@@ -2,8 +2,9 @@ import { buildApp } from "./app";
 
 async function main() {
   const app = await buildApp();
-  await app.listen({ port: 4000, host: "0.0.0.0" });
-  console.log("API running on http://localhost:4000");
+  const port = Number(process.env.PORT ?? 4000);
+  await app.listen({ port, host: "0.0.0.0" });
+  console.log(`API running on ${port}`);
 }
 
 main().catch((err) => {

@@ -7,7 +7,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
 
   await app.register(cors, {
-    origin: ["http://localhost:3000"],
+    origin: [process.env.ADMIN_URL ?? "http://localhost:3000"],
     credentials: true,
   });
 
