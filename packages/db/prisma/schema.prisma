@@ -8,8 +8,212 @@ datasource db {
   // The 'url' property is deprecated in Prisma 5. Move your connection URL to prisma.config.ts.
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
+model users {
+  image       String?
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          Int           @id @default(autoincrement())
+  name        String?       @db.VarChar(255)
+  email       String        @unique @db.VarChar(255)
+  password    String?
+  username    String?       @unique @db.VarChar(50)
+  predictions predictions[]
+
+  @@index([username], map: "idx_users_username")
+}
+
+model bookmakers {
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  externalId BigInt?  @unique @map("external_id")
+  odds       odds[]
+}
+
+model countries {
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id         Int       @id @default(autoincrement())
+  name       String
+  imagePath  String?   @map("image_path")
+  iso2       String?   @db.VarChar(2)
+  iso3       String?   @db.VarChar(3)
+  active     Boolean?  @default(false)
+  externalId BigInt    @unique @map("external_id")
+  leagues    leagues[]
+  teams      teams[]
+}
+
+model fixtures {
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id             Int           @id @default(autoincrement())
+  leagueId       Int?          @map("league_id")
+  seasonId       Int?          @map("season_id")
+  homeTeamId     Int           @map("home_team_id")
+  awayTeamId     Int           @map("away_team_id")
+  name           String
+  startIso       String        @map("start_iso")
+  startTs        Int           @map("start_ts")
+  state          FixtureState  @default(NS)
+  result         String?
+  homeScore      Int?          @map("home_score")
+  awayScore      Int?          @map("away_score")
+  stageRoundName String?       @map("stage_round_name")
+  externalId     BigInt        @unique @map("external_id")
+  hasOdds        Boolean       @default(false) @map("has_odds")
+  awayTeam       teams         @relation("fixtures_away_team_idToteams", fields: [awayTeamId], references: [id], onUpdate: NoAction)
+  homeTeam       teams         @relation("fixtures_home_team_idToteams", fields: [homeTeamId], references: [id], onUpdate: NoAction)
+  league         leagues?      @relation(fields: [leagueId], references: [id], onUpdate: NoAction)
+  season         seasons?      @relation(fields: [seasonId], references: [id], onUpdate: NoAction)
+  odds           odds[]
+  predictions    predictions[]
+
+  @@unique([homeTeamId, awayTeamId, startTs], map: "fixtures_home_away_start_uniq")
+  @@index([id, startTs])
+  @@index([awayTeamId], map: "idx_fixtures_away_team_id")
+  @@index([homeTeamId], map: "idx_fixtures_home_team_id")
+  @@index([leagueId], map: "idx_fixtures_league_id")
+  @@index([seasonId], map: "idx_fixtures_season_id")
+  @@index([startTs], map: "idx_fixtures_start_ts")
+  @@index([startTs, state], map: "idx_fixtures_start_ts_state")
+  @@index([state], map: "idx_fixtures_state")
+  @@index([homeTeamId, awayTeamId, startTs], map: "idx_fixtures_teams_start")
+  @@map("fixtures")
+}
+
+model leagues {
+  id         Int        @id @default(autoincrement())
+  countryId  Int        @map("country_id")
+  name       String
+  type       String
+  imagePath  String?    @map("image_path")
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  shortCode  String?    @map("short_code")
+  externalId BigInt     @unique @map("external_id")
+  subType    String?    @map("sub_type")
+  fixtures   fixtures[]
+  country    countries? @relation(fields: [countryId], references: [id], onUpdate: NoAction)
+  seasons    seasons[]
+
+  @@unique([countryId, name], map: "leagues_country_name_uniq")
+  @@unique([name, countryId], map: "leagues_name_country_uniq")
+  @@index([id], map: "idx_leagues_id")
+  @@index([countryId], map: "leagues_country_idx")
+}
+
+model odds {
+  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id                  Int         @id @default(autoincrement())
+  externalId          BigInt      @unique @map("external_id")
+  fixtureId           Int         @map("fixture_id")
+  bookmakerId         Int?        @map("bookmaker_id")
+  marketExternalId    BigInt      @map("market_external_id")
+  marketDescription   String      @map("market_description")
+  marketName          String      @map("market_name")
+  sortOrder           Int         @map("sort_order")
+  label               String
+  name                String?
+  handicap            String?
+  total               String?
+  value               String
+  probability         String?
+  winning             Boolean     @default(false)
+  startingAt          String      @map("starting_at")
+  startingAtTimestamp Int         @map("starting_at_timestamp")
+  bookmakers          bookmakers? @relation(fields: [bookmakerId], references: [id], onUpdate: NoAction)
+  fixtures            fixtures    @relation(fields: [fixtureId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fixtureId, marketExternalId, bookmakerId], map: "odds_fix_market_book_idx")
+  @@index([startingAtTimestamp], map: "odds_start_ts_idx")
+  @@index([fixtureId], map: "odds_fixture_idx")
+  @@map("odds")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model predictions {
+  id                         Int       @id @default(autoincrement())
+  createdAt                  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                  DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  userId                     Int       @map("user_id")
+  fixtureId                  Int       @map("fixture_id")
+  prediction                 String
+  settled                    Boolean   @default(false)
+  winningCorrectScore        Boolean   @default(false) @map("winning_correct_score")
+  winningMatchWinner         Boolean   @default(false) @map("winning_match_winner")
+  possibleMatchWinnerPoints  String    @default("0") @map("possible_match_winner_points")
+  possibleCorrectScorePoints String    @default("0") @map("possible_correct_score_points")
+  stakeCoins                 Int?      @map("stake_coins")
+  trophiesDelta              Int?      @map("trophies_delta")
+  pointsDelta                Int?      @map("points_delta")
+  winningCoins               Int?      @map("winning_coins")
+  settledAt                  DateTime? @map("settled_at")
+  seenAt                     DateTime? @map("seen_at")
+  frozenOdds                 Json      @map("frozen_odds")
+  placedAt                   DateTime  @default(now()) @map("placed_at") @db.Timestamptz(6)
+  fixtures                   fixtures  @relation(fields: [fixtureId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                      users     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, fixtureId], map: "public_predictions_uniq")
+  @@index([fixtureId, settled], map: "pred_fixture_settled_idx")
+  @@index([userId, placedAt(sort: Desc)], map: "pp_user_placed_desc_idx")
+  @@index([fixtureId], map: "idx_predictions_fixture_id")
+  @@index([fixtureId, userId], map: "idx_predictions_fixture_user")
+  @@index([userId], map: "idx_predictions_user_id")
+  @@index([fixtureId], map: "pp_fixture_idx")
+  @@index([settled], map: "pp_settled_idx")
+  @@index([userId], map: "pp_user_idx")
+  @@map("predictions")
+}
+
+model seasons {
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id         Int        @id @default(autoincrement())
+  leagueId   Int        @map("league_id")
+  name       String
+  startDate  String     @map("start_date")
+  endDate    String     @map("end_date")
+  isCurrent  Boolean    @default(false) @map("is_current")
+  externalId BigInt     @unique @map("external_id")
+  fixtures   fixtures[]
+  leagues    leagues?   @relation(fields: [leagueId], references: [id], onUpdate: NoAction)
+
+  @@unique([leagueId, name], map: "seasons_league_name_uniq")
+  @@index([isCurrent], map: "seasons_current_idx")
+  @@index([leagueId], map: "seasons_league_idx")
+  @@map("seasons")
+}
+
+model teams {
+  id                                    Int        @id @default(autoincrement())
+  countryId                             Int?       @map("country_id")
+  name                                  String
+  shortCode                             String?    @map("short_code")
+  imagePath                             String?    @map("image_path")
+  founded                               Int?
+  type                                  String?
+  createdAt                             DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                             DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  externalId                            BigInt     @unique @map("external_id")
+  fixtures_fixtures_away_team_idToteams fixtures[] @relation("fixtures_away_team_idToteams")
+  fixtures_fixtures_home_team_idToteams fixtures[] @relation("fixtures_home_team_idToteams")
+  countries                             countries? @relation(fields: [countryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([name, countryId], map: "teams_name_country_unique")
+  @@index([id], map: "idx_teams_id")
+  @@index([name, countryId], map: "idx_teams_name_country")
+  @@map("teams")
+}
+
+enum FixtureState {
+  NS
+  LIVE
+  FT
+  CAN
+  INT
+
+  @@map("fixture_state")
 }

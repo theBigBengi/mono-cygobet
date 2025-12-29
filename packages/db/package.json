@@ -19,6 +19,7 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "studio": "prisma studio",
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "seed:fixtures": "ts-node scripts/seed-fixtures.ts"
   }
 }
