@@ -13,6 +13,11 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   app.get("/health", async () => ({ status: "ok" }));
 
+  app.get("/health/db", async () => {
+    const result = await prisma.$queryRaw`SELECT 1`;
+    return { status: "db-ok", result };
+  });
+
   app.get("/version", async () => ({
     name: "api",
     version: "1.0.0",
