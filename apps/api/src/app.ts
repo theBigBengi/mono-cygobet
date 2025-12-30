@@ -18,9 +18,16 @@ const app: FastifyPluginAsync<AppOptions> = async (
   opts
 ): Promise<void> => {
   try {
+    // Minimal schema for @fastify/env (required by the plugin)
+    const schema = {
+      type: "object",
+      required: [],
+      properties: {},
+    };
+
     const options = {
       confKey: "config", // config will be available at fastify.config
-      // schema,
+      schema,
       dotenv: true, // Load from .env automatically
     };
 

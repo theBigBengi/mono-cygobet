@@ -5,7 +5,7 @@ import app from "./app";
 
 // Create Fastify instance
 const fastify = Fastify({
-  // logger: true,
+  logger: true,
   ajv: { customOptions: { coerceTypes: true, allowUnionTypes: true } },
   // querystringParser: (str) => qs.parse(str, { comma: true, allowDots: true }),
 });
