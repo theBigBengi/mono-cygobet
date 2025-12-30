@@ -217,3 +217,57 @@ enum FixtureState {
 
   @@map("fixture_state")
 }
+
+enum RunStatus {
+  queued
+  running
+  success
+  failed
+  skipped
+
+  @@map("run_status")
+}
+
+enum RunTrigger {
+  auto
+  manual
+
+  @@map("run_trigger")
+}
+
+model seedBatches {
+  id            Int        @id @default(autoincrement())
+  name          String
+  version       String?
+  status        RunStatus
+  startedAt     DateTime   @default(now())
+  finishedAt    DateTime?
+  durationMs    Int?
+  itemsTotal    Int        @default(0)
+  itemsSuccess  Int        @default(0)
+  itemsFailed   Int        @default(0)
+  errorMessage  String?
+  errorStack    String?
+  meta          Json       @default("{}")
+  trigger       RunTrigger @default(manual)
+  triggeredBy   String?
+  triggeredById String?
+
+  items seedItems[]
+
+  @@index([name, startedAt(sort: Desc)])
+  @@map("seed_batches")
+}
+
+model seedItems {
+  id           Int         @id @default(autoincrement())
+  batchId      Int
+  batch        seedBatches @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  itemKey      String?
+  status       RunStatus
+  errorMessage String?
+  meta         Json        @default("{}")
+
+  @@index([batchId])
+  @@map("seed_items")
+}

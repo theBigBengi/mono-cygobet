@@ -30,7 +30,11 @@ import {
   coerceEpochSeconds,
 } from "./helpers";
 
+import dotenv from "dotenv";
+dotenv.config();
 /* ----------------------- SportMonksAdapter Implementation ----------------------- */
+
+console.log(process.env.SPORTMONKS_API_TOKEN);
 
 /**
  * Main adapter class that implements SportsDataAdapter interface

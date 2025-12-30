@@ -1,0 +1,260 @@
+// src/etl/seeds/seed.leagues.ts
+import type { LeagueDTO } from "@repo/types/sport-data/common";
+import {
+  startSeedBatch,
+  trackSeedItem,
+  finishSeedBatch,
+  chunk,
+  safeBigInt,
+  normShortCode,
+} from "./seed.utils";
+import { RunStatus, RunTrigger, prisma } from "@repo/db";
+
+const CHUNK_SIZE = 8;
+
+export async function seedLeagues(
+  leagues: LeagueDTO[],
+  opts?: {
+    batchId?: number;
+    version?: string;
+    trigger?: RunTrigger;
+    triggeredBy?: string | null;
+    triggeredById?: string | null;
+    dryRun?: boolean;
+  }
+) {
+  // In dry-run mode, skip all database writes including batch tracking
+  if (opts?.dryRun) {
+    console.log(
+      `🧪 DRY RUN MODE: ${leagues?.length ?? 0} leagues would be processed (no database changes)`
+    );
+    return { batchId: null, ok: 0, fail: 0, total: leagues?.length ?? 0 };
+  }
+
+  let batchId = opts?.batchId;
+  let createdHere = false;
+
+  if (!batchId) {
+    const started = await startSeedBatch(
+      "seed-leagues",
+      opts?.version ?? "v1",
+      { totalInput: leagues?.length ?? 0, dryRun: !!opts?.dryRun },
+      {
+        trigger: opts?.trigger ?? RunTrigger.manual,
+        triggeredBy: opts?.triggeredBy ?? null,
+        triggeredById: opts?.triggeredById ?? null,
+      }
+    );
+    batchId = started.id;
+    createdHere = true;
+  }
+
+  if (!leagues?.length) {
+    await finishSeedBatch(batchId!, RunStatus.success, {
+      itemsTotal: 0,
+      itemsSuccess: 0,
+      itemsFailed: 0,
+      meta: { reason: "no-input" },
+    });
+    return { batchId, ok: 0, fail: 0, total: 0 };
+  }
+
+  console.log(
+    `🏆 Starting leagues seeding: ${leagues.length} leagues to process`
+  );
+
+  // De-dupe input
+  const seen = new Set<string>();
+  const uniqueLeagues: typeof leagues = [];
+  const duplicates: typeof leagues = [];
+
+  for (const league of leagues) {
+    const key = String(league.externalId);
+    if (seen.has(key)) {
+      duplicates.push(league);
+    } else {
+      seen.add(key);
+      uniqueLeagues.push(league);
+    }
+  }
+
+  if (duplicates.length > 0) {
+    console.log(
+      `⚠️  Input contained ${duplicates.length} duplicate leagues, processing ${uniqueLeagues.length} unique items`
+    );
+    const duplicatePromises = duplicates.map((league) =>
+      trackSeedItem(
+        batchId!,
+        String(league.externalId),
+        RunStatus.skipped,
+        undefined,
+        {
+          name: league.name,
+          reason: "duplicate",
+        }
+      )
+    );
+    await Promise.allSettled(duplicatePromises);
+  }
+
+  // Batch lookup countries
+  const countryExternalIds = uniqueLeagues
+    .map((l) => l.countryExternalId)
+    .filter((id): id is string | number => id != null);
+  const uniqueCountryIds = [...new Set(countryExternalIds.map(String))];
+  const countryMap = new Map<string, number>();
+
+  if (uniqueCountryIds.length > 0) {
+    const countries = await prisma.countries.findMany({
+      where: {
+        externalId: { in: uniqueCountryIds.map((id) => safeBigInt(id)) },
+      },
+      select: { id: true, externalId: true },
+    });
+
+    for (const country of countries) {
+      countryMap.set(String(country.externalId), country.id);
+    }
+
+    console.log(
+      `✅ [${batchId}] Country lookup completed: ${countries.length}/${uniqueCountryIds.length} countries found`
+    );
+  }
+
+  let ok = 0;
+  let fail = 0;
+
+  try {
+    for (const group of chunk(uniqueLeagues, CHUNK_SIZE)) {
+      // Process all leagues in the chunk in parallel
+      const chunkResults = await Promise.allSettled(
+        group.map(async (league) => {
+          try {
+            if (!league.name) {
+              throw new Error(
+                `No name specified for league (externalId: ${league.externalId})`
+              );
+            }
+
+            if (!league.type) {
+              throw new Error(
+                `No type specified for league ${league.name} (externalId: ${league.externalId})`
+              );
+            }
+
+            const countryId =
+              league.countryExternalId != null
+                ? (countryMap.get(String(league.countryExternalId)) ?? null)
+                : null;
+
+            if (!countryId) {
+              throw new Error(
+                `No valid country ID found for league ${league.name} (externalId: ${league.externalId})`
+              );
+            }
+
+            const shortCode = normShortCode(league.shortCode);
+
+            await prisma.leagues.upsert({
+              where: { externalId: safeBigInt(league.externalId) },
+              update: {
+                name: league.name,
+                shortCode: shortCode ?? undefined,
+                imagePath: league.imagePath ?? undefined,
+                countryId: countryId,
+                type: league.type,
+                subType: league.subType ?? undefined,
+                updatedAt: new Date(),
+              },
+              create: {
+                externalId: safeBigInt(league.externalId),
+                name: league.name,
+                shortCode: shortCode ?? null,
+                imagePath: league.imagePath ?? null,
+                countryId: countryId,
+                type: league.type,
+                subType: league.subType ?? null,
+              },
+            });
+
+            await trackSeedItem(
+              batchId!,
+              String(league.externalId),
+              RunStatus.success,
+              undefined,
+              {
+                name: league.name,
+                externalId: league.externalId,
+              }
+            );
+
+            return { success: true, league };
+          } catch (e: any) {
+            const errorCode = e?.code || "UNKNOWN_ERROR";
+            const errorMessage = e?.message || "Unknown error";
+
+            await trackSeedItem(
+              batchId!,
+              String(league.externalId),
+              RunStatus.failed,
+              errorMessage.slice(0, 500),
+              {
+                name: league.name,
+                externalId: league.externalId,
+                errorCode,
+                errorMessage: errorMessage.slice(0, 200),
+              }
+            );
+
+            console.log(
+              `❌ [${batchId}] League failed: ${league.name} (ID: ${league.externalId}) - ${errorMessage}`
+            );
+
+            return { success: false, league, error: errorMessage };
+          }
+        })
+      );
+
+      // Count successes and failures from this chunk
+      for (const result of chunkResults) {
+        if (result.status === "fulfilled") {
+          if (result.value.success) {
+            ok++;
+          } else {
+            fail++;
+          }
+        } else {
+          fail++;
+        }
+      }
+    }
+
+    await finishSeedBatch(batchId!, RunStatus.success, {
+      itemsTotal: ok + fail,
+      itemsSuccess: ok,
+      itemsFailed: fail,
+      meta: { ok, fail },
+    });
+
+    console.log(
+      `🎉 [${batchId}] Leagues seeding completed: ${ok} success, ${fail} failed`
+    );
+    return { batchId, ok, fail, total: ok + fail };
+  } catch (e: any) {
+    console.log(
+      `💥 [${batchId}] Unexpected error during leagues seeding: ${
+        e?.message || "Unknown error"
+      }`
+    );
+    await finishSeedBatch(batchId!, RunStatus.failed, {
+      itemsTotal: ok + fail,
+      itemsSuccess: ok,
+      itemsFailed: fail,
+      errorMessage: String(e?.message ?? e).slice(0, 500),
+      meta: { ok, fail },
+    });
+
+    return { batchId, ok, fail, total: ok + fail };
+  }
+}
+

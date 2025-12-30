@@ -81,6 +81,9 @@ importers:
       '@repo/db':
         specifier: workspace:^
         version: link:../../packages/db
+      '@repo/sports-data':
+        specifier: workspace:^
+        version: link:../../packages/sports-data
       '@repo/types':
         specifier: workspace:^
         version: link:../../packages/types

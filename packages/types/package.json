@@ -9,7 +9,8 @@
     "./version": "./src/version.ts",
     "./sport-data/common": "./src/sport-data/common.ts",
     "./sport-data/sportmonks": "./src/sport-data/sportmonks.ts",
-    "./http/health": "./src/http/health.ts"
+    "./http/health": "./src/http/health.ts",
+    "./jobs/run": "./src/jobs/run.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
