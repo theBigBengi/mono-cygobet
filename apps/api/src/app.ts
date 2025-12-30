@@ -3,7 +3,7 @@ import fastifyEnv from "@fastify/env";
 import fastifyCookie from "@fastify/cookie";
 import fastifyCors from "@fastify/cors";
 import { FastifyPluginAsync } from "fastify";
-import fastifyJwt from "@fastify/jwt";
+// import fastifyJwt from "@fastify/jwt";
 import * as path from "path";
 
 export type AppOptions = {
@@ -53,7 +53,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
 
   // Register core plugins
   fastify.register(fastifyCookie);
-  fastify.register(fastifyJwt, { secret: process.env.JWT_SECRET! });
+  // fastify.register(fastifyJwt, { secret: process.env.JWT_SECRET! });
 
   // Register CORS
   fastify.register(fastifyCors, {
