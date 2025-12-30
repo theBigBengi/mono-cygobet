@@ -273,11 +273,7 @@ importers:
         specifier: workspace:^
         version: link:../typescript-config
 
-  packages/types:
-    dependencies:
-      '@repo/types':
-        specifier: workspace:*
-        version: 'link:'
+  packages/types: {}
 
   packages/typescript-config: {}
 
