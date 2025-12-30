@@ -64,11 +64,11 @@ const app: FastifyPluginAsync<AppOptions> = async (
   });
 
   // Load plugins
-  await fastify.register(AutoLoad, {
-    dir: path.join(__dirname, "plugins"),
-    options: opts,
-    forceESM: true,
-  });
+  // await fastify.register(AutoLoad, {
+  //   dir: path.join(__dirname, "plugins"),
+  //   options: opts,
+  //   forceESM: true,
+  // });
 
   // app.ts (after registering core plugins, before routes)
   fastify.setReplySerializer((payload) => {
@@ -81,12 +81,14 @@ const app: FastifyPluginAsync<AppOptions> = async (
     );
   });
 
+  fastify.get("/health", async () => ({ ok: true }));
+
   // Load routes after plugins
-  await fastify.register(AutoLoad, {
-    dir: path.join(__dirname, "routes"),
-    options: opts,
-    forceESM: true,
-  });
+  // await fastify.register(AutoLoad, {
+  //   dir: path.join(__dirname, "routes"),
+  //   options: opts,
+  //   forceESM: true,
+  // });
 };
 
 export default app;

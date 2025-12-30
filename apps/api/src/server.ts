@@ -20,6 +20,9 @@ fastify.ready().then(() => {
   console.log(fastify.printPlugins());
 });
 
+process.on("uncaughtException", (e) => console.error("uncaughtException", e));
+process.on("unhandledRejection", (e) => console.error("unhandledRejection", e));
+
 // Start listening.
 // @ts-ignore
 fastify.listen(
