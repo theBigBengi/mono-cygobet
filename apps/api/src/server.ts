@@ -12,38 +12,53 @@ const fastify = Fastify({
 
 // Initialize logger
 const logger = fastify.log;
-// Register your application as a normal plugin.
-// const appService = require('./app.js')
-fastify.register(app);
 
-fastify.ready().then(() => {
-  console.log(fastify.printPlugins());
+// Register error handlers first
+process.on("uncaughtException", (e) => {
+  console.error("uncaughtException", e);
+  process.exit(1);
 });
 
-process.on("uncaughtException", (e) => console.error("uncaughtException", e));
-process.on("unhandledRejection", (e) => console.error("unhandledRejection", e));
+process.on("unhandledRejection", (e) => {
+  console.error("unhandledRejection", e);
+  process.exit(1);
+});
 
-// Start listening.
-// @ts-ignore
-fastify.listen(
-  {
-    port: parseInt(process.env.PORT || "4000", 10),
-    host: "0.0.0.0", // Bind to all interfaces for cloud deployment
-  },
-  (err) => {
-    if (err) {
-      fastify.log.error(err);
-      process.exit(1);
-    }
-  }
-);
+// Register your application as a normal plugin.
+fastify.register(app);
 
 // Handle graceful shutdown
 const gracefulShutdown = async (signal: string): Promise<void> => {
   logger.info(`\n🛑 Received ${signal}. Shutting down server...`);
-  await fastify.close();
-  process.exit(0);
+  try {
+    await fastify.close();
+    process.exit(0);
+  } catch (err) {
+    logger.error({ err }, "Error during shutdown");
+    process.exit(1);
+  }
 };
 
-process.on("unhandledRejection", (e) => console.error("unhandledRejection", e));
-process.on("uncaughtException", (e) => console.error("uncaughtException", e));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+
+// Start listening
+const start = async () => {
+  try {
+    await fastify.ready();
+    console.log(fastify.printPlugins());
+
+    const port = parseInt(process.env.PORT || "4000", 10);
+    await fastify.listen({
+      port,
+      host: "0.0.0.0", // Bind to all interfaces for cloud deployment
+    });
+
+    logger.info(`🚀 Server listening on port ${port}`);
+  } catch (err) {
+    logger.error({ err }, "Failed to start server");
+    process.exit(1);
+  }
+};
+
+start();
