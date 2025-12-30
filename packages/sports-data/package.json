@@ -1,0 +1,17 @@
+{
+  "name": "@repo/sports-data",
+  "private": true,
+  "version": "1.0.0",
+  "exports": {
+    "./adapters/sportmonks": "./src/adapters/sportmonks/sportmonks.adapter.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts"
+  },
+  "devDependencies": {
+    "@repo/types": "workspace:^",
+    "@repo/typescript-config": "workspace:^"
+  }
+}
