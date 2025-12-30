@@ -18,31 +18,31 @@ const app: FastifyPluginAsync<AppOptions> = async (
   opts
 ): Promise<void> => {
   // Define a schema for validation (optional but recommended)
-  const schema = {
-    type: "object",
-    required: [
-      // "PORT",
-      // "JWT_SECRET",
-      // "GOOGLE_CLIENT_ID",
-      // "GOOGLE_CLIENT_SECRET",
-      // "FB_CLIENT_ID",
-      // "FB_CLIENT_SECRET",
-    ],
-    properties: {
-      PORT: { type: "string", default: "3000" },
-      JWT_SECRET: { type: "string" },
-      GOOGLE_CLIENT_ID: { type: "string" },
-      GOOGLE_CLIENT_SECRET: { type: "string" },
-      FB_CLIENT_ID: { type: "string" },
-      FB_CLIENT_SECRET: { type: "string" },
-      SPORTSMONKS_API_KEY: { type: "string" },
-      SPORTSMONKS_API_URL: { type: "string" },
-    },
-  };
+  // const schema = {
+  //   type: "object",
+  //   required: [
+  //     "PORT",
+  //     "JWT_SECRET",
+  //     "GOOGLE_CLIENT_ID",
+  //     "GOOGLE_CLIENT_SECRET",
+  //     "FB_CLIENT_ID",
+  //     "FB_CLIENT_SECRET",
+  //   ],
+  //   properties: {
+  //     PORT: { type: "string", default: "3000" },
+  //     JWT_SECRET: { type: "string" },
+  //     GOOGLE_CLIENT_ID: { type: "string" },
+  //     GOOGLE_CLIENT_SECRET: { type: "string" },
+  //     FB_CLIENT_ID: { type: "string" },
+  //     FB_CLIENT_SECRET: { type: "string" },
+  //     SPORTSMONKS_API_KEY: { type: "string" },
+  //     SPORTSMONKS_API_URL: { type: "string" },
+  //   },
+  // };
 
   const options = {
     confKey: "config", // config will be available at fastify.config
-    schema,
+    // schema,
     dotenv: true, // Load from .env automatically
   };
 
