@@ -17,74 +17,57 @@ const app: FastifyPluginAsync<AppOptions> = async (
   fastify,
   opts
 ): Promise<void> => {
-  // Define a schema for validation (optional but recommended)
-  // const schema = {
-  //   type: "object",
-  //   required: [
-  //     "PORT",
-  //     "JWT_SECRET",
-  //     "GOOGLE_CLIENT_ID",
-  //     "GOOGLE_CLIENT_SECRET",
-  //     "FB_CLIENT_ID",
-  //     "FB_CLIENT_SECRET",
-  //   ],
-  //   properties: {
-  //     PORT: { type: "string", default: "3000" },
-  //     JWT_SECRET: { type: "string" },
-  //     GOOGLE_CLIENT_ID: { type: "string" },
-  //     GOOGLE_CLIENT_SECRET: { type: "string" },
-  //     FB_CLIENT_ID: { type: "string" },
-  //     FB_CLIENT_SECRET: { type: "string" },
-  //     SPORTSMONKS_API_KEY: { type: "string" },
-  //     SPORTSMONKS_API_URL: { type: "string" },
-  //   },
-  // };
+  try {
+    const options = {
+      confKey: "config", // config will be available at fastify.config
+      // schema,
+      dotenv: true, // Load from .env automatically
+    };
 
-  const options = {
-    confKey: "config", // config will be available at fastify.config
-    // schema,
-    dotenv: true, // Load from .env automatically
-  };
+    await fastify.register(fastifyEnv, options);
 
-  await fastify.register(fastifyEnv, options);
+    // Register core plugins
+    fastify.register(fastifyCookie);
+    // fastify.register(fastifyJwt, { secret: process.env.JWT_SECRET! });
 
-  // Register global error handler first
-  // registerGlobalErrorHandler(fastify);
+    // Register CORS
+    fastify.register(fastifyCors, {
+      origin: ["http://localhost:3000"],
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    });
 
-  // Register core plugins
-  fastify.register(fastifyCookie);
-  // fastify.register(fastifyJwt, { secret: process.env.JWT_SECRET! });
+    // app.ts (after registering core plugins, before routes)
+    fastify.setReplySerializer((payload) => {
+      // Keep strings as-is (Fastify may already give a string)
+      if (typeof payload === "string") return payload;
 
-  // Register CORS
-  fastify.register(fastifyCors, {
-    origin: ["http://localhost:3000"],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  });
+      // Convert BigInt values to strings to avoid precision loss
+      return JSON.stringify(payload, (_key, value) =>
+        typeof value === "bigint" ? value.toString() : value
+      );
+    });
 
-  // app.ts (after registering core plugins, before routes)
-  fastify.setReplySerializer((payload) => {
-    // Keep strings as-is (Fastify may already give a string)
-    if (typeof payload === "string") return payload;
+    // Load plugins
+    const pluginsDir = path.join(__dirname, "plugins");
+    console.log("Loading plugins from:", pluginsDir);
+    await fastify.register(AutoLoad, {
+      dir: pluginsDir,
+      options: opts,
+    });
 
-    // Convert BigInt values to strings to avoid precision loss
-    return JSON.stringify(payload, (_key, value) =>
-      typeof value === "bigint" ? value.toString() : value
-    );
-  });
-
-  // Load plugins
-  await fastify.register(AutoLoad, {
-    dir: path.join(__dirname, "plugins"),
-    options: opts,
-  });
-
-  // Load routes after plugins
-  await fastify.register(AutoLoad, {
-    dir: path.join(__dirname, "routes"),
-    options: opts,
-  });
+    // Load routes after plugins
+    const routesDir = path.join(__dirname, "routes");
+    console.log("Loading routes from:", routesDir);
+    await fastify.register(AutoLoad, {
+      dir: routesDir,
+      options: opts,
+    });
+  } catch (err) {
+    console.error("Error in app plugin:", err);
+    throw err;
+  }
 };
 
 export default app;
