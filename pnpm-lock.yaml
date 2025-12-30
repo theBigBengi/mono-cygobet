@@ -90,6 +90,9 @@ importers:
       fastify:
         specifier: ^5.6.2
         version: 5.6.2
+      fastify-plugin:
+        specifier: ^5.1.0
+        version: 5.1.0
       node-cron:
         specifier: ^4.2.1
         version: 4.2.1
