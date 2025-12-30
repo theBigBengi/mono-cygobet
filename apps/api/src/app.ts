@@ -62,6 +62,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
     await fastify.register(AutoLoad, {
       dir: pluginsDir,
       options: opts,
+      forceESM: true,
     });
 
     // Load routes after plugins
@@ -71,6 +72,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
       dir: routesDir,
       options: opts,
       maxDepth: 3, // Allow loading from subdirectories (e.g., routes/admin/db/, routes/admin/provider/)
+      forceESM: true,
     });
   } catch (err) {
     console.error("Error in app plugin:", err);

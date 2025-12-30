@@ -7,6 +7,15 @@
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
     },
+    "@repo/db#build": {
+      "outputs": []
+    },
+    "@repo/types#build": {
+      "outputs": []
+    },
+    "@repo/sports-data#build": {
+      "outputs": []
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },
