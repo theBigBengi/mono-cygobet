@@ -1,13 +1,12 @@
 // src/etl/seeds/seed.cli.ts
-import {
-  runCountriesSeed,
-  runLeaguesSeed,
-  runTeamsSeed,
-  runSeasonsSeed,
-  runFixturesSeed,
-  runOddsSeed,
-  runJobsSeed,
-} from "./seed.index";
+import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { seedCountries } from "./seed.countries";
+import { seedLeagues } from "./seed.leagues";
+import { seedTeams } from "./seed.teams";
+import { seedSeasons } from "./seed.seasons";
+import { seedFixtures } from "./seed.fixtures";
+import { seedOdds } from "./seed.odds";
+import { seedDefaultJobs } from "./seed.jobs";
 import { format, addDays } from "date-fns";
 
 /**
@@ -72,6 +71,13 @@ const oddsFilters: string = oddsFiltersArg
       console.log("🧪 DRY RUN MODE: No database changes will be made");
     }
 
+    const adapter = new SportMonksAdapter({
+      token: process.env.SPORTMONKS_API_TOKEN,
+      footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
+      coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
+      authMode: process.env.SPORTMONKS_AUTH_MODE as "query" | "header",
+    });
+
     // Validate dependencies when running individual seeds
     if (!runAll) {
       if (hasLeagues && !hasCountries) {
@@ -101,43 +107,60 @@ const oddsFilters: string = oddsFiltersArg
 
     if (runAll || hasCountries) {
       console.log("🚀 Starting countries seeding...");
-      await runCountriesSeed({ dryRun });
+      const countriesDto = await adapter.fetchCountries();
+      await seedCountries(countriesDto, { dryRun });
     }
 
     // Leagues and teams can run in parallel after countries (they both depend on countries)
     if (runAll || hasLeagues) {
       console.log("🚀 Starting leagues seeding...");
-      await runLeaguesSeed({ dryRun });
+      const leaguesDto = await adapter.fetchLeagues();
+      await seedLeagues(leaguesDto, { dryRun });
     }
 
     if (runAll || hasTeams) {
       console.log("🚀 Starting teams seeding...");
-      await runTeamsSeed({ dryRun });
+      const teamsDto = await adapter.fetchTeams();
+      await seedTeams(teamsDto, { dryRun });
     }
 
     // Seasons must come after leagues
     if (runAll || hasSeasons) {
       console.log("🚀 Starting seasons seeding...");
-      await runSeasonsSeed({ dryRun });
+      const seasonsDto = await adapter.fetchSeasons();
+      await seedSeasons(seasonsDto, { dryRun });
     }
 
     // Fixtures must come after leagues, seasons, and teams
     if (runAll || hasFixtures) {
       console.log("🚀 Starting fixtures seeding...");
-      await runFixturesSeed(fixturesSeasonId, { dryRun });
+      if (fixturesSeasonId) {
+        const fixturesDto = await adapter.fetchFixturesBySeason(fixturesSeasonId);
+        await seedFixtures(fixturesDto, { dryRun });
+      } else {
+        const seasonsDto = await adapter.fetchSeasons();
+        for (const season of seasonsDto) {
+          const fixturesDto = await adapter.fetchFixturesBySeason(
+            Number(season.externalId)
+          );
+          if (fixturesDto.length > 0) {
+            await seedFixtures(fixturesDto, { dryRun });
+          }
+        }
+      }
     }
 
     if (runAll || hasOdds) {
       console.log("🚀 Starting odds seeding...");
-      await runOddsSeed(oddsFrom, oddsTo, {
-        dryRun,
+      const oddsDto = await adapter.fetchOddsBetween(oddsFrom, oddsTo, {
         filters: oddsFilters,
       });
+      await seedOdds(oddsDto, { dryRun });
     }
 
     if (runAll || hasJobs) {
       console.log("🚀 Starting jobs seeding...");
-      await runJobsSeed({ dryRun });
+      await seedDefaultJobs({ dryRun });
     }
 
     console.log("✅ Seeding completed successfully");
