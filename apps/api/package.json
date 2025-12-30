@@ -20,7 +20,11 @@
     "seed:seasons": "tsx src/etl/seeds/seed.cli.ts --seasons",
     "seed:seasons:dry": "tsx src/etl/seeds/seed.cli.ts --seasons --dry-run",
     "seed:fixtures": "tsx src/etl/seeds/seed.cli.ts --fixtures",
-    "seed:fixtures:dry": "tsx src/etl/seeds/seed.cli.ts --fixtures --dry-run"
+    "seed:fixtures:dry": "tsx src/etl/seeds/seed.cli.ts --fixtures --dry-run",
+    "seed:odds": "tsx src/etl/seeds/seed.cli.ts --odds",
+    "seed:odds:dry": "tsx src/etl/seeds/seed.cli.ts --odds --dry-run",
+    "seed:jobs": "tsx src/etl/seeds/seed.cli.ts --jobs",
+    "seed:jobs:dry": "tsx src/etl/seeds/seed.cli.ts --jobs --dry-run"
   },
   "keywords": [],
   "author": "",
@@ -34,6 +38,7 @@
     "@repo/db": "workspace:^",
     "@repo/sports-data": "workspace:^",
     "@repo/types": "workspace:^",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",
     "fastify-plugin": "^5.1.0",

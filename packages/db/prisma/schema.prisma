@@ -235,6 +235,17 @@ enum RunTrigger {
   @@map("run_trigger")
 }
 
+model jobs {
+  key          String   @id
+  description  String?
+  scheduleCron String?  @map("schedule_cron")
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("jobs")
+}
+
 model seedBatches {
   id            Int        @id @default(autoincrement())
   name          String

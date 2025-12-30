@@ -4,6 +4,8 @@ import { seedLeagues } from "./seed.leagues";
 import { seedTeams } from "./seed.teams";
 import { seedSeasons } from "./seed.seasons";
 import { seedFixtures } from "./seed.fixtures";
+import { seedOdds } from "./seed.odds";
+import { seedDefaultJobs } from "./seed.jobs";
 
 function createAdapter() {
   return new SportMonksAdapter({
@@ -97,4 +99,36 @@ export async function runFixturesSeed(
   }
 
   console.log("✅ Fixtures seeding finished");
+}
+
+export async function runOddsSeed(
+  startIso: string,
+  endIso: string,
+  opts?: {
+    dryRun?: boolean;
+    filters?: string;
+  }
+) {
+  const adapter = createAdapter();
+
+  console.log(
+    `🎲 Fetching odds from SportMonks between ${startIso} and ${endIso}...`
+  );
+  const oddsDto = await adapter.fetchOddsBetween(startIso, endIso, {
+    filters: opts?.filters,
+  });
+
+  console.log(`📦 Found ${oddsDto.length} odds to seed`);
+  const result = await seedOdds(oddsDto, opts);
+
+  console.log("✅ Odds seeding finished");
+  return result;
+}
+
+export async function runJobsSeed(opts?: { dryRun?: boolean }) {
+  console.log("🔧 Seeding default jobs...");
+  const result = await seedDefaultJobs(opts);
+
+  console.log("✅ Jobs seeding finished");
+  return result;
 }

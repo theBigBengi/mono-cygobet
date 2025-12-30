@@ -5,7 +5,10 @@ import {
   runTeamsSeed,
   runSeasonsSeed,
   runFixturesSeed,
+  runOddsSeed,
+  runJobsSeed,
 } from "./seed.index";
+import { format, addDays } from "date-fns";
 
 /**
  * Seeding Order (based on foreign key dependencies):
@@ -27,8 +30,16 @@ const hasLeagues = args.includes("--leagues");
 const hasTeams = args.includes("--teams");
 const hasSeasons = args.includes("--seasons");
 const hasFixtures = args.includes("--fixtures");
+const hasOdds = args.includes("--odds");
+const hasJobs = args.includes("--jobs");
 const runAll =
-  !hasCountries && !hasLeagues && !hasTeams && !hasSeasons && !hasFixtures;
+  !hasCountries &&
+  !hasLeagues &&
+  !hasTeams &&
+  !hasSeasons &&
+  !hasFixtures &&
+  !hasOdds &&
+  !hasJobs;
 
 // Parse fixtures-season argument if provided
 const fixturesSeasonArg = args.find((arg) =>
@@ -40,6 +51,20 @@ const fixturesSeasonId = fixturesSeasonArg
       return isNaN(parsed) ? undefined : parsed;
     })()
   : undefined;
+
+// Parse odds arguments if provided
+const oddsFromArg = args.find((arg) => arg.startsWith("--odds-from="));
+const oddsToArg = args.find((arg) => arg.startsWith("--odds-to="));
+const oddsFiltersArg = args.find((arg) => arg.startsWith("--odds-filters="));
+const oddsFrom: string = oddsFromArg
+  ? oddsFromArg.split("=")[1]!
+  : format(new Date(), "yyyy-MM-dd");
+const oddsTo: string = oddsToArg
+  ? oddsToArg.split("=")[1]!
+  : format(addDays(new Date(), 7), "yyyy-MM-dd");
+const oddsFilters: string = oddsFiltersArg
+  ? oddsFiltersArg.split("=")[1]!
+  : "bookmakers:1;markets:1,57;fixtureStates:1";
 
 (async () => {
   try {
@@ -100,6 +125,19 @@ const fixturesSeasonId = fixturesSeasonArg
     if (runAll || hasFixtures) {
       console.log("🚀 Starting fixtures seeding...");
       await runFixturesSeed(fixturesSeasonId, { dryRun });
+    }
+
+    if (runAll || hasOdds) {
+      console.log("🚀 Starting odds seeding...");
+      await runOddsSeed(oddsFrom, oddsTo, {
+        dryRun,
+        filters: oddsFilters,
+      });
+    }
+
+    if (runAll || hasJobs) {
+      console.log("🚀 Starting jobs seeding...");
+      await runJobsSeed({ dryRun });
     }
 
     console.log("✅ Seeding completed successfully");
