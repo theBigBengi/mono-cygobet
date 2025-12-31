@@ -66,7 +66,6 @@ export function CountriesTable({
 }: CountriesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [pageSize, setPageSize] = useState(25);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 25,
@@ -97,11 +96,17 @@ export function CountriesTable({
           header: "Status",
           cell: ({ row }: { row: any }) => {
             const status = row.getValue("status") as UnifiedCountry["status"];
-            const statusConfig = {
-              "missing-in-db": { label: "Missing", variant: "destructive" as const },
-              mismatch: { label: "Mismatch", variant: "destructive" as const },
-              "extra-in-db": { label: "Extra", variant: "secondary" as const },
-              ok: { label: "OK", variant: "default" as const },
+            const statusConfig: Record<
+              UnifiedCountry["status"],
+              { label: string; variant: "destructive" | "secondary" | "default" }
+            > = {
+              "missing-in-db": { label: "Missing", variant: "destructive" },
+              mismatch: { label: "Mismatch", variant: "destructive" },
+              "extra-in-db": { label: "Extra", variant: "secondary" },
+              ok: { label: "OK", variant: "default" },
+              "no-leagues": { label: "No Leagues", variant: "secondary" },
+              "iso-missing": { label: "ISO Missing", variant: "secondary" },
+              new: { label: "New", variant: "secondary" },
             };
             const config = statusConfig[status] || statusConfig.ok;
             return (
@@ -364,7 +369,7 @@ export function CountriesTable({
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    globalFilterFn: (row, columnId, filterValue) => {
+    globalFilterFn: (row, _columnId, filterValue) => {
       const search = filterValue.toLowerCase();
       if (mode === "diff") {
         const country = row.original as UnifiedCountry;
