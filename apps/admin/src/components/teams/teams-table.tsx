@@ -379,20 +379,6 @@ export function TeamsTable({
     manualPagination: false,
   });
 
-  const handleSyncTeam = async (externalId: string) => {
-    if (!onSyncTeam) return;
-    setSyncingIds((prev) => new Set(prev).add(externalId));
-    try {
-      await onSyncTeam(externalId);
-    } finally {
-      setSyncingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(externalId);
-        return next;
-      });
-    }
-  };
-
   const handleRowClick = (team: UnifiedTeam | TeamDBRow) => {
     if (mode === "provider") {
       setSelectedTeam(team as UnifiedTeam);
@@ -452,24 +438,12 @@ export function TeamsTable({
               if (rows?.length) {
                 return rows.map((row) => {
                   const team = row.original as UnifiedTeam | TeamDBRow;
-                  const isClickable = mode === "provider" && onSyncTeam;
-                  const canSync =
-                    mode === "provider" &&
-                    onSyncTeam &&
-                    (team as UnifiedTeam).leagueInDb !== false;
 
                   return (
                     <TableRow
                       key={row.id}
-                      className={
-                        isClickable ? "cursor-pointer hover:bg-muted/50" : ""
-                      }
-                      onClick={() => {
-                        if (mode === "provider" || mode === "db") {
-                          setSelectedTeam(team as UnifiedTeam);
-                          setIsDialogOpen(true);
-                        }
-                      }}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleRowClick(team)}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>

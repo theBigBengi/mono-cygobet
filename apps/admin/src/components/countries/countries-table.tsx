@@ -83,6 +83,19 @@ export function CountriesTable({
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const handleRowClick = (country: UnifiedCountry | CountryDBRow) => {
+    if (mode === "provider") {
+      setSelectedCountry(country as UnifiedCountry);
+    } else {
+      // For DB mode, find the unified country from unifiedData
+      const unifiedCountry = unifiedData.find(
+        (c) => c.externalId === country.externalId
+      );
+      setSelectedCountry(unifiedCountry || null);
+    }
+    setIsDialogOpen(true);
+  };
+
   // Filter unified data for provider mode (shows diff)
   const filteredDiffData = useMemo(() => {
     if (mode !== "provider") return [];
@@ -472,20 +485,12 @@ export function CountriesTable({
               if (rows?.length) {
                 return rows.map((row) => {
                   const country = row.original as UnifiedCountry | CountryDBRow;
-                  const isClickable = mode === "provider" && onSyncCountry;
 
                   return (
                     <TableRow
                       key={row.id}
-                      className={
-                        isClickable ? "cursor-pointer hover:bg-muted/50" : ""
-                      }
-                      onClick={() => {
-                        if (isClickable && mode === "provider") {
-                          setSelectedCountry(country as UnifiedCountry);
-                          setIsDialogOpen(true);
-                        }
-                      }}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleRowClick(country)}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>

@@ -82,6 +82,19 @@ export function LeaguesTable({
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const handleRowClick = (league: UnifiedLeague | LeagueDBRow) => {
+    if (mode === "provider") {
+      setSelectedLeague(league as UnifiedLeague);
+    } else {
+      // For DB mode, find the unified league from unifiedData
+      const unifiedLeague = unifiedData.find(
+        (l) => l.externalId === league.externalId
+      );
+      setSelectedLeague(unifiedLeague || null);
+    }
+    setIsDialogOpen(true);
+  };
+
   // Filter unified data for provider mode (shows diff)
   const filteredDiffData = useMemo(() => {
     if (mode !== "provider") return [];
@@ -419,20 +432,12 @@ export function LeaguesTable({
               if (rows?.length) {
                 return rows.map((row) => {
                   const league = row.original as UnifiedLeague | LeagueDBRow;
-                  const isClickable = mode === "provider" && onSyncLeague;
 
                   return (
                     <TableRow
                       key={row.id}
-                      className={
-                        isClickable ? "cursor-pointer hover:bg-muted/50" : ""
-                      }
-                      onClick={() => {
-                        if (isClickable && mode === "provider") {
-                          setSelectedLeague(league as UnifiedLeague);
-                          setIsDialogOpen(true);
-                        }
-                      }}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleRowClick(league)}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>

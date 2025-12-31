@@ -89,14 +89,14 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
           imagePath: t.imagePath,
           founded: t.founded,
           countryId: t.countryId,
-          country: t.countries
+          country: (t as any).countries
             ? {
-                id: t.countries.id,
-                name: t.countries.name,
-                imagePath: t.countries.imagePath,
-                iso2: t.countries.iso2,
-                iso3: t.countries.iso3,
-                externalId: t.countries.externalId.toString(),
+                id: (t as any).countries.id,
+                name: (t as any).countries.name,
+                imagePath: (t as any).countries.imagePath,
+                iso2: (t as any).countries.iso2,
+                iso3: (t as any).countries.iso3,
+                externalId: (t as any).countries.externalId.toString(),
               }
             : null,
           externalId: t.externalId.toString(),
@@ -224,14 +224,14 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
           imagePath: t.imagePath,
           founded: t.founded,
           countryId: t.countryId,
-          country: t.countries
+          country: (t as any).countries
             ? {
-                id: t.countries.id,
-                name: t.countries.name,
-                imagePath: t.countries.imagePath,
-                iso2: t.countries.iso2,
-                iso3: t.countries.iso3,
-                externalId: t.countries.externalId.toString(),
+                id: (t as any).countries.id,
+                name: (t as any).countries.name,
+                imagePath: (t as any).countries.imagePath,
+                iso2: (t as any).countries.iso2,
+                iso3: (t as any).countries.iso3,
+                externalId: (t as any).countries.externalId.toString(),
               }
             : null,
           externalId: t.externalId.toString(),
