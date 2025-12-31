@@ -12,6 +12,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 import CountriesPage from "@/pages/Countries";
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
           </Routes>
         </div>
       </SidebarInset>
+      <Toaster />
     </SidebarProvider>
   );
 }

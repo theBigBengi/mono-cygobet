@@ -6,8 +6,8 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-  type ColumnDef,
   type SortingState,
+  type Row,
 } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import type { UnifiedCountry } from "@/types/countries";
 import type {
   AdminCountriesListResponse,
@@ -36,12 +36,11 @@ import type {
 } from "@/types/api";
 
 type CountryDBRow = AdminCountriesListResponse["data"][0];
-type CountryProviderRow = AdminProviderCountriesResponse["data"][0];
 
 type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
 
 interface CountriesTableProps {
-  mode: "diff" | "db" | "provider";
+  mode: "db" | "provider";
   // For diff mode
   unifiedData?: UnifiedCountry[];
   diffFilter?: DiffFilter;
@@ -52,6 +51,8 @@ interface CountriesTableProps {
   providerData?: AdminProviderCountriesResponse;
   isLoading?: boolean;
   error?: Error | null;
+  // Sync handler
+  onSyncCountry?: (externalId: string) => Promise<void>;
 }
 
 export function CountriesTable({
@@ -60,9 +61,9 @@ export function CountriesTable({
   diffFilter = "all",
   onDiffFilterChange,
   dbData,
-  providerData,
   isLoading = false,
   error = null,
+  onSyncCountry,
 }: CountriesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -70,10 +71,11 @@ export function CountriesTable({
     pageIndex: 0,
     pageSize: 25,
   });
+  const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
 
-  // Filter unified data for diff mode
+  // Filter unified data for provider mode (shows diff)
   const filteredDiffData = useMemo(() => {
-    if (mode !== "diff") return [];
+    if (mode !== "provider") return [];
     let filtered = unifiedData;
     if (diffFilter === "missing") {
       filtered = filtered.filter((c) => c.status === "missing-in-db");
@@ -88,17 +90,20 @@ export function CountriesTable({
   }, [unifiedData, diffFilter, mode]);
 
   // Define columns based on mode
-  const columns = useMemo<ColumnDef<any>[]>(() => {
-    if (mode === "diff") {
+  const columns = useMemo(() => {
+    if (mode === "provider") {
       return [
         {
           accessorKey: "status",
           header: "Status",
-          cell: ({ row }: { row: any }) => {
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const status = row.getValue("status") as UnifiedCountry["status"];
             const statusConfig: Record<
               UnifiedCountry["status"],
-              { label: string; variant: "destructive" | "secondary" | "default" }
+              {
+                label: string;
+                variant: "destructive" | "secondary" | "default";
+              }
             > = {
               "missing-in-db": { label: "Missing", variant: "destructive" },
               mismatch: { label: "Mismatch", variant: "destructive" },
@@ -119,27 +124,27 @@ export function CountriesTable({
         {
           accessorKey: "externalId",
           header: "externalId",
-          cell: ({ row }: { row: any }) => (
-            <span className="font-mono text-xs">{row.getValue("externalId")}</span>
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => (
+            <span className="font-mono text-xs">
+              {row.getValue("externalId")}
+            </span>
           ),
         },
         {
           id: "name-db",
           header: "Name (DB)",
-          cell: ({ row }: { row: any }) => {
-            const country = row.original as UnifiedCountry;
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
+            const country = row.original;
             return (
-              <span className="text-sm">
-                {country.dbData?.name || "—"}
-              </span>
+              <span className="text-sm">{country.dbData?.name || "—"}</span>
             );
           },
         },
         {
           id: "name-provider",
           header: "Name (Provider)",
-          cell: ({ row }: { row: any }) => {
-            const country = row.original as UnifiedCountry;
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
+            const country = row.original;
             return (
               <span className="text-sm">
                 {country.providerData?.name || "—"}
@@ -150,8 +155,8 @@ export function CountriesTable({
         {
           id: "iso2-db",
           header: "ISO2 (DB)",
-          cell: ({ row }: { row: any }) => {
-            const country = row.original as UnifiedCountry;
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
+            const country = row.original;
             return (
               <span className="text-sm font-mono">
                 {country.dbData?.iso2 || "—"}
@@ -162,8 +167,8 @@ export function CountriesTable({
         {
           id: "iso2-provider",
           header: "ISO2 (Provider)",
-          cell: ({ row }: { row: any }) => {
-            const country = row.original as UnifiedCountry;
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
+            const country = row.original;
             return (
               <span className="text-sm font-mono">
                 {country.providerData?.iso2 || "—"}
@@ -174,8 +179,8 @@ export function CountriesTable({
         {
           id: "iso3-db",
           header: "ISO3 (DB)",
-          cell: ({ row }: { row: any }) => {
-            const country = row.original as UnifiedCountry;
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
+            const country = row.original;
             return (
               <span className="text-sm font-mono">
                 {country.dbData?.iso3 || "—"}
@@ -186,8 +191,8 @@ export function CountriesTable({
         {
           id: "iso3-provider",
           header: "ISO3 (Provider)",
-          cell: ({ row }: { row: any }) => {
-            const country = row.original as UnifiedCountry;
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
+            const country = row.original;
             return (
               <span className="text-sm font-mono">
                 {country.providerData?.iso3 || "—"}
@@ -198,10 +203,11 @@ export function CountriesTable({
         {
           id: "image",
           header: "Image",
-          cell: ({ row }: { row: any }) => {
-            const country = row.original as UnifiedCountry;
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
+            const country = row.original;
             const imagePath = country.imagePath;
-            if (!imagePath) return <span className="text-muted-foreground">—</span>;
+            if (!imagePath)
+              return <span className="text-muted-foreground">—</span>;
             return (
               <img
                 src={imagePath}
@@ -211,27 +217,69 @@ export function CountriesTable({
             );
           },
         },
+        {
+          id: "actions",
+          header: "Actions",
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
+            const country = row.original as UnifiedCountry;
+            const isSyncing = syncingIds.has(country.externalId);
+
+            const handleSync = async () => {
+              if (!onSyncCountry) return;
+              setSyncingIds((prev) => new Set(prev).add(country.externalId));
+              try {
+                await onSyncCountry(country.externalId);
+              } catch (error) {
+                console.error("Sync failed:", error);
+              } finally {
+                setSyncingIds((prev) => {
+                  const next = new Set(prev);
+                  next.delete(country.externalId);
+                  return next;
+                });
+              }
+            };
+
+            return (
+              <div className="flex items-center justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={handleSync}
+                  disabled={isSyncing || !onSyncCountry}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`}
+                  />
+                </Button>
+              </div>
+            );
+          },
+        },
       ];
     } else if (mode === "db") {
       return [
         {
           accessorKey: "externalId",
           header: "externalId",
-          cell: ({ row }: { row: any }) => (
-            <span className="font-mono text-xs">{row.getValue("externalId")}</span>
+          cell: ({ row }: { row: Row<CountryDBRow> }) => (
+            <span className="font-mono text-xs">
+              {row.getValue("externalId")}
+            </span>
           ),
         },
         {
           accessorKey: "name",
           header: "Name",
-          cell: ({ row }: { row: any }) => (
+          cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-medium">{row.getValue("name")}</span>
           ),
         },
         {
           accessorKey: "iso2",
           header: "ISO2",
-          cell: ({ row }: { row: any }) => (
+          cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-mono text-sm">
               {row.getValue("iso2") || "—"}
             </span>
@@ -240,7 +288,7 @@ export function CountriesTable({
         {
           accessorKey: "iso3",
           header: "ISO3",
-          cell: ({ row }: { row: any }) => (
+          cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-mono text-sm">
               {row.getValue("iso3") || "—"}
             </span>
@@ -249,9 +297,10 @@ export function CountriesTable({
         {
           accessorKey: "imagePath",
           header: "Image",
-          cell: ({ row }: { row: any }) => {
+          cell: ({ row }: { row: Row<CountryDBRow> }) => {
             const imagePath = row.getValue("imagePath") as string | null;
-            if (!imagePath) return <span className="text-muted-foreground">—</span>;
+            if (!imagePath)
+              return <span className="text-muted-foreground">—</span>;
             return (
               <img
                 src={imagePath}
@@ -264,9 +313,10 @@ export function CountriesTable({
         {
           accessorKey: "updatedAt",
           header: "Updated At",
-          cell: ({ row }: { row: any }) => {
+          cell: ({ row }: { row: Row<CountryDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
-            if (!updatedAt) return <span className="text-muted-foreground">—</span>;
+            if (!updatedAt)
+              return <span className="text-muted-foreground">—</span>;
             return (
               <span className="text-xs text-muted-foreground">
                 {new Date(updatedAt).toLocaleDateString()}
@@ -276,93 +326,37 @@ export function CountriesTable({
         },
       ];
     } else {
-      // provider mode
-      return [
-        {
-          accessorKey: "externalId",
-          header: "externalId",
-          cell: ({ row }: { row: any }) => (
-            <span className="font-mono text-xs">
-              {String(row.getValue("externalId"))}
-            </span>
-          ),
-        },
-        {
-          accessorKey: "name",
-          header: "Name",
-          cell: ({ row }: { row: any }) => (
-            <span className="font-medium">{row.getValue("name")}</span>
-          ),
-        },
-        {
-          accessorKey: "iso2",
-          header: "ISO2",
-          cell: ({ row }: { row: any }) => (
-            <span className="font-mono text-sm">
-              {row.getValue("iso2") || "—"}
-            </span>
-          ),
-        },
-        {
-          accessorKey: "iso3",
-          header: "ISO3",
-          cell: ({ row }: { row: any }) => (
-            <span className="font-mono text-sm">
-              {row.getValue("iso3") || "—"}
-            </span>
-          ),
-        },
-        {
-          accessorKey: "imagePath",
-          header: "Image",
-          cell: ({ row }: { row: any }) => {
-            const imagePath = row.getValue("imagePath") as string | null | undefined;
-            if (!imagePath) return <span className="text-muted-foreground">—</span>;
-            return (
-              <img
-                src={imagePath}
-                alt=""
-                className="w-8 h-6 object-cover rounded border"
-              />
-            );
-          },
-        },
-      ];
+      // provider mode - shows diff view with status column
+      // This should never be reached since provider mode is handled above
+      return [];
     }
-  }, [mode]);
+  }, [mode, syncingIds, onSyncCountry]);
 
   // Get table data based on mode
   const tableData = useMemo(() => {
-    if (mode === "diff") {
+    if (mode === "provider") {
       return filteredDiffData;
-    } else if (mode === "db") {
-      const data = dbData?.data || [];
-      console.log("[CountriesTable] DB mode - dbData:", dbData);
-      console.log("[CountriesTable] DB mode - data array:", data);
-      console.log("[CountriesTable] DB mode - data length:", data.length);
-      return data;
     } else {
-      return providerData?.data || [];
+      // db mode
+      return dbData?.data || [];
     }
-  }, [mode, filteredDiffData, dbData, providerData]);
+  }, [mode, filteredDiffData, dbData]);
 
-  // Only show loading if we're actually loading AND have no data
-  // Check mode-specific loading state
+  // Show loading skeletons only on initial load (no data), not during background refetches
   const isModeLoading = useMemo(() => {
     if (mode === "db") {
-      const loading = isLoading && !dbData;
-      console.log("[CountriesTable] DB mode loading check:", { isLoading, hasDbData: !!dbData, loading });
-      return loading;
-    } else if (mode === "provider") {
-      return isLoading && !providerData;
+      // Only show skeleton if loading AND no data (initial load)
+      return isLoading && !dbData;
     } else {
+      // Provider mode: only show skeleton if loading AND no data (initial load)
       return isLoading && unifiedData.length === 0;
     }
-  }, [mode, isLoading, dbData, providerData, unifiedData]);
+  }, [mode, isLoading, dbData, unifiedData]);
 
   const table = useReactTable({
-    data: tableData,
-    columns,
+    data: tableData as (UnifiedCountry | CountryDBRow)[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    columns: columns as any, // Columns are dynamically typed based on mode
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -371,8 +365,9 @@ export function CountriesTable({
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: (row, _columnId, filterValue) => {
       const search = filterValue.toLowerCase();
-      if (mode === "diff") {
-        const country = row.original as UnifiedCountry;
+      if (mode === "provider") {
+        // Provider mode shows unified diff data
+        const country = row.original as unknown as UnifiedCountry;
         return (
           country.externalId.toLowerCase().includes(search) ||
           country.name.toLowerCase().includes(search) ||
@@ -382,20 +377,12 @@ export function CountriesTable({
           country.iso3?.toLowerCase().includes(search) ||
           false
         );
-      } else if (mode === "db") {
+      } else {
+        // DB mode
         const country = row.original as CountryDBRow;
         return (
           country.name.toLowerCase().includes(search) ||
           country.externalId.toLowerCase().includes(search) ||
-          country.iso2?.toLowerCase().includes(search) ||
-          country.iso3?.toLowerCase().includes(search) ||
-          false
-        );
-      } else {
-        const country = row.original as CountryProviderRow;
-        return (
-          country.name.toLowerCase().includes(search) ||
-          String(country.externalId).toLowerCase().includes(search) ||
           country.iso2?.toLowerCase().includes(search) ||
           country.iso3?.toLowerCase().includes(search) ||
           false
@@ -419,8 +406,39 @@ export function CountriesTable({
   if (isModeLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-96 w-full" />
+        {/* Controls skeleton */}
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-[180px]" />
+          <Skeleton className="h-10 w-[300px]" />
+        </div>
+        {/* Table skeleton */}
+        <div className="rounded-md border">
+          <div className="p-4 space-y-3">
+            {/* Header skeleton */}
+            <div className="flex gap-4 pb-4 border-b">
+              {Array.from({ length: columns.length }).map((_, i) => (
+                <Skeleton key={i} className="h-4 flex-1" />
+              ))}
+            </div>
+            {/* Rows skeleton */}
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="flex gap-4">
+                {Array.from({ length: columns.length }).map((_, j) => (
+                  <Skeleton key={j} className="h-8 flex-1" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Pagination skeleton */}
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-48" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-20" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -434,17 +452,17 @@ export function CountriesTable({
     );
   }
 
-  // Debug: Show raw data info
-  console.log("[CountriesTable] Final render - mode:", mode);
-  console.log("[CountriesTable] Final render - tableData:", tableData);
-  console.log("[CountriesTable] Final render - tableData.length:", tableData.length);
-  console.log("[CountriesTable] Final render - columns.length:", columns.length);
-
   return (
     <div className="space-y-4">
       {/* Controls */}
       <div className="flex items-center gap-4">
-        {mode === "diff" && onDiffFilterChange && (
+        <Input
+          placeholder="Search countries..."
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="max-w-sm"
+        />
+        {mode === "provider" && onDiffFilterChange && (
           <Select value={diffFilter} onValueChange={onDiffFilterChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue />
@@ -458,12 +476,6 @@ export function CountriesTable({
             </SelectContent>
           </Select>
         )}
-        <Input
-          placeholder="Search countries..."
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
-        />
         {mode === "db" && (
           <div className="flex items-center gap-2 ml-auto">
             <span className="text-sm text-muted-foreground">Page size:</span>
@@ -471,7 +483,11 @@ export function CountriesTable({
               value={pagination.pageSize.toString()}
               onValueChange={(v) => {
                 const newPageSize = Number(v);
-                setPagination({ ...pagination, pageSize: newPageSize, pageIndex: 0 });
+                setPagination({
+                  ...pagination,
+                  pageSize: newPageSize,
+                  pageIndex: 0,
+                });
               }}
             >
               <SelectTrigger className="w-[100px]">
@@ -509,10 +525,7 @@ export function CountriesTable({
           <TableBody>
             {(() => {
               const rows = table.getRowModel().rows;
-              console.log("[CountriesTable] Rendering - tableData length:", tableData.length);
-              console.log("[CountriesTable] Rendering - rows length:", rows?.length);
-              console.log("[CountriesTable] Rendering - mode:", mode);
-              
+
               if (rows?.length) {
                 return rows.map((row) => (
                   <TableRow key={row.id}>
@@ -527,14 +540,14 @@ export function CountriesTable({
                   </TableRow>
                 ));
               }
-              
+
               return (
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    {tableData.length === 0 
+                    {tableData.length === 0
                       ? `No countries found (tableData is empty, mode: ${mode})`
                       : `No rows after filtering/pagination (tableData: ${tableData.length}, rows: ${rows?.length || 0})`}
                   </TableCell>
@@ -571,8 +584,7 @@ export function CountriesTable({
               Previous
             </Button>
             <div className="text-sm font-medium">
-              Page {pagination.pageIndex + 1} of{" "}
-              {table.getPageCount() || 1}
+              Page {pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </div>
             <Button
               variant="outline"
@@ -589,4 +601,3 @@ export function CountriesTable({
     </div>
   );
 }
-

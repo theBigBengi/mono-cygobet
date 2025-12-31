@@ -155,8 +155,8 @@ export class SMHttp {
     let cur = page;
     const out: T[] = [];
 
-    // Handle pagination - fetch all pages if paginate=true
-    while (paginate) {
+    // Handle pagination - fetch all pages if paginate=true, or single request if paginate=false
+    do {
       const url = this.buildUrl(path, {
         include: includeParam,
         select: select?.length ? select.join(",") : undefined,
@@ -210,7 +210,7 @@ export class SMHttp {
       // Stop pagination if no more pages or pagination disabled
       if (!paginate || !json.pagination?.has_more) break;
       cur++;
-    }
+    } while (paginate); // Continue only if pagination is enabled
 
     return out;
   }

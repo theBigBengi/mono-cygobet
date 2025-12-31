@@ -417,6 +417,45 @@ export class SportMonksAdapter {
   }
 
   /**
+   * Fetches a single country by ID from SportMonks Core API
+   * Uses the countries/{ID} endpoint
+   * @param id - The SportMonks country ID
+   * @param options - Optional includes (continent, leagues, regions)
+   * @returns CountryDTO or null if not found
+   */
+  async fetchCountryById(
+    id: number,
+    options?: {
+      include?: IncludeNode[];
+      select?: string[];
+    }
+  ): Promise<CountryDTO | null> {
+    try {
+      const rows = await this.httpCore.get<any>(`countries/${id}`, {
+        select: options?.select ?? ["id", "name", "image_path", "iso2", "iso3"],
+        include: options?.include,
+        paginate: false, // Single item, no pagination needed
+      });
+
+      if (!rows || rows.length === 0) {
+        return null;
+      }
+
+      const c = rows[0];
+      return {
+        externalId: c.id,
+        name: c.name,
+        imagePath: c.image_path ?? null,
+        iso2: c.iso2 ?? null,
+        iso3: c.iso3 ?? null,
+      };
+    } catch (error) {
+      // Return null if country not found or other error
+      return null;
+    }
+  }
+
+  /**
    * Fetches all leagues from SportMonks Football API
    * Leagues are the top-level competition structure
    */

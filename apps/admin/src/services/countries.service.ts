@@ -30,4 +30,8 @@ export const countriesService = {
   async sync(dryRun = false) {
     return apiPost("/admin/sync/countries", { dryRun });
   },
+
+  async syncById(id: number | string, dryRun = false) {
+    return apiPost(`/admin/sync/countries/${id}`, { dryRun });
+  },
 };

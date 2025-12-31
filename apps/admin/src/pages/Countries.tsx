@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import {
@@ -12,12 +12,13 @@ import { countriesService } from "@/services/countries.service";
 import { unifyCountries, calculateDiffStats } from "@/utils/countries";
 import type { ViewMode } from "@/types/countries";
 import { CountriesTable } from "@/components/countries/countries-table";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AdminSyncCountriesResponse } from "@/types/api";
 
 type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
 
 export default function CountriesPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>("diff");
+  const [viewMode, setViewMode] = useState<ViewMode>("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
   const [syncResult, setSyncResult] =
     useState<AdminSyncCountriesResponse | null>(null);
@@ -28,6 +29,7 @@ export default function CountriesPage() {
   const {
     data: dbData,
     isLoading: dbLoading,
+    isFetching: dbFetching,
     error: dbError,
     refetch: refetchDb,
   } = useCountriesFromDb({
@@ -38,11 +40,12 @@ export default function CountriesPage() {
   const {
     data: providerData,
     isLoading: providerLoading,
+    isFetching: providerFetching,
     error: providerError,
     refetch: refetchProvider,
   } = useCountriesFromProvider();
 
-  // Sync mutation
+  // Sync mutation (bulk)
   const syncMutation = useMutation({
     mutationFn: () =>
       countriesService.sync(false) as Promise<AdminSyncCountriesResponse>,
@@ -51,15 +54,44 @@ export default function CountriesPage() {
       setSyncTimestamp(new Date());
       setSyncError(null);
       queryClient.invalidateQueries({ queryKey: ["countries"] });
+      toast.success("Countries synced successfully", {
+        description: `Synced ${data.ok} countries. ${data.fail > 0 ? `${data.fail} failed.` : ""}`,
+      });
       setTimeout(() => {
         refetchDb();
         refetchProvider();
       }, 500);
     },
     onError: (error: Error) => {
-      setSyncError(error.message || "Sync failed");
+      const errorMessage = error.message || "Sync failed";
+      setSyncError(errorMessage);
       setSyncResult(null);
       setSyncTimestamp(null);
+      toast.error("Sync failed", {
+        description: errorMessage,
+      });
+    },
+  });
+
+  // Sync single country mutation
+  const syncCountryMutation = useMutation({
+    mutationFn: ({ id }: { id: number | string; name: string }) =>
+      countriesService.syncById(
+        id,
+        false
+      ) as Promise<AdminSyncCountriesResponse>,
+    onSuccess: (_data, variables) => {
+      // Invalidate DB query to trigger automatic refetch
+      queryClient.invalidateQueries({ queryKey: ["countries", "db"] });
+      toast.success("Country synced successfully", {
+        description: `${variables.name} (${variables.id}) has been synced.`,
+      });
+    },
+    onError: (error: Error, variables) => {
+      const errorMessage = error.message || "Sync failed";
+      toast.error("Country sync failed", {
+        description: `Failed to sync ${variables.name} (${variables.id}): ${errorMessage}`,
+      });
     },
   });
 
@@ -74,11 +106,18 @@ export default function CountriesPage() {
     [dbData, providerData]
   );
 
-  // Debug logging
-  console.log("[CountriesPage] dbData:", dbData);
-  console.log("[CountriesPage] dbLoading:", dbLoading);
-  console.log("[CountriesPage] dbError:", dbError);
-  console.log("[CountriesPage] viewMode:", viewMode);
+  const handleSyncCountry = useCallback(
+    async (externalId: string) => {
+      // Find country name from unified data
+      const country = unifiedData.find((c) => c.externalId === externalId);
+      const countryName = country?.name || externalId;
+      await syncCountryMutation.mutateAsync({
+        id: externalId,
+        name: countryName,
+      });
+    },
+    [syncCountryMutation, unifiedData]
+  );
 
   // Calculate diff stats
   const diffStats = useMemo(
@@ -87,6 +126,7 @@ export default function CountriesPage() {
   );
 
   const isLoading = dbLoading || providerLoading;
+  const isFetching = dbFetching || providerFetching;
   const hasError = dbError || providerError;
   const isPartialData = (dbData && !providerData) || (!dbData && providerData);
 
@@ -102,10 +142,10 @@ export default function CountriesPage() {
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            disabled={isLoading}
+            disabled={isFetching}
           >
             <RefreshCw
-              className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+              className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
             />
             Refresh
           </Button>
@@ -113,7 +153,7 @@ export default function CountriesPage() {
             variant="default"
             size="sm"
             onClick={() => syncMutation.mutate()}
-            disabled={syncMutation.isPending}
+            disabled={syncMutation.isPending || isFetching}
           >
             {syncMutation.isPending ? (
               <>
@@ -194,89 +234,66 @@ export default function CountriesPage() {
       )}
 
       {/* Mode Switch */}
-      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="diff">Diff</TabsTrigger>
-          <TabsTrigger value="db">DB</TabsTrigger>
-          <TabsTrigger value="provider">Provider</TabsTrigger>
+      <Tabs
+        value={viewMode}
+        onValueChange={(v) => !isFetching && setViewMode(v as ViewMode)}
+      >
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="provider" disabled={isFetching}>
+            Provider
+          </TabsTrigger>
+          <TabsTrigger value="db" disabled={isFetching}>
+            DB
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {/* Summary Cards (Diff mode only) */}
-      {viewMode === "diff" && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                DB Count
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{diffStats.dbCount}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Provider Count
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {diffStats.providerCount}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Missing in DB
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive">
+      {/* Summary Overview (shows diff stats in both tabs) */}
+      <div className="flex items-center gap-6 text-sm border-b pb-4">
+        {isFetching ? (
+          // Show skeletons when fetching (refresh)
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-5 w-8" />
+            </div>
+          ))
+        ) : (
+          // Show actual data - gentle inline stats
+          <>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">DB:</span>
+              <span className="font-medium">{diffStats.dbCount}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Provider:</span>
+              <span className="font-medium">{diffStats.providerCount}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Missing:</span>
+              <span className="font-medium text-destructive">
                 {diffStats.missing}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Extra in DB
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Extra:</span>
+              <span className="font-medium text-orange-600">
                 {diffStats.extra}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Mismatch
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Mismatch:</span>
+              <span className="font-medium text-yellow-600">
                 {diffStats.mismatch}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                OK
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {diffStats.ok}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">OK:</span>
+              <span className="font-medium text-green-600">{diffStats.ok}</span>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Unified Table */}
       <CountriesTable
@@ -286,20 +303,9 @@ export default function CountriesPage() {
         onDiffFilterChange={setDiffFilter}
         dbData={dbData}
         providerData={providerData}
-        isLoading={
-          viewMode === "db"
-            ? dbLoading
-            : viewMode === "provider"
-              ? providerLoading
-              : isLoading
-        }
-        error={
-          viewMode === "db"
-            ? dbError
-            : viewMode === "provider"
-              ? providerError
-              : null
-        }
+        isLoading={viewMode === "db" ? dbLoading : isLoading}
+        error={viewMode === "db" ? dbError : null}
+        onSyncCountry={viewMode === "provider" ? handleSyncCountry : undefined}
       />
     </div>
   );

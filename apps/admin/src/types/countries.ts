@@ -37,7 +37,7 @@ export interface UnifiedCountry {
   updatedAt?: string;
 }
 
-export type ViewMode = "db" | "provider" | "diff";
+export type ViewMode = "db" | "provider";
 export type StatusFilter =
   | "all"
   | "ok"
