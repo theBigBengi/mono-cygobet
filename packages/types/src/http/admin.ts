@@ -193,3 +193,82 @@ export interface AdminBatchItemsResponse {
   };
   message: string;
 }
+
+export interface AdminTeamsListResponse {
+  status: string;
+  data: Array<{
+    id: number;
+    name: string;
+    type: string | null;
+    shortCode: string | null;
+    imagePath: string | null;
+    founded: number | null;
+    countryId: number | null;
+    country: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      iso2: string | null;
+      iso3: string | null;
+      externalId: string;
+    } | null;
+    externalId: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
+export interface AdminTeamResponse {
+  status: string;
+  data: {
+    id: number;
+    name: string;
+    type: string | null;
+    shortCode: string | null;
+    imagePath: string | null;
+    founded: number | null;
+    countryId: number | null;
+    country: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      iso2: string | null;
+      iso3: string | null;
+      externalId: string;
+    } | null;
+    externalId: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  message: string;
+}
+
+export interface AdminProviderTeamsResponse {
+  status: string;
+  data: Array<{
+    externalId: number | string;
+    name: string;
+    imagePath?: string | null;
+    countryExternalId?: number | string | null;
+    country?: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      iso2: string | null;
+      iso3: string | null;
+    } | null;
+    leagueInDb?: boolean;
+    shortCode?: string | null;
+    founded?: number | null;
+    type?: string | null;
+  }>;
+  message: string;
+  provider: string;
+}

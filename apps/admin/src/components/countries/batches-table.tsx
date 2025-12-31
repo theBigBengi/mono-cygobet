@@ -31,9 +31,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Batch, BatchItem } from "@repo/types";
 import { useBatchItems } from "@/hooks/use-batches";
 
@@ -43,37 +42,10 @@ interface BatchesTableProps {
 }
 
 export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
+  const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   const columns: ColumnDef<Batch>[] = [
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }: { row: Row<Batch> }) => {
-        const batch = row.original;
-        return (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 md:px-3">
-                <Eye className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">View Items</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] sm:max-h-[85vh] p-0 !grid !grid-rows-[auto_1fr] overflow-hidden">
-              <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-2 sm:pb-3 border-b">
-                <DialogTitle className="text-sm sm:text-base">
-                  {batch.name}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-1">
-                  ID: {batch.id} · Items: {batch.itemsTotal}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 min-h-0">
-                <BatchItemsDialogContent batchId={batch.id} />
-              </div>
-            </DialogContent>
-          </Dialog>
-        );
-      },
-    },
     {
       accessorKey: "id",
       header: "Batch ID",
@@ -237,15 +209,25 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
+            {table.getRowModel().rows.map((row) => {
+              const batch = row.original;
+              return (
+                <TableRow
+                  key={row.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => {
+                    setSelectedBatch(batch);
+                    setIsDialogOpen(true);
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -308,6 +290,29 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
           </div>
         </div>
       )}
+
+      {/* Batch Items Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] sm:max-h-[85vh] p-0 !grid !grid-rows-[auto_1fr] overflow-hidden">
+          <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-2 sm:pb-3 border-b">
+            <DialogTitle className="text-sm sm:text-base">
+              {selectedBatch?.name || "Batch Details"}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground mt-1">
+              {selectedBatch && (
+                <>
+                  ID: {selectedBatch.id} · Items: {selectedBatch.itemsTotal}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBatch && (
+            <div className="overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 min-h-0">
+              <BatchItemsDialogContent batchId={selectedBatch.id} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

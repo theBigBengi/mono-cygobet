@@ -34,6 +34,10 @@ const data = {
           title: "Leagues",
           url: "/leagues",
         },
+        {
+          title: "Teams",
+          url: "/teams",
+        },
       ],
     },
   ],

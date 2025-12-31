@@ -1,12 +1,12 @@
 import { apiGet, apiPost } from "@/lib/api";
 import type {
-  AdminLeaguesListResponse,
-  AdminProviderLeaguesResponse,
+  AdminTeamsListResponse,
+  AdminProviderTeamsResponse,
   AdminBatchesListResponse,
   AdminBatchItemsResponse,
 } from "@repo/types";
 
-export const leaguesService = {
+export const teamsService = {
   async getFromDb(params?: {
     page?: number;
     perPage?: number;
@@ -24,20 +24,20 @@ export const leaguesService = {
     if (params?.include) searchParams.append("include", params.include);
 
     const queryString = searchParams.toString();
-    const url = `/admin/db/leagues${queryString ? `?${queryString}` : ""}`;
-    return apiGet<AdminLeaguesListResponse>(url);
+    const url = `/admin/db/teams${queryString ? `?${queryString}` : ""}`;
+    return apiGet<AdminTeamsListResponse>(url);
   },
 
   async getFromProvider() {
-    return apiGet<AdminProviderLeaguesResponse>("/admin/provider/leagues");
+    return apiGet<AdminProviderTeamsResponse>("/admin/provider/teams");
   },
 
   async sync(dryRun = false) {
-    return apiPost("/admin/sync/leagues", { dryRun });
+    return apiPost("/admin/sync/teams", { dryRun });
   },
 
   async syncById(id: number | string, dryRun = false) {
-    return apiPost(`/admin/sync/leagues/${id}`, { dryRun });
+    return apiPost(`/admin/sync/teams/${id}`, { dryRun });
   },
 
   async getBatches(name?: string, limit = 20) {

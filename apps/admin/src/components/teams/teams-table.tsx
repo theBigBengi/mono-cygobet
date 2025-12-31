@@ -8,7 +8,6 @@ import {
   useReactTable,
   type SortingState,
   type Row,
-  type ColumnDef,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CloudSync } from "lucide-react";
+import { CloudSync, CheckCircle2, XCircle } from "lucide-react";
 import {
   TablePagination,
   TableControls,
@@ -36,32 +35,32 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type {
-  UnifiedCountry,
-  AdminCountriesListResponse,
-  AdminProviderCountriesResponse,
+  UnifiedTeam,
+  AdminTeamsListResponse,
+  AdminProviderTeamsResponse,
 } from "@repo/types";
 
-type CountryDBRow = AdminCountriesListResponse["data"][0];
+type TeamDBRow = AdminTeamsListResponse["data"][0];
 
 type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
 
-interface CountriesTableProps {
+interface TeamsTableProps {
   mode: "db" | "provider";
   // For diff mode
-  unifiedData?: UnifiedCountry[];
+  unifiedData?: UnifiedTeam[];
   diffFilter?: DiffFilter;
   onDiffFilterChange?: (filter: DiffFilter) => void;
   // For db mode
-  dbData?: AdminCountriesListResponse;
+  dbData?: AdminTeamsListResponse;
   // For provider mode
-  providerData?: AdminProviderCountriesResponse;
+  providerData?: AdminProviderTeamsResponse;
   isLoading?: boolean;
   error?: Error | null;
   // Sync handler
-  onSyncCountry?: (externalId: string) => Promise<void>;
+  onSyncTeam?: (externalId: string) => Promise<void>;
 }
 
-export function CountriesTable({
+export function TeamsTable({
   mode,
   unifiedData = [],
   diffFilter = "all",
@@ -69,8 +68,8 @@ export function CountriesTable({
   dbData,
   isLoading = false,
   error = null,
-  onSyncCountry,
-}: CountriesTableProps) {
+  onSyncTeam,
+}: TeamsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [pagination, setPagination] = useState({
@@ -78,9 +77,7 @@ export function CountriesTable({
     pageSize: 25,
   });
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
-  const [selectedCountry, setSelectedCountry] = useState<UnifiedCountry | null>(
-    null
-  );
+  const [selectedTeam, setSelectedTeam] = useState<UnifiedTeam | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Filter unified data for provider mode (shows diff)
@@ -88,13 +85,13 @@ export function CountriesTable({
     if (mode !== "provider") return [];
     let filtered = unifiedData;
     if (diffFilter === "missing") {
-      filtered = filtered.filter((c) => c.status === "missing-in-db");
+      filtered = filtered.filter((t) => t.status === "missing-in-db");
     } else if (diffFilter === "mismatch") {
-      filtered = filtered.filter((c) => c.status === "mismatch");
+      filtered = filtered.filter((t) => t.status === "mismatch");
     } else if (diffFilter === "extra") {
-      filtered = filtered.filter((c) => c.status === "extra-in-db");
+      filtered = filtered.filter((t) => t.status === "extra-in-db");
     } else if (diffFilter === "ok") {
-      filtered = filtered.filter((c) => c.status === "ok");
+      filtered = filtered.filter((t) => t.status === "ok");
     }
     return filtered;
   }, [unifiedData, diffFilter, mode]);
@@ -106,10 +103,10 @@ export function CountriesTable({
         {
           accessorKey: "status",
           header: "Status",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const status = row.getValue("status") as UnifiedCountry["status"];
+          cell: ({ row }: { row: Row<UnifiedTeam> }) => {
+            const status = row.getValue("status") as UnifiedTeam["status"];
             const statusConfig: Record<
-              UnifiedCountry["status"],
+              UnifiedTeam["status"],
               {
                 label: string;
                 variant: "destructive" | "secondary" | "default";
@@ -119,8 +116,6 @@ export function CountriesTable({
               mismatch: { label: "Mismatch", variant: "destructive" },
               "extra-in-db": { label: "Extra", variant: "secondary" },
               ok: { label: "OK", variant: "default" },
-              "no-leagues": { label: "No Leagues", variant: "secondary" },
-              "iso-missing": { label: "ISO Missing", variant: "secondary" },
               new: { label: "New", variant: "secondary" },
             };
             const config = statusConfig[status] || statusConfig.ok;
@@ -134,7 +129,7 @@ export function CountriesTable({
         {
           accessorKey: "externalId",
           header: "externalId",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => (
+          cell: ({ row }: { row: Row<UnifiedTeam> }) => (
             <span className="font-mono text-xs">
               {row.getValue("externalId")}
             </span>
@@ -143,11 +138,11 @@ export function CountriesTable({
         {
           id: "name-db",
           header: "Name (DB)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
+          cell: ({ row }: { row: Row<UnifiedTeam> }) => {
+            const team = row.original;
             return (
               <span className="text-xs sm:text-sm">
-                {country.dbData?.name || "—"}
+                {team.dbData?.name || "—"}
               </span>
             );
           },
@@ -155,110 +150,76 @@ export function CountriesTable({
         {
           id: "name-provider",
           header: "Name (Provider)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
+          cell: ({ row }: { row: Row<UnifiedTeam> }) => {
+            const team = row.original;
             return (
               <span className="text-xs sm:text-sm">
-                {country.providerData?.name || "—"}
+                {team.providerData?.name || "—"}
               </span>
             );
           },
         },
         {
-          id: "iso2-db",
-          header: "ISO2 (DB)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
+          id: "type-db",
+          header: "Type (DB)",
+          cell: ({ row }: { row: Row<UnifiedTeam> }) => {
+            const team = row.original;
             return (
-              <span className="text-xs sm:text-sm font-mono">
-                {country.dbData?.iso2 || "—"}
+              <span className="text-xs sm:text-sm">
+                {team.dbData?.type || "—"}
               </span>
             );
           },
         },
         {
-          id: "iso2-provider",
-          header: "ISO2 (Provider)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
+          id: "type-provider",
+          header: "Type (Provider)",
+          cell: ({ row }: { row: Row<UnifiedTeam> }) => {
+            const team = row.original;
             return (
-              <span className="text-xs sm:text-sm font-mono">
-                {country.providerData?.iso2 || "—"}
+              <span className="text-xs sm:text-sm">
+                {team.providerData?.type || "—"}
               </span>
             );
           },
         },
         {
-          id: "iso3-db",
-          header: "ISO3 (DB)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
-            return (
-              <span className="text-xs sm:text-sm font-mono">
-                {country.dbData?.iso3 || "—"}
-              </span>
-            );
+          id: "country",
+          header: "Country",
+          cell: ({ row }: { row: Row<UnifiedTeam> }) => {
+            const team = row.original;
+            const country = team.country;
+            if (!country)
+              return <span className="text-muted-foreground">—</span>;
+            return <span className="text-xs sm:text-sm">{country.name}</span>;
           },
         },
         {
-          id: "iso3-provider",
-          header: "ISO3 (Provider)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
-            return (
-              <span className="text-xs sm:text-sm font-mono">
-                {country.providerData?.iso3 || "—"}
-              </span>
-            );
-          },
-        },
-        {
-          id: "leagues",
-          header: "Leagues",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
-            if (mode === "provider") {
-              // For provider mode, show available leagues count
-              const availableLeagues = country.availableLeaguesCount ?? 0;
-              const totalLeagues = country.providerData?.leaguesCount ?? 0;
-              return (
-                <div className="flex items-center justify-center">
-                  <span className="text-xs text-foreground">
-                    {availableLeagues}
-                    {totalLeagues > 0 && (
-                      <span className="text-muted-foreground">
-                        /{totalLeagues}
-                      </span>
-                    )}
-                  </span>
-                </div>
-              );
-            } else {
-              // For DB mode, show leagues count from DB
-              const leaguesCount =
-                country.leaguesCount ?? country.dbData?.leagues?.length ?? 0;
-              return (
-                <div className="flex items-center justify-center">
-                  <span
-                    className={`text-xs ${
-                      !leaguesCount
-                        ? "text-muted-foreground"
-                        : "text-foreground"
-                    }`}
-                  >
-                    {leaguesCount || 0}
-                  </span>
-                </div>
-              );
+          id: "league-in-db",
+          header: "League in DB",
+          cell: ({ row }: { row: Row<UnifiedTeam> }) => {
+            const team = row.original;
+            const leagueInDb = team.leagueInDb ?? false;
+            if (!team.country) {
+              return <span className="text-muted-foreground">—</span>;
             }
+            return (
+              <div className="flex items-center justify-center">
+                {leagueInDb ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-500" />
+                )}
+              </div>
+            );
           },
         },
         {
           id: "image",
           header: "Image",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
-            return <ImageCell imagePath={country.imagePath} />;
+          cell: ({ row }: { row: Row<UnifiedTeam> }) => {
+            const team = row.original;
+            return <ImageCell imagePath={team.imagePath} />;
           },
         },
       ];
@@ -267,7 +228,7 @@ export function CountriesTable({
         {
           accessorKey: "externalId",
           header: "externalId",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => (
+          cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
             </span>
@@ -276,60 +237,57 @@ export function CountriesTable({
         {
           accessorKey: "name",
           header: "Name",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => (
+          cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="font-medium text-xs sm:text-sm">
               {row.getValue("name")}
             </span>
           ),
         },
         {
-          accessorKey: "iso2",
-          header: "ISO2",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => (
-            <span className="font-mono text-xs sm:text-sm">
-              {row.getValue("iso2") || "—"}
+          accessorKey: "type",
+          header: "Type",
+          cell: ({ row }: { row: Row<TeamDBRow> }) => (
+            <span className="text-xs sm:text-sm">
+              {row.getValue("type") || "—"}
             </span>
           ),
         },
         {
-          accessorKey: "iso3",
-          header: "ISO3",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => (
+          accessorKey: "shortCode",
+          header: "Short Code",
+          cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="font-mono text-xs sm:text-sm">
-              {row.getValue("iso3") || "—"}
+              {row.getValue("shortCode") || "—"}
             </span>
           ),
         },
         {
-          id: "leagues",
-          header: "Leagues",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => {
-            const country = row.original;
-            // Try to get leagues count from unifiedData if available
-            const unifiedCountry = unifiedData.find(
-              (c) => c.externalId === country.externalId
-            );
-            const leaguesCount =
-              unifiedCountry?.leaguesCount ??
-              unifiedCountry?.dbData?.leagues?.length ??
-              0;
+          accessorKey: "founded",
+          header: "Founded",
+          cell: ({ row }: { row: Row<TeamDBRow> }) => {
+            const founded = row.getValue("founded") as number | null;
             return (
-              <div className="flex items-center justify-center">
-                <span
-                  className={`text-xs ${
-                    !leaguesCount ? "text-muted-foreground" : "text-foreground"
-                  }`}
-                >
-                  {leaguesCount || 0}
-                </span>
-              </div>
+              <span className="text-xs sm:text-sm">
+                {founded ? founded.toString() : "—"}
+              </span>
             );
+          },
+        },
+        {
+          id: "country",
+          header: "Country",
+          cell: ({ row }: { row: Row<TeamDBRow> }) => {
+            const team = row.original;
+            const country = team.country;
+            if (!country)
+              return <span className="text-muted-foreground">—</span>;
+            return <span className="text-xs sm:text-sm">{country.name}</span>;
           },
         },
         {
           accessorKey: "imagePath",
           header: "Image",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => {
+          cell: ({ row }: { row: Row<TeamDBRow> }) => {
             const imagePath = row.getValue("imagePath") as string | null;
             return <ImageCell imagePath={imagePath} />;
           },
@@ -337,7 +295,7 @@ export function CountriesTable({
         {
           accessorKey: "updatedAt",
           header: "Updated At",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => {
+          cell: ({ row }: { row: Row<TeamDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
             if (!updatedAt)
               return <span className="text-muted-foreground">—</span>;
@@ -350,11 +308,9 @@ export function CountriesTable({
         },
       ];
     } else {
-      // provider mode - shows diff view with status column
-      // This should never be reached since provider mode is handled above
       return [];
     }
-  }, [mode, unifiedData]);
+  }, [mode]);
 
   // Get table data based on mode
   const tableData = useMemo(() => {
@@ -377,9 +333,10 @@ export function CountriesTable({
     }
   }, [mode, isLoading, dbData, unifiedData]);
 
-  const table = useReactTable<UnifiedCountry | CountryDBRow>({
-    data: tableData as (UnifiedCountry | CountryDBRow)[],
-    columns: columns as ColumnDef<UnifiedCountry | CountryDBRow>[],
+  const table = useReactTable({
+    data: tableData as (UnifiedTeam | TeamDBRow)[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    columns: columns as any, // Columns are dynamically typed based on mode
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -390,24 +347,25 @@ export function CountriesTable({
       const search = filterValue.toLowerCase();
       if (mode === "provider") {
         // Provider mode shows unified diff data
-        const country = row.original as unknown as UnifiedCountry;
+        const team = row.original as unknown as UnifiedTeam;
         return (
-          country.externalId.toLowerCase().includes(search) ||
-          country.name.toLowerCase().includes(search) ||
-          country.dbData?.name?.toLowerCase().includes(search) ||
-          country.providerData?.name?.toLowerCase().includes(search) ||
-          country.iso2?.toLowerCase().includes(search) ||
-          country.iso3?.toLowerCase().includes(search) ||
+          team.externalId.toLowerCase().includes(search) ||
+          team.name.toLowerCase().includes(search) ||
+          team.dbData?.name?.toLowerCase().includes(search) ||
+          team.providerData?.name?.toLowerCase().includes(search) ||
+          team.type?.toLowerCase().includes(search) ||
+          team.country?.name.toLowerCase().includes(search) ||
           false
         );
       } else {
         // DB mode
-        const country = row.original as CountryDBRow;
+        const team = row.original as unknown as TeamDBRow;
         return (
-          country.name.toLowerCase().includes(search) ||
-          country.externalId.toLowerCase().includes(search) ||
-          country.iso2?.toLowerCase().includes(search) ||
-          country.iso3?.toLowerCase().includes(search) ||
+          team.externalId.toLowerCase().includes(search) ||
+          team.name.toLowerCase().includes(search) ||
+          team.type?.toLowerCase().includes(search) ||
+          team.shortCode?.toLowerCase().includes(search) ||
+          team.country?.name.toLowerCase().includes(search) ||
           false
         );
       }
@@ -418,13 +376,35 @@ export function CountriesTable({
       pagination,
     },
     onPaginationChange: setPagination,
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: 25,
-      },
-    },
+    manualPagination: false,
   });
+
+  const handleSyncTeam = async (externalId: string) => {
+    if (!onSyncTeam) return;
+    setSyncingIds((prev) => new Set(prev).add(externalId));
+    try {
+      await onSyncTeam(externalId);
+    } finally {
+      setSyncingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(externalId);
+        return next;
+      });
+    }
+  };
+
+  const handleRowClick = (team: UnifiedTeam | TeamDBRow) => {
+    if (mode === "provider") {
+      setSelectedTeam(team as UnifiedTeam);
+    } else {
+      // For DB mode, we can still show the team in dialog
+      const unifiedTeam = unifiedData.find(
+        (t) => t.externalId === team.externalId
+      );
+      setSelectedTeam(unifiedTeam || null);
+    }
+    setIsDialogOpen(true);
+  };
 
   if (isModeLoading) {
     return <TableSkeleton columnCount={columns.length} />;
@@ -438,7 +418,7 @@ export function CountriesTable({
     <div className="flex flex-col h-full overflow-hidden">
       {/* Controls */}
       <TableControls
-        searchPlaceholder="Search countries..."
+        searchPlaceholder="Search teams..."
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}
         showDiffFilter={mode === "provider" && !!onDiffFilterChange}
@@ -471,8 +451,12 @@ export function CountriesTable({
 
               if (rows?.length) {
                 return rows.map((row) => {
-                  const country = row.original as UnifiedCountry | CountryDBRow;
-                  const isClickable = mode === "provider" && onSyncCountry;
+                  const team = row.original as UnifiedTeam | TeamDBRow;
+                  const isClickable = mode === "provider" && onSyncTeam;
+                  const canSync =
+                    mode === "provider" &&
+                    onSyncTeam &&
+                    (team as UnifiedTeam).leagueInDb !== false;
 
                   return (
                     <TableRow
@@ -481,8 +465,8 @@ export function CountriesTable({
                         isClickable ? "cursor-pointer hover:bg-muted/50" : ""
                       }
                       onClick={() => {
-                        if (isClickable && mode === "provider") {
-                          setSelectedCountry(country as UnifiedCountry);
+                        if (mode === "provider" || mode === "db") {
+                          setSelectedTeam(team as UnifiedTeam);
                           setIsDialogOpen(true);
                         }
                       }}
@@ -507,7 +491,7 @@ export function CountriesTable({
                     className="h-24 text-center"
                   >
                     {tableData.length === 0
-                      ? `No countries found (tableData is empty, mode: ${mode})`
+                      ? `No teams found (tableData is empty, mode: ${mode})`
                       : `No rows after filtering/pagination (tableData: ${tableData.length}, rows: ${rows?.length || 0})`}
                   </TableCell>
                 </TableRow>
@@ -530,48 +514,59 @@ export function CountriesTable({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {selectedCountry
-                ? `Sync ${selectedCountry.name}`
-                : "Sync Country"}
+              {selectedTeam ? `Sync ${selectedTeam.name}` : "Sync Team"}
             </DialogTitle>
             <DialogDescription>
-              {selectedCountry && (
+                  {selectedTeam && (
                 <>
                   External ID:{" "}
-                  <span className="font-mono">
-                    {selectedCountry.externalId}
-                  </span>
+                  <span className="font-mono">{selectedTeam.externalId}</span>
                   <br />
                   Status:{" "}
                   <span className="capitalize">
-                    {selectedCountry.status.replace("-", " ")}
+                    {selectedTeam.status.replace("-", " ")}
                   </span>
+                  {selectedTeam.country && (
+                    <>
+                      <br />
+                      Country: {selectedTeam.country.name}
+                      {selectedTeam.leagueInDb === false && (
+                        <span className="text-destructive ml-2">
+                          (No league in DB)
+                        </span>
+                      )}
+                    </>
+                  )}
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
-          {selectedCountry && (
+          {selectedTeam && (
             <div className="space-y-2 text-sm">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-muted-foreground">Name (DB)</p>
                   <p className="font-medium">
-                    {selectedCountry.dbData?.name || "—"}
+                    {selectedTeam.dbData?.name || "—"}
                   </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Name (Provider)</p>
                   <p className="font-medium">
-                    {selectedCountry.providerData?.name || "—"}
+                    {selectedTeam.providerData?.name || "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">ISO2</p>
-                  <p className="font-mono">{selectedCountry.iso2 || "—"}</p>
+                  <p className="text-muted-foreground">Type</p>
+                  <p className="font-mono">{selectedTeam.type || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">ISO3</p>
-                  <p className="font-mono">{selectedCountry.iso3 || "—"}</p>
+                  <p className="text-muted-foreground">Short Code</p>
+                  <p className="font-mono">{selectedTeam.shortCode || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Founded</p>
+                  <p className="font-mono">{selectedTeam.founded || "—"}</p>
                 </div>
               </div>
             </div>
@@ -582,33 +577,35 @@ export function CountriesTable({
             </Button>
             <Button
               onClick={async () => {
-                if (!selectedCountry || !onSyncCountry) return;
-                const isSyncing = syncingIds.has(selectedCountry.externalId);
-                if (isSyncing) return;
+                if (!selectedTeam || !onSyncTeam) return;
+                const isSyncing = syncingIds.has(selectedTeam.externalId);
+                const isDisabled = selectedTeam.leagueInDb === false;
+                if (isSyncing || isDisabled) return;
 
                 setSyncingIds((prev) =>
-                  new Set(prev).add(selectedCountry.externalId)
+                  new Set(prev).add(selectedTeam.externalId)
                 );
                 try {
-                  await onSyncCountry(selectedCountry.externalId);
+                  await onSyncTeam(selectedTeam.externalId);
                   setIsDialogOpen(false);
                 } catch (error) {
                   console.error("Sync failed:", error);
                 } finally {
                   setSyncingIds((prev) => {
                     const next = new Set(prev);
-                    next.delete(selectedCountry.externalId);
+                    next.delete(selectedTeam.externalId);
                     return next;
                   });
                 }
               }}
               disabled={
-                !selectedCountry ||
-                !onSyncCountry ||
-                syncingIds.has(selectedCountry.externalId)
+                !selectedTeam ||
+                !onSyncTeam ||
+                syncingIds.has(selectedTeam.externalId) ||
+                selectedTeam.leagueInDb === false
               }
             >
-              {syncingIds.has(selectedCountry?.externalId || "") ? (
+              {syncingIds.has(selectedTeam?.externalId || "") ? (
                 <>
                   <CloudSync className="mr-2 h-4 w-4 animate-spin" />
                   Syncing...
@@ -626,3 +623,4 @@ export function CountriesTable({
     </div>
   );
 }
+

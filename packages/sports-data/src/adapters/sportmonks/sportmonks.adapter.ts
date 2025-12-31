@@ -656,6 +656,57 @@ export class SportMonksAdapter {
 
     return teams;
   }
+
+  /**
+   * Fetches a single team by ID from SportMonks Football API
+   * @param id - The SportMonks team ID
+   * @returns TeamDTO or null if not found
+   */
+  async fetchTeamById(id: number): Promise<TeamDTO | null> {
+    try {
+      const rows = await this.httpFootball.get<any>(`teams/${id}`, {
+        select: [
+          "id",
+          "name",
+          "short_code",
+          "image_path",
+          "country_id",
+          "founded",
+          "type",
+        ],
+        paginate: false, // Single item, no pagination needed
+      });
+
+      if (!rows || rows.length === 0) {
+        return null;
+      }
+
+      const t = rows[0];
+      const name: string = t.name ?? "";
+      const img: string | null = t.image_path ?? null;
+
+      // Skip placeholder teams
+      if (SportMonksAdapter.looksLikePlaceholder(name, img)) {
+        return null;
+      }
+
+      const type: string | null =
+        typeof t.type === "string" ? t.type.toLowerCase() : null;
+
+      return {
+        externalId: t.id,
+        name,
+        shortCode: t.short_code ?? null,
+        imagePath: img,
+        countryExternalId: t.country_id ?? null,
+        founded: Number.isInteger(t.founded) ? t.founded : null,
+        type: type ?? null,
+      };
+    } catch (error) {
+      // Return null if team not found or other error
+      return null;
+    }
+  }
 }
 
 export default SportMonksAdapter;

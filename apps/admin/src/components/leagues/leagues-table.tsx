@@ -9,14 +9,6 @@ import {
   type SortingState,
   type Row,
 } from "@tanstack/react-table";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -26,14 +18,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CloudSync, CheckCircle2, XCircle } from "lucide-react";
 import {
-  ChevronLeft,
-  ChevronRight,
-  CloudSync,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react";
+  TablePagination,
+  TableControls,
+  TableSkeleton,
+  TableError,
+  ImageCell,
+} from "@/components/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type {
   UnifiedLeague,
   AdminLeaguesListResponse,
@@ -77,6 +77,10 @@ export function LeaguesTable({
     pageSize: 25,
   });
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
+  const [selectedLeague, setSelectedLeague] = useState<UnifiedLeague | null>(
+    null
+  );
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Filter unified data for provider mode (shows diff)
   const filteredDiffData = useMemo(() => {
@@ -204,9 +208,9 @@ export function LeaguesTable({
             return (
               <div className="flex items-center justify-center">
                 {countryInDb ? (
-                  <CheckCircle2 className="h-4 w-4 text-foreground" />
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
                 ) : (
-                  <XCircle className="h-4 w-4 text-muted-foreground" />
+                  <XCircle className="h-4 w-4 text-red-500" />
                 )}
               </div>
             );
@@ -217,62 +221,7 @@ export function LeaguesTable({
           header: "Image",
           cell: ({ row }: { row: Row<UnifiedLeague> }) => {
             const league = row.original;
-            const imagePath = league.imagePath;
-            if (!imagePath)
-              return <span className="text-muted-foreground">—</span>;
-            return (
-              <img
-                src={imagePath}
-                alt=""
-                className="w-8 h-6 object-cover rounded border"
-              />
-            );
-          },
-        },
-        {
-          id: "actions",
-          header: "Actions",
-          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
-            const league = row.original as UnifiedLeague;
-            const isSyncing = syncingIds.has(league.externalId);
-            const countryInDb = league.countryInDb;
-            // Only disable if countryInDb is explicitly false (country exists but not in DB)
-            const isDisabled = countryInDb === false;
-
-            const handleSync = async () => {
-              if (!onSyncLeague || isDisabled) return;
-              setSyncingIds((prev) => new Set(prev).add(league.externalId));
-              try {
-                await onSyncLeague(league.externalId);
-              } catch (error) {
-                console.error("Sync failed:", error);
-              } finally {
-                setSyncingIds((prev) => {
-                  const next = new Set(prev);
-                  next.delete(league.externalId);
-                  return next;
-                });
-              }
-            };
-
-            return (
-              <div className="flex items-center justify-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={handleSync}
-                  disabled={isSyncing || !onSyncLeague || isDisabled}
-                  title={isDisabled ? "Country not in DB" : undefined}
-                >
-                  <CloudSync
-                    className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""} ${
-                      isDisabled ? "opacity-50" : ""
-                    }`}
-                  />
-                </Button>
-              </div>
-            );
+            return <ImageCell imagePath={league.imagePath} />;
           },
         },
       ];
@@ -330,15 +279,7 @@ export function LeaguesTable({
           header: "Image",
           cell: ({ row }: { row: Row<LeagueDBRow> }) => {
             const imagePath = row.getValue("imagePath") as string | null;
-            if (!imagePath)
-              return <span className="text-muted-foreground">—</span>;
-            return (
-              <img
-                src={imagePath}
-                alt=""
-                className="w-8 h-6 object-cover rounded border"
-              />
-            );
+            return <ImageCell imagePath={imagePath} />;
           },
         },
         {
@@ -359,7 +300,7 @@ export function LeaguesTable({
     } else {
       return [];
     }
-  }, [mode, syncingIds, onSyncLeague]);
+  }, [mode]);
 
   // Get table data based on mode
   const tableData = useMemo(() => {
@@ -433,79 +374,24 @@ export function LeaguesTable({
   });
 
   if (isModeLoading) {
-    return (
-      <div className="flex flex-col h-full overflow-hidden">
-        {/* Controls skeleton */}
-        <div className="flex-shrink-0 flex items-center gap-4 mb-2 sm:mb-4">
-          <Skeleton className="h-10 w-[180px]" />
-          <Skeleton className="h-10 w-[300px]" />
-        </div>
-        {/* Table skeleton */}
-        <div className="flex-1 min-h-0 border-t overflow-auto">
-          <div className="p-4 space-y-3">
-            {/* Header skeleton */}
-            <div className="flex gap-4 pb-4 border-b">
-              {Array.from({ length: columns.length }).map((_, i) => (
-                <Skeleton key={i} className="h-4 flex-1" />
-              ))}
-            </div>
-            {/* Rows skeleton */}
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex gap-4">
-                {Array.from({ length: columns.length }).map((_, j) => (
-                  <Skeleton key={j} className="h-8 flex-1" />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Pagination skeleton */}
-        <div className="flex-shrink-0 flex items-center justify-between pt-2 sm:pt-4 border-t mt-2 sm:mt-4">
-          <Skeleton className="h-4 w-48" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-20" />
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-20" />
-          </div>
-        </div>
-      </div>
-    );
+    return <TableSkeleton columnCount={columns.length} />;
   }
 
   if (error) {
-    return (
-      <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-4">
-        <p className="text-destructive font-medium">Error loading data</p>
-        <p className="text-sm text-muted-foreground mt-1">{String(error)}</p>
-      </div>
-    );
+    return <TableError error={error} />;
   }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Controls */}
-      <div className="flex-shrink-0 flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
-        <Input
-          placeholder="Search leagues..."
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm h-7 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1"
-        />
-        {mode === "provider" && onDiffFilterChange && (
-          <Select value={diffFilter} onValueChange={onDiffFilterChange}>
-            <SelectTrigger className="w-[120px] sm:w-[180px] h-7 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="missing">Only Missing</SelectItem>
-              <SelectItem value="mismatch">Only Mismatch</SelectItem>
-              <SelectItem value="extra">Only Extra</SelectItem>
-              <SelectItem value="ok">Only OK</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </div>
+      <TableControls
+        searchPlaceholder="Search leagues..."
+        globalFilter={globalFilter}
+        onGlobalFilterChange={setGlobalFilter}
+        showDiffFilter={mode === "provider" && !!onDiffFilterChange}
+        diffFilter={diffFilter}
+        onDiffFilterChange={onDiffFilterChange}
+      />
 
       {/* Table */}
       <div className="flex-1 min-h-0 border-t overflow-auto">
@@ -531,18 +417,34 @@ export function LeaguesTable({
               const rows = table.getRowModel().rows;
 
               if (rows?.length) {
-                return rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ));
+                return rows.map((row) => {
+                  const league = row.original as UnifiedLeague | LeagueDBRow;
+                  const isClickable = mode === "provider" && onSyncLeague;
+
+                  return (
+                    <TableRow
+                      key={row.id}
+                      className={
+                        isClickable ? "cursor-pointer hover:bg-muted/50" : ""
+                      }
+                      onClick={() => {
+                        if (isClickable && mode === "provider") {
+                          setSelectedLeague(league as UnifiedLeague);
+                          setIsDialogOpen(true);
+                        }
+                      }}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                });
               }
 
               return (
@@ -563,67 +465,120 @@ export function LeaguesTable({
       </div>
 
       {/* Pagination */}
-      {tableData.length > 0 && (
-        <div className="flex-shrink-0 flex items-center justify-between gap-1 sm:gap-2 pt-2 sm:pt-4 border-t mt-2 sm:mt-4 text-[10px] sm:text-xs">
-          <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
-            <span className="text-muted-foreground whitespace-nowrap">
-              {pagination.pageIndex * pagination.pageSize + 1}-
-              {Math.min(
-                (pagination.pageIndex + 1) * pagination.pageSize,
-                table.getFilteredRowModel().rows.length
-              )}{" "}
-              <span className="hidden sm:inline">of </span>
-              <span className="sm:hidden">/</span>
-              {table.getFilteredRowModel().rows.length}
-            </span>
-            <Select
-              value={pagination.pageSize.toString()}
-              onValueChange={(v) => {
-                const newPageSize = Number(v);
-                setPagination({
-                  ...pagination,
-                  pageSize: newPageSize,
-                  pageIndex: 0,
-                });
+      <TablePagination
+        table={table}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        dataLength={tableData.length}
+      />
+
+      {/* Sync Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedLeague ? `Sync ${selectedLeague.name}` : "Sync League"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedLeague && (
+                <>
+                  External ID:{" "}
+                  <span className="font-mono">{selectedLeague.externalId}</span>
+                  <br />
+                  Status:{" "}
+                  <span className="capitalize">
+                    {selectedLeague.status.replace("-", " ")}
+                  </span>
+                  {selectedLeague.country && (
+                    <>
+                      <br />
+                      Country: {selectedLeague.country.name}
+                      {selectedLeague.countryInDb === false && (
+                        <span className="text-destructive ml-2">
+                          (Not in DB)
+                        </span>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLeague && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-muted-foreground">Name (DB)</p>
+                  <p className="font-medium">
+                    {selectedLeague.dbData?.name || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Name (Provider)</p>
+                  <p className="font-medium">
+                    {selectedLeague.providerData?.name || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Type</p>
+                  <p className="font-mono">{selectedLeague.type || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Short Code</p>
+                  <p className="font-mono">{selectedLeague.shortCode || "—"}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!selectedLeague || !onSyncLeague) return;
+                const isSyncing = syncingIds.has(selectedLeague.externalId);
+                const isDisabled = selectedLeague.countryInDb === false;
+                if (isSyncing || isDisabled) return;
+
+                setSyncingIds((prev) =>
+                  new Set(prev).add(selectedLeague.externalId)
+                );
+                try {
+                  await onSyncLeague(selectedLeague.externalId);
+                  setIsDialogOpen(false);
+                } catch (error) {
+                  console.error("Sync failed:", error);
+                } finally {
+                  setSyncingIds((prev) => {
+                    const next = new Set(prev);
+                    next.delete(selectedLeague.externalId);
+                    return next;
+                  });
+                }
               }}
+              disabled={
+                !selectedLeague ||
+                !onSyncLeague ||
+                syncingIds.has(selectedLeague.externalId) ||
+                selectedLeague.countryInDb === false
+              }
             >
-              <SelectTrigger className="w-[50px] sm:w-[70px] h-6 sm:h-7 text-[10px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="h-6 sm:h-8 w-6 sm:w-auto px-1 sm:px-3"
-            >
-              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline sm:ml-2">Previous</span>
+              {syncingIds.has(selectedLeague?.externalId || "") ? (
+                <>
+                  <CloudSync className="mr-2 h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <CloudSync className="mr-2 h-4 w-4" />
+                  Sync
+                </>
+              )}
             </Button>
-            <span className="font-medium whitespace-nowrap">
-              {pagination.pageIndex + 1}/{table.getPageCount() || 1}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="h-6 sm:h-8 w-6 sm:w-auto px-1 sm:px-3"
-            >
-              <span className="hidden sm:inline sm:mr-2">Next</span>
-              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

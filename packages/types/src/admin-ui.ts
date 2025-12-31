@@ -119,3 +119,70 @@ export type LeagueStatusFilter =
   | "extra-in-db"
   | "mismatch";
 
+export interface TeamDB {
+  id: number;
+  name: string;
+  type: string | null;
+  shortCode: string | null;
+  imagePath: string | null;
+  founded: number | null;
+  countryId: number | null;
+  externalId: string;
+  country?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    iso2: string | null;
+    iso3: string | null;
+    externalId: string;
+  } | null;
+}
+
+export interface TeamProvider {
+  externalId: number | string;
+  name: string;
+  imagePath?: string | null;
+  countryExternalId?: number | string | null;
+  country?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    iso2: string | null;
+    iso3: string | null;
+  } | null;
+  leagueInDb?: boolean;
+  shortCode?: string | null;
+  founded?: number | null;
+  type?: string | null;
+}
+
+export interface UnifiedTeam {
+  externalId: string;
+  name: string;
+  imagePath: string | null;
+  type: string | null;
+  shortCode: string | null;
+  founded: number | null;
+  source: "db" | "provider" | "both";
+  status: "ok" | "missing-in-db" | "extra-in-db" | "mismatch" | "new";
+  dbData?: TeamDB;
+  providerData?: TeamProvider;
+  country?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    iso2: string | null;
+    iso3: string | null;
+    externalId: string;
+  } | null;
+  leagueInDb?: boolean;
+  updatedAt?: string;
+}
+
+export type TeamStatusFilter =
+  | "all"
+  | "ok"
+  | "missing-in-db"
+  | "extra-in-db"
+  | "mismatch";
+

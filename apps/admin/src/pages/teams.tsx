@@ -4,21 +4,28 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CloudSync, RefreshCw } from "lucide-react";
-import { useLeaguesFromDb, useLeaguesFromProvider } from "@/hooks/use-leagues";
+import { useTeamsFromDb, useTeamsFromProvider } from "@/hooks/use-teams";
 import { useBatches } from "@/hooks/use-batches";
 import { BatchesTable } from "@/components/countries/batches-table";
-import { leaguesService } from "@/services/leagues.service";
-import { unifyLeagues, calculateDiffStats } from "@/utils/leagues";
-import { LeaguesTable } from "@/components/leagues/leagues-table";
+import { teamsService } from "@/services/teams.service";
+import { unifyTeams, calculateDiffStats } from "@/utils/teams";
+import { TeamsTable } from "@/components/teams/teams-table";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ViewMode, AdminSyncLeaguesResponse } from "@repo/types";
+import type { ViewMode } from "@repo/types";
 
 type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
 
-export default function LeaguesPage() {
+interface AdminSyncTeamsResponse {
+  batchId: number | null;
+  ok: number;
+  fail: number;
+  total: number;
+}
+
+export default function TeamsPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
-  const [syncResult, setSyncResult] = useState<AdminSyncLeaguesResponse | null>(
+  const [syncResult, setSyncResult] = useState<AdminSyncTeamsResponse | null>(
     null
   );
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -31,7 +38,7 @@ export default function LeaguesPage() {
     isFetching: dbFetching,
     error: dbError,
     refetch: refetchDb,
-  } = useLeaguesFromDb({
+  } = useTeamsFromDb({
     perPage: 1000,
   });
 
@@ -41,26 +48,32 @@ export default function LeaguesPage() {
     isFetching: providerFetching,
     error: providerError,
     refetch: refetchProvider,
-  } = useLeaguesFromProvider();
+  } = useTeamsFromProvider();
 
-  // Fetch batches (only seed-leagues batches)
+  // Fetch batches (only seed-teams batches)
   const {
     data: batchesData,
     isLoading: batchesLoading,
     refetch: refetchBatches,
-  } = useBatches("seed-leagues", 20);
+  } = useBatches("seed-teams", 20);
+
+  // Unify and process data
+  const unifiedData = useMemo(
+    () => unifyTeams(dbData, providerData),
+    [dbData, providerData]
+  );
 
   // Sync mutation (bulk)
   const syncMutation = useMutation({
     mutationFn: () =>
-      leaguesService.sync(false) as Promise<AdminSyncLeaguesResponse>,
+      teamsService.sync(false) as Promise<AdminSyncTeamsResponse>,
     onSuccess: (data) => {
       setSyncResult(data);
       setSyncTimestamp(new Date());
       setSyncError(null);
-      queryClient.invalidateQueries({ queryKey: ["leagues"] });
-      toast.success("Leagues synced successfully", {
-        description: `Synced ${data.ok} leagues. ${data.fail > 0 ? `${data.fail} failed.` : ""}`,
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      toast.success("Teams synced successfully", {
+        description: `Synced ${data.ok} teams. ${data.fail > 0 ? `${data.fail} failed.` : ""}`,
       });
       setTimeout(() => {
         refetchDb();
@@ -79,13 +92,13 @@ export default function LeaguesPage() {
     },
   });
 
-  // Sync single league mutation
-  const syncLeagueMutation = useMutation({
+  // Sync single team mutation
+  const syncTeamMutation = useMutation({
     mutationFn: ({ id }: { id: string; name: string }) =>
-      leaguesService.syncById(id, false) as Promise<AdminSyncLeaguesResponse>,
+      teamsService.syncById(id, false) as Promise<AdminSyncTeamsResponse>,
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["leagues", "db"] });
-      toast.success("League synced successfully", {
+      queryClient.invalidateQueries({ queryKey: ["teams", "db"] });
+      toast.success("Team synced successfully", {
         description: `Synced ${variables.name} (${variables.id})`,
       });
       setTimeout(() => {
@@ -95,28 +108,23 @@ export default function LeaguesPage() {
     },
     onError: (error: Error, variables) => {
       const errorMessage = error.message || "Sync failed";
-      toast.error("League sync failed", {
+      toast.error("Team sync failed", {
         description: `Failed to sync ${variables.name} (${variables.id}): ${errorMessage}`,
       });
     },
   });
-  // Unify and process data
-  const unifiedData = useMemo(
-    () => unifyLeagues(dbData, providerData),
-    [dbData, providerData]
-  );
 
-  const handleSyncLeague = useCallback(
+  const handleSyncTeam = useCallback(
     async (externalId: string) => {
-      // Find league name from unified data
-      const league = unifiedData.find((l) => l.externalId === externalId);
-      const leagueName = league?.name || externalId;
-      await syncLeagueMutation.mutateAsync({
+      // Find team name from unified data
+      const team = unifiedData.find((t) => t.externalId === externalId);
+      const teamName = team?.name || externalId;
+      await syncTeamMutation.mutateAsync({
         id: externalId,
-        name: leagueName,
+        name: teamName,
       });
     },
-    [syncLeagueMutation, unifiedData]
+    [syncTeamMutation, unifiedData]
   );
 
   const handleRefresh = () => {
@@ -144,7 +152,7 @@ export default function LeaguesPage() {
         <div className="flex items-center justify-between gap-2">
           <div>
             <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">
-              Leagues
+              Teams
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -175,7 +183,7 @@ export default function LeaguesPage() {
               ) : (
                 <>
                   <CloudSync className="h-4 w-4 max-sm:mr-0 sm:mr-2" />
-                  <span className="hidden sm:inline">Sync Leagues</span>
+                  <span className="hidden sm:inline">Sync Teams</span>
                 </>
               )}
             </Button>
@@ -295,7 +303,7 @@ export default function LeaguesPage() {
             isLoading={batchesLoading}
           />
         ) : (
-          <LeaguesTable
+          <TeamsTable
             mode={viewMode}
             unifiedData={unifiedData}
             diffFilter={diffFilter}
@@ -304,8 +312,8 @@ export default function LeaguesPage() {
             providerData={providerData}
             isLoading={viewMode === "db" ? dbLoading : isLoading}
             error={viewMode === "db" ? dbError : null}
-            onSyncLeague={
-              viewMode === "provider" ? handleSyncLeague : undefined
+            onSyncTeam={
+              viewMode === "provider" ? handleSyncTeam : undefined
             }
           />
         )}
@@ -313,3 +321,4 @@ export default function LeaguesPage() {
     </div>
   );
 }
+
