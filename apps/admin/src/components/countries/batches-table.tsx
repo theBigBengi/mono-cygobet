@@ -10,6 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -50,14 +57,18 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
                 <span className="hidden sm:inline">View Items</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-              <DialogHeader>
-                <DialogTitle>Batch Items - {batch.name}</DialogTitle>
-                <DialogDescription>
-                  Batch ID: {batch.id} | Total Items: {batch.itemsTotal}
+            <DialogContent className="max-w-4xl max-h-[90vh] sm:max-h-[85vh] p-0 !grid !grid-rows-[auto_1fr] overflow-hidden">
+              <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-2 sm:pb-3 border-b">
+                <DialogTitle className="text-sm sm:text-base">
+                  {batch.name}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-1">
+                  ID: {batch.id} · Items: {batch.itemsTotal}
                 </DialogDescription>
               </DialogHeader>
-              <BatchItemsDialogContent batchId={batch.id} />
+              <div className="overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 min-h-0">
+                <BatchItemsDialogContent batchId={batch.id} />
+              </div>
             </DialogContent>
           </Dialog>
         );
@@ -176,8 +187,8 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="rounded-md border max-h-[500px] overflow-auto">
+      <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex-1 min-h-0 border-t overflow-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -206,8 +217,8 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-md border max-h-[500px] overflow-auto">
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex-1 min-h-0 border-t overflow-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -240,9 +251,30 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
       </div>
 
       {batches.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="text-xs md:text-sm text-muted-foreground">
-            Showing {batches.length} batches
+        <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 sm:pt-4 border-t mt-2 sm:mt-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="text-xs md:text-sm text-muted-foreground">
+              Showing {batches.length} batches
+            </div>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <span className="text-xs sm:text-sm text-muted-foreground">Page size:</span>
+              <Select
+                value={table.getState().pagination.pageSize.toString()}
+                onValueChange={(v) => {
+                  table.setPageSize(Number(v));
+                }}
+              >
+                <SelectTrigger className="w-[70px] sm:w-[100px] h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -291,27 +323,27 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
         </span>
       ),
     },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }: { row: Row<BatchItem> }) => {
-        const status = row.getValue("status") as string;
-        const statusConfig: Record<
-          string,
-          { label: string; variant: "destructive" | "secondary" | "default" }
-        > = {
-          success: { label: "Success", variant: "default" },
-          failed: { label: "Failed", variant: "destructive" },
-          skipped: { label: "Skipped", variant: "secondary" },
-        };
-        const config = statusConfig[status] || statusConfig.success;
-        return (
-          <Badge variant={config.variant} className="text-xs">
-            {config.label}
-          </Badge>
-        );
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }: { row: Row<BatchItem> }) => {
+          const status = row.getValue("status") as string;
+          const statusConfig: Record<
+            string,
+            { label: string; variant: "destructive" | "secondary" | "default" }
+          > = {
+            success: { label: "Success", variant: "default" },
+            failed: { label: "Failed", variant: "destructive" },
+            skipped: { label: "Skipped", variant: "secondary" },
+          };
+          const config = statusConfig[status] || statusConfig.success;
+          return (
+            <span className="text-xs text-muted-foreground">
+              {config.label}
+            </span>
+          );
+        },
       },
-    },
     {
       accessorKey: "errorMessage",
       header: "Message",
@@ -337,20 +369,9 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
           return <span className="text-muted-foreground">—</span>;
         }
         return (
-          <div className="flex flex-wrap gap-1">
-            {Object.entries(meta)
-              .slice(0, 3)
-              .map(([key, value]) => (
-                <Badge key={key} variant="outline" className="text-xs">
-                  {key}: {String(value).slice(0, 20)}
-                </Badge>
-              ))}
-            {Object.keys(meta).length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{Object.keys(meta).length - 3}
-              </Badge>
-            )}
-          </div>
+          <span className="text-xs text-muted-foreground">
+            {Object.keys(meta).length} items
+          </span>
         );
       },
     },
@@ -379,21 +400,23 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
 
   if (!data || data.data.length === 0) {
     return (
-      <div className="text-center text-sm text-muted-foreground py-8">
-        No items found for this batch
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center text-xs sm:text-sm text-muted-foreground">
+          No items found for this batch
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
+        <div className="border-t">
+          <Table>
+          <TableHeader className="sticky top-0 bg-background z-10">
             {itemsTable.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="h-8">
+                  <TableHead key={header.id} className="h-8 text-xs sm:text-sm">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -409,7 +432,7 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
             {itemsTable.getRowModel().rows.map((row) => (
               <TableRow key={row.id}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="h-8">
+                  <TableCell key={cell.id} className="h-8 text-xs sm:text-sm">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -419,8 +442,8 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
         </Table>
       </div>
       {data.pagination.totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="text-xs text-muted-foreground">
+        <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 sm:pt-4 border-t mt-3 sm:mt-4">
+          <div className="text-[10px] sm:text-xs text-muted-foreground">
             <span className="hidden sm:inline">Showing </span>
             {(page - 1) * perPage + 1}
             <span className="hidden sm:inline"> to </span>{" "}
@@ -431,7 +454,7 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
             </span>
             <span className="sm:hidden"> / {data.pagination.totalItems}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -440,12 +463,12 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
                 if (newPage >= 1) setPage(newPage);
               }}
               disabled={page === 1}
-              className="px-2 sm:px-3"
+              className="h-7 sm:h-8 px-2 sm:px-3 text-xs"
             >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="hidden sm:inline ml-2">Previous</span>
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline ml-1 sm:ml-2">Previous</span>
             </Button>
-            <div className="text-xs font-medium">
+            <div className="text-[10px] sm:text-xs font-medium px-1 sm:px-2">
               Page {page} of {data.pagination.totalPages}
             </div>
             <Button
@@ -456,10 +479,10 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
                 if (newPage <= data.pagination.totalPages) setPage(newPage);
               }}
               disabled={page >= data.pagination.totalPages}
-              className="px-2 sm:px-3"
+              className="h-7 sm:h-8 px-2 sm:px-3 text-xs"
             >
-              <span className="hidden sm:inline mr-2">Next</span>
-              <ChevronRight className="h-4 w-4" />
+              <span className="hidden sm:inline mr-1 sm:mr-2">Next</span>
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>

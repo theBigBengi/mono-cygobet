@@ -19,8 +19,8 @@ function App() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
-        <header className="bg-background sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b px-4">
+      <SidebarInset className="h-svh flex flex-col overflow-hidden">
+        <header className="bg-background flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <Breadcrumb>
@@ -31,7 +31,7 @@ function App() {
             </BreadcrumbList>
           </Breadcrumb>
         </header>
-        <div className="flex flex-1 flex-col overflow-auto">
+        <div className="flex flex-1 flex-col overflow-hidden min-h-0">
           <Routes>
             <Route path="/" element={<CountriesPage />} />
             <Route path="/countries" element={<CountriesPage />} />

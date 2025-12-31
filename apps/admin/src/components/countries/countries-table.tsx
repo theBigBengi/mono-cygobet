@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -115,12 +114,9 @@ export function CountriesTable({
             };
             const config = statusConfig[status] || statusConfig.ok;
             return (
-              <Badge
-                variant={config.variant}
-                className="text-[10px] sm:text-xs"
-              >
+              <span className="text-xs text-muted-foreground">
                 {config.label}
-              </Badge>
+              </span>
             );
           },
         },
@@ -202,6 +198,30 @@ export function CountriesTable({
               <span className="text-xs sm:text-sm font-mono">
                 {country.providerData?.iso3 || "—"}
               </span>
+            );
+          },
+        },
+        {
+          id: "leagues",
+          header: "Leagues",
+          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
+            const country = row.original;
+            const leaguesCount = country.leaguesCount ?? country.dbData?.leagues?.length ?? 0;
+            if (country.source === "provider" && !country.dbData) {
+              return (
+                <div className="flex items-center justify-center">
+                  <span className="text-muted-foreground">—</span>
+                </div>
+              );
+            }
+            return (
+              <div className="flex items-center justify-center">
+                <span className={`text-xs ${
+                  !leaguesCount ? "text-muted-foreground" : "text-foreground"
+                }`}>
+                  {leaguesCount || 0}
+                </span>
+              </div>
             );
           },
         },
@@ -302,6 +322,31 @@ export function CountriesTable({
           ),
         },
         {
+          id: "leagues",
+          header: "Leagues",
+          cell: ({ row }: { row: Row<CountryDBRow> }) => {
+            const country = row.original;
+            // Try to get leagues count from unifiedData if available
+            const unifiedCountry = unifiedData.find(
+              (c) => c.externalId === country.externalId
+            );
+            const leaguesCount =
+              unifiedCountry?.leaguesCount ??
+              unifiedCountry?.dbData?.leagues?.length ??
+              (country as any)?.leagues?.length ??
+              0;
+            return (
+              <div className="flex items-center justify-center">
+                <span className={`text-xs ${
+                  !leaguesCount ? "text-muted-foreground" : "text-foreground"
+                }`}>
+                  {leaguesCount || 0}
+                </span>
+              </div>
+            );
+          },
+        },
+        {
           accessorKey: "imagePath",
           header: "Image",
           cell: ({ row }: { row: Row<CountryDBRow> }) => {
@@ -337,7 +382,7 @@ export function CountriesTable({
       // This should never be reached since provider mode is handled above
       return [];
     }
-  }, [mode, syncingIds, onSyncCountry]);
+  }, [mode, syncingIds, onSyncCountry, unifiedData]);
 
   // Get table data based on mode
   const tableData = useMemo(() => {
@@ -412,14 +457,14 @@ export function CountriesTable({
 
   if (isModeLoading) {
     return (
-      <div className="space-y-4">
+      <div className="flex flex-col h-full overflow-hidden">
         {/* Controls skeleton */}
-        <div className="flex items-center gap-4">
+        <div className="flex-shrink-0 flex items-center gap-4 mb-2 sm:mb-4">
           <Skeleton className="h-10 w-[180px]" />
           <Skeleton className="h-10 w-[300px]" />
         </div>
         {/* Table skeleton */}
-        <div className="rounded-md border max-h-[600px] overflow-auto">
+        <div className="flex-1 min-h-0 border-t overflow-auto">
           <div className="p-4 space-y-3">
             {/* Header skeleton */}
             <div className="flex gap-4 pb-4 border-b">
@@ -438,7 +483,7 @@ export function CountriesTable({
           </div>
         </div>
         {/* Pagination skeleton */}
-        <div className="flex items-center justify-between">
+        <div className="flex-shrink-0 flex items-center justify-between pt-2 sm:pt-4 border-t mt-2 sm:mt-4">
           <Skeleton className="h-4 w-48" />
           <div className="flex items-center gap-2">
             <Skeleton className="h-8 w-20" />
@@ -460,18 +505,18 @@ export function CountriesTable({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Controls */}
-      <div className="flex items-center gap-4">
+      <div className="flex-shrink-0 flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
         <Input
           placeholder="Search countries..."
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
+          className="max-w-sm h-7 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1"
         />
         {mode === "provider" && onDiffFilterChange && (
           <Select value={diffFilter} onValueChange={onDiffFilterChange}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[120px] sm:w-[180px] h-7 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -483,35 +528,10 @@ export function CountriesTable({
             </SelectContent>
           </Select>
         )}
-        {mode === "db" && (
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="text-sm text-muted-foreground">Page size:</span>
-            <Select
-              value={pagination.pageSize.toString()}
-              onValueChange={(v) => {
-                const newPageSize = Number(v);
-                setPagination({
-                  ...pagination,
-                  pageSize: newPageSize,
-                  pageIndex: 0,
-                });
-              }}
-            >
-              <SelectTrigger className="w-[100px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
       </div>
 
       {/* Table */}
-      <div className="rounded-md border max-h-[600px] overflow-auto">
+      <div className="flex-1 min-h-0 border-t overflow-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -567,23 +587,48 @@ export function CountriesTable({
 
       {/* Pagination */}
       {tableData.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="text-xs md:text-sm text-muted-foreground">
-            <span className="hidden sm:inline">Showing </span>
-            {table.getFilteredRowModel().rows.length > 0
-              ? pagination.pageIndex * pagination.pageSize + 1
-              : 0}{" "}
-            <span className="hidden sm:inline">to </span>
-            {Math.min(
-              (pagination.pageIndex + 1) * pagination.pageSize,
-              table.getFilteredRowModel().rows.length
-            )}{" "}
-            <span className="hidden sm:inline">
-              of {table.getFilteredRowModel().rows.length} countries
-            </span>
-            <span className="sm:hidden">
-              / {table.getFilteredRowModel().rows.length}
-            </span>
+        <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 sm:pt-4 border-t mt-2 sm:mt-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="text-xs md:text-sm text-muted-foreground">
+              <span className="hidden sm:inline">Showing </span>
+              {table.getFilteredRowModel().rows.length > 0
+                ? pagination.pageIndex * pagination.pageSize + 1
+                : 0}{" "}
+              <span className="hidden sm:inline">to </span>
+              {Math.min(
+                (pagination.pageIndex + 1) * pagination.pageSize,
+                table.getFilteredRowModel().rows.length
+              )}{" "}
+              <span className="hidden sm:inline">
+                of {table.getFilteredRowModel().rows.length} countries
+              </span>
+              <span className="sm:hidden">
+                / {table.getFilteredRowModel().rows.length}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <span className="text-xs sm:text-sm text-muted-foreground">Page size:</span>
+              <Select
+                value={pagination.pageSize.toString()}
+                onValueChange={(v) => {
+                  const newPageSize = Number(v);
+                  setPagination({
+                    ...pagination,
+                    pageSize: newPageSize,
+                    pageIndex: 0,
+                  });
+                }}
+              >
+                <SelectTrigger className="w-[70px] sm:w-[100px] h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button

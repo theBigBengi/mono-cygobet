@@ -3,7 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, AlertCircle, CloudSync } from "lucide-react";
+import {
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  CloudSync,
+  RefreshCw,
+} from "lucide-react";
 import {
   useCountriesFromDb,
   useCountriesFromProvider,
@@ -142,9 +148,11 @@ export default function CountriesPage() {
   const isPartialData = (dbData && !providerData) || (!dbData && providerData);
 
   return (
-    <div className="flex flex-1 flex-col gap-3 sm:gap-4 md:gap-6 p-3 sm:p-4 md:p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
+    <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-3 sm:p-4 md:p-6">
+      {/* Fixed Header Section */}
+      <div className="flex-shrink-0 space-y-2 mb-3 sm:mb-4">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">
             Countries
@@ -158,7 +166,7 @@ export default function CountriesPage() {
             disabled={isFetching}
             className="!px-2 sm:!px-3"
           >
-            <CloudSync
+            <RefreshCw
               className={`h-4 w-4 ${isFetching ? "animate-spin" : ""} max-sm:mr-0 sm:mr-2`}
             />
             <span className="hidden sm:inline">Refresh</span>
@@ -183,196 +191,117 @@ export default function CountriesPage() {
             )}
           </Button>
         </div>
-      </div>
-
-      {/* Sync Result Panel */}
-      {syncResult && syncTimestamp && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle2 className="h-4 w-4 text-blue-600" />
-            <span className="text-xs md:text-sm font-medium text-blue-900">
-              Sync completed
-            </span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 text-xs md:text-sm">
-            <div>
-              <span className="text-blue-700 font-medium">batchId:</span>{" "}
-              <span className="text-blue-900">{syncResult.batchId ?? "—"}</span>
-            </div>
-            <div>
-              <span className="text-blue-700 font-medium">ok:</span>{" "}
-              <span className="text-blue-900">{syncResult.ok}</span>
-            </div>
-            <div>
-              <span className="text-blue-700 font-medium">fail:</span>{" "}
-              <span className="text-blue-900">{syncResult.fail}</span>
-            </div>
-            <div>
-              <span className="text-blue-700 font-medium">total:</span>{" "}
-              <span className="text-blue-900">{syncResult.total}</span>
-            </div>
-            <div>
-              <span className="text-blue-700 font-medium">timestamp:</span>{" "}
-              <span className="text-blue-900">
-                {syncTimestamp.toLocaleTimeString()}
-              </span>
-            </div>
-          </div>
         </div>
-      )}
 
-      {/* Sync Error */}
-      {syncError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-2 md:p-3 flex items-center gap-2">
-          <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
-          <span className="text-xs sm:text-sm text-red-800">{syncError}</span>
-        </div>
-      )}
+        {/* Sync Result Panel */}
+        {syncResult && syncTimestamp && (
+          <div className="border-b pb-2 text-xs text-muted-foreground">
+            Synced: {syncResult.ok} ok, {syncResult.fail} failed
+          </div>
+        )}
 
-      {/* Partial Data Warning */}
-      {isPartialData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 md:p-3 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-          <span className="text-xs sm:text-sm text-yellow-800">
+        {/* Sync Error */}
+        {syncError && (
+          <div className="border-b pb-2 text-xs text-destructive">
+            {syncError}
+          </div>
+        )}
+
+        {/* Partial Data Warning */}
+        {isPartialData && (
+          <div className="border-b pb-2 text-xs text-muted-foreground">
             {!providerData
               ? "Provider data unavailable"
               : "Database data unavailable"}
-          </span>
-        </div>
-      )}
-
-      {/* Error State */}
-      {hasError && !isPartialData && (
-        <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-3 md:p-4">
-          <p className="text-destructive font-medium text-xs sm:text-sm md:text-base">
-            Error loading data
-          </p>
-          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-1">
-            {dbError ? "DB failed to load" : "Provider failed to load"}
-          </p>
-        </div>
-      )}
-
-      {/* Summary Overview */}
-      <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
-        <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-xs pb-2 min-w-max">
-          {isFetching ? (
-            // Show skeletons when fetching (refresh)
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-1.5">
-                <Skeleton className="h-3 w-12" />
-                <Skeleton className="h-3 w-6" />
-              </div>
-            ))
-          ) : (
-            // Show actual data - gentle inline stats
-            <>
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted-foreground/70">DB:</span>
-                <span className="font-normal text-foreground/80">
-                  {diffStats.dbCount}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted-foreground/70">Provider:</span>
-                <span className="font-normal text-foreground/80">
-                  {diffStats.providerCount}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted-foreground/70">Missing:</span>
-                <span className="font-normal text-destructive/80">
-                  {diffStats.missing}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted-foreground/70">Extra:</span>
-                <span className="font-normal text-orange-600/80">
-                  {diffStats.extra}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted-foreground/70">Mismatch:</span>
-                <span className="font-normal text-yellow-600/80">
-                  {diffStats.mismatch}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted-foreground/70">OK:</span>
-                <span className="font-normal text-green-600/80">
-                  {diffStats.ok}
-                </span>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Mode Switch */}
-      <div className="border-b">
-        <Tabs
-          value={viewMode}
-          onValueChange={(v) =>
-            !isFetching && setViewMode(v as ViewMode | "history")
-          }
-          className="w-full"
-        >
-          <TabsList className="h-8 w-auto bg-transparent p-0 gap-0">
-            <TabsTrigger
-              value="provider"
-              disabled={isFetching}
-              className="h-8 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none transition-colors data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none hover:text-foreground/70"
-            >
-              Provider
-            </TabsTrigger>
-            <TabsTrigger
-              value="db"
-              disabled={isFetching}
-              className="h-8 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none transition-colors data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none hover:text-foreground/70"
-            >
-              DB
-            </TabsTrigger>
-            <TabsTrigger
-              value="history"
-              disabled={isFetching}
-              className="h-8 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none transition-colors data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none hover:text-foreground/70"
-            >
-              History
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* Content based on active tab */}
-      {viewMode === "history" ? (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-sm sm:text-base md:text-lg font-semibold tracking-tight">
-              Seeding / Sync History
-            </h2>
-            <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
-              Recent seed-countries batches
-            </p>
           </div>
+        )}
+
+        {/* Error State */}
+        {hasError && !isPartialData && (
+          <div className="border-b pb-2 text-xs text-destructive">
+            {dbError ? "DB failed to load" : "Provider failed to load"}
+          </div>
+        )}
+
+        {/* Mode Switch */}
+        <div className="border-b">
+          <Tabs
+            value={viewMode}
+            onValueChange={(v) =>
+              !isFetching && setViewMode(v as ViewMode | "history")
+            }
+            className="w-full"
+          >
+            <TabsList className="h-7 w-auto bg-transparent p-0 gap-0">
+              <TabsTrigger
+                value="provider"
+                disabled={isFetching}
+                className="h-7 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
+              >
+                Provider
+              </TabsTrigger>
+              <TabsTrigger
+                value="db"
+                disabled={isFetching}
+                className="h-7 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
+              >
+                DB
+              </TabsTrigger>
+              <TabsTrigger
+                value="history"
+                disabled={isFetching}
+                className="h-7 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
+              >
+                History
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Summary Overview */}
+        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+          <div className="flex items-center gap-3 sm:gap-4 text-xs pb-1 min-w-max">
+            {isFetching ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-3 w-12" />
+              ))
+            ) : (
+              <>
+                <span className="text-muted-foreground">
+                  DB: <span className="text-foreground">{diffStats.dbCount}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Provider:{" "}
+                  <span className="text-foreground">{diffStats.providerCount}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Missing:{" "}
+                  <span className="text-foreground">{diffStats.missing}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Extra: <span className="text-foreground">{diffStats.extra}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Mismatch:{" "}
+                  <span className="text-foreground">{diffStats.mismatch}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  OK: <span className="text-foreground">{diffStats.ok}</span>
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Scrollable Content Area */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {viewMode === "history" ? (
           <BatchesTable
             batches={batchesData?.data || []}
             isLoading={batchesLoading}
           />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-base sm:text-lg md:text-xl font-semibold tracking-tight">
-              {viewMode === "provider"
-                ? "Provider Countries"
-                : "Database Countries"}
-            </h2>
-            <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
-              {viewMode === "provider"
-                ? "Compare countries between Provider and Database"
-                : "Countries stored in the database"}
-            </p>
-          </div>
+        ) : (
           <CountriesTable
             mode={viewMode}
             unifiedData={unifiedData}
@@ -386,8 +315,8 @@ export default function CountriesPage() {
               viewMode === "provider" ? handleSyncCountry : undefined
             }
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
