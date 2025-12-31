@@ -39,7 +39,11 @@ const app: FastifyPluginAsync<AppOptions> = async (
 
     // Register CORS
     fastify.register(fastifyCors, {
-      origin: ["http://localhost:3000", "http://localhost:5173"],
+      origin: [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://mono-cygobet-admin.vercel.app",
+      ],
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
