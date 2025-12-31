@@ -467,9 +467,7 @@ export class SportMonksAdapter {
    * @param options - Optional includes (country, etc.)
    * @returns LeagueDTO[] with country included if requested (formatted)
    */
-  async fetchLeagues(options?: {
-    include?: IncludeNode[];
-  }): Promise<
+  async fetchLeagues(options?: { include?: IncludeNode[] }): Promise<
     (LeagueDTO & {
       country?: {
         id: number;
