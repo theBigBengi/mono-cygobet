@@ -1,5 +1,6 @@
 // src/etl/seeds/seed.cli.ts
 import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { seedBookmakers } from "./seed.bookmakers";
 import { seedCountries } from "./seed.countries";
 import { seedLeagues } from "./seed.leagues";
 import { seedTeams } from "./seed.teams";
@@ -11,11 +12,12 @@ import { format, addDays } from "date-fns";
 
 /**
  * Seeding Order (based on foreign key dependencies):
- * 1. countries - No dependencies (base entity)
- * 2. leagues - Depends on: countries (countryId)
- * 3. teams - Depends on: countries (countryId, nullable)
- * 4. seasons - Depends on: leagues (leagueId)
- * 5. fixtures - Depends on: leagues (leagueId), seasons (seasonId), teams (homeTeamId, awayTeamId)
+ * 1. bookmakers - No dependencies (base entity)
+ * 2. countries - No dependencies (base entity)
+ * 3. leagues - Depends on: countries (countryId)
+ * 4. teams - Depends on: countries (countryId, nullable)
+ * 5. seasons - Depends on: leagues (leagueId)
+ * 6. fixtures - Depends on: leagues (leagueId), seasons (seasonId), teams (homeTeamId, awayTeamId)
  *
  * Note: When running individual seeds, ensure dependencies are seeded first.
  * When using --all or no flags, seeds run in the correct order automatically.
@@ -24,6 +26,7 @@ import { format, addDays } from "date-fns";
 // Simple CLI argument parsing
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
+const hasBookmakers = args.includes("--bookmakers");
 const hasCountries = args.includes("--countries");
 const hasLeagues = args.includes("--leagues");
 const hasTeams = args.includes("--teams");
@@ -32,6 +35,7 @@ const hasFixtures = args.includes("--fixtures");
 const hasOdds = args.includes("--odds");
 const hasJobs = args.includes("--jobs");
 const runAll =
+  !hasBookmakers &&
   !hasCountries &&
   !hasLeagues &&
   !hasTeams &&
@@ -104,6 +108,12 @@ const oddsFilters: string = oddsFiltersArg
 
     // Seed in dependency order (always, even for individual seeds)
     // This ensures correct order when using --all or when multiple flags are used
+
+    if (runAll || hasBookmakers) {
+      console.log("🚀 Starting bookmakers seeding...");
+      const bookmakersDto = await adapter.fetchBookmakers();
+      await seedBookmakers(bookmakersDto, { dryRun });
+    }
 
     if (runAll || hasCountries) {
       console.log("🚀 Starting countries seeding...");

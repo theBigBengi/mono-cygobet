@@ -6,4 +6,5 @@ export * from "./countries.schemas";
 export * from "./health.schemas";
 export * from "./leagues.schemas";
 export * from "./teams.schemas";
+export * from "./seasons.schemas";
 

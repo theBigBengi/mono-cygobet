@@ -1,12 +1,12 @@
-import * as React from "react"
-import { ChevronRight } from "lucide-react"
-import { Link, useLocation } from "react-router-dom"
+import * as React from "react";
+import { ChevronRight } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -19,13 +19,17 @@ import {
   SidebarMenuItem,
   SidebarRail,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 const data = {
   navMain: [
     {
       title: "Data",
       items: [
+        {
+          title: "Seasons",
+          url: "/seasons",
+        },
         {
           title: "Countries",
           url: "/countries",
@@ -41,17 +45,17 @@ const data = {
       ],
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const location = useLocation()
-  const { isMobile, setOpenMobile } = useSidebar()
+  const location = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const handleLinkClick = () => {
     if (isMobile) {
-      setOpenMobile(false)
+      setOpenMobile(false);
     }
-  }
+  };
 
   return (
     <Sidebar {...props}>
@@ -82,7 +86,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {item.items.map((subItem) => {
-                      const isActive = location.pathname === subItem.url
+                      const isActive = location.pathname === subItem.url;
                       return (
                         <SidebarMenuItem key={subItem.title}>
                           <SidebarMenuButton asChild isActive={isActive}>
@@ -91,7 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
-                      )
+                      );
                     })}
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -102,5 +106,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

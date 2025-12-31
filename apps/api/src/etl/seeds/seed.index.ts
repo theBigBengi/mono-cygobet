@@ -1,4 +1,5 @@
 import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { seedBookmakers } from "./seed.bookmakers";
 import { seedCountries } from "./seed.countries";
 import { seedLeagues } from "./seed.leagues";
 import { seedTeams } from "./seed.teams";
@@ -14,6 +15,19 @@ function createAdapter() {
     coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
     authMode: process.env.SPORTMONKS_AUTH_MODE as "query" | "header",
   });
+}
+
+export async function runBookmakersSeed(opts?: { dryRun?: boolean }) {
+  const adapter = createAdapter();
+
+  console.log("🎰 Fetching bookmakers from SportMonks...");
+  const bookmakersDto = await adapter.fetchBookmakers();
+
+  console.log(`📦 Found ${bookmakersDto.length} bookmakers to seed`);
+  const result = await seedBookmakers(bookmakersDto, opts);
+
+  console.log("✅ Bookmakers seeding finished");
+  return result;
 }
 
 export async function runCountriesSeed(opts?: { dryRun?: boolean }) {

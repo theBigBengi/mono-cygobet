@@ -569,6 +569,57 @@ export class SportMonksAdapter {
   }
 
   /**
+   * Fetches a single season by ID from SportMonks Football API
+   * @param id - The SportMonks season ID
+   * @returns SeasonDTO or null if not found
+   */
+  async fetchSeasonById(id: number): Promise<SeasonDTO | null> {
+    try {
+      const rows = await this.httpFootball.get<any>(`seasons/${id}`, {
+        select: [
+          "id",
+          "league_id",
+          "name",
+          "starting_at",
+          "ending_at",
+          "is_current",
+          "finished",
+        ],
+        include: [
+          {
+            name: "league",
+            fields: ["id", "name"],
+            include: [{ name: "country", fields: ["id", "name"] }],
+          },
+        ],
+        paginate: false,
+      });
+
+      if (!rows || rows.length === 0) {
+        return null;
+      }
+
+      const s = rows[0];
+      if (Boolean(s.finished)) {
+        return null; // Skip finished seasons
+      }
+
+      return {
+        externalId: s.id,
+        leagueExternalId: s.league_id ?? null,
+        name: s.name,
+        startDate: s.starting_at ?? null,
+        endDate: s.ending_at ?? null,
+        isCurrent: Boolean(s.is_current),
+        leagueName: s.league?.name,
+        countryName: s.league?.country?.name,
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
    * Returns hardcoded bookmakers since SportMonks doesn't provide bookmaker data
    * Currently only bet365 is supported
    */

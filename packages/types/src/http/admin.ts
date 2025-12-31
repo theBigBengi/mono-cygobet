@@ -272,3 +272,98 @@ export interface AdminProviderTeamsResponse {
   message: string;
   provider: string;
 }
+
+export interface AdminSeasonsListResponse {
+  status: string;
+  data: Array<{
+    id: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+    isCurrent: boolean;
+    leagueId: number;
+    league: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      type: string;
+      externalId: string;
+      country: {
+        id: number;
+        name: string;
+        imagePath: string | null;
+        iso2: string | null;
+        iso3: string | null;
+        externalId: string;
+      } | null;
+    } | null;
+    externalId: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
+export interface AdminSeasonResponse {
+  status: string;
+  data: {
+    id: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+    isCurrent: boolean;
+    leagueId: number;
+    league: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      type: string;
+      externalId: string;
+      country: {
+        id: number;
+        name: string;
+        imagePath: string | null;
+        iso2: string | null;
+        iso3: string | null;
+        externalId: string;
+      } | null;
+    } | null;
+    externalId: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  message: string;
+}
+
+export interface AdminProviderSeasonsResponse {
+  status: string;
+  data: Array<{
+    externalId: number | string;
+    name: string;
+    startDate: string | null;
+    endDate: string | null;
+    isCurrent: boolean;
+    leagueExternalId: number | string | null;
+    league?: {
+      id: number;
+      name: string;
+    } | null;
+    leagueInDb?: boolean;
+    countryName?: string | null;
+  }>;
+  message: string;
+  provider: string;
+}
+
+export interface AdminSyncSeasonsResponse {
+  batchId: number | null;
+  ok: number;
+  fail: number;
+  total: number;
+}

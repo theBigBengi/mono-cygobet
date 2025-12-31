@@ -1,10 +1,18 @@
 // src/etl/seeds/seed.bookmakers.ts
 import type { BookmakerDTO } from "@repo/types/sport-data/common";
-import { startSeedBatch, trackSeedItem, finishSeedBatch } from "./seed.utils";
+import {
+  startSeedBatch,
+  trackSeedItem,
+  finishSeedBatch,
+  safeBigInt,
+} from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
 
 /**
- * Seeds bookmakers into the database using Prisma upsert operations.
+ * Seeds bookmakers.
+ * Assumptions:
+ *  - bookmakers(name) has a UNIQUE constraint
+ *  - bookmakers(externalId) has a UNIQUE constraint
  */
 export async function seedBookmakers(
   bookmakers: BookmakerDTO[],
@@ -17,7 +25,16 @@ export async function seedBookmakers(
     dryRun?: boolean;
   }
 ) {
+  // In dry-run mode, skip all database writes including batch tracking
+  if (opts?.dryRun) {
+    console.log(
+      `🧪 DRY RUN MODE: ${bookmakers?.length ?? 0} bookmakers would be processed (no database changes)`
+    );
+    return { batchId: null, ok: 0, fail: 0, total: bookmakers?.length ?? 0 };
+  }
+
   let batchId = opts?.batchId;
+  let createdHere = false;
 
   if (!batchId) {
     const started = await startSeedBatch(
@@ -31,8 +48,10 @@ export async function seedBookmakers(
       }
     );
     batchId = started.id;
+    createdHere = true;
   }
 
+  // Short-circuit: no input
   if (!bookmakers?.length) {
     await finishSeedBatch(batchId!, RunStatus.success, {
       itemsTotal: 0,
@@ -48,45 +67,30 @@ export async function seedBookmakers(
   );
 
   try {
-    if (opts?.dryRun) {
-      const promises = bookmakers.map((bookmaker) =>
-        trackSeedItem(
-          batchId!,
-          String(bookmaker.externalId),
-          RunStatus.skipped,
-          undefined,
-          {
-            name: bookmaker.name,
-            reason: "dryRun",
-          }
-        )
-      );
-      await Promise.allSettled(promises);
-      await finishSeedBatch(batchId!, RunStatus.success, {
-        itemsTotal: bookmakers.length,
-        itemsSuccess: 0,
-        itemsFailed: 0,
-        meta: { dryRun: true },
-      });
-      return { batchId, ok: 0, fail: 0, total: bookmakers.length };
-    }
+    console.log(
+      `🚀 [${batchId}] Starting bookmakers seeding with ${bookmakers.length} items`
+    );
 
     let ok = 0;
     let fail = 0;
 
+    // Upsert each bookmaker
     for (const bookmaker of bookmakers) {
       try {
+        // Use Prisma upsert to handle both create and update scenarios
         await prisma.bookmakers.upsert({
-          where: { name: bookmaker.name },
-          update: {},
+          where: { externalId: safeBigInt(bookmaker.externalId) },
+          update: {
+            name: bookmaker.name,
+            updatedAt: new Date(),
+          },
           create: {
             name: bookmaker.name,
-            externalId: bookmaker.externalId
-              ? BigInt(bookmaker.externalId)
-              : null,
+            externalId: safeBigInt(bookmaker.externalId),
           },
         });
 
+        // Track successful seeding
         await trackSeedItem(
           batchId!,
           String(bookmaker.externalId),
@@ -99,6 +103,9 @@ export async function seedBookmakers(
         );
 
         ok++;
+        console.log(
+          `✅ [${batchId}] Bookmaker seeded/updated: ${bookmaker.name} (${bookmaker.externalId})`
+        );
       } catch (error: any) {
         const errorCode = error?.code || "UNKNOWN_ERROR";
         const errorMessage = String(error?.message || "Unknown error").slice(
@@ -106,6 +113,7 @@ export async function seedBookmakers(
           500
         );
 
+        // Track failed seeding
         await trackSeedItem(
           batchId!,
           String(bookmaker.externalId),
@@ -126,6 +134,7 @@ export async function seedBookmakers(
       }
     }
 
+    // Finalize the batch
     await finishSeedBatch(batchId!, RunStatus.success, {
       itemsTotal: bookmakers.length,
       itemsSuccess: ok,
@@ -157,4 +166,3 @@ export async function seedBookmakers(
     };
   }
 }
-

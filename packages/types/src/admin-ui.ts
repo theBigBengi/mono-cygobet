@@ -186,3 +186,79 @@ export type TeamStatusFilter =
   | "extra-in-db"
   | "mismatch";
 
+export interface SeasonDB {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  leagueId: number;
+  externalId: string;
+  league?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    type: string;
+    externalId: string;
+    country: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      iso2: string | null;
+      iso3: string | null;
+      externalId: string;
+    } | null;
+  } | null;
+}
+
+export interface SeasonProvider {
+  externalId: number | string;
+  name: string;
+  startDate: string | null;
+  endDate: string | null;
+  isCurrent: boolean;
+  leagueExternalId?: number | string | null;
+  league?: {
+    id: number;
+    name: string;
+  } | null;
+  leagueInDb?: boolean;
+  countryName?: string | null;
+}
+
+export interface UnifiedSeason {
+  externalId: string;
+  name: string;
+  startDate: string | null;
+  endDate: string | null;
+  isCurrent: boolean;
+  source: "db" | "provider" | "both";
+  status: "ok" | "missing-in-db" | "extra-in-db" | "mismatch" | "new";
+  dbData?: SeasonDB;
+  providerData?: SeasonProvider;
+  league?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    type: string;
+    externalId: string;
+    country: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      iso2: string | null;
+      iso3: string | null;
+      externalId: string;
+    } | null;
+  } | null;
+  leagueInDb?: boolean;
+  updatedAt?: string;
+}
+
+export type SeasonStatusFilter =
+  | "all"
+  | "ok"
+  | "missing-in-db"
+  | "extra-in-db"
+  | "mismatch";
+

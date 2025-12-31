@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import CountriesPage from "@/pages/countries";
 import LeaguesPage from "@/pages/leagues";
 import TeamsPage from "@/pages/teams";
+import SeasonsPage from "@/pages/seasons";
 
 function App() {
   const location = useLocation();
@@ -34,7 +35,9 @@ function App() {
                     ? "Leagues"
                     : location.pathname === "/teams"
                       ? "Teams"
-                      : "Countries"}
+                      : location.pathname === "/seasons"
+                        ? "Seasons"
+                        : "Countries"}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
@@ -46,6 +49,7 @@ function App() {
             <Route path="/countries" element={<CountriesPage />} />
             <Route path="/leagues" element={<LeaguesPage />} />
             <Route path="/teams" element={<TeamsPage />} />
+            <Route path="/seasons" element={<SeasonsPage />} />
             <Route
               path="*"
               element={
