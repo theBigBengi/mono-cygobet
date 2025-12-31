@@ -42,7 +42,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
       origin: [
         "http://localhost:3000",
         "http://localhost:5173",
-        "http://mono-cygobet-admin.vercel.app",
+        "https://mono-cygobet-admin.vercel.app",
       ],
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
