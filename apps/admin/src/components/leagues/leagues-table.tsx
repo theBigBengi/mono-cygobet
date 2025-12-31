@@ -25,6 +25,7 @@ import {
   TableSkeleton,
   TableError,
   ImageCell,
+  DataTableColumnHeader,
 } from "@/components/table";
 import {
   Dialog,
@@ -117,7 +118,9 @@ export function LeaguesTable({
       return [
         {
           accessorKey: "status",
-          header: "Status",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Status" />
+          ),
           cell: ({ row }: { row: Row<UnifiedLeague> }) => {
             const status = row.getValue("status") as UnifiedLeague["status"];
             const statusConfig: Record<
@@ -153,6 +156,7 @@ export function LeaguesTable({
         {
           id: "name-db",
           header: "Name (DB)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedLeague> }) => {
             const league = row.original;
             return (
@@ -165,6 +169,7 @@ export function LeaguesTable({
         {
           id: "name-provider",
           header: "Name (Provider)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedLeague> }) => {
             const league = row.original;
             return (
@@ -177,6 +182,7 @@ export function LeaguesTable({
         {
           id: "type-db",
           header: "Type (DB)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedLeague> }) => {
             const league = row.original;
             return (
@@ -189,6 +195,7 @@ export function LeaguesTable({
         {
           id: "type-provider",
           header: "Type (Provider)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedLeague> }) => {
             const league = row.original;
             return (
@@ -212,6 +219,7 @@ export function LeaguesTable({
         {
           id: "country-in-db",
           header: "Country in DB",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedLeague> }) => {
             const league = row.original;
             const countryInDb = league.countryInDb ?? false;
@@ -232,6 +240,7 @@ export function LeaguesTable({
         {
           id: "image",
           header: "Image",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedLeague> }) => {
             const league = row.original;
             return <ImageCell imagePath={league.imagePath} />;
@@ -242,7 +251,9 @@ export function LeaguesTable({
       return [
         {
           accessorKey: "externalId",
-          header: "externalId",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="externalId" />
+          ),
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
@@ -251,7 +262,9 @@ export function LeaguesTable({
         },
         {
           accessorKey: "name",
-          header: "Name",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Name" />
+          ),
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="font-medium text-xs sm:text-sm">
               {row.getValue("name")}
@@ -260,7 +273,9 @@ export function LeaguesTable({
         },
         {
           accessorKey: "type",
-          header: "Type",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Type" />
+          ),
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="text-xs sm:text-sm">
               {row.getValue("type") || "—"}
@@ -269,7 +284,9 @@ export function LeaguesTable({
         },
         {
           accessorKey: "shortCode",
-          header: "Short Code",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Short Code" />
+          ),
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="font-mono text-xs sm:text-sm">
               {row.getValue("shortCode") || "—"}
@@ -279,6 +296,7 @@ export function LeaguesTable({
         {
           id: "country",
           header: "Country",
+          enableSorting: false,
           cell: ({ row }: { row: Row<LeagueDBRow> }) => {
             const league = row.original;
             const country = league.country;
@@ -290,6 +308,7 @@ export function LeaguesTable({
         {
           accessorKey: "imagePath",
           header: "Image",
+          enableSorting: false,
           cell: ({ row }: { row: Row<LeagueDBRow> }) => {
             const imagePath = row.getValue("imagePath") as string | null;
             return <ImageCell imagePath={imagePath} />;
@@ -297,7 +316,9 @@ export function LeaguesTable({
         },
         {
           accessorKey: "updatedAt",
-          header: "Updated At",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Updated At" />
+          ),
           cell: ({ row }: { row: Row<LeagueDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
             if (!updatedAt)

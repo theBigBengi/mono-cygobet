@@ -66,7 +66,7 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   // GET /admin/db/bookmakers/:id - Get a single bookmaker by ID
-  fastify.get<{ Reply: AdminBookmakerResponse }>(
+  fastify.get<{ Params: { id: string }; Reply: AdminBookmakerResponse }>(
     "/bookmakers/:id",
     {
       schema: {
@@ -78,14 +78,14 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminBookmakerResponse> => {
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       const bookmakerId = Number(id);
 
       if (isNaN(bookmakerId)) {
-        return reply.status(400).send({
+        return reply.code(400).send({
           status: "error",
           message: `Invalid bookmaker ID: ${id}`,
-        });
+        } as any);
       }
 
       try {
@@ -106,10 +106,10 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
         });
       } catch (error: any) {
         if (error.statusCode === 404) {
-          return reply.status(404).send({
+          return reply.code(404).send({
             status: "error",
             message: error.message,
-          });
+          } as any);
         }
         throw error;
       }

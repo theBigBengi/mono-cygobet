@@ -3,3 +3,4 @@ export { TableControls } from "./table-controls";
 export { TableSkeleton } from "./table-skeleton";
 export { TableError } from "./table-error";
 export { ImageCell } from "./image-cell";
+export { DataTableColumnHeader } from "./data-table-column-header";

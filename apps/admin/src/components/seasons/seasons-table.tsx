@@ -24,6 +24,7 @@ import {
   TableControls,
   TableSkeleton,
   TableError,
+  DataTableColumnHeader,
 } from "@/components/table";
 import {
   Dialog,
@@ -103,7 +104,9 @@ export function SeasonsTable({
       return [
         {
           accessorKey: "status",
-          header: "Status",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Status" />
+          ),
           cell: ({ row }: { row: Row<UnifiedSeason> }) => {
             const status = row.getValue("status") as UnifiedSeason["status"];
             const statusConfig: Record<
@@ -129,7 +132,9 @@ export function SeasonsTable({
         },
         {
           accessorKey: "externalId",
-          header: "externalId",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="externalId" />
+          ),
           cell: ({ row }: { row: Row<UnifiedSeason> }) => (
             <span className="font-mono text-xs">
               {row.getValue("externalId")}
@@ -139,6 +144,7 @@ export function SeasonsTable({
         {
           id: "name-db",
           header: "Name (DB)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedSeason> }) => {
             const season = row.original;
             return (
@@ -151,6 +157,7 @@ export function SeasonsTable({
         {
           id: "name-provider",
           header: "Name (Provider)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedSeason> }) => {
             const season = row.original;
             return (
@@ -163,6 +170,7 @@ export function SeasonsTable({
         {
           id: "league",
           header: "League",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedSeason> }) => {
             const season = row.original;
             const league = season.league;
@@ -174,6 +182,7 @@ export function SeasonsTable({
         {
           id: "league-in-db",
           header: "League in DB",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedSeason> }) => {
             const season = row.original;
             const leagueInDb = season.leagueInDb ?? false;
@@ -194,6 +203,7 @@ export function SeasonsTable({
         {
           id: "dates",
           header: "Dates",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedSeason> }) => {
             const season = row.original;
             return (
@@ -208,6 +218,7 @@ export function SeasonsTable({
         {
           id: "isCurrent",
           header: "Current",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedSeason> }) => {
             const season = row.original;
             return (
@@ -222,7 +233,9 @@ export function SeasonsTable({
       return [
         {
           accessorKey: "externalId",
-          header: "externalId",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="externalId" />
+          ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
             <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
@@ -231,7 +244,9 @@ export function SeasonsTable({
         },
         {
           accessorKey: "name",
-          header: "Name",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Name" />
+          ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
             <span className="font-medium text-xs sm:text-sm">
               {row.getValue("name")}
@@ -241,6 +256,7 @@ export function SeasonsTable({
         {
           id: "league",
           header: "League",
+          enableSorting: false,
           cell: ({ row }: { row: Row<SeasonDBRow> }) => {
             const season = row.original;
             const league = season.league;
@@ -251,7 +267,9 @@ export function SeasonsTable({
         },
         {
           accessorKey: "startDate",
-          header: "Start Date",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Start Date" />
+          ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
             <span className="text-xs sm:text-sm">
               {row.getValue("startDate") || "—"}
@@ -260,7 +278,9 @@ export function SeasonsTable({
         },
         {
           accessorKey: "endDate",
-          header: "End Date",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="End Date" />
+          ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
             <span className="text-xs sm:text-sm">
               {row.getValue("endDate") || "—"}
@@ -269,7 +289,9 @@ export function SeasonsTable({
         },
         {
           accessorKey: "isCurrent",
-          header: "Current",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Current" />
+          ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
             <span className="text-xs sm:text-sm">
               {row.getValue("isCurrent") ? "Yes" : "No"}
@@ -278,7 +300,9 @@ export function SeasonsTable({
         },
         {
           accessorKey: "updatedAt",
-          header: "Updated At",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Updated At" />
+          ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
             if (!updatedAt)

@@ -15,7 +15,7 @@ interface Batch {
   name: string;
   version: string | null;
   status: string;
-  trigger: string;
+  triggeredBy: string | null;
   startedAt: string;
   finishedAt: string | null;
   itemsTotal: number;
@@ -71,7 +71,7 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
                     name: { type: "string" },
                     version: { type: ["string", "null"] },
                     status: { type: "string" },
-                    trigger: { type: "string" },
+                    triggeredBy: { type: ["string", "null"] },
                     startedAt: { type: "string" },
                     finishedAt: { type: ["string", "null"] },
                     itemsTotal: { type: "number" },
@@ -98,7 +98,7 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
           name: true,
           version: true,
           status: true,
-          trigger: true,
+          triggeredBy: true,
           startedAt: true,
           finishedAt: true,
           itemsTotal: true,
@@ -114,7 +114,7 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
           name: b.name,
           version: b.version,
           status: b.status,
-          trigger: b.trigger,
+          triggeredBy: b.triggeredBy,
           startedAt: b.startedAt.toISOString(),
           finishedAt: b.finishedAt?.toISOString() ?? null,
           itemsTotal: b.itemsTotal,

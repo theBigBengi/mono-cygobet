@@ -25,6 +25,7 @@ import {
   TableSkeleton,
   TableError,
   ImageCell,
+  DataTableColumnHeader,
 } from "@/components/table";
 import {
   Dialog,
@@ -102,7 +103,9 @@ export function TeamsTable({
       return [
         {
           accessorKey: "status",
-          header: "Status",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Status" />
+          ),
           cell: ({ row }: { row: Row<UnifiedTeam> }) => {
             const status = row.getValue("status") as UnifiedTeam["status"];
             const statusConfig: Record<
@@ -128,7 +131,9 @@ export function TeamsTable({
         },
         {
           accessorKey: "externalId",
-          header: "externalId",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="externalId" />
+          ),
           cell: ({ row }: { row: Row<UnifiedTeam> }) => (
             <span className="font-mono text-xs">
               {row.getValue("externalId")}
@@ -138,6 +143,7 @@ export function TeamsTable({
         {
           id: "name-db",
           header: "Name (DB)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedTeam> }) => {
             const team = row.original;
             return (
@@ -150,6 +156,7 @@ export function TeamsTable({
         {
           id: "name-provider",
           header: "Name (Provider)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedTeam> }) => {
             const team = row.original;
             return (
@@ -162,6 +169,7 @@ export function TeamsTable({
         {
           id: "type-db",
           header: "Type (DB)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedTeam> }) => {
             const team = row.original;
             return (
@@ -174,6 +182,7 @@ export function TeamsTable({
         {
           id: "type-provider",
           header: "Type (Provider)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedTeam> }) => {
             const team = row.original;
             return (
@@ -186,6 +195,7 @@ export function TeamsTable({
         {
           id: "country",
           header: "Country",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedTeam> }) => {
             const team = row.original;
             const country = team.country;
@@ -197,6 +207,7 @@ export function TeamsTable({
         {
           id: "league-in-db",
           header: "League in DB",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedTeam> }) => {
             const team = row.original;
             const leagueInDb = team.leagueInDb ?? false;
@@ -217,6 +228,7 @@ export function TeamsTable({
         {
           id: "image",
           header: "Image",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedTeam> }) => {
             const team = row.original;
             return <ImageCell imagePath={team.imagePath} />;
@@ -227,7 +239,9 @@ export function TeamsTable({
       return [
         {
           accessorKey: "externalId",
-          header: "externalId",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="externalId" />
+          ),
           cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
@@ -236,7 +250,9 @@ export function TeamsTable({
         },
         {
           accessorKey: "name",
-          header: "Name",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Name" />
+          ),
           cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="font-medium text-xs sm:text-sm">
               {row.getValue("name")}
@@ -245,7 +261,9 @@ export function TeamsTable({
         },
         {
           accessorKey: "type",
-          header: "Type",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Type" />
+          ),
           cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="text-xs sm:text-sm">
               {row.getValue("type") || "—"}
@@ -254,7 +272,9 @@ export function TeamsTable({
         },
         {
           accessorKey: "shortCode",
-          header: "Short Code",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Short Code" />
+          ),
           cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="font-mono text-xs sm:text-sm">
               {row.getValue("shortCode") || "—"}
@@ -263,7 +283,9 @@ export function TeamsTable({
         },
         {
           accessorKey: "founded",
-          header: "Founded",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Founded" />
+          ),
           cell: ({ row }: { row: Row<TeamDBRow> }) => {
             const founded = row.getValue("founded") as number | null;
             return (
@@ -276,6 +298,7 @@ export function TeamsTable({
         {
           id: "country",
           header: "Country",
+          enableSorting: false,
           cell: ({ row }: { row: Row<TeamDBRow> }) => {
             const team = row.original;
             const country = team.country;
@@ -287,6 +310,7 @@ export function TeamsTable({
         {
           accessorKey: "imagePath",
           header: "Image",
+          enableSorting: false,
           cell: ({ row }: { row: Row<TeamDBRow> }) => {
             const imagePath = row.getValue("imagePath") as string | null;
             return <ImageCell imagePath={imagePath} />;
@@ -294,7 +318,9 @@ export function TeamsTable({
         },
         {
           accessorKey: "updatedAt",
-          header: "Updated At",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Updated At" />
+          ),
           cell: ({ row }: { row: Row<TeamDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
             if (!updatedAt)

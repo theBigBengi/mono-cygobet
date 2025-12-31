@@ -526,6 +526,52 @@ export class SportMonksAdapter {
   }
 
   /**
+   * Fetches a single league by ID from SportMonks Football API
+   * @param id - The SportMonks league ID
+   * @returns LeagueDTO or null if not found
+   */
+  async fetchLeagueById(id: number): Promise<LeagueDTO | null> {
+    try {
+      const rows = await this.httpFootball.get<any>(`leagues/${id}`, {
+        select: [
+          "id",
+          "name",
+          "image_path",
+          "country_id",
+          "short_code",
+          "type",
+          "sub_type",
+        ],
+        include: [
+          {
+            name: "country",
+            fields: ["id", "name", "image_path", "iso2", "iso3"],
+          },
+        ],
+        paginate: false, // Single item, no pagination needed
+      });
+
+      if (!rows || rows.length === 0) {
+        return null;
+      }
+
+      const l = rows[0];
+      return {
+        externalId: l.id,
+        name: l.name,
+        imagePath: l.image_path ?? null,
+        shortCode: l.short_code ?? null,
+        countryExternalId: l.country_id ?? null,
+        type: l.type ?? null,
+        subType: l.sub_type ?? null,
+      };
+    } catch (error) {
+      // Return null if league not found or other error
+      return null;
+    }
+  }
+
+  /**
    * Fetches seasons from SportMonks Football API
    * Filters to only current and future seasons to avoid historical data
    */

@@ -168,7 +168,7 @@ export interface Batch {
   name: string;
   version: string | null;
   status: string;
-  trigger: string;
+  triggeredBy: string | null;
   startedAt: string;
   finishedAt: string | null;
   itemsTotal: number;

@@ -26,6 +26,7 @@ import {
   TableSkeleton,
   TableError,
   ImageCell,
+  DataTableColumnHeader,
 } from "@/components/table";
 import {
   Dialog,
@@ -118,7 +119,9 @@ export function CountriesTable({
       return [
         {
           accessorKey: "status",
-          header: "Status",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Status" />
+          ),
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const status = row.getValue("status") as UnifiedCountry["status"];
             const statusConfig: Record<
@@ -146,7 +149,9 @@ export function CountriesTable({
         },
         {
           accessorKey: "externalId",
-          header: "externalId",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="externalId" />
+          ),
           cell: ({ row }: { row: Row<UnifiedCountry> }) => (
             <span className="font-mono text-xs">
               {row.getValue("externalId")}
@@ -156,6 +161,7 @@ export function CountriesTable({
         {
           id: "name-db",
           header: "Name (DB)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
@@ -168,6 +174,7 @@ export function CountriesTable({
         {
           id: "name-provider",
           header: "Name (Provider)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
@@ -180,6 +187,7 @@ export function CountriesTable({
         {
           id: "iso2-db",
           header: "ISO2 (DB)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
@@ -192,6 +200,7 @@ export function CountriesTable({
         {
           id: "iso2-provider",
           header: "ISO2 (Provider)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
@@ -204,6 +213,7 @@ export function CountriesTable({
         {
           id: "iso3-db",
           header: "ISO3 (DB)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
@@ -216,6 +226,7 @@ export function CountriesTable({
         {
           id: "iso3-provider",
           header: "ISO3 (Provider)",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
@@ -228,6 +239,7 @@ export function CountriesTable({
         {
           id: "leagues",
           header: "Leagues",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             if (mode === "provider") {
@@ -269,6 +281,7 @@ export function CountriesTable({
         {
           id: "image",
           header: "Image",
+          enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return <ImageCell imagePath={country.imagePath} />;
@@ -279,7 +292,9 @@ export function CountriesTable({
       return [
         {
           accessorKey: "externalId",
-          header: "externalId",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="externalId" />
+          ),
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
@@ -288,7 +303,9 @@ export function CountriesTable({
         },
         {
           accessorKey: "name",
-          header: "Name",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Name" />
+          ),
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-medium text-xs sm:text-sm">
               {row.getValue("name")}
@@ -297,7 +314,9 @@ export function CountriesTable({
         },
         {
           accessorKey: "iso2",
-          header: "ISO2",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="ISO2" />
+          ),
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-mono text-xs sm:text-sm">
               {row.getValue("iso2") || "—"}
@@ -306,7 +325,9 @@ export function CountriesTable({
         },
         {
           accessorKey: "iso3",
-          header: "ISO3",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="ISO3" />
+          ),
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-mono text-xs sm:text-sm">
               {row.getValue("iso3") || "—"}
@@ -316,6 +337,7 @@ export function CountriesTable({
         {
           id: "leagues",
           header: "Leagues",
+          enableSorting: false,
           cell: ({ row }: { row: Row<CountryDBRow> }) => {
             const country = row.original;
             // Try to get leagues count from unifiedData if available
@@ -342,6 +364,7 @@ export function CountriesTable({
         {
           accessorKey: "imagePath",
           header: "Image",
+          enableSorting: false,
           cell: ({ row }: { row: Row<CountryDBRow> }) => {
             const imagePath = row.getValue("imagePath") as string | null;
             return <ImageCell imagePath={imagePath} />;
@@ -349,7 +372,9 @@ export function CountriesTable({
         },
         {
           accessorKey: "updatedAt",
-          header: "Updated At",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Updated At" />
+          ),
           cell: ({ row }: { row: Row<CountryDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
             if (!updatedAt)

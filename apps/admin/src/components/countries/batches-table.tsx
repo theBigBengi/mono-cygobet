@@ -84,13 +84,13 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
       },
     },
     {
-      accessorKey: "trigger",
-      header: "Trigger",
+      accessorKey: "triggeredBy",
+      header: "Triggered By",
       cell: ({ row }: { row: Row<Batch> }) => {
-        const trigger = row.getValue("trigger") as string;
+        const triggeredBy = row.getValue("triggeredBy") as string | null;
         return (
-          <span className="text-xs capitalize text-muted-foreground">
-            {trigger}
+          <span className="text-xs text-muted-foreground">
+            {triggeredBy || "—"}
           </span>
         );
       },
