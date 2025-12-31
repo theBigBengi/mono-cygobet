@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudSync } from "lucide-react";
 import type { UnifiedCountry } from "@/types/countries";
 import type {
   AdminCountriesListResponse,
@@ -115,7 +115,10 @@ export function CountriesTable({
             };
             const config = statusConfig[status] || statusConfig.ok;
             return (
-              <Badge variant={config.variant} className="text-xs">
+              <Badge
+                variant={config.variant}
+                className="text-[10px] sm:text-xs"
+              >
                 {config.label}
               </Badge>
             );
@@ -136,7 +139,9 @@ export function CountriesTable({
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
-              <span className="text-sm">{country.dbData?.name || "—"}</span>
+              <span className="text-xs sm:text-sm">
+                {country.dbData?.name || "—"}
+              </span>
             );
           },
         },
@@ -146,7 +151,7 @@ export function CountriesTable({
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
-              <span className="text-sm">
+              <span className="text-xs sm:text-sm">
                 {country.providerData?.name || "—"}
               </span>
             );
@@ -158,7 +163,7 @@ export function CountriesTable({
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
-              <span className="text-sm font-mono">
+              <span className="text-xs sm:text-sm font-mono">
                 {country.dbData?.iso2 || "—"}
               </span>
             );
@@ -170,7 +175,7 @@ export function CountriesTable({
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
-              <span className="text-sm font-mono">
+              <span className="text-xs sm:text-sm font-mono">
                 {country.providerData?.iso2 || "—"}
               </span>
             );
@@ -182,7 +187,7 @@ export function CountriesTable({
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
-              <span className="text-sm font-mono">
+              <span className="text-xs sm:text-sm font-mono">
                 {country.dbData?.iso3 || "—"}
               </span>
             );
@@ -194,7 +199,7 @@ export function CountriesTable({
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             return (
-              <span className="text-sm font-mono">
+              <span className="text-xs sm:text-sm font-mono">
                 {country.providerData?.iso3 || "—"}
               </span>
             );
@@ -249,7 +254,7 @@ export function CountriesTable({
                   onClick={handleSync}
                   disabled={isSyncing || !onSyncCountry}
                 >
-                  <RefreshCw
+                  <CloudSync
                     className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`}
                   />
                 </Button>
@@ -264,7 +269,7 @@ export function CountriesTable({
           accessorKey: "externalId",
           header: "externalId",
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
-            <span className="font-mono text-xs">
+            <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
             </span>
           ),
@@ -273,14 +278,16 @@ export function CountriesTable({
           accessorKey: "name",
           header: "Name",
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
-            <span className="font-medium">{row.getValue("name")}</span>
+            <span className="font-medium text-xs sm:text-sm">
+              {row.getValue("name")}
+            </span>
           ),
         },
         {
           accessorKey: "iso2",
           header: "ISO2",
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
-            <span className="font-mono text-sm">
+            <span className="font-mono text-xs sm:text-sm">
               {row.getValue("iso2") || "—"}
             </span>
           ),
@@ -289,7 +296,7 @@ export function CountriesTable({
           accessorKey: "iso3",
           header: "ISO3",
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
-            <span className="font-mono text-sm">
+            <span className="font-mono text-xs sm:text-sm">
               {row.getValue("iso3") || "—"}
             </span>
           ),
@@ -318,7 +325,7 @@ export function CountriesTable({
             if (!updatedAt)
               return <span className="text-muted-foreground">—</span>;
             return (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-[10px] sm:text-xs text-muted-foreground">
                 {new Date(updatedAt).toLocaleDateString()}
               </span>
             );
@@ -560,18 +567,23 @@ export function CountriesTable({
 
       {/* Pagination */}
       {tableData.length > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Showing{" "}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="text-xs md:text-sm text-muted-foreground">
+            <span className="hidden sm:inline">Showing </span>
             {table.getFilteredRowModel().rows.length > 0
               ? pagination.pageIndex * pagination.pageSize + 1
               : 0}{" "}
-            to{" "}
+            <span className="hidden sm:inline">to </span>
             {Math.min(
               (pagination.pageIndex + 1) * pagination.pageSize,
               table.getFilteredRowModel().rows.length
             )}{" "}
-            of {table.getFilteredRowModel().rows.length} countries
+            <span className="hidden sm:inline">
+              of {table.getFilteredRowModel().rows.length} countries
+            </span>
+            <span className="sm:hidden">
+              / {table.getFilteredRowModel().rows.length}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -579,11 +591,12 @@ export function CountriesTable({
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
+              className="px-2 sm:px-3"
             >
               <ChevronLeft className="h-4 w-4" />
-              Previous
+              <span className="hidden sm:inline sm:ml-2">Previous</span>
             </Button>
-            <div className="text-sm font-medium">
+            <div className="text-[10px] sm:text-xs md:text-sm font-medium">
               Page {pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </div>
             <Button
@@ -591,8 +604,9 @@ export function CountriesTable({
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
+              className="px-2 sm:px-3"
             >
-              Next
+              <span className="hidden sm:inline sm:mr-2">Next</span>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

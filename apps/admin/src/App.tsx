@@ -13,7 +13,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import CountriesPage from "@/pages/Countries";
+import CountriesPage from "@/pages/countries";
 
 function App() {
   return (

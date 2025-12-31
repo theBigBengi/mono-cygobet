@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, CloudSync } from "lucide-react";
 import {
   useCountriesFromDb,
   useCountriesFromProvider,
@@ -142,11 +142,13 @@ export default function CountriesPage() {
   const isPartialData = (dbData && !providerData) || (!dbData && providerData);
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-3 sm:gap-4 md:gap-6 p-3 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Countries</h1>
+          <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">
+            Countries
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -154,25 +156,30 @@ export default function CountriesPage() {
             size="sm"
             onClick={handleRefresh}
             disabled={isFetching}
+            className="!px-2 sm:!px-3"
           >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
+            <CloudSync
+              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""} max-sm:mr-0 sm:mr-2`}
             />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
           <Button
             variant="default"
             size="sm"
             onClick={() => syncMutation.mutate()}
             disabled={syncMutation.isPending || isFetching}
+            className="!px-2 sm:!px-3"
           >
             {syncMutation.isPending ? (
               <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Syncing...
+                <CloudSync className="h-4 w-4 animate-spin max-sm:mr-0 sm:mr-2" />
+                <span className="hidden sm:inline">Syncing...</span>
               </>
             ) : (
-              "Sync Countries"
+              <>
+                <CloudSync className="h-4 w-4 max-sm:mr-0 sm:mr-2" />
+                <span className="hidden sm:inline">Sync Countries</span>
+              </>
             )}
           </Button>
         </div>
@@ -180,14 +187,14 @@ export default function CountriesPage() {
 
       {/* Sync Result Panel */}
       {syncResult && syncTimestamp && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-900">
+            <span className="text-xs md:text-sm font-medium text-blue-900">
               Sync completed
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 text-xs md:text-sm">
             <div>
               <span className="text-blue-700 font-medium">batchId:</span>{" "}
               <span className="text-blue-900">{syncResult.batchId ?? "—"}</span>
@@ -216,17 +223,17 @@ export default function CountriesPage() {
 
       {/* Sync Error */}
       {syncError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
-          <XCircle className="h-4 w-4 text-red-600" />
-          <span className="text-sm text-red-800">{syncError}</span>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-2 md:p-3 flex items-center gap-2">
+          <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+          <span className="text-xs sm:text-sm text-red-800">{syncError}</span>
         </div>
       )}
 
       {/* Partial Data Warning */}
       {isPartialData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-yellow-600" />
-          <span className="text-sm text-yellow-800">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 md:p-3 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+          <span className="text-xs sm:text-sm text-yellow-800">
             {!providerData
               ? "Provider data unavailable"
               : "Database data unavailable"}
@@ -236,65 +243,69 @@ export default function CountriesPage() {
 
       {/* Error State */}
       {hasError && !isPartialData && (
-        <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-4">
-          <p className="text-destructive font-medium">Error loading data</p>
-          <p className="text-sm text-muted-foreground mt-1">
+        <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-3 md:p-4">
+          <p className="text-destructive font-medium text-xs sm:text-sm md:text-base">
+            Error loading data
+          </p>
+          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-1">
             {dbError ? "DB failed to load" : "Provider failed to load"}
           </p>
         </div>
       )}
 
       {/* Summary Overview */}
-      <div className="flex items-center gap-4 text-xs border-b border-border/40 pb-2">
-        {isFetching ? (
-          // Show skeletons when fetching (refresh)
-          Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-1.5">
-              <Skeleton className="h-3 w-12" />
-              <Skeleton className="h-3 w-6" />
-            </div>
-          ))
-        ) : (
-          // Show actual data - gentle inline stats
-          <>
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground/70">DB:</span>
-              <span className="font-normal text-foreground/80">
-                {diffStats.dbCount}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground/70">Provider:</span>
-              <span className="font-normal text-foreground/80">
-                {diffStats.providerCount}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground/70">Missing:</span>
-              <span className="font-normal text-destructive/80">
-                {diffStats.missing}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground/70">Extra:</span>
-              <span className="font-normal text-orange-600/80">
-                {diffStats.extra}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground/70">Mismatch:</span>
-              <span className="font-normal text-yellow-600/80">
-                {diffStats.mismatch}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground/70">OK:</span>
-              <span className="font-normal text-green-600/80">
-                {diffStats.ok}
-              </span>
-            </div>
-          </>
-        )}
+      <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+        <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-xs pb-2 min-w-max">
+          {isFetching ? (
+            // Show skeletons when fetching (refresh)
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <Skeleton className="h-3 w-12" />
+                <Skeleton className="h-3 w-6" />
+              </div>
+            ))
+          ) : (
+            // Show actual data - gentle inline stats
+            <>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground/70">DB:</span>
+                <span className="font-normal text-foreground/80">
+                  {diffStats.dbCount}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground/70">Provider:</span>
+                <span className="font-normal text-foreground/80">
+                  {diffStats.providerCount}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground/70">Missing:</span>
+                <span className="font-normal text-destructive/80">
+                  {diffStats.missing}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground/70">Extra:</span>
+                <span className="font-normal text-orange-600/80">
+                  {diffStats.extra}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground/70">Mismatch:</span>
+                <span className="font-normal text-yellow-600/80">
+                  {diffStats.mismatch}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground/70">OK:</span>
+                <span className="font-normal text-green-600/80">
+                  {diffStats.ok}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Mode Switch */}
@@ -336,10 +347,10 @@ export default function CountriesPage() {
       {viewMode === "history" ? (
         <div className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">
+            <h2 className="text-sm sm:text-base md:text-lg font-semibold tracking-tight">
               Seeding / Sync History
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
               Recent seed-countries batches
             </p>
           </div>
@@ -351,12 +362,12 @@ export default function CountriesPage() {
       ) : (
         <div className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">
+            <h2 className="text-base sm:text-lg md:text-xl font-semibold tracking-tight">
               {viewMode === "provider"
                 ? "Provider Countries"
                 : "Database Countries"}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
               {viewMode === "provider"
                 ? "Compare countries between Provider and Database"
                 : "Countries stored in the database"}
