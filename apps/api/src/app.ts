@@ -39,11 +39,22 @@ const app: FastifyPluginAsync<AppOptions> = async (
 
     // Register CORS
     fastify.register(fastifyCors, {
-      origin: [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://mono-cygobet-admin.vercel.app",
-      ],
+      origin: (origin, cb) => {
+        // allow non-browser calls (curl / server-to-server)
+        if (!origin) return cb(null, true);
+
+        // allow your known origins + any vercel preview
+        const isAllowed =
+          origin === "http://localhost:3000" ||
+          origin === "http://localhost:5173" ||
+          origin === "https://mono-cygobet-admin.vercel.app" ||
+          (origin.startsWith("https://") && origin.endsWith(".vercel.app"));
+
+        if (!isAllowed) return cb(new Error("Not allowed by CORS"), false);
+
+        // IMPORTANT: echo the exact origin string
+        return cb(null, origin);
+      },
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
