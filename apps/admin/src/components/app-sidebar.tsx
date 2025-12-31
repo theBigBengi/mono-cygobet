@@ -18,6 +18,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 const data = {
@@ -29,6 +30,10 @@ const data = {
           title: "Countries",
           url: "/countries",
         },
+        {
+          title: "Leagues",
+          url: "/leagues",
+        },
       ],
     },
   ],
@@ -36,6 +41,13 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
 
   return (
     <Sidebar {...props}>
@@ -70,7 +82,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       return (
                         <SidebarMenuItem key={subItem.title}>
                           <SidebarMenuButton asChild isActive={isActive}>
-                            <Link to={subItem.url}>{subItem.title}</Link>
+                            <Link to={subItem.url} onClick={handleLinkClick}>
+                              {subItem.title}
+                            </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       )

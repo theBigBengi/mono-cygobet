@@ -5,24 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CloudSync, RefreshCw } from "lucide-react";
 import {
-  useCountriesFromDb,
-  useCountriesFromProvider,
-} from "@/hooks/use-countries";
+  useLeaguesFromDb,
+  useLeaguesFromProvider,
+} from "@/hooks/use-leagues";
 import { useBatches } from "@/hooks/use-batches";
 import { BatchesTable } from "@/components/countries/batches-table";
-import { countriesService } from "@/services/countries.service";
-import { unifyCountries, calculateDiffStats } from "@/utils/countries";
-import { CountriesTable } from "@/components/countries/countries-table";
+import { leaguesService } from "@/services/leagues.service";
+import { unifyLeagues, calculateDiffStats } from "@/utils/leagues";
+import { LeaguesTable } from "@/components/leagues/leagues-table";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ViewMode, AdminSyncCountriesResponse } from "@repo/types";
+import type { ViewMode, AdminSyncLeaguesResponse } from "@repo/types";
 
 type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
 
-export default function CountriesPage() {
+export default function LeaguesPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
   const [syncResult, setSyncResult] =
-    useState<AdminSyncCountriesResponse | null>(null);
+    useState<AdminSyncLeaguesResponse | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncTimestamp, setSyncTimestamp] = useState<Date | null>(null);
   const queryClient = useQueryClient();
@@ -33,9 +33,8 @@ export default function CountriesPage() {
     isFetching: dbFetching,
     error: dbError,
     refetch: refetchDb,
-  } = useCountriesFromDb({
+  } = useLeaguesFromDb({
     perPage: 1000,
-    include: "leagues",
   });
 
   const {
@@ -44,26 +43,26 @@ export default function CountriesPage() {
     isFetching: providerFetching,
     error: providerError,
     refetch: refetchProvider,
-  } = useCountriesFromProvider();
+  } = useLeaguesFromProvider();
 
-  // Fetch batches (only seed-countries batches)
+  // Fetch batches (only seed-leagues batches)
   const {
     data: batchesData,
     isLoading: batchesLoading,
     refetch: refetchBatches,
-  } = useBatches("seed-countries", 20);
+  } = useBatches("seed-leagues", 20);
 
   // Sync mutation (bulk)
   const syncMutation = useMutation({
     mutationFn: () =>
-      countriesService.sync(false) as Promise<AdminSyncCountriesResponse>,
+      leaguesService.sync(false) as Promise<AdminSyncLeaguesResponse>,
     onSuccess: (data) => {
       setSyncResult(data);
       setSyncTimestamp(new Date());
       setSyncError(null);
-      queryClient.invalidateQueries({ queryKey: ["countries"] });
-      toast.success("Countries synced successfully", {
-        description: `Synced ${data.ok} countries. ${data.fail > 0 ? `${data.fail} failed.` : ""}`,
+      queryClient.invalidateQueries({ queryKey: ["leagues"] });
+      toast.success("Leagues synced successfully", {
+        description: `Synced ${data.ok} leagues. ${data.fail > 0 ? `${data.fail} failed.` : ""}`,
       });
       setTimeout(() => {
         refetchDb();
@@ -82,28 +81,6 @@ export default function CountriesPage() {
     },
   });
 
-  // Sync single country mutation
-  const syncCountryMutation = useMutation({
-    mutationFn: ({ id }: { id: number | string; name: string }) =>
-      countriesService.syncById(
-        id,
-        false
-      ) as Promise<AdminSyncCountriesResponse>,
-    onSuccess: (_data, variables) => {
-      // Invalidate DB query to trigger automatic refetch
-      queryClient.invalidateQueries({ queryKey: ["countries", "db"] });
-      toast.success("Country synced successfully", {
-        description: `${variables.name} (${variables.id}) has been synced.`,
-      });
-    },
-    onError: (error: Error, variables) => {
-      const errorMessage = error.message || "Sync failed";
-      toast.error("Country sync failed", {
-        description: `Failed to sync ${variables.name} (${variables.id}): ${errorMessage}`,
-      });
-    },
-  });
-
   const handleRefresh = () => {
     refetchDb();
     refetchProvider();
@@ -112,21 +89,8 @@ export default function CountriesPage() {
 
   // Unify and process data
   const unifiedData = useMemo(
-    () => unifyCountries(dbData, providerData),
+    () => unifyLeagues(dbData, providerData),
     [dbData, providerData]
-  );
-
-  const handleSyncCountry = useCallback(
-    async (externalId: string) => {
-      // Find country name from unified data
-      const country = unifiedData.find((c) => c.externalId === externalId);
-      const countryName = country?.name || externalId;
-      await syncCountryMutation.mutateAsync({
-        id: externalId,
-        name: countryName,
-      });
-    },
-    [syncCountryMutation, unifiedData]
   );
 
   // Calculate diff stats
@@ -148,7 +112,7 @@ export default function CountriesPage() {
         <div className="flex items-center justify-between gap-2">
           <div>
             <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">
-              Countries
+              Leagues
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -179,7 +143,7 @@ export default function CountriesPage() {
               ) : (
                 <>
                   <CloudSync className="h-4 w-4 max-sm:mr-0 sm:mr-2" />
-                  <span className="hidden sm:inline">Sync Countries</span>
+                  <span className="hidden sm:inline">Sync Leagues</span>
                 </>
               )}
             </Button>
@@ -299,7 +263,7 @@ export default function CountriesPage() {
             isLoading={batchesLoading}
           />
         ) : (
-          <CountriesTable
+          <LeaguesTable
             mode={viewMode}
             unifiedData={unifiedData}
             diffFilter={diffFilter}
@@ -308,12 +272,10 @@ export default function CountriesPage() {
             providerData={providerData}
             isLoading={viewMode === "db" ? dbLoading : isLoading}
             error={viewMode === "db" ? dbError : null}
-            onSyncCountry={
-              viewMode === "provider" ? handleSyncCountry : undefined
-            }
           />
         )}
       </div>
     </div>
   );
 }
+

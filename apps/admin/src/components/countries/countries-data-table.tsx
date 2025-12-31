@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { UnifiedCountry } from "@/types/countries";
+import type { UnifiedCountry } from "@repo/types";
 import { createColumns } from "./data-table-columns";
 
 interface CountriesDataTableProps {

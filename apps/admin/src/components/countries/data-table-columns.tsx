@@ -2,7 +2,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Eye, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { UnifiedCountry } from "@/types/countries";
+import type { UnifiedCountry } from "@repo/types";
 
 export const createColumns = (
   onSync?: (externalId: string) => void,

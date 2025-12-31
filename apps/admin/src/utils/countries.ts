@@ -2,11 +2,9 @@ import type {
   CountryDB,
   CountryProvider,
   UnifiedCountry,
-} from "@/types/countries";
-import type {
   AdminCountriesListResponse,
   AdminProviderCountriesResponse,
-} from "@/types/api";
+} from "@repo/types";
 
 // Normalize string for comparison (name: trim only)
 function normalizeName(str: string | null | undefined): string {

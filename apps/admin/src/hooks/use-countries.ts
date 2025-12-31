@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { countriesService } from "@/services/countries.service";
-import type { AdminCountriesListResponse, AdminProviderCountriesResponse } from "@/types/api";
+import type {
+  AdminCountriesListResponse,
+  AdminProviderCountriesResponse,
+} from "@repo/types";
 
 export function useCountriesFromDb(params?: { page?: number; perPage?: number; include?: string }) {
   return useQuery<AdminCountriesListResponse>({

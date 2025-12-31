@@ -72,6 +72,14 @@ export interface AdminLeaguesListResponse {
     subType: string | null;
     imagePath: string | null;
     countryId: number;
+    country: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      iso2: string | null;
+      iso3: string | null;
+      externalId: string;
+    } | null;
     externalId: string;
     createdAt: string;
     updatedAt: string;
@@ -95,6 +103,14 @@ export interface AdminLeagueResponse {
     subType: string | null;
     imagePath: string | null;
     countryId: number;
+    country: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      iso2: string | null;
+      iso3: string | null;
+      externalId: string;
+    } | null;
     externalId: string;
     createdAt: string;
     updatedAt: string;
@@ -109,10 +125,71 @@ export interface AdminProviderLeaguesResponse {
     name: string;
     imagePath?: string | null;
     countryExternalId?: number | string | null;
+    country?: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      iso2: string | null;
+      iso3: string | null;
+    } | null;
+    countryInDb?: boolean;
     shortCode?: string | null;
     type?: string | null;
     subType?: string | null;
   }>;
   message: string;
   provider: string;
+}
+
+export interface AdminSyncCountriesResponse {
+  batchId: number | null;
+  ok: number;
+  fail: number;
+  total: number;
+}
+
+export interface AdminSyncLeaguesResponse {
+  batchId: number | null;
+  ok: number;
+  fail: number;
+  total: number;
+}
+
+export interface BatchItem {
+  id: number;
+  itemKey: string | null;
+  status: string;
+  errorMessage: string | null;
+  meta: Record<string, unknown>;
+}
+
+export interface Batch {
+  id: number;
+  name: string;
+  version: string | null;
+  status: string;
+  trigger: string;
+  startedAt: string;
+  finishedAt: string | null;
+  itemsTotal: number;
+  itemsSuccess: number;
+  itemsFailed: number;
+}
+
+export interface AdminBatchesListResponse {
+  status: string;
+  data: Batch[];
+  message: string;
+}
+
+export interface AdminBatchItemsResponse {
+  status: string;
+  data: BatchItem[];
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
 }

@@ -55,13 +55,28 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
+      // Always include country
+      const includeWithCountry: Prisma.leaguesInclude = {
+        ...include,
+        country: {
+          select: {
+            id: true,
+            name: true,
+            imagePath: true,
+            iso2: true,
+            iso3: true,
+            externalId: true,
+          },
+        },
+      };
+
       const { leagues, count } = await service.get({
         take,
         skip,
         countryId: query.countryId,
         type: query.type,
         orderBy: [{ name: "asc" }],
-        include,
+        include: includeWithCountry,
       });
 
       return reply.send({
@@ -74,6 +89,14 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
           subType: l.subType,
           imagePath: l.imagePath,
           countryId: l.countryId,
+          country: (l as any).country ? {
+            id: (l as any).country.id,
+            name: (l as any).country.name,
+            imagePath: (l as any).country.imagePath,
+            iso2: (l as any).country.iso2,
+            iso3: (l as any).country.iso3,
+            externalId: (l as any).country.externalId.toString(),
+          } : null,
           externalId: l.externalId.toString(),
           createdAt: l.createdAt.toISOString(),
           updatedAt: l.updatedAt.toISOString(),
@@ -127,7 +150,22 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const league = await service.getById(leagueId, includeObj);
+      // Always include country
+      const includeWithCountry: Prisma.leaguesInclude = {
+        ...includeObj,
+        country: {
+          select: {
+            id: true,
+            name: true,
+            imagePath: true,
+            iso2: true,
+            iso3: true,
+            externalId: true,
+          },
+        },
+      };
+
+      const league = await service.getById(leagueId, includeWithCountry);
 
       return reply.send({
         status: "success",
@@ -139,6 +177,14 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
           subType: league.subType,
           imagePath: league.imagePath,
           countryId: league.countryId,
+          country: (league as any).country ? {
+            id: (league as any).country.id,
+            name: (league as any).country.name,
+            imagePath: (league as any).country.imagePath,
+            iso2: (league as any).country.iso2,
+            iso3: (league as any).country.iso3,
+            externalId: (league as any).country.externalId.toString(),
+          } : null,
           externalId: league.externalId.toString(),
           createdAt: league.createdAt.toISOString(),
           updatedAt: league.updatedAt.toISOString(),
@@ -162,6 +208,7 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply): Promise<AdminLeaguesListResponse> => {
       const { q, take } = req.query as { q: string; take?: number };
 
+      // Search already includes country by default
       const leagues = await service.search(q, take || 10);
 
       return reply.send({
@@ -174,6 +221,14 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
           subType: l.subType,
           imagePath: l.imagePath,
           countryId: l.countryId,
+          country: (l as any).country ? {
+            id: (l as any).country.id,
+            name: (l as any).country.name,
+            imagePath: (l as any).country.imagePath,
+            iso2: (l as any).country.iso2,
+            iso3: (l as any).country.iso3,
+            externalId: (l as any).country.externalId.toString(),
+          } : null,
           externalId: l.externalId.toString(),
           createdAt: l.createdAt.toISOString(),
           updatedAt: l.updatedAt.toISOString(),

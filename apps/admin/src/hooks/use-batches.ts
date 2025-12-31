@@ -3,7 +3,7 @@ import { countriesService } from "@/services/countries.service";
 import type {
   AdminBatchesListResponse,
   AdminBatchItemsResponse,
-} from "@/types/api";
+} from "@repo/types";
 
 export function useBatches(name?: string, limit = 20) {
   return useQuery<AdminBatchesListResponse>({

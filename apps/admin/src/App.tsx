@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -14,8 +14,10 @@ import {
 } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import CountriesPage from "@/pages/countries";
+import LeaguesPage from "@/pages/leagues";
 
 function App() {
+  const location = useLocation();
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -26,7 +28,9 @@ function App() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>Countries</BreadcrumbPage>
+                <BreadcrumbPage>
+                  {location.pathname === "/leagues" ? "Leagues" : "Countries"}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -35,6 +39,7 @@ function App() {
           <Routes>
             <Route path="/" element={<CountriesPage />} />
             <Route path="/countries" element={<CountriesPage />} />
+            <Route path="/leagues" element={<LeaguesPage />} />
             <Route
               path="*"
               element={

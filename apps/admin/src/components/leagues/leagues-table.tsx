@@ -27,34 +27,40 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight, CloudSync } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CloudSync,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import type {
-  UnifiedCountry,
-  AdminCountriesListResponse,
-  AdminProviderCountriesResponse,
+  UnifiedLeague,
+  AdminLeaguesListResponse,
+  AdminProviderLeaguesResponse,
 } from "@repo/types";
 
-type CountryDBRow = AdminCountriesListResponse["data"][0];
+type LeagueDBRow = AdminLeaguesListResponse["data"][0];
 
 type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
 
-interface CountriesTableProps {
+interface LeaguesTableProps {
   mode: "db" | "provider";
   // For diff mode
-  unifiedData?: UnifiedCountry[];
+  unifiedData?: UnifiedLeague[];
   diffFilter?: DiffFilter;
   onDiffFilterChange?: (filter: DiffFilter) => void;
   // For db mode
-  dbData?: AdminCountriesListResponse;
+  dbData?: AdminLeaguesListResponse;
   // For provider mode
-  providerData?: AdminProviderCountriesResponse;
+  providerData?: AdminProviderLeaguesResponse;
   isLoading?: boolean;
   error?: Error | null;
-  // Sync handler
-  onSyncCountry?: (externalId: string) => Promise<void>;
+  // Sync handler (not implemented yet for leagues)
+  onSyncLeague?: (externalId: string) => Promise<void>;
 }
 
-export function CountriesTable({
+export function LeaguesTable({
   mode,
   unifiedData = [],
   diffFilter = "all",
@@ -62,8 +68,8 @@ export function CountriesTable({
   dbData,
   isLoading = false,
   error = null,
-  onSyncCountry,
-}: CountriesTableProps) {
+  onSyncLeague,
+}: LeaguesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [pagination, setPagination] = useState({
@@ -77,13 +83,13 @@ export function CountriesTable({
     if (mode !== "provider") return [];
     let filtered = unifiedData;
     if (diffFilter === "missing") {
-      filtered = filtered.filter((c) => c.status === "missing-in-db");
+      filtered = filtered.filter((l) => l.status === "missing-in-db");
     } else if (diffFilter === "mismatch") {
-      filtered = filtered.filter((c) => c.status === "mismatch");
+      filtered = filtered.filter((l) => l.status === "mismatch");
     } else if (diffFilter === "extra") {
-      filtered = filtered.filter((c) => c.status === "extra-in-db");
+      filtered = filtered.filter((l) => l.status === "extra-in-db");
     } else if (diffFilter === "ok") {
-      filtered = filtered.filter((c) => c.status === "ok");
+      filtered = filtered.filter((l) => l.status === "ok");
     }
     return filtered;
   }, [unifiedData, diffFilter, mode]);
@@ -95,10 +101,10 @@ export function CountriesTable({
         {
           accessorKey: "status",
           header: "Status",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const status = row.getValue("status") as UnifiedCountry["status"];
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const status = row.getValue("status") as UnifiedLeague["status"];
             const statusConfig: Record<
-              UnifiedCountry["status"],
+              UnifiedLeague["status"],
               {
                 label: string;
                 variant: "destructive" | "secondary" | "default";
@@ -108,8 +114,6 @@ export function CountriesTable({
               mismatch: { label: "Mismatch", variant: "destructive" },
               "extra-in-db": { label: "Extra", variant: "secondary" },
               ok: { label: "OK", variant: "default" },
-              "no-leagues": { label: "No Leagues", variant: "secondary" },
-              "iso-missing": { label: "ISO Missing", variant: "secondary" },
               new: { label: "New", variant: "secondary" },
             };
             const config = statusConfig[status] || statusConfig.ok;
@@ -123,7 +127,7 @@ export function CountriesTable({
         {
           accessorKey: "externalId",
           header: "externalId",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => (
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => (
             <span className="font-mono text-xs">
               {row.getValue("externalId")}
             </span>
@@ -132,11 +136,11 @@ export function CountriesTable({
         {
           id: "name-db",
           header: "Name (DB)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const league = row.original;
             return (
               <span className="text-xs sm:text-sm">
-                {country.dbData?.name || "—"}
+                {league.dbData?.name || "—"}
               </span>
             );
           },
@@ -144,103 +148,76 @@ export function CountriesTable({
         {
           id: "name-provider",
           header: "Name (Provider)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const league = row.original;
             return (
               <span className="text-xs sm:text-sm">
-                {country.providerData?.name || "—"}
+                {league.providerData?.name || "—"}
               </span>
             );
           },
         },
         {
-          id: "iso2-db",
-          header: "ISO2 (DB)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
+          id: "type-db",
+          header: "Type (DB)",
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const league = row.original;
             return (
-              <span className="text-xs sm:text-sm font-mono">
-                {country.dbData?.iso2 || "—"}
+              <span className="text-xs sm:text-sm">
+                {league.dbData?.type || "—"}
               </span>
             );
           },
         },
         {
-          id: "iso2-provider",
-          header: "ISO2 (Provider)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
+          id: "type-provider",
+          header: "Type (Provider)",
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const league = row.original;
             return (
-              <span className="text-xs sm:text-sm font-mono">
-                {country.providerData?.iso2 || "—"}
+              <span className="text-xs sm:text-sm">
+                {league.providerData?.type || "—"}
               </span>
             );
           },
         },
         {
-          id: "iso3-db",
-          header: "ISO3 (DB)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
-            return (
-              <span className="text-xs sm:text-sm font-mono">
-                {country.dbData?.iso3 || "—"}
-              </span>
-            );
+          id: "country",
+          header: "Country",
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const league = row.original;
+            const country = league.country;
+            if (!country)
+              return <span className="text-muted-foreground">—</span>;
+            return <span className="text-xs sm:text-sm">{country.name}</span>;
           },
         },
         {
-          id: "iso3-provider",
-          header: "ISO3 (Provider)",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
-            return (
-              <span className="text-xs sm:text-sm font-mono">
-                {country.providerData?.iso3 || "—"}
-              </span>
-            );
-          },
-        },
-        {
-          id: "leagues",
-          header: "Leagues",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
-            if (mode === "provider") {
-              // For provider mode, show available leagues count
-              const availableLeagues = country.availableLeaguesCount ?? 0;
-              const totalLeagues = country.providerData?.leaguesCount ?? 0;
-              return (
-                <div className="flex items-center justify-center">
-                  <span className="text-xs text-foreground">
-                    {availableLeagues}
-                    {totalLeagues > 0 && (
-                      <span className="text-muted-foreground">/{totalLeagues}</span>
-                    )}
-                  </span>
-                </div>
-              );
-            } else {
-              // For DB mode, show leagues count from DB
-              const leaguesCount = country.leaguesCount ?? country.dbData?.leagues?.length ?? 0;
-              return (
-                <div className="flex items-center justify-center">
-                  <span className={`text-xs ${
-                    !leaguesCount ? "text-muted-foreground" : "text-foreground"
-                  }`}>
-                    {leaguesCount || 0}
-                  </span>
-                </div>
-              );
+          id: "country-in-db",
+          header: "Country in DB",
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const league = row.original;
+            const countryInDb = league.countryInDb ?? false;
+            if (!league.country) {
+              return <span className="text-muted-foreground">—</span>;
             }
+            return (
+              <div className="flex items-center justify-center">
+                {countryInDb ? (
+                  <CheckCircle2 className="h-4 w-4 text-foreground" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
+            );
           },
         },
         {
           id: "image",
           header: "Image",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original;
-            const imagePath = country.imagePath;
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const league = row.original;
+            const imagePath = league.imagePath;
             if (!imagePath)
               return <span className="text-muted-foreground">—</span>;
             return (
@@ -255,21 +232,24 @@ export function CountriesTable({
         {
           id: "actions",
           header: "Actions",
-          cell: ({ row }: { row: Row<UnifiedCountry> }) => {
-            const country = row.original as UnifiedCountry;
-            const isSyncing = syncingIds.has(country.externalId);
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const league = row.original as UnifiedLeague;
+            const isSyncing = syncingIds.has(league.externalId);
+            const countryInDb = league.countryInDb;
+            // Only disable if countryInDb is explicitly false (country exists but not in DB)
+            const isDisabled = countryInDb === false;
 
             const handleSync = async () => {
-              if (!onSyncCountry) return;
-              setSyncingIds((prev) => new Set(prev).add(country.externalId));
+              if (!onSyncLeague || isDisabled) return;
+              setSyncingIds((prev) => new Set(prev).add(league.externalId));
               try {
-                await onSyncCountry(country.externalId);
+                await onSyncLeague(league.externalId);
               } catch (error) {
                 console.error("Sync failed:", error);
               } finally {
                 setSyncingIds((prev) => {
                   const next = new Set(prev);
-                  next.delete(country.externalId);
+                  next.delete(league.externalId);
                   return next;
                 });
               }
@@ -282,10 +262,13 @@ export function CountriesTable({
                   size="sm"
                   className="h-8 w-8 p-0"
                   onClick={handleSync}
-                  disabled={isSyncing || !onSyncCountry}
+                  disabled={isSyncing || !onSyncLeague || isDisabled}
+                  title={isDisabled ? "Country not in DB" : undefined}
                 >
                   <CloudSync
-                    className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`}
+                    className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""} ${
+                      isDisabled ? "opacity-50" : ""
+                    }`}
                   />
                 </Button>
               </div>
@@ -298,7 +281,7 @@ export function CountriesTable({
         {
           accessorKey: "externalId",
           header: "externalId",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => (
+          cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
             </span>
@@ -307,59 +290,45 @@ export function CountriesTable({
         {
           accessorKey: "name",
           header: "Name",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => (
+          cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="font-medium text-xs sm:text-sm">
               {row.getValue("name")}
             </span>
           ),
         },
         {
-          accessorKey: "iso2",
-          header: "ISO2",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => (
-            <span className="font-mono text-xs sm:text-sm">
-              {row.getValue("iso2") || "—"}
+          accessorKey: "type",
+          header: "Type",
+          cell: ({ row }: { row: Row<LeagueDBRow> }) => (
+            <span className="text-xs sm:text-sm">
+              {row.getValue("type") || "—"}
             </span>
           ),
         },
         {
-          accessorKey: "iso3",
-          header: "ISO3",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => (
+          accessorKey: "shortCode",
+          header: "Short Code",
+          cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="font-mono text-xs sm:text-sm">
-              {row.getValue("iso3") || "—"}
+              {row.getValue("shortCode") || "—"}
             </span>
           ),
         },
         {
-          id: "leagues",
-          header: "Leagues",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => {
-            const country = row.original;
-            // Try to get leagues count from unifiedData if available
-            const unifiedCountry = unifiedData.find(
-              (c) => c.externalId === country.externalId
-            );
-            const leaguesCount =
-              unifiedCountry?.leaguesCount ??
-              unifiedCountry?.dbData?.leagues?.length ??
-              (country as any)?.leagues?.length ??
-              0;
-            return (
-              <div className="flex items-center justify-center">
-                <span className={`text-xs ${
-                  !leaguesCount ? "text-muted-foreground" : "text-foreground"
-                }`}>
-                  {leaguesCount || 0}
-                </span>
-              </div>
-            );
+          id: "country",
+          header: "Country",
+          cell: ({ row }: { row: Row<LeagueDBRow> }) => {
+            const league = row.original;
+            const country = league.country;
+            if (!country)
+              return <span className="text-muted-foreground">—</span>;
+            return <span className="text-xs sm:text-sm">{country.name}</span>;
           },
         },
         {
           accessorKey: "imagePath",
           header: "Image",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => {
+          cell: ({ row }: { row: Row<LeagueDBRow> }) => {
             const imagePath = row.getValue("imagePath") as string | null;
             if (!imagePath)
               return <span className="text-muted-foreground">—</span>;
@@ -375,7 +344,7 @@ export function CountriesTable({
         {
           accessorKey: "updatedAt",
           header: "Updated At",
-          cell: ({ row }: { row: Row<CountryDBRow> }) => {
+          cell: ({ row }: { row: Row<LeagueDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
             if (!updatedAt)
               return <span className="text-muted-foreground">—</span>;
@@ -388,11 +357,9 @@ export function CountriesTable({
         },
       ];
     } else {
-      // provider mode - shows diff view with status column
-      // This should never be reached since provider mode is handled above
       return [];
     }
-  }, [mode, syncingIds, onSyncCountry, unifiedData]);
+  }, [mode, syncingIds, onSyncLeague]);
 
   // Get table data based on mode
   const tableData = useMemo(() => {
@@ -416,7 +383,7 @@ export function CountriesTable({
   }, [mode, isLoading, dbData, unifiedData]);
 
   const table = useReactTable({
-    data: tableData as (UnifiedCountry | CountryDBRow)[],
+    data: tableData as (UnifiedLeague | LeagueDBRow)[],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     columns: columns as any, // Columns are dynamically typed based on mode
     getCoreRowModel: getCoreRowModel(),
@@ -429,24 +396,24 @@ export function CountriesTable({
       const search = filterValue.toLowerCase();
       if (mode === "provider") {
         // Provider mode shows unified diff data
-        const country = row.original as unknown as UnifiedCountry;
+        const league = row.original as unknown as UnifiedLeague;
         return (
-          country.externalId.toLowerCase().includes(search) ||
-          country.name.toLowerCase().includes(search) ||
-          country.dbData?.name?.toLowerCase().includes(search) ||
-          country.providerData?.name?.toLowerCase().includes(search) ||
-          country.iso2?.toLowerCase().includes(search) ||
-          country.iso3?.toLowerCase().includes(search) ||
+          league.externalId.toLowerCase().includes(search) ||
+          league.name.toLowerCase().includes(search) ||
+          league.dbData?.name?.toLowerCase().includes(search) ||
+          league.providerData?.name?.toLowerCase().includes(search) ||
+          league.type?.toLowerCase().includes(search) ||
+          league.country?.name.toLowerCase().includes(search) ||
           false
         );
       } else {
         // DB mode
-        const country = row.original as CountryDBRow;
+        const league = row.original as LeagueDBRow;
         return (
-          country.name.toLowerCase().includes(search) ||
-          country.externalId.toLowerCase().includes(search) ||
-          country.iso2?.toLowerCase().includes(search) ||
-          country.iso3?.toLowerCase().includes(search) ||
+          league.name.toLowerCase().includes(search) ||
+          league.externalId.toLowerCase().includes(search) ||
+          league.type?.toLowerCase().includes(search) ||
+          league.country?.name.toLowerCase().includes(search) ||
           false
         );
       }
@@ -519,7 +486,7 @@ export function CountriesTable({
       {/* Controls */}
       <div className="flex-shrink-0 flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
         <Input
-          placeholder="Search countries..."
+          placeholder="Search leagues..."
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
           className="max-w-sm h-7 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1"
@@ -585,7 +552,7 @@ export function CountriesTable({
                     className="h-24 text-center"
                   >
                     {tableData.length === 0
-                      ? `No countries found (tableData is empty, mode: ${mode})`
+                      ? `No leagues found (tableData is empty, mode: ${mode})`
                       : `No rows after filtering/pagination (tableData: ${tableData.length}, rows: ${rows?.length || 0})`}
                   </TableCell>
                 </TableRow>
@@ -600,7 +567,8 @@ export function CountriesTable({
         <div className="flex-shrink-0 flex items-center justify-between gap-1 sm:gap-2 pt-2 sm:pt-4 border-t mt-2 sm:mt-4 text-[10px] sm:text-xs">
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
             <span className="text-muted-foreground whitespace-nowrap">
-              {pagination.pageIndex * pagination.pageSize + 1}-{Math.min(
+              {pagination.pageIndex * pagination.pageSize + 1}-
+              {Math.min(
                 (pagination.pageIndex + 1) * pagination.pageSize,
                 table.getFilteredRowModel().rows.length
               )}{" "}

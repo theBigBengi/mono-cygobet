@@ -7,9 +7,11 @@
     ".": "./src/index.ts",
     "./user": "./src/user.ts",
     "./version": "./src/version.ts",
+    "./admin-ui": "./src/admin-ui.ts",
     "./sport-data/common": "./src/sport-data/common.ts",
     "./sport-data/sportmonks": "./src/sport-data/sportmonks.ts",
     "./http/health": "./src/http/health.ts",
+    "./http/admin": "./src/http/admin.ts",
     "./jobs/run": "./src/jobs/run.ts"
   },
   "scripts": {

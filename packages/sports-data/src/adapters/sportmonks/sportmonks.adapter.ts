@@ -464,8 +464,22 @@ export class SportMonksAdapter {
   /**
    * Fetches all leagues from SportMonks Football API
    * Leagues are the top-level competition structure
+   * @param options - Optional includes (country, etc.)
+   * @returns LeagueDTO[] with country included if requested (formatted)
    */
-  async fetchLeagues(): Promise<LeagueDTO[]> {
+  async fetchLeagues(options?: {
+    include?: IncludeNode[];
+  }): Promise<
+    (LeagueDTO & {
+      country?: {
+        id: number;
+        name: string;
+        imagePath: string | null;
+        iso2: string | null;
+        iso3: string | null;
+      };
+    })[]
+  > {
     const rows = await this.httpFootball.get<any>("leagues", {
       select: [
         "id",
@@ -476,12 +490,23 @@ export class SportMonksAdapter {
         "type",
         "sub_type",
       ],
+      include: options?.include,
       perPage: 50,
       paginate: true,
     });
 
     return rows.map(
-      (l: any): LeagueDTO => ({
+      (
+        l: any
+      ): LeagueDTO & {
+        country?: {
+          id: number;
+          name: string;
+          imagePath: string | null;
+          iso2: string | null;
+          iso3: string | null;
+        };
+      } => ({
         externalId: l.id,
         name: l.name,
         imagePath: l.image_path,
@@ -489,6 +514,15 @@ export class SportMonksAdapter {
         countryExternalId: l.country_id,
         type: l.type,
         subType: l.sub_type,
+        country: l.country
+          ? {
+              id: l.country.id,
+              name: l.country.name,
+              imagePath: l.country.image_path ?? null,
+              iso2: l.country.iso2 ?? null,
+              iso3: l.country.iso3 ?? null,
+            }
+          : undefined,
       })
     );
   }

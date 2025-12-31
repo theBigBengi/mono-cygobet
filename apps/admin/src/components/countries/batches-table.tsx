@@ -34,7 +34,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
-import type { Batch, BatchItem } from "@/types/api";
+import type { Batch, BatchItem } from "@repo/types";
 import { useBatchItems } from "@/hooks/use-batches";
 
 interface BatchesTableProps {
