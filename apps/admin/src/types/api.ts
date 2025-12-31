@@ -10,6 +10,7 @@ export interface AdminCountriesListResponse {
     externalId: string;
     createdAt: string;
     updatedAt: string;
+    leaguesCount?: number;
   }>;
   pagination: {
     page: number;
@@ -28,6 +29,7 @@ export interface AdminProviderCountriesResponse {
     imagePath?: string | null;
     iso2?: string | null;
     iso3?: string | null;
+    availableLeaguesCount?: number;
   }>;
   message: string;
   provider: string;

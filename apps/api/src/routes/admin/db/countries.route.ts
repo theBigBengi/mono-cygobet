@@ -1,6 +1,6 @@
 // src/routes/admin/db/countries.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { Prisma } from "@repo/db";
+import { Prisma, prisma } from "@repo/db";
 import { CountriesService } from "../../../services/countries.service";
 import { AdminCountriesListResponse, AdminCountryResponse } from "@repo/types";
 import {
@@ -54,12 +54,20 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
+      // Always include leagues to count them
+      const includeWithLeagues: Prisma.countriesInclude = {
+        ...include,
+        leagues: {
+          select: { id: true },
+        },
+      };
+
       const { countries, count } = await service.get({
         take,
         skip,
         active: query.active,
         orderBy: [{ name: "asc" }],
-        include,
+        include: includeWithLeagues,
       });
 
       return reply.send({
@@ -74,6 +82,7 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
           externalId: c.externalId.toString(),
           createdAt: c.createdAt.toISOString(),
           updatedAt: c.updatedAt.toISOString(),
+          leaguesCount: (c as any).leagues?.length || 0,
         })),
         pagination: {
           page,
@@ -124,7 +133,15 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const country = await service.getById(countryId, includeObj);
+      // Always include leagues to count them
+      const includeWithLeagues: Prisma.countriesInclude = {
+        ...includeObj,
+        leagues: {
+          select: { id: true },
+        },
+      };
+
+      const country = await service.getById(countryId, includeWithLeagues);
 
       return reply.send({
         status: "success",
@@ -138,6 +155,7 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
           externalId: country.externalId.toString(),
           createdAt: country.createdAt.toISOString(),
           updatedAt: country.updatedAt.toISOString(),
+          leaguesCount: (country as any).leagues?.length || 0,
         },
         message: "Country fetched successfully",
       });
@@ -160,6 +178,19 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
 
       const countries = await service.search(q, take || 10);
 
+      // Get leagues count for each country
+      const countryIds = countries.map((c) => c.id);
+      const leaguesByCountry = await prisma.leagues.groupBy({
+        by: ["countryId"],
+        where: {
+          countryId: { in: countryIds },
+        },
+        _count: true,
+      });
+      const leaguesCountMap = new Map(
+        leaguesByCountry.map((l) => [l.countryId, l._count])
+      );
+
       return reply.send({
         status: "success",
         data: countries.map((c) => ({
@@ -172,6 +203,7 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
           externalId: c.externalId.toString(),
           createdAt: c.createdAt.toISOString(),
           updatedAt: c.updatedAt.toISOString(),
+          leaguesCount: leaguesCountMap.get(c.id) || 0,
         })),
         pagination: {
           page: 1,

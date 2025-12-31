@@ -397,21 +397,27 @@ export class SportMonksAdapter {
   /**
    * Fetches all countries from SportMonks Core API
    * Countries are used to organize leagues and teams
+   * @param options - Optional includes (leagues, etc.)
+   * @returns CountryDTO[] with leagues included if requested
    */
-  async fetchCountries(): Promise<CountryDTO[]> {
+  async fetchCountries(options?: {
+    include?: IncludeNode[];
+  }): Promise<(CountryDTO & { leagues?: Array<{ id: number }> })[]> {
     const rows = await this.httpCore.get<any>("countries", {
       select: ["id", "name", "image_path", "iso2", "iso3"],
+      include: options?.include,
       perPage: 50,
       paginate: true,
     });
 
     return rows.map(
-      (c: any): CountryDTO => ({
+      (c: any): CountryDTO & { leagues?: Array<{ id: number }> } => ({
         externalId: c.id,
         name: c.name,
         imagePath: c.image_path ?? null,
         iso2: c.iso2 ?? null,
         iso3: c.iso3 ?? null,
+        leagues: c.leagues, // Include leagues if present in response
       })
     );
   }

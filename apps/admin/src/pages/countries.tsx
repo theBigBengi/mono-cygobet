@@ -147,44 +147,44 @@ export default function CountriesPage() {
       <div className="flex-shrink-0 space-y-2 mb-3 sm:mb-4">
         {/* Header */}
         <div className="flex items-center justify-between gap-2">
-        <div>
-          <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">
-            Countries
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isFetching}
-            className="!px-2 sm:!px-3"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""} max-sm:mr-0 sm:mr-2`}
-            />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => syncMutation.mutate()}
-            disabled={syncMutation.isPending || isFetching}
-            className="!px-2 sm:!px-3"
-          >
-            {syncMutation.isPending ? (
-              <>
-                <CloudSync className="h-4 w-4 animate-spin max-sm:mr-0 sm:mr-2" />
-                <span className="hidden sm:inline">Syncing...</span>
-              </>
-            ) : (
-              <>
-                <CloudSync className="h-4 w-4 max-sm:mr-0 sm:mr-2" />
-                <span className="hidden sm:inline">Sync Countries</span>
-              </>
-            )}
-          </Button>
-        </div>
+          <div>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">
+              Countries
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isFetching}
+              className="!px-2 sm:!px-3"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""} max-sm:mr-0 sm:mr-2`}
+              />
+              <span className="hidden sm:inline">Refresh</span>
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending || isFetching}
+              className="!px-2 sm:!px-3"
+            >
+              {syncMutation.isPending ? (
+                <>
+                  <CloudSync className="h-4 w-4 animate-spin max-sm:mr-0 sm:mr-2" />
+                  <span className="hidden sm:inline">Syncing...</span>
+                </>
+              ) : (
+                <>
+                  <CloudSync className="h-4 w-4 max-sm:mr-0 sm:mr-2" />
+                  <span className="hidden sm:inline">Sync Countries</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Sync Result Panel */}
@@ -230,21 +230,21 @@ export default function CountriesPage() {
               <TabsTrigger
                 value="provider"
                 disabled={isFetching}
-                className="h-7 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
+                className="h-7 rounded-none bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
               >
                 Provider
               </TabsTrigger>
               <TabsTrigger
                 value="db"
                 disabled={isFetching}
-                className="h-7 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
+                className="h-7 rounded-none bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
               >
                 DB
               </TabsTrigger>
               <TabsTrigger
                 value="history"
                 disabled={isFetching}
-                className="h-7 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
+                className="h-7 rounded-none bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
               >
                 History
               </TabsTrigger>
@@ -253,7 +253,7 @@ export default function CountriesPage() {
         </div>
 
         {/* Summary Overview */}
-        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-2 py-2 sm:py-1">
           <div className="flex items-center gap-3 sm:gap-4 text-xs pb-1 min-w-max">
             {isFetching ? (
               Array.from({ length: 6 }).map((_, i) => (
@@ -262,18 +262,22 @@ export default function CountriesPage() {
             ) : (
               <>
                 <span className="text-muted-foreground">
-                  DB: <span className="text-foreground">{diffStats.dbCount}</span>
+                  DB:{" "}
+                  <span className="text-foreground">{diffStats.dbCount}</span>
                 </span>
                 <span className="text-muted-foreground">
                   Provider:{" "}
-                  <span className="text-foreground">{diffStats.providerCount}</span>
+                  <span className="text-foreground">
+                    {diffStats.providerCount}
+                  </span>
                 </span>
                 <span className="text-muted-foreground">
                   Missing:{" "}
                   <span className="text-foreground">{diffStats.missing}</span>
                 </span>
                 <span className="text-muted-foreground">
-                  Extra: <span className="text-foreground">{diffStats.extra}</span>
+                  Extra:{" "}
+                  <span className="text-foreground">{diffStats.extra}</span>
                 </span>
                 <span className="text-muted-foreground">
                   Mismatch:{" "}

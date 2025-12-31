@@ -251,55 +251,59 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
       </div>
 
       {batches.length > 0 && (
-        <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 sm:pt-4 border-t mt-2 sm:mt-4">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="text-xs md:text-sm text-muted-foreground">
-              Showing {batches.length} batches
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <span className="text-xs sm:text-sm text-muted-foreground">Page size:</span>
-              <Select
-                value={table.getState().pagination.pageSize.toString()}
-                onValueChange={(v) => {
-                  table.setPageSize(Number(v));
-                }}
-              >
-                <SelectTrigger className="w-[70px] sm:w-[100px] h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="flex-shrink-0 flex items-center justify-between gap-1 sm:gap-2 pt-2 sm:pt-4 border-t mt-2 sm:mt-4 text-[10px] sm:text-xs">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+            <span className="text-muted-foreground whitespace-nowrap">
+              {table.getRowModel().rows.length > 0
+                ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1
+                : 0}-{Math.min(
+                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                table.getRowModel().rows.length
+              )}{" "}
+              <span className="hidden sm:inline">of </span>
+              <span className="sm:hidden">/</span>
+              {table.getRowModel().rows.length}
+            </span>
+            <Select
+              value={table.getState().pagination.pageSize.toString()}
+              onValueChange={(v) => {
+                table.setPageSize(Number(v));
+              }}
+            >
+              <SelectTrigger className="w-[50px] sm:w-[70px] h-6 sm:h-7 text-[10px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="px-2 sm:px-3"
+              className="h-6 sm:h-8 w-6 sm:w-auto px-1 sm:px-3"
             >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="hidden sm:inline ml-2">Previous</span>
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline sm:ml-2">Previous</span>
             </Button>
-            <div className="text-xs md:text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount() || 1}
-            </div>
+            <span className="font-medium whitespace-nowrap">
+              {table.getState().pagination.pageIndex + 1}/{table.getPageCount() || 1}
+            </span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="px-2 sm:px-3"
+              className="h-6 sm:h-8 w-6 sm:w-auto px-1 sm:px-3"
             >
-              <span className="hidden sm:inline mr-2">Next</span>
-              <ChevronRight className="h-4 w-4" />
+              <span className="hidden sm:inline sm:mr-2">Next</span>
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>
@@ -310,7 +314,7 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
 
 function BatchItemsDialogContent({ batchId }: { batchId: number }) {
   const [page, setPage] = useState(1);
-  const perPage = 50;
+  const [perPage, setPerPage] = useState(50);
   const { data, isLoading } = useBatchItems(batchId, page, perPage);
 
   const itemColumns: ColumnDef<BatchItem>[] = [
@@ -441,50 +445,66 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
           </TableBody>
         </Table>
       </div>
-      {data.pagination.totalPages > 1 && (
-        <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 sm:pt-4 border-t mt-3 sm:mt-4">
-          <div className="text-[10px] sm:text-xs text-muted-foreground">
-            <span className="hidden sm:inline">Showing </span>
-            {(page - 1) * perPage + 1}
-            <span className="hidden sm:inline"> to </span>{" "}
-            {Math.min(page * perPage, data.pagination.totalItems)}
-            <span className="hidden sm:inline">
-              {" "}
-              of {data.pagination.totalItems} items
+      {data && data.data.length > 0 && (
+        <div className="flex-shrink-0 flex items-center justify-between gap-1 sm:gap-2 pt-2 sm:pt-4 border-t mt-2 sm:mt-4 text-[10px] sm:text-xs">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+            <span className="text-muted-foreground whitespace-nowrap">
+              {(page - 1) * perPage + 1}-{Math.min(page * perPage, data.pagination.totalItems)}{" "}
+              <span className="hidden sm:inline">of </span>
+              <span className="sm:hidden">/</span>
+              {data.pagination.totalItems}
             </span>
-            <span className="sm:hidden"> / {data.pagination.totalItems}</span>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const newPage = page - 1;
-                if (newPage >= 1) setPage(newPage);
+            <Select
+              value={perPage.toString()}
+              onValueChange={(v) => {
+                setPerPage(Number(v));
+                setPage(1); // Reset to first page on page size change
               }}
-              disabled={page === 1}
-              className="h-7 sm:h-8 px-2 sm:px-3 text-xs"
             >
-              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline ml-1 sm:ml-2">Previous</span>
-            </Button>
-            <div className="text-[10px] sm:text-xs font-medium px-1 sm:px-2">
-              Page {page} of {data.pagination.totalPages}
+              <SelectTrigger className="w-[50px] sm:w-[70px] h-6 sm:h-7 text-[10px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {data.pagination.totalPages > 1 && (
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newPage = page - 1;
+                  if (newPage >= 1) setPage(newPage);
+                }}
+                disabled={page === 1}
+                className="h-6 sm:h-8 w-6 sm:w-auto px-1 sm:px-3"
+              >
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline sm:ml-2">Previous</span>
+              </Button>
+              <span className="font-medium whitespace-nowrap">
+                {page}/{data.pagination.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newPage = page + 1;
+                  if (newPage <= data.pagination.totalPages) setPage(newPage);
+                }}
+                disabled={page >= data.pagination.totalPages}
+                className="h-6 sm:h-8 w-6 sm:w-auto px-1 sm:px-3"
+              >
+                <span className="hidden sm:inline sm:mr-2">Next</span>
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const newPage = page + 1;
-                if (newPage <= data.pagination.totalPages) setPage(newPage);
-              }}
-              disabled={page >= data.pagination.totalPages}
-              className="h-7 sm:h-8 px-2 sm:px-3 text-xs"
-            >
-              <span className="hidden sm:inline mr-1 sm:mr-2">Next</span>
-              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
-            </Button>
-          </div>
+          )}
         </div>
       )}
     </div>

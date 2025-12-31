@@ -33,18 +33,20 @@ export function unifyCountries(
   // Allow partial data - process what we have
   if (!dbData && !providerData) return [];
 
-  const dbMap = new Map<string, CountryDB>();
+  const dbMap = new Map<string, CountryDB & { leaguesCount?: number }>();
   if (dbData?.data) {
     dbData.data.forEach((c) => {
       const countryWithLeagues = c as CountryDB & {
         leagues?: Array<{ id: number; name: string }>;
+        leaguesCount?: number;
         updatedAt?: string;
       };
       dbMap.set(c.externalId, {
         ...c,
         leagues: countryWithLeagues.leagues || [],
+        leaguesCount: countryWithLeagues.leaguesCount,
         updatedAt: countryWithLeagues.updatedAt,
-      } as CountryDB & { updatedAt?: string });
+      } as CountryDB & { leaguesCount?: number; updatedAt?: string });
     });
   }
 
@@ -108,7 +110,8 @@ export function unifyCountries(
       status,
       dbData: db,
       providerData: provider,
-      leaguesCount: db?.leagues?.length || 0,
+      leaguesCount: (db as any)?.leaguesCount ?? db?.leagues?.length ?? 0,
+      availableLeaguesCount: provider?.availableLeaguesCount ?? 0,
       updatedAt: (db as any)?.updatedAt,
     });
   });

@@ -206,23 +206,33 @@ export function CountriesTable({
           header: "Leagues",
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
-            const leaguesCount = country.leaguesCount ?? country.dbData?.leagues?.length ?? 0;
-            if (country.source === "provider" && !country.dbData) {
+            if (mode === "provider") {
+              // For provider mode, show available leagues count
+              const availableLeagues = country.availableLeaguesCount ?? 0;
+              const totalLeagues = country.providerData?.leaguesCount ?? 0;
               return (
                 <div className="flex items-center justify-center">
-                  <span className="text-muted-foreground">—</span>
+                  <span className="text-xs text-foreground">
+                    {availableLeagues}
+                    {totalLeagues > 0 && (
+                      <span className="text-muted-foreground">/{totalLeagues}</span>
+                    )}
+                  </span>
+                </div>
+              );
+            } else {
+              // For DB mode, show leagues count from DB
+              const leaguesCount = country.leaguesCount ?? country.dbData?.leagues?.length ?? 0;
+              return (
+                <div className="flex items-center justify-center">
+                  <span className={`text-xs ${
+                    !leaguesCount ? "text-muted-foreground" : "text-foreground"
+                  }`}>
+                    {leaguesCount || 0}
+                  </span>
                 </div>
               );
             }
-            return (
-              <div className="flex items-center justify-center">
-                <span className={`text-xs ${
-                  !leaguesCount ? "text-muted-foreground" : "text-foreground"
-                }`}>
-                  {leaguesCount || 0}
-                </span>
-              </div>
-            );
           },
         },
         {
@@ -587,72 +597,61 @@ export function CountriesTable({
 
       {/* Pagination */}
       {tableData.length > 0 && (
-        <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 sm:pt-4 border-t mt-2 sm:mt-4">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="text-xs md:text-sm text-muted-foreground">
-              <span className="hidden sm:inline">Showing </span>
-              {table.getFilteredRowModel().rows.length > 0
-                ? pagination.pageIndex * pagination.pageSize + 1
-                : 0}{" "}
-              <span className="hidden sm:inline">to </span>
-              {Math.min(
+        <div className="flex-shrink-0 flex items-center justify-between gap-1 sm:gap-2 pt-2 sm:pt-4 border-t mt-2 sm:mt-4 text-[10px] sm:text-xs">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+            <span className="text-muted-foreground whitespace-nowrap">
+              {pagination.pageIndex * pagination.pageSize + 1}-{Math.min(
                 (pagination.pageIndex + 1) * pagination.pageSize,
                 table.getFilteredRowModel().rows.length
               )}{" "}
-              <span className="hidden sm:inline">
-                of {table.getFilteredRowModel().rows.length} countries
-              </span>
-              <span className="sm:hidden">
-                / {table.getFilteredRowModel().rows.length}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <span className="text-xs sm:text-sm text-muted-foreground">Page size:</span>
-              <Select
-                value={pagination.pageSize.toString()}
-                onValueChange={(v) => {
-                  const newPageSize = Number(v);
-                  setPagination({
-                    ...pagination,
-                    pageSize: newPageSize,
-                    pageIndex: 0,
-                  });
-                }}
-              >
-                <SelectTrigger className="w-[70px] sm:w-[100px] h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <span className="hidden sm:inline">of </span>
+              <span className="sm:hidden">/</span>
+              {table.getFilteredRowModel().rows.length}
+            </span>
+            <Select
+              value={pagination.pageSize.toString()}
+              onValueChange={(v) => {
+                const newPageSize = Number(v);
+                setPagination({
+                  ...pagination,
+                  pageSize: newPageSize,
+                  pageIndex: 0,
+                });
+              }}
+            >
+              <SelectTrigger className="w-[50px] sm:w-[70px] h-6 sm:h-7 text-[10px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="px-2 sm:px-3"
+              className="h-6 sm:h-8 w-6 sm:w-auto px-1 sm:px-3"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline sm:ml-2">Previous</span>
             </Button>
-            <div className="text-[10px] sm:text-xs md:text-sm font-medium">
-              Page {pagination.pageIndex + 1} of {table.getPageCount() || 1}
-            </div>
+            <span className="font-medium whitespace-nowrap">
+              {pagination.pageIndex + 1}/{table.getPageCount() || 1}
+            </span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="px-2 sm:px-3"
+              className="h-6 sm:h-8 w-6 sm:w-auto px-1 sm:px-3"
             >
               <span className="hidden sm:inline sm:mr-2">Next</span>
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>

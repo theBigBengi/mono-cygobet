@@ -14,6 +14,8 @@ export interface CountryProvider {
   imagePath?: string | null;
   iso2?: string | null;
   iso3?: string | null;
+  leaguesCount?: number;
+  availableLeaguesCount?: number;
 }
 
 export interface UnifiedCountry {
@@ -34,6 +36,7 @@ export interface UnifiedCountry {
   dbData?: CountryDB;
   providerData?: CountryProvider;
   leaguesCount?: number;
+  availableLeaguesCount?: number;
   updatedAt?: string;
 }
 
