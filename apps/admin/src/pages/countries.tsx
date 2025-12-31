@@ -3,13 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  CloudSync,
-  RefreshCw,
-} from "lucide-react";
+import { CloudSync, RefreshCw } from "lucide-react";
 import {
   useCountriesFromDb,
   useCountriesFromProvider,
