@@ -367,3 +367,50 @@ export interface AdminSyncSeasonsResponse {
   fail: number;
   total: number;
 }
+
+export interface AdminBookmakersListResponse {
+  status: string;
+  data: Array<{
+    id: number;
+    name: string;
+    externalId: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
+export interface AdminBookmakerResponse {
+  status: string;
+  data: {
+    id: number;
+    name: string;
+    externalId: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  message: string;
+}
+
+export interface AdminProviderBookmakersResponse {
+  status: string;
+  data: Array<{
+    externalId: number | string;
+    name: string;
+  }>;
+  message: string;
+  provider: string;
+}
+
+export interface AdminSyncBookmakersResponse {
+  batchId: number | null;
+  ok: number;
+  fail: number;
+  total: number;
+}

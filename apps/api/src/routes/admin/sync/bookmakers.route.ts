@@ -1,13 +1,13 @@
-// src/routes/admin/sync/seasons.route.ts
+// src/routes/admin/sync/bookmakers.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { seedSeasons } from "../../../etl/seeds/seed.seasons";
 import SportMonksAdapter from "@repo/sports-data/adapters/sportmonks";
+import { seedBookmakers } from "../../../etl/seeds/seed.bookmakers";
 import {
   syncBodySchema,
   syncResponseSchema,
 } from "../../../schemas/admin.schemas";
 
-interface SyncSeasonsResponse {
+interface SyncBookmakersResponse {
   status: string;
   data: {
     batchId: number | null;
@@ -18,13 +18,13 @@ interface SyncSeasonsResponse {
   message: string;
 }
 
-const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
-  // POST /admin/sync/seasons - Sync seasons from provider to database
+const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
+  // POST /admin/sync/bookmakers - Sync bookmakers from provider to database
   fastify.post<{
     Body: { dryRun?: boolean };
-    Reply: SyncSeasonsResponse;
+    Reply: SyncBookmakersResponse;
   }>(
-    "/seasons",
+    "/bookmakers",
     {
       schema: {
         body: syncBodySchema,
@@ -33,7 +33,7 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (req, reply): Promise<SyncSeasonsResponse> => {
+    async (req, reply): Promise<SyncBookmakersResponse> => {
       const { dryRun = false } = req.body ?? {};
 
       const adapter = new SportMonksAdapter({
@@ -43,9 +43,8 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
         authMode:
           (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
       });
-      const seasonsDto = await adapter.fetchSeasons();
-
-      const result = await seedSeasons(seasonsDto, { 
+      const bookmakersDto = await adapter.fetchBookmakers();
+      const result = await seedBookmakers(bookmakersDto, { 
         dryRun,
         triggeredBy: "admin-ui"
       });
@@ -59,19 +58,19 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
           total: result.total,
         },
         message: dryRun
-          ? "Seasons sync dry-run completed"
-          : "Seasons synced successfully from provider to database",
+          ? "Bookmakers sync dry-run completed"
+          : "Bookmakers synced successfully from provider to database",
       });
     }
   );
 
-  // POST /admin/sync/seasons/:id - Sync a single season by ID
+  // POST /admin/sync/bookmakers/:id - Sync a single bookmaker by ID from provider to database
   fastify.post<{
     Params: { id: string };
     Body: { dryRun?: boolean };
-    Reply: SyncSeasonsResponse;
+    Reply: SyncBookmakersResponse;
   }>(
-    "/seasons/:id",
+    "/bookmakers/:id",
     {
       schema: {
         params: {
@@ -87,13 +86,13 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (req, reply): Promise<SyncSeasonsResponse> => {
+    async (req, reply): Promise<SyncBookmakersResponse> => {
       const { id } = req.params;
       const { dryRun = false } = req.body ?? {};
 
-      const seasonId = parseInt(id, 10);
-      if (isNaN(seasonId)) {
-        return reply.code(400).send({
+      const bookmakerId = Number(id);
+      if (isNaN(bookmakerId)) {
+        return reply.status(400).send({
           status: "error",
           data: {
             batchId: null,
@@ -101,8 +100,8 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
             fail: 1,
             total: 1,
           },
-          message: "Invalid season ID",
-        } as any);
+          message: `Invalid bookmaker ID: ${id}`,
+        });
       }
 
       const adapter = new SportMonksAdapter({
@@ -113,10 +112,13 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
           (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
       });
 
-      const seasonDto = await adapter.fetchSeasonById(seasonId);
+      const bookmakersDto = await adapter.fetchBookmakers();
+      const bookmakerDto = bookmakersDto.find(
+        (b) => b.externalId === bookmakerId
+      );
 
-      if (!seasonDto) {
-        return reply.code(404).send({
+      if (!bookmakerDto) {
+        return reply.status(404).send({
           status: "error",
           data: {
             batchId: null,
@@ -124,11 +126,11 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
             fail: 1,
             total: 1,
           },
-          message: `Season with ID ${seasonId} not found in provider`,
-        } as any);
+          message: `Bookmaker with ID ${bookmakerId} not found in provider`,
+        });
       }
 
-      const result = await seedSeasons([seasonDto], { 
+      const result = await seedBookmakers([bookmakerDto], { 
         dryRun,
         triggeredBy: "admin-ui"
       });
@@ -142,11 +144,12 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
           total: result.total,
         },
         message: dryRun
-          ? "Season sync dry-run completed"
-          : "Season synced successfully from provider to database",
+          ? `Bookmaker sync dry-run completed for ID ${bookmakerId}`
+          : `Bookmaker synced successfully from provider to database (ID: ${bookmakerId})`,
       });
     }
   );
 };
 
-export default adminSyncSeasonsRoutes;
+export default adminSyncBookmakersRoutes;
+

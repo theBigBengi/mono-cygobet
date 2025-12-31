@@ -45,7 +45,10 @@ const adminSyncTeamsRoutes: FastifyPluginAsync = async (fastify) => {
       });
       const teamsDto = await adapter.fetchTeams();
 
-      const result = await seedTeams(teamsDto, { dryRun });
+      const result = await seedTeams(teamsDto, { 
+        dryRun,
+        triggeredBy: "admin-ui"
+      });
 
       return reply.send({
         status: "success",
@@ -125,7 +128,10 @@ const adminSyncTeamsRoutes: FastifyPluginAsync = async (fastify) => {
         } as any);
       }
 
-      const result = await seedTeams([teamDto], { dryRun });
+      const result = await seedTeams([teamDto], { 
+        dryRun,
+        triggeredBy: "admin-ui"
+      });
 
       return reply.send({
         status: "success",

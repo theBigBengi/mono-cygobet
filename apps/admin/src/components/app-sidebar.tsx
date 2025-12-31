@@ -42,6 +42,10 @@ const data = {
           title: "Teams",
           url: "/teams",
         },
+        {
+          title: "Bookmakers",
+          url: "/bookmakers",
+        },
       ],
     },
   ],

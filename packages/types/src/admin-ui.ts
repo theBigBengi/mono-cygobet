@@ -262,3 +262,34 @@ export type SeasonStatusFilter =
   | "extra-in-db"
   | "mismatch";
 
+export interface BookmakerDB {
+  id: number;
+  name: string;
+  externalId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BookmakerProvider {
+  externalId: number | string;
+  name: string;
+}
+
+export interface UnifiedBookmaker {
+  externalId: string;
+  name: string;
+  source: "db" | "provider" | "both";
+  status: "ok" | "missing-in-db" | "extra-in-db" | "mismatch" | "new";
+  dbData?: BookmakerDB;
+  providerData?: BookmakerProvider;
+  updatedAt?: string;
+}
+
+export type BookmakerStatusFilter =
+  | "all"
+  | "ok"
+  | "missing-in-db"
+  | "extra-in-db"
+  | "mismatch"
+  | "new";
+

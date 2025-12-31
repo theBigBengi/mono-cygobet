@@ -44,7 +44,10 @@ const adminSyncCountriesRoutes: FastifyPluginAsync = async (fastify) => {
           (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
       });
       const countriesDto = await adapter.fetchCountries();
-      const result = await seedCountries(countriesDto, { dryRun });
+      const result = await seedCountries(countriesDto, {
+        dryRun,
+        triggeredBy: "admin-ui",
+      });
 
       return reply.send({
         status: "success",
@@ -124,7 +127,10 @@ const adminSyncCountriesRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const result = await seedCountries([countryDto], { dryRun });
+      const result = await seedCountries([countryDto], {
+        dryRun,
+        triggeredBy: "admin-ui",
+      });
 
       return reply.send({
         status: "success",
