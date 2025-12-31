@@ -412,7 +412,7 @@ export function CountriesTable({
           <Skeleton className="h-10 w-[300px]" />
         </div>
         {/* Table skeleton */}
-        <div className="rounded-md border">
+        <div className="rounded-md border max-h-[600px] overflow-auto">
           <div className="p-4 space-y-3">
             {/* Header skeleton */}
             <div className="flex gap-4 pb-4 border-b">
@@ -504,7 +504,7 @@ export function CountriesTable({
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border max-h-[600px] overflow-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

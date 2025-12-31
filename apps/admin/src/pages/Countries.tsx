@@ -8,6 +8,8 @@ import {
   useCountriesFromDb,
   useCountriesFromProvider,
 } from "@/hooks/use-countries";
+import { useBatches } from "@/hooks/use-batches";
+import { BatchesTable } from "@/components/countries/batches-table";
 import { countriesService } from "@/services/countries.service";
 import { unifyCountries, calculateDiffStats } from "@/utils/countries";
 import type { ViewMode } from "@/types/countries";
@@ -18,7 +20,7 @@ import type { AdminSyncCountriesResponse } from "@/types/api";
 type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
 
 export default function CountriesPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>("provider");
+  const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
   const [syncResult, setSyncResult] =
     useState<AdminSyncCountriesResponse | null>(null);
@@ -45,6 +47,13 @@ export default function CountriesPage() {
     refetch: refetchProvider,
   } = useCountriesFromProvider();
 
+  // Fetch batches (only seed-countries batches)
+  const {
+    data: batchesData,
+    isLoading: batchesLoading,
+    refetch: refetchBatches,
+  } = useBatches("seed-countries", 20);
+
   // Sync mutation (bulk)
   const syncMutation = useMutation({
     mutationFn: () =>
@@ -60,6 +69,7 @@ export default function CountriesPage() {
       setTimeout(() => {
         refetchDb();
         refetchProvider();
+        refetchBatches(); // Refetch batches after sync
       }, 500);
     },
     onError: (error: Error) => {
@@ -98,6 +108,7 @@ export default function CountriesPage() {
   const handleRefresh = () => {
     refetchDb();
     refetchProvider();
+    refetchBatches(); // Also refetch batches on refresh
   };
 
   // Unify and process data
@@ -233,80 +244,139 @@ export default function CountriesPage() {
         </div>
       )}
 
-      {/* Mode Switch */}
-      <Tabs
-        value={viewMode}
-        onValueChange={(v) => !isFetching && setViewMode(v as ViewMode)}
-      >
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="provider" disabled={isFetching}>
-            Provider
-          </TabsTrigger>
-          <TabsTrigger value="db" disabled={isFetching}>
-            DB
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {/* Summary Overview (shows diff stats in both tabs) */}
-      <div className="flex items-center gap-6 text-sm border-b pb-4">
+      {/* Summary Overview */}
+      <div className="flex items-center gap-4 text-xs border-b border-border/40 pb-2">
         {isFetching ? (
           // Show skeletons when fetching (refresh)
           Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-5 w-8" />
+            <div key={i} className="flex items-center gap-1.5">
+              <Skeleton className="h-3 w-12" />
+              <Skeleton className="h-3 w-6" />
             </div>
           ))
         ) : (
           // Show actual data - gentle inline stats
           <>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">DB:</span>
-              <span className="font-medium">{diffStats.dbCount}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground/70">DB:</span>
+              <span className="font-normal text-foreground/80">
+                {diffStats.dbCount}
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Provider:</span>
-              <span className="font-medium">{diffStats.providerCount}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground/70">Provider:</span>
+              <span className="font-normal text-foreground/80">
+                {diffStats.providerCount}
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Missing:</span>
-              <span className="font-medium text-destructive">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground/70">Missing:</span>
+              <span className="font-normal text-destructive/80">
                 {diffStats.missing}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Extra:</span>
-              <span className="font-medium text-orange-600">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground/70">Extra:</span>
+              <span className="font-normal text-orange-600/80">
                 {diffStats.extra}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Mismatch:</span>
-              <span className="font-medium text-yellow-600">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground/70">Mismatch:</span>
+              <span className="font-normal text-yellow-600/80">
                 {diffStats.mismatch}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">OK:</span>
-              <span className="font-medium text-green-600">{diffStats.ok}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground/70">OK:</span>
+              <span className="font-normal text-green-600/80">
+                {diffStats.ok}
+              </span>
             </div>
           </>
         )}
       </div>
 
-      {/* Unified Table */}
-      <CountriesTable
-        mode={viewMode}
-        unifiedData={unifiedData}
-        diffFilter={diffFilter}
-        onDiffFilterChange={setDiffFilter}
-        dbData={dbData}
-        providerData={providerData}
-        isLoading={viewMode === "db" ? dbLoading : isLoading}
-        error={viewMode === "db" ? dbError : null}
-        onSyncCountry={viewMode === "provider" ? handleSyncCountry : undefined}
-      />
+      {/* Mode Switch */}
+      <div className="border-b">
+        <Tabs
+          value={viewMode}
+          onValueChange={(v) =>
+            !isFetching && setViewMode(v as ViewMode | "history")
+          }
+          className="w-full"
+        >
+          <TabsList className="h-8 w-auto bg-transparent p-0 gap-0">
+            <TabsTrigger
+              value="provider"
+              disabled={isFetching}
+              className="h-8 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none transition-colors data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none hover:text-foreground/70"
+            >
+              Provider
+            </TabsTrigger>
+            <TabsTrigger
+              value="db"
+              disabled={isFetching}
+              className="h-8 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none transition-colors data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none hover:text-foreground/70"
+            >
+              DB
+            </TabsTrigger>
+            <TabsTrigger
+              value="history"
+              disabled={isFetching}
+              className="h-8 rounded-none border-b-2 border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-none transition-colors data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none hover:text-foreground/70"
+            >
+              History
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Content based on active tab */}
+      {viewMode === "history" ? (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">
+              Seeding / Sync History
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Recent seed-countries batches
+            </p>
+          </div>
+          <BatchesTable
+            batches={batchesData?.data || []}
+            isLoading={batchesLoading}
+          />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">
+              {viewMode === "provider"
+                ? "Provider Countries"
+                : "Database Countries"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {viewMode === "provider"
+                ? "Compare countries between Provider and Database"
+                : "Countries stored in the database"}
+            </p>
+          </div>
+          <CountriesTable
+            mode={viewMode}
+            unifiedData={unifiedData}
+            diffFilter={diffFilter}
+            onDiffFilterChange={setDiffFilter}
+            dbData={dbData}
+            providerData={providerData}
+            isLoading={viewMode === "db" ? dbLoading : isLoading}
+            error={viewMode === "db" ? dbError : null}
+            onSyncCountry={
+              viewMode === "provider" ? handleSyncCountry : undefined
+            }
+          />
+        </div>
+      )}
     </div>
   );
 }
