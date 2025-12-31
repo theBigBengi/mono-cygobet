@@ -9,6 +9,7 @@ import {
   type SortingState,
   type Row,
   type ColumnDef,
+  type Column,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -119,7 +120,7 @@ export function CountriesTable({
       return [
         {
           accessorKey: "status",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Status" />
           ),
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
@@ -149,7 +150,7 @@ export function CountriesTable({
         },
         {
           accessorKey: "externalId",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="externalId" />
           ),
           cell: ({ row }: { row: Row<UnifiedCountry> }) => (
@@ -292,7 +293,7 @@ export function CountriesTable({
       return [
         {
           accessorKey: "externalId",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="externalId" />
           ),
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
@@ -303,7 +304,7 @@ export function CountriesTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Name" />
           ),
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
@@ -314,7 +315,7 @@ export function CountriesTable({
         },
         {
           accessorKey: "iso2",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="ISO2" />
           ),
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
@@ -325,7 +326,7 @@ export function CountriesTable({
         },
         {
           accessorKey: "iso3",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="ISO3" />
           ),
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
@@ -372,7 +373,7 @@ export function CountriesTable({
         },
         {
           accessorKey: "updatedAt",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Updated At" />
           ),
           cell: ({ row }: { row: Row<CountryDBRow> }) => {

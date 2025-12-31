@@ -8,6 +8,7 @@ import {
   useReactTable,
   type SortingState,
   type Row,
+  type Column,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,7 +119,7 @@ export function LeaguesTable({
       return [
         {
           accessorKey: "status",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Status" />
           ),
           cell: ({ row }: { row: Row<UnifiedLeague> }) => {
@@ -251,7 +252,7 @@ export function LeaguesTable({
       return [
         {
           accessorKey: "externalId",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="externalId" />
           ),
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
@@ -262,7 +263,7 @@ export function LeaguesTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Name" />
           ),
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
@@ -273,7 +274,7 @@ export function LeaguesTable({
         },
         {
           accessorKey: "type",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Type" />
           ),
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
@@ -284,7 +285,7 @@ export function LeaguesTable({
         },
         {
           accessorKey: "shortCode",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Short Code" />
           ),
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
@@ -316,7 +317,7 @@ export function LeaguesTable({
         },
         {
           accessorKey: "updatedAt",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Updated At" />
           ),
           cell: ({ row }: { row: Row<LeagueDBRow> }) => {

@@ -8,6 +8,7 @@ import {
   useReactTable,
   type SortingState,
   type Row,
+  type Column,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -104,7 +105,7 @@ export function SeasonsTable({
       return [
         {
           accessorKey: "status",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Status" />
           ),
           cell: ({ row }: { row: Row<UnifiedSeason> }) => {
@@ -132,7 +133,7 @@ export function SeasonsTable({
         },
         {
           accessorKey: "externalId",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="externalId" />
           ),
           cell: ({ row }: { row: Row<UnifiedSeason> }) => (
@@ -233,7 +234,7 @@ export function SeasonsTable({
       return [
         {
           accessorKey: "externalId",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="externalId" />
           ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
@@ -244,7 +245,7 @@ export function SeasonsTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Name" />
           ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
@@ -267,7 +268,7 @@ export function SeasonsTable({
         },
         {
           accessorKey: "startDate",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Start Date" />
           ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
@@ -278,7 +279,7 @@ export function SeasonsTable({
         },
         {
           accessorKey: "endDate",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="End Date" />
           ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
@@ -289,7 +290,7 @@ export function SeasonsTable({
         },
         {
           accessorKey: "isCurrent",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Current" />
           ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
@@ -300,7 +301,7 @@ export function SeasonsTable({
         },
         {
           accessorKey: "updatedAt",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Updated At" />
           ),
           cell: ({ row }: { row: Row<SeasonDBRow> }) => {

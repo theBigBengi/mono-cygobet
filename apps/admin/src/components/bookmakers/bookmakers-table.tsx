@@ -9,6 +9,7 @@ import {
   type SortingState,
   type Row,
   type ColumnDef,
+  type Column,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -114,11 +115,11 @@ export function BookmakersTable({
       return [
         {
           id: "status",
-          accessorFn: (row) => {
+          accessorFn: (row: UnifiedBookmaker | BookmakerDBRow) => {
             const bookmaker = row as UnifiedBookmaker;
             return bookmaker.status;
           },
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Status" />
           ),
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => {
@@ -144,7 +145,7 @@ export function BookmakersTable({
         },
         {
           accessorKey: "externalId",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="externalId" />
           ),
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => (
@@ -155,7 +156,7 @@ export function BookmakersTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Name" />
           ),
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => (
@@ -168,7 +169,7 @@ export function BookmakersTable({
       return [
         {
           accessorKey: "id",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="ID" />
           ),
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => {
@@ -182,7 +183,7 @@ export function BookmakersTable({
         },
         {
           accessorKey: "externalId",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="externalId" />
           ),
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => (
@@ -193,7 +194,7 @@ export function BookmakersTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Name" />
           ),
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => (
@@ -202,7 +203,7 @@ export function BookmakersTable({
         },
         {
           accessorKey: "updatedAt",
-          header: ({ column }) => (
+          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
             <DataTableColumnHeader column={column} title="Updated" />
           ),
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => {
