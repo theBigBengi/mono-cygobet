@@ -58,7 +58,16 @@ export function unifyLeagues(
         type: l.type ?? null,
         shortCode: l.shortCode ?? null,
         countryExternalId: l.countryExternalId ?? null,
-        country: l.country,
+        country: l.country
+          ? {
+              id: l.country.id,
+              name: l.country.name,
+              imagePath: l.country.imagePath ?? null,
+              iso2: l.country.iso2 ?? null,
+              iso3: l.country.iso3 ?? null,
+              externalId: String(l.countryExternalId ?? l.country.externalId ?? ""),
+            }
+          : null,
       });
     });
   }

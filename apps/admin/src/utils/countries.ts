@@ -112,6 +112,7 @@ export function unifyCountries(
       imagePath: db?.imagePath || provider?.imagePath || null,
       iso2: db?.iso2 || provider?.iso2 || null,
       iso3: db?.iso3 || provider?.iso3 || null,
+      active: db?.active ?? false,
       source,
       status,
       dbData: db,
