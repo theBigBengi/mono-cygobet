@@ -51,7 +51,15 @@ export function unifyLeagues(
   const providerMap = new Map<string, LeagueProvider>();
   if (providerData?.data) {
     providerData.data.forEach((l: AdminProviderLeaguesResponse["data"][0]) => {
-      providerMap.set(String(l.externalId), l);
+      providerMap.set(String(l.externalId), {
+        externalId: l.externalId,
+        name: l.name,
+        imagePath: l.imagePath ?? null,
+        type: l.type ?? null,
+        shortCode: l.shortCode ?? null,
+        countryExternalId: l.countryExternalId ?? null,
+        country: l.country,
+      });
     });
   }
 
@@ -135,7 +143,6 @@ export function unifyLeagues(
           }
         : null,
       updatedAt,
-      countryInDb: provider?.countryInDb ?? false,
     });
   });
 

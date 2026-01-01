@@ -51,7 +51,17 @@ export function unifyTeams(
   const providerMap = new Map<string, TeamProvider>();
   if (providerData?.data) {
     providerData.data.forEach((t: AdminProviderTeamsResponse["data"][0]) => {
-      providerMap.set(String(t.externalId), t);
+      providerMap.set(String(t.externalId), {
+        externalId: t.externalId,
+        name: t.name,
+        imagePath: t.imagePath ?? null,
+        type: t.type ?? null,
+        shortCode: t.shortCode ?? null,
+        founded: t.founded ?? null,
+        countryExternalId: t.countryExternalId ?? null,
+        country: t.country,
+        leagueInDb: t.leagueInDb,
+      });
     });
   }
 

@@ -53,7 +53,13 @@ export function unifyCountries(
   const providerMap = new Map<string, CountryProvider>();
   if (providerData?.data) {
     providerData.data.forEach((c) => {
-      providerMap.set(String(c.externalId), c);
+      providerMap.set(String(c.externalId), {
+        externalId: c.externalId,
+        name: c.name,
+        imagePath: c.imagePath ?? null,
+        iso2: c.iso2 ?? null,
+        iso3: c.iso3 ?? null,
+      });
     });
   }
 
@@ -110,8 +116,7 @@ export function unifyCountries(
       status,
       dbData: db,
       providerData: provider,
-      leaguesCount: (db as any)?.leaguesCount ?? db?.leagues?.length ?? 0,
-      availableLeaguesCount: provider?.availableLeaguesCount ?? 0,
+      leaguesCount: db?.leaguesCount ?? 0,
       updatedAt: (db as any)?.updatedAt,
     });
   });
@@ -121,10 +126,8 @@ export function unifyCountries(
     "missing-in-db": 1,
     mismatch: 2,
     "extra-in-db": 3,
-    "no-leagues": 4,
-    "iso-missing": 5,
-    new: 6,
-    ok: 7,
+    new: 4,
+    ok: 5,
   };
 
   return result.sort((a, b) => {

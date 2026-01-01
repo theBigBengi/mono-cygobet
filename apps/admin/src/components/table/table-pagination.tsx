@@ -28,12 +28,7 @@ export function TablePagination<TData>({
   onPaginationChange,
   dataLength,
 }: TablePaginationProps<TData>) {
-  // Get the total filtered rows (before pagination)
-  // getFilteredRowModel() returns filtered rows, getRowModel() returns paginated rows
-  const totalFilteredRows = table.getFilteredRowModel().rows.length;
-  
   // Show pagination if there's data in the source
-  // Only hide if dataLength is 0 (don't check totalFilteredRows as it might be 0 due to pagination)
   if (dataLength === 0) {
     return null;
   }

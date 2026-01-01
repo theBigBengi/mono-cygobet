@@ -4,7 +4,6 @@ import type {
   AdminProviderFixturesResponse,
   AdminBatchesListResponse,
   AdminBatchItemsResponse,
-  AdminSyncFixturesResponse,
 } from "@repo/types";
 
 export const fixturesService = {

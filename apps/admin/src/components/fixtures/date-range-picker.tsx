@@ -79,7 +79,9 @@ export function DateRangePicker({
               mode="range"
               defaultMonth={tempDateRange?.from || dateRange?.from}
               selected={tempDateRange}
-              onSelect={setTempDateRange}
+              onSelect={(range) => {
+                setTempDateRange(range as DateRange | undefined);
+              }}
               numberOfMonths={1}
             />
             <div className="flex justify-end gap-2 pt-3 border-t">

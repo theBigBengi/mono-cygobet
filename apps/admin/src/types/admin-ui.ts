@@ -153,7 +153,6 @@ export interface TeamProvider {
     iso3: string | null;
     externalId: string;
   } | null;
-  type?: string | null;
   leagueInDb?: boolean;
 }
 
