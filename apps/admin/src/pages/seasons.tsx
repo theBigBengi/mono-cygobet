@@ -54,7 +54,8 @@ export default function SeasonsPage() {
     [dbData, providerData]
   );
 
-  // Sync mutation (bulk)
+  // Sync mutation (bulk) - removed from UI for now
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const syncMutation = useMutation({
     mutationFn: () =>
       seasonsService.sync(false) as Promise<AdminSyncSeasonsResponse>,
@@ -118,11 +119,14 @@ export default function SeasonsPage() {
     [syncSeasonMutation, unifiedData]
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleRefresh = () => {
     refetchDb();
     refetchProvider();
     refetchBatches(); // Also refetch batches on refresh
   };
+<｜tool▁call▁begin｜>
+read_file
 
   // Calculate diff stats
   const diffStats = useMemo(

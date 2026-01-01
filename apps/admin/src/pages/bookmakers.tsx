@@ -51,6 +51,8 @@ export default function BookmakersPage() {
   } = useBatches("seed-bookmakers", 20);
 
   // Sync mutation (bulk)
+  // Sync mutation (bulk) - removed from UI for now
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const syncMutation = useMutation({
     mutationFn: () =>
       bookmakersService.sync(false) as Promise<AdminSyncBookmakersResponse>,
@@ -101,6 +103,7 @@ export default function BookmakersPage() {
     },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleRefresh = () => {
     refetchDb();
     refetchProvider();

@@ -19,10 +19,6 @@ import type { AdminSyncCountriesResponse } from "@repo/types";
 export default function CountriesPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
-  const [syncResult, setSyncResult] =
-    useState<AdminSyncCountriesResponse | null>(null);
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncTimestamp, setSyncTimestamp] = useState<Date | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -30,7 +26,6 @@ export default function CountriesPage() {
     isLoading: dbLoading,
     isFetching: dbFetching,
     error: dbError,
-    refetch: refetchDb,
   } = useCountriesFromDb({
     perPage: 1000,
     include: "leagues",
@@ -41,14 +36,12 @@ export default function CountriesPage() {
     isLoading: providerLoading,
     isFetching: providerFetching,
     error: providerError,
-    refetch: refetchProvider,
   } = useCountriesFromProvider();
 
   // Fetch batches (only seed-countries batches)
   const {
     data: batchesData,
     isLoading: batchesLoading,
-    refetch: refetchBatches,
   } = useBatches("seed-countries", 20);
 
   // Sync mutation (bulk) - removed from UI for now
@@ -112,20 +105,6 @@ export default function CountriesPage() {
       <div className="flex-shrink-0 space-y-2 mb-3 sm:mb-4">
         {/* Filters */}
         <PageFilters />
-
-        {/* Sync Result Panel */}
-        {syncResult && syncTimestamp && (
-          <div className="border-b pb-2 text-xs text-muted-foreground">
-            Synced: {syncResult.data.ok} ok, {syncResult.data.fail} failed
-          </div>
-        )}
-
-        {/* Sync Error */}
-        {syncError && (
-          <div className="border-b pb-2 text-xs text-destructive">
-            {syncError}
-          </div>
-        )}
 
         {/* Partial Data Warning */}
         {isPartialData && (

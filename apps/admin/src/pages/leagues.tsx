@@ -48,7 +48,8 @@ export default function LeaguesPage() {
     refetch: refetchBatches,
   } = useBatches("seed-leagues", 20);
 
-  // Sync mutation (bulk)
+  // Sync mutation (bulk) - removed from UI for now
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const syncMutation = useMutation({
     mutationFn: () =>
       leaguesService.sync(false) as Promise<AdminSyncLeaguesResponse>,
@@ -117,6 +118,7 @@ export default function LeaguesPage() {
     [syncLeagueMutation, unifiedData]
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleRefresh = () => {
     refetchDb();
     refetchProvider();
