@@ -7,6 +7,7 @@ import {
   getSortedRowModel,
   useReactTable,
   type SortingState,
+  type VisibilityState,
   type Row,
   type ColumnDef,
   type Column,
@@ -28,6 +29,7 @@ import {
   TableError,
   ImageCell,
   DataTableColumnHeader,
+  StatusBadge,
 } from "@/components/table";
 import {
   Dialog,
@@ -75,6 +77,7 @@ export function CountriesTable({
 }: CountriesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 25,
@@ -127,25 +130,7 @@ export function CountriesTable({
           }) => <DataTableColumnHeader column={column} title="Status" />,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const status = row.getValue("status") as UnifiedCountry["status"];
-            const statusConfig: Record<
-              UnifiedCountry["status"],
-              {
-                label: string;
-                variant: "destructive" | "secondary" | "default";
-              }
-            > = {
-              "missing-in-db": { label: "Missing", variant: "destructive" },
-              mismatch: { label: "Mismatch", variant: "destructive" },
-              "extra-in-db": { label: "Extra", variant: "secondary" },
-              ok: { label: "OK", variant: "default" },
-              new: { label: "New", variant: "secondary" },
-            };
-            const config = statusConfig[status] || statusConfig.ok;
-            return (
-              <span className="text-xs text-muted-foreground">
-                {config.label}
-              </span>
-            );
+            return <StatusBadge status={status} className="text-xs" />;
           },
         },
         {
@@ -460,8 +445,10 @@ export function CountriesTable({
     state: {
       sorting,
       globalFilter,
+      columnVisibility,
       pagination,
     },
+    onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     initialState: {
       pagination: {
@@ -483,6 +470,7 @@ export function CountriesTable({
     <div className="flex flex-col h-full overflow-hidden">
       {/* Controls */}
       <TableControls
+        table={table}
         searchPlaceholder="Search countries..."
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}

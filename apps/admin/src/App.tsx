@@ -13,6 +13,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
+import { ErrorBoundary } from "@/components/error-boundary";
 import CountriesPage from "@/pages/countries";
 import LeaguesPage from "@/pages/leagues";
 import TeamsPage from "@/pages/teams";
@@ -50,23 +51,25 @@ function App() {
           </Breadcrumb>
         </header>
         <div className="flex flex-1 flex-col overflow-hidden min-h-0">
-          <Routes>
-            <Route path="/" element={<CountriesPage />} />
-            <Route path="/countries" element={<CountriesPage />} />
-            <Route path="/leagues" element={<LeaguesPage />} />
-            <Route path="/teams" element={<TeamsPage />} />
-            <Route path="/seasons" element={<SeasonsPage />} />
-            <Route path="/bookmakers" element={<BookmakersPage />} />
-            <Route path="/fixtures" element={<FixturesPage />} />
-            <Route
-              path="*"
-              element={
-                <div className="p-6">
-                  <h1>Page not found</h1>
-                </div>
-              }
-            />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<CountriesPage />} />
+              <Route path="/countries" element={<CountriesPage />} />
+              <Route path="/leagues" element={<LeaguesPage />} />
+              <Route path="/teams" element={<TeamsPage />} />
+              <Route path="/seasons" element={<SeasonsPage />} />
+              <Route path="/bookmakers" element={<BookmakersPage />} />
+              <Route path="/fixtures" element={<FixturesPage />} />
+              <Route
+                path="*"
+                element={
+                  <div className="p-6">
+                    <h1>Page not found</h1>
+                  </div>
+                }
+              />
+            </Routes>
+          </ErrorBoundary>
         </div>
       </SidebarInset>
       <Toaster />

@@ -70,7 +70,10 @@ export function MultiSelectCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full h-10 justify-between px-3", className)}
+          className={cn(
+            "w-full h-10 justify-between px-3",
+            className
+          )}
           disabled={disabled}
         >
           <div className="flex items-center gap-1.5 flex-1 text-left overflow-hidden">
@@ -97,9 +100,7 @@ export function MultiSelectCombobox({
                       handleUnselect(option.value);
                     }}
                   >
-                    <span className="max-w-[80px] truncate">
-                      {option.label}
-                    </span>
+                    <span className="max-w-[80px] truncate">{option.label}</span>
                     <button
                       className="ml-0.5 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-secondary/80 transition-colors"
                       onKeyDown={(e) => {
@@ -163,3 +164,4 @@ export function MultiSelectCombobox({
     </Popover>
   );
 }
+

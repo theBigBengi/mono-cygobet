@@ -7,6 +7,7 @@ import {
   getSortedRowModel,
   useReactTable,
   type SortingState,
+  type VisibilityState,
   type Row,
   type Column,
   type ColumnDef,
@@ -27,6 +28,7 @@ import {
   TableSkeleton,
   TableError,
   DataTableColumnHeader,
+  StatusBadge,
 } from "@/components/table";
 import {
   Dialog,
@@ -75,6 +77,7 @@ export function FixturesTable({
 }: FixturesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 25,
@@ -114,25 +117,7 @@ export function FixturesTable({
           }) => <DataTableColumnHeader column={column} title="Status" />,
           cell: ({ row }: { row: Row<UnifiedFixture> }) => {
             const status = row.getValue("status") as UnifiedFixture["status"];
-            const statusConfig: Record<
-              UnifiedFixture["status"],
-              {
-                label: string;
-                variant: "destructive" | "secondary" | "default";
-              }
-            > = {
-              "missing-in-db": { label: "Missing", variant: "destructive" },
-              mismatch: { label: "Mismatch", variant: "destructive" },
-              "extra-in-db": { label: "Extra", variant: "secondary" },
-              ok: { label: "OK", variant: "default" },
-              new: { label: "New", variant: "secondary" },
-            };
-            const config = statusConfig[status] || statusConfig.ok;
-            return (
-              <span className="text-xs text-muted-foreground">
-                {config.label}
-              </span>
-            );
+            return <StatusBadge status={status} className="text-xs" />;
           },
         },
         {
@@ -532,14 +517,17 @@ export function FixturesTable({
       {/* Controls */}
       {mode === "provider" && onDiffFilterChange && (
         <TableControls
+          table={table}
           globalFilter={globalFilter}
           onGlobalFilterChange={setGlobalFilter}
           diffFilter={diffFilter}
           onDiffFilterChange={onDiffFilterChange}
+          showDiffFilter={true}
         />
       )}
       {mode === "db" && (
         <TableControls
+          table={table}
           globalFilter={globalFilter}
           onGlobalFilterChange={setGlobalFilter}
         />

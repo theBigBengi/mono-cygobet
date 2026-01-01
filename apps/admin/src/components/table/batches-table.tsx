@@ -8,7 +8,7 @@ import {
   type Row,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "./status-badge";
 import {
   Select,
   SelectContent,
@@ -66,20 +66,7 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
       header: "Status",
       cell: ({ row }: { row: Row<Batch> }) => {
         const status = row.getValue("status") as string;
-        return (
-          <Badge
-            variant={
-              status === "success"
-                ? "default"
-                : status === "failed"
-                  ? "destructive"
-                  : "secondary"
-            }
-            className="text-xs"
-          >
-            {status}
-          </Badge>
-        );
+        return <StatusBadge status={status} className="text-xs" />;
       },
     },
     {
@@ -323,20 +310,7 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
       header: "Status",
       cell: ({ row }: { row: Row<BatchItem> }) => {
         const status = row.getValue("status") as string;
-        return (
-          <Badge
-            variant={
-              status === "success"
-                ? "default"
-                : status === "failed"
-                  ? "destructive"
-                  : "secondary"
-            }
-            className="text-xs"
-          >
-            {status}
-          </Badge>
-        );
+        return <StatusBadge status={status} className="text-xs" />;
       },
     },
     {

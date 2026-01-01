@@ -1,3 +1,4 @@
+import { type Table } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -6,10 +7,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DataTableViewOptions } from "./data-table-view-options";
 
 import type { DiffFilter } from "@/types";
 
-interface TableControlsProps {
+interface TableControlsProps<TData> {
+  table: Table<TData>;
   searchPlaceholder?: string;
   globalFilter: string;
   onGlobalFilterChange: (value: string) => void;
@@ -18,14 +21,15 @@ interface TableControlsProps {
   onDiffFilterChange?: (filter: DiffFilter) => void;
 }
 
-export function TableControls({
+export function TableControls<TData>({
+  table,
   searchPlaceholder = "Search...",
   globalFilter,
   onGlobalFilterChange,
   showDiffFilter = false,
   diffFilter = "all",
   onDiffFilterChange,
-}: TableControlsProps) {
+}: TableControlsProps<TData>) {
   return (
     <div className="flex-shrink-0 flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
       <Input
@@ -48,6 +52,7 @@ export function TableControls({
           </SelectContent>
         </Select>
       )}
+      <DataTableViewOptions table={table} />
     </div>
   );
 }

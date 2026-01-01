@@ -7,6 +7,7 @@ import {
   getSortedRowModel,
   useReactTable,
   type SortingState,
+  type VisibilityState,
   type Row,
   type ColumnDef,
   type Column,
@@ -27,6 +28,7 @@ import {
   TableSkeleton,
   TableError,
   DataTableColumnHeader,
+  StatusBadge,
 } from "@/components/table";
 import {
   Dialog,
@@ -74,6 +76,7 @@ export function BookmakersTable({
 }: BookmakersTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 25,
@@ -127,22 +130,7 @@ export function BookmakersTable({
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => {
             const bookmaker = row.original as UnifiedBookmaker;
             const status = bookmaker.status;
-            const statusConfig: Record<
-              UnifiedBookmaker["status"],
-              { label: string }
-            > = {
-              "missing-in-db": { label: "Missing" },
-              mismatch: { label: "Mismatch" },
-              "extra-in-db": { label: "Extra" },
-              ok: { label: "OK" },
-              new: { label: "New" },
-            };
-            const config = statusConfig[status] || statusConfig.ok;
-            return (
-              <span className="text-xs text-muted-foreground">
-                {config.label}
-              </span>
-            );
+            return <StatusBadge status={status} className="text-xs" />;
           },
         },
         {
@@ -276,8 +264,10 @@ export function BookmakersTable({
     state: {
       sorting,
       globalFilter,
+      columnVisibility,
       pagination,
     },
+    onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     initialState: {
       pagination: {
@@ -310,6 +300,7 @@ export function BookmakersTable({
     <div className="flex flex-col h-full overflow-hidden">
       {/* Controls */}
       <TableControls
+        table={table}
         searchPlaceholder="Search bookmakers..."
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}

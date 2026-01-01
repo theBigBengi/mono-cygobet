@@ -117,6 +117,10 @@ export function unifyLeagues(
     const providerCountry = provider?.country;
     const country = dbCountry || providerCountry || null;
 
+    // Determine if country exists in DB
+    // If the league has a country from DB data, countryInDb is true
+    const countryInDb = !!dbCountry;
+
     // Get country externalId - from DB country if available, otherwise from provider's countryExternalId
     let countryExternalId: string | null = null;
     if (dbCountry?.externalId) {
@@ -151,6 +155,7 @@ export function unifyLeagues(
             externalId: countryExternalId || "",
           }
         : null,
+      countryInDb,
       updatedAt,
     });
   });

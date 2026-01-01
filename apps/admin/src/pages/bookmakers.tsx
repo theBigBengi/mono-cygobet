@@ -1,9 +1,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CloudSync, RefreshCw } from "lucide-react";
+import { PageFilters } from "@/components/filters/page-filters";
 import {
   useBookmakersFromDb,
   useBookmakersFromProvider,
@@ -142,47 +141,8 @@ export default function BookmakersPage() {
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-3 sm:p-4 md:p-6">
       {/* Fixed Header Section */}
       <div className="flex-shrink-0 space-y-2 mb-3 sm:mb-4">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h1 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">
-              Bookmakers
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isFetching}
-              className="!px-2 sm:!px-3"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""} max-sm:mr-0 sm:mr-2`}
-              />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => syncMutation.mutate()}
-              disabled={syncMutation.isPending || isFetching}
-              className="!px-2 sm:!px-3"
-            >
-              {syncMutation.isPending ? (
-                <>
-                  <CloudSync className="h-4 w-4 animate-spin max-sm:mr-0 sm:mr-2" />
-                  <span className="hidden sm:inline">Syncing...</span>
-                </>
-              ) : (
-                <>
-                  <CloudSync className="h-4 w-4 max-sm:mr-0 sm:mr-2" />
-                  <span className="hidden sm:inline">Sync Bookmakers</span>
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        {/* Filters */}
+        <PageFilters />
 
         {/* Sync Result Panel */}
         {syncResult && syncTimestamp && (
@@ -215,39 +175,24 @@ export default function BookmakersPage() {
         )}
 
         {/* Mode Switch */}
-        <div className="border-b">
-          <Tabs
-            value={viewMode}
-            onValueChange={(v) =>
-              !isFetching && setViewMode(v as ViewMode | "history")
-            }
-            className="w-full"
-          >
-            <TabsList className="h-7 w-auto bg-transparent p-0 gap-0">
-              <TabsTrigger
-                value="provider"
-                disabled={isFetching}
-                className="h-7 rounded-none bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
-              >
-                Provider
-              </TabsTrigger>
-              <TabsTrigger
-                value="db"
-                disabled={isFetching}
-                className="h-7 rounded-none bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
-              >
-                DB
-              </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                disabled={isFetching}
-                className="h-7 rounded-none bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
-              >
-                History
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+        <Tabs
+          value={viewMode}
+          onValueChange={(v) =>
+            !isFetching && setViewMode(v as ViewMode | "history")
+          }
+        >
+          <TabsList>
+            <TabsTrigger value="provider" disabled={isFetching}>
+              Provider
+            </TabsTrigger>
+            <TabsTrigger value="db" disabled={isFetching}>
+              DB
+            </TabsTrigger>
+            <TabsTrigger value="history" disabled={isFetching}>
+              History
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {/* Summary Overview */}
         <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-2 py-2 sm:py-1">

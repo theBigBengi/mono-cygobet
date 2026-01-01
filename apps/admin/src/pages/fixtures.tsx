@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CloudSync, RefreshCw, Search } from "lucide-react";
+import { PageFilters } from "@/components/filters/page-filters";
 import {
   useFixturesFromDb,
   useFixturesFromProvider,
@@ -19,7 +20,7 @@ import { DateRangePicker } from "@/components/fixtures/date-range-picker";
 import {
   MultiSelectCombobox,
   type MultiSelectOption,
-} from "@/components/fixtures/multi-select-combobox";
+} from "@/components/filters/multi-select-combobox";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ViewMode, DiffFilter } from "@/types";
 import type { AdminSyncFixturesResponse } from "@repo/types";
@@ -32,10 +33,7 @@ type DateRange = {
 export default function FixturesPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
-  const [syncResult, setSyncResult] =
-    useState<AdminSyncFixturesResponse | null>(null);
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncTimestamp, setSyncTimestamp] = useState<Date | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Initialize date range: 3 days back and 4 days ahead
@@ -155,11 +153,10 @@ export default function FixturesPage() {
   );
 
   // Fetch batches (only seed-fixtures batches)
-  const {
-    data: batchesData,
-    isLoading: batchesLoading,
-    refetch: refetchBatches,
-  } = useBatches("seed-fixtures", 20);
+  const { data: batchesData, isLoading: batchesLoading } = useBatches(
+    "seed-fixtures",
+    20
+  );
 
   // Unify and process data
   const unifiedData = useMemo(
@@ -167,34 +164,8 @@ export default function FixturesPage() {
     [dbData, providerData]
   );
 
-  // Sync mutation (bulk)
-  const syncMutation = useMutation({
-    mutationFn: () =>
-      fixturesService.sync(false) as Promise<AdminSyncFixturesResponse>,
-    onSuccess: (data) => {
-      setSyncResult(data);
-      setSyncTimestamp(new Date());
-      setSyncError(null);
-      queryClient.invalidateQueries({ queryKey: ["fixtures"] });
-      toast.success("Fixtures synced successfully", {
-        description: `Synced ${data.data.ok} fixtures. ${data.data.fail > 0 ? `${data.data.fail} failed.` : ""}`,
-      });
-      setTimeout(() => {
-        refetchDb();
-        refetchProvider();
-        refetchBatches();
-      }, 500);
-    },
-    onError: (error: Error) => {
-      const errorMessage = error.message || "Sync failed";
-      setSyncError(errorMessage);
-      setSyncResult(null);
-      setSyncTimestamp(null);
-      toast.error("Sync failed", {
-        description: errorMessage,
-      });
-    },
-  });
+  // Sync mutation (bulk) - removed from UI for now
+  // const syncMutation = useMutation({...});
 
   // Sync single fixture mutation
   const syncFixtureMutation = useMutation({
@@ -231,12 +202,6 @@ export default function FixturesPage() {
     [syncFixtureMutation, unifiedData]
   );
 
-  const handleRefresh = () => {
-    refetchDb();
-    refetchProvider();
-    refetchBatches();
-  };
-
   // Calculate diff stats
   const diffStats = useMemo(
     () => calculateDiffStats(unifiedData),
@@ -251,125 +216,84 @@ export default function FixturesPage() {
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
       {/* Fixed Header Section */}
-      <div className="flex-shrink-0 space-y-2 mb-2 sm:mb-4">
+      <div className="flex-shrink-0 mb-2 sm:mb-4">
         {/* Filters */}
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex-1 min-w-0">
-              <DateRangePicker
-                dateRange={tempDateRange}
-                onDateRangeChange={setTempDateRange}
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <MultiSelectCombobox
-                options={leagueOptions}
-                selectedValues={tempLeagueIds}
-                onSelectionChange={(values) =>
-                  setTempLeagueIds(values as number[])
-                }
-                placeholder="Leagues"
-                searchPlaceholder="Search leagues..."
-                emptyMessage="No leagues found."
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <MultiSelectCombobox
-                options={countryOptions}
-                selectedValues={tempCountryIds}
-                onSelectionChange={(values) =>
-                  setTempCountryIds(values as number[])
-                }
-                placeholder="Countries"
-                searchPlaceholder="Search countries..."
-                emptyMessage="No countries found."
-              />
-            </div>
+        <PageFilters
+          showSubmit={true}
+          onSubmit={handleFilterSubmit}
+          submitDisabled={!hasUnsavedFilters || isFetching}
+          submitTitle="Apply filters"
+          hideMobileButton={true}
+          drawerOpen={drawerOpen}
+          onDrawerOpenChange={setDrawerOpen}
+        >
+          <div className="flex-1 min-w-0">
+            <DateRangePicker
+              dateRange={tempDateRange}
+              onDateRangeChange={setTempDateRange}
+            />
           </div>
-          <div className="flex gap-2 justify-end sm:justify-start">
-            <Button
-              variant="default"
-              size="icon"
-              onClick={handleFilterSubmit}
-              disabled={!hasUnsavedFilters || isFetching}
-              className="h-10 w-10 shrink-0"
-              title="Apply filters"
-            >
-              <Search className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={isFetching}
-              className="h-10 w-10 shrink-0"
-              title="Refresh"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-              />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => syncMutation.mutate()}
-              disabled={syncMutation.isPending || isFetching}
-              className="h-10 w-10 shrink-0"
-              title="Sync fixtures"
-            >
-              <CloudSync
-                className={`h-4 w-4 ${
-                  syncMutation.isPending ? "animate-spin" : ""
-                }`}
-              />
-            </Button>
+          <div className="flex-1 min-w-0">
+            <MultiSelectCombobox
+              options={leagueOptions}
+              selectedValues={tempLeagueIds}
+              onSelectionChange={(values) =>
+                setTempLeagueIds(values as number[])
+              }
+              placeholder="Leagues"
+              searchPlaceholder="Search leagues..."
+              emptyMessage="No leagues found."
+            />
           </div>
-        </div>
+          <div className="flex-1 min-w-0">
+            <MultiSelectCombobox
+              options={countryOptions}
+              selectedValues={tempCountryIds}
+              onSelectionChange={(values) =>
+                setTempCountryIds(values as number[])
+              }
+              placeholder="Countries"
+              searchPlaceholder="Search countries..."
+              emptyMessage="No countries found."
+            />
+          </div>
+        </PageFilters>
 
-        {/* Mode Switch */}
-        <div className="border-b">
+        {/* Mode Switch with Mobile Filter Button */}
+        <div className="flex items-center justify-between gap-2 mt-4 sm:mt-6">
           <Tabs
             value={viewMode}
             onValueChange={(v) =>
               !isFetching && setViewMode(v as ViewMode | "history")
             }
-            className="w-full"
           >
-            <TabsList className="h-7 w-auto bg-transparent p-0 gap-0">
-              <TabsTrigger
-                value="provider"
-                disabled={isFetching}
-                className="h-7 rounded-none bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
-              >
+            <TabsList>
+              <TabsTrigger value="provider" disabled={isFetching}>
                 Provider
               </TabsTrigger>
-              <TabsTrigger
-                value="db"
-                disabled={isFetching}
-                className="h-7 rounded-none bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
-              >
+              <TabsTrigger value="db" disabled={isFetching}>
                 DB
               </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                disabled={isFetching}
-                className="h-7 rounded-none bg-transparent px-3 py-1 text-xs text-muted-foreground shadow-none border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-foreground data-[state=active]:text-foreground hover:text-foreground/60"
-              >
+              <TabsTrigger value="history" disabled={isFetching}>
                 History
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          {/* Mobile Filter Button */}
+          <div className="flex sm:hidden">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setDrawerOpen(true)}
+              className="h-9 w-9 shrink-0"
+              title="Filters"
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Messages */}
-        {syncResult && syncTimestamp && (
-          <div className="text-xs text-muted-foreground">
-            Synced: {syncResult.data.ok} ok, {syncResult.data.fail} failed
-          </div>
-        )}
-        {syncError && (
-          <div className="text-xs text-destructive">{syncError}</div>
-        )}
         {isPartialData && (
           <div className="text-xs text-muted-foreground">
             {!providerData

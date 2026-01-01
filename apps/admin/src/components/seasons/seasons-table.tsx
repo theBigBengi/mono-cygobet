@@ -7,6 +7,7 @@ import {
   getSortedRowModel,
   useReactTable,
   type SortingState,
+  type VisibilityState,
   type Row,
   type Column,
 } from "@tanstack/react-table";
@@ -26,6 +27,7 @@ import {
   TableSkeleton,
   TableError,
   DataTableColumnHeader,
+  StatusBadge,
 } from "@/components/table";
 import {
   Dialog,
@@ -73,6 +75,7 @@ export function SeasonsTable({
 }: SeasonsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 25,
@@ -112,25 +115,7 @@ export function SeasonsTable({
           }) => <DataTableColumnHeader column={column} title="Status" />,
           cell: ({ row }: { row: Row<UnifiedSeason> }) => {
             const status = row.getValue("status") as UnifiedSeason["status"];
-            const statusConfig: Record<
-              UnifiedSeason["status"],
-              {
-                label: string;
-                variant: "destructive" | "secondary" | "default";
-              }
-            > = {
-              "missing-in-db": { label: "Missing", variant: "destructive" },
-              mismatch: { label: "Mismatch", variant: "destructive" },
-              "extra-in-db": { label: "Extra", variant: "secondary" },
-              ok: { label: "OK", variant: "default" },
-              new: { label: "New", variant: "secondary" },
-            };
-            const config = statusConfig[status] || statusConfig.ok;
-            return (
-              <span className="text-xs text-muted-foreground">
-                {config.label}
-              </span>
-            );
+            return <StatusBadge status={status} className="text-xs" />;
           },
         },
         {
@@ -395,8 +380,10 @@ export function SeasonsTable({
     state: {
       sorting,
       globalFilter,
+      columnVisibility,
       pagination,
     },
+    onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     manualPagination: false,
   });
@@ -426,6 +413,7 @@ export function SeasonsTable({
     <div className="flex flex-col h-full overflow-hidden">
       {/* Controls */}
       <TableControls
+        table={table}
         searchPlaceholder="Search seasons..."
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}
