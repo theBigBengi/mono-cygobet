@@ -52,8 +52,7 @@ export default function BookmakersPage() {
 
   // Sync mutation (bulk)
   // Sync mutation (bulk) - removed from UI for now
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const syncMutation = useMutation({
+  const _syncMutation = useMutation({
     mutationFn: () =>
       bookmakersService.sync(false) as Promise<AdminSyncBookmakersResponse>,
     onSuccess: (data) => {
@@ -103,8 +102,7 @@ export default function BookmakersPage() {
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleRefresh = () => {
+  const _handleRefresh = () => {
     refetchDb();
     refetchProvider();
     refetchBatches(); // Also refetch batches on refresh

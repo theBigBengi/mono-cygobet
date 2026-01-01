@@ -55,8 +55,7 @@ export default function SeasonsPage() {
   );
 
   // Sync mutation (bulk) - removed from UI for now
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const syncMutation = useMutation({
+  const _syncMutation = useMutation({
     mutationFn: () =>
       seasonsService.sync(false) as Promise<AdminSyncSeasonsResponse>,
     onSuccess: (data) => {
@@ -119,8 +118,7 @@ export default function SeasonsPage() {
     [syncSeasonMutation, unifiedData]
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleRefresh = () => {
+  const _handleRefresh = () => {
     refetchDb();
     refetchProvider();
     refetchBatches(); // Also refetch batches on refresh

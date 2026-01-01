@@ -34,14 +34,14 @@ class ErrorBoundaryClass extends React.Component<
   render() {
     if (this.state.hasError) {
       const FallbackComponent = this.props.fallback || DefaultErrorFallback;
-      return <FallbackComponent hasError={this.state.hasError} error={this.state.error} />;
+      return <FallbackComponent error={this.state.error} />;
     }
 
     return this.props.children;
   }
 }
 
-function DefaultErrorFallback({ hasError, error }: ErrorBoundaryState) {
+function DefaultErrorFallback({ error }: { error: Error | null }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
       <div className="max-w-md w-full space-y-4">

@@ -55,8 +55,7 @@ export default function TeamsPage() {
   );
 
   // Sync mutation (bulk) - removed from UI for now
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const syncMutation = useMutation({
+  const _syncMutation = useMutation({
     mutationFn: () =>
       teamsService.sync(false) as Promise<AdminSyncTeamsResponse>,
     onSuccess: (data) => {
@@ -119,8 +118,7 @@ export default function TeamsPage() {
     [syncTeamMutation, unifiedData]
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleRefresh = () => {
+  const _handleRefresh = () => {
     refetchDb();
     refetchProvider();
     refetchBatches(); // Also refetch batches on refresh
