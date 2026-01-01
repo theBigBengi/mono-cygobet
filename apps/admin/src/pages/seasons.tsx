@@ -125,8 +125,6 @@ export default function SeasonsPage() {
     refetchProvider();
     refetchBatches(); // Also refetch batches on refresh
   };
-<｜tool▁call▁begin｜>
-read_file
 
   // Calculate diff stats
   const diffStats = useMemo(
