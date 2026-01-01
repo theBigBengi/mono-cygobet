@@ -36,11 +36,11 @@ export function TableControls<TData>({
         placeholder={searchPlaceholder}
         value={globalFilter}
         onChange={(e) => onGlobalFilterChange(e.target.value)}
-        className="max-w-sm h-7 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1"
+        className="max-w-sm"
       />
       {showDiffFilter && onDiffFilterChange && (
         <Select value={diffFilter} onValueChange={onDiffFilterChange}>
-          <SelectTrigger className="w-[120px] sm:w-[180px] h-7 sm:h-9 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+          <SelectTrigger className="w-[120px] sm:w-[180px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
