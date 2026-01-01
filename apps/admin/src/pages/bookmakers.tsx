@@ -106,20 +106,6 @@ export default function BookmakersPage() {
         {/* Filters */}
         <PageFilters />
 
-        {/* Sync Result Panel */}
-        {syncResult && syncTimestamp && (
-          <div className="border-b pb-2 text-xs text-muted-foreground">
-            Synced: {syncResult.data.ok} ok, {syncResult.data.fail} failed
-          </div>
-        )}
-
-        {/* Sync Error */}
-        {syncError && (
-          <div className="border-b pb-2 text-xs text-destructive">
-            {syncError}
-          </div>
-        )}
-
         {/* Partial Data Warning */}
         {isPartialData && (
           <div className="border-b pb-2 text-xs text-muted-foreground">

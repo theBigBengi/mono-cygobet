@@ -58,10 +58,7 @@ export default function SeasonsPage() {
       toast.success("Season synced successfully", {
         description: `Synced ${variables.name} (${variables.id})`,
       });
-      setTimeout(() => {
-        refetchDb();
-        refetchProvider();
-      }, 500);
+      // Data will be refetched automatically via query invalidation
     },
     onError: (error: Error, variables) => {
       const errorMessage = error.message || "Sync failed";
@@ -101,20 +98,6 @@ export default function SeasonsPage() {
       <div className="flex-shrink-0 space-y-2 mb-3 sm:mb-4">
         {/* Filters */}
         <PageFilters />
-
-        {/* Sync Result Panel */}
-        {syncResult && syncTimestamp && (
-          <div className="border-b pb-2 text-xs text-muted-foreground">
-            Synced: {syncResult.data.ok} ok, {syncResult.data.fail} failed
-          </div>
-        )}
-
-        {/* Sync Error */}
-        {syncError && (
-          <div className="border-b pb-2 text-xs text-destructive">
-            {syncError}
-          </div>
-        )}
 
         {/* Partial Data Warning */}
         {isPartialData && (

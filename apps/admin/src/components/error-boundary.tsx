@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
-  fallback?: React.ComponentType<ErrorBoundaryState>;
+  fallback?: React.ComponentType<{ error: Error | null }>;
 }
 
 interface ErrorBoundaryState {
