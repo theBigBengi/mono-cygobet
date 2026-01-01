@@ -65,7 +65,7 @@ export function unifyLeagues(
               imagePath: l.country.imagePath ?? null,
               iso2: l.country.iso2 ?? null,
               iso3: l.country.iso3 ?? null,
-              externalId: String(l.countryExternalId ?? l.country.externalId ?? ""),
+              externalId: String(l.countryExternalId ?? ""),
             }
           : null,
       });
