@@ -16,11 +16,6 @@ import type { AdminSyncLeaguesResponse } from "@repo/types";
 export default function LeaguesPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
-  const [syncResult, setSyncResult] = useState<AdminSyncLeaguesResponse | null>(
-    null
-  );
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncTimestamp, setSyncTimestamp] = useState<Date | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -28,7 +23,6 @@ export default function LeaguesPage() {
     isLoading: dbLoading,
     isFetching: dbFetching,
     error: dbError,
-    refetch: refetchDb,
   } = useLeaguesFromDb({
     perPage: 1000,
   });
@@ -38,14 +32,12 @@ export default function LeaguesPage() {
     isLoading: providerLoading,
     isFetching: providerFetching,
     error: providerError,
-    refetch: refetchProvider,
   } = useLeaguesFromProvider();
 
   // Fetch batches (only seed-leagues batches)
   const {
     data: batchesData,
     isLoading: batchesLoading,
-    refetch: refetchBatches,
   } = useBatches("seed-leagues", 20);
 
   // Sync mutation (bulk) - removed from UI for now

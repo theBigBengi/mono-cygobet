@@ -16,11 +16,6 @@ import type { AdminSyncSeasonsResponse } from "@repo/types";
 export default function SeasonsPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
-  const [syncResult, setSyncResult] = useState<AdminSyncSeasonsResponse | null>(
-    null
-  );
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncTimestamp, setSyncTimestamp] = useState<Date | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -28,7 +23,6 @@ export default function SeasonsPage() {
     isLoading: dbLoading,
     isFetching: dbFetching,
     error: dbError,
-    refetch: refetchDb,
   } = useSeasonsFromDb({
     perPage: 1000,
   });
@@ -38,14 +32,12 @@ export default function SeasonsPage() {
     isLoading: providerLoading,
     isFetching: providerFetching,
     error: providerError,
-    refetch: refetchProvider,
   } = useSeasonsFromProvider();
 
   // Fetch batches (only seed-seasons batches)
   const {
     data: batchesData,
     isLoading: batchesLoading,
-    refetch: refetchBatches,
   } = useBatches("seed-seasons", 20);
 
   // Unify and process data

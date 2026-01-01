@@ -19,10 +19,6 @@ import type { AdminSyncBookmakersResponse } from "@repo/types";
 export default function BookmakersPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
-  const [syncResult, setSyncResult] =
-    useState<AdminSyncBookmakersResponse | null>(null);
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncTimestamp, setSyncTimestamp] = useState<Date | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -30,7 +26,6 @@ export default function BookmakersPage() {
     isLoading: dbLoading,
     isFetching: dbFetching,
     error: dbError,
-    refetch: refetchDb,
   } = useBookmakersFromDb({
     perPage: 1000,
   });
@@ -40,14 +35,12 @@ export default function BookmakersPage() {
     isLoading: providerLoading,
     isFetching: providerFetching,
     error: providerError,
-    refetch: refetchProvider,
   } = useBookmakersFromProvider();
 
   // Fetch batches (only seed-bookmakers batches)
   const {
     data: batchesData,
     isLoading: batchesLoading,
-    refetch: refetchBatches,
   } = useBatches("seed-bookmakers", 20);
 
   // Sync mutation (bulk) - removed from UI for now

@@ -16,11 +16,6 @@ import type { AdminSyncTeamsResponse } from "@repo/types";
 export default function TeamsPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
-  const [syncResult, setSyncResult] = useState<AdminSyncTeamsResponse | null>(
-    null
-  );
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncTimestamp, setSyncTimestamp] = useState<Date | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -28,7 +23,6 @@ export default function TeamsPage() {
     isLoading: dbLoading,
     isFetching: dbFetching,
     error: dbError,
-    refetch: refetchDb,
   } = useTeamsFromDb({
     perPage: 1000,
   });
@@ -38,14 +32,12 @@ export default function TeamsPage() {
     isLoading: providerLoading,
     isFetching: providerFetching,
     error: providerError,
-    refetch: refetchProvider,
   } = useTeamsFromProvider();
 
   // Fetch batches (only seed-teams batches)
   const {
     data: batchesData,
     isLoading: batchesLoading,
-    refetch: refetchBatches,
   } = useBatches("seed-teams", 20);
 
   // Unify and process data
