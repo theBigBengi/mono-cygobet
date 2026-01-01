@@ -37,15 +37,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { UnifiedCountry } from "@/types";
 import type {
-  UnifiedCountry,
   AdminCountriesListResponse,
   AdminProviderCountriesResponse,
 } from "@repo/types";
 
 type CountryDBRow = AdminCountriesListResponse["data"][0];
 
-type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
+import type { DiffFilter } from "@/types";
 
 interface CountriesTableProps {
   mode: "db" | "provider";
@@ -120,9 +120,11 @@ export function CountriesTable({
       return [
         {
           accessorKey: "status",
-          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Status" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedCountry | CountryDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Status" />,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const status = row.getValue("status") as UnifiedCountry["status"];
             const statusConfig: Record<
@@ -136,8 +138,6 @@ export function CountriesTable({
               mismatch: { label: "Mismatch", variant: "destructive" },
               "extra-in-db": { label: "Extra", variant: "secondary" },
               ok: { label: "OK", variant: "default" },
-              "no-leagues": { label: "No Leagues", variant: "secondary" },
-              "iso-missing": { label: "ISO Missing", variant: "secondary" },
               new: { label: "New", variant: "secondary" },
             };
             const config = statusConfig[status] || statusConfig.ok;
@@ -150,9 +150,11 @@ export function CountriesTable({
         },
         {
           accessorKey: "externalId",
-          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="externalId" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedCountry | CountryDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="externalId" />,
           cell: ({ row }: { row: Row<UnifiedCountry> }) => (
             <span className="font-mono text-xs">
               {row.getValue("externalId")}
@@ -244,25 +246,19 @@ export function CountriesTable({
           cell: ({ row }: { row: Row<UnifiedCountry> }) => {
             const country = row.original;
             if (mode === "provider") {
-              // For provider mode, show available leagues count
-              const availableLeagues = country.availableLeaguesCount ?? 0;
-              const totalLeagues = country.providerData?.leaguesCount ?? 0;
+              // For provider mode, show leagues count
+              const leaguesCount = country.leaguesCount ?? 0;
               return (
                 <div className="flex items-center justify-center">
                   <span className="text-xs text-foreground">
-                    {availableLeagues}
-                    {totalLeagues > 0 && (
-                      <span className="text-muted-foreground">
-                        /{totalLeagues}
-                      </span>
-                    )}
+                    {leaguesCount}
                   </span>
                 </div>
               );
             } else {
               // For DB mode, show leagues count from DB
               const leaguesCount =
-                country.leaguesCount ?? country.dbData?.leagues?.length ?? 0;
+                country.leaguesCount ?? country.dbData?.leaguesCount ?? 0;
               return (
                 <div className="flex items-center justify-center">
                   <span
@@ -293,9 +289,11 @@ export function CountriesTable({
       return [
         {
           accessorKey: "externalId",
-          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="externalId" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedCountry | CountryDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="externalId" />,
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
@@ -304,9 +302,11 @@ export function CountriesTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Name" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedCountry | CountryDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Name" />,
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-medium text-xs sm:text-sm">
               {row.getValue("name")}
@@ -315,9 +315,11 @@ export function CountriesTable({
         },
         {
           accessorKey: "iso2",
-          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="ISO2" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedCountry | CountryDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="ISO2" />,
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-mono text-xs sm:text-sm">
               {row.getValue("iso2") || "—"}
@@ -326,9 +328,11 @@ export function CountriesTable({
         },
         {
           accessorKey: "iso3",
-          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="ISO3" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedCountry | CountryDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="ISO3" />,
           cell: ({ row }: { row: Row<CountryDBRow> }) => (
             <span className="font-mono text-xs sm:text-sm">
               {row.getValue("iso3") || "—"}
@@ -347,7 +351,7 @@ export function CountriesTable({
             );
             const leaguesCount =
               unifiedCountry?.leaguesCount ??
-              unifiedCountry?.dbData?.leagues?.length ??
+              unifiedCountry?.dbData?.leaguesCount ??
               0;
             return (
               <div className="flex items-center justify-center">
@@ -373,9 +377,11 @@ export function CountriesTable({
         },
         {
           accessorKey: "updatedAt",
-          header: ({ column }: { column: Column<UnifiedCountry | CountryDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Updated At" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedCountry | CountryDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Updated At" />,
           cell: ({ row }: { row: Row<CountryDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
             if (!updatedAt)

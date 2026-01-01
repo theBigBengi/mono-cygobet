@@ -142,17 +142,25 @@ export interface AdminProviderLeaguesResponse {
 }
 
 export interface AdminSyncCountriesResponse {
-  batchId: number | null;
-  ok: number;
-  fail: number;
-  total: number;
+  status: string;
+  data: {
+    batchId: number | null;
+    ok: number;
+    fail: number;
+    total: number;
+  };
+  message: string;
 }
 
 export interface AdminSyncLeaguesResponse {
-  batchId: number | null;
-  ok: number;
-  fail: number;
-  total: number;
+  status: string;
+  data: {
+    batchId: number | null;
+    ok: number;
+    fail: number;
+    total: number;
+  };
+  message: string;
 }
 
 export interface BatchItem {
@@ -362,10 +370,14 @@ export interface AdminProviderSeasonsResponse {
 }
 
 export interface AdminSyncSeasonsResponse {
-  batchId: number | null;
-  ok: number;
-  fail: number;
-  total: number;
+  status: string;
+  data: {
+    batchId: number | null;
+    ok: number;
+    fail: number;
+    total: number;
+  };
+  message: string;
 }
 
 export interface AdminBookmakersListResponse {
@@ -409,8 +421,158 @@ export interface AdminProviderBookmakersResponse {
 }
 
 export interface AdminSyncBookmakersResponse {
-  batchId: number | null;
-  ok: number;
-  fail: number;
-  total: number;
+  status: string;
+  data: {
+    batchId: number | null;
+    ok: number;
+    fail: number;
+    total: number;
+  };
+  message: string;
+}
+
+export interface AdminFixturesListResponse {
+  status: string;
+  data: Array<{
+    id: number;
+    name: string;
+    startIso: string;
+    startTs: number;
+    state: string;
+    result: string | null;
+    homeScore: number | null;
+    awayScore: number | null;
+    stageRoundName: string | null;
+    leagueId: number | null;
+    seasonId: number | null;
+    homeTeamId: number;
+    awayTeamId: number;
+    homeTeam: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      externalId: string;
+    } | null;
+    awayTeam: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      externalId: string;
+    } | null;
+    league: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      type: string;
+      externalId: string;
+    } | null;
+    season: {
+      id: number;
+      name: string;
+      externalId: string;
+    } | null;
+    externalId: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
+export interface AdminFixtureResponse {
+  status: string;
+  data: {
+    id: number;
+    name: string;
+    startIso: string;
+    startTs: number;
+    state: string;
+    result: string | null;
+    homeScore: number | null;
+    awayScore: number | null;
+    stageRoundName: string | null;
+    leagueId: number | null;
+    seasonId: number | null;
+    homeTeamId: number;
+    awayTeamId: number;
+    homeTeam: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      externalId: string;
+    } | null;
+    awayTeam: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      externalId: string;
+    } | null;
+    league: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      type: string;
+      externalId: string;
+    } | null;
+    season: {
+      id: number;
+      name: string;
+      externalId: string;
+    } | null;
+    externalId: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  message: string;
+}
+
+export interface AdminProviderFixturesResponse {
+  status: string;
+  data: Array<{
+    externalId: number;
+    name: string;
+    startIso: string | null;
+    startTs: number;
+    state: string;
+    result: string | null;
+    stageRoundName: string | null;
+    leagueExternalId: number | null;
+    seasonExternalId: number | null;
+    homeTeamExternalId: number;
+    awayTeamExternalId: number;
+    leagueInDb: boolean;
+    seasonInDb: boolean;
+    leagueName: string | null;
+    countryName: string | null;
+    hasOdds: boolean;
+  }>;
+  message: string;
+  provider: string;
+}
+
+export interface AdminSyncFixturesResponse {
+  status: string;
+  data: {
+    batchId: number | null;
+    ok: number;
+    fail: number;
+    total: number;
+  };
+  message: string;
+}
+
+export interface AdminSyncTeamsResponse {
+  status: string;
+  data: {
+    batchId: number | null;
+    ok: number;
+    fail: number;
+    total: number;
+  };
+  message: string;
 }

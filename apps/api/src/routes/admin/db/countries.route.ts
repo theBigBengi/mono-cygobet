@@ -3,6 +3,7 @@ import { FastifyPluginAsync } from "fastify";
 import { Prisma, prisma } from "@repo/db";
 import { CountriesService } from "../../../services/countries.service";
 import { AdminCountriesListResponse, AdminCountryResponse } from "@repo/types";
+import { getPagination, createPaginationResponse, parseId, parseIncludeString } from "../../../utils/routes";
 import {
   listCountriesQuerystringSchema,
   listCountriesResponseSchema,
@@ -13,6 +14,12 @@ import {
   searchCountriesQuerystringSchema,
   searchCountriesResponseSchema,
 } from "../../../schemas/countries.schemas";
+import type {
+  ListCountriesQuerystring,
+  GetCountryQuerystring,
+  GetCountryParams,
+  SearchCountriesQuerystring,
+} from "../../../types";
 
 const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new CountriesService(fastify);
@@ -29,30 +36,17 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminCountriesListResponse> => {
-      const query = req.query as {
-        page?: number;
-        perPage?: number;
-        active?: boolean;
-        include?: string;
-      };
-
-      const page = query.page ?? 1;
-      const perPage = query.perPage ?? 20;
-      const skip = (page - 1) * perPage;
-      const take = perPage;
+      const query = req.query as ListCountriesQuerystring;
+      const { page, perPage, skip, take } = getPagination(query);
 
       // Parse include string to Prisma include object
-      let include: Prisma.countriesInclude | undefined = undefined;
-      if (query.include) {
-        include = {} as Prisma.countriesInclude;
-        const includes = query.include.split(",");
-        includes.forEach((inc) => {
-          const key = inc.trim() as keyof Prisma.countriesInclude;
-          if (key === "leagues" || key === "teams") {
-            (include as any)[key] = true;
-          }
-        });
-      }
+      const includeKeys = parseIncludeString(query.include);
+      const include: Prisma.countriesInclude = {};
+      includeKeys.forEach((key) => {
+        if (key === "leagues" || key === "teams") {
+          (include as any)[key] = true;
+        }
+      });
 
       // Always include leagues to count them
       const includeWithLeagues: Prisma.countriesInclude = {
@@ -84,19 +78,18 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
           updatedAt: c.updatedAt.toISOString(),
           leaguesCount: (c as any).leagues?.length || 0,
         })),
-        pagination: {
-          page,
-          perPage,
-          totalItems: count,
-          totalPages: Math.ceil(count / perPage),
-        },
+        pagination: createPaginationResponse(page, perPage, count),
         message: "Countries fetched successfully",
       });
     }
   );
 
   // GET /admin/countries/db/:id - Get country by ID from database
-  fastify.get<{ Params: { id: string }; Reply: AdminCountryResponse }>(
+  fastify.get<{
+    Params: GetCountryParams;
+    Querystring: GetCountryQuerystring;
+    Reply: AdminCountryResponse;
+  }>(
     "/countries/:id",
     {
       schema: {
@@ -110,28 +103,26 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply): Promise<AdminCountryResponse> => {
       const { id } = req.params;
-      const { include } = req.query as { include?: string };
+      const { include } = req.query;
 
-      const countryId = parseInt(id, 10);
-      if (isNaN(countryId)) {
+      let countryId: number;
+      try {
+        countryId = parseId(id);
+      } catch (error: any) {
         return reply.code(400).send({
           status: "error",
-          message: "Invalid country ID",
+          message: error.message,
         } as any);
       }
 
       // Parse include string to Prisma include object
-      let includeObj: Prisma.countriesInclude | undefined = undefined;
-      if (include) {
-        includeObj = {} as Prisma.countriesInclude;
-        const includes = include.split(",");
-        includes.forEach((inc) => {
-          const key = inc.trim() as keyof Prisma.countriesInclude;
-          if (key === "leagues" || key === "teams") {
-            (includeObj as any)[key] = true;
-          }
-        });
-      }
+      const includeKeys = parseIncludeString(include);
+      const includeObj: Prisma.countriesInclude = {};
+      includeKeys.forEach((key) => {
+        if (key === "leagues" || key === "teams") {
+          (includeObj as any)[key] = true;
+        }
+      });
 
       // Always include leagues to count them
       const includeWithLeagues: Prisma.countriesInclude = {
@@ -174,7 +165,7 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminCountriesListResponse> => {
-      const { q, take } = req.query as { q: string; take?: number };
+      const { q, take } = req.query as SearchCountriesQuerystring;
 
       const countries = await service.search(q, take || 10);
 

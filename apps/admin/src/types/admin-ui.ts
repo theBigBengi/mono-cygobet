@@ -1,3 +1,4 @@
+// src/types/admin-ui.ts
 // Frontend-specific unified types for admin UI
 
 export interface CountryDB {
@@ -6,51 +7,54 @@ export interface CountryDB {
   iso2: string | null;
   iso3: string | null;
   imagePath: string | null;
+  active: boolean;
   externalId: string;
-  leagues?: Array<{ id: number; name: string }>;
+  createdAt: string;
+  updatedAt: string;
+  leaguesCount?: number;
 }
 
 export interface CountryProvider {
   externalId: number | string;
   name: string;
-  imagePath?: string | null;
-  iso2?: string | null;
-  iso3?: string | null;
-  leaguesCount?: number;
-  availableLeaguesCount?: number;
+  iso2: string | null;
+  iso3: string | null;
+  imagePath: string | null;
 }
 
 export interface UnifiedCountry {
   externalId: string;
   name: string;
-  imagePath: string | null;
   iso2: string | null;
   iso3: string | null;
+  imagePath: string | null;
+  active: boolean;
   source: "db" | "provider" | "both";
-  status:
-    | "ok"
-    | "missing-in-db"
-    | "extra-in-db"
-    | "mismatch"
-    | "no-leagues"
-    | "iso-missing"
-    | "new";
+  status: "ok" | "missing-in-db" | "extra-in-db" | "mismatch" | "new";
   dbData?: CountryDB;
   providerData?: CountryProvider;
   leaguesCount?: number;
-  availableLeaguesCount?: number;
   updatedAt?: string;
 }
+
+export type CountryStatusFilter =
+  | "all"
+  | "ok"
+  | "missing-in-db"
+  | "extra-in-db"
+  | "mismatch";
 
 export interface LeagueDB {
   id: number;
   name: string;
-  type: string;
+  type: string | null;
   shortCode: string | null;
   subType: string | null;
   imagePath: string | null;
-  countryId: number;
+  countryId: number | null;
   externalId: string;
+  createdAt: string;
+  updatedAt: string;
   country?: {
     id: number;
     name: string;
@@ -64,18 +68,19 @@ export interface LeagueDB {
 export interface LeagueProvider {
   externalId: number | string;
   name: string;
-  imagePath?: string | null;
-  countryExternalId?: number | string | null;
+  imagePath: string | null;
+  type: string | null;
+  shortCode: string | null;
+  countryExternalId: number | string | null;
   country?: {
     id: number;
     name: string;
     imagePath: string | null;
     iso2: string | null;
     iso3: string | null;
+    externalId: string;
   } | null;
-  countryInDb?: boolean;
-  shortCode?: string | null;
-  type?: string | null;
+
   subType?: string | null;
 }
 
@@ -103,14 +108,6 @@ export interface UnifiedLeague {
 }
 
 export type ViewMode = "db" | "provider";
-export type CountryStatusFilter =
-  | "all"
-  | "ok"
-  | "missing-in-db"
-  | "extra-in-db"
-  | "mismatch"
-  | "has-leagues"
-  | "iso-issues";
 
 export type LeagueStatusFilter =
   | "all"
@@ -128,6 +125,8 @@ export interface TeamDB {
   founded: number | null;
   countryId: number | null;
   externalId: string;
+  createdAt: string;
+  updatedAt: string;
   country?: {
     id: number;
     name: string;
@@ -141,19 +140,21 @@ export interface TeamDB {
 export interface TeamProvider {
   externalId: number | string;
   name: string;
-  imagePath?: string | null;
-  countryExternalId?: number | string | null;
+  imagePath: string | null;
+  type: string | null;
+  shortCode: string | null;
+  founded: number | null;
+  countryExternalId: number | string | null;
   country?: {
     id: number;
     name: string;
     imagePath: string | null;
     iso2: string | null;
     iso3: string | null;
+    externalId: string;
   } | null;
-  leagueInDb?: boolean;
-  shortCode?: string | null;
-  founded?: number | null;
   type?: string | null;
+  leagueInDb?: boolean;
 }
 
 export interface UnifiedTeam {
@@ -189,11 +190,13 @@ export type TeamStatusFilter =
 export interface SeasonDB {
   id: number;
   name: string;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  endDate: string | null;
   isCurrent: boolean;
-  leagueId: number;
+  leagueId: number | null;
   externalId: string;
+  createdAt: string;
+  updatedAt: string;
   league?: {
     id: number;
     name: string;
@@ -217,11 +220,7 @@ export interface SeasonProvider {
   startDate: string | null;
   endDate: string | null;
   isCurrent: boolean;
-  leagueExternalId?: number | string | null;
-  league?: {
-    id: number;
-    name: string;
-  } | null;
+  leagueExternalId: number | string | null;
   leagueInDb?: boolean;
   countryName?: string | null;
 }
@@ -293,3 +292,119 @@ export type BookmakerStatusFilter =
   | "mismatch"
   | "new";
 
+export interface FixtureDB {
+  id: number;
+  name: string;
+  startIso: string;
+  startTs: number;
+  state: string;
+  result: string | null;
+  homeScore: number | null;
+  awayScore: number | null;
+  stageRoundName: string | null;
+  leagueId: number | null;
+  seasonId: number | null;
+  homeTeamId: number;
+  awayTeamId: number;
+  externalId: string;
+  createdAt: string;
+  updatedAt: string;
+  homeTeam?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    externalId: string;
+  } | null;
+  awayTeam?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    externalId: string;
+  } | null;
+  league?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    type: string;
+    externalId: string;
+  } | null;
+  season?: {
+    id: number;
+    name: string;
+    externalId: string;
+  } | null;
+}
+
+export interface FixtureProvider {
+  externalId: number | string;
+  name: string;
+  startIso: string | null;
+  startTs: number;
+  state: string;
+  result: string | null;
+  stageRoundName: string | null;
+  leagueExternalId: number | string | null;
+  seasonExternalId: number | string | null;
+  homeTeamExternalId: number | string;
+  awayTeamExternalId: number | string;
+  leagueInDb: boolean;
+  seasonInDb: boolean;
+  leagueName: string | null;
+  countryName: string | null;
+  hasOdds: boolean;
+}
+
+export interface UnifiedFixture {
+  externalId: string;
+  name: string;
+  startIso: string | null;
+  startTs: number;
+  state: string;
+  result: string | null;
+  stageRoundName: string | null;
+  source: "db" | "provider" | "both";
+  status: "ok" | "missing-in-db" | "extra-in-db" | "mismatch" | "new";
+  dbData?: FixtureDB;
+  providerData?: FixtureProvider;
+  league?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    type: string;
+    externalId: string;
+  } | null;
+  season?: {
+    id: number;
+    name: string;
+    externalId: string;
+  } | null;
+  homeTeam?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    externalId: string;
+  } | null;
+  awayTeam?: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    externalId: string;
+  } | null;
+  leagueInDb?: boolean;
+  seasonInDb?: boolean;
+  updatedAt?: string;
+  // Provider-specific fields
+  leagueName?: string | null;
+  countryName?: string | null;
+  hasOdds?: boolean;
+}
+
+export type FixtureStatusFilter =
+  | "all"
+  | "ok"
+  | "missing-in-db"
+  | "extra-in-db"
+  | "mismatch";
+
+// Shared filter type used across all admin tables
+export type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";

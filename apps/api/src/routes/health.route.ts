@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from "fastify";
-import { HealthResponse } from "@repo/types/http/health";
+import { HealthResponse } from "../../types/health";
 import { prisma } from "@repo/db";
 import { healthResponseSchema } from "../schemas/health.schemas";
 

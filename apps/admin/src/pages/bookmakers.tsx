@@ -9,14 +9,13 @@ import {
   useBookmakersFromProvider,
 } from "@/hooks/use-bookmakers";
 import { useBatches } from "@/hooks/use-batches";
-import { BatchesTable } from "@/components/countries/batches-table";
+import { BatchesTable } from "@/components/table";
 import { bookmakersService } from "@/services/bookmakers.service";
 import { unifyBookmakers, calculateDiffStats } from "@/utils/bookmakers";
 import { BookmakersTable } from "@/components/bookmakers/bookmakers-table";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ViewMode, AdminSyncBookmakersResponse } from "@repo/types";
-
-type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
+import type { ViewMode, DiffFilter } from "@/types";
+import type { AdminSyncBookmakersResponse } from "@repo/types";
 
 export default function BookmakersPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
@@ -62,7 +61,7 @@ export default function BookmakersPage() {
       setSyncError(null);
       queryClient.invalidateQueries({ queryKey: ["bookmakers"] });
       toast.success("Bookmakers synced successfully", {
-        description: `Synced ${data.ok} bookmakers. ${data.fail > 0 ? `${data.fail} failed.` : ""}`,
+        description: `Synced ${data.data.ok} bookmakers. ${data.data.fail > 0 ? `${data.data.fail} failed.` : ""}`,
       });
       setTimeout(() => {
         refetchDb();
@@ -188,7 +187,7 @@ export default function BookmakersPage() {
         {/* Sync Result Panel */}
         {syncResult && syncTimestamp && (
           <div className="border-b pb-2 text-xs text-muted-foreground">
-            Synced: {syncResult.ok} ok, {syncResult.fail} failed
+            Synced: {syncResult.data.ok} ok, {syncResult.data.fail} failed
           </div>
         )}
 
@@ -316,4 +315,3 @@ export default function BookmakersPage() {
     </div>
   );
 }
-

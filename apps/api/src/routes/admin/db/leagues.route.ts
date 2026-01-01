@@ -4,6 +4,12 @@ import { Prisma } from "@repo/db";
 import { LeaguesService } from "../../../services/leagues.service";
 import { AdminLeaguesListResponse, AdminLeagueResponse } from "@repo/types";
 import {
+  getPagination,
+  createPaginationResponse,
+  parseId,
+  parseIncludeString,
+} from "../../../utils/routes";
+import {
   listLeaguesQuerystringSchema,
   listLeaguesResponseSchema,
   getLeagueParamsSchema,
@@ -13,6 +19,12 @@ import {
   searchLeaguesQuerystringSchema,
   searchLeaguesResponseSchema,
 } from "../../../schemas/leagues.schemas";
+import type {
+  ListLeaguesQuerystring,
+  GetLeagueQuerystring,
+  GetLeagueParams,
+  SearchLeaguesQuerystring,
+} from "../../../types";
 
 const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new LeaguesService(fastify);
@@ -29,31 +41,18 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminLeaguesListResponse> => {
-      const query = req.query as {
-        page?: number;
-        perPage?: number;
-        countryId?: number;
-        type?: string;
-        include?: string;
-      };
+      const query = req.query as ListLeaguesQuerystring;
 
-      const page = query.page ?? 1;
-      const perPage = query.perPage ?? 20;
-      const skip = (page - 1) * perPage;
-      const take = perPage;
+      const { page, perPage, skip, take } = getPagination(query);
 
       // Parse include string to Prisma include object
-      let include: Prisma.leaguesInclude | undefined = undefined;
-      if (query.include) {
-        include = {} as Prisma.leaguesInclude;
-        const includes = query.include.split(",");
-        includes.forEach((inc) => {
-          const key = inc.trim() as keyof Prisma.leaguesInclude;
-          if (key === "country" || key === "seasons" || key === "fixtures") {
-            (include as any)[key] = true;
-          }
-        });
-      }
+      const includeKeys = parseIncludeString(query.include);
+      const include: Prisma.leaguesInclude = {};
+      includeKeys.forEach((key) => {
+        if (key === "country" || key === "seasons" || key === "fixtures") {
+          (include as any)[key] = true;
+        }
+      });
 
       // Always include country
       const includeWithCountry: Prisma.leaguesInclude = {
@@ -89,31 +88,32 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
           subType: l.subType,
           imagePath: l.imagePath,
           countryId: l.countryId,
-          country: (l as any).country ? {
-            id: (l as any).country.id,
-            name: (l as any).country.name,
-            imagePath: (l as any).country.imagePath,
-            iso2: (l as any).country.iso2,
-            iso3: (l as any).country.iso3,
-            externalId: (l as any).country.externalId.toString(),
-          } : null,
+          country: (l as any).country
+            ? {
+                id: (l as any).country.id,
+                name: (l as any).country.name,
+                imagePath: (l as any).country.imagePath,
+                iso2: (l as any).country.iso2,
+                iso3: (l as any).country.iso3,
+                externalId: (l as any).country.externalId.toString(),
+              }
+            : null,
           externalId: l.externalId.toString(),
           createdAt: l.createdAt.toISOString(),
           updatedAt: l.updatedAt.toISOString(),
         })),
-        pagination: {
-          page,
-          perPage,
-          totalItems: count,
-          totalPages: Math.ceil(count / perPage),
-        },
+        pagination: createPaginationResponse(page, perPage, count),
         message: "Leagues fetched successfully",
       });
     }
   );
 
   // GET /admin/leagues/db/:id - Get league by ID from database
-  fastify.get<{ Params: { id: string }; Reply: AdminLeagueResponse }>(
+  fastify.get<{
+    Params: GetLeagueParams;
+    Querystring: GetLeagueQuerystring;
+    Reply: AdminLeagueResponse;
+  }>(
     "/leagues/:id",
     {
       schema: {
@@ -127,28 +127,26 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply): Promise<AdminLeagueResponse> => {
       const { id } = req.params;
-      const { include } = req.query as { include?: string };
+      const { include } = req.query;
 
-      const leagueId = parseInt(id, 10);
-      if (isNaN(leagueId)) {
+      let leagueId: number;
+      try {
+        leagueId = parseId(id);
+      } catch (error: any) {
         return reply.code(400).send({
           status: "error",
-          message: "Invalid league ID",
+          message: error.message,
         } as any);
       }
 
       // Parse include string to Prisma include object
-      let includeObj: Prisma.leaguesInclude | undefined = undefined;
-      if (include) {
-        includeObj = {} as Prisma.leaguesInclude;
-        const includes = include.split(",");
-        includes.forEach((inc) => {
-          const key = inc.trim() as keyof Prisma.leaguesInclude;
-          if (key === "country" || key === "seasons" || key === "fixtures") {
-            (includeObj as any)[key] = true;
-          }
-        });
-      }
+      const includeKeys = parseIncludeString(include);
+      const includeObj: Prisma.leaguesInclude = {};
+      includeKeys.forEach((key) => {
+        if (key === "country" || key === "seasons" || key === "fixtures") {
+          (includeObj as any)[key] = true;
+        }
+      });
 
       // Always include country
       const includeWithCountry: Prisma.leaguesInclude = {
@@ -177,14 +175,16 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
           subType: league.subType,
           imagePath: league.imagePath,
           countryId: league.countryId,
-          country: (league as any).country ? {
-            id: (league as any).country.id,
-            name: (league as any).country.name,
-            imagePath: (league as any).country.imagePath,
-            iso2: (league as any).country.iso2,
-            iso3: (league as any).country.iso3,
-            externalId: (league as any).country.externalId.toString(),
-          } : null,
+          country: (league as any).country
+            ? {
+                id: (league as any).country.id,
+                name: (league as any).country.name,
+                imagePath: (league as any).country.imagePath,
+                iso2: (league as any).country.iso2,
+                iso3: (league as any).country.iso3,
+                externalId: (league as any).country.externalId.toString(),
+              }
+            : null,
           externalId: league.externalId.toString(),
           createdAt: league.createdAt.toISOString(),
           updatedAt: league.updatedAt.toISOString(),
@@ -206,7 +206,7 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminLeaguesListResponse> => {
-      const { q, take } = req.query as { q: string; take?: number };
+      const { q, take } = req.query as SearchLeaguesQuerystring;
 
       // Search already includes country by default
       const leagues = await service.search(q, take || 10);
@@ -221,24 +221,21 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
           subType: l.subType,
           imagePath: l.imagePath,
           countryId: l.countryId,
-          country: (l as any).country ? {
-            id: (l as any).country.id,
-            name: (l as any).country.name,
-            imagePath: (l as any).country.imagePath,
-            iso2: (l as any).country.iso2,
-            iso3: (l as any).country.iso3,
-            externalId: (l as any).country.externalId.toString(),
-          } : null,
+          country: (l as any).country
+            ? {
+                id: (l as any).country.id,
+                name: (l as any).country.name,
+                imagePath: (l as any).country.imagePath,
+                iso2: (l as any).country.iso2,
+                iso3: (l as any).country.iso3,
+                externalId: (l as any).country.externalId.toString(),
+              }
+            : null,
           externalId: l.externalId.toString(),
           createdAt: l.createdAt.toISOString(),
           updatedAt: l.updatedAt.toISOString(),
         })),
-        pagination: {
-          page: 1,
-          perPage: leagues.length,
-          totalItems: leagues.length,
-          totalPages: 1,
-        },
+        pagination: createPaginationResponse(1, leagues.length, leagues.length),
         message: "Leagues search completed",
       });
     }

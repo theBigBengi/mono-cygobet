@@ -2,6 +2,13 @@
 import { FastifyPluginAsync } from "fastify";
 import { Prisma } from "@repo/db";
 import { SeasonsService } from "../../../services/seasons.service";
+import { AdminSeasonsListResponse, AdminSeasonResponse } from "@repo/types";
+import {
+  getPagination,
+  createPaginationResponse,
+  parseId,
+  parseIncludeString,
+} from "../../../utils/routes";
 import {
   listSeasonsQuerystringSchema,
   listSeasonsResponseSchema,
@@ -12,74 +19,12 @@ import {
   searchSeasonsQuerystringSchema,
   searchSeasonsResponseSchema,
 } from "../../../schemas/seasons.schemas";
-
-interface AdminSeasonsListResponse {
-  status: string;
-  data: Array<{
-    id: number;
-    name: string;
-    startDate: string;
-    endDate: string;
-    isCurrent: boolean;
-    leagueId: number;
-    league: {
-      id: number;
-      name: string;
-      imagePath: string | null;
-      type: string;
-      externalId: string;
-      country: {
-        id: number;
-        name: string;
-        imagePath: string | null;
-        iso2: string | null;
-        iso3: string | null;
-        externalId: string;
-      } | null;
-    } | null;
-    externalId: string;
-    createdAt: string;
-    updatedAt: string;
-  }>;
-  pagination: {
-    page: number;
-    perPage: number;
-    totalItems: number;
-    totalPages: number;
-  };
-  message: string;
-}
-
-interface AdminSeasonResponse {
-  status: string;
-  data: {
-    id: number;
-    name: string;
-    startDate: string;
-    endDate: string;
-    isCurrent: boolean;
-    leagueId: number;
-    league: {
-      id: number;
-      name: string;
-      imagePath: string | null;
-      type: string;
-      externalId: string;
-      country: {
-        id: number;
-        name: string;
-        imagePath: string | null;
-        iso2: string | null;
-        iso3: string | null;
-        externalId: string;
-      } | null;
-    } | null;
-    externalId: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-  message: string;
-}
+import type {
+  ListSeasonsQuerystring,
+  GetSeasonQuerystring,
+  GetSeasonParams,
+  SearchSeasonsQuerystring,
+} from "../../../types";
 
 const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new SeasonsService(fastify);
@@ -96,31 +41,18 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminSeasonsListResponse> => {
-      const query = req.query as {
-        page?: number;
-        perPage?: number;
-        leagueId?: number;
-        isCurrent?: boolean;
-        include?: string;
-      };
+      const query = req.query as ListSeasonsQuerystring;
 
-      const page = query.page ?? 1;
-      const perPage = query.perPage ?? 20;
-      const skip = (page - 1) * perPage;
-      const take = perPage;
+      const { page, perPage, skip, take } = getPagination(query);
 
       // Parse include string to Prisma include object
-      let include: Prisma.seasonsInclude | undefined = undefined;
-      if (query.include) {
-        include = {} as Prisma.seasonsInclude;
-        const includes = query.include.split(",");
-        includes.forEach((inc) => {
-          const key = inc.trim() as keyof Prisma.seasonsInclude;
-          if (key === "leagues") {
-            (include as any)[key] = true;
-          }
-        });
-      }
+      const includeKeys = parseIncludeString(query.include);
+      const include: Prisma.seasonsInclude = {};
+      includeKeys.forEach((key) => {
+        if (key === "leagues") {
+          (include as any)[key] = true;
+        }
+      });
 
       // Always include league
       const includeWithLeague: Prisma.seasonsInclude = {
@@ -178,7 +110,9 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
                       imagePath: (s as any).leagues.country.imagePath,
                       iso2: (s as any).leagues.country.iso2,
                       iso3: (s as any).leagues.country.iso3,
-                      externalId: (s as any).leagues.country.externalId.toString(),
+                      externalId: (
+                        s as any
+                      ).leagues.country.externalId.toString(),
                     }
                   : null,
               }
@@ -187,19 +121,18 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
           createdAt: s.createdAt.toISOString(),
           updatedAt: s.updatedAt.toISOString(),
         })),
-        pagination: {
-          page,
-          perPage,
-          totalItems: count,
-          totalPages: Math.ceil(count / perPage),
-        },
+        pagination: createPaginationResponse(page, perPage, count),
         message: "Seasons fetched successfully",
       });
     }
   );
 
   // GET /admin/seasons/db/:id - Get season by ID
-  fastify.get<{ Params: { id: string }; Reply: AdminSeasonResponse }>(
+  fastify.get<{
+    Params: GetSeasonParams;
+    Querystring: GetSeasonQuerystring;
+    Reply: AdminSeasonResponse;
+  }>(
     "/seasons/:id",
     {
       schema: {
@@ -213,28 +146,26 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply): Promise<AdminSeasonResponse> => {
       const { id } = req.params;
-      const { include } = req.query as { include?: string };
+      const { include } = req.query;
 
-      const seasonId = parseInt(id, 10);
-      if (isNaN(seasonId)) {
+      let seasonId: number;
+      try {
+        seasonId = parseId(id);
+      } catch (error: any) {
         return reply.code(400).send({
           status: "error",
-          message: "Invalid season ID",
+          message: error.message,
         } as any);
       }
 
       // Parse include string to Prisma include object
-      let includeObj: Prisma.seasonsInclude | undefined = undefined;
-      if (include) {
-        includeObj = {} as Prisma.seasonsInclude;
-        const includes = include.split(",");
-        includes.forEach((inc) => {
-          const key = inc.trim() as keyof Prisma.seasonsInclude;
-          if (key === "leagues") {
-            (includeObj as any)[key] = true;
-          }
-        });
-      }
+      const includeKeys = parseIncludeString(include);
+      const includeObj: Prisma.seasonsInclude = {};
+      includeKeys.forEach((key) => {
+        if (key === "leagues") {
+          (includeObj as any)[key] = true;
+        }
+      });
 
       // Always include league
       const includeWithLeague: Prisma.seasonsInclude = {
@@ -285,7 +216,9 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
                       imagePath: (season as any).leagues.country.imagePath,
                       iso2: (season as any).leagues.country.iso2,
                       iso3: (season as any).leagues.country.iso3,
-                      externalId: (season as any).leagues.country.externalId.toString(),
+                      externalId: (
+                        season as any
+                      ).leagues.country.externalId.toString(),
                     }
                   : null,
               }
@@ -311,7 +244,7 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminSeasonsListResponse> => {
-      const { q, take = 10 } = req.query as { q: string; take?: number };
+      const { q, take = 10 } = req.query as SearchSeasonsQuerystring;
 
       const seasons = await service.search(q, take);
 
@@ -338,7 +271,9 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
                       imagePath: (s as any).leagues.country.imagePath,
                       iso2: (s as any).leagues.country.iso2,
                       iso3: (s as any).leagues.country.iso3,
-                      externalId: (s as any).leagues.country.externalId.toString(),
+                      externalId: (
+                        s as any
+                      ).leagues.country.externalId.toString(),
                     }
                   : null,
               }
@@ -347,12 +282,7 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
           createdAt: s.createdAt.toISOString(),
           updatedAt: s.updatedAt.toISOString(),
         })),
-        pagination: {
-          page: 1,
-          perPage: take,
-          totalItems: seasons.length,
-          totalPages: 1,
-        },
+        pagination: createPaginationResponse(1, take, seasons.length),
         message: "Seasons search completed",
       });
     }
@@ -360,4 +290,3 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
 };
 
 export default adminSeasonsDbRoutes;
-

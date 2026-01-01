@@ -1,51 +1,18 @@
 // src/routes/admin/db/batches.route.ts
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "@repo/db";
-
-interface BatchItem {
-  id: number;
-  itemKey: string | null;
-  status: string;
-  errorMessage: string | null;
-  meta: Record<string, unknown>;
-}
-
-interface Batch {
-  id: number;
-  name: string;
-  version: string | null;
-  status: string;
-  triggeredBy: string | null;
-  startedAt: string;
-  finishedAt: string | null;
-  itemsTotal: number;
-  itemsSuccess: number;
-  itemsFailed: number;
-}
-
-interface BatchesListResponse {
-  status: string;
-  data: Batch[];
-  message: string;
-}
-
-interface BatchItemsResponse {
-  status: string;
-  data: BatchItem[];
-  pagination: {
-    page: number;
-    perPage: number;
-    totalItems: number;
-    totalPages: number;
-  };
-  message: string;
-}
+import {
+  BatchItem,
+  Batch,
+  AdminBatchesListResponse,
+  AdminBatchItemsResponse,
+} from "@repo/types";
 
 const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/db/batches - List seed batches (filtered by name if provided)
   fastify.get<{
     Querystring: { name?: string; limit?: number };
-    Reply: BatchesListResponse;
+    Reply: AdminBatchesListResponse;
   }>(
     "/batches",
     {
@@ -86,7 +53,7 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (req, reply): Promise<BatchesListResponse> => {
+    async (req, reply): Promise<AdminBatchesListResponse> => {
       const { name, limit = 20 } = req.query;
 
       const batches = await prisma.seedBatches.findMany({
@@ -130,7 +97,7 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{
     Params: { id: string };
     Querystring: { page?: number; perPage?: number };
-    Reply: BatchItemsResponse;
+    Reply: AdminBatchItemsResponse;
   }>(
     "/batches/:id/items",
     {
@@ -182,7 +149,7 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (req, reply): Promise<BatchItemsResponse> => {
+    async (req, reply): Promise<AdminBatchItemsResponse> => {
       const { id } = req.params;
       const { page = 1, perPage = 50 } = req.query;
 

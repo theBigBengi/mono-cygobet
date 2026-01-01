@@ -36,15 +36,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { UnifiedBookmaker } from "@/types";
 import type {
-  UnifiedBookmaker,
   AdminBookmakersListResponse,
   AdminProviderBookmakersResponse,
 } from "@repo/types";
 
 type BookmakerDBRow = AdminBookmakersListResponse["data"][0];
 
-type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
+import type { DiffFilter } from "@/types";
 
 interface BookmakersTableProps {
   mode: "db" | "provider";
@@ -79,15 +79,15 @@ export function BookmakersTable({
     pageSize: 25,
   });
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
-  const [selectedBookmaker, setSelectedBookmaker] = useState<UnifiedBookmaker | null>(
-    null
-  );
+  const [selectedBookmaker, setSelectedBookmaker] =
+    useState<UnifiedBookmaker | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleRowClick = (bookmaker: UnifiedBookmaker | BookmakerDBRow) => {
     const unifiedBookmaker = unifiedData.find(
-      (b) => b.externalId === (bookmaker as BookmakerDBRow).externalId || 
-             b.externalId === String((bookmaker as UnifiedBookmaker).externalId)
+      (b) =>
+        b.externalId === (bookmaker as BookmakerDBRow).externalId ||
+        b.externalId === String((bookmaker as UnifiedBookmaker).externalId)
     );
     setSelectedBookmaker(unifiedBookmaker || (bookmaker as UnifiedBookmaker));
     setIsDialogOpen(true);
@@ -119,9 +119,11 @@ export function BookmakersTable({
             const bookmaker = row as UnifiedBookmaker;
             return bookmaker.status;
           },
-          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Status" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedBookmaker | BookmakerDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Status" />,
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => {
             const bookmaker = row.original as UnifiedBookmaker;
             const status = bookmaker.status;
@@ -145,9 +147,11 @@ export function BookmakersTable({
         },
         {
           accessorKey: "externalId",
-          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="externalId" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedBookmaker | BookmakerDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="externalId" />,
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => (
             <span className="text-xs sm:text-sm font-mono">
               {(row.getValue("externalId") as string) || "—"}
@@ -156,9 +160,11 @@ export function BookmakersTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Name" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedBookmaker | BookmakerDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Name" />,
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => (
             <span className="text-xs sm:text-sm">{row.getValue("name")}</span>
           ),
@@ -169,9 +175,11 @@ export function BookmakersTable({
       return [
         {
           accessorKey: "id",
-          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="ID" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedBookmaker | BookmakerDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="ID" />,
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => {
             const bookmaker = row.original as BookmakerDBRow;
             return (
@@ -183,9 +191,11 @@ export function BookmakersTable({
         },
         {
           accessorKey: "externalId",
-          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="externalId" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedBookmaker | BookmakerDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="externalId" />,
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => (
             <span className="text-xs sm:text-sm font-mono">
               {(row.getValue("externalId") as string) || "—"}
@@ -194,18 +204,22 @@ export function BookmakersTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Name" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedBookmaker | BookmakerDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Name" />,
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => (
             <span className="text-xs sm:text-sm">{row.getValue("name")}</span>
           ),
         },
         {
           accessorKey: "updatedAt",
-          header: ({ column }: { column: Column<UnifiedBookmaker | BookmakerDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Updated" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedBookmaker | BookmakerDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Updated" />,
           cell: ({ row }: { row: Row<UnifiedBookmaker | BookmakerDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string;
             return (
@@ -292,7 +306,6 @@ export function BookmakersTable({
     return <TableError error={error} />;
   }
 
-
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Controls */}
@@ -330,7 +343,9 @@ export function BookmakersTable({
 
               if (rows?.length) {
                 return rows.map((row) => {
-                  const bookmaker = row.original as UnifiedBookmaker | BookmakerDBRow;
+                  const bookmaker = row.original as
+                    | UnifiedBookmaker
+                    | BookmakerDBRow;
 
                   return (
                     <TableRow
@@ -469,4 +484,3 @@ export function BookmakersTable({
     </div>
   );
 }
-

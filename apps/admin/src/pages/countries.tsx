@@ -9,14 +9,13 @@ import {
   useCountriesFromProvider,
 } from "@/hooks/use-countries";
 import { useBatches } from "@/hooks/use-batches";
-import { BatchesTable } from "@/components/countries/batches-table";
+import { BatchesTable } from "@/components/table";
 import { countriesService } from "@/services/countries.service";
 import { unifyCountries, calculateDiffStats } from "@/utils/countries";
 import { CountriesTable } from "@/components/countries/countries-table";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ViewMode, AdminSyncCountriesResponse } from "@repo/types";
-
-type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
+import type { ViewMode, DiffFilter } from "@/types";
+import type { AdminSyncCountriesResponse } from "@repo/types";
 
 export default function CountriesPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
@@ -63,7 +62,7 @@ export default function CountriesPage() {
       setSyncError(null);
       queryClient.invalidateQueries({ queryKey: ["countries"] });
       toast.success("Countries synced successfully", {
-        description: `Synced ${data.ok} countries. ${data.fail > 0 ? `${data.fail} failed.` : ""}`,
+        description: `Synced ${data.data.ok} countries. ${data.data.fail > 0 ? `${data.data.fail} failed.` : ""}`,
       });
       setTimeout(() => {
         refetchDb();
@@ -189,7 +188,7 @@ export default function CountriesPage() {
         {/* Sync Result Panel */}
         {syncResult && syncTimestamp && (
           <div className="border-b pb-2 text-xs text-muted-foreground">
-            Synced: {syncResult.ok} ok, {syncResult.fail} failed
+            Synced: {syncResult.data.ok} ok, {syncResult.data.fail} failed
           </div>
         )}
 

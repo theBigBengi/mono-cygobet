@@ -46,6 +46,10 @@ const data = {
           title: "Bookmakers",
           url: "/bookmakers",
         },
+        {
+          title: "Fixtures",
+          url: "/fixtures",
+        },
       ],
     },
   ],

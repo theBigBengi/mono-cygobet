@@ -36,15 +36,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { UnifiedLeague } from "@/types";
 import type {
-  UnifiedLeague,
   AdminLeaguesListResponse,
   AdminProviderLeaguesResponse,
 } from "@repo/types";
 
 type LeagueDBRow = AdminLeaguesListResponse["data"][0];
 
-type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
+import type { DiffFilter } from "@/types";
 
 interface LeaguesTableProps {
   mode: "db" | "provider";
@@ -119,9 +119,11 @@ export function LeaguesTable({
       return [
         {
           accessorKey: "status",
-          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Status" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedLeague | LeagueDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Status" />,
           cell: ({ row }: { row: Row<UnifiedLeague> }) => {
             const status = row.getValue("status") as UnifiedLeague["status"];
             const statusConfig: Record<
@@ -252,9 +254,11 @@ export function LeaguesTable({
       return [
         {
           accessorKey: "externalId",
-          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="externalId" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedLeague | LeagueDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="externalId" />,
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
@@ -263,9 +267,11 @@ export function LeaguesTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Name" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedLeague | LeagueDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Name" />,
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="font-medium text-xs sm:text-sm">
               {row.getValue("name")}
@@ -274,9 +280,11 @@ export function LeaguesTable({
         },
         {
           accessorKey: "type",
-          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Type" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedLeague | LeagueDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Type" />,
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="text-xs sm:text-sm">
               {row.getValue("type") || "—"}
@@ -285,9 +293,11 @@ export function LeaguesTable({
         },
         {
           accessorKey: "shortCode",
-          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Short Code" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedLeague | LeagueDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Short Code" />,
           cell: ({ row }: { row: Row<LeagueDBRow> }) => (
             <span className="font-mono text-xs sm:text-sm">
               {row.getValue("shortCode") || "—"}
@@ -317,9 +327,11 @@ export function LeaguesTable({
         },
         {
           accessorKey: "updatedAt",
-          header: ({ column }: { column: Column<UnifiedLeague | LeagueDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Updated At" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedLeague | LeagueDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Updated At" />,
           cell: ({ row }: { row: Row<LeagueDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
             if (!updatedAt)

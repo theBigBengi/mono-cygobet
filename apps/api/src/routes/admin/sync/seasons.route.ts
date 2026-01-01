@@ -2,27 +2,17 @@
 import { FastifyPluginAsync } from "fastify";
 import { seedSeasons } from "../../../etl/seeds/seed.seasons";
 import SportMonksAdapter from "@repo/sports-data/adapters/sportmonks";
+import { AdminSyncSeasonsResponse } from "@repo/types";
 import {
   syncBodySchema,
   syncResponseSchema,
 } from "../../../schemas/admin.schemas";
 
-interface SyncSeasonsResponse {
-  status: string;
-  data: {
-    batchId: number | null;
-    ok: number;
-    fail: number;
-    total: number;
-  };
-  message: string;
-}
-
 const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sync/seasons - Sync seasons from provider to database
   fastify.post<{
     Body: { dryRun?: boolean };
-    Reply: SyncSeasonsResponse;
+    Reply: AdminSyncSeasonsResponse;
   }>(
     "/seasons",
     {
@@ -33,7 +23,7 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (req, reply): Promise<SyncSeasonsResponse> => {
+    async (req, reply): Promise<AdminSyncSeasonsResponse> => {
       const { dryRun = false } = req.body ?? {};
 
       const adapter = new SportMonksAdapter({
@@ -69,7 +59,7 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{
     Params: { id: string };
     Body: { dryRun?: boolean };
-    Reply: SyncSeasonsResponse;
+    Reply: AdminSyncSeasonsResponse;
   }>(
     "/seasons/:id",
     {
@@ -87,7 +77,7 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (req, reply): Promise<SyncSeasonsResponse> => {
+    async (req, reply): Promise<AdminSyncSeasonsResponse> => {
       const { id } = req.params;
       const { dryRun = false } = req.body ?? {};
 

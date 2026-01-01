@@ -36,15 +36,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { UnifiedTeam } from "@/types";
 import type {
-  UnifiedTeam,
   AdminTeamsListResponse,
   AdminProviderTeamsResponse,
 } from "@repo/types";
 
 type TeamDBRow = AdminTeamsListResponse["data"][0];
 
-type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
+import type { DiffFilter } from "@/types";
 
 interface TeamsTableProps {
   mode: "db" | "provider";
@@ -104,9 +104,11 @@ export function TeamsTable({
       return [
         {
           accessorKey: "status",
-          header: ({ column }: { column: Column<UnifiedTeam | TeamDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Status" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedTeam | TeamDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Status" />,
           cell: ({ row }: { row: Row<UnifiedTeam> }) => {
             const status = row.getValue("status") as UnifiedTeam["status"];
             const statusConfig: Record<
@@ -132,9 +134,11 @@ export function TeamsTable({
         },
         {
           accessorKey: "externalId",
-          header: ({ column }: { column: Column<UnifiedTeam | TeamDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="externalId" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedTeam | TeamDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="externalId" />,
           cell: ({ row }: { row: Row<UnifiedTeam> }) => (
             <span className="font-mono text-xs">
               {row.getValue("externalId")}
@@ -240,9 +244,11 @@ export function TeamsTable({
       return [
         {
           accessorKey: "externalId",
-          header: ({ column }: { column: Column<UnifiedTeam | TeamDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="externalId" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedTeam | TeamDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="externalId" />,
           cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
@@ -251,9 +257,11 @@ export function TeamsTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }: { column: Column<UnifiedTeam | TeamDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Name" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedTeam | TeamDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Name" />,
           cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="font-medium text-xs sm:text-sm">
               {row.getValue("name")}
@@ -262,9 +270,11 @@ export function TeamsTable({
         },
         {
           accessorKey: "type",
-          header: ({ column }: { column: Column<UnifiedTeam | TeamDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Type" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedTeam | TeamDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Type" />,
           cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="text-xs sm:text-sm">
               {row.getValue("type") || "—"}
@@ -273,9 +283,11 @@ export function TeamsTable({
         },
         {
           accessorKey: "shortCode",
-          header: ({ column }: { column: Column<UnifiedTeam | TeamDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Short Code" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedTeam | TeamDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Short Code" />,
           cell: ({ row }: { row: Row<TeamDBRow> }) => (
             <span className="font-mono text-xs sm:text-sm">
               {row.getValue("shortCode") || "—"}
@@ -284,9 +296,11 @@ export function TeamsTable({
         },
         {
           accessorKey: "founded",
-          header: ({ column }: { column: Column<UnifiedTeam | TeamDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Founded" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedTeam | TeamDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Founded" />,
           cell: ({ row }: { row: Row<TeamDBRow> }) => {
             const founded = row.getValue("founded") as number | null;
             return (
@@ -319,9 +333,11 @@ export function TeamsTable({
         },
         {
           accessorKey: "updatedAt",
-          header: ({ column }: { column: Column<UnifiedTeam | TeamDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Updated At" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedTeam | TeamDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Updated At" />,
           cell: ({ row }: { row: Row<TeamDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
             if (!updatedAt)
@@ -518,7 +534,7 @@ export function TeamsTable({
               {selectedTeam ? `Sync ${selectedTeam.name}` : "Sync Team"}
             </DialogTitle>
             <DialogDescription>
-                  {selectedTeam && (
+              {selectedTeam && (
                 <>
                   External ID:{" "}
                   <span className="font-mono">{selectedTeam.externalId}</span>
@@ -624,4 +640,3 @@ export function TeamsTable({
     </div>
   );
 }
-

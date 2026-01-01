@@ -35,15 +35,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { UnifiedSeason } from "@/types";
 import type {
-  UnifiedSeason,
   AdminSeasonsListResponse,
   AdminProviderSeasonsResponse,
 } from "@repo/types";
 
 type SeasonDBRow = AdminSeasonsListResponse["data"][0];
 
-type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
+import type { DiffFilter } from "@/types";
 
 interface SeasonsTableProps {
   mode: "db" | "provider";
@@ -105,9 +105,11 @@ export function SeasonsTable({
       return [
         {
           accessorKey: "status",
-          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Status" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedSeason | SeasonDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Status" />,
           cell: ({ row }: { row: Row<UnifiedSeason> }) => {
             const status = row.getValue("status") as UnifiedSeason["status"];
             const statusConfig: Record<
@@ -133,9 +135,11 @@ export function SeasonsTable({
         },
         {
           accessorKey: "externalId",
-          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="externalId" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedSeason | SeasonDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="externalId" />,
           cell: ({ row }: { row: Row<UnifiedSeason> }) => (
             <span className="font-mono text-xs">
               {row.getValue("externalId")}
@@ -234,9 +238,11 @@ export function SeasonsTable({
       return [
         {
           accessorKey: "externalId",
-          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="externalId" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedSeason | SeasonDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="externalId" />,
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
             <span className="font-mono text-[10px] sm:text-xs">
               {row.getValue("externalId")}
@@ -245,9 +251,11 @@ export function SeasonsTable({
         },
         {
           accessorKey: "name",
-          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Name" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedSeason | SeasonDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Name" />,
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
             <span className="font-medium text-xs sm:text-sm">
               {row.getValue("name")}
@@ -268,9 +276,11 @@ export function SeasonsTable({
         },
         {
           accessorKey: "startDate",
-          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Start Date" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedSeason | SeasonDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Start Date" />,
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
             <span className="text-xs sm:text-sm">
               {row.getValue("startDate") || "—"}
@@ -279,9 +289,11 @@ export function SeasonsTable({
         },
         {
           accessorKey: "endDate",
-          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="End Date" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedSeason | SeasonDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="End Date" />,
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
             <span className="text-xs sm:text-sm">
               {row.getValue("endDate") || "—"}
@@ -290,9 +302,11 @@ export function SeasonsTable({
         },
         {
           accessorKey: "isCurrent",
-          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Current" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedSeason | SeasonDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Current" />,
           cell: ({ row }: { row: Row<SeasonDBRow> }) => (
             <span className="text-xs sm:text-sm">
               {row.getValue("isCurrent") ? "Yes" : "No"}
@@ -301,9 +315,11 @@ export function SeasonsTable({
         },
         {
           accessorKey: "updatedAt",
-          header: ({ column }: { column: Column<UnifiedSeason | SeasonDBRow, unknown> }) => (
-            <DataTableColumnHeader column={column} title="Updated At" />
-          ),
+          header: ({
+            column,
+          }: {
+            column: Column<UnifiedSeason | SeasonDBRow, unknown>;
+          }) => <DataTableColumnHeader column={column} title="Updated At" />,
           cell: ({ row }: { row: Row<SeasonDBRow> }) => {
             const updatedAt = row.getValue("updatedAt") as string | undefined;
             if (!updatedAt)
@@ -605,4 +621,3 @@ export function SeasonsTable({
     </div>
   );
 }
-

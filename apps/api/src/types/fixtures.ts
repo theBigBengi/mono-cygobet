@@ -1,0 +1,27 @@
+// src/types/fixtures.ts
+// Type definitions for fixtures routes
+
+export interface ListFixturesQuerystring {
+  page?: number;
+  perPage?: number;
+  leagueId?: number;
+  leagueIds?: number[];
+  countryIds?: number[];
+  seasonId?: number;
+  state?: string;
+  include?: string;
+}
+
+export interface GetFixtureQuerystring {
+  include?: string;
+}
+
+export interface GetFixtureParams {
+  id: string;
+}
+
+export interface SearchFixturesQuerystring {
+  q: string;
+  take?: number;
+}
+

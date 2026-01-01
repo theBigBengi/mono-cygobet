@@ -1,0 +1,268 @@
+// src/routes/admin/db/fixtures.route.ts
+import { FastifyPluginAsync } from "fastify";
+import { Prisma } from "@repo/db";
+import { FixturesService } from "../../../services/fixtures.service";
+import { AdminFixturesListResponse, AdminFixtureResponse } from "@repo/types";
+import {
+  getPagination,
+  createPaginationResponse,
+  parseId,
+  parseIncludeString,
+  parseArrayParam,
+} from "../../../utils/routes";
+import {
+  listFixturesQuerystringSchema,
+  listFixturesResponseSchema,
+  getFixtureParamsSchema,
+  getFixtureQuerystringSchema,
+  getFixtureResponseSchema,
+  getFixture404ResponseSchema,
+  searchFixturesQuerystringSchema,
+  searchFixturesResponseSchema,
+} from "../../../schemas/fixtures.schemas";
+import type {
+  ListFixturesQuerystring,
+  GetFixtureQuerystring,
+  GetFixtureParams,
+  SearchFixturesQuerystring,
+} from "../../../types";
+
+// Helper function to map fixture to response format
+function mapFixtureToResponse(f: any) {
+  return {
+    id: f.id,
+    name: f.name,
+    startIso: f.startIso,
+    startTs: f.startTs,
+    state: f.state,
+    result: f.result,
+    homeScore: f.homeScore,
+    awayScore: f.awayScore,
+    stageRoundName: f.stageRoundName,
+    leagueId: f.leagueId,
+    seasonId: f.seasonId,
+    homeTeamId: f.homeTeamId,
+    awayTeamId: f.awayTeamId,
+    homeTeam: f.homeTeam
+      ? {
+          id: f.homeTeam.id,
+          name: f.homeTeam.name,
+          imagePath: f.homeTeam.imagePath,
+          externalId: f.homeTeam.externalId.toString(),
+        }
+      : null,
+    awayTeam: f.awayTeam
+      ? {
+          id: f.awayTeam.id,
+          name: f.awayTeam.name,
+          imagePath: f.awayTeam.imagePath,
+          externalId: f.awayTeam.externalId.toString(),
+        }
+      : null,
+    league: f.league
+      ? {
+          id: f.league.id,
+          name: f.league.name,
+          imagePath: f.league.imagePath,
+          type: f.league.type,
+          externalId: f.league.externalId.toString(),
+        }
+      : null,
+    season: f.season
+      ? {
+          id: f.season.id,
+          name: f.season.name,
+          externalId: f.season.externalId.toString(),
+        }
+      : null,
+    externalId: f.externalId.toString(),
+    createdAt: f.createdAt.toISOString(),
+    updatedAt: f.updatedAt.toISOString(),
+  };
+}
+
+const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
+  const service = new FixturesService(fastify);
+
+  // GET /admin/db/fixtures - List fixtures from database
+  fastify.get<{ Reply: AdminFixturesListResponse }>(
+    "/fixtures",
+    {
+      schema: {
+        querystring: listFixturesQuerystringSchema,
+        response: {
+          200: listFixturesResponseSchema,
+        },
+      },
+    },
+    async (req, reply): Promise<AdminFixturesListResponse> => {
+      const query = req.query as ListFixturesQuerystring;
+
+      const { page, perPage, skip, take } = getPagination(query);
+
+      // Parse include string to Prisma include object
+      const includeKeys = parseIncludeString(query.include);
+      const include: Prisma.fixturesInclude = {};
+
+      const teamSelect = {
+        id: true,
+        name: true,
+        imagePath: true,
+        externalId: true,
+      };
+      const leagueSelect = {
+        id: true,
+        name: true,
+        imagePath: true,
+        type: true,
+        externalId: true,
+      };
+      const seasonSelect = { id: true, name: true, externalId: true };
+
+      includeKeys.forEach((key) => {
+        if (key === "homeTeam" || key === "awayTeam") {
+          (include as any)[key] = { select: teamSelect };
+        } else if (key === "league") {
+          (include as any)[key] = { select: leagueSelect };
+        } else if (key === "season") {
+          (include as any)[key] = { select: seasonSelect };
+        }
+      });
+
+      // Parse leagueIds and countryIds from query string
+      const leagueIds = parseArrayParam(query.leagueIds);
+      const countryIds = parseArrayParam(query.countryIds);
+
+      const { fixtures, count } = await service.get({
+        take,
+        skip,
+        leagueId: query.leagueId,
+        leagueIds,
+        countryIds,
+        seasonId: query.seasonId,
+        state: query.state,
+        orderBy: [{ startTs: "desc" }],
+        include: Object.keys(include).length > 0 ? include : undefined,
+      });
+
+      return reply.send({
+        status: "success",
+        data: fixtures.map(mapFixtureToResponse),
+        pagination: createPaginationResponse(page, perPage, count),
+        message: "Fixtures fetched from database successfully",
+      });
+    }
+  );
+
+  // GET /admin/db/fixtures/:id - Get a single fixture by ID
+  fastify.get<{
+    Params: GetFixtureParams;
+    Querystring: GetFixtureQuerystring;
+    Reply: AdminFixtureResponse;
+  }>(
+    "/fixtures/:id",
+    {
+      schema: {
+        params: getFixtureParamsSchema,
+        querystring: getFixtureQuerystringSchema,
+        response: {
+          200: getFixtureResponseSchema,
+          404: getFixture404ResponseSchema,
+        },
+      },
+    },
+    async (req, reply): Promise<AdminFixtureResponse> => {
+      const { id } = req.params;
+      const { include } = req.query;
+
+      let fixtureId: number;
+      try {
+        fixtureId = parseId(id);
+      } catch (error: any) {
+        return reply.code(400).send({
+          status: "error",
+          message: error.message,
+        } as any);
+      }
+
+      // Parse include string to Prisma include object
+      const includeKeys = parseIncludeString(include);
+      const includeObj: Prisma.fixturesInclude = {};
+
+      const teamSelect = {
+        id: true,
+        name: true,
+        imagePath: true,
+        externalId: true,
+      };
+      const leagueSelect = {
+        id: true,
+        name: true,
+        imagePath: true,
+        type: true,
+        externalId: true,
+      };
+      const seasonSelect = { id: true, name: true, externalId: true };
+
+      includeKeys.forEach((key) => {
+        if (key === "homeTeam" || key === "awayTeam") {
+          (includeObj as any)[key] = { select: teamSelect };
+        } else if (key === "league") {
+          (includeObj as any)[key] = { select: leagueSelect };
+        } else if (key === "season") {
+          (includeObj as any)[key] = { select: seasonSelect };
+        }
+      });
+
+      try {
+        const fixture = await service.getById(
+          fixtureId,
+          Object.keys(includeObj).length > 0 ? includeObj : undefined
+        );
+
+        return reply.send({
+          status: "success",
+          data: mapFixtureToResponse(fixture),
+          message: "Fixture fetched from database successfully",
+        });
+      } catch (error: any) {
+        if (error.statusCode === 404) {
+          return reply.code(404).send({
+            status: "error",
+            message: error.message,
+          } as any);
+        }
+        throw error;
+      }
+    }
+  );
+
+  // GET /admin/db/fixtures/search - Search fixtures
+  fastify.get<{ Reply: AdminFixturesListResponse }>(
+    "/fixtures/search",
+    {
+      schema: {
+        querystring: searchFixturesQuerystringSchema,
+        response: {
+          200: searchFixturesResponseSchema,
+        },
+      },
+    },
+    async (req, reply): Promise<AdminFixturesListResponse> => {
+      const query = req.query as SearchFixturesQuerystring;
+
+      const take = query.take ?? 10;
+
+      const fixtures = await service.search(query.q, take);
+
+      return reply.send({
+        status: "success",
+        data: fixtures.map(mapFixtureToResponse),
+        pagination: createPaginationResponse(1, take, fixtures.length),
+        message: "Fixtures search completed successfully",
+      });
+    }
+  );
+};
+
+export default adminFixturesDbRoutes;

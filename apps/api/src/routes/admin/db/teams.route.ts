@@ -4,6 +4,12 @@ import { Prisma } from "@repo/db";
 import { TeamsService } from "../../../services/teams.service";
 import { AdminTeamsListResponse, AdminTeamResponse } from "@repo/types";
 import {
+  getPagination,
+  createPaginationResponse,
+  parseId,
+  parseIncludeString,
+} from "../../../utils/routes";
+import {
   listTeamsQuerystringSchema,
   listTeamsResponseSchema,
   getTeamParamsSchema,
@@ -13,6 +19,12 @@ import {
   searchTeamsQuerystringSchema,
   searchTeamsResponseSchema,
 } from "../../../schemas/teams.schemas";
+import type {
+  ListTeamsQuerystring,
+  GetTeamQuerystring,
+  GetTeamParams,
+  SearchTeamsQuerystring,
+} from "../../../types";
 
 const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new TeamsService(fastify);
@@ -29,31 +41,17 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminTeamsListResponse> => {
-      const query = req.query as {
-        page?: number;
-        perPage?: number;
-        countryId?: number;
-        type?: string;
-        include?: string;
-      };
-
-      const page = query.page ?? 1;
-      const perPage = query.perPage ?? 20;
-      const skip = (page - 1) * perPage;
-      const take = perPage;
+      const query = req.query as ListTeamsQuerystring;
+      const { page, perPage, skip, take } = getPagination(query);
 
       // Parse include string to Prisma include object
-      let include: Prisma.teamsInclude | undefined = undefined;
-      if (query.include) {
-        include = {} as Prisma.teamsInclude;
-        const includes = query.include.split(",");
-        includes.forEach((inc) => {
-          const key = inc.trim() as keyof Prisma.teamsInclude;
-          if (key === "countries") {
-            (include as any)[key] = true;
-          }
-        });
-      }
+      const includeKeys = parseIncludeString(query.include);
+      const include: Prisma.teamsInclude = {};
+      includeKeys.forEach((key) => {
+        if (key === "countries") {
+          (include as any)[key] = true;
+        }
+      });
 
       // Always include country
       const includeWithCountry: Prisma.teamsInclude = {
@@ -103,19 +101,18 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
           createdAt: t.createdAt.toISOString(),
           updatedAt: t.updatedAt.toISOString(),
         })),
-        pagination: {
-          page,
-          perPage,
-          totalItems: count,
-          totalPages: Math.ceil(count / perPage),
-        },
+        pagination: createPaginationResponse(page, perPage, count),
         message: "Teams fetched successfully",
       });
     }
   );
 
   // GET /admin/teams/db/:id - Get team by ID from database
-  fastify.get<{ Params: { id: string }; Reply: AdminTeamResponse }>(
+  fastify.get<{
+    Params: GetTeamParams;
+    Querystring: GetTeamQuerystring;
+    Reply: AdminTeamResponse;
+  }>(
     "/teams/:id",
     {
       schema: {
@@ -129,28 +126,26 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply): Promise<AdminTeamResponse> => {
       const { id } = req.params;
-      const { include } = req.query as { include?: string };
+      const { include } = req.query;
 
-      const teamId = parseInt(id, 10);
-      if (isNaN(teamId)) {
+      let teamId: number;
+      try {
+        teamId = parseId(id);
+      } catch (error: any) {
         return reply.code(400).send({
           status: "error",
-          message: "Invalid team ID",
+          message: error.message,
         } as any);
       }
 
       // Parse include string to Prisma include object
-      let includeObj: Prisma.teamsInclude | undefined = undefined;
-      if (include) {
-        includeObj = {} as Prisma.teamsInclude;
-        const includes = include.split(",");
-        includes.forEach((inc) => {
-          const key = inc.trim() as keyof Prisma.teamsInclude;
-          if (key === "countries") {
-            (includeObj as any)[key] = true;
-          }
-        });
-      }
+      const includeKeys = parseIncludeString(include);
+      const includeObj: Prisma.teamsInclude = {};
+      includeKeys.forEach((key) => {
+        if (key === "countries") {
+          (includeObj as any)[key] = true;
+        }
+      });
 
       // Always include country
       const includeWithCountry: Prisma.teamsInclude = {
@@ -210,7 +205,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminTeamsListResponse> => {
-      const { q, take = 10 } = req.query as { q: string; take?: number };
+      const { q, take = 10 } = req.query as SearchTeamsQuerystring;
 
       const teams = await service.search(q, take);
 
@@ -238,12 +233,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
           createdAt: t.createdAt.toISOString(),
           updatedAt: t.updatedAt.toISOString(),
         })),
-        pagination: {
-          page: 1,
-          perPage: take,
-          totalItems: teams.length,
-          totalPages: 1,
-        },
+        pagination: createPaginationResponse(1, take, teams.length),
         message: "Teams search completed",
       });
     }
@@ -251,4 +241,3 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
 };
 
 export default adminTeamsDbRoutes;
-

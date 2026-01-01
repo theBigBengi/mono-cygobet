@@ -3,6 +3,7 @@ import { FastifyPluginAsync } from "fastify";
 import { prisma } from "@repo/db";
 import { BookmakersService } from "../../../services/bookmakers.service";
 import { AdminBookmakersListResponse, AdminBookmakerResponse } from "@repo/types";
+import { getPagination, createPaginationResponse, parseId } from "../../../utils/routes";
 import {
   listBookmakersQuerystringSchema,
   listBookmakersResponseSchema,
@@ -12,6 +13,11 @@ import {
   searchBookmakersQuerystringSchema,
   searchBookmakersResponseSchema,
 } from "../../../schemas/bookmakers.schemas";
+import type {
+  ListBookmakersQuerystring,
+  GetBookmakerParams,
+  SearchBookmakersQuerystring,
+} from "../../../types";
 
 const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new BookmakersService(fastify);
@@ -28,15 +34,9 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminBookmakersListResponse> => {
-      const query = req.query as {
-        page?: number;
-        perPage?: number;
-      };
+      const query = req.query as ListBookmakersQuerystring;
 
-      const page = query.page ?? 1;
-      const perPage = query.perPage ?? 20;
-      const skip = (page - 1) * perPage;
-      const take = perPage;
+      const { page, perPage, skip, take } = getPagination(query);
 
       const { bookmakers, count } = await service.get({
         take,
@@ -54,19 +54,14 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send({
         status: "success",
         data,
-        pagination: {
-          page,
-          perPage,
-          totalItems: count,
-          totalPages: Math.ceil(count / perPage),
-        },
+        pagination: createPaginationResponse(page, perPage, count),
         message: "Bookmakers fetched from database successfully",
       });
     }
   );
 
   // GET /admin/db/bookmakers/:id - Get a single bookmaker by ID
-  fastify.get<{ Params: { id: string }; Reply: AdminBookmakerResponse }>(
+  fastify.get<{ Params: GetBookmakerParams; Reply: AdminBookmakerResponse }>(
     "/bookmakers/:id",
     {
       schema: {
@@ -78,13 +73,14 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminBookmakerResponse> => {
-      const { id } = req.params as { id: string };
-      const bookmakerId = Number(id);
-
-      if (isNaN(bookmakerId)) {
+      const { id } = req.params;
+      let bookmakerId: number;
+      try {
+        bookmakerId = parseId(id);
+      } catch (error: any) {
         return reply.code(400).send({
           status: "error",
-          message: `Invalid bookmaker ID: ${id}`,
+          message: error.message,
         } as any);
       }
 
@@ -128,10 +124,7 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminBookmakersListResponse> => {
-      const query = req.query as {
-        q: string;
-        take?: number;
-      };
+      const query = req.query as SearchBookmakersQuerystring;
 
       const take = query.take ?? 10;
 
@@ -148,12 +141,7 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send({
         status: "success",
         data,
-        pagination: {
-          page: 1,
-          perPage: take,
-          totalItems: data.length,
-          totalPages: 1,
-        },
+        pagination: createPaginationResponse(1, take, data.length),
         message: "Bookmakers search completed successfully",
       });
     }

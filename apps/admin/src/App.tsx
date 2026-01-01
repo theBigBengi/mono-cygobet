@@ -18,6 +18,7 @@ import LeaguesPage from "@/pages/leagues";
 import TeamsPage from "@/pages/teams";
 import SeasonsPage from "@/pages/seasons";
 import BookmakersPage from "@/pages/bookmakers";
+import FixturesPage from "@/pages/fixtures";
 
 function App() {
   const location = useLocation();
@@ -40,7 +41,9 @@ function App() {
                         ? "Seasons"
                         : location.pathname === "/bookmakers"
                           ? "Bookmakers"
-                          : "Countries"}
+                          : location.pathname === "/fixtures"
+                            ? "Fixtures"
+                            : "Countries"}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
@@ -54,6 +57,7 @@ function App() {
             <Route path="/teams" element={<TeamsPage />} />
             <Route path="/seasons" element={<SeasonsPage />} />
             <Route path="/bookmakers" element={<BookmakersPage />} />
+            <Route path="/fixtures" element={<FixturesPage />} />
             <Route
               path="*"
               element={

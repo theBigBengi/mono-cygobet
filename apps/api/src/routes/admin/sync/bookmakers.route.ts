@@ -2,27 +2,17 @@
 import { FastifyPluginAsync } from "fastify";
 import SportMonksAdapter from "@repo/sports-data/adapters/sportmonks";
 import { seedBookmakers } from "../../../etl/seeds/seed.bookmakers";
+import { AdminSyncBookmakersResponse } from "@repo/types";
 import {
   syncBodySchema,
   syncResponseSchema,
 } from "../../../schemas/admin.schemas";
 
-interface SyncBookmakersResponse {
-  status: string;
-  data: {
-    batchId: number | null;
-    ok: number;
-    fail: number;
-    total: number;
-  };
-  message: string;
-}
-
 const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sync/bookmakers - Sync bookmakers from provider to database
   fastify.post<{
     Body: { dryRun?: boolean };
-    Reply: SyncBookmakersResponse;
+    Reply: AdminSyncBookmakersResponse;
   }>(
     "/bookmakers",
     {
@@ -33,7 +23,7 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (req, reply): Promise<SyncBookmakersResponse> => {
+    async (req, reply): Promise<AdminSyncBookmakersResponse> => {
       const { dryRun = false } = req.body ?? {};
 
       const adapter = new SportMonksAdapter({
@@ -68,7 +58,7 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{
     Params: { id: string };
     Body: { dryRun?: boolean };
-    Reply: SyncBookmakersResponse;
+    Reply: AdminSyncBookmakersResponse;
   }>(
     "/bookmakers/:id",
     {
@@ -86,7 +76,7 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (req, reply): Promise<SyncBookmakersResponse> => {
+    async (req, reply): Promise<AdminSyncBookmakersResponse> => {
       const { id } = req.params;
       const { dryRun = false } = req.body ?? {};
 

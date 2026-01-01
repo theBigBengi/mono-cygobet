@@ -1,28 +1,9 @@
 // src/routes/admin/provider/seasons.route.ts
 import { FastifyPluginAsync } from "fastify";
 import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { AdminProviderSeasonsResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../schemas/admin.schemas";
 import { prisma } from "@repo/db";
-
-interface AdminProviderSeasonsResponse {
-  status: string;
-  data: Array<{
-    externalId: number | string;
-    name: string;
-    startDate: string | null;
-    endDate: string | null;
-    isCurrent: boolean;
-    leagueExternalId: number | string | null;
-    league?: {
-      id: number;
-      name: string;
-    } | null;
-    leagueInDb?: boolean;
-    countryName?: string | null;
-  }>;
-  message: string;
-  provider: string;
-}
 
 const adminSeasonsProviderRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/seasons/provider - Get seasons from SportMonks provider

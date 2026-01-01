@@ -327,10 +327,67 @@ export class SportMonksAdapter {
   }
 
   /**
+   * Fetches a single fixture by ID from SportMonks Football API
+   *
+   * This method wraps fetchFixturesByIds to provide a convenient way to fetch
+   * a single fixture. It includes all necessary related data (participants,
+   * state, league, round, stage, scores) for complete fixture information.
+   *
+   * @param id - The SportMonks fixture external ID
+   * @returns FixtureDTO or null if not found or on error
+   *
+   * @example
+   * ```typescript
+   * const fixture = await adapter.fetchFixtureById(12345);
+   * if (fixture) {
+   *   console.log(fixture.name, fixture.state);
+   * }
+   * ```
+   */
+  async fetchFixtureById(id: number): Promise<FixtureDTO | null> {
+    try {
+      // Use fetchFixturesByIds with a single ID and include all related data
+      const fixtures = await this.fetchFixturesByIds([id], {
+        include: [
+          {
+            name: "participants", // Home and away team information
+          },
+          {
+            name: "state", // Fixture state (NS, LIVE, FT, etc.)
+            fields: ["id", "short_name"],
+          },
+          {
+            name: "league", // League information
+            include: [{ name: "country" }], // Include country for league
+          },
+          {
+            name: "round", // Round name (e.g., "Round 1")
+            fields: ["name"],
+          },
+          {
+            name: "stage", // Stage name (e.g., "Regular Season")
+            fields: ["name"],
+          },
+          "scores", // Score information for finished fixtures
+        ],
+      });
+
+      // Return the first fixture if found, otherwise null
+      // Use nullish coalescing to handle potential undefined value
+      return fixtures.length > 0 ? (fixtures[0] ?? null) : null;
+    } catch (error) {
+      // Return null if fixture not found or any other error occurs
+      // This allows callers to handle missing fixtures gracefully
+      return null;
+    }
+  }
+
+  /**
    * Fetches specific fixtures by their SportMonks IDs
    * Uses the fixtures endpoint with id:in filter
    * Useful for targeted re-sync of specific matches
    */
+
   async fetchFixturesByIds(
     externalIds: number[],
     options?: {

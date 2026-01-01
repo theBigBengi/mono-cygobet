@@ -6,21 +6,13 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CloudSync, RefreshCw } from "lucide-react";
 import { useTeamsFromDb, useTeamsFromProvider } from "@/hooks/use-teams";
 import { useBatches } from "@/hooks/use-batches";
-import { BatchesTable } from "@/components/countries/batches-table";
+import { BatchesTable } from "@/components/table";
 import { teamsService } from "@/services/teams.service";
 import { unifyTeams, calculateDiffStats } from "@/utils/teams";
 import { TeamsTable } from "@/components/teams/teams-table";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ViewMode } from "@repo/types";
-
-type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
-
-interface AdminSyncTeamsResponse {
-  batchId: number | null;
-  ok: number;
-  fail: number;
-  total: number;
-}
+import type { ViewMode, DiffFilter } from "@/types";
+import type { AdminSyncTeamsResponse } from "@repo/types";
 
 export default function TeamsPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
@@ -73,7 +65,7 @@ export default function TeamsPage() {
       setSyncError(null);
       queryClient.invalidateQueries({ queryKey: ["teams"] });
       toast.success("Teams synced successfully", {
-        description: `Synced ${data.ok} teams. ${data.fail > 0 ? `${data.fail} failed.` : ""}`,
+        description: `Synced ${data.data.ok} teams. ${data.data.fail > 0 ? `${data.data.fail} failed.` : ""}`,
       });
       setTimeout(() => {
         refetchDb();
@@ -193,7 +185,7 @@ export default function TeamsPage() {
         {/* Sync Result Panel */}
         {syncResult && syncTimestamp && (
           <div className="border-b pb-2 text-xs text-muted-foreground">
-            Synced: {syncResult.ok} ok, {syncResult.fail} failed
+            Synced: {syncResult.data.ok} ok, {syncResult.data.fail} failed
           </div>
         )}
 
@@ -312,13 +304,10 @@ export default function TeamsPage() {
             providerData={providerData}
             isLoading={viewMode === "db" ? dbLoading : isLoading}
             error={viewMode === "db" ? dbError : null}
-            onSyncTeam={
-              viewMode === "provider" ? handleSyncTeam : undefined
-            }
+            onSyncTeam={viewMode === "provider" ? handleSyncTeam : undefined}
           />
         )}
       </div>
     </div>
   );
 }
-

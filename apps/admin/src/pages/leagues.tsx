@@ -6,14 +6,13 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CloudSync, RefreshCw } from "lucide-react";
 import { useLeaguesFromDb, useLeaguesFromProvider } from "@/hooks/use-leagues";
 import { useBatches } from "@/hooks/use-batches";
-import { BatchesTable } from "@/components/countries/batches-table";
+import { BatchesTable } from "@/components/table";
 import { leaguesService } from "@/services/leagues.service";
 import { unifyLeagues, calculateDiffStats } from "@/utils/leagues";
 import { LeaguesTable } from "@/components/leagues/leagues-table";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ViewMode, AdminSyncLeaguesResponse } from "@repo/types";
-
-type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
+import type { ViewMode, DiffFilter } from "@/types";
+import type { AdminSyncLeaguesResponse } from "@repo/types";
 
 export default function LeaguesPage() {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
@@ -60,7 +59,7 @@ export default function LeaguesPage() {
       setSyncError(null);
       queryClient.invalidateQueries({ queryKey: ["leagues"] });
       toast.success("Leagues synced successfully", {
-        description: `Synced ${data.ok} leagues. ${data.fail > 0 ? `${data.fail} failed.` : ""}`,
+        description: `Synced ${data.data.ok} leagues. ${data.data.fail > 0 ? `${data.data.fail} failed.` : ""}`,
       });
       setTimeout(() => {
         refetchDb();
@@ -185,7 +184,7 @@ export default function LeaguesPage() {
         {/* Sync Result Panel */}
         {syncResult && syncTimestamp && (
           <div className="border-b pb-2 text-xs text-muted-foreground">
-            Synced: {syncResult.ok} ok, {syncResult.fail} failed
+            Synced: {syncResult.data.ok} ok, {syncResult.data.fail} failed
           </div>
         )}
 
