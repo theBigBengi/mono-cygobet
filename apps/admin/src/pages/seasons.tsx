@@ -55,33 +55,7 @@ export default function SeasonsPage() {
   );
 
   // Sync mutation (bulk) - removed from UI for now
-  const _syncMutation = useMutation({
-    mutationFn: () =>
-      seasonsService.sync(false) as Promise<AdminSyncSeasonsResponse>,
-    onSuccess: (data) => {
-      setSyncResult(data);
-      setSyncTimestamp(new Date());
-      setSyncError(null);
-      queryClient.invalidateQueries({ queryKey: ["seasons"] });
-      toast.success("Seasons synced successfully", {
-        description: `Synced ${data.data.ok} seasons. ${data.data.fail > 0 ? `${data.data.fail} failed.` : ""}`,
-      });
-      setTimeout(() => {
-        refetchDb();
-        refetchProvider();
-        refetchBatches(); // Refetch batches after sync
-      }, 500);
-    },
-    onError: (error: Error) => {
-      const errorMessage = error.message || "Sync failed";
-      setSyncError(errorMessage);
-      setSyncResult(null);
-      setSyncTimestamp(null);
-      toast.error("Sync failed", {
-        description: errorMessage,
-      });
-    },
-  });
+  // Can be re-enabled when needed
 
   // Sync single season mutation
   const syncSeasonMutation = useMutation({
@@ -117,12 +91,6 @@ export default function SeasonsPage() {
     },
     [syncSeasonMutation, unifiedData]
   );
-
-  const _handleRefresh = () => {
-    refetchDb();
-    refetchProvider();
-    refetchBatches(); // Also refetch batches on refresh
-  };
 
   // Calculate diff stats
   const diffStats = useMemo(

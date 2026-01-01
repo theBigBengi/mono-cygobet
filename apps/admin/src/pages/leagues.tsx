@@ -49,33 +49,7 @@ export default function LeaguesPage() {
   } = useBatches("seed-leagues", 20);
 
   // Sync mutation (bulk) - removed from UI for now
-  const _syncMutation = useMutation({
-    mutationFn: () =>
-      leaguesService.sync(false) as Promise<AdminSyncLeaguesResponse>,
-    onSuccess: (data) => {
-      setSyncResult(data);
-      setSyncTimestamp(new Date());
-      setSyncError(null);
-      queryClient.invalidateQueries({ queryKey: ["leagues"] });
-      toast.success("Leagues synced successfully", {
-        description: `Synced ${data.data.ok} leagues. ${data.data.fail > 0 ? `${data.data.fail} failed.` : ""}`,
-      });
-      setTimeout(() => {
-        refetchDb();
-        refetchProvider();
-        refetchBatches(); // Refetch batches after sync
-      }, 500);
-    },
-    onError: (error: Error) => {
-      const errorMessage = error.message || "Sync failed";
-      setSyncError(errorMessage);
-      setSyncResult(null);
-      setSyncTimestamp(null);
-      toast.error("Sync failed", {
-        description: errorMessage,
-      });
-    },
-  });
+  // Can be re-enabled when needed
 
   // Sync single league mutation
   const syncLeagueMutation = useMutation({
@@ -116,12 +90,6 @@ export default function LeaguesPage() {
     },
     [syncLeagueMutation, unifiedData]
   );
-
-  const _handleRefresh = () => {
-    refetchDb();
-    refetchProvider();
-    refetchBatches(); // Also refetch batches on refresh
-  };
 
   // Calculate diff stats
   const diffStats = useMemo(

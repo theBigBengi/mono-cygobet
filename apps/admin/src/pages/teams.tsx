@@ -55,33 +55,7 @@ export default function TeamsPage() {
   );
 
   // Sync mutation (bulk) - removed from UI for now
-  const _syncMutation = useMutation({
-    mutationFn: () =>
-      teamsService.sync(false) as Promise<AdminSyncTeamsResponse>,
-    onSuccess: (data) => {
-      setSyncResult(data);
-      setSyncTimestamp(new Date());
-      setSyncError(null);
-      queryClient.invalidateQueries({ queryKey: ["teams"] });
-      toast.success("Teams synced successfully", {
-        description: `Synced ${data.data.ok} teams. ${data.data.fail > 0 ? `${data.data.fail} failed.` : ""}`,
-      });
-      setTimeout(() => {
-        refetchDb();
-        refetchProvider();
-        refetchBatches(); // Refetch batches after sync
-      }, 500);
-    },
-    onError: (error: Error) => {
-      const errorMessage = error.message || "Sync failed";
-      setSyncError(errorMessage);
-      setSyncResult(null);
-      setSyncTimestamp(null);
-      toast.error("Sync failed", {
-        description: errorMessage,
-      });
-    },
-  });
+  // Can be re-enabled when needed
 
   // Sync single team mutation
   const syncTeamMutation = useMutation({
@@ -117,12 +91,6 @@ export default function TeamsPage() {
     },
     [syncTeamMutation, unifiedData]
   );
-
-  const _handleRefresh = () => {
-    refetchDb();
-    refetchProvider();
-    refetchBatches(); // Also refetch batches on refresh
-  };
 
   // Calculate diff stats
   const diffStats = useMemo(
