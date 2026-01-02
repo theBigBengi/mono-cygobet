@@ -1,13 +1,16 @@
 "use client";
 
 import * as React from "react";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
   DrawerClose,
   DrawerContent,
+  DrawerDescription,
   DrawerFooter,
+  DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
 
@@ -89,6 +92,14 @@ export function PageFilters({
             </DrawerTrigger>
             <DrawerContent>
               <div className="mx-auto w-full max-w-sm">
+                <DrawerTitle asChild>
+                  <VisuallyHidden.Root>Filters</VisuallyHidden.Root>
+                </DrawerTitle>
+                <DrawerDescription asChild>
+                  <VisuallyHidden.Root>
+                    Filter and search options
+                  </VisuallyHidden.Root>
+                </DrawerDescription>
                 <div className="p-4 pb-0 space-y-4">
                   {children && (
                     <div className="flex flex-col gap-2">{children}</div>
@@ -121,6 +132,14 @@ export function PageFilters({
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DrawerContent>
             <div className="mx-auto w-full max-w-sm">
+              <DrawerTitle asChild>
+                <VisuallyHidden.Root>Filters</VisuallyHidden.Root>
+              </DrawerTitle>
+              <DrawerDescription asChild>
+                <VisuallyHidden.Root>
+                  Filter and search options
+                </VisuallyHidden.Root>
+              </DrawerDescription>
               <div className="p-4 pb-0 space-y-4">
                 {children && (
                   <div className="flex flex-col gap-2">{children}</div>
