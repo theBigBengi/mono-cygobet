@@ -63,8 +63,7 @@ export function MultiSelectCombobox({
     } else {
       onSelectionChange([...selectedValues, value]);
     }
-    // Keep popover open for multi-select
-    setOpen(true);
+    // Keep popover open for multi-select - user will click OK to close
   };
 
   const selectedOptions = options.filter((option) =>
@@ -99,19 +98,19 @@ export function MultiSelectCombobox({
                     key={option.value}
                     variant="secondary"
                     className="text-xs py-0.5 px-2 h-6 flex items-center gap-1 shrink-0"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleUnselect(option.value);
-                    }}
                   >
                     <span className="max-w-[80px] truncate">
                       {option.label}
                     </span>
-                    <button
-                      className="ml-0.5 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-secondary/80 transition-colors"
+                    <span
+                      className="ml-0.5 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-secondary/80 transition-colors cursor-pointer"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Remove ${option.label}`}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
                           handleUnselect(option.value);
                         }
                       }}
@@ -126,7 +125,7 @@ export function MultiSelectCombobox({
                       }}
                     >
                       <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                    </button>
+                    </span>
                   </Badge>
                 ))}
                 {selectedOptions.length > 2 && (
@@ -178,6 +177,15 @@ export function MultiSelectCombobox({
             </CommandGroup>
           </CommandList>
         </Command>
+        <div className="border-t p-2 flex justify-end">
+          <Button
+            size="sm"
+            onClick={() => setOpen(false)}
+            className="h-8"
+          >
+            OK
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
