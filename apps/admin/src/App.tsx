@@ -20,6 +20,7 @@ import TeamsPage from "@/pages/teams";
 import SeasonsPage from "@/pages/seasons";
 import BookmakersPage from "@/pages/bookmakers";
 import FixturesPage from "@/pages/fixtures";
+import SyncCenterPage from "@/pages/sync-center";
 
 function App() {
   const location = useLocation();
@@ -34,17 +35,19 @@ function App() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbPage>
-                  {location.pathname === "/leagues"
-                    ? "Leagues"
-                    : location.pathname === "/teams"
-                      ? "Teams"
-                      : location.pathname === "/seasons"
-                        ? "Seasons"
-                        : location.pathname === "/bookmakers"
-                          ? "Bookmakers"
-                          : location.pathname === "/fixtures"
-                            ? "Fixtures"
-                            : "Countries"}
+                  {location.pathname === "/sync-center"
+                    ? "Sync Center"
+                    : location.pathname === "/leagues"
+                      ? "Leagues"
+                      : location.pathname === "/teams"
+                        ? "Teams"
+                        : location.pathname === "/seasons"
+                          ? "Seasons"
+                          : location.pathname === "/bookmakers"
+                            ? "Bookmakers"
+                            : location.pathname === "/fixtures"
+                              ? "Fixtures"
+                              : "Countries"}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
@@ -53,7 +56,8 @@ function App() {
         <div className="flex flex-1 flex-col overflow-hidden min-h-0">
           <ErrorBoundary>
             <Routes>
-              <Route path="/" element={<CountriesPage />} />
+              <Route path="/" element={<SyncCenterPage />} />
+              <Route path="/sync-center" element={<SyncCenterPage />} />
               <Route path="/countries" element={<CountriesPage />} />
               <Route path="/leagues" element={<LeaguesPage />} />
               <Route path="/teams" element={<TeamsPage />} />

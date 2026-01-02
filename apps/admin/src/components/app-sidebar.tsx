@@ -27,6 +27,10 @@ const data = {
       title: "Data",
       items: [
         {
+          title: "Sync Center",
+          url: "/sync-center",
+        },
+        {
           title: "Seasons",
           url: "/seasons",
         },
