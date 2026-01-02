@@ -119,9 +119,7 @@ export function MultiSelectCombobox({
                 variant="secondary"
                 className="text-xs py-0.5 px-2 h-6 flex items-center gap-1 shrink-0"
               >
-                <span className="max-w-[80px] truncate">
-                  {option.label}
-                </span>
+                <span className="max-w-[80px] truncate">{option.label}</span>
                 <span
                   className="ml-0.5 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-secondary/80 transition-colors cursor-pointer"
                   role="button"
@@ -244,11 +242,7 @@ export function MultiSelectCombobox({
       <PopoverContent className="w-[300px] p-0" align="start">
         {optionsContent}
         <div className="border-t p-2 flex justify-end">
-          <Button
-            size="sm"
-            onClick={() => setOpen(false)}
-            className="h-8"
-          >
+          <Button size="sm" onClick={() => setOpen(false)} className="h-8">
             OK
           </Button>
         </div>
