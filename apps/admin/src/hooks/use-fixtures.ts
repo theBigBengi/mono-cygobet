@@ -9,8 +9,8 @@ export function useFixturesFromDb(params?: {
   page?: number;
   perPage?: number;
   leagueId?: number;
-  leagueIds?: number[];
-  countryIds?: number[];
+  leagueIds?: string[]; // External IDs
+  countryIds?: string[]; // External IDs
   seasonId?: number;
   state?: string;
   include?: string;
@@ -26,8 +26,8 @@ export function useFixturesFromProvider(
   from?: string,
   to?: string,
   seasonId?: number,
-  leagueIds?: number[],
-  countryIds?: number[]
+  leagueIds?: string[], // External IDs
+  countryIds?: string[] // External IDs
 ) {
   return useQuery<AdminProviderFixturesResponse>({
     queryKey: [

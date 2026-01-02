@@ -10,8 +10,8 @@ import {
   useFixturesFromProvider,
 } from "@/hooks/use-fixtures";
 import { useBatches } from "@/hooks/use-batches";
-import { useLeaguesFromDb } from "@/hooks/use-leagues";
-import { useCountriesFromDb } from "@/hooks/use-countries";
+import { useLeaguesFromProvider } from "@/hooks/use-leagues";
+import { useCountriesFromProvider } from "@/hooks/use-countries";
 import { BatchesTable } from "@/components/table";
 import { fixturesService } from "@/services/fixtures.service";
 import { unifyFixtures, calculateDiffStats } from "@/utils/fixtures";
@@ -52,33 +52,36 @@ export default function FixturesPage() {
   const [appliedDateRange, setAppliedDateRange] = useState<
     DateRange | undefined
   >(defaultDateRange);
-  const [appliedLeagueIds, setAppliedLeagueIds] = useState<number[]>([]);
-  const [appliedCountryIds, setAppliedCountryIds] = useState<number[]>([]);
+  const [appliedLeagueIds, setAppliedLeagueIds] = useState<string[]>([]); // External IDs
+  const [appliedCountryIds, setAppliedCountryIds] = useState<string[]>([]); // External IDs
 
   // Temporary filter states (for UI, not applied until submit)
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>(
     defaultDateRange
   );
-  const [tempLeagueIds, setTempLeagueIds] = useState<number[]>([]);
-  const [tempCountryIds, setTempCountryIds] = useState<number[]>([]);
+  const [tempLeagueIds, setTempLeagueIds] = useState<string[]>([]); // External IDs
+  const [tempCountryIds, setTempCountryIds] = useState<string[]>([]); // External IDs
 
-  // Fetch leagues and countries for combobox options
-  const { data: leaguesData } = useLeaguesFromDb({
-    perPage: 1000,
-  });
-
-  const { data: countriesData } = useCountriesFromDb({
-    perPage: 1000,
-  });
+  // Fetch leagues and countries for combobox options - use provider data
+  const { data: leaguesProviderData } = useLeaguesFromProvider();
+  const { data: countriesProviderData } = useCountriesFromProvider();
 
   // Convert applied date range to ISO strings for API
+  // Use local timezone to avoid day shift when converting to UTC
   const [fromDate, toDate] = useMemo(() => {
     if (!appliedDateRange?.from || !appliedDateRange?.to) {
       return [undefined, undefined];
     }
+    // Format dates in local timezone to avoid UTC conversion issues
+    const formatLocalDate = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
     return [
-      appliedDateRange.from.toISOString().split("T")[0]!,
-      appliedDateRange.to.toISOString().split("T")[0]!,
+      formatLocalDate(appliedDateRange.from),
+      formatLocalDate(appliedDateRange.to),
     ];
   }, [appliedDateRange]);
 
@@ -109,22 +112,48 @@ export default function FixturesPage() {
     setAppliedCountryIds(tempCountryIds);
   };
 
-  // Prepare combobox options
+  // Prepare combobox options from provider data - use external IDs directly
   const leagueOptions: MultiSelectOption[] = useMemo(() => {
-    if (!leaguesData?.data) return [];
-    return leaguesData.data.map((league) => ({
-      value: league.id,
-      label: league.name,
-    }));
-  }, [leaguesData]);
+    if (!leaguesProviderData?.data) return [];
+
+    const seen = new Set<string>(); // Track unique combinations to avoid duplicates
+    const options: MultiSelectOption[] = [];
+
+    leaguesProviderData.data.forEach((league) => {
+      const externalId = String(league.externalId);
+      const key = `${externalId}-${league.name}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        options.push({
+          value: externalId,
+          label: league.name,
+        });
+      }
+    });
+
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }, [leaguesProviderData]);
 
   const countryOptions: MultiSelectOption[] = useMemo(() => {
-    if (!countriesData?.data) return [];
-    return countriesData.data.map((country) => ({
-      value: country.id,
-      label: country.name,
-    }));
-  }, [countriesData]);
+    if (!countriesProviderData?.data) return [];
+
+    const seen = new Set<string>(); // Track unique combinations to avoid duplicates
+    const options: MultiSelectOption[] = [];
+
+    countriesProviderData.data.forEach((country) => {
+      const externalId = String(country.externalId);
+      const key = `${externalId}-${country.name}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        options.push({
+          value: externalId,
+          label: country.name,
+        });
+      }
+    });
+
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }, [countriesProviderData]);
 
   const {
     data: dbData,
@@ -238,7 +267,7 @@ export default function FixturesPage() {
               options={leagueOptions}
               selectedValues={tempLeagueIds}
               onSelectionChange={(values) =>
-                setTempLeagueIds(values as number[])
+                setTempLeagueIds(values.map((v) => String(v)))
               }
               placeholder="Leagues"
               searchPlaceholder="Search leagues..."
@@ -250,7 +279,7 @@ export default function FixturesPage() {
               options={countryOptions}
               selectedValues={tempCountryIds}
               onSelectionChange={(values) =>
-                setTempCountryIds(values as number[])
+                setTempCountryIds(values.map((v) => String(v)))
               }
               placeholder="Countries"
               searchPlaceholder="Search countries..."

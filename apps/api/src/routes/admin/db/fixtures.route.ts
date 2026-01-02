@@ -1,6 +1,6 @@
 // src/routes/admin/db/fixtures.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { Prisma } from "@repo/db";
+import { Prisma, prisma } from "@repo/db";
 import { FixturesService } from "../../../services/fixtures.service";
 import { AdminFixturesListResponse, AdminFixtureResponse } from "@repo/types";
 import {
@@ -129,16 +129,46 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
         }
       });
 
-      // Parse leagueIds and countryIds from query string
-      const leagueIds = parseArrayParam(query.leagueIds);
-      const countryIds = parseArrayParam(query.countryIds);
+      // Parse leagueIds and countryIds from query string (external IDs)
+      // Convert external IDs to DB IDs
+      let leagueDbIds: number[] | undefined;
+      if (query.leagueIds) {
+        const leagueExternalIds = query.leagueIds.split(",").map((id) => id.trim()).filter(Boolean);
+        if (leagueExternalIds.length > 0) {
+          const leagues = await prisma.leagues.findMany({
+            where: {
+              externalId: {
+                in: leagueExternalIds.map((id) => BigInt(id)),
+              },
+            },
+            select: { id: true },
+          });
+          leagueDbIds = leagues.map((l) => l.id);
+        }
+      }
+
+      let countryDbIds: number[] | undefined;
+      if (query.countryIds) {
+        const countryExternalIds = query.countryIds.split(",").map((id) => id.trim()).filter(Boolean);
+        if (countryExternalIds.length > 0) {
+          const countries = await prisma.countries.findMany({
+            where: {
+              externalId: {
+                in: countryExternalIds.map((id) => BigInt(id)),
+              },
+            },
+            select: { id: true },
+          });
+          countryDbIds = countries.map((c) => c.id);
+        }
+      }
 
       const { fixtures, count } = await service.get({
         take,
         skip,
         leagueId: query.leagueId,
-        leagueIds,
-        countryIds,
+        leagueIds: leagueDbIds,
+        countryIds: countryDbIds,
         seasonId: query.seasonId,
         state: query.state,
         orderBy: [{ startTs: "desc" }],

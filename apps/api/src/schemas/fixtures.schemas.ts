@@ -7,14 +7,8 @@ export const listFixturesQuerystringSchema = {
     page: { type: "number", default: 1 },
     perPage: { type: "number", default: 20 },
     leagueId: { type: "number" },
-    leagueIds: {
-      type: "array",
-      items: { type: "number" },
-    },
-    countryIds: {
-      type: "array",
-      items: { type: "number" },
-    },
+    leagueIds: { type: "string" }, // Comma-separated string of external IDs
+    countryIds: { type: "string" }, // Comma-separated string of external IDs
     seasonId: { type: "number" },
     state: { type: "string" },
     include: { type: "string" },

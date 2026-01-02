@@ -18,14 +18,8 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
             from: { type: "string" }, // ISO date string
             to: { type: "string" }, // ISO date string
             seasonId: { type: "number" }, // Optional: fetch fixtures for a specific season
-            leagueIds: {
-              type: "array",
-              items: { type: "number" },
-            },
-            countryIds: {
-              type: "array",
-              items: { type: "number" },
-            },
+            leagueIds: { type: "string" }, // Comma-separated string of external IDs
+            countryIds: { type: "string" }, // Comma-separated string of external IDs
           },
         },
         response: {
@@ -38,26 +32,40 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
         from?: string;
         to?: string;
         seasonId?: number;
-        leagueIds?: number[];
-        countryIds?: number[];
+        leagueIds?: string; // Comma-separated string of external IDs
+        countryIds?: string; // Comma-separated string of external IDs
       };
 
       // Default to 3 days back and 4 days ahead if not provided
       let fromDate: string;
       let toDate: string;
+      let fromDateOnly: string;
+      let toDateOnly: string;
 
       if (query.from && query.to) {
-        fromDate = query.from;
-        toDate = query.to;
+        // Extract date-only part (YYYY-MM-DD) - avoid timezone issues
+        // If the string already contains time, extract just the date part
+        fromDateOnly = query.from.split("T")[0]!.split(" ")[0]!;
+        toDateOnly = query.to.split("T")[0]!.split(" ")[0]!;
+
+        // For SportMonks API, use date-only format (YYYY-MM-DD) in the URL path
+        // The API expects dates in YYYY-MM-DD format, not full ISO strings
+        fromDate = fromDateOnly;
+        toDate = toDateOnly;
       } else {
         const now = new Date();
         const from = new Date(now);
         from.setDate(from.getDate() - 3);
+        from.setHours(0, 0, 0, 0);
         const to = new Date(now);
         to.setDate(to.getDate() + 4);
+        to.setHours(23, 59, 59, 999);
 
-        fromDate = from.toISOString().split("T")[0]!;
-        toDate = to.toISOString().split("T")[0]!;
+        // Extract date-only (YYYY-MM-DD) for API calls
+        fromDateOnly = from.toISOString().split("T")[0]!;
+        toDateOnly = to.toISOString().split("T")[0]!;
+        fromDate = fromDateOnly;
+        toDate = toDateOnly;
       }
 
       const adapter = new SportMonksAdapter({
@@ -144,18 +152,31 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
         fixturesDto = await adapter.fetchFixturesBetween(fromDate, toDate);
       }
 
+      // Filter fixtures by date range to ensure they're within the requested range
+      // Compare dates only (YYYY-MM-DD) to avoid timezone issues
+      // fromDateOnly and toDateOnly are already set above
+
+      fixturesDto = fixturesDto.filter((f) => {
+        if (!f.startIso) return false;
+        // Extract date part (YYYY-MM-DD) from ISO string
+        const fixtureDateOnly = f.startIso.split("T")[0]!;
+        return fixtureDateOnly >= fromDateOnly && fixtureDateOnly <= toDateOnly;
+      });
+
+      // Also filter fixturesRaw to match
+      fixturesRaw = fixturesRaw.filter((rf: any) => {
+        if (!rf.starting_at) return false;
+        // Extract date part (YYYY-MM-DD) from ISO string
+        const fixtureDateOnly = rf.starting_at.split("T")[0]!;
+        return fixtureDateOnly >= fromDateOnly && fixtureDateOnly <= toDateOnly;
+      });
+
       // Get leagues and countries from DB for filtering
       const dbLeagues = await prisma.leagues.findMany({
         select: { id: true, externalId: true, countryId: true },
       });
       const dbLeagueExternalIds = new Set(
         dbLeagues.map((l) => l.externalId.toString())
-      );
-      const leagueIdToExternalId = new Map(
-        dbLeagues.map((l) => [l.id, l.externalId.toString()])
-      );
-      const leagueIdToCountryId = new Map(
-        dbLeagues.map((l) => [l.id, l.countryId])
       );
 
       // Get all season external IDs from DB
@@ -166,46 +187,57 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
         dbSeasons.map((s) => s.externalId.toString())
       );
 
-      // Filter by leagueIds if provided
+      // Filter by leagueIds if provided (external IDs)
       let filteredFixturesDto = fixturesDto;
-      const leagueIds = query.leagueIds;
-      if (leagueIds && Array.isArray(leagueIds) && leagueIds.length > 0) {
-        const allowedLeagueExternalIds = new Set<string>();
-        leagueIds.forEach((id: number) => {
-          const extId = leagueIdToExternalId.get(id);
-          if (extId) {
-            allowedLeagueExternalIds.add(extId);
-          }
-        });
-        filteredFixturesDto = fixturesDto.filter((f) => {
-          const leagueExternalId = f.leagueExternalId
-            ? String(f.leagueExternalId)
-            : null;
-          return (
-            leagueExternalId && allowedLeagueExternalIds.has(leagueExternalId)
-          );
-        });
+      const leagueIdsStr = query.leagueIds;
+      if (leagueIdsStr) {
+        const leagueExternalIds = leagueIdsStr
+          .split(",")
+          .map((id) => id.trim())
+          .filter(Boolean);
+        if (leagueExternalIds.length > 0) {
+          const allowedLeagueExternalIds = new Set(leagueExternalIds);
+          filteredFixturesDto = fixturesDto.filter((f) => {
+            const leagueExternalId = f.leagueExternalId
+              ? String(f.leagueExternalId)
+              : null;
+            return (
+              leagueExternalId && allowedLeagueExternalIds.has(leagueExternalId)
+            );
+          });
+        }
       }
 
-      // Filter by countryIds if provided
-      const countryIds = query.countryIds;
-      if (countryIds && Array.isArray(countryIds) && countryIds.length > 0) {
-        const allowedCountryIds = new Set(countryIds);
-        filteredFixturesDto = filteredFixturesDto.filter((f) => {
-          // Find the league ID from external ID
-          const leagueExternalId = f.leagueExternalId
-            ? String(f.leagueExternalId)
-            : null;
-          if (!leagueExternalId) return false;
+      // Filter by countryIds if provided (external IDs)
+      const countryIdsStr = query.countryIds;
+      if (countryIdsStr) {
+        const countryExternalIds = countryIdsStr
+          .split(",")
+          .map((id) => id.trim())
+          .filter(Boolean);
+        if (countryExternalIds.length > 0) {
+          const allowedCountryExternalIds = new Set(countryExternalIds);
 
-          // Find the league in DB by external ID
-          const league = dbLeagues.find(
-            (l) => l.externalId.toString() === leagueExternalId
-          );
-          if (!league || !league.countryId) return false;
+          // Create a map of fixture external IDs to country external IDs from raw data
+          const fixtureCountryMap = new Map<number, string>();
+          fixturesRaw.forEach((rf: any) => {
+            if (rf.id && rf.league?.country?.id) {
+              fixtureCountryMap.set(
+                Number(rf.id),
+                String(rf.league.country.id)
+              );
+            }
+          });
 
-          return allowedCountryIds.has(league.countryId);
-        });
+          // Filter by country external ID from provider data
+          filteredFixturesDto = filteredFixturesDto.filter((f) => {
+            const countryExternalId = fixtureCountryMap.get(f.externalId);
+            return (
+              countryExternalId &&
+              allowedCountryExternalIds.has(countryExternalId)
+            );
+          });
+        }
       }
 
       // Create a map of fixture external IDs to raw fixture data

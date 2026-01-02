@@ -11,8 +11,8 @@ export const fixturesService = {
     page?: number;
     perPage?: number;
     leagueId?: number;
-    leagueIds?: number[];
-    countryIds?: number[];
+    leagueIds?: string[]; // External IDs
+    countryIds?: string[]; // External IDs
     seasonId?: number;
     state?: string;
     include?: string;
@@ -24,14 +24,10 @@ export const fixturesService = {
     if (params?.leagueId)
       searchParams.append("leagueId", params.leagueId.toString());
     if (params?.leagueIds && params.leagueIds.length > 0) {
-      params.leagueIds.forEach((id) => {
-        searchParams.append("leagueIds", id.toString());
-      });
+      searchParams.append("leagueIds", params.leagueIds.join(","));
     }
     if (params?.countryIds && params.countryIds.length > 0) {
-      params.countryIds.forEach((id) => {
-        searchParams.append("countryIds", id.toString());
-      });
+      searchParams.append("countryIds", params.countryIds.join(","));
     }
     if (params?.seasonId)
       searchParams.append("seasonId", params.seasonId.toString());
@@ -47,22 +43,18 @@ export const fixturesService = {
     from?: string,
     to?: string,
     seasonId?: number,
-    leagueIds?: number[],
-    countryIds?: number[]
+    leagueIds?: string[], // External IDs
+    countryIds?: string[] // External IDs
   ) {
     const searchParams = new URLSearchParams();
     if (from) searchParams.append("from", from);
     if (to) searchParams.append("to", to);
     if (seasonId) searchParams.append("seasonId", seasonId.toString());
     if (leagueIds && leagueIds.length > 0) {
-      leagueIds.forEach((id) => {
-        searchParams.append("leagueIds", id.toString());
-      });
+      searchParams.append("leagueIds", leagueIds.join(","));
     }
     if (countryIds && countryIds.length > 0) {
-      countryIds.forEach((id) => {
-        searchParams.append("countryIds", id.toString());
-      });
+      searchParams.append("countryIds", countryIds.join(","));
     }
 
     const queryString = searchParams.toString();

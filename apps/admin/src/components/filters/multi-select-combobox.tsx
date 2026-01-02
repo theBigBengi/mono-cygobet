@@ -48,19 +48,27 @@ export function MultiSelectCombobox({
   const [open, setOpen] = React.useState(false);
 
   const handleUnselect = (value: string | number) => {
-    onSelectionChange(selectedValues.filter((v) => v !== value));
+    onSelectionChange(
+      selectedValues.filter((v) => String(v) !== String(value))
+    );
   };
 
   const handleSelect = (value: string | number) => {
-    if (selectedValues.includes(value)) {
+    // Convert both to strings for comparison
+    const valueStr = String(value);
+    const isSelected = selectedValues.some((v) => String(v) === valueStr);
+
+    if (isSelected) {
       handleUnselect(value);
     } else {
       onSelectionChange([...selectedValues, value]);
     }
+    // Keep popover open for multi-select
+    setOpen(true);
   };
 
   const selectedOptions = options.filter((option) =>
-    selectedValues.includes(option.value)
+    selectedValues.some((v) => String(v) === String(option.value))
   );
 
   return (
@@ -70,10 +78,7 @@ export function MultiSelectCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn(
-            "w-full h-10 justify-between px-3",
-            className
-          )}
+          className={cn("w-full h-10 justify-between px-3", className)}
           disabled={disabled}
         >
           <div className="flex items-center gap-1.5 flex-1 text-left overflow-hidden">
@@ -100,7 +105,9 @@ export function MultiSelectCombobox({
                       handleUnselect(option.value);
                     }}
                   >
-                    <span className="max-w-[80px] truncate">{option.label}</span>
+                    <span className="max-w-[80px] truncate">
+                      {option.label}
+                    </span>
                     <button
                       className="ml-0.5 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-secondary/80 transition-colors"
                       onKeyDown={(e) => {
@@ -140,12 +147,23 @@ export function MultiSelectCombobox({
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => {
-                const isSelected = selectedValues.includes(option.value);
+                const isSelected = selectedValues.some(
+                  (v) => String(v) === String(option.value)
+                );
                 return (
                   <CommandItem
                     key={option.value}
-                    value={option.label}
-                    onSelect={() => handleSelect(option.value)}
+                    value={String(option.value)}
+                    keywords={[option.label]}
+                    onSelect={(currentValue) => {
+                      // currentValue is the value prop (String(option.value))
+                      const selectedOption = options.find(
+                        (opt) => String(opt.value) === currentValue
+                      );
+                      if (selectedOption) {
+                        handleSelect(selectedOption.value);
+                      }
+                    }}
                   >
                     <Check
                       className={cn(
@@ -164,4 +182,3 @@ export function MultiSelectCombobox({
     </Popover>
   );
 }
-

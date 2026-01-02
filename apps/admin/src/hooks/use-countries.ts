@@ -5,7 +5,11 @@ import type {
   AdminProviderCountriesResponse,
 } from "@repo/types";
 
-export function useCountriesFromDb(params?: { page?: number; perPage?: number; include?: string }) {
+export function useCountriesFromDb(params?: {
+  page?: number;
+  perPage?: number;
+  include?: string;
+}) {
   return useQuery<AdminCountriesListResponse>({
     queryKey: ["countries", "db", params],
     queryFn: () => countriesService.getFromDb(params),
@@ -20,5 +24,3 @@ export function useCountriesFromProvider() {
     staleTime: 30000, // 30 seconds
   });
 }
-
-

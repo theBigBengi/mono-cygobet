@@ -5,8 +5,8 @@ export interface ListFixturesQuerystring {
   page?: number;
   perPage?: number;
   leagueId?: number;
-  leagueIds?: number[];
-  countryIds?: number[];
+  leagueIds?: string[]; // Comma-separated string of external IDs
+  countryIds?: string[]; // Comma-separated string of external IDs
   seasonId?: number;
   state?: string;
   include?: string;
