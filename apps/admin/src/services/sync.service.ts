@@ -3,14 +3,13 @@ import { countriesService } from "./countries.service";
 import { leaguesService } from "./leagues.service";
 import { seasonsService } from "./seasons.service";
 import { teamsService } from "./teams.service";
-import { fixturesService } from "./fixtures.service";
 import { bookmakersService } from "./bookmakers.service";
 import type {
+  AdminSyncFixturesResponse,
   AdminSyncCountriesResponse,
   AdminSyncLeaguesResponse,
   AdminSyncSeasonsResponse,
   AdminSyncTeamsResponse,
-  AdminSyncFixturesResponse,
   AdminSyncBookmakersResponse,
 } from "@repo/types";
 
@@ -38,7 +37,7 @@ export const syncService = {
 
     // Step 1: Countries
     try {
-      const result = await countriesService.sync(dryRun);
+      const result = (await countriesService.sync(dryRun)) as AdminSyncCountriesResponse;
       results.push({
         step: "Countries",
         status: "success",
@@ -62,7 +61,7 @@ export const syncService = {
 
     // Step 2: Leagues
     try {
-      const result = await leaguesService.sync(dryRun);
+      const result = (await leaguesService.sync(dryRun)) as AdminSyncLeaguesResponse;
       results.push({
         step: "Leagues",
         status: "success",
@@ -86,7 +85,7 @@ export const syncService = {
 
     // Step 3: Seasons
     try {
-      const result = await seasonsService.sync(dryRun);
+      const result = (await seasonsService.sync(dryRun)) as AdminSyncSeasonsResponse;
       results.push({
         step: "Seasons",
         status: "success",
@@ -110,7 +109,7 @@ export const syncService = {
 
     // Step 4: Teams
     try {
-      const result = await teamsService.sync(dryRun);
+      const result = (await teamsService.sync(dryRun)) as AdminSyncTeamsResponse;
       results.push({
         step: "Teams",
         status: "success",
@@ -187,7 +186,7 @@ export const syncService = {
 
     // Step 6: Bookmakers (optional, doesn't block)
     try {
-      const result = await bookmakersService.sync(dryRun);
+      const result = (await bookmakersService.sync(dryRun)) as AdminSyncBookmakersResponse;
       results.push({
         step: "Bookmakers",
         status: "success",
