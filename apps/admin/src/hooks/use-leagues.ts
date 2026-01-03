@@ -5,9 +5,9 @@ import type {
   AdminProviderLeaguesResponse,
 } from "@repo/types";
 
-export function useLeaguesFromDb(params?: { 
-  page?: number; 
-  perPage?: number; 
+export function useLeaguesFromDb(params?: {
+  page?: number;
+  perPage?: number;
   countryId?: number;
   type?: string;
   include?: string;
@@ -15,7 +15,7 @@ export function useLeaguesFromDb(params?: {
   return useQuery<AdminLeaguesListResponse>({
     queryKey: ["leagues", "db", params],
     queryFn: () => leaguesService.getFromDb(params),
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000, // 30 seconds - leagues don't change often
   });
 }
 
@@ -23,7 +23,6 @@ export function useLeaguesFromProvider() {
   return useQuery<AdminProviderLeaguesResponse>({
     queryKey: ["leagues", "provider"],
     queryFn: () => leaguesService.getFromProvider(),
-    staleTime: 30000, // 30 seconds
+    staleTime: 600000 * 3, // 30 minutes - leagues don't change often
   });
 }
-

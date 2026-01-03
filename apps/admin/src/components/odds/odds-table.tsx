@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   TablePagination,
   TableControls,
@@ -547,66 +548,149 @@ export function OddsTable({
 
       {/* Detail Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-[95vw] sm:w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader className="text-left">
-            <DialogTitle className="text-base sm:text-lg">
-              {mode === "provider" && selectedGroupedOdd
-                ? "Market Odds Details"
-                : "Odds Details"}
-            </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
-              {mode === "provider" && selectedGroupedOdd
-                ? `${selectedGroupedOdd.fixtureName || "Fixture"} - ${selectedGroupedOdd.marketName || "Market"}`
-                : selectedOdd &&
-                    "providerData" in selectedOdd &&
-                    selectedOdd.providerData
-                  ? selectedOdd.providerData.fixtureName || "Odds information"
-                  : selectedOdd && "dbData" in selectedOdd && selectedOdd.dbData
-                    ? selectedOdd.dbData.fixtureName || "Odds information"
-                    : "Odds information"}
-            </DialogDescription>
+        <DialogContent
+          className="w-[95vw] max-w-[95vw] sm:w-full sm:max-w-4xl max-h-[90vh] flex flex-col p-4 sm:p-6 overflow-hidden"
+          showCloseButton={false}
+        >
+          <DialogHeader className="text-left flex-shrink-0">
+            {(() => {
+              const now = Math.floor(Date.now() / 1000);
+              let startTs: number = 0;
+              let odds: UnifiedOdds[] = [];
+              let fixtureName: string | null = null;
+              let marketName: string | null = null;
+
+              if (mode === "provider" && selectedGroupedOdd) {
+                startTs = selectedGroupedOdd.startingAtTs;
+                odds = selectedGroupedOdd.odds;
+                fixtureName = selectedGroupedOdd.fixtureName;
+                marketName = selectedGroupedOdd.marketName;
+              } else if (selectedOdd && "startingAtTs" in selectedOdd) {
+                // UnifiedOdds case
+                startTs = selectedOdd.startingAtTs || 0;
+                odds = [selectedOdd];
+                fixtureName =
+                  ("providerData" in selectedOdd &&
+                    selectedOdd.providerData?.fixtureName) ||
+                  ("dbData" in selectedOdd &&
+                    selectedOdd.dbData?.fixtureName) ||
+                  null;
+                marketName = selectedOdd.marketName;
+              } else if (selectedOdd && "startingAtTimestamp" in selectedOdd) {
+                // OddsDBRow case
+                startTs = selectedOdd.startingAtTimestamp || 0;
+                odds = [
+                  {
+                    ...selectedOdd,
+                    startingAtTs: selectedOdd.startingAtTimestamp,
+                    source: "db" as const,
+                    status: "ok" as const,
+                  } as UnifiedOdds,
+                ];
+                fixtureName = selectedOdd.fixtureName;
+                marketName = selectedOdd.marketName;
+              }
+
+              let fixtureState: string | null = null;
+              if (startTs > 0 && odds.length > 0) {
+                if (startTs > now) {
+                  fixtureState = "upcoming";
+                } else {
+                  const allWinningFalse = odds.every((odd) => !odd.winning);
+                  if (allWinningFalse) {
+                    fixtureState = "live";
+                  } else {
+                    fixtureState = "full time";
+                  }
+                }
+              }
+
+              const variantMap: Record<
+                string,
+                "default" | "secondary" | "destructive" | "outline"
+              > = {
+                upcoming: "secondary",
+                live: "destructive",
+                "full time": "default",
+              };
+
+              return (
+                <>
+                  {/* Mobile: Market name as title, fixture name + state as subtitle */}
+                  {/* Desktop: Keep current layout */}
+                  <div className="block sm:hidden">
+                    <DialogTitle className="text-base">
+                      {marketName || "Market"}
+                    </DialogTitle>
+                    <DialogDescription className="flex items-center gap-2 mt-1">
+                      <span className="text-xs">
+                        {fixtureName || "Fixture"}
+                      </span>
+                      {fixtureState && (
+                        <Badge
+                          variant={variantMap[fixtureState] || "outline"}
+                          className="text-xs"
+                        >
+                          {fixtureState}
+                        </Badge>
+                      )}
+                    </DialogDescription>
+                  </div>
+                  {/* Desktop layout */}
+                  <div className="hidden sm:flex items-center gap-2 flex-wrap">
+                    <DialogTitle className="text-lg">
+                      {mode === "provider" && selectedGroupedOdd
+                        ? `${selectedGroupedOdd.fixtureName || "Fixture"} - ${selectedGroupedOdd.marketName || "Market"}`
+                        : selectedOdd &&
+                            "providerData" in selectedOdd &&
+                            selectedOdd.providerData
+                          ? selectedOdd.providerData.fixtureName ||
+                            "Odds information"
+                          : selectedOdd &&
+                              "dbData" in selectedOdd &&
+                              selectedOdd.dbData
+                            ? selectedOdd.dbData.fixtureName ||
+                              "Odds information"
+                            : "Odds information"}
+                    </DialogTitle>
+                    {fixtureState && (
+                      <Badge
+                        variant={variantMap[fixtureState] || "outline"}
+                        className="text-xs"
+                      >
+                        {fixtureState}
+                      </Badge>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </DialogHeader>
 
           {mode === "provider" && selectedGroupedOdd ? (
-            <div className="space-y-3 sm:space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-2 sm:space-y-4 flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 flex-shrink-0">
                 <div>
-                  <label className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Fixture External ID
                   </label>
-                  <p className="text-xs sm:text-sm font-mono break-all">
+                  <p className="text-xs font-mono break-all">
                     {selectedGroupedOdd.fixtureExternalId}
                   </p>
                 </div>
                 <div>
-                  <label className="text-xs sm:text-sm font-medium text-muted-foreground">
-                    Fixture Name
-                  </label>
-                  <p className="text-xs sm:text-sm break-words">
-                    {selectedGroupedOdd.fixtureName || "—"}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Market External ID
                   </label>
-                  <p className="text-xs sm:text-sm font-mono break-all">
+                  <p className="text-xs font-mono break-all">
                     {selectedGroupedOdd.marketExternalId}
                   </p>
                 </div>
                 <div>
-                  <label className="text-xs sm:text-sm font-medium text-muted-foreground">
-                    Market Name
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Status in DB
                   </label>
-                  <p className="text-xs sm:text-sm break-words">
-                    {selectedGroupedOdd.marketName || "—"}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs sm:text-sm font-medium text-muted-foreground">
-                    Status
-                  </label>
-                  <p className="text-xs sm:text-sm">
+                  <p className="text-xs">
                     <StatusBadge
                       status={
                         selectedGroupedOdd.status as
@@ -621,18 +705,10 @@ export function OddsTable({
                   </p>
                 </div>
                 <div>
-                  <label className="text-xs sm:text-sm font-medium text-muted-foreground">
-                    Odds Count
-                  </label>
-                  <p className="text-xs sm:text-sm font-semibold">
-                    {selectedGroupedOdd.oddsCount}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Start At
                   </label>
-                  <p className="text-xs sm:text-sm break-words">
+                  <p className="text-xs break-words">
                     {selectedGroupedOdd.startingAtTs
                       ? format(
                           new Date(selectedGroupedOdd.startingAtTs * 1000),
@@ -643,9 +719,11 @@ export function OddsTable({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <h4 className="text-xs sm:text-sm font-semibold">All Odds</h4>
-                <div className="border rounded-lg overflow-x-auto -mx-2 sm:mx-0">
+              <div className="space-y-2 flex-1 min-h-0 flex flex-col overflow-hidden">
+                <h4 className="text-xs sm:text-sm font-semibold flex-shrink-0">
+                  All Odds
+                </h4>
+                <div className="border rounded-lg overflow-auto flex-1 min-h-0 -mx-2 sm:mx-0">
                   <div className="min-w-full inline-block">
                     <Table>
                       <TableHeader>
@@ -711,22 +789,22 @@ export function OddsTable({
             </div>
           ) : (
             selectedOdd && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-xs font-medium text-muted-foreground">
                       External ID
                     </label>
-                    <p className="text-sm font-mono">
+                    <p className="text-xs font-mono break-all">
                       {selectedOdd.externalId}
                     </p>
                   </div>
                   {"status" in selectedOdd && (
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Status
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Status in DB
                       </label>
-                      <p className="text-sm">
+                      <p className="text-xs">
                         <StatusBadge
                           status={
                             selectedOdd.status as
@@ -742,18 +820,18 @@ export function OddsTable({
                     </div>
                   )}
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Fixture External ID
                     </label>
-                    <p className="text-sm font-mono">
+                    <p className="text-xs font-mono break-all">
                       {selectedOdd.fixtureExternalId}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Fixture Name
                     </label>
-                    <p className="text-sm">
+                    <p className="text-xs break-words">
                       {("providerData" in selectedOdd &&
                         selectedOdd.providerData?.fixtureName) ||
                         ("dbData" in selectedOdd &&
@@ -762,44 +840,48 @@ export function OddsTable({
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Bookmaker
                     </label>
-                    <p className="text-sm">
+                    <p className="text-xs break-words">
                       {selectedOdd.bookmakerName || "—"}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Market
                     </label>
-                    <p className="text-sm">{selectedOdd.marketName || "—"}</p>
+                    <p className="text-xs break-words">
+                      {selectedOdd.marketName || "—"}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Market External ID
                     </label>
-                    <p className="text-sm font-mono">
+                    <p className="text-xs font-mono break-all">
                       {selectedOdd.marketExternalId}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Label
                     </label>
-                    <p className="text-sm">{selectedOdd.label}</p>
+                    <p className="text-xs break-words">{selectedOdd.label}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Value
                     </label>
-                    <p className="text-sm font-semibold">{selectedOdd.value}</p>
+                    <p className="text-xs font-semibold break-words">
+                      {selectedOdd.value}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Settled
                     </label>
-                    <p className="text-sm">
+                    <p className="text-xs">
                       <StatusBadge
                         status={selectedOdd.winning ? "success" : "pending"}
                         className="text-xs"
@@ -807,10 +889,10 @@ export function OddsTable({
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Start At
                     </label>
-                    <p className="text-sm">
+                    <p className="text-xs break-words">
                       {"startingAtTs" in selectedOdd && selectedOdd.startingAtTs
                         ? format(
                             new Date(

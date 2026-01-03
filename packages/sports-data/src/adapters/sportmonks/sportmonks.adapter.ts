@@ -12,6 +12,7 @@
 import type {
   BookmakerDTO,
   CountryDTO,
+  MarketDTO,
   OddsDTO,
   FixtureDTO,
   FixtureState,
@@ -43,6 +44,7 @@ console.log(process.env.SPORTMONKS_API_TOKEN);
 export class SportMonksAdapter {
   private httpFootball: SMHttp; // For football-specific endpoints
   private httpCore: SMHttp; // For core endpoints (countries, etc.)
+  private httpBase: SMHttp; // For base v3 endpoints (odds/markets, etc.)
 
   constructor(
     opts: {
@@ -70,6 +72,13 @@ export class SportMonksAdapter {
     // Initialize HTTP clients for both APIs
     this.httpFootball = new SMHttp(token, footballBaseUrl, authMode);
     this.httpCore = new SMHttp(token, coreBaseUrl, authMode);
+
+    // Base v3 URL (strip /football/ or /core/ from the base URL)
+    // Derive from football base URL: https://api.sportmonks.com/v3/football/ -> https://api.sportmonks.com/v3/
+    const baseV3Url = footballBaseUrl
+      .replace(/\/football\/?$/, "")
+      .replace(/\/core\/?$/, "");
+    this.httpBase = new SMHttp(token, baseV3Url, authMode);
   }
 
   /** Standard includes for fixture requests to get related data */
@@ -733,6 +742,29 @@ export class SportMonksAdapter {
         name: "bet365",
       },
     ];
+  }
+
+  /**
+   * Fetches all markets from SportMonks API
+   * Markets define the types of betting markets available (e.g., "Match Winner", "Over/Under")
+   * Uses the /odds/markets endpoint (v3 level, not under /football/ or /core/)
+   * @returns MarketDTO[] with all available markets
+   */
+  async fetchMarkets(): Promise<MarketDTO[]> {
+    // Note: markets endpoint may not support select parameter
+    const rows = await this.httpBase.get<any>("odds/markets", {
+      perPage: 50,
+      paginate: true,
+    });
+
+    return rows.map(
+      (m: any): MarketDTO => ({
+        externalId: m.id,
+        name: m.name,
+        description: m.description ?? null,
+        developerName: m.developer_name ?? null,
+      })
+    );
   }
 
   /**

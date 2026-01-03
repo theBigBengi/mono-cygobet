@@ -21,6 +21,6 @@ export function useCountriesFromProvider() {
   return useQuery<AdminProviderCountriesResponse>({
     queryKey: ["countries", "provider"],
     queryFn: () => countriesService.getFromProvider(),
-    staleTime: 30000, // 30 seconds
+    staleTime: 600000 * 3, // 30 minutes - countries don't change often
   });
 }

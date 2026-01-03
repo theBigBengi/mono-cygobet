@@ -31,6 +31,13 @@ export type BookmakerDTO = {
   name: string;
 };
 
+export type MarketDTO = {
+  externalId: number;
+  name: string;
+  description?: string | null;
+  developerName?: string | null;
+};
+
 export type TeamDTO = {
   /** Provider’s team id -> goes to team_mappings.external_id (as string) */
   externalId: number | string;

@@ -456,6 +456,18 @@ export interface AdminProviderBookmakersResponse {
   provider: string;
 }
 
+export interface AdminProviderMarketsResponse {
+  status: string;
+  data: Array<{
+    externalId: string;
+    name: string;
+    description?: string | null;
+    developerName?: string | null;
+  }>;
+  message: string;
+  provider: string;
+}
+
 export interface AdminSyncBookmakersResponse {
   status: string;
   data: {

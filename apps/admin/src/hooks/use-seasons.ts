@@ -5,9 +5,9 @@ import type {
   AdminProviderSeasonsResponse,
 } from "@repo/types";
 
-export function useSeasonsFromDb(params?: { 
-  page?: number; 
-  perPage?: number; 
+export function useSeasonsFromDb(params?: {
+  page?: number;
+  perPage?: number;
   leagueId?: number;
   isCurrent?: boolean;
   include?: string;
@@ -23,7 +23,6 @@ export function useSeasonsFromProvider() {
   return useQuery<AdminProviderSeasonsResponse>({
     queryKey: ["seasons", "provider"],
     queryFn: () => seasonsService.getFromProvider(),
-    staleTime: 30000, // 30 seconds
+    staleTime: 600000 * 3, // 30 minutes - seasons don't change often
   });
 }
-

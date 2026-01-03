@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useBatches } from "@/hooks/use-batches";
 import { BatchesTable } from "@/components/table";
 import { useBookmakersFromProvider } from "@/hooks/use-bookmakers";
+import { useMarketsFromProvider } from "@/hooks/use-markets";
 import { useOddsFromDb, useOddsFromProvider } from "@/hooks/use-odds";
 import { unifyOdds, calculateDiffStats } from "@/utils/odds";
 import { OddsTable } from "@/components/odds/odds-table";
@@ -157,6 +158,20 @@ export default function OddsPage() {
     20
   );
 
+  // Fetch markets from provider API
+  const { data: marketsProviderData } = useMarketsFromProvider();
+
+  // Market options from provider API
+  const marketOptions: MultiSelectOption[] = useMemo(() => {
+    if (!marketsProviderData?.data) return [];
+    return marketsProviderData.data
+      .map((m) => ({
+        value: String(m.externalId),
+        label: m.name,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [marketsProviderData]);
+
   const unifiedData = useMemo(
     () => unifyOdds(dbData, providerData),
     [dbData, providerData]
@@ -205,10 +220,7 @@ export default function OddsPage() {
           </div>
           <div className="flex-1 min-w-0">
             <MultiSelectCombobox
-              options={[
-                { label: "1", value: "1" },
-                { label: "57", value: "57" },
-              ]}
+              options={marketOptions}
               selectedValues={tempMarketIds}
               onSelectionChange={(values) =>
                 setTempMarketIds(values.map((v) => String(v)))
