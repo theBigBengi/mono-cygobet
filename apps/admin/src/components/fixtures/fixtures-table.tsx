@@ -13,6 +13,14 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -21,7 +29,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CloudSync, CheckCircle2, XCircle } from "lucide-react";
+import { CloudSync, CheckCircle2, XCircle, Pencil } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   TablePagination,
   TableControls,
@@ -87,6 +96,8 @@ export function FixturesTable({
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedState, setEditedState] = useState<string>("");
 
   // Filter unified data for provider mode (shows diff)
   const filteredDiffData = useMemo(() => {
@@ -481,6 +492,8 @@ export function FixturesTable({
   });
 
   const handleRowClick = (fixture: UnifiedFixture | FixtureDBRow) => {
+    setIsEditMode(false);
+    setEditedState("");
     if (mode === "provider") {
       setSelectedFixture(fixture as UnifiedFixture);
     } else {
@@ -619,172 +632,193 @@ export function FixturesTable({
       />
 
       {/* Detail Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Fixture Details</DialogTitle>
-            <DialogDescription>
-              {selectedFixture?.name || "Fixture information"}
-            </DialogDescription>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setIsEditMode(false);
+            setEditedState("");
+          }
+        }}
+      >
+        <DialogContent
+          className="w-[95vw] max-w-[95vw] sm:w-full sm:max-w-2xl max-h-[90vh] flex flex-col p-4 sm:p-6 overflow-hidden"
+          showCloseButton={false}
+        >
+          <DialogHeader className="text-left flex-shrink-0">
+            {(() => {
+              const fixtureName = selectedFixture?.name || "Fixture";
+              const fixtureState = selectedFixture?.state || null;
+
+              const variantMap: Record<
+                string,
+                "default" | "secondary" | "destructive" | "outline"
+              > = {
+                NS: "secondary",
+                LIVE: "destructive",
+                FT: "default",
+                CAN: "outline",
+                INT: "outline",
+              };
+
+              return (
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <DialogTitle className="text-base sm:text-lg">
+                    {fixtureName}
+                  </DialogTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 border"
+                    onClick={() => {
+                      setIsEditMode(!isEditMode);
+                      if (!isEditMode && selectedFixture) {
+                        setEditedState(selectedFixture.state || "");
+                      }
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })()}
           </DialogHeader>
 
           {selectedFixture && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+            <div className="space-y-2 sm:space-y-4 flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 flex-shrink-0">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
                     External ID
                   </label>
-                  <p className="text-sm font-mono">
-                    {selectedFixture.externalId}
-                  </p>
+                  <Input
+                    readOnly
+                    value={String(selectedFixture.externalId)}
+                    className="text-xs h-8 bg-muted font-mono"
+                  />
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Status
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Fixture Name
                   </label>
-                  <p className="text-sm">{selectedFixture.status || "N/A"}</p>
+                  <Input
+                    readOnly
+                    value={selectedFixture.name || "—"}
+                    className="text-xs h-8 bg-muted"
+                  />
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Start Date
                   </label>
-                  <p className="text-sm">
-                    {selectedFixture.startIso
-                      ? format(new Date(selectedFixture.startIso), "PPpp")
-                      : "—"}
-                  </p>
+                  <Input
+                    readOnly
+                    value={
+                      selectedFixture.startIso
+                        ? format(new Date(selectedFixture.startIso), "PPpp")
+                        : "—"
+                    }
+                    className="text-xs h-8 bg-muted"
+                  />
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
                     State
                   </label>
-                  <p className="text-sm">{selectedFixture.state || "—"}</p>
+                  {isEditMode ? (
+                    <Select
+                      value={editedState || selectedFixture.state || ""}
+                      onValueChange={setEditedState}
+                    >
+                      <SelectTrigger className="text-xs h-8">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NS">Not Started (NS)</SelectItem>
+                        <SelectItem value="LIVE">Live (LIVE)</SelectItem>
+                        <SelectItem value="FT">Full Time (FT)</SelectItem>
+                        <SelectItem value="CAN">Cancelled (CAN)</SelectItem>
+                        <SelectItem value="INT">Interrupted (INT)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      readOnly
+                      value={selectedFixture.state || "—"}
+                      className="text-xs h-8 bg-muted"
+                    />
+                  )}
                 </div>
                 {selectedFixture.result && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Result
                     </label>
-                    <p className="text-sm">{selectedFixture.result}</p>
+                    <Input
+                      readOnly
+                      value={selectedFixture.result}
+                      className="text-xs h-8 bg-muted"
+                    />
                   </div>
                 )}
                 {selectedFixture.stageRoundName && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
                       Stage/Round
                     </label>
-                    <p className="text-sm">{selectedFixture.stageRoundName}</p>
+                    <Input
+                      readOnly
+                      value={selectedFixture.stageRoundName}
+                      className="text-xs h-8 bg-muted"
+                    />
+                  </div>
+                )}
+                {selectedFixture.league && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      League
+                    </label>
+                    <Input
+                      readOnly
+                      value={selectedFixture.league.name}
+                      className="text-xs h-8 bg-muted"
+                    />
+                  </div>
+                )}
+                {selectedFixture.season && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Season
+                    </label>
+                    <Input
+                      readOnly
+                      value={selectedFixture.season.name}
+                      className="text-xs h-8 bg-muted"
+                    />
+                  </div>
+                )}
+                {selectedFixture.homeTeam && selectedFixture.awayTeam && (
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Teams
+                    </label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs sm:text-sm break-words">
+                        {selectedFixture.homeTeam.name}
+                      </span>
+                      <span className="text-muted-foreground">vs</span>
+                      <span className="text-xs sm:text-sm break-words">
+                        {selectedFixture.awayTeam.name}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
-
-              {selectedFixture.league && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    League
-                  </label>
-                  <p className="text-sm">{selectedFixture.league.name}</p>
-                </div>
-              )}
-
-              {selectedFixture.season && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Season
-                  </label>
-                  <p className="text-sm">{selectedFixture.season.name}</p>
-                </div>
-              )}
-
-              {selectedFixture.homeTeam && selectedFixture.awayTeam && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Teams
-                  </label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm">
-                      {selectedFixture.homeTeam.name}
-                    </span>
-                    <span className="text-muted-foreground">vs</span>
-                    <span className="text-sm">
-                      {selectedFixture.awayTeam.name}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {mode === "provider" && selectedFixture.providerData && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold">Provider Data</h4>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-muted-foreground">
-                        League in DB:{" "}
-                      </span>
-                      <span>
-                        {selectedFixture.leagueInDb ? (
-                          <CheckCircle2 className="inline h-3 w-3 text-green-500" />
-                        ) : (
-                          <XCircle className="inline h-3 w-3 text-red-500" />
-                        )}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">
-                        Season in DB:{" "}
-                      </span>
-                      <span>
-                        {selectedFixture.seasonInDb ? (
-                          <CheckCircle2 className="inline h-3 w-3 text-green-500" />
-                        ) : (
-                          <XCircle className="inline h-3 w-3 text-red-500" />
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedFixture.dbData && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold">Database Data</h4>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {selectedFixture.dbData.homeScore !== null &&
-                      selectedFixture.dbData.awayScore !== null && (
-                        <div>
-                          <span className="text-muted-foreground">Score: </span>
-                          <span>
-                            {selectedFixture.dbData.homeScore} -{" "}
-                            {selectedFixture.dbData.awayScore}
-                          </span>
-                        </div>
-                      )}
-                    <div>
-                      <span className="text-muted-foreground">Created: </span>
-                      <span>
-                        {format(
-                          new Date(selectedFixture.dbData.createdAt),
-                          "PPpp"
-                        )}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Updated: </span>
-                      <span>
-                        {format(
-                          new Date(selectedFixture.dbData.updatedAt),
-                          "PPpp"
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0">
             {mode === "provider" &&
               selectedFixture &&
               selectedFixture.status === "missing-in-db" && (

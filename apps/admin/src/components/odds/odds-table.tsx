@@ -213,20 +213,6 @@ export function OddsTable({
           },
         },
         {
-          accessorKey: "fixtureExternalId",
-          header: ({ column }: { column: Column<GroupedOdds, unknown> }) => (
-            <DataTableColumnHeader
-              column={column}
-              title="Fixture External ID"
-            />
-          ),
-          cell: ({ row }: { row: Row<GroupedOdds> }) => (
-            <span className="text-xs sm:text-sm font-mono">
-              {row.getValue("fixtureExternalId") as string}
-            </span>
-          ),
-        },
-        {
           accessorKey: "fixtureName",
           header: ({ column }: { column: Column<GroupedOdds, unknown> }) => (
             <DataTableColumnHeader column={column} title="Fixture Name" />
@@ -616,43 +602,14 @@ export function OddsTable({
 
               return (
                 <>
-                  {/* Mobile: Market name as title, fixture name + state as subtitle */}
-                  {/* Desktop: Keep current layout */}
-                  <div className="block sm:hidden">
-                    <DialogTitle className="text-base">
-                      {marketName || "Market"}
-                    </DialogTitle>
-                    <DialogDescription className="flex items-center gap-2 mt-1">
-                      <span className="text-xs">
-                        {fixtureName || "Fixture"}
-                      </span>
-                      {fixtureState && (
-                        <Badge
-                          variant={variantMap[fixtureState] || "outline"}
-                          className="text-xs"
-                        >
-                          {fixtureState}
-                        </Badge>
-                      )}
-                    </DialogDescription>
-                  </div>
-                  {/* Desktop layout */}
-                  <div className="hidden sm:flex items-center gap-2 flex-wrap">
-                    <DialogTitle className="text-lg">
-                      {mode === "provider" && selectedGroupedOdd
-                        ? `${selectedGroupedOdd.fixtureName || "Fixture"} - ${selectedGroupedOdd.marketName || "Market"}`
-                        : selectedOdd &&
-                            "providerData" in selectedOdd &&
-                            selectedOdd.providerData
-                          ? selectedOdd.providerData.fixtureName ||
-                            "Odds information"
-                          : selectedOdd &&
-                              "dbData" in selectedOdd &&
-                              selectedOdd.dbData
-                            ? selectedOdd.dbData.fixtureName ||
-                              "Odds information"
-                            : "Odds information"}
-                    </DialogTitle>
+                  {/* Market name as title, fixture name + state as subtitle (same for mobile and desktop) */}
+                  <DialogTitle className="text-base sm:text-lg">
+                    {marketName || "Market"}
+                  </DialogTitle>
+                  <DialogDescription className="flex items-center gap-2 mt-1">
+                    <span className="text-xs sm:text-sm">
+                      {fixtureName || "Fixture"}
+                    </span>
                     {fixtureState && (
                       <Badge
                         variant={variantMap[fixtureState] || "outline"}
@@ -661,7 +618,7 @@ export function OddsTable({
                         {fixtureState}
                       </Badge>
                     )}
-                  </div>
+                  </DialogDescription>
                 </>
               );
             })()}
