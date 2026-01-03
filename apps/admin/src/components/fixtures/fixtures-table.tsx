@@ -30,7 +30,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CloudSync, CheckCircle2, XCircle, Pencil } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   TablePagination,
   TableControls,
@@ -42,7 +41,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -53,6 +51,7 @@ import type {
   AdminProviderFixturesResponse,
 } from "@repo/types";
 import { format } from "date-fns";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 
 type FixtureDBRow = AdminFixturesListResponse["data"][0];
 
@@ -86,7 +85,13 @@ export function FixturesTable({
 }: FixturesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useColumnVisibility(
+    "fixtures-table",
+    {
+      "name-db": false,
+      "state-db": false,
+    }
+  );
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 25,
@@ -151,7 +156,7 @@ export function FixturesTable({
           cell: ({ row }: { row: Row<UnifiedFixture> }) => {
             const fixture = row.original;
             return (
-              <span className="text-xs sm:text-sm">
+              <span className="text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis block">
                 {fixture.dbData?.name || "—"}
               </span>
             );
@@ -164,7 +169,7 @@ export function FixturesTable({
           cell: ({ row }: { row: Row<UnifiedFixture> }) => {
             const fixture = row.original;
             return (
-              <span className="text-xs sm:text-sm">
+              <span className="text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis block">
                 {fixture.providerData?.name || "—"}
               </span>
             );
@@ -194,7 +199,7 @@ export function FixturesTable({
             try {
               const date = new Date(startIso);
               return (
-                <span className="text-xs sm:text-sm">
+                <span className="text-xs sm:text-sm whitespace-nowrap">
                   {format(date, "MMM dd, yyyy HH:mm")}
                 </span>
               );
@@ -210,7 +215,7 @@ export function FixturesTable({
           cell: ({ row }: { row: Row<UnifiedFixture> }) => {
             const fixture = row.original;
             return (
-              <span className="text-xs sm:text-sm">
+              <span className="text-xs sm:text-sm whitespace-nowrap">
                 {fixture.dbData?.state || "—"}
               </span>
             );
@@ -223,7 +228,7 @@ export function FixturesTable({
           cell: ({ row }: { row: Row<UnifiedFixture> }) => {
             const fixture = row.original;
             return (
-              <span className="text-xs sm:text-sm">
+              <span className="text-xs sm:text-sm whitespace-nowrap">
                 {fixture.providerData?.state || "—"}
               </span>
             );
@@ -300,7 +305,11 @@ export function FixturesTable({
             const leagueName = fixture.leagueName;
             if (!leagueName)
               return <span className="text-muted-foreground">—</span>;
-            return <span className="text-xs sm:text-sm">{leagueName}</span>;
+            return (
+              <span className="text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis block">
+                {leagueName}
+              </span>
+            );
           },
         },
         {
@@ -316,7 +325,11 @@ export function FixturesTable({
             const countryName = fixture.countryName;
             if (!countryName)
               return <span className="text-muted-foreground">—</span>;
-            return <span className="text-xs sm:text-sm">{countryName}</span>;
+            return (
+              <span className="text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis block">
+                {countryName}
+              </span>
+            );
           },
         },
       ];
@@ -330,7 +343,7 @@ export function FixturesTable({
             column: Column<UnifiedFixture | FixtureDBRow, unknown>;
           }) => <DataTableColumnHeader column={column} title="externalId" />,
           cell: ({ row }: { row: Row<FixtureDBRow> }) => (
-            <span className="font-mono text-[10px] sm:text-xs">
+            <span className="font-mono text-[10px] sm:text-xs whitespace-nowrap">
               {row.getValue("externalId")}
             </span>
           ),
@@ -343,7 +356,7 @@ export function FixturesTable({
             column: Column<UnifiedFixture | FixtureDBRow, unknown>;
           }) => <DataTableColumnHeader column={column} title="Name" />,
           cell: ({ row }: { row: Row<FixtureDBRow> }) => (
-            <span className="font-medium text-xs sm:text-sm">
+            <span className="font-medium text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis block">
               {row.getValue("name")}
             </span>
           ),
@@ -371,7 +384,7 @@ export function FixturesTable({
             try {
               const date = new Date(startIso);
               return (
-                <span className="text-xs sm:text-sm">
+                <span className="text-xs sm:text-sm whitespace-nowrap">
                   {format(date, "MMM dd, yyyy HH:mm")}
                 </span>
               );
@@ -388,7 +401,9 @@ export function FixturesTable({
             column: Column<UnifiedFixture | FixtureDBRow, unknown>;
           }) => <DataTableColumnHeader column={column} title="State" />,
           cell: ({ row }: { row: Row<FixtureDBRow> }) => (
-            <span className="text-xs sm:text-sm">{row.getValue("state")}</span>
+            <span className="text-xs sm:text-sm whitespace-nowrap">
+              {row.getValue("state")}
+            </span>
           ),
         },
         {
@@ -399,7 +414,7 @@ export function FixturesTable({
             const fixture = row.original;
             if (fixture.homeScore !== null && fixture.awayScore !== null) {
               return (
-                <span className="text-xs sm:text-sm font-medium">
+                <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
                   {fixture.homeScore} - {fixture.awayScore}
                 </span>
               );
@@ -416,7 +431,11 @@ export function FixturesTable({
             const league = fixture.league;
             if (!league)
               return <span className="text-muted-foreground">—</span>;
-            return <span className="text-xs sm:text-sm">{league.name}</span>;
+            return (
+              <span className="text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis block">
+                {league.name}
+              </span>
+            );
           },
         },
         {
@@ -428,7 +447,11 @@ export function FixturesTable({
             const season = fixture.season;
             if (!season)
               return <span className="text-muted-foreground">—</span>;
-            return <span className="text-xs sm:text-sm">{season.name}</span>;
+            return (
+              <span className="text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis block">
+                {season.name}
+              </span>
+            );
           },
         },
         {
@@ -443,10 +466,14 @@ export function FixturesTable({
               return <span className="text-muted-foreground">—</span>;
             }
             return (
-              <div className="flex items-center gap-1 text-xs sm:text-sm">
-                <span>{homeTeam.name}</span>
-                <span className="text-muted-foreground">vs</span>
-                <span>{awayTeam.name}</span>
+              <div className="flex items-center gap-1 text-xs sm:text-sm whitespace-nowrap">
+                <span className="overflow-hidden text-ellipsis">
+                  {homeTeam.name}
+                </span>
+                <span className="text-muted-foreground flex-shrink-0">vs</span>
+                <span className="overflow-hidden text-ellipsis">
+                  {awayTeam.name}
+                </span>
               </div>
             );
           },
@@ -595,14 +622,17 @@ export function FixturesTable({
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleRowClick(fixture)}
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="whitespace-nowrap overflow-hidden text-ellipsis"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
                     </TableRow>
                   );
                 });
@@ -647,42 +677,24 @@ export function FixturesTable({
           showCloseButton={false}
         >
           <DialogHeader className="text-left flex-shrink-0">
-            {(() => {
-              const fixtureName = selectedFixture?.name || "Fixture";
-              const fixtureState = selectedFixture?.state || null;
-
-              const variantMap: Record<
-                string,
-                "default" | "secondary" | "destructive" | "outline"
-              > = {
-                NS: "secondary",
-                LIVE: "destructive",
-                FT: "default",
-                CAN: "outline",
-                INT: "outline",
-              };
-
-              return (
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <DialogTitle className="text-base sm:text-lg">
-                    {fixtureName}
-                  </DialogTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 border"
-                    onClick={() => {
-                      setIsEditMode(!isEditMode);
-                      if (!isEditMode && selectedFixture) {
-                        setEditedState(selectedFixture.state || "");
-                      }
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </div>
-              );
-            })()}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <DialogTitle className="text-base sm:text-lg">
+                {selectedFixture?.name || "Fixture"}
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 border"
+                onClick={() => {
+                  setIsEditMode(!isEditMode);
+                  if (!isEditMode && selectedFixture) {
+                    setEditedState(selectedFixture.state || "");
+                  }
+                }}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
           </DialogHeader>
 
           {selectedFixture && (

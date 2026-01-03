@@ -47,6 +47,7 @@ import type {
 type TeamDBRow = AdminTeamsListResponse["data"][0];
 
 import type { DiffFilter } from "@/types";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 
 interface TeamsTableProps {
   mode: "db" | "provider";
@@ -76,7 +77,10 @@ export function TeamsTable({
 }: TeamsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useColumnVisibility(
+    "teams-table",
+    {}
+  );
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 25,

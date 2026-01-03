@@ -7,7 +7,6 @@ import {
   getSortedRowModel,
   useReactTable,
   type SortingState,
-  type VisibilityState,
   type Row,
   type Column,
   type ColumnDef,
@@ -45,6 +44,7 @@ import type {
 } from "@repo/types";
 import { format } from "date-fns";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 
 type OddsDBRow = AdminOddsListResponse["data"][0];
 
@@ -82,7 +82,10 @@ export function OddsTable({
 }: OddsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useColumnVisibility(
+    "odds-table",
+    {}
+  );
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 });
   const [selectedGroupedOdd, setSelectedGroupedOdd] =
     useState<GroupedOdds | null>(null);

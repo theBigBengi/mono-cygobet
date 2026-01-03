@@ -48,6 +48,7 @@ import type {
 type CountryDBRow = AdminCountriesListResponse["data"][0];
 
 import type { DiffFilter } from "@/types";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 
 interface CountriesTableProps {
   mode: "db" | "provider";
@@ -77,7 +78,10 @@ export function CountriesTable({
 }: CountriesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useColumnVisibility(
+    "countries-table",
+    {}
+  );
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 25,

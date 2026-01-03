@@ -46,6 +46,7 @@ import type {
 type SeasonDBRow = AdminSeasonsListResponse["data"][0];
 
 import type { DiffFilter } from "@/types";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 
 interface SeasonsTableProps {
   mode: "db" | "provider";
@@ -75,7 +76,10 @@ export function SeasonsTable({
 }: SeasonsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useColumnVisibility(
+    "seasons-table",
+    {}
+  );
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 25,
