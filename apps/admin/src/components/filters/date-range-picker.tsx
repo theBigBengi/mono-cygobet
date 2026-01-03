@@ -157,7 +157,7 @@ export function DateRangePicker({
 
   // Calendar content for desktop (popover)
   const renderPopoverContent = () => (
-    <div className="p-3 max-w-xs">
+    <div className="p-3 max-w-[280px]">
       <Calendar
         mode="range"
         defaultMonth={tempDateRange?.from || dateRange?.from}
@@ -166,7 +166,7 @@ export function DateRangePicker({
           setTempDateRange(range as DateRange | undefined);
         }}
         numberOfMonths={1}
-        className="w-full"
+        className="mx-auto"
       />
       {/* Presets */}
       <div className="flex justify-center gap-2 py-3 flex-wrap border-t">
@@ -210,11 +210,11 @@ export function DateRangePicker({
             setTempDateRange(range as DateRange | undefined);
           }}
           numberOfMonths={1}
-          className="w-full"
+          className="mx-auto"
         />
 
         {/* Presets */}
-        <div className="flex justify-center gap-2 pt-3 flex-wrap border-t">
+        <div className="flex justify-center gap-2 py-3 flex-wrap border-t">
           {presets.map((preset) => (
             <Button
               key={preset.label}
@@ -228,7 +228,7 @@ export function DateRangePicker({
           ))}
         </div>
       </div>
-      <DrawerFooter className="flex-col gap-2 px-0">
+      <DrawerFooter className="flex-col gap-2 px-0 border-t">
         <Button
           variant="default"
           onClick={handleConfirm}
@@ -278,4 +278,3 @@ export function DateRangePicker({
     </div>
   );
 }
-
