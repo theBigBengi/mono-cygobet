@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { DateRangePicker } from "@/components/filters/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { BatchesTable } from "@/components/table/batches-table";
-import { syncService, type SyncAllResult } from "@/services/sync.service";
+import { syncService } from "@/services/sync.service";
 import { batchesService } from "@/services/batches.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
