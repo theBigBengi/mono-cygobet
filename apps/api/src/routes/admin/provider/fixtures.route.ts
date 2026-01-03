@@ -152,16 +152,19 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
         fixturesDto = await adapter.fetchFixturesBetween(fromDate, toDate);
       }
 
+      // Store original fixturesRaw BEFORE any filtering - we need this for odds lookup
+      const originalFixturesRaw = [...fixturesRaw];
+
       // Filter fixtures by date range to ensure they're within the requested range
       // Compare dates only (YYYY-MM-DD) to avoid timezone issues
       // fromDateOnly and toDateOnly are already set above
 
-      fixturesDto = fixturesDto.filter((f) => {
-        if (!f.startIso) return false;
-        // Extract date part (YYYY-MM-DD) from ISO string
-        const fixtureDateOnly = f.startIso.split("T")[0]!;
-        return fixtureDateOnly >= fromDateOnly && fixtureDateOnly <= toDateOnly;
-      });
+      // fixturesDto = fixturesDto.filter((f) => {
+      //   if (!f.startIso) return false;
+      //   // Extract date part (YYYY-MM-DD) from ISO string
+      //   const fixtureDateOnly = f.startIso.split("T")[0]!;
+      //   return fixtureDateOnly >= fromDateOnly && fixtureDateOnly <= toDateOnly;
+      // });
 
       // Also filter fixturesRaw to match
       fixturesRaw = fixturesRaw.filter((rf: any) => {
@@ -205,6 +208,15 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
               leagueExternalId && allowedLeagueExternalIds.has(leagueExternalId)
             );
           });
+          // Also filter fixturesRaw by league
+          fixturesRaw = fixturesRaw.filter((rf: any) => {
+            const leagueExternalId = rf.league?.id
+              ? String(rf.league.id)
+              : null;
+            return (
+              leagueExternalId && allowedLeagueExternalIds.has(leagueExternalId)
+            );
+          });
         }
       }
 
@@ -237,12 +249,24 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
               allowedCountryExternalIds.has(countryExternalId)
             );
           });
+          // Also filter fixturesRaw by country
+          fixturesRaw = fixturesRaw.filter((rf: any) => {
+            const countryExternalId = rf.league?.country?.id
+              ? String(rf.league.country.id)
+              : null;
+            return (
+              countryExternalId &&
+              allowedCountryExternalIds.has(countryExternalId)
+            );
+          });
         }
       }
 
       // Create a map of fixture external IDs to raw fixture data
+      // Build map from ORIGINAL fixturesRaw (before filtering) to ensure we have odds data for ALL fixtures
+      // This way, even if fixturesRaw gets filtered, we can still look up odds for any fixture in fixturesDto
       const rawFixtureMap = new Map<number, any>();
-      fixturesRaw.forEach((f: any) => {
+      originalFixturesRaw.forEach((f: any) => {
         rawFixtureMap.set(Number(f.id), f);
       });
 
@@ -259,6 +283,7 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
           const awayTeamExternalId = String(f.awayTeamExternalId);
 
           // Get raw fixture data for league, country, and odds
+          // Look up using the external ID as a number to match the map key
           const rawFixture = rawFixtureMap.get(f.externalId);
           const leagueName = rawFixture?.league?.name ?? null;
           const countryName = rawFixture?.league?.country?.name ?? null;

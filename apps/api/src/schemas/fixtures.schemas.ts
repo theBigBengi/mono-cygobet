@@ -12,6 +12,8 @@ export const listFixturesQuerystringSchema = {
     seasonId: { type: "number" },
     state: { type: "string" },
     include: { type: "string" },
+    fromTs: { type: "number" }, // Start timestamp filter
+    toTs: { type: "number" }, // End timestamp filter
   },
 };
 

@@ -5,11 +5,13 @@ export interface ListFixturesQuerystring {
   page?: number;
   perPage?: number;
   leagueId?: number;
-  leagueIds?: string[]; // Comma-separated string of external IDs
-  countryIds?: string[]; // Comma-separated string of external IDs
+  leagueIds?: string; // Comma-separated string of external IDs
+  countryIds?: string; // Comma-separated string of external IDs
   seasonId?: number;
   state?: string;
   include?: string;
+  fromTs?: number; // Start timestamp filter
+  toTs?: number; // End timestamp filter
 }
 
 export interface GetFixtureQuerystring {
@@ -24,4 +26,3 @@ export interface SearchFixturesQuerystring {
   q: string;
   take?: number;
 }
-

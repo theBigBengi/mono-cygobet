@@ -14,6 +14,8 @@ export class FixturesService {
     countryIds?: number[];
     seasonId?: number;
     state?: string;
+    fromTs?: number;
+    toTs?: number;
     orderBy?: Prisma.fixturesOrderByWithRelationInput[];
     include?: Prisma.fixturesInclude;
   }) {
@@ -43,6 +45,17 @@ export class FixturesService {
 
     if (args.state !== undefined) {
       where.state = args.state as any;
+    }
+
+    // Date range filtering by startTs
+    if (args.fromTs !== undefined || args.toTs !== undefined) {
+      where.startTs = {};
+      if (args.fromTs !== undefined) {
+        where.startTs.gte = args.fromTs;
+      }
+      if (args.toTs !== undefined) {
+        where.startTs.lte = args.toTs;
+      }
     }
 
     const findManyArgs: Prisma.fixturesFindManyArgs = {

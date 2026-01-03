@@ -126,6 +126,7 @@ export type OddsDTO = {
   bookmakerExternalId: number;
   bookmakerName: string;
   marketName: string;
+  fixtureName: string;
 };
 
 export type FixtureOddsDTO = FixtureDTO & {

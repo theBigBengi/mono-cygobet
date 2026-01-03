@@ -5,3 +5,4 @@ export * from "./teams";
 export * from "./seasons";
 export * from "./bookmakers";
 export * from "./fixtures";
+export * from "./odds";

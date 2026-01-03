@@ -20,6 +20,7 @@ import TeamsPage from "@/pages/teams";
 import SeasonsPage from "@/pages/seasons";
 import BookmakersPage from "@/pages/bookmakers";
 import FixturesPage from "@/pages/fixtures";
+import OddsPage from "@/pages/odds";
 import SyncCenterPage from "@/pages/sync-center";
 
 function App() {
@@ -45,9 +46,11 @@ function App() {
                           ? "Seasons"
                           : location.pathname === "/bookmakers"
                             ? "Bookmakers"
-                            : location.pathname === "/fixtures"
-                              ? "Fixtures"
-                              : "Countries"}
+                            : location.pathname === "/odds"
+                              ? "Odds"
+                              : location.pathname === "/fixtures"
+                                ? "Fixtures"
+                                : "Countries"}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
@@ -63,6 +66,7 @@ function App() {
               <Route path="/teams" element={<TeamsPage />} />
               <Route path="/seasons" element={<SeasonsPage />} />
               <Route path="/bookmakers" element={<BookmakersPage />} />
+              <Route path="/odds" element={<OddsPage />} />
               <Route path="/fixtures" element={<FixturesPage />} />
               <Route
                 path="*"

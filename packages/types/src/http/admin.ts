@@ -410,6 +410,42 @@ export interface AdminBookmakerResponse {
   message: string;
 }
 
+export interface AdminOddsListResponse {
+  status: string;
+  data: Array<{
+    id: number;
+    externalId: string;
+    fixtureId: number;
+    fixtureExternalId: string;
+    fixtureName: string | null;
+    bookmakerId: number | null;
+    bookmakerExternalId: string | null;
+    bookmakerName: string | null;
+    marketExternalId: string;
+    marketName: string | null;
+    marketDescription: string;
+    sortOrder: number;
+    label: string;
+    name: string | null;
+    handicap: string | null;
+    total: string | null;
+    value: string;
+    probability: string | null;
+    winning: boolean;
+    startingAt: string;
+    startingAtTimestamp: number;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
 export interface AdminProviderBookmakersResponse {
   status: string;
   data: Array<{
@@ -550,6 +586,33 @@ export interface AdminProviderFixturesResponse {
     leagueName: string | null;
     countryName: string | null;
     hasOdds: boolean;
+  }>;
+  message: string;
+  provider: string;
+}
+
+export interface AdminProviderOddsResponse {
+  status: string;
+  data: Array<{
+    bookmakerId: number;
+    marketExternalId: number;
+    externalId: number;
+    name: string | null;
+    value: string;
+    marketDescription: string;
+    winning: boolean;
+    startingAt: string;
+    startingAtTs: number;
+    probability: string;
+    total: string | null;
+    handicap: string | null;
+    label: string;
+    sortOrder: number;
+    fixtureExternalId: number;
+    fixtureName: string | null;
+    bookmakerExternalId: number;
+    bookmakerName: string;
+    marketName: string;
   }>;
   message: string;
   provider: string;

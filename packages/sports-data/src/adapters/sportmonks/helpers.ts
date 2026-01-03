@@ -342,6 +342,7 @@ export function buildOdds(f: FixtureSportmonks): OddsDTO[] {
       bookmakerExternalId: o.bookmaker_id,
       bookmakerName: o.bookmaker?.name,
       fixtureExternalId: f.id,
+      fixtureName: f.name,
     });
   }
 

@@ -133,7 +133,10 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
       // Convert external IDs to DB IDs
       let leagueDbIds: number[] | undefined;
       if (query.leagueIds) {
-        const leagueExternalIds = query.leagueIds.split(",").map((id) => id.trim()).filter(Boolean);
+        const leagueExternalIds = query.leagueIds
+          .split(",")
+          .map((id) => id.trim())
+          .filter(Boolean);
         if (leagueExternalIds.length > 0) {
           const leagues = await prisma.leagues.findMany({
             where: {
@@ -149,7 +152,10 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
 
       let countryDbIds: number[] | undefined;
       if (query.countryIds) {
-        const countryExternalIds = query.countryIds.split(",").map((id) => id.trim()).filter(Boolean);
+        const countryExternalIds = query.countryIds
+          .split(",")
+          .map((id) => id.trim())
+          .filter(Boolean);
         if (countryExternalIds.length > 0) {
           const countries = await prisma.countries.findMany({
             where: {
@@ -163,6 +169,10 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
 
+      // Parse date filters (timestamps)
+      const fromTs = query.fromTs ? Number(query.fromTs) : undefined;
+      const toTs = query.toTs ? Number(query.toTs) : undefined;
+
       const { fixtures, count } = await service.get({
         take,
         skip,
@@ -171,6 +181,8 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
         countryIds: countryDbIds,
         seasonId: query.seasonId,
         state: query.state,
+        fromTs,
+        toTs,
         orderBy: [{ startTs: "desc" }],
         include: Object.keys(include).length > 0 ? include : undefined,
       });

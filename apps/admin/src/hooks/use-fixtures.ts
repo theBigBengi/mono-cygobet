@@ -14,6 +14,8 @@ export function useFixturesFromDb(params?: {
   seasonId?: number;
   state?: string;
   include?: string;
+  fromTs?: number; // Start timestamp filter
+  toTs?: number; // End timestamp filter
 }) {
   return useQuery<AdminFixturesListResponse>({
     queryKey: ["fixtures", "db", params],

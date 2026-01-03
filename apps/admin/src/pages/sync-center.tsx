@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { DateRangePicker } from "@/components/fixtures/date-range-picker";
+import { DateRangePicker } from "@/components/filters/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { BatchesTable } from "@/components/table/batches-table";
 import { syncService, type SyncAllResult } from "@/services/sync.service";

@@ -16,6 +16,8 @@ export const fixturesService = {
     seasonId?: number;
     state?: string;
     include?: string;
+    fromTs?: number; // Start timestamp filter
+    toTs?: number; // End timestamp filter
   }) {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append("page", params.page.toString());
@@ -33,6 +35,10 @@ export const fixturesService = {
       searchParams.append("seasonId", params.seasonId.toString());
     if (params?.state) searchParams.append("state", params.state);
     if (params?.include) searchParams.append("include", params.include);
+    if (params?.fromTs !== undefined)
+      searchParams.append("fromTs", params.fromTs.toString());
+    if (params?.toTs !== undefined)
+      searchParams.append("toTs", params.toTs.toString());
 
     const queryString = searchParams.toString();
     const url = `/admin/db/fixtures${queryString ? `?${queryString}` : ""}`;

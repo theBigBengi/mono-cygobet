@@ -50,6 +50,10 @@ const data = {
           title: "Bookmakers",
           url: "/bookmakers",
         },
+            {
+              title: "Odds",
+              url: "/odds",
+            },
         {
           title: "Fixtures",
           url: "/fixtures",

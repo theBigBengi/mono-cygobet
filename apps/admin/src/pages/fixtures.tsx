@@ -16,7 +16,7 @@ import { BatchesTable } from "@/components/table";
 import { fixturesService } from "@/services/fixtures.service";
 import { unifyFixtures, calculateDiffStats } from "@/utils/fixtures";
 import { FixturesTable } from "@/components/fixtures/fixtures-table";
-import { DateRangePicker } from "@/components/fixtures/date-range-picker";
+import { DateRangePicker } from "@/components/filters/date-range-picker";
 import {
   MultiSelectCombobox,
   type MultiSelectOption,
@@ -66,7 +66,7 @@ export default function FixturesPage() {
   const { data: leaguesProviderData } = useLeaguesFromProvider();
   const { data: countriesProviderData } = useCountriesFromProvider();
 
-  // Convert applied date range to ISO strings for API
+  // Convert applied date range to ISO strings for provider API
   // Use local timezone to avoid day shift when converting to UTC
   const [fromDate, toDate] = useMemo(() => {
     if (!appliedDateRange?.from || !appliedDateRange?.to) {
@@ -83,6 +83,25 @@ export default function FixturesPage() {
       formatLocalDate(appliedDateRange.from),
       formatLocalDate(appliedDateRange.to),
     ];
+  }, [appliedDateRange]);
+
+  // Convert applied date range to timestamps for DB API
+  // Ensure we use day boundaries (00:00:00 to 23:59:59) to match provider API behavior
+  const [fromTs, toTs] = useMemo(() => {
+    if (!appliedDateRange?.from || !appliedDateRange?.to) {
+      return [undefined, undefined];
+    }
+    // Set from to start of day (00:00:00.000)
+    const fromDate = new Date(appliedDateRange.from);
+    fromDate.setHours(0, 0, 0, 0);
+    const fromTimestamp = Math.floor(fromDate.getTime() / 1000);
+    
+    // Set to to end of day (23:59:59.999)
+    const toDate = new Date(appliedDateRange.to);
+    toDate.setHours(23, 59, 59, 999);
+    const toTimestamp = Math.floor(toDate.getTime() / 1000);
+    
+    return [fromTimestamp, toTimestamp];
   }, [appliedDateRange]);
 
   // Check if filters have unsaved changes
@@ -165,6 +184,8 @@ export default function FixturesPage() {
     perPage: 1000,
     leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
     countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
+    fromTs,
+    toTs,
   });
 
   const {

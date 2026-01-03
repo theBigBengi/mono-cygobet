@@ -193,16 +193,30 @@ export function FixturesTable({
           },
         },
         {
-          id: "state",
-          header: ({
-            column,
-          }: {
-            column: Column<UnifiedFixture | FixtureDBRow, unknown>;
-          }) => <DataTableColumnHeader column={column} title="State" />,
-          accessorFn: (row: UnifiedFixture) => row.state,
-          cell: ({ row }: { row: Row<UnifiedFixture> }) => (
-            <span className="text-xs sm:text-sm">{row.original.state}</span>
-          ),
+          id: "state-db",
+          header: "State (DB)",
+          enableSorting: false,
+          cell: ({ row }: { row: Row<UnifiedFixture> }) => {
+            const fixture = row.original;
+            return (
+              <span className="text-xs sm:text-sm">
+                {fixture.dbData?.state || "—"}
+              </span>
+            );
+          },
+        },
+        {
+          id: "state-provider",
+          header: "State (Provider)",
+          enableSorting: false,
+          cell: ({ row }: { row: Row<UnifiedFixture> }) => {
+            const fixture = row.original;
+            return (
+              <span className="text-xs sm:text-sm">
+                {fixture.providerData?.state || "—"}
+              </span>
+            );
+          },
         },
         {
           id: "league-in-db",

@@ -405,5 +405,57 @@ export type FixtureStatusFilter =
   | "extra-in-db"
   | "mismatch";
 
+export interface OddsDB {
+  id: number;
+  externalId: string;
+  fixtureExternalId: string;
+  fixtureName: string | null;
+  bookmakerExternalId: string | null;
+  bookmakerName: string | null;
+  marketExternalId: string;
+  marketName: string | null;
+  marketDescription: string;
+  label: string;
+  value: string;
+  probability: string | null;
+  winning: boolean;
+  startingAtTs: number;
+  updatedAt: string;
+}
+
+export interface OddsProvider {
+  externalId: number | string;
+  fixtureExternalId: number;
+  fixtureName: string | null;
+  bookmakerExternalId: number;
+  bookmakerName: string;
+  marketExternalId: number;
+  marketName: string;
+  marketDescription: string;
+  label: string;
+  value: string;
+  probability: string;
+  winning: boolean;
+  startingAtTs: number;
+}
+
+export interface UnifiedOdds {
+  externalId: string;
+  source: "db" | "provider" | "both";
+  status: "ok" | "missing-in-db" | "extra-in-db" | "mismatch" | "new";
+  fixtureExternalId: string;
+  bookmakerExternalId: string | null;
+  bookmakerName: string | null;
+  marketExternalId: string;
+  marketName: string | null;
+  label: string;
+  value: string;
+  winning: boolean;
+  startingAtTs: number;
+  dbData?: OddsDB;
+  providerData?: OddsProvider;
+  updatedAt?: string;
+}
+
 // Shared filter type used across all admin tables
 export type DiffFilter = "all" | "missing" | "mismatch" | "extra" | "ok";
