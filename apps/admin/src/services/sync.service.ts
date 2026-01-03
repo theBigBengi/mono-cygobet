@@ -18,6 +18,7 @@ export interface SyncAllParams {
   from?: string;
   to?: string;
   seasonId?: number;
+  fetchAllFixtureStates?: boolean;
 }
 
 export interface SyncAllResult {
@@ -133,11 +134,12 @@ export const syncService = {
 
     // Step 5: Fixtures
     try {
-      // Fixtures sync needs date range or seasonId
-      if (from && to) {
+      const { fetchAllFixtureStates = true } = params;
+      // Fixtures sync: if seasonId or date range provided, use those; otherwise sync by all seasons in DB
+      if (seasonId) {
         const fixturesResult = await apiPost<AdminSyncFixturesResponse>(
           "/admin/sync/fixtures",
-          { dryRun, from, to }
+          { dryRun, seasonId, fetchAllFixtureStates }
         );
         results.push({
           step: "Fixtures",
@@ -147,10 +149,10 @@ export const syncService = {
           fail: fixturesResult.data.fail,
           total: fixturesResult.data.total,
         });
-      } else if (seasonId) {
+      } else if (from && to) {
         const fixturesResult = await apiPost<AdminSyncFixturesResponse>(
           "/admin/sync/fixtures",
-          { dryRun, seasonId }
+          { dryRun, from, to, fetchAllFixtureStates }
         );
         results.push({
           step: "Fixtures",
@@ -161,15 +163,18 @@ export const syncService = {
           total: fixturesResult.data.total,
         });
       } else {
-        // Skip fixtures if no date range or seasonId provided
+        // Sync fixtures for all seasons in database
+        const fixturesResult = await apiPost<AdminSyncFixturesResponse>(
+          "/admin/sync/fixtures",
+          { dryRun, fetchAllFixtureStates }
+        );
         results.push({
           step: "Fixtures",
-          status: "error",
-          batchId: null,
-          ok: 0,
-          fail: 0,
-          total: 0,
-          error: "Date range or seasonId required for fixtures sync",
+          status: "success",
+          batchId: fixturesResult.data.batchId,
+          ok: fixturesResult.data.ok,
+          fail: fixturesResult.data.fail,
+          total: fixturesResult.data.total,
         });
       }
     } catch (error) {

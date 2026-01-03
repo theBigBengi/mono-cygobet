@@ -45,6 +45,26 @@ tsx src/etl/seeds/seed.cli.ts [flags...]
 #### Fixtures Options
 
 - `--fixtures-season=<id>` - Seed fixtures for a specific season ID only
+- `--fixtures-states=<states>` - Filter fixtures by state(s). Comma-separated list of state numbers (e.g., `1,2,3`). If not provided, fetches all fixture states.
+
+**Fixture State Numbers (SportMonks API):**
+
+- `1` - NS (Not Started) - Fixtures that haven't started yet
+- `2` - LIVE - Fixtures currently in play
+- `3` - HT (Half Time) - Fixtures at half time
+- `4` - LIVE - Fixtures in second half
+- `5` - FT (Finished) - Completed fixtures
+- `6` - CAN (Cancelled) - Cancelled fixtures
+- `7` - INT (Interrupted) - Interrupted fixtures
+- `8` - ABAN (Abandoned) - Abandoned fixtures
+- `9` - SUSP (Suspended) - Suspended fixtures
+- `10` - AWARDED - Awarded fixtures
+- `11` - WO (Walkover) - Walkover fixtures
+- `12` - DELAYED - Delayed fixtures
+- `13` - TBA (To Be Announced) - Fixtures to be announced
+- `14` - POSTPONED - Postponed fixtures
+
+**Note:** When `--fixtures-states` is not provided, all fixture states are fetched, which allows updating existing fixtures' states (e.g., NS → LIVE → FT).
 
 #### Odds Options
 
@@ -87,14 +107,26 @@ pnpm --filter api seed:dry -- --countries --leagues
 ### Fixtures
 
 ```bash
-# Seed fixtures for all seasons
+# Seed fixtures for all seasons (fetches all fixture states by default)
 pnpm --filter api seed -- --fixtures
 
 # Seed fixtures for a specific season
 pnpm --filter api seed -- --fixtures --fixtures-season=12345
 
-# Dry run for specific season
-pnpm --filter api seed:dry -- --fixtures --fixtures-season=12345
+# Only fetch NS (Not Started) fixtures
+pnpm --filter api seed -- --fixtures --fixtures-states=1
+
+# Fetch multiple states (e.g., NS and LIVE)
+pnpm --filter api seed -- --fixtures --fixtures-states=1,2
+
+# Fetch only finished fixtures
+pnpm --filter api seed -- --fixtures --fixtures-states=5
+
+# Combine season and state filter
+pnpm --filter api seed -- --fixtures --fixtures-season=12345 --fixtures-states=1,2,5
+
+# Dry run for specific season with state filter
+pnpm --filter api seed:dry -- --fixtures --fixtures-season=12345 --fixtures-states=1
 ```
 
 ### Odds
@@ -186,16 +218,18 @@ SPORTMONKS_AUTH_MODE=query  # or "header"
 ## Troubleshooting
 
 ### "Route not found" or API errors
+
 - Check that `SPORTMONKS_API_TOKEN` is set correctly
 - Verify API base URLs are correct
 - Ensure you have API quota remaining
 
 ### Database errors
+
 - Make sure the database is running and accessible
 - Check that migrations have been run
 - Verify database connection string in environment variables
 
 ### Dependency errors
+
 - Seed entities in dependency order
 - Or use `--all` to let the CLI handle ordering automatically
-

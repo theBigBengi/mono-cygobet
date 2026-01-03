@@ -236,26 +236,22 @@ export async function seedFixtures(
             // Parse scores from result string
             const { homeScore, awayScore } = parseScores(fixture.result);
 
-            // Map FixtureState enum from DTO to Prisma enum
-            // DTO uses string values like "NS", "LIVE", "FT", "CAN"
-            // Prisma enum uses the same values
-            const state = fixture.state as any; // Type assertion needed for enum compatibility
-
+            // Upsert fixture: update if exists, create if not
             await prisma.fixtures.upsert({
               where: { externalId: safeBigInt(fixture.externalId) },
               update: {
                 name: fixture.name,
-                leagueId: leagueId ?? undefined,
-                seasonId: seasonId ?? undefined,
+                leagueId: leagueId ?? null,
+                seasonId: seasonId ?? null,
                 homeTeamId,
                 awayTeamId,
                 startIso,
                 startTs: fixture.startTs,
-                state,
-                result: fixture.result ?? undefined,
-                homeScore: homeScore ?? undefined,
-                awayScore: awayScore ?? undefined,
-                stageRoundName: fixture.stageRoundName ?? undefined,
+                state: fixture.state,
+                result: fixture.result ?? null,
+                homeScore: homeScore ?? null,
+                awayScore: awayScore ?? null,
+                stageRoundName: fixture.stageRoundName ?? null,
                 updatedAt: new Date(),
               },
               create: {
@@ -267,7 +263,7 @@ export async function seedFixtures(
                 awayTeamId,
                 startIso,
                 startTs: fixture.startTs,
-                state,
+                state: fixture.state,
                 result: fixture.result ?? null,
                 homeScore: homeScore ?? null,
                 awayScore: awayScore ?? null,

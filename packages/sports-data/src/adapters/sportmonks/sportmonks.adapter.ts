@@ -134,9 +134,11 @@ export class SportMonksAdapter {
           },
           ...(options.include ?? []),
         ],
-        filters: {
-          fixtureStates: options.fixtureStates ?? "1", // Filter for only upcoming fixtures (NS)
-        },
+        filters: options.fixtureStates
+          ? {
+              fixtureStates: options.fixtureStates,
+            }
+          : undefined, // No filter = fetch all fixture states
       }
     );
 

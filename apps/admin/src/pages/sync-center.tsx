@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { DateRangePicker } from "@/components/filters/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { BatchesTable } from "@/components/table/batches-table";
 import { syncService } from "@/services/sync.service";
@@ -19,11 +18,6 @@ import {
 } from "@/components/ui/card";
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from "lucide-react";
 
-type DateRange = {
-  from: Date | undefined;
-  to: Date | undefined;
-};
-
 const SYNC_STEPS = [
   "Countries",
   "Leagues",
@@ -35,18 +29,8 @@ const SYNC_STEPS = [
 
 export default function SyncCenterPage() {
   const [dryRun, setDryRun] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
-    // Default: 3 days back and 4 days ahead
-    const now = new Date();
-    const from = new Date(now);
-    from.setDate(from.getDate() - 3);
-    from.setHours(0, 0, 0, 0);
-    const to = new Date(now);
-    to.setDate(to.getDate() + 4);
-    to.setHours(23, 59, 59, 999);
-    return { from, to };
-  });
   const [seasonId, setSeasonId] = useState<string>("");
+  const [fetchAllFixtureStates, setFetchAllFixtureStates] = useState(true);
 
   const queryClient = useQueryClient();
 
@@ -66,25 +50,15 @@ export default function SyncCenterPage() {
     mutationFn: async () => {
       const params: {
         dryRun: boolean;
-        from?: string;
-        to?: string;
         seasonId?: number;
+        fetchAllFixtureStates?: boolean;
       } = {
         dryRun,
+        fetchAllFixtureStates,
       };
 
       if (seasonId) {
         params.seasonId = Number(seasonId);
-      } else if (dateRange?.from && dateRange?.to) {
-        // Format dates in local timezone
-        const formatLocalDate = (date: Date): string => {
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, "0");
-          const day = String(date.getDate()).padStart(2, "0");
-          return `${year}-${month}-${day}`;
-        };
-        params.from = formatLocalDate(dateRange.from);
-        params.to = formatLocalDate(dateRange.to);
       }
 
       return syncService.syncAll(params);
@@ -119,12 +93,7 @@ export default function SyncCenterPage() {
   });
 
   const handleSyncAll = () => {
-    if (!seasonId && (!dateRange?.from || !dateRange?.to)) {
-      toast.error("Date range or Season ID required", {
-        description: "Please provide either a date range or season ID for fixtures sync.",
-      });
-      return;
-    }
+    // No validation needed - if no seasonId, it will sync by all seasons in DB
     syncAllMutation.mutate();
   };
 
@@ -164,25 +133,34 @@ export default function SyncCenterPage() {
                 </Label>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Date Range (for Fixtures)</Label>
-                  <DateRangePicker
-                    dateRange={dateRange}
-                    onDateRangeChange={setDateRange}
-                  />
-                </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="fetch-all-states"
+                  checked={fetchAllFixtureStates}
+                  onCheckedChange={(checked) =>
+                    setFetchAllFixtureStates(checked === true)
+                  }
+                />
+                <Label htmlFor="fetch-all-states" className="cursor-pointer">
+                  Fetch all fixture states (NS, LIVE, FT, etc.)
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground ml-6">
+                If unchecked, only fetches fixtures with state "NS" (Not Started)
+              </p>
 
-                <div className="space-y-2">
-                  <Label htmlFor="season-id">Season ID (alternative to date range)</Label>
-                  <Input
-                    id="season-id"
-                    type="number"
-                    placeholder="Optional"
-                    value={seasonId}
-                    onChange={(e) => setSeasonId(e.target.value)}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="season-id">Season ID (optional, for specific season)</Label>
+                <Input
+                  id="season-id"
+                  type="number"
+                  placeholder="Optional - leave empty to sync all seasons in database"
+                  value={seasonId}
+                  onChange={(e) => setSeasonId(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  If not provided, fixtures will be synced for all seasons in database
+                </p>
               </div>
             </div>
 

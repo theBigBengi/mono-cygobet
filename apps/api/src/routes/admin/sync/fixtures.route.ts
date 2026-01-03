@@ -7,12 +7,19 @@ import {
   syncBodySchema,
   syncResponseSchema,
 } from "../../../schemas/admin.schemas";
+import { prisma } from "@repo/db";
 
 const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sync/fixtures - Sync fixtures from provider to database
   // Requires date range or seasonId in body
   fastify.post<{
-    Body: { dryRun?: boolean; from?: string; to?: string; seasonId?: number };
+    Body: {
+      dryRun?: boolean;
+      from?: string;
+      to?: string;
+      seasonId?: number;
+      fetchAllFixtureStates?: boolean;
+    };
     Reply: AdminSyncFixturesResponse;
   }>(
     "/fixtures",
@@ -25,6 +32,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
             from: { type: "string" },
             to: { type: "string" },
             seasonId: { type: "number" },
+            fetchAllFixtureStates: { type: "boolean" },
           },
         },
         response: {
@@ -33,20 +41,13 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminSyncFixturesResponse> => {
-      const { dryRun = false, from, to, seasonId } = req.body ?? {};
-
-      if (!seasonId && (!from || !to)) {
-        return reply.code(400).send({
-          status: "error",
-          data: {
-            batchId: null,
-            ok: 0,
-            fail: 0,
-            total: 0,
-          },
-          message: "Either seasonId or both from and to dates are required",
-        });
-      }
+      const {
+        dryRun = false,
+        from,
+        to,
+        seasonId,
+        fetchAllFixtureStates = true,
+      } = req.body ?? {};
 
       const adapter = new SportMonksAdapter({
         token: process.env.SPORTMONKS_API_TOKEN,
@@ -56,15 +57,90 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
       });
 
-      let fixturesDto: any[] = [];
+      let allFixturesDto: any[] = [];
+      let totalOk = 0;
+      let totalFail = 0;
+      let totalTotal = 0;
+      let lastBatchId: number | null = null;
 
       if (seasonId) {
-        fixturesDto = await adapter.fetchFixturesBySeason(seasonId);
+        // Single season
+        const fixturesDto = await adapter.fetchFixturesBySeason(seasonId, {
+          fixtureStates: fetchAllFixtureStates ? undefined : "1",
+        });
+        allFixturesDto = fixturesDto;
       } else if (from && to) {
-        fixturesDto = await adapter.fetchFixturesBetween(from, to);
+        // Date range
+        const fixturesDto = await adapter.fetchFixturesBetween(from, to, {
+          filters: fetchAllFixtureStates
+            ? undefined
+            : { fixtureStates: "1" },
+        });
+        allFixturesDto = fixturesDto;
+      } else {
+        // Fetch all seasons from database and seed fixtures for each
+        const dbSeasons = await prisma.seasons.findMany({
+          select: { externalId: true },
+          orderBy: { name: "asc" },
+        });
+
+        if (dbSeasons.length === 0) {
+          return reply.code(400).send({
+            status: "error",
+            data: {
+              batchId: null,
+              ok: 0,
+              fail: 0,
+              total: 0,
+            },
+            message: "No seasons found in database. Please sync seasons first.",
+          });
+        }
+
+        // Fetch fixtures for each season
+        for (const season of dbSeasons) {
+          try {
+            const fixturesDto = await adapter.fetchFixturesBySeason(
+              Number(season.externalId),
+              {
+                fixtureStates: fetchAllFixtureStates ? undefined : "1",
+              }
+            );
+            if (fixturesDto.length > 0) {
+              const result = await seedFixtures(fixturesDto, {
+                dryRun,
+                triggeredBy: "admin-ui",
+              });
+              totalOk += result.ok;
+              totalFail += result.fail;
+              totalTotal += result.total;
+              if (result.batchId) {
+                lastBatchId = result.batchId;
+              }
+            }
+          } catch (error) {
+            // Continue with other seasons even if one fails
+            totalFail += 1;
+            totalTotal += 1;
+          }
+        }
+
+        return reply.send({
+          status: "success",
+          data: {
+            batchId: lastBatchId,
+            ok: totalOk,
+            fail: totalFail,
+            total: totalTotal,
+          },
+          message: dryRun
+            ? `Fixtures sync dry-run completed for ${dbSeasons.length} seasons`
+            : `Fixtures synced successfully from provider to database for ${dbSeasons.length} seasons`,
+        });
       }
 
-      const result = await seedFixtures(fixturesDto, {
+      // Single batch for seasonId or date range
+      const result = await seedFixtures(allFixturesDto, {
         dryRun,
         triggeredBy: "admin-ui",
       });

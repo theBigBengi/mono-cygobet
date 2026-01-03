@@ -55,6 +55,15 @@ const fixturesSeasonId = fixturesSeasonArg
     })()
   : undefined;
 
+// Parse fixtures-states argument if provided (e.g., --fixtures-states=1,2,3 or --fixtures-states=1)
+// If not provided, fetches all states (undefined)
+const fixturesStatesArg = args.find((arg) =>
+  arg.startsWith("--fixtures-states=")
+);
+const fixtureStates = fixturesStatesArg
+  ? fixturesStatesArg.split("=")[1]
+  : undefined;
+
 // Parse odds arguments if provided
 const oddsFromArg = args.find((arg) => arg.startsWith("--odds-from="));
 const oddsToArg = args.find((arg) => arg.startsWith("--odds-to="));
@@ -144,14 +153,28 @@ const oddsFilters: string = oddsFiltersArg
     // Fixtures must come after leagues, seasons, and teams
     if (runAll || hasFixtures) {
       console.log("🚀 Starting fixtures seeding...");
+      if (fixtureStates) {
+        console.log(`   📋 Fetching fixtures with states: ${fixtureStates}`);
+      } else {
+        console.log("   📋 Fetching all fixture states (NS, LIVE, FT, etc.)");
+      }
       if (fixturesSeasonId) {
-        const fixturesDto = await adapter.fetchFixturesBySeason(fixturesSeasonId);
+        const fixturesDto = await adapter.fetchFixturesBySeason(
+          fixturesSeasonId,
+          {
+            fixtureStates: fixtureStates,
+          }
+        );
         await seedFixtures(fixturesDto, { dryRun });
       } else {
+        // Fetch current and future seasons
         const seasonsDto = await adapter.fetchSeasons();
         for (const season of seasonsDto) {
           const fixturesDto = await adapter.fetchFixturesBySeason(
-            Number(season.externalId)
+            Number(season.externalId),
+            {
+              fixtureStates: fixtureStates,
+            }
           );
           if (fixturesDto.length > 0) {
             await seedFixtures(fixturesDto, { dryRun });
