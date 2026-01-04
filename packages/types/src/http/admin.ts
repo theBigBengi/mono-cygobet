@@ -1,4 +1,4 @@
-import { FixtureDTO } from "../sport-data/common";
+import type { FixtureDTO } from "../sport-data/common";
 
 // Admin API response types
 export interface AdminHealthResponse {

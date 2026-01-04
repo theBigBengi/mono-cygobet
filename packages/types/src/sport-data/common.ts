@@ -1,12 +1,14 @@
 export type ID = number; // or string if you prefer
 
-export enum MatchState {
-  Scheduled = "SCHEDULED",
-  Inplay = "INPLAY",
-  Finished = "FINISHED",
-  Postponed = "POSTPONED",
-  Canceled = "CANCELED",
-}
+export const MatchState = {
+  Scheduled: "SCHEDULED",
+  Inplay: "INPLAY",
+  Finished: "FINISHED",
+  Postponed: "POSTPONED",
+  Canceled: "CANCELED",
+} as const;
+
+export type MatchState = (typeof MatchState)[keyof typeof MatchState];
 
 export type CountryDTO = {
   externalId: number | string;
@@ -73,14 +75,16 @@ export type SeasonDTO = {
 };
 
 // Reuse your existing enum if you already have it; shown here for clarity.
-export enum FixtureState {
-  NS = "NS",
-  LIVE = "LIVE",
-  CAN = "CAN",
-  FT = "FT",
-  HT = "HT",
-  INT = "INT",
-}
+export const FixtureState = {
+  NS: "NS",
+  LIVE: "LIVE",
+  CAN: "CAN",
+  FT: "FT",
+  HT: "HT",
+  INT: "INT",
+} as const;
+
+export type FixtureState = (typeof FixtureState)[keyof typeof FixtureState];
 
 export type FixtureDTO = {
   /** Provider fixture id to map into fixture_mappings */
