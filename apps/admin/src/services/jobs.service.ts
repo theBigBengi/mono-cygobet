@@ -44,7 +44,12 @@ export const jobsService = {
 
   async updateJob(
     jobId: string,
-    patch: { description?: string | null; enabled?: boolean; scheduleCron?: string | null }
+    patch: {
+      description?: string | null;
+      enabled?: boolean;
+      scheduleCron?: string | null;
+      meta?: Record<string, unknown> | null;
+    }
   ): Promise<AdminUpdateJobResponse> {
     return apiPatch<AdminUpdateJobResponse>(
       `/admin/db/jobs/${encodeURIComponent(jobId)}`,

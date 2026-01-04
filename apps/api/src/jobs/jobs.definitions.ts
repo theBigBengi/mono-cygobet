@@ -13,6 +13,11 @@ export type JobDefinition = {
   description: string;
   enabled: boolean;
   scheduleCron: string | null;
+  /**
+   * Per-job parameters persisted in the DB `jobs.meta` column (create-only defaults).
+   * Shape is job-specific.
+   */
+  meta?: Record<string, unknown>;
 };
 
 export const UPCOMING_FIXTURES_JOB = {
@@ -21,6 +26,7 @@ export const UPCOMING_FIXTURES_JOB = {
   enabled: true,
   // every 6 hours (minute 10) - offset from other jobs
   scheduleCron: "10 */6 * * *",
+  meta: {},
 } as const satisfies JobDefinition;
 
 export const LIVE_FIXTURES_JOB = {
@@ -29,6 +35,7 @@ export const LIVE_FIXTURES_JOB = {
   enabled: true,
   // every 5 minutes
   scheduleCron: "*/5 * * * *",
+  meta: {},
 } as const satisfies JobDefinition;
 
 export const FINISHED_FIXTURES_JOB = {
@@ -38,15 +45,22 @@ export const FINISHED_FIXTURES_JOB = {
   enabled: true,
   // every hour (at minute 0)
   scheduleCron: "0 * * * *",
+  meta: {},
 } as const satisfies JobDefinition;
 
 export const UPDATE_PREMATCH_ODDS_JOB = {
   key: "update-prematch-odds",
   description:
-    "Fetch prematch odds for a rolling window and upsert them into DB (markets 1,57; bookmaker 1)",
+    "Fetch prematch odds for a rolling window and upsert them into DB (markets 1,57; bookmaker 2)",
   enabled: true,
   // every hour (at minute 0)
   scheduleCron: "0 * * * *",
+  meta: {
+    odds: {
+      bookmakerExternalIds: [2],
+      marketExternalIds: [1, 57],
+    },
+  },
 } as const satisfies JobDefinition;
 
 export const JOB_DEFINITIONS = [

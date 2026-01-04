@@ -249,6 +249,7 @@ model jobs {
   description  String?
   scheduleCron String?  @map("schedule_cron")
   enabled      Boolean  @default(true)
+  meta         Json     @default("{}")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 

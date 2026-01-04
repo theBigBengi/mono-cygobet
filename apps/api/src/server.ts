@@ -7,6 +7,9 @@ import app from "./app";
 const fastify = Fastify({
   logger: true,
   ajv: { customOptions: { coerceTypes: true, allowUnionTypes: true } },
+  // Render/production can be slower to load/compile route modules during autoload.
+  // Avoid failing startup due to Fastify's default plugin timeout (~10s).
+  pluginTimeout: Number(process.env.FASTIFY_PLUGIN_TIMEOUT_MS ?? 60_000),
   // querystringParser: (str) => qs.parse(str, { comma: true, allowDots: true }),
 });
 

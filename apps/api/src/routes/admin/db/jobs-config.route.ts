@@ -16,6 +16,10 @@ import cron from "node-cron";
  * - PATCH /admin/db/jobs/:jobId
  */
 const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
+  function isPlainObject(v: unknown): v is Record<string, unknown> {
+    return typeof v === "object" && v !== null && !Array.isArray(v);
+  }
+
   // GET /admin/db/jobs - List jobs from database (plus derived last run + runnable flag)
   fastify.get<{ Reply: AdminJobsListResponse }>(
     "/jobs",
@@ -27,32 +31,65 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (_req, reply): Promise<AdminJobsListResponse> => {
-      const jobs = await prisma.jobs.findMany({
-        orderBy: { key: "asc" },
-        select: {
-          key: true,
-          description: true,
-          scheduleCron: true,
-          enabled: true,
-          createdAt: true,
-          updatedAt: true,
-          runs: {
-            take: 1,
-            orderBy: { startedAt: "desc" },
-            select: {
-              id: true,
-              status: true,
-              trigger: true,
-              triggeredBy: true,
-              startedAt: true,
-              finishedAt: true,
-              durationMs: true,
-              rowsAffected: true,
-              errorMessage: true,
+      // Backward-compatible: `jobs.meta` may not exist until migrations/prisma generate are applied.
+      // Try to include meta; fallback to meta={} if the field isn't available yet.
+      let jobs: any[] = [];
+      try {
+        jobs = await prisma.jobs.findMany({
+          orderBy: { key: "asc" },
+          select: {
+            key: true,
+            description: true,
+            scheduleCron: true,
+            enabled: true,
+            meta: true,
+            createdAt: true,
+            updatedAt: true,
+            runs: {
+              take: 1,
+              orderBy: { startedAt: "desc" },
+              select: {
+                id: true,
+                status: true,
+                trigger: true,
+                triggeredBy: true,
+                startedAt: true,
+                finishedAt: true,
+                durationMs: true,
+                rowsAffected: true,
+                errorMessage: true,
+              },
+            },
+          } as any,
+        } as any);
+      } catch {
+        jobs = await prisma.jobs.findMany({
+          orderBy: { key: "asc" },
+          select: {
+            key: true,
+            description: true,
+            scheduleCron: true,
+            enabled: true,
+            createdAt: true,
+            updatedAt: true,
+            runs: {
+              take: 1,
+              orderBy: { startedAt: "desc" },
+              select: {
+                id: true,
+                status: true,
+                trigger: true,
+                triggeredBy: true,
+                startedAt: true,
+                finishedAt: true,
+                durationMs: true,
+                rowsAffected: true,
+                errorMessage: true,
+              },
             },
           },
-        },
-      });
+        });
+      }
 
       return reply.send({
         status: "success",
@@ -63,6 +100,10 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
             description: j.description ?? null,
             scheduleCron: j.scheduleCron ?? null,
             enabled: j.enabled,
+            meta:
+              typeof j.meta === "object" && j.meta
+                ? (j.meta as Record<string, unknown>)
+                : {},
             createdAt: j.createdAt.toISOString(),
             updatedAt: j.updatedAt.toISOString(),
             runnable: isJobRunnable(j.key),
@@ -95,6 +136,7 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
       description?: string | null;
       enabled?: boolean;
       scheduleCron?: string | null;
+      meta?: Record<string, unknown> | null;
     };
     Reply: AdminUpdateJobResponse;
   }>(
@@ -112,6 +154,7 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
             description: { anyOf: [{ type: "string" }, { type: "null" }] },
             enabled: { type: "boolean" },
             scheduleCron: { anyOf: [{ type: "string" }, { type: "null" }] },
+            meta: { type: ["object", "null"] },
           },
         },
         response: {
@@ -122,6 +165,14 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply): Promise<AdminUpdateJobResponse> => {
       const { jobId } = req.params;
       const body = req.body ?? {};
+
+      if (body.meta !== undefined && body.meta !== null && !isPlainObject(body.meta)) {
+        return reply.status(400).send({
+          status: "error",
+          data: null,
+          message: "Invalid meta: expected a JSON object",
+        } as any);
+      }
 
       const scheduleCronRaw =
         typeof body.scheduleCron === "string"
@@ -140,39 +191,79 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
         } as any);
       }
 
-      const updated = await prisma.jobs.update({
-        where: { key: jobId },
-        data: {
-          ...(body.description !== undefined
-            ? { description: body.description }
-            : {}),
-          ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
-          ...(body.scheduleCron !== undefined ? { scheduleCron } : {}),
-        },
-        select: {
-          key: true,
-          description: true,
-          scheduleCron: true,
-          enabled: true,
-          createdAt: true,
-          updatedAt: true,
-          runs: {
-            take: 1,
-            orderBy: { startedAt: "desc" },
-            select: {
-              id: true,
-              status: true,
-              trigger: true,
-              triggeredBy: true,
-              startedAt: true,
-              finishedAt: true,
-              durationMs: true,
-              rowsAffected: true,
-              errorMessage: true,
+      let updated: any;
+      try {
+        updated = await prisma.jobs.update({
+          where: { key: jobId },
+          data: {
+            ...(body.description !== undefined
+              ? { description: body.description }
+              : {}),
+            ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
+            ...(body.scheduleCron !== undefined ? { scheduleCron } : {}),
+            ...(body.meta !== undefined ? { meta: body.meta ?? {} } : {}),
+          } as any,
+          select: {
+            key: true,
+            description: true,
+            scheduleCron: true,
+            enabled: true,
+            meta: true,
+            createdAt: true,
+            updatedAt: true,
+            runs: {
+              take: 1,
+              orderBy: { startedAt: "desc" },
+              select: {
+                id: true,
+                status: true,
+                trigger: true,
+                triggeredBy: true,
+                startedAt: true,
+                finishedAt: true,
+                durationMs: true,
+                rowsAffected: true,
+                errorMessage: true,
+              },
+            },
+          } as any,
+        } as any);
+      } catch {
+        // Fallback: meta column not available yet
+        updated = await prisma.jobs.update({
+          where: { key: jobId },
+          data: {
+            ...(body.description !== undefined
+              ? { description: body.description }
+              : {}),
+            ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
+            ...(body.scheduleCron !== undefined ? { scheduleCron } : {}),
+          },
+          select: {
+            key: true,
+            description: true,
+            scheduleCron: true,
+            enabled: true,
+            createdAt: true,
+            updatedAt: true,
+            runs: {
+              take: 1,
+              orderBy: { startedAt: "desc" },
+              select: {
+                id: true,
+                status: true,
+                trigger: true,
+                triggeredBy: true,
+                startedAt: true,
+                finishedAt: true,
+                durationMs: true,
+                rowsAffected: true,
+                errorMessage: true,
+              },
             },
           },
-        },
-      });
+        });
+      }
 
       const lastRun = updated.runs?.[0];
 
@@ -183,6 +274,10 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
           description: updated.description ?? null,
           scheduleCron: updated.scheduleCron ?? null,
           enabled: updated.enabled,
+          meta:
+            typeof updated.meta === "object" && updated.meta
+              ? (updated.meta as Record<string, unknown>)
+              : {},
           createdAt: updated.createdAt.toISOString(),
           updatedAt: updated.updatedAt.toISOString(),
           runnable: isJobRunnable(updated.key),

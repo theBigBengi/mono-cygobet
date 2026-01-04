@@ -211,6 +211,7 @@ export interface AdminJobsListResponse {
     description: string | null;
     scheduleCron: string | null;
     enabled: boolean;
+    meta: Record<string, unknown>;
     runnable: boolean;
     createdAt: string;
     updatedAt: string;

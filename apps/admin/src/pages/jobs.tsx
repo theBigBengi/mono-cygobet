@@ -18,6 +18,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  MultiSelectCombobox,
+  type MultiSelectOption,
+} from "@/components/filters/multi-select-combobox";
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -37,6 +41,8 @@ import { CheckCircle2, XCircle } from "lucide-react";
 
 import { useJobsFromDb, useJobRunsFromDb } from "@/hooks/use-jobs";
 import { jobsService } from "@/services/jobs.service";
+import { useBookmakersFromProvider } from "@/hooks/use-bookmakers";
+import { useMarketsFromProvider } from "@/hooks/use-markets";
 import type { AdminJobRunsListResponse } from "@repo/types";
 import type { AdminJobsListResponse } from "@repo/types";
 
@@ -82,6 +88,13 @@ function jobNameFromKey(key: string): string {
 function clampInt(value: number, min: number, max: number) {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, Math.trunc(value)));
+}
+
+function asStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((x) => (typeof x === "string" || typeof x === "number" ? String(x) : ""))
+    .filter(Boolean);
 }
 
 function parseScheduleCron(cronExpr: string | null): ScheduleState {
@@ -210,6 +223,29 @@ export default function JobsPage() {
     status: statusFilter === "all" ? undefined : statusFilter,
   });
 
+  const { data: bookmakersProviderData } = useBookmakersFromProvider();
+  const bookmakerOptions: MultiSelectOption[] = useMemo(() => {
+    if (!bookmakersProviderData?.data) return [];
+    const seen = new Set<string>();
+    const out: MultiSelectOption[] = [];
+    bookmakersProviderData.data.forEach((b) => {
+      const id = String(b.externalId);
+      const key = `${id}-${b.name}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({ value: id, label: b.name });
+    });
+    return out.sort((a, b) => a.label.localeCompare(b.label));
+  }, [bookmakersProviderData]);
+
+  const { data: marketsProviderData } = useMarketsFromProvider();
+  const marketOptions: MultiSelectOption[] = useMemo(() => {
+    if (!marketsProviderData?.data) return [];
+    return marketsProviderData.data
+      .map((m) => ({ value: String(m.externalId), label: m.name }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [marketsProviderData]);
+
   const jobs = useMemo(() => jobsQuery.data?.data ?? [], [jobsQuery.data]);
   const runs = useMemo(() => runsQuery.data?.data ?? [], [runsQuery.data]);
 
@@ -294,6 +330,8 @@ export default function JobsPage() {
     description: string;
     enabled: boolean;
     schedule: ScheduleState;
+    oddsBookmakerExternalIds: string[];
+    oddsMarketExternalIds: string[];
   } | null>(null);
 
   const openRun = (r: RunRow) => {
@@ -302,11 +340,25 @@ export default function JobsPage() {
   };
 
   const openJob = (j: JobRow) => {
+    const oddsMeta = (j.meta ?? {}) as Record<string, unknown>;
+    const odds = (oddsMeta["odds"] ?? {}) as Record<string, unknown>;
+    const defaultOddsBookmakers =
+      j.key === "update-prematch-odds" ? (["2"] as string[]) : [];
+    const defaultOddsMarkets =
+      j.key === "update-prematch-odds" ? (["1", "57"] as string[]) : [];
     setSelectedJob(j);
     setJobForm({
       description: j.description ?? "",
       enabled: !!j.enabled,
       schedule: parseScheduleCron(j.scheduleCron),
+      oddsBookmakerExternalIds: (() => {
+        const v = asStringArray(odds["bookmakerExternalIds"]);
+        return v.length ? v : defaultOddsBookmakers;
+      })(),
+      oddsMarketExternalIds: (() => {
+        const v = asStringArray(odds["marketExternalIds"]);
+        return v.length ? v : defaultOddsMarkets;
+      })(),
     });
     setJobDrawerOpen(true);
   };
@@ -940,6 +992,68 @@ export default function JobsPage() {
                     />
                   </div>
 
+                  {selectedJob.key === "update-prematch-odds" && (
+                    <div className="space-y-3 rounded-lg border p-4">
+                      <div>
+                        <div className="text-sm font-medium">Odds parameters</div>
+                        <div className="text-xs text-muted-foreground">
+                          Controls which bookmakers/markets the job fetches and
+                          seeds.
+                        </div>
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label className="text-xs text-muted-foreground">
+                          Bookmakers (external IDs)
+                        </Label>
+                        <MultiSelectCombobox
+                          options={bookmakerOptions}
+                          selectedValues={jobForm.oddsBookmakerExternalIds}
+                          onSelectionChange={(values) =>
+                            setJobForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    oddsBookmakerExternalIds: values.map((v) =>
+                                      String(v)
+                                    ),
+                                  }
+                                : prev
+                            )
+                          }
+                          placeholder="Select bookmakers..."
+                          searchPlaceholder="Search bookmakers..."
+                          emptyMessage="No bookmakers found."
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label className="text-xs text-muted-foreground">
+                          Markets (external IDs)
+                        </Label>
+                        <MultiSelectCombobox
+                          options={marketOptions}
+                          selectedValues={jobForm.oddsMarketExternalIds}
+                          onSelectionChange={(values) =>
+                            setJobForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    oddsMarketExternalIds: values.map((v) =>
+                                      String(v)
+                                    ),
+                                  }
+                                : prev
+                            )
+                          }
+                          placeholder="Select markets..."
+                          searchPlaceholder="Search markets..."
+                          emptyMessage="No markets found."
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label>Schedule</Label>
 
@@ -1468,6 +1582,21 @@ export default function JobsPage() {
                       description: jobForm.description.trim() || null,
                       enabled: jobForm.enabled,
                       scheduleCron: buildCronFromSchedule(jobForm.schedule),
+                      ...(selectedJob.key === "update-prematch-odds"
+                        ? {
+                            meta: {
+                              ...(selectedJob.meta ?? {}),
+                              odds: {
+                                bookmakerExternalIds: jobForm.oddsBookmakerExternalIds
+                                  .map((v) => Number(v))
+                                  .filter((n) => Number.isFinite(n)),
+                                marketExternalIds: jobForm.oddsMarketExternalIds
+                                  .map((v) => Number(v))
+                                  .filter((n) => Number.isFinite(n)),
+                              },
+                            } as Record<string, unknown>,
+                          }
+                        : {}),
                     };
                     updateJobMutation.mutate({
                       jobKey: selectedJob.key,
