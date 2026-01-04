@@ -1,3 +1,5 @@
+import { FixtureDTO } from "../sport-data/common";
+
 // Admin API response types
 export interface AdminHealthResponse {
   status: string;
@@ -581,24 +583,7 @@ export interface AdminFixtureResponse {
 
 export interface AdminProviderFixturesResponse {
   status: string;
-  data: Array<{
-    externalId: number;
-    name: string;
-    startIso: string | null;
-    startTs: number;
-    state: string;
-    result: string | null;
-    stageRoundName: string | null;
-    leagueExternalId: number | null;
-    seasonExternalId: number | null;
-    homeTeamExternalId: number;
-    awayTeamExternalId: number;
-    leagueInDb: boolean;
-    seasonInDb: boolean;
-    leagueName: string | null;
-    countryName: string | null;
-    hasOdds: boolean;
-  }>;
+  data: Array<FixtureDTO>;
   message: string;
   provider: string;
 }

@@ -19,6 +19,9 @@ import {
   getFixture404ResponseSchema,
   searchFixturesQuerystringSchema,
   searchFixturesResponseSchema,
+  updateFixtureBodySchema,
+  updateFixtureResponseSchema,
+  updateFixture404ResponseSchema,
 } from "../../../schemas/fixtures.schemas";
 import type {
   ListFixturesQuerystring,
@@ -303,6 +306,87 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
         pagination: createPaginationResponse(1, take, fixtures.length),
         message: "Fixtures search completed successfully",
       });
+    }
+  );
+
+  // PATCH /admin/db/fixtures/:id - Update a fixture
+  fastify.patch<{
+    Params: GetFixtureParams;
+    Body: {
+      name?: string;
+      state?: string;
+      homeScore?: number | null;
+      awayScore?: number | null;
+      result?: string | null;
+    };
+    Reply: AdminFixtureResponse;
+  }>(
+    "/fixtures/:id",
+    {
+      schema: {
+        params: getFixtureParamsSchema,
+        body: updateFixtureBodySchema,
+        response: {
+          200: updateFixtureResponseSchema,
+          404: updateFixture404ResponseSchema,
+        },
+      },
+    },
+    async (req, reply): Promise<AdminFixtureResponse> => {
+      const { id } = req.params;
+      const body = req.body;
+
+      let fixtureId: number;
+      try {
+        fixtureId = parseId(id);
+      } catch (error: any) {
+        return reply.code(400).send({
+          status: "error",
+          message: error.message,
+        } as any);
+      }
+
+      try {
+        // Use the result from body if provided (including null)
+        // Only build result from scores if result is not provided (undefined) AND both scores are non-null
+        let result = body.result;
+        if (
+          result === undefined &&
+          body.homeScore !== undefined &&
+          body.awayScore !== undefined
+        ) {
+          // Only build result if both scores are non-null
+          if (body.homeScore !== null && body.awayScore !== null) {
+            result = `${body.homeScore}-${body.awayScore}`;
+          } else {
+            // If scores are null, set result to null
+            result = null;
+          }
+        }
+        // If result is explicitly null in body, keep it as null (don't rebuild from scores)
+
+        const fixture = await service.update(fixtureId, {
+          name: body.name,
+          state: body.state,
+          homeScore: body.homeScore,
+          awayScore: body.awayScore,
+          result: result,
+        });
+
+        return reply.send({
+          status: "success",
+          data: mapFixtureToResponse(fixture),
+          message: "Fixture updated successfully",
+        });
+      } catch (error: any) {
+        if (error.statusCode === 404) {
+          return reply.code(404).send({
+            status: "error",
+            message: error.message,
+          } as any);
+        }
+        throw error;
+      }
     }
   );
 };

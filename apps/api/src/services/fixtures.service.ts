@@ -119,4 +119,44 @@ export class FixturesService {
 
     return fixtures;
   }
+
+  async update(
+    id: number,
+    data: {
+      name?: string;
+      state?: string;
+      homeScore?: number | null;
+      awayScore?: number | null;
+      result?: string | null;
+    }
+  ) {
+    const updateData: Prisma.fixturesUpdateInput = {};
+
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
+
+    if (data.state !== undefined) {
+      updateData.state = data.state as any;
+    }
+
+    if (data.homeScore !== undefined) {
+      updateData.homeScore = data.homeScore;
+    }
+
+    if (data.awayScore !== undefined) {
+      updateData.awayScore = data.awayScore;
+    }
+
+    if (data.result !== undefined) {
+      updateData.result = data.result;
+    }
+
+    const fixture = await prisma.fixtures.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return fixture;
+  }
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -11,15 +11,6 @@ import {
   type Column,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -28,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CloudSync, CheckCircle2, XCircle, Pencil } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import {
   TablePagination,
   TableControls,
@@ -37,13 +28,6 @@ import {
   DataTableColumnHeader,
   StatusBadge,
 } from "@/components/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import type { UnifiedFixture } from "@/types";
 import type {
   AdminFixturesListResponse,
@@ -51,6 +35,7 @@ import type {
 } from "@repo/types";
 import { format } from "date-fns";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
+import { FixtureDialog } from "./fixture-dialog";
 
 type FixtureDBRow = AdminFixturesListResponse["data"][0];
 
@@ -70,6 +55,8 @@ interface FixturesTableProps {
   error?: Error | null;
   // Sync handler
   onSyncFixture?: (externalId: string) => Promise<void>;
+  // Update handler
+  onUpdate?: () => void;
 }
 
 export function FixturesTable({
@@ -81,6 +68,7 @@ export function FixturesTable({
   isLoading = false,
   error = null,
   onSyncFixture,
+  onUpdate,
 }: FixturesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -100,8 +88,44 @@ export function FixturesTable({
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editedState, setEditedState] = useState<string>("");
+
+  // Update selectedFixture when unifiedData or dbData changes (after refresh)
+  useEffect(() => {
+    if (selectedFixture && isDialogOpen) {
+      // Find the updated fixture in the data
+      if (mode === "provider" && unifiedData) {
+        const updatedFixture = unifiedData.find(
+          (f) => f.externalId === selectedFixture.externalId
+        );
+        if (updatedFixture) {
+          setSelectedFixture(updatedFixture);
+        }
+      } else if (mode === "db" && dbData?.data) {
+        const updatedFixture = dbData.data.find(
+          (f) => f.externalId === selectedFixture.externalId
+        );
+        if (updatedFixture) {
+          // Convert to UnifiedFixture format
+          setSelectedFixture({
+            externalId: updatedFixture.externalId,
+            name: updatedFixture.name,
+            startIso: updatedFixture.startIso,
+            startTs: updatedFixture.startTs,
+            state: updatedFixture.state,
+            result: updatedFixture.result,
+            stageRoundName: updatedFixture.stageRoundName,
+            source: "db",
+            status: "ok",
+            dbData: updatedFixture,
+            league: updatedFixture.league,
+            season: updatedFixture.season,
+            homeTeam: updatedFixture.homeTeam,
+            awayTeam: updatedFixture.awayTeam,
+          } as UnifiedFixture);
+        }
+      }
+    }
+  }, [unifiedData, dbData, selectedFixture, isDialogOpen, mode]);
 
   // Filter unified data for provider mode (shows diff)
   const filteredDiffData = useMemo(() => {
@@ -518,8 +542,6 @@ export function FixturesTable({
   });
 
   const handleRowClick = (fixture: UnifiedFixture | FixtureDBRow) => {
-    setIsEditMode(false);
-    setEditedState("");
     if (mode === "provider") {
       setSelectedFixture(fixture as UnifiedFixture);
     } else {
@@ -621,17 +643,17 @@ export function FixturesTable({
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleRowClick(fixture)}
                     >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className="whitespace-nowrap overflow-hidden text-ellipsis"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className="whitespace-nowrap overflow-hidden text-ellipsis"
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
                     </TableRow>
                   );
                 });
@@ -661,206 +683,15 @@ export function FixturesTable({
       />
 
       {/* Detail Dialog */}
-      <Dialog
+      <FixtureDialog
         open={isDialogOpen}
-        onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) {
-            setIsEditMode(false);
-            setEditedState("");
-          }
-        }}
-      >
-        <DialogContent
-          className="w-[95vw] max-w-[95vw] sm:w-full sm:max-w-2xl max-h-[90vh] flex flex-col p-4 sm:p-6 overflow-hidden"
-          showCloseButton={false}
-        >
-          <DialogHeader className="text-left flex-shrink-0">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <DialogTitle className="text-base sm:text-lg">
-                {selectedFixture?.name || "Fixture"}
-              </DialogTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 border"
-                onClick={() => {
-                  setIsEditMode(!isEditMode);
-                  if (!isEditMode && selectedFixture) {
-                    setEditedState(selectedFixture.state || "");
-                  }
-                }}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            </div>
-          </DialogHeader>
-
-          {selectedFixture && (
-            <div className="space-y-2 sm:space-y-4 flex-1 min-h-0 flex flex-col overflow-hidden">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 flex-shrink-0">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    External ID
-                  </label>
-                  <Input
-                    readOnly
-                    value={String(selectedFixture.externalId)}
-                    className="text-xs h-8 bg-muted font-mono"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Fixture Name
-                  </label>
-                  <Input
-                    readOnly
-                    value={selectedFixture.name || "—"}
-                    className="text-xs h-8 bg-muted"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Start Date
-                  </label>
-                  <Input
-                    readOnly
-                    value={
-                      selectedFixture.startIso
-                        ? format(new Date(selectedFixture.startIso), "PPpp")
-                        : "—"
-                    }
-                    className="text-xs h-8 bg-muted"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    State
-                  </label>
-                  {isEditMode ? (
-                    <Select
-                      value={editedState || selectedFixture.state || ""}
-                      onValueChange={setEditedState}
-                    >
-                      <SelectTrigger className="text-xs h-8">
-                        <SelectValue placeholder="Select state" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NS">Not Started (NS)</SelectItem>
-                        <SelectItem value="LIVE">Live (LIVE)</SelectItem>
-                        <SelectItem value="FT">Full Time (FT)</SelectItem>
-                        <SelectItem value="CAN">Cancelled (CAN)</SelectItem>
-                        <SelectItem value="INT">Interrupted (INT)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      readOnly
-                      value={selectedFixture.state || "—"}
-                      className="text-xs h-8 bg-muted"
-                    />
-                  )}
-                </div>
-                {selectedFixture.result && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Result
-                    </label>
-                    <Input
-                      readOnly
-                      value={selectedFixture.result}
-                      className="text-xs h-8 bg-muted"
-                    />
-                  </div>
-                )}
-                {selectedFixture.stageRoundName && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Stage/Round
-                    </label>
-                    <Input
-                      readOnly
-                      value={selectedFixture.stageRoundName}
-                      className="text-xs h-8 bg-muted"
-                    />
-                  </div>
-                )}
-                {selectedFixture.league && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      League
-                    </label>
-                    <Input
-                      readOnly
-                      value={selectedFixture.league.name}
-                      className="text-xs h-8 bg-muted"
-                    />
-                  </div>
-                )}
-                {selectedFixture.season && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Season
-                    </label>
-                    <Input
-                      readOnly
-                      value={selectedFixture.season.name}
-                      className="text-xs h-8 bg-muted"
-                    />
-                  </div>
-                )}
-                {selectedFixture.homeTeam && selectedFixture.awayTeam && (
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Teams
-                    </label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs sm:text-sm break-words">
-                        {selectedFixture.homeTeam.name}
-                      </span>
-                      <span className="text-muted-foreground">vs</span>
-                      <span className="text-xs sm:text-sm break-words">
-                        {selectedFixture.awayTeam.name}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="flex-shrink-0">
-            {mode === "provider" &&
-              selectedFixture &&
-              selectedFixture.status === "missing-in-db" && (
-                <Button
-                  onClick={() => {
-                    if (selectedFixture) {
-                      handleSyncFixture(selectedFixture.externalId);
-                    }
-                    setIsDialogOpen(false);
-                  }}
-                  disabled={syncingIds.has(selectedFixture.externalId)}
-                >
-                  {syncingIds.has(selectedFixture.externalId) ? (
-                    <>
-                      <CloudSync className="mr-2 h-4 w-4 animate-spin" />
-                      Syncing...
-                    </>
-                  ) : (
-                    <>
-                      <CloudSync className="mr-2 h-4 w-4" />
-                      Sync Fixture
-                    </>
-                  )}
-                </Button>
-              )}
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={setIsDialogOpen}
+        fixture={selectedFixture}
+        mode={mode}
+        onSyncFixture={handleSyncFixture}
+        syncingIds={syncingIds}
+        onUpdate={onUpdate}
+      />
     </div>
   );
 }

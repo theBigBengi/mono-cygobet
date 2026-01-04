@@ -7,7 +7,11 @@ import {
   ScoreSportmonks,
 } from "@repo/types/sport-data/sportmonks";
 import { FixtureSportmonks } from "@repo/types/sport-data/sportmonks";
-import { OddsDTO } from "@repo/types/sport-data/common";
+import {
+  OddsDTO,
+  FixtureDTO,
+  FixtureState,
+} from "@repo/types/sport-data/common";
 
 // SportMonks has separate APIs for different data types
 
@@ -347,6 +351,33 @@ export function buildOdds(f: FixtureSportmonks): OddsDTO[] {
   }
 
   return out;
+}
+
+/**
+ * Builds FixtureDTO from raw SportMonks fixture data
+ * Transforms raw API response to our standardized DTO format
+ */
+export function buildFixtures(f: FixtureSportmonks): FixtureDTO | null {
+  const { homeId, awayId } = extractTeams(f.participants);
+  if (!homeId || !awayId) return null;
+
+  return {
+    externalId: Number(f.id),
+    name: String(f.name ?? ""),
+    leagueExternalId: Number.isFinite(f.league_id) ? Number(f.league_id) : null,
+    seasonExternalId: Number.isFinite(f.season_id) ? Number(f.season_id) : null,
+    homeTeamExternalId: homeId,
+    awayTeamExternalId: awayId,
+    startIso: f.starting_at ?? null,
+    startTs: coerceEpochSeconds(f.starting_at_timestamp, f.starting_at),
+    state: mapSmShortToApp(f?.state?.short_name) as FixtureState,
+    result: pickScoreString(f?.scores),
+    stageRoundName:
+      `${f?.stage?.name ?? ""} - ${f?.round?.name ?? ""}`.trim() || "",
+    hasOdds: f.has_odds,
+    leagueName: f.league?.name ?? "",
+    countryName: f.league?.country?.name ?? "",
+  };
 }
 
 /**

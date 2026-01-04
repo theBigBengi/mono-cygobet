@@ -77,3 +77,31 @@ export const searchFixturesResponseSchema = {
     message: { type: "string" },
   },
 };
+
+export const updateFixtureBodySchema = {
+  type: "object",
+  properties: {
+    name: { type: "string" },
+    state: { type: "string" },
+    homeScore: { type: "number" },
+    awayScore: { type: "number" },
+    result: { type: "string" },
+  },
+};
+
+export const updateFixtureResponseSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string" },
+    data: { type: "object" },
+    message: { type: "string" },
+  },
+};
+
+export const updateFixture404ResponseSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string" },
+    message: { type: "string" },
+  },
+};

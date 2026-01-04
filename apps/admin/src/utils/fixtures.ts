@@ -1,8 +1,4 @@
-import type {
-  FixtureDB,
-  FixtureProvider,
-  UnifiedFixture,
-} from "@/types";
+import type { FixtureDB, FixtureProvider, UnifiedFixture } from "@/types";
 import type {
   AdminFixturesListResponse,
   AdminProviderFixturesResponse,
@@ -12,6 +8,12 @@ import type {
 function normalizeString(str: string | null | undefined): string {
   if (!str) return "";
   return str.trim();
+}
+
+// Normalize result string - convert ":" to "-" for consistent comparison
+function normalizeResult(result: string | null | undefined): string {
+  if (!result) return "";
+  return result.trim().replace(/:/g, "-");
 }
 
 export function unifyFixtures(
@@ -37,7 +39,11 @@ export function unifyFixtures(
   const providerMap = new Map<string, FixtureProvider>();
   if (providerData?.data) {
     providerData.data.forEach((f: AdminProviderFixturesResponse["data"][0]) => {
-      providerMap.set(String(f.externalId), f);
+      providerMap.set(String(f.externalId), {
+        ...f,
+        leagueInDb: Boolean(f.leagueExternalId),
+        seasonInDb: Boolean(f.seasonExternalId),
+      } as FixtureProvider);
     });
   }
 
@@ -67,10 +73,13 @@ export function unifyFixtures(
       const providerNameNorm = normalizeString(provider.name);
       const dbStateNorm = normalizeString(db.state);
       const providerStateNorm = normalizeString(provider.state);
+      const dbResultNorm = normalizeResult(db.result);
+      const providerResultNorm = normalizeResult(provider.result);
 
       if (
         dbNameNorm !== providerNameNorm ||
-        dbStateNorm !== providerStateNorm
+        dbStateNorm !== providerStateNorm ||
+        dbResultNorm !== providerResultNorm
       ) {
         status = "mismatch";
       } else {
@@ -103,8 +112,8 @@ export function unifyFixtures(
       season,
       homeTeam,
       awayTeam,
-      leagueInDb: provider?.leagueInDb ?? false,
-      seasonInDb: provider?.seasonInDb ?? false,
+      leagueInDb: Boolean(db?.leagueId),
+      seasonInDb: Boolean(db?.seasonId),
       updatedAt,
       // Provider-specific fields
       leagueName: provider?.leagueName ?? null,
@@ -133,4 +142,3 @@ export function calculateDiffStats(unifiedData: UnifiedFixture[]) {
 
   return { dbCount, providerCount, missing, extra, mismatch, ok };
 }
-

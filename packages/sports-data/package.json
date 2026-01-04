@@ -3,7 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "exports": {
-    "./adapters/sportmonks": "./src/adapters/sportmonks/sportmonks.adapter.ts"
+    "./adapters/sportmonks": "./src/adapters/sportmonks/sportmonks.adapter.ts",
+    "./adapters/sportmonks/helpers": "./src/adapters/sportmonks/helpers.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",

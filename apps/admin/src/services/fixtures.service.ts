@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPost, apiPatch } from "@/lib/api";
 import type {
   AdminFixturesListResponse,
   AdminProviderFixturesResponse,
@@ -52,10 +52,27 @@ export const fixturesService = {
     leagueIds?: string[], // External IDs
     countryIds?: string[] // External IDs
   ) {
+    // If seasonId is provided, use the dedicated season route
+    if (seasonId) {
+      const searchParams = new URLSearchParams();
+      if (leagueIds && leagueIds.length > 0) {
+        searchParams.append("leagueIds", leagueIds.join(","));
+      }
+      if (countryIds && countryIds.length > 0) {
+        searchParams.append("countryIds", countryIds.join(","));
+      }
+
+      const queryString = searchParams.toString();
+      const url = `/admin/provider/fixtures/season/${seasonId}${
+        queryString ? `?${queryString}` : ""
+      }`;
+      return apiGet<AdminProviderFixturesResponse>(url);
+    }
+
+    // Otherwise, use the date range route
     const searchParams = new URLSearchParams();
     if (from) searchParams.append("from", from);
     if (to) searchParams.append("to", to);
-    if (seasonId) searchParams.append("seasonId", seasonId.toString());
     if (leagueIds && leagueIds.length > 0) {
       searchParams.append("leagueIds", leagueIds.join(","));
     }
@@ -89,5 +106,18 @@ export const fixturesService = {
     return apiGet<AdminBatchItemsResponse>(
       `/admin/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
     );
+  },
+
+  async update(
+    id: number | string,
+    data: {
+      name?: string;
+      state?: string;
+      homeScore?: number | null;
+      awayScore?: number | null;
+      result?: string | null;
+    }
+  ) {
+    return apiPatch(`/admin/db/fixtures/${id}`, data);
   },
 };

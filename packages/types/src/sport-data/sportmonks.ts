@@ -3,6 +3,17 @@ export interface FixtureStateSportmonks {
   name: string;
   state: string;
   developer_name: string;
+  short_name: "NS" | "LIVE" | "CAN" | "FT" | "HT" | "INT";
+}
+
+export interface FixtureStageSportmonks {
+  id: number;
+  name: string;
+}
+
+export interface FixtureRoundSportmonks {
+  id: number;
+  name: string;
 }
 
 export interface MarketSportmonks {
@@ -205,6 +216,8 @@ export interface FixtureSportmonks {
   statistics?: FixtureSportmonksStatistics[];
   events?: FixtureEvent[];
   metadata?: FixtureSportmonksMetadata[];
+  stage: FixtureStageSportmonks;
+  round: FixtureRoundSportmonks;
 }
 
 export interface SportmonksFixturesRequest {

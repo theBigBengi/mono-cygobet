@@ -78,6 +78,8 @@ export enum FixtureState {
   LIVE = "LIVE",
   CAN = "CAN",
   FT = "FT",
+  HT = "HT",
+  INT = "INT",
 }
 
 export type FixtureDTO = {
@@ -109,9 +111,15 @@ export type FixtureDTO = {
   state: FixtureState;
 
   /** Provider raw result string (nullable) -> fixtures.result */
-  result?: string | null;
+  result: string | null;
 
   stageRoundName: string;
+
+  hasOdds: boolean;
+
+  leagueName: string;
+
+  countryName: string;
 };
 
 export type OddsDTO = {

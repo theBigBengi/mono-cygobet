@@ -29,6 +29,7 @@ import {
   extractTeams,
   buildOdds,
   coerceEpochSeconds,
+  buildFixtures,
 } from "./helpers";
 
 import dotenv from "dotenv";
@@ -146,36 +147,10 @@ export class SportMonksAdapter {
     for (const r of rows) {
       const fixtures = r.fixtures;
       for (const f of fixtures) {
-        // Extract home/away team IDs from participants
-        let homeId: number | null = null;
-        let awayId: number | null = null;
-        if (Array.isArray((f as any).participants)) {
-          for (const p of (f as any).participants) {
-            const location = String(p?.meta?.location ?? "").toLowerCase();
-
-            if (location === "home") homeId = p.id;
-            else if (location === "away") awayId = p.id;
-          }
+        const fixture = buildFixtures(f);
+        if (fixture) {
+          out.push(fixture);
         }
-
-        out.push({
-          externalId: Number(f.id),
-          name: f.name ?? "",
-          leagueExternalId: Number.isFinite(f.league_id)
-            ? Number(f.league_id)
-            : null,
-          seasonExternalId: Number.isFinite(f.season_id)
-            ? Number(f.season_id)
-            : null,
-          homeTeamExternalId: homeId ?? 0,
-          awayTeamExternalId: awayId ?? 0,
-          startIso: f.starting_at ?? null,
-          startTs: Number.isFinite(f.starting_at_timestamp)
-            ? Number(f.starting_at_timestamp)
-            : 0,
-          state: mapSmShortToApp(f?.state?.short_name) as FixtureState,
-          stageRoundName: `${f?.stage?.name} - ${f?.round?.name}`,
-        });
       }
     }
     return out;
@@ -192,6 +167,8 @@ export class SportMonksAdapter {
     options: {
       include?: IncludeNode[];
       perPage?: number;
+      sortBy?: string;
+      order?: "asc" | "desc";
       filters?: string | Record<string, string | number | boolean>;
     } = {}
   ): Promise<FixtureDTO[]> {
@@ -199,52 +176,28 @@ export class SportMonksAdapter {
     const encodedFrom = encodeURIComponent(startIso);
     const encodedTo = encodeURIComponent(endIso);
 
-    const rows = await this.httpFootball.get<any>(
+    const rows = await this.httpFootball.get<FixtureSportmonks>(
       `fixtures/between/${encodedFrom}/${encodedTo}`,
       {
         // select: this.fixtureSelect,
         include: [...this.fixtureInclude, ...(options.include ?? [])],
         filters: options.filters,
-        perPage: 50,
-        sortBy: "starting_at",
-        order: "asc",
+        perPage: options.perPage ?? 50,
+        sortBy: options.sortBy ?? "starting_at",
+        order: options.order ?? "asc",
       }
     );
 
     const out: FixtureDTO[] = [];
 
+    // Transform raw data to DTOs using buildFixtures helper (avoiding duplicate API call)
     for (const f of rows) {
-      // Extract home/away team IDs from participants
-      let homeId: number | null = null;
-      let awayId: number | null = null;
-
-      for (const p of (f as any).participants) {
-        const location = String(p?.meta?.location ?? "").toLowerCase();
-
-        if (location === "home") homeId = p.id;
-        else if (location === "away") awayId = p.id;
+      const fixture = buildFixtures(f);
+      if (fixture) {
+        out.push(fixture);
       }
-
-      if (!homeId || !awayId) continue;
-
-      out.push({
-        externalId: Number(f.id),
-        name: String(f.name ?? ""),
-        leagueExternalId: Number.isFinite(f.league_id)
-          ? Number(f.league_id)
-          : null,
-        seasonExternalId: Number.isFinite(f.season_id)
-          ? Number(f.season_id)
-          : null,
-        homeTeamExternalId: homeId,
-        awayTeamExternalId: awayId,
-        startIso: f.starting_at ?? null,
-        startTs: coerceEpochSeconds(f.starting_at_timestamp, f.starting_at),
-        state: mapSmShortToApp(f?.state?.short_name) as FixtureState,
-        result: pickScoreString(f?.scores),
-        stageRoundName: `${f?.stage?.name} - ${f?.round?.name}`,
-      });
     }
+
     return out;
   }
 
@@ -304,34 +257,10 @@ export class SportMonksAdapter {
     const out: FixtureDTO[] = [];
 
     for (const f of rows) {
-      let homeId: number | null = null;
-      let awayId: number | null = null;
-
-      for (const p of (f as any).participants ?? []) {
-        const location = String(p?.meta?.location ?? "").toLowerCase();
-        if (location === "home") homeId = p.id;
-        else if (location === "away") awayId = p.id;
+      const fixture = buildFixtures(f);
+      if (fixture) {
+        out.push(fixture);
       }
-
-      if (!homeId || !awayId) continue;
-
-      out.push({
-        externalId: Number(f.id),
-        name: String(f.name ?? ""),
-        leagueExternalId: Number.isFinite(f.league_id)
-          ? Number(f.league_id)
-          : null,
-        seasonExternalId: Number.isFinite(f.season_id)
-          ? Number(f.season_id)
-          : null,
-        homeTeamExternalId: homeId,
-        awayTeamExternalId: awayId,
-        startIso: f.starting_at ?? null,
-        startTs: coerceEpochSeconds(f.starting_at_timestamp, f.starting_at),
-        state: mapSmShortToApp(f?.state?.short_name) as FixtureState, // will resolve to LIVE
-        result: pickScoreString(f?.scores),
-        stageRoundName: `${f?.stage?.name} - ${f?.round?.name}`,
-      });
     }
 
     return out;

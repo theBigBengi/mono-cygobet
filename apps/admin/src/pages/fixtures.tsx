@@ -417,6 +417,13 @@ export default function FixturesPage() {
             onSyncFixture={
               viewMode === "provider" ? handleSyncFixture : undefined
             }
+            onUpdate={() => {
+              queryClient.invalidateQueries({ queryKey: ["fixtures", "db"] });
+              setTimeout(() => {
+                refetchDb();
+                refetchProvider();
+              }, 500);
+            }}
           />
         )}
       </div>

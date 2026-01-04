@@ -34,3 +34,19 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
+export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  const baseUrl = getApiUrl();
+  const url = `${baseUrl}${path}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    throw new Error(`API error ${res.status}: ${res.statusText}`);
+  }
+  return res.json() as Promise<T>;
+}
