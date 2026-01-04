@@ -3,10 +3,16 @@ import Fastify from "fastify";
 // import qs from "qs";
 import app from "./app";
 
+const pluginTimeoutMs =
+  process.env.NODE_ENV === "production"
+    ? Number(process.env.FASTIFY_PLUGIN_TIMEOUT_MS ?? 60_000)
+    : undefined;
+
 // Create Fastify instance
 const fastify = Fastify({
   logger: true,
   ajv: { customOptions: { coerceTypes: true, allowUnionTypes: true } },
+  ...(pluginTimeoutMs ? { pluginTimeout: pluginTimeoutMs } : {}),
   // querystringParser: (str) => qs.parse(str, { comma: true, allowDots: true }),
 });
 
