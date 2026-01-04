@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db";
+import { Prisma, prisma } from "@repo/db";
 import type { JobDefinition } from "./jobs.definitions";
 
 /**
@@ -15,23 +15,17 @@ export async function ensureJobRow(job: JobDefinition): Promise<{
   scheduleCron: string | null;
   meta: Record<string, unknown>;
 }> {
-  // Backward-compatible: `jobs.meta` may not exist until migrations/prisma generate are applied.
-  // We try to read/write meta, and fall back cleanly if the field isn't available yet.
-  let existing:
-    | { key: string; enabled: boolean; scheduleCron: string | null; meta?: any }
-    | null = null;
-  try {
-    existing = await prisma.jobs.findUnique({
-      where: { key: job.key },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      select: { key: true, enabled: true, scheduleCron: true, meta: true } as any,
-    });
-  } catch {
-    existing = await prisma.jobs.findUnique({
-      where: { key: job.key },
-      select: { key: true, enabled: true, scheduleCron: true },
-    });
-  }
+  const selectJob = Prisma.validator<Prisma.jobsSelect>()({
+    key: true,
+    enabled: true,
+    scheduleCron: true,
+    meta: true,
+  });
+
+  const existing = await prisma.jobs.findUnique({
+    where: { key: job.key },
+    select: selectJob,
+  });
 
   if (existing) {
     return {
@@ -39,52 +33,32 @@ export async function ensureJobRow(job: JobDefinition): Promise<{
       enabled: existing.enabled,
       scheduleCron: existing.scheduleCron ?? null,
       meta:
-        typeof (existing as any).meta === "object" && (existing as any).meta
-          ? ((existing as any).meta as Record<string, unknown>)
+        typeof existing.meta === "object" && existing.meta && !Array.isArray(existing.meta)
+          ? (existing.meta as Record<string, unknown>)
           : {},
     };
   }
 
-  // Create (try with meta, then fallback without)
-  try {
-    const created: any = await prisma.jobs.create({
-      data: {
-        key: job.key,
-        description: job.description,
-        scheduleCron: job.scheduleCron,
-        enabled: job.enabled,
-        meta: job.meta ?? {},
-      } as any,
-      select: { key: true, enabled: true, scheduleCron: true, meta: true } as any,
-    });
-    return {
-      key: created.key,
-      enabled: created.enabled,
-      scheduleCron: created.scheduleCron ?? null,
-      meta:
-        typeof created.meta === "object" && created.meta
-          ? (created.meta as Record<string, unknown>)
-          : {},
-    };
-  } catch {
-    const created = await prisma.jobs.create({
-      data: {
-        key: job.key,
-        description: job.description,
-        scheduleCron: job.scheduleCron,
-        enabled: job.enabled,
-      },
-      select: { key: true, enabled: true, scheduleCron: true },
-    });
-    return {
-      key: created.key,
-      enabled: created.enabled,
-      scheduleCron: created.scheduleCron ?? null,
-      meta: {},
-    };
-  }
+  const created = await prisma.jobs.create({
+    data: {
+      key: job.key,
+      description: job.description,
+      scheduleCron: job.scheduleCron,
+      enabled: job.enabled,
+      meta: (job.meta ?? {}) as Prisma.InputJsonValue,
+    },
+    select: selectJob,
+  });
 
-  // (unreachable)
+  return {
+    key: created.key,
+    enabled: created.enabled,
+    scheduleCron: created.scheduleCron ?? null,
+    meta:
+      typeof created.meta === "object" && created.meta && !Array.isArray(created.meta)
+        ? (created.meta as Record<string, unknown>)
+        : {},
+  };
 }
 
 
