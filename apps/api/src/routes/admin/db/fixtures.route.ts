@@ -8,7 +8,6 @@ import {
   createPaginationResponse,
   parseId,
   parseIncludeString,
-  parseArrayParam,
 } from "../../../utils/routes";
 import {
   listFixturesQuerystringSchema,

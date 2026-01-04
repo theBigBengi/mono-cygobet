@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import { addDays, format } from "date-fns";
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
 import type { OddsDTO } from "@repo/types/sport-data/common";
 import { JobTriggerBy, RunStatus, RunTrigger, prisma } from "@repo/db";
 
@@ -163,6 +162,11 @@ export async function runUpdatePrematchOddsJob(
   }
 
   try {
+    // Lazy-load the provider adapter so API startup doesn't pay the TSX import/compile cost
+    // unless this job actually runs.
+    const { SportMonksAdapter } =
+      await import("@repo/sports-data/adapters/sportmonks");
+
     const adapter = new SportMonksAdapter({
       token,
       footballBaseUrl,
