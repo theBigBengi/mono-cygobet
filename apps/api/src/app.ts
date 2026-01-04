@@ -76,7 +76,11 @@ const app: FastifyPluginAsync<AppOptions> = async (
           try {
             const u = new URL(origin);
             const host = u.hostname;
-            if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
+            if (
+              host === "localhost" ||
+              host === "127.0.0.1" ||
+              host === "::1"
+            ) {
               return cb(null, origin);
             }
             if (isPrivateIPv4(host)) {
@@ -116,14 +120,14 @@ const app: FastifyPluginAsync<AppOptions> = async (
     });
 
     // Load routes after plugins
-    const routesDir = path.join(__dirname, "routes");
-    console.log("Loading routes from:", routesDir);
-    await fastify.register(AutoLoad, {
-      dir: routesDir,
-      options: opts,
-      maxDepth: 3, // Allow loading from subdirectories (e.g., routes/admin/db/, routes/admin/provider/)
-      forceESM: true,
-    });
+    // const routesDir = path.join(__dirname, "routes");
+    // console.log("Loading routes from:", routesDir);
+    // await fastify.register(AutoLoad, {
+    //   dir: routesDir,
+    //   options: opts,
+    //   maxDepth: 3, // Allow loading from subdirectories (e.g., routes/admin/db/, routes/admin/provider/)
+    //   forceESM: true,
+    // });
     // Note: if you add new route folders (e.g. `routes/mobile/*`), you may need to restart `pnpm -F api dev`
     // so the runtime autoload scan picks them up.
   } catch (err) {
