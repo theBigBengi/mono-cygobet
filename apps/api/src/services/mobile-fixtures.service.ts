@@ -32,9 +32,34 @@ function toUnixSeconds(d: Date): number {
   return Math.floor(d.getTime() / 1000);
 }
 
+function parseTeamsFromFixtureName(
+  name: string | null | undefined
+): { home: string; away: string } | null {
+  if (!name) return null;
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+
+  // Common provider formats: "Home vs Away", "Home v Away", "Home - Away"
+  const candidates = [
+    /\s+vs\.?\s+/i,
+    /\s+v\s+/i,
+    /\s*-\s*/,
+    /\s*–\s*/, // en dash
+  ];
+
+  for (const re of candidates) {
+    const parts = trimmed.split(re).map((p) => p.trim()).filter(Boolean);
+    if (parts.length === 2 && parts[0] && parts[1]) {
+      return { home: parts[0]!, away: parts[1]! };
+    }
+  }
+  return null;
+}
+
 function mapProviderFixtureToMobile(fx: FixtureDTO): MobileUpcomingFixture | null {
   if (!fx?.externalId || !fx?.startTs) return null;
   const kickoffAt = new Date(fx.startTs * 1000).toISOString();
+  const parsedTeams = parseTeamsFromFixtureName(fx.name);
 
   return {
     id: String(fx.externalId),
@@ -45,11 +70,11 @@ function mapProviderFixtureToMobile(fx: FixtureDTO): MobileUpcomingFixture | nul
     },
     homeTeam: {
       id: fx.homeTeamExternalId != null ? String(fx.homeTeamExternalId) : "unknown",
-      name: fx.homeTeamName ?? "Unknown",
+      name: parsedTeams?.home ?? "Unknown",
     },
     awayTeam: {
       id: fx.awayTeamExternalId != null ? String(fx.awayTeamExternalId) : "unknown",
-      name: fx.awayTeamName ?? "Unknown",
+      name: parsedTeams?.away ?? "Unknown",
     },
   };
 }

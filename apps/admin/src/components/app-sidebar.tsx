@@ -31,10 +31,6 @@ const data = {
           url: "/sync-center",
         },
         {
-          title: "Jobs",
-          url: "/jobs",
-        },
-        {
           title: "Seasons",
           url: "/seasons",
         },
@@ -61,6 +57,15 @@ const data = {
         {
           title: "Fixtures",
           url: "/fixtures",
+        },
+      ],
+    },
+    {
+      title: "Automation",
+      items: [
+        {
+          title: "Jobs",
+          url: "/jobs",
         },
       ],
     },
