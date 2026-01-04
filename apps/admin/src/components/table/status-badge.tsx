@@ -44,6 +44,14 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
   // Check if it's a unified status
   if (status in unifiedStatusConfig) {
     const config = unifiedStatusConfig[status as UnifiedStatus];
+    // Use yellow for mismatch status
+    if (status === "mismatch") {
+      return (
+        <Badge className={`bg-yellow-500 hover:bg-yellow-600 text-white ${className || ""}`}>
+          {config.label}
+        </Badge>
+      );
+    }
     return (
       <Badge variant={config.variant} className={className}>
         {config.label}

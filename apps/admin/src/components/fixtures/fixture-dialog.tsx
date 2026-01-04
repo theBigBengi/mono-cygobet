@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
-import { CloudSync, Pencil, Save, X, RefreshCw } from "lucide-react";
+import { Pencil, PencilOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -128,13 +128,26 @@ export function FixtureDialog({
   };
 
   const handleEditToggle = () => {
-    setIsEditMode(!isEditMode);
-    if (!isEditMode && fixture?.dbData) {
-      setEditedState(fixture.dbData.state || "");
-      setEditedName(fixture.dbData.name || "");
-      const { home, away } = parseResult(fixture.dbData.result);
-      setEditedHomeScore(home);
-      setEditedAwayScore(away);
+    if (isEditMode) {
+      // Exiting edit mode - reset to original values
+      setIsEditMode(false);
+      if (fixture?.dbData) {
+        setEditedState(fixture.dbData.state || "");
+        setEditedName(fixture.dbData.name || "");
+        const { home, away } = parseResult(fixture.dbData.result);
+        setEditedHomeScore(home);
+        setEditedAwayScore(away);
+      }
+    } else {
+      // Entering edit mode - initialize edited values
+      setIsEditMode(true);
+      if (fixture?.dbData) {
+        setEditedState(fixture.dbData.state || "");
+        setEditedName(fixture.dbData.name || "");
+        const { home, away } = parseResult(fixture.dbData.result);
+        setEditedHomeScore(home);
+        setEditedAwayScore(away);
+      }
     }
   };
 
@@ -248,18 +261,6 @@ export function FixtureDialog({
     }
   };
 
-  const handleCancel = () => {
-    setIsEditMode(false);
-    // Reset edited values to original
-    if (fixture?.dbData) {
-      setEditedState(fixture.dbData.state || "");
-      setEditedName(fixture.dbData.name || "");
-      const { home, away } = parseResult(fixture.dbData.result);
-      setEditedHomeScore(home);
-      setEditedAwayScore(away);
-    }
-  };
-
   const handleUpdateFields = () => {
     if (!fixture?.providerData || !fixture?.dbData) return;
 
@@ -288,6 +289,56 @@ export function FixtureDialog({
     );
   };
 
+  // Check if any fields have been changed from their original values
+  const hasChanges = useMemo(() => {
+    if (!fixture?.dbData || !isEditMode) return false;
+
+    // Check name
+    const nameChanged = editedName !== fixture.dbData.name;
+
+    // Check state
+    const stateChanged = editedState !== fixture.dbData.state;
+
+    // Check result (scores)
+    const originalHome = parseResult(fixture.dbData.result).home;
+    const originalAway = parseResult(fixture.dbData.result).away;
+    const originalHomeScore =
+      originalHome !== "" && !isNaN(parseInt(originalHome, 10))
+        ? parseInt(originalHome, 10)
+        : null;
+    const originalAwayScore =
+      originalAway !== "" && !isNaN(parseInt(originalAway, 10))
+        ? parseInt(originalAway, 10)
+        : null;
+
+    const homeScoreValue = editedHomeScore.trim();
+    const awayScoreValue = editedAwayScore.trim();
+    const homeScore =
+      homeScoreValue === ""
+        ? null
+        : !isNaN(parseInt(homeScoreValue, 10))
+          ? parseInt(homeScoreValue, 10)
+          : null;
+    const awayScore =
+      awayScoreValue === ""
+        ? null
+        : !isNaN(parseInt(awayScoreValue, 10))
+          ? parseInt(awayScoreValue, 10)
+          : null;
+
+    const scoresChanged =
+      homeScore !== originalHomeScore || awayScore !== originalAwayScore;
+
+    return nameChanged || stateChanged || scoresChanged;
+  }, [
+    fixture?.dbData,
+    isEditMode,
+    editedName,
+    editedState,
+    editedHomeScore,
+    editedAwayScore,
+  ]);
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
@@ -306,7 +357,11 @@ export function FixtureDialog({
                 className="h-8 w-8 border"
                 onClick={handleEditToggle}
               >
-                <Pencil className="h-4 w-4" />
+                {isEditMode ? (
+                  <PencilOff className="h-4 w-4" />
+                ) : (
+                  <Pencil className="h-4 w-4" />
+                )}
               </Button>
             )}
           </div>
@@ -364,10 +419,7 @@ export function FixtureDialog({
                           Fixture Name
                         </label>
                         {hasMismatch("name") && (
-                          <Badge
-                            variant="destructive"
-                            className="text-[10px] px-1.5 py-0"
-                          >
+                          <Badge className="text-[10px] px-1.5 py-0 bg-yellow-500 hover:bg-yellow-600 text-white">
                             Mismatch
                           </Badge>
                         )}
@@ -401,10 +453,7 @@ export function FixtureDialog({
                           State
                         </label>
                         {hasMismatch("state") && (
-                          <Badge
-                            variant="destructive"
-                            className="text-[10px] px-1.5 py-0"
-                          >
+                          <Badge className="text-[10px] px-1.5 py-0 bg-yellow-500 hover:bg-yellow-600 text-white">
                             Mismatch
                           </Badge>
                         )}
@@ -421,10 +470,7 @@ export function FixtureDialog({
                           Result
                         </label>
                         {hasMismatch("result") && (
-                          <Badge
-                            variant="destructive"
-                            className="text-[10px] px-1.5 py-0"
-                          >
+                          <Badge className="text-[10px] px-1.5 py-0 bg-yellow-500 hover:bg-yellow-600 text-white">
                             Mismatch
                           </Badge>
                         )}
@@ -536,10 +582,7 @@ export function FixtureDialog({
                           Fixture Name
                         </label>
                         {hasMismatch("name") && (
-                          <Badge
-                            variant="destructive"
-                            className="text-[10px] px-1.5 py-0"
-                          >
+                          <Badge className="text-[10px] px-1.5 py-0 bg-yellow-500 hover:bg-yellow-600 text-white">
                             Mismatch
                           </Badge>
                         )}
@@ -579,10 +622,7 @@ export function FixtureDialog({
                           State
                         </label>
                         {hasMismatch("state") && (
-                          <Badge
-                            variant="destructive"
-                            className="text-[10px] px-1.5 py-0"
-                          >
+                          <Badge className="text-[10px] px-1.5 py-0 bg-yellow-500 hover:bg-yellow-600 text-white">
                             Mismatch
                           </Badge>
                         )}
@@ -619,10 +659,7 @@ export function FixtureDialog({
                           Result
                         </label>
                         {hasMismatch("result") && (
-                          <Badge
-                            variant="destructive"
-                            className="text-[10px] px-1.5 py-0"
-                          >
+                          <Badge className="text-[10px] px-1.5 py-0 bg-yellow-500 hover:bg-yellow-600 text-white">
                             Mismatch
                           </Badge>
                         )}
@@ -738,39 +775,20 @@ export function FixtureDialog({
           </div>
         )}
 
-        <DialogFooter className="flex-shrink-0">
+        <DialogFooter className="flex-shrink-0 gap-2">
           {isEditMode && activeTab === "db" && fixture?.dbData ? (
             <>
-              <Button
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isSaving}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Cancel
-              </Button>
               {hasAnyMismatch() && (
                 <Button
                   variant="outline"
                   onClick={handleUpdateFields}
                   disabled={isSaving}
                 >
-                  <RefreshCw className="mr-2 h-4 w-4" />
                   Update Fields
                 </Button>
               )}
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Save className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save
-                  </>
-                )}
+              <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
+                {isSaving ? "Saving..." : "Save"}
               </Button>
             </>
           ) : (
@@ -783,17 +801,9 @@ export function FixtureDialog({
                     onClick={handleSync}
                     disabled={syncingIds.has(fixture.externalId)}
                   >
-                    {syncingIds.has(fixture.externalId) ? (
-                      <>
-                        <CloudSync className="mr-2 h-4 w-4 animate-spin" />
-                        Syncing...
-                      </>
-                    ) : (
-                      <>
-                        <CloudSync className="mr-2 h-4 w-4" />
-                        Sync Fixture
-                      </>
-                    )}
+                    {syncingIds.has(fixture.externalId)
+                      ? "Syncing..."
+                      : "Sync Fixture"}
                   </Button>
                 )}
               <Button variant="outline" onClick={() => handleOpenChange(false)}>
