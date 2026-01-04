@@ -663,16 +663,23 @@ export class SportMonksAdapter {
   }
 
   /**
-   * Returns hardcoded bookmakers since SportMonks doesn't provide bookmaker data
-   * Currently only bet365 is supported
+   * Fetches all bookmakers from SportMonks API.
+   * Uses the /odds/bookmakers endpoint (v3 level, not under /football/ or /core/).
+   *
+   * Docs: https://docs.sportmonks.com/v3/endpoints-and-entities/endpoints/bookmakers/get-all-bookmakers
    */
   async fetchBookmakers(): Promise<BookmakerDTO[]> {
-    return [
-      {
-        externalId: 2,
-        name: "bet365",
-      },
-    ];
+    const rows = await this.httpBase.get<any>("odds/bookmakers", {
+      perPage: 50,
+      paginate: true,
+    });
+
+    return rows.map(
+      (b: any): BookmakerDTO => ({
+        externalId: b.id,
+        name: b.name,
+      })
+    );
   }
 
   /**
