@@ -6,15 +6,7 @@ import type {
 } from "@repo/types";
 import cron from "node-cron";
 
-let jobsRegistryPromise: Promise<
-  typeof import("../../../jobs/jobs.registry")
-> | null = null;
-async function getJobsRegistry() {
-  if (!jobsRegistryPromise) {
-    jobsRegistryPromise = import("../../../jobs/jobs.registry");
-  }
-  return jobsRegistryPromise;
-}
+import { isJobRunnable } from "../../../jobs/jobs.registry";
 
 /**
  * Admin Jobs DB Routes
@@ -40,8 +32,6 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (_req, reply): Promise<AdminJobsListResponse> => {
-      const { isJobRunnable } = await getJobsRegistry();
-
       // Backward-compatible: `jobs.meta` may not exist until migrations/prisma generate are applied.
       // Try to include meta; fallback to meta={} if the field isn't available yet.
       let jobs: any[] = [];
@@ -174,12 +164,14 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminUpdateJobResponse> => {
-      const { isJobRunnable } = await getJobsRegistry();
-
       const { jobId } = req.params;
       const body = req.body ?? {};
 
-      if (body.meta !== undefined && body.meta !== null && !isPlainObject(body.meta)) {
+      if (
+        body.meta !== undefined &&
+        body.meta !== null &&
+        !isPlainObject(body.meta)
+      ) {
         return reply.status(400).send({
           status: "error",
           data: null,
@@ -317,5 +309,3 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
 };
 
 export default adminJobsDbRoutes;
-
-

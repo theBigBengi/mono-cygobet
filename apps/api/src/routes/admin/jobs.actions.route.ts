@@ -1,15 +1,10 @@
 import { FastifyPluginAsync } from "fastify";
 import type { AdminRunAllJobsResponse, AdminRunJobResponse } from "@repo/types";
-
-let jobsRegistryPromise: Promise<
-  typeof import("../../jobs/jobs.registry")
-> | null = null;
-async function getJobsRegistry() {
-  if (!jobsRegistryPromise) {
-    jobsRegistryPromise = import("../../jobs/jobs.registry");
-  }
-  return jobsRegistryPromise;
-}
+import {
+  RUNNABLE_JOBS,
+  getJobRunner,
+  makeAdminRunOpts,
+} from "../../jobs/jobs.registry";
 
 /**
  * Admin Jobs Actions Routes
@@ -46,7 +41,6 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply): Promise<AdminRunJobResponse> => {
       const { jobId } = req.params;
-      const { getJobRunner, makeAdminRunOpts } = await getJobsRegistry();
       const runner = getJobRunner(jobId);
       if (!runner) {
         return reply.status(404).send({
@@ -108,7 +102,6 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminRunAllJobsResponse> => {
-      const { RUNNABLE_JOBS, makeAdminRunOpts } = await getJobsRegistry();
       const opts = makeAdminRunOpts(req.body);
 
       const results: Array<{

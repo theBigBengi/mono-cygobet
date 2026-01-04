@@ -3,23 +3,10 @@ import Fastify from "fastify";
 // import qs from "qs";
 import app from "./app";
 
-// Render often doesn't set NODE_ENV=production. Still, startup can be slower there because we run via `tsx`.
-// Default to a safer timeout on Render/production-like environments, and allow overriding via env.
-const pluginTimeoutMs = (() => {
-  const configured = Number(process.env.FASTIFY_PLUGIN_TIMEOUT_MS ?? "");
-  if (Number.isFinite(configured) && configured > 0) return configured;
-
-  const isRender =
-    process.env.RENDER === "true" || !!process.env.RENDER_SERVICE_ID;
-  const isProdLike = process.env.NODE_ENV === "production" || isRender;
-  return isProdLike ? 60_000 : undefined;
-})();
-
 // Create Fastify instance
 const fastify = Fastify({
   logger: true,
   ajv: { customOptions: { coerceTypes: true, allowUnionTypes: true } },
-  ...(pluginTimeoutMs ? { pluginTimeout: pluginTimeoutMs } : {}),
   // querystringParser: (str) => qs.parse(str, { comma: true, allowDots: true }),
 });
 
