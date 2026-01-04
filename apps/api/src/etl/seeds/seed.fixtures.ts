@@ -7,9 +7,20 @@ import {
   chunk,
   safeBigInt,
 } from "./seed.utils";
-import { RunStatus, RunTrigger, prisma } from "@repo/db";
+import {
+  FixtureState as DbFixtureState,
+  RunStatus,
+  RunTrigger,
+  prisma,
+} from "@repo/db";
 
 const CHUNK_SIZE = 8;
+
+function coerceDbFixtureState(state: FixtureDTO["state"]): DbFixtureState {
+  // `FixtureDTO.state` is from `@repo/types` (string union).
+  // Prisma expects its own `FixtureState` type; values are the same (e.g. "NS", "LIVE", ...).
+  return state as unknown as DbFixtureState;
+}
 
 // Helper to parse scores from result string (e.g., "2-1" -> { home: 2, away: 1 })
 function parseScores(result: string | null | undefined): {
@@ -235,6 +246,7 @@ export async function seedFixtures(
 
             // Parse scores from result string
             const { homeScore, awayScore } = parseScores(fixture.result);
+            const dbState = coerceDbFixtureState(fixture.state);
 
             // Upsert fixture: update if exists, create if not
             await prisma.fixtures.upsert({
@@ -247,7 +259,7 @@ export async function seedFixtures(
                 awayTeamId,
                 startIso,
                 startTs: fixture.startTs,
-                state: fixture.state,
+                state: dbState,
                 result: fixture.result ?? null,
                 homeScore: homeScore ?? null,
                 awayScore: awayScore ?? null,
@@ -263,7 +275,7 @@ export async function seedFixtures(
                 awayTeamId,
                 startIso,
                 startTs: fixture.startTs,
-                state: fixture.state,
+                state: dbState,
                 result: fixture.result ?? null,
                 homeScore: homeScore ?? null,
                 awayScore: awayScore ?? null,
