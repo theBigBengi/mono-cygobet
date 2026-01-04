@@ -95,12 +95,12 @@ export default function FixturesPage() {
     const fromDate = new Date(appliedDateRange.from);
     fromDate.setHours(0, 0, 0, 0);
     const fromTimestamp = Math.floor(fromDate.getTime() / 1000);
-    
+
     // Set to to end of day (23:59:59.999)
     const toDate = new Date(appliedDateRange.to);
     toDate.setHours(23, 59, 59, 999);
     const toTimestamp = Math.floor(toDate.getTime() / 1000);
-    
+
     return [fromTimestamp, toTimestamp];
   }, [appliedDateRange]);
 
@@ -310,7 +310,7 @@ export default function FixturesPage() {
         </PageFilters>
 
         {/* Mode Switch with Mobile Filter Button */}
-        <div className="flex items-center justify-between gap-2 mt-4 sm:mt-6">
+        <div className="flex items-center justify-between gap-2 sm:mt-6">
           <Tabs
             value={viewMode}
             onValueChange={(v) =>
@@ -357,8 +357,8 @@ export default function FixturesPage() {
           </div>
         )}
 
-        {/* Summary Overview */}
-        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-2 py-2 sm:py-1">
+        {/* Summary Overview (hidden on mobile) */}
+        <div className="hidden sm:block overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-2 py-2 sm:py-1">
           <div className="flex items-center gap-3 sm:gap-4 text-xs pb-1 min-w-max">
             {isFetching ? (
               Array.from({ length: 6 }).map((_, i) => (
