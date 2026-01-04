@@ -2,7 +2,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
 import { AdminProviderOddsResponse } from "@repo/types";
-import { providerResponseSchema } from "../../../schemas/admin.schemas";
+import { providerResponseSchema } from "../../../schemas/admin/admin.schemas";
 
 const adminOddsProviderRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/provider/odds - Get odds from SportMonks provider

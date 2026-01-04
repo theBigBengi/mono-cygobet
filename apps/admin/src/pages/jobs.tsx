@@ -1,0 +1,1497 @@
+import { useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { StatusBadge } from "@/components/table/status-badge";
+import { CheckCircle2, XCircle } from "lucide-react";
+
+import { useJobsFromDb, useJobRunsFromDb } from "@/hooks/use-jobs";
+import { jobsService } from "@/services/jobs.service";
+import type { AdminJobRunsListResponse } from "@repo/types";
+import type { AdminJobsListResponse } from "@repo/types";
+
+type JobsTab = "runs" | "jobs";
+type RunRow = AdminJobRunsListResponse["data"][0];
+type JobRow = AdminJobsListResponse["data"][0];
+
+type ScheduleState =
+  | { mode: "disabled" }
+  | { mode: "every_minutes"; intervalMinutes: number }
+  | { mode: "every_hours"; intervalHours: number; minute: number }
+  | { mode: "hourly"; minute: number }
+  | { mode: "daily"; hour: number; minute: number }
+  | { mode: "weekly"; dayOfWeek: number; hour: number; minute: number }
+  | { mode: "custom"; raw: string };
+
+function formatDateTime(iso: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleString();
+}
+
+function formatDurationMs(ms: number | null) {
+  if (ms == null) return "—";
+  if (ms < 1000) return `${ms}ms`;
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${m}m ${rem}s`;
+}
+
+function truncate(s: string, max = 120) {
+  if (s.length <= max) return s;
+  return `${s.slice(0, max - 1)}…`;
+}
+
+function jobNameFromKey(key: string): string {
+  // user-requested: show job name derived from key without "-" chars
+  return key.replace(/-/g, " ");
+}
+
+function clampInt(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.trunc(value)));
+}
+
+function parseScheduleCron(cronExpr: string | null): ScheduleState {
+  const raw = (cronExpr ?? "").trim();
+  if (!raw) return { mode: "disabled" };
+
+  // Only support 5-field patterns for "friendly" parsing.
+  const parts = raw.split(/\s+/);
+  if (parts.length !== 5) return { mode: "custom", raw };
+
+  // M */N * * *  (every N hours at minute M)
+  {
+    const m = raw.match(/^(\d+)\s+\*\/(\d+)\s+\*\s+\*\s+\*$/);
+    if (m) {
+      const minute = clampInt(Number(m[1]), 0, 59);
+      const intervalHours = clampInt(Number(m[2]), 1, 23);
+      if (intervalHours === 1) {
+        return { mode: "hourly", minute };
+      }
+      return { mode: "every_hours", minute, intervalHours };
+    }
+  }
+
+  // */N * * * *
+  {
+    const m = raw.match(/^\*\/(\d+)\s+\*\s+\*\s+\*\s+\*$/);
+    if (m) {
+      return {
+        mode: "every_minutes",
+        intervalMinutes: clampInt(Number(m[1]), 1, 59),
+      };
+    }
+  }
+
+  // M * * * *
+  {
+    const m = raw.match(/^(\d+)\s+\*\s+\*\s+\*\s+\*$/);
+    if (m) {
+      return { mode: "hourly", minute: clampInt(Number(m[1]), 0, 59) };
+    }
+  }
+
+  // M H * * *
+  {
+    const m = raw.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/);
+    if (m) {
+      return {
+        mode: "daily",
+        minute: clampInt(Number(m[1]), 0, 59),
+        hour: clampInt(Number(m[2]), 0, 23),
+      };
+    }
+  }
+
+  // M H * * DOW
+  {
+    const m = raw.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+(\d+)$/);
+    if (m) {
+      return {
+        mode: "weekly",
+        minute: clampInt(Number(m[1]), 0, 59),
+        hour: clampInt(Number(m[2]), 0, 23),
+        dayOfWeek: clampInt(Number(m[3]), 0, 6),
+      };
+    }
+  }
+
+  return { mode: "custom", raw };
+}
+
+function buildCronFromSchedule(schedule: ScheduleState): string | null {
+  switch (schedule.mode) {
+    case "disabled":
+      return null;
+    case "every_minutes":
+      return `*/${clampInt(schedule.intervalMinutes, 1, 59)} * * * *`;
+    case "every_hours":
+      return `${clampInt(schedule.minute, 0, 59)} */${clampInt(
+        schedule.intervalHours,
+        1,
+        23
+      )} * * *`;
+    case "hourly":
+      return `${clampInt(schedule.minute, 0, 59)} * * * *`;
+    case "daily":
+      return `${clampInt(schedule.minute, 0, 59)} ${clampInt(schedule.hour, 0, 23)} * * *`;
+    case "weekly":
+      return `${clampInt(schedule.minute, 0, 59)} ${clampInt(schedule.hour, 0, 23)} * * ${clampInt(schedule.dayOfWeek, 0, 6)}`;
+    case "custom": {
+      const raw = schedule.raw.trim();
+      return raw ? raw : null;
+    }
+    default: {
+      const _exhaustive: never = schedule;
+      return _exhaustive;
+    }
+  }
+}
+
+export default function JobsPage() {
+  const queryClient = useQueryClient();
+
+  const [tab, setTab] = useState<JobsTab>("runs");
+  const [runAllResult, setRunAllResult] = useState<{
+    timestamp: string;
+    triggeredCount: number;
+    ok: number;
+    fail: number;
+  } | null>(null);
+
+  // Runs filters
+  const [jobFilter, setJobFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [search, setSearch] = useState<string>("");
+
+  // Cursor pagination
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [cursorStack, setCursorStack] = useState<Array<number | null>>([null]); // stack of cursors (null = first page)
+  const cursor = cursorStack[cursorStack.length - 1] ?? null;
+
+  const jobsQuery = useJobsFromDb();
+  const runsQuery = useJobRunsFromDb({
+    limit: pageSize,
+    cursor,
+    jobId: jobFilter === "all" ? undefined : jobFilter,
+    status: statusFilter === "all" ? undefined : statusFilter,
+  });
+
+  const jobs = useMemo(() => jobsQuery.data?.data ?? [], [jobsQuery.data]);
+  const runs = useMemo(() => runsQuery.data?.data ?? [], [runsQuery.data]);
+
+  const jobOptions = useMemo(() => {
+    const keys = jobs.map((j) => j.key);
+    return keys;
+  }, [jobs]);
+
+  const filteredRuns = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return runs;
+    return runs.filter((r) => {
+      const nameFromKey = jobNameFromKey(r.jobKey).toLowerCase();
+      const key = r.jobKey.toLowerCase();
+      const meta = (r.meta ?? {}) as Record<string, unknown>;
+      const batchId = meta["batchId"];
+      const batchIdStr =
+        typeof batchId === "string" || typeof batchId === "number"
+          ? String(batchId)
+          : "";
+      return (
+        nameFromKey.includes(q) ||
+        key.includes(q) ||
+        String(r.id).includes(q) ||
+        batchIdStr.includes(q)
+      );
+    });
+  }, [runs, search]);
+
+  const summary = useMemo(() => {
+    const totalJobs = jobs.length;
+    const runningCount = runs.filter((r) => r.status === "running").length;
+    const failedCount = runs.filter((r) => r.status === "failed").length;
+    const successCount = runs.filter((r) => r.status === "success").length;
+    return { totalJobs, runningCount, failedCount, successCount };
+  }, [jobs.length, runs]);
+
+  const refresh = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["jobs", "db"] }),
+      queryClient.invalidateQueries({ queryKey: ["job-runs"] }),
+    ]);
+  };
+
+  const runAllMutation = useMutation({
+    mutationFn: async () => jobsService.runAll(false),
+    onSuccess: (res) => {
+      setRunAllResult({
+        timestamp: new Date().toLocaleString(),
+        triggeredCount: res.data.triggeredCount,
+        ok: res.data.ok,
+        fail: res.data.fail,
+      });
+      toast.success("Run All triggered", {
+        description: `Triggered ${res.data.triggeredCount} jobs (ok: ${res.data.ok}, fail: ${res.data.fail})`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["jobs", "db"] });
+      queryClient.invalidateQueries({ queryKey: ["job-runs"] });
+    },
+    onError: (e: Error) => {
+      toast.error("Run All failed", { description: e.message });
+    },
+  });
+
+  const runJobMutation = useMutation({
+    mutationFn: async (vars: { jobKey: string }) =>
+      jobsService.runJob(vars.jobKey, false),
+    onSuccess: (_res, vars) => {
+      toast.success("Job triggered", { description: vars.jobKey });
+      queryClient.invalidateQueries({ queryKey: ["job-runs"] });
+    },
+    onError: (e: Error) => {
+      toast.error("Job trigger failed", { description: e.message });
+    },
+  });
+
+  const [selectedRun, setSelectedRun] = useState<RunRow | null>(null);
+  const [runDrawerOpen, setRunDrawerOpen] = useState(false);
+  const [jobDrawerOpen, setJobDrawerOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<JobRow | null>(null);
+  const [jobForm, setJobForm] = useState<{
+    description: string;
+    enabled: boolean;
+    schedule: ScheduleState;
+  } | null>(null);
+
+  const openRun = (r: RunRow) => {
+    setSelectedRun(r);
+    setRunDrawerOpen(true);
+  };
+
+  const openJob = (j: JobRow) => {
+    setSelectedJob(j);
+    setJobForm({
+      description: j.description ?? "",
+      enabled: !!j.enabled,
+      schedule: parseScheduleCron(j.scheduleCron),
+    });
+    setJobDrawerOpen(true);
+  };
+
+  const updateJobMutation = useMutation({
+    mutationFn: async (vars: {
+      jobKey: string;
+      patch: {
+        description?: string | null;
+        enabled?: boolean;
+        scheduleCron?: string | null;
+      };
+    }) => jobsService.updateJob(vars.jobKey, vars.patch),
+    onSuccess: () => {
+      toast.success("Job updated");
+      queryClient.invalidateQueries({ queryKey: ["jobs", "db"] });
+      setJobDrawerOpen(false);
+    },
+    onError: (e: Error) => {
+      toast.error("Update failed", { description: e.message });
+    },
+  });
+
+  const canGoPrev = cursorStack.length > 1;
+  const canGoNext = runs.length === pageSize && !!runsQuery.data?.nextCursor;
+
+  const goPrev = () => {
+    if (!canGoPrev) return;
+    setCursorStack((s) => s.slice(0, -1));
+  };
+
+  const goNext = () => {
+    if (!runsQuery.data?.nextCursor) return;
+    setCursorStack((s) => [...s, runsQuery.data?.nextCursor ?? null]);
+  };
+
+  const onChangePageSize = (v: string) => {
+    const next = Number(v);
+    setPageSize(next);
+    setCursorStack([null]);
+  };
+
+  const sortedJobs = useMemo(() => {
+    return [...jobs].sort((a, b) =>
+      (a.description ?? a.key).localeCompare(b.description ?? b.key)
+    );
+  }, [jobs]);
+
+  return (
+    <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
+      {/* Header row */}
+      <div className="flex-shrink-0 mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Jobs</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={refresh}
+            disabled={jobsQuery.isFetching || runsQuery.isFetching}
+          >
+            Refresh
+          </Button>
+          <Button
+            onClick={() => runAllMutation.mutate()}
+            disabled={runAllMutation.isPending}
+          >
+            Run All
+          </Button>
+        </div>
+      </div>
+
+      {/* Tabs + content (fills remaining height) */}
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as JobsTab)}
+        className="flex flex-col flex-1 min-h-0 overflow-hidden"
+      >
+        <div className="flex-shrink-0 space-y-3">
+          <TabsList>
+            <TabsTrigger value="runs">Job Runs</TabsTrigger>
+            <TabsTrigger value="jobs">Jobs Catalog</TabsTrigger>
+          </TabsList>
+
+          {/* Summary strip */}
+          <Card>
+            <CardContent className="py-3">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+                <span className="text-muted-foreground">
+                  Total jobs:{" "}
+                  <span className="text-foreground">{summary.totalJobs}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Running:{" "}
+                  <span className="text-foreground">
+                    {summary.runningCount}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Failed runs:{" "}
+                  <span className="text-foreground">{summary.failedCount}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Success runs:{" "}
+                  <span className="text-foreground">
+                    {summary.successCount}
+                  </span>
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Run-all result panel */}
+          {runAllResult && (
+            <Card>
+              <CardContent className="py-3">
+                <div className="text-sm font-medium">Run All result</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {runAllResult.timestamp} — triggered{" "}
+                  {runAllResult.triggeredCount} jobs (ok: {runAllResult.ok},
+                  fail: {runAllResult.fail})
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        <TabsContent
+          value="jobs"
+          className="flex-1 min-h-0 overflow-hidden mt-4"
+        >
+          <Card className="flex flex-col h-full min-h-0 overflow-hidden">
+            <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+              <div className="flex-1 min-h-0 overflow-auto border-t">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Job name</TableHead>
+                      <TableHead>Key / slug</TableHead>
+                      <TableHead>Schedule</TableHead>
+                      <TableHead>Enabled</TableHead>
+                      <TableHead>Last run status</TableHead>
+                      <TableHead>Last run at</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedJobs.map((j) => {
+                      const isRowPending =
+                        runJobMutation.isPending &&
+                        runJobMutation.variables?.jobKey === j.key;
+                      return (
+                        <TableRow
+                          key={j.key}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => openJob(j)}
+                        >
+                          <TableCell className="font-medium whitespace-nowrap">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="block max-w-[320px] truncate">
+                                {jobNameFromKey(j.key)}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {j.key}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {j.scheduleCron ?? "—"}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {j.enabled ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <XCircle className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {j.lastRun ? (
+                              <StatusBadge status={j.lastRun.status} />
+                            ) : (
+                              "—"
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {formatDateTime(j.lastRun?.startedAt ?? null)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                runJobMutation.mutate({ jobKey: j.key });
+                              }}
+                              disabled={!j.runnable || isRowPending}
+                            >
+                              {isRowPending ? "Running…" : "Run"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {!sortedJobs.length && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="text-center text-sm text-muted-foreground py-8"
+                        >
+                          No jobs found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent
+          value="runs"
+          className="flex-1 min-h-0 overflow-hidden mt-4"
+        >
+          <div className="flex flex-col h-full min-h-0 overflow-hidden">
+            {/* Filters row */}
+            <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2 sm:items-center mb-3">
+              <Select
+                value={jobFilter}
+                onValueChange={(v) => {
+                  setJobFilter(v);
+                  setCursorStack([null]);
+                }}
+              >
+                <SelectTrigger className="sm:w-[260px]">
+                  <SelectValue placeholder="Job" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All jobs</SelectItem>
+                  {jobOptions.map((k) => (
+                    <SelectItem key={k} value={k}>
+                      {k}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => {
+                  setStatusFilter(v);
+                  setCursorStack([null]);
+                }}
+              >
+                <SelectTrigger className="sm:w-[220px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="success">success</SelectItem>
+                  <SelectItem value="failed">failed</SelectItem>
+                  <SelectItem value="running">running</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search job / run id / batch id"
+                className="sm:max-w-[320px]"
+              />
+
+              <div className="flex items-center gap-2 sm:ml-auto">
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={onChangePageSize}
+                >
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Card className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+                <div className="flex-1 min-h-0 overflow-auto border-t">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Run ID</TableHead>
+                        <TableHead>Job</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>StartedAt</TableHead>
+                        <TableHead>FinishedAt</TableHead>
+                        <TableHead>Duration</TableHead>
+                        <TableHead>Error</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRuns.map((r) => (
+                        <TableRow
+                          key={r.id}
+                          className="cursor-pointer"
+                          onClick={() => openRun(r)}
+                        >
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {r.id}
+                          </TableCell>
+                          <TableCell className="text-sm whitespace-nowrap max-w-[520px]">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="truncate">
+                                {jobNameFromKey(r.jobKey)}
+                              </span>
+                              <span className="font-mono text-xs text-muted-foreground truncate">
+                                {r.jobKey}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <StatusBadge status={r.status} />
+                          </TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {formatDateTime(r.startedAt)}
+                          </TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {formatDateTime(r.finishedAt)}
+                          </TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {formatDurationMs(r.durationMs)}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                            {r.errorMessage
+                              ? truncate(r.errorMessage, 120)
+                              : "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {!filteredRuns.length && (
+                        <TableRow>
+                          <TableCell
+                            colSpan={7}
+                            className="text-center text-sm text-muted-foreground py-8"
+                          >
+                            No runs found.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination (sticks to bottom of the card) */}
+                <div className="flex-shrink-0 px-4 py-3 border-t flex items-center justify-between">
+                  <div className="text-xs text-muted-foreground">
+                    Showing {filteredRuns.length} runs
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={goPrev}
+                      disabled={!canGoPrev}
+                    >
+                      Prev
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={goNext}
+                      disabled={!canGoNext}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Run drawer (right panel) */}
+      <Sheet open={runDrawerOpen} onOpenChange={setRunDrawerOpen}>
+        <SheetContent
+          side="right"
+          className="sm:max-w-xl p-0 flex flex-col h-full min-h-0"
+        >
+          {selectedRun ? (
+            <>
+              <div className="p-6 pb-4">
+                <SheetHeader>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <SheetTitle className="truncate">
+                        {jobNameFromKey(selectedRun.jobKey)}
+                      </SheetTitle>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Run{" "}
+                        <span className="font-mono text-foreground">
+                          #{selectedRun.id}
+                        </span>{" "}
+                        • Job{" "}
+                        <span className="font-mono text-foreground">
+                          {selectedRun.jobKey}
+                        </span>
+                      </div>
+                    </div>
+                    <StatusBadge status={selectedRun.status} />
+                  </div>
+
+                  {selectedRun.job?.description ? (
+                    <SheetDescription className="mt-2">
+                      {selectedRun.job.description}
+                    </SheetDescription>
+                  ) : null}
+                </SheetHeader>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                  <div className="text-muted-foreground">
+                    Started
+                    <div className="text-foreground">
+                      {formatDateTime(selectedRun.startedAt)}
+                    </div>
+                  </div>
+                  <div className="text-muted-foreground">
+                    Finished
+                    <div className="text-foreground">
+                      {formatDateTime(selectedRun.finishedAt)}
+                    </div>
+                  </div>
+                  <div className="text-muted-foreground">
+                    Duration
+                    <div className="text-foreground">
+                      {formatDurationMs(selectedRun.durationMs)}
+                    </div>
+                  </div>
+                  <div className="text-muted-foreground">
+                    Trigger
+                    <div className="text-foreground font-mono">
+                      {selectedRun.trigger}
+                      {selectedRun.triggeredBy
+                        ? ` • ${selectedRun.triggeredBy}`
+                        : ""}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex-1 min-h-0 overflow-y-auto p-6 pt-4 space-y-4">
+                {(() => {
+                  const meta = (selectedRun.meta ?? {}) as Record<
+                    string,
+                    unknown
+                  >;
+                  const ok = typeof meta["ok"] === "number" ? meta["ok"] : 0;
+                  const fail =
+                    typeof meta["fail"] === "number" ? meta["fail"] : 0;
+                  const total =
+                    typeof meta["total"] === "number" ? meta["total"] : 0;
+                  const batchId = meta["batchId"];
+                  const batchIdLabel =
+                    typeof batchId === "string" || typeof batchId === "number"
+                      ? String(batchId)
+                      : "—";
+
+                  return (
+                    <div className="rounded-lg border p-4">
+                      <div className="text-sm font-medium">Result</div>
+                      <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
+                        <div className="text-muted-foreground">
+                          OK
+                          <div className="text-foreground font-medium">
+                            {ok}
+                          </div>
+                        </div>
+                        <div className="text-muted-foreground">
+                          Fail
+                          <div className="text-foreground font-medium">
+                            {fail}
+                          </div>
+                        </div>
+                        <div className="text-muted-foreground">
+                          Total
+                          <div className="text-foreground font-medium">
+                            {total}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3 text-xs text-muted-foreground">
+                        batchId:{" "}
+                        <span className="font-mono text-foreground">
+                          {batchIdLabel}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {selectedRun.status === "failed" && (
+                  <div className="rounded-lg border border-destructive/30 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="text-sm font-medium">Error</div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={async () => {
+                          const text = [
+                            selectedRun.errorMessage ?? "",
+                            selectedRun.errorStack ?? "",
+                          ]
+                            .filter(Boolean)
+                            .join("\n\n");
+                          try {
+                            await navigator.clipboard.writeText(text);
+                            toast.success("Copied error");
+                          } catch {
+                            toast.error("Failed to copy");
+                          }
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                    <div className="mt-2 text-xs text-foreground">
+                      {selectedRun.errorMessage ?? "—"}
+                    </div>
+                    {selectedRun.errorStack ? (
+                      <details className="mt-3 text-xs text-muted-foreground">
+                        <summary className="cursor-pointer">
+                          Stack trace
+                        </summary>
+                        <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted p-3 text-xs text-foreground">
+                          {selectedRun.errorStack}
+                        </pre>
+                      </details>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="p-6">
+              <SheetHeader>
+                <SheetTitle>Run</SheetTitle>
+                <SheetDescription>
+                  Select a run to view details.
+                </SheetDescription>
+              </SheetHeader>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Job drawer (right panel) */}
+      <Sheet open={jobDrawerOpen} onOpenChange={setJobDrawerOpen}>
+        <SheetContent
+          side="right"
+          className="sm:max-w-xl p-0 flex flex-col h-full min-h-0"
+        >
+          {selectedJob && jobForm ? (
+            <>
+              {/* Header */}
+              <div className="p-6 pb-4">
+                <SheetHeader>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <SheetTitle className="truncate">
+                        {jobNameFromKey(selectedJob.key)}
+                      </SheetTitle>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Key{" "}
+                        <span className="font-mono text-foreground">
+                          {selectedJob.key}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-0.5">
+                      {jobForm.enabled ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedJob.description ? (
+                    <SheetDescription className="mt-2">
+                      {selectedJob.description}
+                    </SheetDescription>
+                  ) : (
+                    <SheetDescription className="mt-2">
+                      Configure job settings.
+                    </SheetDescription>
+                  )}
+                </SheetHeader>
+
+                <div className="mt-4 text-xs text-muted-foreground">
+                  Cron preview:{" "}
+                  <span className="font-mono text-foreground">
+                    {buildCronFromSchedule(jobForm.schedule) ?? "—"}
+                  </span>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Body */}
+              <div className="flex-1 min-h-0 overflow-y-auto p-6 pt-4">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="job-description">Description</Label>
+                    <Textarea
+                      id="job-description"
+                      value={jobForm.description}
+                      onChange={(e) =>
+                        setJobForm((prev) =>
+                          prev ? { ...prev, description: e.target.value } : prev
+                        )
+                      }
+                      placeholder="What does this job do?"
+                      className="min-h-[96px]"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Schedule</Label>
+
+                    <Select
+                      value={jobForm.schedule.mode}
+                      onValueChange={(v) =>
+                        setJobForm((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                schedule:
+                                  v === "disabled"
+                                    ? { mode: "disabled" }
+                                    : v === "every_minutes"
+                                      ? {
+                                          mode: "every_minutes",
+                                          intervalMinutes: 5,
+                                        }
+                                      : v === "every_hours"
+                                        ? {
+                                            mode: "every_hours",
+                                            intervalHours: 6,
+                                            minute: 0,
+                                          }
+                                        : v === "hourly"
+                                          ? { mode: "hourly", minute: 0 }
+                                          : v === "daily"
+                                            ? {
+                                                mode: "daily",
+                                                hour: 3,
+                                                minute: 0,
+                                              }
+                                            : v === "weekly"
+                                              ? {
+                                                  mode: "weekly",
+                                                  dayOfWeek: 1,
+                                                  hour: 3,
+                                                  minute: 0,
+                                                }
+                                              : { mode: "custom", raw: "" },
+                              }
+                            : prev
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="disabled">
+                          Disabled (manual only)
+                        </SelectItem>
+                        <SelectItem value="every_minutes">
+                          Every N minutes
+                        </SelectItem>
+                        <SelectItem value="every_hours">
+                          Every N hours
+                        </SelectItem>
+                        <SelectItem value="hourly">Hourly</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="custom">Custom cron</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {jobForm.schedule.mode === "every_minutes" && (
+                      <div className="grid gap-2">
+                        <Label
+                          htmlFor="every-minutes"
+                          className="text-xs text-muted-foreground"
+                        >
+                          Interval (minutes)
+                        </Label>
+                        <Select
+                          value={String(jobForm.schedule.intervalMinutes)}
+                          onValueChange={(v) =>
+                            setJobForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    schedule: {
+                                      mode: "every_minutes",
+                                      intervalMinutes: clampInt(
+                                        Number(v),
+                                        1,
+                                        59
+                                      ),
+                                    },
+                                  }
+                                : prev
+                            )
+                          }
+                        >
+                          <SelectTrigger id="every-minutes" className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[1, 2, 3, 5, 10, 15, 20, 30, 45, 60]
+                              .filter((n) => n >= 1 && n <= 59)
+                              .map((n) => (
+                                <SelectItem key={n} value={String(n)}>
+                                  {n} minutes
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {jobForm.schedule.mode === "every_hours" && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="grid gap-2">
+                          <Label
+                            htmlFor="every-hours"
+                            className="text-xs text-muted-foreground"
+                          >
+                            Interval (hours)
+                          </Label>
+                          <Select
+                            value={String(jobForm.schedule.intervalHours)}
+                            onValueChange={(v) =>
+                              setJobForm((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      schedule: {
+                                        mode: "every_hours",
+                                        intervalHours: clampInt(
+                                          Number(v),
+                                          1,
+                                          23
+                                        ),
+                                        minute:
+                                          prev.schedule.mode === "every_hours"
+                                            ? prev.schedule.minute
+                                            : 0,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          >
+                            <SelectTrigger id="every-hours" className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[2, 3, 4, 6, 8, 12].map((n) => (
+                                <SelectItem key={n} value={String(n)}>
+                                  {n} hours
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label
+                            htmlFor="every-hours-minute"
+                            className="text-xs text-muted-foreground"
+                          >
+                            Minute within hour
+                          </Label>
+                          <Select
+                            value={String(jobForm.schedule.minute)}
+                            onValueChange={(v) =>
+                              setJobForm((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      schedule: {
+                                        mode: "every_hours",
+                                        intervalHours:
+                                          prev.schedule.mode === "every_hours"
+                                            ? prev.schedule.intervalHours
+                                            : 6,
+                                        minute: clampInt(Number(v), 0, 59),
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          >
+                            <SelectTrigger
+                              id="every-hours-minute"
+                              className="w-full"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[0, 5, 10, 15, 20, 30, 45].map((m) => (
+                                <SelectItem key={m} value={String(m)}>
+                                  minute {m.toString().padStart(2, "0")}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {jobForm.schedule.mode === "hourly" && (
+                      <div className="grid gap-2">
+                        <Label
+                          htmlFor="hourly-minute"
+                          className="text-xs text-muted-foreground"
+                        >
+                          Minute of hour
+                        </Label>
+                        <Select
+                          value={String(jobForm.schedule.minute)}
+                          onValueChange={(v) =>
+                            setJobForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    schedule: {
+                                      mode: "hourly",
+                                      minute: clampInt(Number(v), 0, 59),
+                                    },
+                                  }
+                                : prev
+                            )
+                          }
+                        >
+                          <SelectTrigger id="hourly-minute" className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[0, 5, 10, 15, 20, 30, 45].map((m) => (
+                              <SelectItem key={m} value={String(m)}>
+                                minute {m.toString().padStart(2, "0")}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {jobForm.schedule.mode === "daily" && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="grid gap-2">
+                          <Label className="text-xs text-muted-foreground">
+                            Hour
+                          </Label>
+                          <Select
+                            value={String(jobForm.schedule.hour)}
+                            onValueChange={(v) =>
+                              setJobForm((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      schedule: {
+                                        mode: "daily",
+                                        hour: clampInt(Number(v), 0, 23),
+                                        minute:
+                                          prev.schedule.mode === "daily"
+                                            ? prev.schedule.minute
+                                            : 0,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Array.from({ length: 24 }).map((_, i) => (
+                                <SelectItem key={i} value={String(i)}>
+                                  {i.toString().padStart(2, "0")}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label className="text-xs text-muted-foreground">
+                            Minute
+                          </Label>
+                          <Select
+                            value={String(jobForm.schedule.minute)}
+                            onValueChange={(v) =>
+                              setJobForm((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      schedule: {
+                                        mode: "daily",
+                                        hour:
+                                          prev.schedule.mode === "daily"
+                                            ? prev.schedule.hour
+                                            : 0,
+                                        minute: clampInt(Number(v), 0, 59),
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[0, 5, 10, 15, 20, 30, 45].map((m) => (
+                                <SelectItem key={m} value={String(m)}>
+                                  {m.toString().padStart(2, "0")}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {jobForm.schedule.mode === "weekly" && (
+                      <div className="grid gap-3">
+                        <div className="grid gap-2">
+                          <Label className="text-xs text-muted-foreground">
+                            Day of week
+                          </Label>
+                          <Select
+                            value={String(jobForm.schedule.dayOfWeek)}
+                            onValueChange={(v) =>
+                              setJobForm((prev) =>
+                                prev
+                                  ? (() => {
+                                      const base =
+                                        prev.schedule.mode === "weekly"
+                                          ? prev.schedule
+                                          : {
+                                              mode: "weekly" as const,
+                                              dayOfWeek: 1,
+                                              hour: 3,
+                                              minute: 0,
+                                            };
+                                      return {
+                                        ...prev,
+                                        schedule: {
+                                          ...base,
+                                          dayOfWeek: clampInt(Number(v), 0, 6),
+                                        },
+                                      };
+                                    })()
+                                  : prev
+                              )
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[
+                                { v: 0, label: "Sunday" },
+                                { v: 1, label: "Monday" },
+                                { v: 2, label: "Tuesday" },
+                                { v: 3, label: "Wednesday" },
+                                { v: 4, label: "Thursday" },
+                                { v: 5, label: "Friday" },
+                                { v: 6, label: "Saturday" },
+                              ].map((d) => (
+                                <SelectItem key={d.v} value={String(d.v)}>
+                                  {d.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="grid gap-2">
+                            <Label className="text-xs text-muted-foreground">
+                              Hour
+                            </Label>
+                            <Select
+                              value={String(jobForm.schedule.hour)}
+                              onValueChange={(v) =>
+                                setJobForm((prev) =>
+                                  prev
+                                    ? (() => {
+                                        const base =
+                                          prev.schedule.mode === "weekly"
+                                            ? prev.schedule
+                                            : {
+                                                mode: "weekly" as const,
+                                                dayOfWeek: 1,
+                                                hour: 3,
+                                                minute: 0,
+                                              };
+                                        return {
+                                          ...prev,
+                                          schedule: {
+                                            ...base,
+                                            hour: clampInt(Number(v), 0, 23),
+                                          },
+                                        };
+                                      })()
+                                    : prev
+                                )
+                              }
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 24 }).map((_, i) => (
+                                  <SelectItem key={i} value={String(i)}>
+                                    {i.toString().padStart(2, "0")}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label className="text-xs text-muted-foreground">
+                              Minute
+                            </Label>
+                            <Select
+                              value={String(jobForm.schedule.minute)}
+                              onValueChange={(v) =>
+                                setJobForm((prev) =>
+                                  prev
+                                    ? (() => {
+                                        const base =
+                                          prev.schedule.mode === "weekly"
+                                            ? prev.schedule
+                                            : {
+                                                mode: "weekly" as const,
+                                                dayOfWeek: 1,
+                                                hour: 3,
+                                                minute: 0,
+                                              };
+                                        return {
+                                          ...prev,
+                                          schedule: {
+                                            ...base,
+                                            minute: clampInt(Number(v), 0, 59),
+                                          },
+                                        };
+                                      })()
+                                    : prev
+                                )
+                              }
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[0, 5, 10, 15, 20, 30, 45].map((m) => (
+                                  <SelectItem key={m} value={String(m)}>
+                                    {m.toString().padStart(2, "0")}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {jobForm.schedule.mode === "custom" && (
+                      <div className="grid gap-2">
+                        <Label
+                          htmlFor="cron-custom"
+                          className="text-xs text-muted-foreground"
+                        >
+                          Cron expression (5 fields)
+                        </Label>
+                        <Input
+                          id="cron-custom"
+                          value={jobForm.schedule.raw}
+                          onChange={(e) =>
+                            setJobForm((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    schedule: {
+                                      mode: "custom",
+                                      raw: e.target.value,
+                                    },
+                                  }
+                                : prev
+                            )
+                          }
+                          placeholder="*/5 * * * *"
+                          className="font-mono"
+                        />
+                      </div>
+                    )}
+
+                    {/* Cron preview is shown in the header; keep the form clean. */}
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border p-4">
+                    <div>
+                      <div className="text-sm font-medium">Enabled</div>
+                      <div className="text-xs text-muted-foreground">
+                        When disabled, it won’t run on schedule.
+                      </div>
+                    </div>
+                    <Checkbox
+                      id="job-enabled"
+                      checked={jobForm.enabled}
+                      onCheckedChange={(v) =>
+                        setJobForm((prev) =>
+                          prev ? { ...prev, enabled: v === true } : prev
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sticky footer */}
+              <div className="p-4 border-t bg-background flex items-center justify-end gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setJobDrawerOpen(false)}
+                  disabled={updateJobMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    const patch = {
+                      description: jobForm.description.trim() || null,
+                      enabled: jobForm.enabled,
+                      scheduleCron: buildCronFromSchedule(jobForm.schedule),
+                    };
+                    updateJobMutation.mutate({
+                      jobKey: selectedJob.key,
+                      patch,
+                    });
+                  }}
+                  disabled={updateJobMutation.isPending}
+                >
+                  Save
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="p-6">
+              <SheetHeader>
+                <SheetTitle>Job</SheetTitle>
+                <SheetDescription>
+                  Select a job to edit settings.
+                </SheetDescription>
+              </SheetHeader>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}

@@ -2,7 +2,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
 import { AdminProviderFixturesResponse } from "@repo/types";
-import { providerResponseSchema } from "../../../schemas/admin.schemas";
+import { providerResponseSchema } from "../../../schemas/admin/admin.schemas";
 import { prisma } from "@repo/db";
 // Import helper functions - we need them to transform raw API data to DTOs
 // without duplicating the API call

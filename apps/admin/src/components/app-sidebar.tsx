@@ -31,6 +31,10 @@ const data = {
           url: "/sync-center",
         },
         {
+          title: "Jobs",
+          url: "/jobs",
+        },
+        {
           title: "Seasons",
           url: "/seasons",
         },

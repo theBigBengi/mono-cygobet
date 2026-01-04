@@ -1,107 +1,61 @@
 // src/schemas/fixtures.schemas.ts
-// Fixtures admin routes schemas
 
-export const listFixturesQuerystringSchema = {
+const idSchema = {
+  oneOf: [{ type: "string" }, { type: "number" }],
+};
+
+export const upcomingMobileFixturesQuerystringSchema = {
   type: "object",
   properties: {
-    page: { type: "number", default: 1 },
-    perPage: { type: "number", default: 20 },
-    leagueId: { type: "number" },
-    leagueIds: { type: "string" }, // Comma-separated string of external IDs
-    countryIds: { type: "string" }, // Comma-separated string of external IDs
-    seasonId: { type: "number" },
-    state: { type: "string" },
-    include: { type: "string" },
-    fromTs: { type: "number" }, // Start timestamp filter
-    toTs: { type: "number" }, // End timestamp filter
+    from: { type: "string" }, // ISO datetime
+    to: { type: "string" }, // ISO datetime
+    page: { type: "integer", minimum: 1, default: 1 },
+    perPage: { type: "integer", minimum: 1, maximum: 200, default: 30 },
   },
 };
 
-export const listFixturesResponseSchema = {
+export const upcomingMobileFixturesResponseSchema = {
   type: "object",
+  required: ["status", "data", "pagination"],
   properties: {
-    status: { type: "string" },
-    data: { type: "array", items: { type: "object" } },
-    pagination: { type: "object" },
-    message: { type: "string" },
+    status: { type: "string", enum: ["success"] },
+    data: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["id", "kickoffAt", "league", "homeTeam", "awayTeam"],
+        properties: {
+          id: idSchema,
+          kickoffAt: { type: "string" },
+          league: {
+            type: "object",
+            required: ["id", "name"],
+            properties: { id: idSchema, name: { type: "string" } },
+          },
+          homeTeam: {
+            type: "object",
+            required: ["id", "name"],
+            properties: { id: idSchema, name: { type: "string" } },
+          },
+          awayTeam: {
+            type: "object",
+            required: ["id", "name"],
+            properties: { id: idSchema, name: { type: "string" } },
+          },
+        },
+      },
+    },
+    pagination: {
+      type: "object",
+      required: ["page", "perPage", "totalItems", "totalPages"],
+      properties: {
+        page: { type: "integer" },
+        perPage: { type: "integer" },
+        totalItems: { oneOf: [{ type: "integer" }, { type: "null" }] },
+        totalPages: { oneOf: [{ type: "integer" }, { type: "null" }] },
+      },
+    },
   },
 };
 
-export const getFixtureParamsSchema = {
-  type: "object",
-  properties: {
-    id: { type: "string" },
-  },
-  required: ["id"],
-};
 
-export const getFixtureQuerystringSchema = {
-  type: "object",
-  properties: {
-    include: { type: "string" },
-  },
-};
-
-export const getFixtureResponseSchema = {
-  type: "object",
-  properties: {
-    status: { type: "string" },
-    data: { type: "object" },
-    message: { type: "string" },
-  },
-};
-
-export const getFixture404ResponseSchema = {
-  type: "object",
-  properties: {
-    status: { type: "string" },
-    message: { type: "string" },
-  },
-};
-
-export const searchFixturesQuerystringSchema = {
-  type: "object",
-  properties: {
-    q: { type: "string" },
-    take: { type: "number", default: 10 },
-  },
-  required: ["q"],
-};
-
-export const searchFixturesResponseSchema = {
-  type: "object",
-  properties: {
-    status: { type: "string" },
-    data: { type: "array", items: { type: "object" } },
-    pagination: { type: "object" },
-    message: { type: "string" },
-  },
-};
-
-export const updateFixtureBodySchema = {
-  type: "object",
-  properties: {
-    name: { type: "string" },
-    state: { type: "string" },
-    homeScore: { type: "number" },
-    awayScore: { type: "number" },
-    result: { type: "string" },
-  },
-};
-
-export const updateFixtureResponseSchema = {
-  type: "object",
-  properties: {
-    status: { type: "string" },
-    data: { type: "object" },
-    message: { type: "string" },
-  },
-};
-
-export const updateFixture404ResponseSchema = {
-  type: "object",
-  properties: {
-    status: { type: "string" },
-    message: { type: "string" },
-  },
-};

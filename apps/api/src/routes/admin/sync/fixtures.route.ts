@@ -6,7 +6,7 @@ import { AdminSyncFixturesResponse } from "@repo/types";
 import {
   syncBodySchema,
   syncResponseSchema,
-} from "../../../schemas/admin.schemas";
+} from "../../../schemas/admin/admin.schemas";
 import { prisma } from "@repo/db";
 
 const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {

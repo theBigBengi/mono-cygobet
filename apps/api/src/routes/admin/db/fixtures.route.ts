@@ -22,7 +22,7 @@ import {
   updateFixtureBodySchema,
   updateFixtureResponseSchema,
   updateFixture404ResponseSchema,
-} from "../../../schemas/fixtures.schemas";
+} from "../../../schemas/admin/fixtures.schemas";
 import type {
   ListFixturesQuerystring,
   GetFixtureQuerystring,

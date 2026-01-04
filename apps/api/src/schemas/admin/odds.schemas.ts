@@ -1,4 +1,4 @@
-// src/schemas/odds.schemas.ts
+// src/schemas/admin/odds.schemas.ts
 
 export const listOddsQuerystringSchema = {
   type: "object",
@@ -24,4 +24,5 @@ export const listOddsResponseSchema = {
     message: { type: "string" },
   },
 };
+
 

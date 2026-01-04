@@ -12,7 +12,7 @@ import {
   getBookmaker404ResponseSchema,
   searchBookmakersQuerystringSchema,
   searchBookmakersResponseSchema,
-} from "../../../schemas/bookmakers.schemas";
+} from "../../../schemas/admin/bookmakers.schemas";
 import type {
   ListBookmakersQuerystring,
   GetBookmakerParams,

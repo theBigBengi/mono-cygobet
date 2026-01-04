@@ -18,7 +18,7 @@ import {
   getTeam404ResponseSchema,
   searchTeamsQuerystringSchema,
   searchTeamsResponseSchema,
-} from "../../../schemas/teams.schemas";
+} from "../../../schemas/admin/teams.schemas";
 import type {
   ListTeamsQuerystring,
   GetTeamQuerystring,

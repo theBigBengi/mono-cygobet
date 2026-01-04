@@ -13,7 +13,7 @@ import {
   getCountry404ResponseSchema,
   searchCountriesQuerystringSchema,
   searchCountriesResponseSchema,
-} from "../../../schemas/countries.schemas";
+} from "../../../schemas/admin/countries.schemas";
 import type {
   ListCountriesQuerystring,
   GetCountryQuerystring,

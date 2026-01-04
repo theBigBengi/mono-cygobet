@@ -2,6 +2,17 @@
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
+## API base URL (single source of truth)
+
+Set the backend base URL via **`EXPO_PUBLIC_API_BASE_URL`** (used by `src/lib/api.ts`).
+
+Examples:
+
+- iOS simulator / Android emulator / web (API running locally on port 4000):
+  - `EXPO_PUBLIC_API_BASE_URL=http://localhost:4000`
+- Physical device on the same Wi‑Fi:
+  - `EXPO_PUBLIC_API_BASE_URL=http://<your-lan-ip>:4000`
+
 ## Get started
 
 1. Install dependencies

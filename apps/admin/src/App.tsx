@@ -22,6 +22,7 @@ import BookmakersPage from "@/pages/bookmakers";
 import FixturesPage from "@/pages/fixtures";
 import OddsPage from "@/pages/odds";
 import SyncCenterPage from "@/pages/sync-center";
+import JobsPage from "@/pages/jobs";
 
 function App() {
   const location = useLocation();
@@ -38,6 +39,8 @@ function App() {
                 <BreadcrumbPage>
                   {location.pathname === "/sync-center"
                     ? "Sync Center"
+                    : location.pathname === "/jobs"
+                      ? "Jobs"
                     : location.pathname === "/leagues"
                       ? "Leagues"
                       : location.pathname === "/teams"
@@ -68,6 +71,7 @@ function App() {
               <Route path="/bookmakers" element={<BookmakersPage />} />
               <Route path="/odds" element={<OddsPage />} />
               <Route path="/fixtures" element={<FixturesPage />} />
+              <Route path="/jobs" element={<JobsPage />} />
               <Route
                 path="*"
                 element={

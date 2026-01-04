@@ -1,18 +1,18 @@
-// src/schemas/seasons.schemas.ts
-// Seasons admin routes schemas
+// src/schemas/admin/teams.schemas.ts
+// Teams admin routes schemas
 
-export const listSeasonsQuerystringSchema = {
+export const listTeamsQuerystringSchema = {
   type: "object",
   properties: {
     page: { type: "number", default: 1 },
     perPage: { type: "number", default: 20 },
-    leagueId: { type: "number" },
-    isCurrent: { type: "boolean" },
-    include: { type: "string" }, // e.g., "leagues"
+    countryId: { type: "number" },
+    type: { type: "string" },
+    include: { type: "string" }, // e.g., "country"
   },
 };
 
-export const listSeasonsResponseSchema = {
+export const listTeamsResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -22,7 +22,7 @@ export const listSeasonsResponseSchema = {
   },
 };
 
-export const getSeasonParamsSchema = {
+export const getTeamParamsSchema = {
   type: "object",
   properties: {
     id: { type: "string" },
@@ -30,14 +30,14 @@ export const getSeasonParamsSchema = {
   required: ["id"],
 };
 
-export const getSeasonQuerystringSchema = {
+export const getTeamQuerystringSchema = {
   type: "object",
   properties: {
     include: { type: "string" },
   },
 };
 
-export const getSeasonResponseSchema = {
+export const getTeamResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -46,7 +46,7 @@ export const getSeasonResponseSchema = {
   },
 };
 
-export const getSeason404ResponseSchema = {
+export const getTeam404ResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -54,7 +54,7 @@ export const getSeason404ResponseSchema = {
   },
 };
 
-export const searchSeasonsQuerystringSchema = {
+export const searchTeamsQuerystringSchema = {
   type: "object",
   properties: {
     q: { type: "string" },
@@ -63,7 +63,7 @@ export const searchSeasonsQuerystringSchema = {
   required: ["q"],
 };
 
-export const searchSeasonsResponseSchema = {
+export const searchTeamsResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -72,4 +72,5 @@ export const searchSeasonsResponseSchema = {
     message: { type: "string" },
   },
 };
+
 

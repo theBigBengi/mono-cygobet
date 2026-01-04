@@ -7,19 +7,3 @@ export const healthResponseSchema = {
     timestamp: { type: "string" },
   },
 };
-
-export const adminHealthResponseSchema = {
-  type: "object",
-  properties: {
-    status: { type: "string" },
-    timestamp: { type: "string" },
-    database: {
-      type: "object",
-      properties: {
-        status: { type: "string" },
-        connected: { type: "boolean" },
-      },
-    },
-  },
-};
-

@@ -1,18 +1,18 @@
-// src/schemas/leagues.schemas.ts
-// Leagues admin routes schemas
+// src/schemas/admin/seasons.schemas.ts
+// Seasons admin routes schemas
 
-export const listLeaguesQuerystringSchema = {
+export const listSeasonsQuerystringSchema = {
   type: "object",
   properties: {
     page: { type: "number", default: 1 },
     perPage: { type: "number", default: 20 },
-    countryId: { type: "number" },
-    type: { type: "string" },
-    include: { type: "string" }, // e.g., "country,seasons,fixtures"
+    leagueId: { type: "number" },
+    isCurrent: { type: "boolean" },
+    include: { type: "string" }, // e.g., "leagues"
   },
 };
 
-export const listLeaguesResponseSchema = {
+export const listSeasonsResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -22,7 +22,7 @@ export const listLeaguesResponseSchema = {
   },
 };
 
-export const getLeagueParamsSchema = {
+export const getSeasonParamsSchema = {
   type: "object",
   properties: {
     id: { type: "string" },
@@ -30,14 +30,14 @@ export const getLeagueParamsSchema = {
   required: ["id"],
 };
 
-export const getLeagueQuerystringSchema = {
+export const getSeasonQuerystringSchema = {
   type: "object",
   properties: {
     include: { type: "string" },
   },
 };
 
-export const getLeagueResponseSchema = {
+export const getSeasonResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -46,7 +46,7 @@ export const getLeagueResponseSchema = {
   },
 };
 
-export const getLeague404ResponseSchema = {
+export const getSeason404ResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -54,7 +54,7 @@ export const getLeague404ResponseSchema = {
   },
 };
 
-export const searchLeaguesQuerystringSchema = {
+export const searchSeasonsQuerystringSchema = {
   type: "object",
   properties: {
     q: { type: "string" },
@@ -63,7 +63,7 @@ export const searchLeaguesQuerystringSchema = {
   required: ["q"],
 };
 
-export const searchLeaguesResponseSchema = {
+export const searchSeasonsResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -72,4 +72,5 @@ export const searchLeaguesResponseSchema = {
     message: { type: "string" },
   },
 };
+
 

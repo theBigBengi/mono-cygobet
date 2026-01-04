@@ -6,7 +6,7 @@ import { AdminSyncBookmakersResponse } from "@repo/types";
 import {
   syncBodySchema,
   syncResponseSchema,
-} from "../../../schemas/admin.schemas";
+} from "../../../schemas/admin/admin.schemas";
 
 const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sync/bookmakers - Sync bookmakers from provider to database

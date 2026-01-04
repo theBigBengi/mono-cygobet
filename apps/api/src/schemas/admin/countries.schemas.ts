@@ -1,18 +1,17 @@
-// src/schemas/teams.schemas.ts
-// Teams admin routes schemas
+// src/schemas/admin/countries.schemas.ts
+// Countries admin routes schemas
 
-export const listTeamsQuerystringSchema = {
+export const listCountriesQuerystringSchema = {
   type: "object",
   properties: {
     page: { type: "number", default: 1 },
     perPage: { type: "number", default: 20 },
-    countryId: { type: "number" },
-    type: { type: "string" },
-    include: { type: "string" }, // e.g., "country"
+    active: { type: "boolean" },
+    include: { type: "string" }, // e.g., "leagues,teams"
   },
 };
 
-export const listTeamsResponseSchema = {
+export const listCountriesResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -22,7 +21,7 @@ export const listTeamsResponseSchema = {
   },
 };
 
-export const getTeamParamsSchema = {
+export const getCountryParamsSchema = {
   type: "object",
   properties: {
     id: { type: "string" },
@@ -30,14 +29,14 @@ export const getTeamParamsSchema = {
   required: ["id"],
 };
 
-export const getTeamQuerystringSchema = {
+export const getCountryQuerystringSchema = {
   type: "object",
   properties: {
     include: { type: "string" },
   },
 };
 
-export const getTeamResponseSchema = {
+export const getCountryResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -46,7 +45,7 @@ export const getTeamResponseSchema = {
   },
 };
 
-export const getTeam404ResponseSchema = {
+export const getCountry404ResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -54,7 +53,7 @@ export const getTeam404ResponseSchema = {
   },
 };
 
-export const searchTeamsQuerystringSchema = {
+export const searchCountriesQuerystringSchema = {
   type: "object",
   properties: {
     q: { type: "string" },
@@ -63,7 +62,7 @@ export const searchTeamsQuerystringSchema = {
   required: ["q"],
 };
 
-export const searchTeamsResponseSchema = {
+export const searchCountriesResponseSchema = {
   type: "object",
   properties: {
     status: { type: "string" },
@@ -72,4 +71,5 @@ export const searchTeamsResponseSchema = {
     message: { type: "string" },
   },
 };
+
 

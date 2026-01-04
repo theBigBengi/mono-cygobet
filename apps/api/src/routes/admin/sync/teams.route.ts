@@ -6,7 +6,7 @@ import { AdminSyncTeamsResponse } from "@repo/types";
 import {
   syncBodySchema,
   syncResponseSchema,
-} from "../../../schemas/admin.schemas";
+} from "../../../schemas/admin/admin.schemas";
 
 const adminSyncTeamsRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sync/teams - Sync teams from provider to database

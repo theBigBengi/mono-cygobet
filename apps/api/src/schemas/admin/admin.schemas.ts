@@ -1,4 +1,4 @@
-// src/schemas/admin.schemas.ts
+// src/schemas/admin/admin.schemas.ts
 // Admin routes schemas
 
 // Common pagination query string
@@ -54,4 +54,5 @@ export const providerResponseSchema = {
     provider: { type: "string" },
   },
 };
+
 

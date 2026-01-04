@@ -10,7 +10,7 @@ import {
 import {
   listOddsQuerystringSchema,
   listOddsResponseSchema,
-} from "../../../schemas/odds.schemas";
+} from "../../../schemas/admin/odds.schemas";
 import type { ListOddsQuerystring } from "../../../types/odds";
 import { OddsService } from "../../../services/odds.service";
 

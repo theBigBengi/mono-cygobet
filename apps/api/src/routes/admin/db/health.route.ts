@@ -2,7 +2,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { AdminHealthResponse } from "@repo/types";
 import { prisma } from "@repo/db";
-import { adminHealthResponseSchema } from "../../../schemas/health.schemas";
+import { adminHealthResponseSchema } from "../../../schemas/admin/health.schemas";
 
 const adminHealthRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{ Reply: AdminHealthResponse }>(

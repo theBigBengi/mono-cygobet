@@ -6,7 +6,7 @@ import { AdminSyncLeaguesResponse } from "@repo/types";
 import {
   syncBodySchema,
   syncResponseSchema,
-} from "../../../schemas/admin.schemas";
+} from "../../../schemas/admin/admin.schemas";
 
 const adminSyncLeaguesRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sync/leagues - Sync leagues from provider to database

@@ -48,7 +48,7 @@ schemas/
 import {
   listCountriesQuerystringSchema,
   listCountriesResponseSchema,
-} from "../../../schemas/countries.schemas";
+} from "../../../schemas/admin/countries.schemas";
 
 fastify.get("/countries", {
   schema: {
@@ -91,7 +91,7 @@ fastify.get("/countries", {
 
 Example:
 ```typescript
-// schemas/teams.schemas.ts
+// schemas/admin/teams.schemas.ts
 export const listTeamsQuerystringSchema = { ... };
 
 // schemas/index.ts

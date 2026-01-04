@@ -62,6 +62,15 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
   // Check if it's a batch status
   if (status in batchStatusConfig) {
     const config = batchStatusConfig[status as BatchStatus];
+    if (status === "success") {
+      return (
+        <Badge
+          className={`bg-green-600 hover:bg-green-700 text-white ${className || ""}`}
+        >
+          {status}
+        </Badge>
+      );
+    }
     return (
       <Badge variant={config.variant} className={className}>
         {status}

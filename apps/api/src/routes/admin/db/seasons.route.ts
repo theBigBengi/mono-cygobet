@@ -18,7 +18,7 @@ import {
   getSeason404ResponseSchema,
   searchSeasonsQuerystringSchema,
   searchSeasonsResponseSchema,
-} from "../../../schemas/seasons.schemas";
+} from "../../../schemas/admin/seasons.schemas";
 import type {
   ListSeasonsQuerystring,
   GetSeasonQuerystring,

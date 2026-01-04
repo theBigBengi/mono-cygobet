@@ -6,7 +6,7 @@ import { AdminSyncCountriesResponse } from "@repo/types";
 import {
   syncBodySchema,
   syncResponseSchema,
-} from "../../../schemas/admin.schemas";
+} from "../../../schemas/admin/admin.schemas";
 
 const adminSyncCountriesRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sync/countries - Sync countries from provider to database

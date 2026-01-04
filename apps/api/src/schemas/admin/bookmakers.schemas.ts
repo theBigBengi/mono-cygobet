@@ -1,4 +1,4 @@
-// src/schemas/bookmakers.schemas.ts
+// src/schemas/admin/bookmakers.schemas.ts
 // Bookmakers admin routes schemas
 
 export const listBookmakersQuerystringSchema = {
@@ -62,4 +62,5 @@ export const searchBookmakersResponseSchema = {
     message: { type: "string" },
   },
 };
+
 

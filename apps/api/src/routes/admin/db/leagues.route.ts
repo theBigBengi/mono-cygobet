@@ -18,7 +18,7 @@ import {
   getLeague404ResponseSchema,
   searchLeaguesQuerystringSchema,
   searchLeaguesResponseSchema,
-} from "../../../schemas/leagues.schemas";
+} from "../../../schemas/admin/leagues.schemas";
 import type {
   ListLeaguesQuerystring,
   GetLeagueQuerystring,

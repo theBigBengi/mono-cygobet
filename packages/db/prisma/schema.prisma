@@ -235,6 +235,15 @@ enum RunTrigger {
   @@map("run_trigger")
 }
 
+enum JobTriggerBy {
+  cron_scheduler
+  admin_ui
+  api_call
+  cli_command
+
+  @@map("job_trigger_by")
+}
+
 model jobs {
   key          String   @id
   description  String?
@@ -243,7 +252,29 @@ model jobs {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  runs jobRuns[]
+
   @@map("jobs")
+}
+
+model jobRuns {
+  id            Int           @id @default(autoincrement())
+  jobKey        String        @map("job_key")
+  job           jobs          @relation(fields: [jobKey], references: [key], onDelete: Cascade)
+  status        RunStatus
+  startedAt     DateTime      @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt    DateTime?     @map("finished_at") @db.Timestamptz(6)
+  durationMs    Int?          @map("duration_ms")
+  rowsAffected  Int?          @map("rows_affected")
+  errorMessage  String?       @map("error_message")
+  errorStack    String?       @map("error_stack")
+  meta          Json          @default("{}")
+  trigger       RunTrigger    @default(auto)
+  triggeredBy   JobTriggerBy? @map("triggered_by")
+  triggeredById String?       @map("triggered_by_id")
+
+  @@index([jobKey, startedAt(sort: Desc)], map: "job_runs_job_key_started_at_idx")
+  @@map("job_runs")
 }
 
 model seedBatches {

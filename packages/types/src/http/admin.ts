@@ -204,6 +204,85 @@ export interface AdminBatchItemsResponse {
   message: string;
 }
 
+export interface AdminJobsListResponse {
+  status: string;
+  data: Array<{
+    key: string;
+    description: string | null;
+    scheduleCron: string | null;
+    enabled: boolean;
+    runnable: boolean;
+    createdAt: string;
+    updatedAt: string;
+    lastRun: null | {
+      id: number;
+      status: string;
+      trigger: string;
+      triggeredBy: string | null;
+      startedAt: string;
+      finishedAt: string | null;
+      durationMs: number | null;
+      rowsAffected: number | null;
+      errorMessage: string | null;
+    };
+  }>;
+  message: string;
+}
+
+export interface AdminUpdateJobResponse {
+  status: string;
+  data: AdminJobsListResponse["data"][0] | null;
+  message: string;
+}
+
+export interface AdminJobRunsListResponse {
+  status: string;
+  data: Array<{
+    id: number;
+    jobKey: string;
+    job: { key: string; description: string | null } | null;
+    status: string;
+    trigger: string;
+    triggeredBy: string | null;
+    triggeredById: string | null;
+    startedAt: string;
+    finishedAt: string | null;
+    durationMs: number | null;
+    rowsAffected: number | null;
+    errorMessage: string | null;
+    errorStack: string | null;
+    meta: Record<string, unknown>;
+  }>;
+  nextCursor: number | null;
+  message: string;
+}
+
+export interface AdminRunJobResponse {
+  status: string;
+  data: {
+    jobKey: string;
+    jobRunId: number | null;
+    result: unknown;
+  };
+  message: string;
+}
+
+export interface AdminRunAllJobsResponse {
+  status: string;
+  data: {
+    triggeredCount: number;
+    ok: number;
+    fail: number;
+    results: Array<{
+      jobKey: string;
+      jobRunId: number | null;
+      status: "success" | "error";
+      error?: string;
+    }>;
+  };
+  message: string;
+}
+
 export interface AdminTeamsListResponse {
   status: string;
   data: Array<{
