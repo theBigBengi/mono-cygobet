@@ -2,6 +2,17 @@ import type { FastifyInstance } from "fastify";
 import { JobTriggerBy, RunTrigger } from "@repo/db";
 import type { JobRunOpts } from "../types/jobs";
 
+/**
+ * Jobs registry
+ * -------------
+ * Purpose:
+ * - Central “catalog” of runnable jobs in this API build.
+ * - Provides lookup helpers for the scheduler and admin “Run now” endpoints.
+ *
+ * Why it exists (instead of importing jobs everywhere):
+ * - Fastify autoload loads routes/plugins at startup; importing heavy job modules there is slow.
+ * - We use dynamic imports so jobs are loaded only when executed.
+ */
 import {
   UPCOMING_FIXTURES_JOB,
   LIVE_FIXTURES_JOB,
@@ -10,9 +21,13 @@ import {
 } from "./jobs.definitions";
 
 export type RunnableJobDefinition = {
+  /** DB primary key / stable identifier used everywhere (routes, scheduler, job_runs). */
   key: string;
+  /** Human readable description for UI/observability. */
   description: string;
+  /** Default schedule (5-field cron) used only as a fallback in tooling (DB is source of truth). */
   scheduleCron: string | null;
+  /** Runtime entrypoint that executes the job. */
   run: (fastify: FastifyInstance, opts: JobRunOpts) => Promise<unknown>;
 };
 
@@ -21,6 +36,16 @@ export type RunnableJobDefinition = {
 // during Fastify autoload on Render, and `tsx` compilation makes heavy imports slow.
 // Instead, load each job implementation only when it actually runs.
 type Runner = (fastify: FastifyInstance, opts: JobRunOpts) => Promise<unknown>;
+
+/**
+ * RUNNERS
+ * -------
+ * Map jobKey -> async loader.
+ *
+ * Why dynamic imports:
+ * - Keeps Fastify startup fast and predictable.
+ * - Jobs can import heavy adapters/seeders without slowing down route/plugin registration.
+ */
 const RUNNERS: Record<string, Runner> = {
   [UPCOMING_FIXTURES_JOB.key]: async (fastify, opts) => {
     const { runUpcomingFixturesJob } = await import("./upcoming-fixtures.job");
@@ -41,6 +66,17 @@ const RUNNERS: Record<string, Runner> = {
   },
 };
 
+/**
+ * RUNNABLE_JOBS
+ * ------------
+ * The “catalog” of runnable jobs for:
+ * - scheduler (what can be scheduled)
+ * - admin actions route (what can be run manually)
+ *
+ * NOTE:
+ * - Runtime scheduling uses DB `jobs.scheduleCron`.
+ * - These `scheduleCron` values are defaults/documentation, not the live source of truth.
+ */
 export const RUNNABLE_JOBS: RunnableJobDefinition[] = [
   {
     key: UPCOMING_FIXTURES_JOB.key,
@@ -68,20 +104,28 @@ export const RUNNABLE_JOBS: RunnableJobDefinition[] = [
   },
 ];
 
+/** True if the job key is known and runnable by this API build. */
 export function isJobRunnable(jobKey: string): boolean {
   return RUNNABLE_JOBS.some((j) => j.key === jobKey);
 }
 
+/** Get a runnable job “run” function for a given key (or null if not runnable/unknown). */
 export function getJobRunner(jobKey: string) {
   return RUNNABLE_JOBS.find((j) => j.key === jobKey)?.run ?? null;
 }
 
+/** Get the full runnable job descriptor for a given key (or null). */
 export function getRunnableJob(jobKey: string) {
   return RUNNABLE_JOBS.find((j) => j.key === jobKey) ?? null;
 }
 
 /**
  * Convenience defaults for admin-triggered runs.
+ *
+ * Why it exists:
+ * - When the admin UI triggers a run, we want consistent attribution in `job_runs`:
+ *   - trigger = manual
+ *   - triggeredBy = admin_ui
  */
 export function makeAdminRunOpts(body?: { dryRun?: boolean }): JobRunOpts {
   return {

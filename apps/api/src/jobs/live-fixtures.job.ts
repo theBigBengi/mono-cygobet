@@ -2,9 +2,9 @@ import type { FastifyInstance } from "fastify";
 import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
 import { JobTriggerBy, prisma, RunStatus, RunTrigger } from "@repo/db";
 import { seedFixtures } from "../etl/seeds/seed.fixtures";
-import type { JobRunOpts } from "../types/jobs";
+import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
 import { LIVE_FIXTURES_JOB } from "./jobs.definitions";
-import { ensureJobRow } from "./jobs.db";
+import { getJobRowOrThrow } from "./jobs.db";
 
 /**
  * live-fixtures job
@@ -22,20 +22,24 @@ import { ensureJobRow } from "./jobs.db";
  */
 export const liveFixturesJob = LIVE_FIXTURES_JOB;
 
+/**
+ * runLiveFixturesJob()
+ * -------------------
+ * This is the single entrypoint the scheduler/admin calls to execute the job.
+ *
+ * Flow (high level):
+ * 1) Read job config from DB (`jobs` table).
+ * 2) Create a `job_runs` record (status=running) so UI can show progress.
+ * 3) If job is disabled AND this trigger is cron => mark run as skipped and return.
+ * 4) Build SportMonks adapter from env.
+ * 5) Fetch live fixtures, seed them, and update the run record with results.
+ */
 export async function runLiveFixturesJob(
   fastify: FastifyInstance,
   opts: JobRunOpts = {}
-): Promise<{
-  jobRunId: number;
-  fetched: number;
-  total?: number;
-  ok?: number;
-  fail?: number;
-  batchId?: number | null;
-  skipped: boolean;
-}> {
-  // Ensure the job row exists in DB (create only; do not overwrite admin edits).
-  const jobRow = await ensureJobRow(liveFixturesJob);
+): Promise<StandardJobRunStats> {
+  // Jobs are seeded in DB. Missing row is a deployment/config error.
+  const jobRow = await getJobRowOrThrow(liveFixturesJob.key);
 
   // Disabled should only prevent cron runs. Manual "Run" should still work.
   const isCronTrigger = opts.triggeredBy === JobTriggerBy.cron_scheduler;

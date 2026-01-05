@@ -4,9 +4,9 @@ import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
 import type { FixtureDTO } from "@repo/types/sport-data/common";
 import { JobTriggerBy, RunStatus, RunTrigger, prisma } from "@repo/db";
 import { seedFixtures } from "../etl/seeds/seed.fixtures";
-import { JobRunOpts } from "../types/jobs";
+import { JobRunOpts, type StandardJobRunStats } from "../types/jobs";
 import { UPCOMING_FIXTURES_JOB } from "./jobs.definitions";
-import { ensureJobRow } from "./jobs.db";
+import { getJobRowOrThrow } from "./jobs.db";
 
 /**
  * upcoming-fixtures job
@@ -25,28 +25,41 @@ import { ensureJobRow } from "./jobs.db";
  */
 export const upcomingFixturesJob = UPCOMING_FIXTURES_JOB;
 
+/**
+ * isNotStarted()
+ * --------------
+ * Provider returns fixtures in many states; this job only wants NS (Not Started).
+ * We keep this as a tiny helper to make the filtering logic readable/testable.
+ */
 function isNotStarted(fx: FixtureDTO): boolean {
   return String(fx.state) === "NS";
 }
 
+/**
+ * runUpcomingFixturesJob()
+ * -----------------------
+ * Entry point for scheduler/admin to execute the “upcoming fixtures” job.
+ *
+ * Flow:
+ * 1) Read job config from DB (must exist; jobs are seeded).
+ * 2) Create a job_run record.
+ * 3) Skip if disabled + cron trigger.
+ * 4) Fetch fixtures in window, filter to NS, seed into DB.
+ * 5) Persist run results to job_runs.
+ */
 export async function runUpcomingFixturesJob(
   fastify: FastifyInstance,
   opts: JobRunOpts & { daysAhead?: number } = { daysAhead: 3 }
-): Promise<{
-  jobRunId: number;
-  batchId?: number | null;
-  fetched: number;
-  scheduled: number;
-  total?: number;
-  ok?: number;
-  fail?: number;
-  window: { from: string; to: string };
-  skipped: boolean;
-}> {
+): Promise<
+  StandardJobRunStats & {
+    scheduled: number;
+    window: { from: string; to: string };
+  }
+> {
   const daysAhead = opts.daysAhead ?? 3;
 
-  // Ensure the job row exists in DB (create only; do not overwrite admin edits).
-  const jobRow = await ensureJobRow(upcomingFixturesJob);
+  // Jobs are seeded in DB. Missing row is a deployment/config error.
+  const jobRow = await getJobRowOrThrow(upcomingFixturesJob.key);
 
   // Disabled should only prevent cron runs. Manual "Run" should still work.
   const isCronTrigger = opts.triggeredBy === JobTriggerBy.cron_scheduler;

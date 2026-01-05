@@ -6,9 +6,31 @@ import { seedTeams } from "./seed.teams";
 import { seedSeasons } from "./seed.seasons";
 import { seedFixtures } from "./seed.fixtures";
 import { seedOdds } from "./seed.odds";
-import { seedDefaultJobs } from "./seed.jobs";
+import { seedJobsDefaults } from "./seed.jobs";
 
+/**
+ * seed.index.ts
+ * ------------
+ * Purpose:
+ * - Provides small “programmatic” helpers around the seed functions.
+ * - Used by scripts/tests/tools that want to seed without invoking the CLI parser.
+ *
+ * Why this exists:
+ * - `seed.cli.ts` is for command line UX.
+ * - This file is for importing and calling seed routines from code.
+ */
+
+/**
+ * createAdapter()
+ * ---------------
+ * Creates a SportMonks adapter using env vars.
+ *
+ * Why a function instead of a shared singleton:
+ * - Keeps seeds easy to reuse in other contexts (tests, one-off scripts).
+ * - Avoids creating the adapter when you only run DB-only seeds.
+ */
 function createAdapter() {
+  // One adapter instance per call so callers can reuse helpers in other scripts.
   return new SportMonksAdapter({
     token: process.env.SPORTMONKS_API_TOKEN,
     footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
@@ -17,6 +39,11 @@ function createAdapter() {
   });
 }
 
+/**
+ * runBookmakersSeed()
+ * ------------------
+ * Fetches bookmakers from provider and persists them to DB.
+ */
 export async function runBookmakersSeed(opts?: { dryRun?: boolean }) {
   const adapter = createAdapter();
 
@@ -30,6 +57,11 @@ export async function runBookmakersSeed(opts?: { dryRun?: boolean }) {
   return result;
 }
 
+/**
+ * runCountriesSeed()
+ * -----------------
+ * Fetches countries from provider and persists them to DB.
+ */
 export async function runCountriesSeed(opts?: { dryRun?: boolean }) {
   const adapter = createAdapter();
 
@@ -43,6 +75,14 @@ export async function runCountriesSeed(opts?: { dryRun?: boolean }) {
   return result;
 }
 
+/**
+ * runLeaguesSeed()
+ * ---------------
+ * Fetches leagues from provider and persists them to DB.
+ *
+ * Dependency:
+ * - countries should be seeded first (FK).
+ */
 export async function runLeaguesSeed(opts?: { dryRun?: boolean }) {
   const adapter = createAdapter();
 
@@ -56,6 +96,14 @@ export async function runLeaguesSeed(opts?: { dryRun?: boolean }) {
   return result;
 }
 
+/**
+ * runTeamsSeed()
+ * -------------
+ * Fetches teams from provider and persists them to DB.
+ *
+ * Dependency:
+ * - countries should be seeded first (FK, nullable).
+ */
 export async function runTeamsSeed(opts?: { dryRun?: boolean }) {
   const adapter = createAdapter();
 
@@ -68,6 +116,14 @@ export async function runTeamsSeed(opts?: { dryRun?: boolean }) {
   console.log("✅ Teams seeding finished");
 }
 
+/**
+ * runSeasonsSeed()
+ * ---------------
+ * Fetches seasons from provider and persists them to DB.
+ *
+ * Dependency:
+ * - leagues should be seeded first (FK).
+ */
 export async function runSeasonsSeed(opts?: { dryRun?: boolean }) {
   const adapter = createAdapter();
 
@@ -80,6 +136,18 @@ export async function runSeasonsSeed(opts?: { dryRun?: boolean }) {
   console.log("✅ Seasons seeding finished");
 }
 
+/**
+ * runFixturesSeed()
+ * ----------------
+ * Fetches fixtures and persists them to DB.
+ *
+ * Dependencies:
+ * - leagues, seasons, teams must exist first (FKs).
+ *
+ * Behavior:
+ * - When `seasonExternalId` is provided, it fetches fixtures for just that season.
+ * - Otherwise, it fetches all seasons and then fixtures for each season.
+ */
 export async function runFixturesSeed(
   seasonExternalId?: number,
   opts?: { dryRun?: boolean }
@@ -115,6 +183,17 @@ export async function runFixturesSeed(
   console.log("✅ Fixtures seeding finished");
 }
 
+/**
+ * runOddsSeed()
+ * ------------
+ * Fetches odds between two dates and persists them to DB.
+ *
+ * Dependencies:
+ * - fixtures (and often markets/bookmakers tables depending on your schema/seeders).
+ *
+ * Note:
+ * - `filters` is a SportMonks query string like `bookmakers:2;markets:1,57;...`
+ */
 export async function runOddsSeed(
   startIso: string,
   endIso: string,
@@ -139,9 +218,20 @@ export async function runOddsSeed(
   return result;
 }
 
+/**
+ * runJobsSeed()
+ * ------------
+ * Seeds “infrastructure” job rows into the `jobs` table (create-only).
+ *
+ * This MUST run at least once per environment, otherwise:
+ * - scheduler cannot read schedules
+ * - job runners will throw because config row is missing
+ */
 export async function runJobsSeed(opts?: { dryRun?: boolean }) {
-  console.log("🔧 Seeding default jobs...");
-  const result = await seedDefaultJobs(opts);
+  // Jobs are “infrastructure config” for the scheduler and admin UI.
+  // This seed is create-only and must not overwrite admin edits in DB.
+  console.log("🔧 Seeding jobs defaults (create-only)...");
+  const result = await seedJobsDefaults(opts);
 
   console.log("✅ Jobs seeding finished");
   return result;

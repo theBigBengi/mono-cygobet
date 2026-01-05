@@ -9,7 +9,7 @@ import {
 } from "@repo/db";
 import { JobRunOpts } from "../types/jobs";
 import { FINISHED_FIXTURES_JOB } from "./jobs.definitions";
-import { ensureJobRow } from "./jobs.db";
+import { getJobRowOrThrow } from "./jobs.db";
 // NOTE: We now have a dedicated `jobRuns` table for job executions (see prisma schema).
 
 /**
@@ -28,6 +28,10 @@ export const finishedFixturesJob = FINISHED_FIXTURES_JOB;
 /**
  * Extract numeric scores from a normalized result string.
  * Accepts either "2-1" or "2:1" (we normalize ":" -> "-" elsewhere).
+ *
+ * Why we parse:
+ * - Provider/DB result formats are strings, but we also store numeric score fields.
+ * - Parsing here centralizes the logic and keeps DB writes consistent.
  */
 function parseScores(result: string | null | undefined): {
   homeScore: number | null;
@@ -45,6 +49,10 @@ function parseScores(result: string | null | undefined): {
 /**
  * Provider sometimes returns "0:0" while our DB/UI standard is "0-0".
  * Normalize to "-" so comparisons + DB values stay consistent.
+ *
+ * Why normalize:
+ * - Prevents duplicate/unequal strings representing the same value.
+ * - Makes UI and DB comparisons stable.
  */
 function normalizeResult(result: string | null | undefined): string | null {
   if (!result) return null;
@@ -57,6 +65,10 @@ function normalizeResult(result: string | null | undefined): string | null {
 /**
  * Prisma expects its own enum type. Provider/DTO state is a string union with the same values.
  * We intentionally coerce here (values must match the Prisma enum values in schema.prisma).
+ *
+ * Why cast:
+ * - Provider states come as strings; Prisma expects its generated enum type.
+ * - Values are aligned by design in our schema.
  */
 function coerceDbFixtureState(state: string): DbFixtureState {
   // Provider DTOs use string values that match Prisma enum values (NS, LIVE, FT, CAN, INT, ...)
@@ -74,6 +86,13 @@ function chunk<T>(arr: T[], n: number): T[][] {
 /**
  * Main runner called by the cron scheduler.
  * Returns lightweight stats (counts) so callers can decide whether to log.
+ *
+ * Flow:
+ * 1) Read job config from DB.
+ * 2) Create job_runs record.
+ * 3) Skip if disabled + cron trigger.
+ * 4) Find “too old LIVE” fixtures, re-fetch from provider, update to finished state/results.
+ * 5) Update job_runs with counts/errors.
  */
 export async function runFinishedFixturesJob(
   fastify: FastifyInstance,
@@ -81,8 +100,8 @@ export async function runFinishedFixturesJob(
 ) {
   const maxLiveAgeHours = opts.maxLiveAgeHours ?? 2;
 
-  // Ensure the job row exists in DB (create only; do not overwrite admin edits).
-  const jobRow = await ensureJobRow(finishedFixturesJob);
+  // Jobs are seeded in DB. Missing row is a deployment/config error.
+  const jobRow = await getJobRowOrThrow(finishedFixturesJob.key);
 
   // Disabled should only prevent cron runs. Manual "Run" should still work.
   const isCronTrigger = opts.triggeredBy === JobTriggerBy.cron_scheduler;

@@ -7,7 +7,7 @@ import { seedTeams } from "./seed.teams";
 import { seedSeasons } from "./seed.seasons";
 import { seedFixtures } from "./seed.fixtures";
 import { seedOdds } from "./seed.odds";
-import { seedDefaultJobs } from "./seed.jobs";
+import { seedJobsDefaults } from "./seed.jobs";
 import { format, addDays } from "date-fns";
 
 /**
@@ -23,8 +23,29 @@ import { format, addDays } from "date-fns";
  * When using --all or no flags, seeds run in the correct order automatically.
  */
 
+/**
+ * seed.cli.ts
+ * ----------
+ * Purpose:
+ * - A human-friendly CLI to seed the database.
+ *
+ * Why it exists:
+ * - In dev/staging you often need to bootstrap DB quickly.
+ * - In prod you may want one-off seeding/migrations from a worker container.
+ *
+ * Typical usage:
+ * - Seed everything: `tsx src/etl/seeds/seed.cli.ts`
+ * - Seed just jobs (infrastructure config): `tsx src/etl/seeds/seed.cli.ts --jobs`
+ * - Dry-run: `tsx src/etl/seeds/seed.cli.ts --jobs --dry-run`
+ */
+
 // Simple CLI argument parsing
 const args = process.argv.slice(2);
+
+// Flags:
+// - When no flags are provided, we run *all* seeds in dependency order.
+// - When specific flags are provided, we still try to run in a safe order, but you are responsible
+//   for ensuring dependencies exist (we print warnings below).
 const dryRun = args.includes("--dry-run");
 const hasBookmakers = args.includes("--bookmakers");
 const hasCountries = args.includes("--countries");
@@ -34,6 +55,8 @@ const hasSeasons = args.includes("--seasons");
 const hasFixtures = args.includes("--fixtures");
 const hasOdds = args.includes("--odds");
 const hasJobs = args.includes("--jobs");
+
+// If no specific seed flags were provided, run everything.
 const runAll =
   !hasBookmakers &&
   !hasCountries &&
@@ -80,10 +103,12 @@ const oddsFilters: string = oddsFiltersArg
 
 (async () => {
   try {
+    // Dry-run allows you to validate inputs and provider connectivity without touching DB.
     if (dryRun) {
       console.log("🧪 DRY RUN MODE: No database changes will be made");
     }
 
+    // Adapter is created once and re-used for all seeds that need SportMonks.
     const adapter = new SportMonksAdapter({
       token: process.env.SPORTMONKS_API_TOKEN,
       footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
@@ -193,7 +218,8 @@ const oddsFilters: string = oddsFiltersArg
 
     if (runAll || hasJobs) {
       console.log("🚀 Starting jobs seeding...");
-      await seedDefaultJobs({ dryRun });
+      // Jobs seeding is create-only: it guarantees required `jobs` rows exist without overwriting admin edits.
+      await seedJobsDefaults({ dryRun });
     }
 
     console.log("✅ Seeding completed successfully");

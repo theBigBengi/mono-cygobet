@@ -8,7 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -45,6 +52,10 @@ import { useBookmakersFromProvider } from "@/hooks/use-bookmakers";
 import { useMarketsFromProvider } from "@/hooks/use-markets";
 import type { AdminJobRunsListResponse } from "@repo/types";
 import type { AdminJobsListResponse } from "@repo/types";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import type { UpdatePrematchOddsJobMeta } from "@repo/types";
+
+const UPDATE_PREMATCH_ODDS_JOB_KEY = "update-prematch-odds" as const;
 
 type JobsTab = "runs" | "jobs";
 type RunRow = AdminJobRunsListResponse["data"][0];
@@ -83,6 +94,18 @@ function truncate(s: string, max = 120) {
 function jobNameFromKey(key: string): string {
   // user-requested: show job name derived from key without "-" chars
   return key.replace(/-/g, " ");
+}
+
+function titleCaseWords(s: string): string {
+  return s
+    .split(/\s+/)
+    .map((w) => {
+      const v = w.trim();
+      if (!v) return "";
+      return v[0]!.toUpperCase() + v.slice(1);
+    })
+    .filter(Boolean)
+    .join(" ");
 }
 
 function clampInt(value: number, min: number, max: number) {
@@ -191,6 +214,40 @@ function buildCronFromSchedule(schedule: ScheduleState): string | null {
     }
     default: {
       const _exhaustive: never = schedule;
+      return _exhaustive;
+    }
+  }
+}
+
+function formatScheduleHuman(scheduleCron: string | null): string {
+  const s = parseScheduleCron(scheduleCron);
+  switch (s.mode) {
+    case "disabled":
+      return "Disabled";
+    case "every_minutes":
+      return `Every ${s.intervalMinutes} minute${s.intervalMinutes === 1 ? "" : "s"}`;
+    case "every_hours":
+      return `Every ${s.intervalHours} hour${s.intervalHours === 1 ? "" : "s"} at :${String(
+        clampInt(s.minute, 0, 59)
+      ).padStart(2, "0")}`;
+    case "hourly":
+      return `Hourly at :${String(clampInt(s.minute, 0, 59)).padStart(2, "0")}`;
+    case "daily":
+      return `Daily ${String(clampInt(s.hour, 0, 23)).padStart(2, "0")}:${String(
+        clampInt(s.minute, 0, 59)
+      ).padStart(2, "0")}`;
+    case "weekly": {
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+      const dow = clampInt(s.dayOfWeek, 0, 6);
+      return `Weekly ${days[dow]} ${String(clampInt(s.hour, 0, 23)).padStart(
+        2,
+        "0"
+      )}:${String(clampInt(s.minute, 0, 59)).padStart(2, "0")}`;
+    }
+    case "custom":
+      return "Custom";
+    default: {
+      const _exhaustive: never = s;
       return _exhaustive;
     }
   }
@@ -492,91 +549,114 @@ export default function JobsPage() {
           value="jobs"
           className="flex-1 min-h-0 overflow-hidden mt-4"
         >
-          <Card className="flex flex-col h-full min-h-0 overflow-hidden">
+          <Card className="flex flex-col h-full min-h-0 overflow-hidden border-0 shadow-none">
             <CardContent className="p-0 flex flex-col flex-1 min-h-0">
-              <div className="flex-1 min-h-0 overflow-auto border-t">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Job name</TableHead>
-                      <TableHead>Key / slug</TableHead>
-                      <TableHead>Schedule</TableHead>
-                      <TableHead>Enabled</TableHead>
-                      <TableHead>Last run status</TableHead>
-                      <TableHead>Last run at</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+              <div className="flex-1 min-h-0 overflow-auto">
+                {!sortedJobs.length ? (
+                  <div className="py-10 text-center text-sm text-muted-foreground">
+                    No jobs found.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {sortedJobs.map((j) => {
                       const isRowPending =
                         runJobMutation.isPending &&
                         runJobMutation.variables?.jobKey === j.key;
+
                       return (
-                        <TableRow
+                        <Card
                           key={j.key}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => openJob(j)}
+                          className="cursor-default hover:bg-muted/50 transition-colors"
                         >
-                          <TableCell className="font-medium whitespace-nowrap">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="block max-w-[320px] truncate">
-                                {jobNameFromKey(j.key)}
-                              </span>
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <CardTitle className="text-sm truncate">
+                                  {titleCaseWords(jobNameFromKey(j.key))}
+                                </CardTitle>
+                                <CardDescription className="mt-1 font-mono text-[11px] truncate">
+                                  {j.key}
+                                </CardDescription>
+                              </div>
+                              <div className="flex-shrink-0 pt-0.5">
+                                {j.enabled ? (
+                                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                ) : (
+                                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                                )}
+                              </div>
                             </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-xs whitespace-nowrap">
-                            {j.key}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs whitespace-nowrap">
-                            {j.scheduleCron ?? "—"}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {j.enabled ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            ) : (
-                              <XCircle className="h-5 w-5 text-muted-foreground" />
-                            )}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {j.lastRun ? (
-                              <StatusBadge status={j.lastRun.status} />
-                            ) : (
-                              "—"
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs whitespace-nowrap">
-                            {formatDateTime(j.lastRun?.startedAt ?? null)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                runJobMutation.mutate({ jobKey: j.key });
-                              }}
-                              disabled={!j.runnable || isRowPending}
-                            >
-                              {isRowPending ? "Running…" : "Run"}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                          </CardHeader>
+
+                          <CardContent className="pt-0">
+                            <div className="space-y-3">
+                              <div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  Schedule
+                                </div>
+                                <div className="mt-1 text-xs">
+                                  {formatScheduleHuman(j.scheduleCron ?? null)}
+                                </div>
+                                <div className="mt-0.5 font-mono text-[11px] text-muted-foreground truncate">
+                                  {j.scheduleCron ?? "—"}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  Last run
+                                </div>
+                                <div className="mt-1 flex items-center justify-between gap-2">
+                                  <div className="whitespace-nowrap">
+                                    {j.lastRun ? (
+                                      <StatusBadge status={j.lastRun.status} />
+                                    ) : (
+                                      "—"
+                                    )}
+                                  </div>
+                                  <div className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                    {formatDateTime(
+                                      j.lastRun?.startedAt ?? null
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+
+                          <CardFooter className="justify-end">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openJob(j);
+                                }}
+                              >
+                                Details
+                              </Button>
+                              <Button
+                                size="sm"
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  runJobMutation.mutate({ jobKey: j.key });
+                                }}
+                                disabled={!j.runnable || isRowPending}
+                              >
+                                {isRowPending ? "Running…" : "Run"}
+                              </Button>
+                            </div>
+                          </CardFooter>
+                        </Card>
                       );
                     })}
-                    {!sortedJobs.length && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="text-center text-sm text-muted-foreground py-8"
-                        >
-                          No jobs found.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -752,6 +832,7 @@ export default function JobsPage() {
       {/* Run drawer (right panel) */}
       <Sheet open={runDrawerOpen} onOpenChange={setRunDrawerOpen}>
         <SheetContent
+          hideClose
           side="right"
           className="sm:max-w-xl p-0 flex flex-col h-full min-h-0"
         >
@@ -926,6 +1007,7 @@ export default function JobsPage() {
       {/* Job drawer (right panel) */}
       <Sheet open={jobDrawerOpen} onOpenChange={setJobDrawerOpen}>
         <SheetContent
+          hideClose
           side="right"
           className="sm:max-w-xl p-0 flex flex-col h-full min-h-0"
         >
@@ -937,7 +1019,7 @@ export default function JobsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <SheetTitle className="truncate">
-                        {jobNameFromKey(selectedJob.key)}
+                        {titleCaseWords(jobNameFromKey(selectedJob.key))}
                       </SheetTitle>
                       <div className="mt-1 text-xs text-muted-foreground">
                         Key{" "}
@@ -946,7 +1028,7 @@ export default function JobsPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="mt-0.5">
+                    <div className="mt-0.5 flex-shrink-0">
                       {jobForm.enabled ? (
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
                       ) : (
@@ -955,18 +1037,14 @@ export default function JobsPage() {
                     </div>
                   </div>
 
-                  {selectedJob.description ? (
-                    <SheetDescription className="mt-2">
-                      {selectedJob.description}
-                    </SheetDescription>
-                  ) : (
+                  <VisuallyHidden>
                     <SheetDescription className="mt-2">
                       Configure job settings.
                     </SheetDescription>
-                  )}
+                  </VisuallyHidden>
                 </SheetHeader>
 
-                <div className="mt-4 text-xs text-muted-foreground">
+                <div className="mt-2 text-xs text-muted-foreground">
                   Cron preview:{" "}
                   <span className="font-mono text-foreground">
                     {buildCronFromSchedule(jobForm.schedule) ?? "—"}
@@ -1586,20 +1664,19 @@ export default function JobsPage() {
                       description: jobForm.description.trim() || null,
                       enabled: jobForm.enabled,
                       scheduleCron: buildCronFromSchedule(jobForm.schedule),
-                      ...(selectedJob.key === "update-prematch-odds"
+                      ...(selectedJob.key === UPDATE_PREMATCH_ODDS_JOB_KEY
                         ? {
                             meta: {
-                              ...(selectedJob.meta ?? {}),
                               odds: {
                                 bookmakerExternalIds:
                                   jobForm.oddsBookmakerExternalIds
-                                    .map((v) => Number(v))
+                                    .map((v) => Math.trunc(Number(v)))
                                     .filter((n) => Number.isFinite(n)),
                                 marketExternalIds: jobForm.oddsMarketExternalIds
-                                  .map((v) => Number(v))
+                                  .map((v) => Math.trunc(Number(v)))
                                   .filter((n) => Number.isFinite(n)),
                               },
-                            } as Record<string, unknown>,
+                            } satisfies UpdatePrematchOddsJobMeta,
                           }
                         : {}),
                     };

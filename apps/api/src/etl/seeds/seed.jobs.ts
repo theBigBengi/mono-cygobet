@@ -1,236 +1,112 @@
 // src/etl/seeds/seed.jobs.ts
-import {
-  startSeedBatch,
-  trackSeedItem,
-  finishSeedBatch,
-  chunk,
-} from "./seed.utils";
-import { RunStatus, RunTrigger, prisma } from "@repo/db";
+import { Prisma, RunStatus, RunTrigger, prisma } from "@repo/db";
+import { JOB_DEFINITIONS } from "../../jobs/jobs.definitions";
+import { startSeedBatch, trackSeedItem, finishSeedBatch } from "./seed.utils";
 
 /**
- * Job data structure for seeding
+ * Seed jobs defaults into DB (create-only).
+ *
+ * WHY:
+ * - We want to guarantee `jobs` rows always exist (no runtime "create if missing").
+ * - Admin is allowed to edit description/enabled/scheduleCron/meta, so seeding must NOT overwrite.
+ * - This makes the runtime code simpler: jobs can assume DB config exists and just read it.
+ *
+ * BEHAVIOR:
+ * - If a job already exists: mark item as skipped (no updates)
+ * - If missing: create using `JOB_DEFINITIONS` defaults
+ *
+ * HOW TO USE:
+ * - Run locally: `pnpm -C apps/api tsx src/etl/seeds/seed.cli.ts --jobs`
+ * - In production: run it once after migrations (or as part of a deploy step).
  */
-interface JobData {
-  key: string;
-  description: string;
-  scheduleCron?: string;
-  enabled?: boolean;
-}
-
-const CHUNK_SIZE = 8;
-
-/**
- * Seeds jobs into the database using Prisma upsert operations.
- */
-export async function seedJobs(
-  jobs: JobData[],
-  opts?: {
-    batchId?: number;
-    version?: string;
-    trigger?: RunTrigger;
-    triggeredBy?: string | null;
-    triggeredById?: string | null;
-    dryRun?: boolean;
-  }
-) {
-  // In dry-run mode, skip all database writes including batch tracking
+export async function seedJobsDefaults(opts?: { dryRun?: boolean }) {
+  // Dry-run mode is used to preview what would happen without touching the DB.
   if (opts?.dryRun) {
     console.log(
-      `🧪 DRY RUN MODE: ${jobs?.length ?? 0} jobs would be processed (no database changes)`
+      `🧪 DRY RUN MODE: ${JOB_DEFINITIONS.length} jobs would be created if missing (no database changes)`
     );
-    return { batchId: null, ok: 0, fail: 0, total: jobs?.length ?? 0 };
+    return { batchId: null, ok: 0, fail: 0, total: JOB_DEFINITIONS.length };
   }
 
-  let batchId = opts?.batchId;
-  let createdHere = false;
-
-  if (!batchId) {
-    const started = await startSeedBatch(
-      "seed-jobs",
-      opts?.version ?? "v1",
-      { totalInput: jobs?.length ?? 0, dryRun: !!opts?.dryRun },
-      {
-        trigger: opts?.trigger ?? RunTrigger.manual,
-        triggeredBy: opts?.triggeredBy ?? null,
-        triggeredById: opts?.triggeredById ?? null,
-      }
-    );
-    batchId = started.id;
-    createdHere = true;
-  }
-
-  if (!jobs?.length) {
-    await finishSeedBatch(batchId!, RunStatus.success, {
-      itemsTotal: 0,
-      itemsSuccess: 0,
-      itemsFailed: 0,
-      meta: { reason: "no-input" },
-    });
-    return { batchId, ok: 0, fail: 0, total: 0 };
-  }
-
-  console.log(`🔧 Starting jobs seeding: ${jobs.length} jobs to process`);
-
-  // De-dupe input
-  const seen = new Set<string>();
-  const uniqueJobs: typeof jobs = [];
-  const duplicates: typeof jobs = [];
-
-  for (const job of jobs) {
-    const key = job.key;
-    if (seen.has(key)) {
-      duplicates.push(job);
-    } else {
-      seen.add(key);
-      uniqueJobs.push(job);
+  // Seed batches provide observability in DB (what ran, when, what succeeded/failed).
+  const started = await startSeedBatch(
+    "seed-jobs-defaults",
+    "v1",
+    { totalInput: JOB_DEFINITIONS.length, dryRun: false },
+    {
+      trigger: RunTrigger.manual,
+      triggeredBy: "cli",
+      triggeredById: null,
     }
-  }
+  );
 
-  if (duplicates.length > 0) {
-    console.log(
-      `⚠️  Input contained ${duplicates.length} duplicate jobs, processing ${uniqueJobs.length} unique items`
-    );
-    const duplicatePromises = duplicates.map((job) =>
-      trackSeedItem(
-        batchId!,
-        job.key,
-        RunStatus.skipped,
-        undefined,
-        {
-          name: job.key,
-          reason: "duplicate",
-        }
-      )
-    );
-    await Promise.allSettled(duplicatePromises);
-  }
+  // Batch id groups all per-job seed items.
+  const batchId = started.id;
 
+  // Counters are persisted into the seed batch for later debugging.
   let ok = 0;
   let fail = 0;
+  let skipped = 0;
 
   try {
-    for (const group of chunk(uniqueJobs, CHUNK_SIZE)) {
-      // Process all jobs in the chunk in parallel
-      const chunkResults = await Promise.allSettled(
-        group.map(async (job) => {
-          try {
-            if (!job.key) {
-              throw new Error("Job key is required");
-            }
+    for (const job of JOB_DEFINITIONS) {
+      // Create-only: if row exists, do nothing.
+      const existing = await prisma.jobs.findUnique({
+        where: { key: job.key },
+        select: { key: true },
+      });
 
-            await prisma.jobs.upsert({
-              where: { key: job.key },
-              update: {
-                description: job.description ?? undefined,
-                scheduleCron: job.scheduleCron ?? undefined,
-                enabled: job.enabled ?? undefined,
-                updatedAt: new Date(),
-              },
-              create: {
-                key: job.key,
-                description: job.description ?? null,
-                scheduleCron: job.scheduleCron ?? null,
-                enabled: job.enabled ?? true,
-              },
-            });
-
-            await trackSeedItem(
-              batchId!,
-              job.key,
-              RunStatus.success,
-              undefined,
-              {
-                name: job.key,
-                description: job.description,
-              }
-            );
-
-            return { success: true, job };
-          } catch (e: any) {
-            const errorCode = e?.code || "UNKNOWN_ERROR";
-            const errorMessage = e?.message || "Unknown error";
-
-            await trackSeedItem(
-              batchId!,
-              job.key,
-              RunStatus.failed,
-              errorMessage.slice(0, 500),
-              {
-                name: job.key,
-                description: job.description,
-                errorCode,
-                errorMessage: errorMessage.slice(0, 200),
-              }
-            );
-
-            console.log(
-              `❌ [${batchId}] Job failed: ${job.key} - ${errorMessage}`
-            );
-
-            return { success: false, job, error: errorMessage };
-          }
-        })
-      );
-
-      // Count successes and failures from this chunk
-      for (const result of chunkResults) {
-        if (result.status === "fulfilled") {
-          if (result.value.success) {
-            ok++;
-          } else {
-            fail++;
-          }
-        } else {
-          fail++;
-        }
+      if (existing) {
+        skipped++;
+        await trackSeedItem(batchId, job.key, RunStatus.skipped, undefined, {
+          name: job.key,
+          reason: "already-exists",
+        });
+        continue;
       }
+
+      // Create with defaults. We do NOT write updates here to avoid overwriting admin edits.
+      await prisma.jobs.create({
+        data: {
+          key: job.key,
+          description: job.description,
+          enabled: job.enabled,
+          scheduleCron: job.scheduleCron,
+          // `meta` is JSON; we store job-specific defaults here (e.g. odds filters).
+          meta: (job.meta ?? {}) as unknown as Prisma.InputJsonValue,
+        },
+        select: { key: true },
+      });
+
+      ok++;
+      await trackSeedItem(batchId, job.key, RunStatus.success, undefined, {
+        name: job.key,
+        description: job.description,
+      });
     }
 
-    await finishSeedBatch(batchId!, RunStatus.success, {
-      itemsTotal: ok + fail,
+    // Mark the batch as successful. Note: "skipped" counts as finished, not failure.
+    await finishSeedBatch(batchId, RunStatus.success, {
+      itemsTotal: ok + fail + skipped,
       itemsSuccess: ok,
       itemsFailed: fail,
-      meta: { ok, fail },
+      meta: { ok, fail, skipped },
     });
 
     console.log(
-      `🎉 [${batchId}] Jobs seeding completed: ${ok} success, ${fail} failed`
+      `✅ [${batchId}] Jobs defaults seeded: created=${ok}, skipped=${skipped}, failed=${fail}`
     );
-    return { batchId, ok, fail, total: ok + fail };
-  } catch (e: any) {
-    console.log(
-      `💥 [${batchId}] Unexpected error during jobs seeding: ${
-        e?.message || "Unknown error"
-      }`
-    );
-    await finishSeedBatch(batchId!, RunStatus.failed, {
-      itemsTotal: ok + fail,
+    return { batchId, ok, fail, total: ok + fail + skipped };
+  } catch (e: unknown) {
+    // Any unexpected error marks the seed batch failed so it's visible in DB.
+    fail++;
+    await finishSeedBatch(batchId, RunStatus.failed, {
+      itemsTotal: ok + fail + skipped,
       itemsSuccess: ok,
       itemsFailed: fail,
-      errorMessage: String(e?.message ?? e).slice(0, 500),
-      meta: { ok, fail },
+      errorMessage: String((e as any)?.message ?? e).slice(0, 500),
+      meta: { ok, fail, skipped },
     });
-
-    return { batchId, ok, fail, total: ok + fail };
+    throw e;
   }
 }
-
-/**
- * Seeds the default jobs that should always exist in the system.
- * These are fixed jobs, not fetched from external APIs.
- */
-export async function seedDefaultJobs(opts?: { dryRun?: boolean }) {
-  const defaultJobs: JobData[] = [
-    {
-      key: "session-cleanup",
-      description: "Cleaning expired sessions",
-      enabled: true,
-    },
-  ];
-
-  console.log(
-    `📋 Default jobs to seed: ${defaultJobs.map((j) => j.key).join(", ")}`
-  );
-  return await seedJobs(defaultJobs, opts);
-}
-
