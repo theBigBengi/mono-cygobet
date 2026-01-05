@@ -163,7 +163,7 @@ importers:
         specifier: ^7.2.4
         version: 7.3.0(@types/node@24.10.4)(jiti@1.21.7)(lightningcss@1.30.2)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
 
-  apps/api:
+  apps/server:
     dependencies:
       '@fastify/autoload':
         specifier: ^6.3.1
