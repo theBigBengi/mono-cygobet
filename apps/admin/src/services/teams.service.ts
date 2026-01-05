@@ -24,20 +24,20 @@ export const teamsService = {
     if (params?.include) searchParams.append("include", params.include);
 
     const queryString = searchParams.toString();
-    const url = `/admin/db/teams${queryString ? `?${queryString}` : ""}`;
+    const url = `/admin/sync-center/db/teams${queryString ? `?${queryString}` : ""}`;
     return apiGet<AdminTeamsListResponse>(url);
   },
 
   async getFromProvider() {
-    return apiGet<AdminProviderTeamsResponse>("/admin/provider/teams");
+    return apiGet<AdminProviderTeamsResponse>("/admin/sync-center/provider/teams");
   },
 
   async sync(dryRun = false) {
-    return apiPost("/admin/sync/teams", { dryRun });
+    return apiPost("/admin/sync-center/sync/teams", { dryRun });
   },
 
   async syncById(id: number | string, dryRun = false) {
-    return apiPost(`/admin/sync/teams/${id}`, { dryRun });
+    return apiPost(`/admin/sync-center/sync/teams/${id}`, { dryRun });
   },
 
   async getBatches(name?: string, limit = 20) {
@@ -45,13 +45,13 @@ export const teamsService = {
     if (name) params.append("name", name);
     params.append("limit", limit.toString());
     return apiGet<AdminBatchesListResponse>(
-      `/admin/db/batches?${params.toString()}`
+      `/admin/sync-center/db/batches?${params.toString()}`
     );
   },
 
   async getBatchItems(batchId: number, page = 1, perPage = 50) {
     return apiGet<AdminBatchItemsResponse>(
-      `/admin/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
+      `/admin/sync-center/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
     );
   },
 };

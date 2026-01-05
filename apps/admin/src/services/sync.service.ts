@@ -138,7 +138,7 @@ export const syncService = {
       // Fixtures sync: if seasonId or date range provided, use those; otherwise sync by all seasons in DB
       if (seasonId) {
         const fixturesResult = await apiPost<AdminSyncFixturesResponse>(
-          "/admin/sync/fixtures",
+          "/admin/sync-center/sync/fixtures",
           { dryRun, seasonId, fetchAllFixtureStates }
         );
         results.push({
@@ -151,7 +151,7 @@ export const syncService = {
         });
       } else if (from && to) {
         const fixturesResult = await apiPost<AdminSyncFixturesResponse>(
-          "/admin/sync/fixtures",
+          "/admin/sync-center/sync/fixtures",
           { dryRun, from, to, fetchAllFixtureStates }
         );
         results.push({
@@ -165,7 +165,7 @@ export const syncService = {
       } else {
         // Sync fixtures for all seasons in database
         const fixturesResult = await apiPost<AdminSyncFixturesResponse>(
-          "/admin/sync/fixtures",
+          "/admin/sync-center/sync/fixtures",
           { dryRun, fetchAllFixtureStates }
         );
         results.push({

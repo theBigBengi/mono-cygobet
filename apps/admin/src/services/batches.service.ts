@@ -9,7 +9,7 @@ export const batchesService = {
     const params = new URLSearchParams();
     params.append("limit", limit.toString());
     return apiGet<AdminBatchesListResponse>(
-      `/admin/db/batches?${params.toString()}`
+      `/admin/sync-center/db/batches?${params.toString()}`
     );
   },
 
@@ -18,13 +18,13 @@ export const batchesService = {
     params.append("name", name);
     params.append("limit", limit.toString());
     return apiGet<AdminBatchesListResponse>(
-      `/admin/db/batches?${params.toString()}`
+      `/admin/sync-center/db/batches?${params.toString()}`
     );
   },
 
   async getBatchItems(batchId: number, page = 1, perPage = 50) {
     return apiGet<AdminBatchItemsResponse>(
-      `/admin/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
+      `/admin/sync-center/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
     );
   },
 };

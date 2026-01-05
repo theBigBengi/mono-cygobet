@@ -17,20 +17,20 @@ export const bookmakersService = {
       searchParams.append("perPage", params.perPage.toString());
 
     const queryString = searchParams.toString();
-    const url = `/admin/db/bookmakers${queryString ? `?${queryString}` : ""}`;
+    const url = `/admin/sync-center/db/bookmakers${queryString ? `?${queryString}` : ""}`;
     return apiGet<AdminBookmakersListResponse>(url);
   },
 
   async getFromProvider() {
-    return apiGet<AdminProviderBookmakersResponse>("/admin/provider/bookmakers");
+    return apiGet<AdminProviderBookmakersResponse>("/admin/sync-center/provider/bookmakers");
   },
 
   async sync(dryRun = false) {
-    return apiPost("/admin/sync/bookmakers", { dryRun });
+    return apiPost("/admin/sync-center/sync/bookmakers", { dryRun });
   },
 
   async syncById(id: number | string, dryRun = false) {
-    return apiPost(`/admin/sync/bookmakers/${id}`, { dryRun });
+    return apiPost(`/admin/sync-center/sync/bookmakers/${id}`, { dryRun });
   },
 
   async getBatches(name?: string, limit = 20) {
@@ -38,13 +38,13 @@ export const bookmakersService = {
     if (name) params.append("name", name);
     params.append("limit", limit.toString());
     return apiGet<AdminBatchesListResponse>(
-      `/admin/db/batches?${params.toString()}`
+      `/admin/sync-center/db/batches?${params.toString()}`
     );
   },
 
   async getBatchItems(batchId: number, page = 1, perPage = 50) {
     return apiGet<AdminBatchItemsResponse>(
-      `/admin/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
+      `/admin/sync-center/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
     );
   },
 };

@@ -23,7 +23,7 @@ export const oddsService = {
     if (params?.toTs !== undefined) searchParams.append("toTs", String(params.toTs));
 
     const qs = searchParams.toString();
-    const url = `/admin/db/odds${qs ? `?${qs}` : ""}`;
+    const url = `/admin/sync-center/db/odds${qs ? `?${qs}` : ""}`;
     return apiGet<AdminOddsListResponse>(url);
   },
 
@@ -45,7 +45,7 @@ export const oddsService = {
       searchParams.append("fixtureStates", params.fixtureStates.join(","));
 
     const qs = searchParams.toString();
-    const url = `/admin/provider/odds${qs ? `?${qs}` : ""}`;
+    const url = `/admin/sync-center/provider/odds${qs ? `?${qs}` : ""}`;
     return apiGet<AdminProviderOddsResponse>(url);
   },
 };

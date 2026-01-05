@@ -16,7 +16,7 @@ export type GetJobRunsParams = {
 
 export const jobsService = {
   async getJobs(): Promise<AdminJobsListResponse> {
-    return apiGet<AdminJobsListResponse>("/admin/db/jobs");
+    return apiGet<AdminJobsListResponse>("/admin/jobs");
   },
 
   async getRuns(
@@ -31,7 +31,7 @@ export const jobsService = {
 
     const qs = sp.toString();
     return apiGet<AdminJobRunsListResponse>(
-      `/admin/db/job-runs${qs ? `?${qs}` : ""}`
+      `/admin/jobs/runs${qs ? `?${qs}` : ""}`
     );
   },
 
@@ -58,7 +58,7 @@ export const jobsService = {
     }
   ): Promise<AdminUpdateJobResponse> {
     return apiPatch<AdminUpdateJobResponse>(
-      `/admin/db/jobs/${encodeURIComponent(jobId)}`,
+      `/admin/jobs/${encodeURIComponent(jobId)}`,
       patch
     );
   },

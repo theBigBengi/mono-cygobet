@@ -41,7 +41,7 @@ export const fixturesService = {
       searchParams.append("toTs", params.toTs.toString());
 
     const queryString = searchParams.toString();
-    const url = `/admin/db/fixtures${queryString ? `?${queryString}` : ""}`;
+    const url = `/admin/sync-center/db/fixtures${queryString ? `?${queryString}` : ""}`;
     return apiGet<AdminFixturesListResponse>(url);
   },
 
@@ -63,7 +63,7 @@ export const fixturesService = {
       }
 
       const queryString = searchParams.toString();
-      const url = `/admin/provider/fixtures/season/${seasonId}${
+      const url = `/admin/sync-center/provider/fixtures/season/${seasonId}${
         queryString ? `?${queryString}` : ""
       }`;
       return apiGet<AdminProviderFixturesResponse>(url);
@@ -81,16 +81,16 @@ export const fixturesService = {
     }
 
     const queryString = searchParams.toString();
-    const url = `/admin/provider/fixtures${queryString ? `?${queryString}` : ""}`;
+    const url = `/admin/sync-center/provider/fixtures${queryString ? `?${queryString}` : ""}`;
     return apiGet<AdminProviderFixturesResponse>(url);
   },
 
   async sync(dryRun = false) {
-    return apiPost("/admin/sync/fixtures", { dryRun });
+    return apiPost("/admin/sync-center/sync/fixtures", { dryRun });
   },
 
   async syncById(id: number | string, dryRun = false) {
-    return apiPost(`/admin/sync/fixtures/${id}`, { dryRun });
+    return apiPost(`/admin/sync-center/sync/fixtures/${id}`, { dryRun });
   },
 
   async getBatches(name?: string, limit = 20) {
@@ -98,13 +98,13 @@ export const fixturesService = {
     if (name) params.append("name", name);
     params.append("limit", limit.toString());
     return apiGet<AdminBatchesListResponse>(
-      `/admin/db/batches?${params.toString()}`
+      `/admin/sync-center/db/batches?${params.toString()}`
     );
   },
 
   async getBatchItems(batchId: number, page = 1, perPage = 50) {
     return apiGet<AdminBatchItemsResponse>(
-      `/admin/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
+      `/admin/sync-center/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
     );
   },
 
@@ -118,6 +118,6 @@ export const fixturesService = {
       result?: string | null;
     }
   ) {
-    return apiPatch(`/admin/db/fixtures/${id}`, data);
+    return apiPatch(`/admin/sync-center/db/fixtures/${id}`, data);
   },
 };
