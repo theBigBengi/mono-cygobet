@@ -20,6 +20,7 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "studio": "prisma studio",
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "postinstall": "prisma generate"
   }
 }

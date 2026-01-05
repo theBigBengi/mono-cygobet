@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { addDays, format } from "date-fns";
+import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
 import type { OddsDTO } from "@repo/types/sport-data/common";
 import { JobTriggerBy, RunStatus, RunTrigger, prisma } from "@repo/db";
 
@@ -32,36 +33,10 @@ export async function runUpdatePrematchOddsJob(
   skipped: boolean;
 }> {
   const daysAhead = opts.daysAhead ?? 7;
+  const filters = opts.filters ?? "bookmakers:1;markets:1,57;";
 
   // Ensure job row exists in DB (create only; do not overwrite admin edits).
   const jobRow = await ensureJobRow(updatePrematchOddsJob);
-
-  const buildFiltersFromJobMeta = (meta: Record<string, unknown>): string => {
-    const odds = (meta["odds"] ?? {}) as Record<string, unknown>;
-    const bookmakerExternalIds = Array.isArray(odds["bookmakerExternalIds"])
-      ? (odds["bookmakerExternalIds"] as unknown[])
-          .map((v) => Number(v))
-          .filter((n) => Number.isFinite(n))
-      : [2];
-    const marketExternalIds = Array.isArray(odds["marketExternalIds"])
-      ? (odds["marketExternalIds"] as unknown[])
-          .map((v) => Number(v))
-          .filter((n) => Number.isFinite(n))
-      : [1, 57];
-
-    const parts: string[] = [];
-    if (bookmakerExternalIds.length)
-      parts.push(`bookmakers:${bookmakerExternalIds.join(",")}`);
-    if (marketExternalIds.length)
-      parts.push(`markets:${marketExternalIds.join(",")}`);
-
-    return parts.length ? `${parts.join(";")};` : "";
-  };
-
-  const filters =
-    opts.filters ??
-    buildFiltersFromJobMeta((jobRow.meta ?? {}) as Record<string, unknown>) ??
-    "bookmakers:2;markets:1,57;";
 
   // Disabled should only prevent cron runs. Manual "Run" should still work.
   const isCronTrigger = opts.triggeredBy === JobTriggerBy.cron_scheduler;
@@ -162,11 +137,6 @@ export async function runUpdatePrematchOddsJob(
   }
 
   try {
-    // Lazy-load the provider adapter so API startup doesn't pay the TSX import/compile cost
-    // unless this job actually runs.
-    const { SportMonksAdapter } =
-      await import("@repo/sports-data/adapters/sportmonks");
-
     const adapter = new SportMonksAdapter({
       token,
       footballBaseUrl,

@@ -17,17 +17,25 @@ export async function apiGet<T>(
       url.searchParams.set(k, String(v));
     }
   }
-
+  console.log("url.toString() =", url.toString());
   const res = await fetch(url.toString(), {
     method: "GET",
     headers: { Accept: "application/json" },
   });
 
+  console.log("res =", res);
+
   if (!res.ok) {
+    console.log("res error=", res);
     const err: ApiError = new Error(`Request failed: ${res.status}`);
     err.status = res.status;
     throw err;
   }
 
-  return (await res.json()) as T;
+  console.log("res =", res);
+
+  const data = await res.json();
+  console.log("data =", data);
+
+  return data as T;
 }

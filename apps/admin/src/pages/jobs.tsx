@@ -93,7 +93,9 @@ function clampInt(value: number, min: number, max: number) {
 function asStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return v
-    .map((x) => (typeof x === "string" || typeof x === "number" ? String(x) : ""))
+    .map((x) =>
+      typeof x === "string" || typeof x === "number" ? String(x) : ""
+    )
     .filter(Boolean);
 }
 
@@ -995,7 +997,9 @@ export default function JobsPage() {
                   {selectedJob.key === "update-prematch-odds" && (
                     <div className="space-y-3 rounded-lg border p-4">
                       <div>
-                        <div className="text-sm font-medium">Odds parameters</div>
+                        <div className="text-sm font-medium">
+                          Odds parameters
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           Controls which bookmakers/markets the job fetches and
                           seeds.
@@ -1587,9 +1591,10 @@ export default function JobsPage() {
                             meta: {
                               ...(selectedJob.meta ?? {}),
                               odds: {
-                                bookmakerExternalIds: jobForm.oddsBookmakerExternalIds
-                                  .map((v) => Number(v))
-                                  .filter((n) => Number.isFinite(n)),
+                                bookmakerExternalIds:
+                                  jobForm.oddsBookmakerExternalIds
+                                    .map((v) => Number(v))
+                                    .filter((n) => Number.isFinite(n)),
                                 marketExternalIds: jobForm.oddsMarketExternalIds
                                   .map((v) => Number(v))
                                   .filter((n) => Number.isFinite(n)),

@@ -19,12 +19,15 @@ export const jobsService = {
     return apiGet<AdminJobsListResponse>("/admin/db/jobs");
   },
 
-  async getRuns(params: GetJobRunsParams = {}): Promise<AdminJobRunsListResponse> {
+  async getRuns(
+    params: GetJobRunsParams = {}
+  ): Promise<AdminJobRunsListResponse> {
     const sp = new URLSearchParams();
     if (params.jobId) sp.set("jobId", params.jobId);
     if (params.status) sp.set("status", params.status);
     if (typeof params.limit === "number") sp.set("limit", String(params.limit));
-    if (typeof params.cursor === "number") sp.set("cursor", String(params.cursor));
+    if (typeof params.cursor === "number")
+      sp.set("cursor", String(params.cursor));
 
     const qs = sp.toString();
     return apiGet<AdminJobRunsListResponse>(
@@ -33,9 +36,12 @@ export const jobsService = {
   },
 
   async runJob(jobId: string, dryRun = false): Promise<AdminRunJobResponse> {
-    return apiPost<AdminRunJobResponse>(`/admin/jobs/${encodeURIComponent(jobId)}/run`, {
-      dryRun,
-    });
+    return apiPost<AdminRunJobResponse>(
+      `/admin/jobs/${encodeURIComponent(jobId)}/run`,
+      {
+        dryRun,
+      }
+    );
   },
 
   async runAll(dryRun = false): Promise<AdminRunAllJobsResponse> {
@@ -57,5 +63,3 @@ export const jobsService = {
     );
   },
 };
-
-

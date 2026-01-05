@@ -174,10 +174,7 @@ export class SMHttp {
       let attempt = 0;
       let res: Response | undefined;
 
-      if (process.env.SPORTMONKS_DEBUG === "1") {
-        // eslint-disable-next-line no-console
-        console.log({ url });
-      }
+      console.log({ url });
 
       // Retry logic for rate limiting (429) and server errors (5xx)
       while (attempt <= retries) {

@@ -41,19 +41,19 @@ function App() {
                     ? "Sync Center"
                     : location.pathname === "/jobs"
                       ? "Jobs"
-                    : location.pathname === "/leagues"
-                      ? "Leagues"
-                      : location.pathname === "/teams"
-                        ? "Teams"
-                        : location.pathname === "/seasons"
-                          ? "Seasons"
-                          : location.pathname === "/bookmakers"
-                            ? "Bookmakers"
-                            : location.pathname === "/odds"
-                              ? "Odds"
-                              : location.pathname === "/fixtures"
-                                ? "Fixtures"
-                                : "Countries"}
+                      : location.pathname === "/leagues"
+                        ? "Leagues"
+                        : location.pathname === "/teams"
+                          ? "Teams"
+                          : location.pathname === "/seasons"
+                            ? "Seasons"
+                            : location.pathname === "/bookmakers"
+                              ? "Bookmakers"
+                              : location.pathname === "/odds"
+                                ? "Odds"
+                                : location.pathname === "/fixtures"
+                                  ? "Fixtures"
+                                  : "Countries"}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
