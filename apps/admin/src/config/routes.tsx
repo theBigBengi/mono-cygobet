@@ -9,6 +9,7 @@ import FixturesPage from "@/pages/fixtures";
 import OddsPage from "@/pages/odds";
 import SyncCenterPage from "@/pages/sync-center";
 import JobsPage from "@/pages/jobs";
+import UsersPage from "@/pages/users";
 import SettingsPage from "@/pages/settings";
 import UserSettingsPage from "@/pages/settings/user";
 import SystemSettingsPage from "@/pages/settings/system";
@@ -40,6 +41,7 @@ export const routes: RouteObject[] = [
       { path: "/odds", element: <OddsPage /> },
       { path: "/fixtures", element: <FixturesPage /> },
       { path: "/jobs", element: <JobsPage /> },
+      { path: "/users", element: <UsersPage /> },
       { path: "/settings", element: <SettingsPage /> },
       { path: "/settings/user", element: <UserSettingsPage /> },
       { path: "/settings/system", element: <SystemSettingsPage /> },

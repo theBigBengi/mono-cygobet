@@ -6,6 +6,7 @@ import {
   setLogoutCallback,
   setGetAccessTokenCallback,
 } from "../http/apiClient";
+import { ApiError } from "../http/apiError";
 import * as authApi from "./auth.api";
 import * as authStorage from "./auth.storage";
 import type { AuthState, AuthStatus, User } from "./auth.types";
@@ -65,10 +66,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return response.accessToken;
       } catch (err) {
         console.error("Failed to refresh access token:", err);
-        // Clear invalid refresh token
-        await authStorage.clearRefreshToken();
-        setAccessToken(null);
-        accessTokenRef.current = null;
+
+        // Only clear tokens on 401 (auth failure)
+        // Network errors should not clear tokens - allow retry
+        if (err instanceof ApiError && err.status === 401) {
+          await authStorage.clearRefreshToken();
+          setAccessToken(null);
+          accessTokenRef.current = null;
+        }
+        // For network errors (status 0) or other errors, keep tokens for retry
+
         return null;
       } finally {
         // Clear the promise ref so next refresh can proceed
@@ -110,48 +117,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setStatus("authed");
     } catch (err) {
       console.error("Bootstrap failed:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to initialize auth"
-      );
-      setStatus("guest");
-      await authStorage.clearRefreshToken();
-      setAccessToken(null);
-      accessTokenRef.current = null;
-      setUser(null);
+
+      // Only clear tokens on 401 (auth failure)
+      // Network errors should keep tokens for retry
+      if (err instanceof ApiError && err.status === 401) {
+        setError(
+          err instanceof Error ? err.message : "Failed to initialize auth"
+        );
+        setStatus("guest");
+        await authStorage.clearRefreshToken();
+        setAccessToken(null);
+        accessTokenRef.current = null;
+        setUser(null);
+      } else {
+        // Network error or other error - keep tokens, show error state
+        // User can retry later when network is available
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to connect. Please check your connection and try again."
+        );
+        setStatus("guest"); // Could also use "loading" with retry UI
+        // Tokens remain stored for retry
+      }
     }
   }, [refreshAccessToken]);
-
-  /**
-   * Login with email/username and password
-   */
-  const login = useCallback(
-    async (emailOrUsername: string, password: string) => {
-      try {
-        setError(null);
-        const response = await authApi.login(emailOrUsername, password);
-
-        // Store refresh token
-        await authStorage.setRefreshToken(response.refreshToken);
-
-        // Set access token (so me() can use it via callback)
-        setAccessToken(response.accessToken);
-        accessTokenRef.current = response.accessToken;
-
-        // Fetch user data once (includes role and all user info)
-        // me() will automatically use the access token via callback
-        const userData = await authApi.me();
-        setUser(userData);
-
-        setStatus("authed");
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Login failed";
-        setError(errorMessage);
-        throw err;
-      }
-    },
-    []
-  );
 
   /**
    * Logout: clear tokens and user data
@@ -179,6 +169,77 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
     }
   }, []);
+
+  /**
+   * Login with email/username and password
+   */
+  const login = useCallback(
+    async (emailOrUsername: string, password: string) => {
+      try {
+        setError(null);
+        const response = await authApi.login(emailOrUsername, password);
+
+        // Store refresh token
+        await authStorage.setRefreshToken(response.refreshToken);
+
+        // Set access token (so me() can use it via callback)
+        setAccessToken(response.accessToken);
+        accessTokenRef.current = response.accessToken;
+
+        // Fetch user data once (includes role and all user info)
+        // me() will automatically use the access token via callback
+        try {
+          const userData = await authApi.me();
+          setUser(userData);
+          setStatus("authed");
+        } catch (meError) {
+          // Handle /auth/me failure separately
+          // Network error: keep tokens, set status to authed with null user
+          if (meError instanceof ApiError && meError.status === 0) {
+            setUser(null);
+            setStatus("authed"); // User is authed, just no user data yet (network issue)
+            setError(
+              "Connected but unable to load user data. Please try again."
+            );
+            // Don't throw - allow user to retry /auth/me later
+            return;
+          }
+
+          // 401 error: token pipeline issue, attempt refresh once
+          if (meError instanceof ApiError && meError.status === 401) {
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+              // Retry /auth/me with new token
+              try {
+                const userData = await authApi.me();
+                setUser(userData);
+                setStatus("authed");
+                return;
+              } catch {
+                // Still failing after refresh, logout
+                await logout();
+                throw new Error("Authentication failed. Please log in again.");
+              }
+            } else {
+              // Refresh failed, logout
+              await logout();
+              throw new Error("Authentication failed. Please log in again.");
+            }
+          }
+
+          // Other errors, throw as-is
+          throw meError;
+        }
+      } catch (err) {
+        // Login request itself failed
+        const errorMessage =
+          err instanceof Error ? err.message : "Login failed";
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [refreshAccessToken, logout]
+  );
 
   // Set refresh and logout callbacks for API client
   // Use ref for access token callback to avoid stale closure

@@ -295,6 +295,73 @@ export interface AdminMeResponse {
   };
 }
 
+export interface AdminUsersListResponse {
+  status: "success";
+  data: {
+    users: Array<{
+      id: number;
+      email: string;
+      name: string | null;
+      username: string | null;
+      role: "admin" | "user";
+      image: string | null;
+      createdAt: string;
+      emailVerifiedAt: string | null;
+      lastLoginAt: string | null;
+    }>;
+    total: number;
+  };
+  message: string;
+}
+
+export interface AdminUserResponse {
+  status: "success" | "error";
+  data: {
+    id: number;
+    email: string;
+    name: string | null;
+    username: string | null;
+    role: "admin" | "user";
+    image: string | null;
+    createdAt: string;
+    emailVerifiedAt: string | null;
+    lastLoginAt: string | null;
+  } | null;
+  message: string;
+}
+
+export interface AdminCreateUserResponse {
+  status: "success" | "error";
+  data: {
+    id: number;
+    email: string;
+    name: string | null;
+    username: string | null;
+    role: "admin" | "user";
+    image: string | null;
+    createdAt: string;
+    emailVerifiedAt: string | null;
+    lastLoginAt: string | null;
+  } | null;
+  message: string;
+}
+
+export interface AdminUpdateUserResponse {
+  status: "success" | "error";
+  data: {
+    id: number;
+    email: string;
+    name: string | null;
+    username: string | null;
+    role: "admin" | "user";
+    image: string | null;
+    createdAt: string;
+    emailVerifiedAt: string | null;
+    lastLoginAt: string | null;
+  } | null;
+  message: string;
+}
+
 export interface AdminTeamsListResponse {
   status: string;
   data: Array<{

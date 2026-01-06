@@ -70,6 +70,15 @@ const data = {
       ],
     },
     {
+      title: "Admin",
+      items: [
+        {
+          title: "Users",
+          url: "/users",
+        },
+      ],
+    },
+    {
       title: "Settings",
       items: [
         {
