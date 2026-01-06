@@ -1,4 +1,4 @@
-import { apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/adminApi";
 import { countriesService } from "./countries.service";
 import { leaguesService } from "./leagues.service";
 import { seasonsService } from "./seasons.service";

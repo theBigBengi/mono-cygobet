@@ -1,4 +1,4 @@
-import { apiGet } from "@/lib/api";
+import { apiGet } from "@/lib/adminApi";
 import type { AdminOddsListResponse, AdminProviderOddsResponse } from "@repo/types";
 
 export const oddsService = {

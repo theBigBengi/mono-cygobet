@@ -1,7 +1,26 @@
+/**
+ * Admin Login Page
+ * 
+ * Provides login form for admin authentication.
+ * 
+ * Flow:
+ * 1. User enters email/password
+ * 2. On submit → calls login() from useAdminAuth
+ * 3. On success → redirects to original path (or "/")
+ * 4. On 401 error → shows "Invalid credentials"
+ * 5. If already authenticated → automatically redirects to home
+ * 
+ * Features:
+ * - Preserves return path (redirects back after login)
+ * - Shows loading state during submission
+ * - Displays error messages for failed login attempts
+ * - Auto-redirects if already authenticated
+ */
+
 import * as React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AdminApiError } from "@/lib/adminApi";
-import { useAdminAuth } from "@/auth/useAdminAuth";
+import { useAdminAuth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,23 +36,38 @@ export default function LoginPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
 
+  // Get return path from navigation state (set by AdminGuard)
   const from = (location.state as { from?: string } | null)?.from ?? "/";
 
+  // Auto-redirect if already authenticated (e.g., user navigated directly to /login)
   React.useEffect(() => {
     if (status === "authed") navigate(from, { replace: true });
   }, [status, navigate, from]);
 
+  /**
+   * Handle login form submission
+   * 
+   * 1. Prevents default form submission
+   * 2. Calls login() which sets httpOnly cookie
+   * 3. On success → redirects to return path
+   * 4. On 401 → shows "Invalid credentials" error
+   * 5. On other errors → shows error message
+   */
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     try {
+      // login() throws on error, so we catch and handle it
       await login(email, password);
+      // If login succeeds, redirect to return path
       navigate(from, { replace: true });
     } catch (err: unknown) {
+      // Show user-friendly error for invalid credentials
       if (err instanceof AdminApiError && err.status === 401) {
         setError("Invalid credentials");
       } else {
+        // Show generic error for other failures
         setError(err instanceof Error ? err.message : "Login failed");
       }
     } finally {

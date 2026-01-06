@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch } from "@/lib/api";
+import { apiGet, apiPost, apiPatch } from "@/lib/adminApi";
 import type {
   AdminFixturesListResponse,
   AdminProviderFixturesResponse,

@@ -78,3 +78,25 @@ export async function adminFetch<T>(
 
   return body as T;
 }
+
+/**
+ * Convenience wrappers for common HTTP methods.
+ * These provide a cleaner API for services while routing through adminFetch.
+ */
+export async function apiGet<T>(path: string): Promise<T> {
+  return adminFetch<T>(path, { method: "GET" });
+}
+
+export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
+  return adminFetch<T>(path, {
+    method: "POST",
+    body: typeof body === "undefined" ? undefined : JSON.stringify(body),
+  });
+}
+
+export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  return adminFetch<T>(path, {
+    method: "PATCH",
+    body: typeof body === "undefined" ? undefined : JSON.stringify(body),
+  });
+}
