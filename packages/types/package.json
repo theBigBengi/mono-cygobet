@@ -12,6 +12,7 @@
     "./sport-data/sportmonks": "./src/sport-data/sportmonks.ts",
     "./http/health": "./src/http/health.ts",
     "./http/admin": "./src/http/admin.ts",
+    "./http/auth": "./src/http/auth.ts",
     "./jobs/run": "./src/jobs/run.ts"
   },
   "scripts": {
