@@ -37,12 +37,12 @@ export function setAdminSessionCookie(
   rawToken: string,
   expires: Date
 ): void {
-  //   const sameSite = getAdminCookieSameSite();
-  //   const secure = getAdminCookieSecure(sameSite);
+  const sameSite = getAdminCookieSameSite();
+  const secure = getAdminCookieSecure(sameSite);
   reply.setCookie(ADMIN_SESSION_COOKIE_NAME, rawToken, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite,
+    secure,
     path: ADMIN_SESSION_COOKIE_PATH,
     expires,
   });
