@@ -21,16 +21,15 @@ function getAdminCookieSameSite(): "lax" | "none" | "strict" {
   const v = (process.env.ADMIN_COOKIE_SAMESITE ?? "").trim().toLowerCase();
   if (v === "none") return "none";
   if (v === "strict") return "strict";
-  // Default to "none" in production for cross-origin support
-  return isProd() ? "none" : "lax";
+  // Always use "none" for cross-origin admin authentication
+  return "none";
 }
 
 function getAdminCookieSecure(sameSite: "lax" | "none" | "strict"): boolean {
-  // Default: secure in prod
-  const secure = parseBoolEnv(process.env.ADMIN_COOKIE_SECURE, isProd());
-  // Browsers require Secure when SameSite=None.
+  // Always secure when SameSite=None (browser requirement)
   if (sameSite === "none") return true;
-  return secure;
+  // Default: secure in prod for other sameSite values
+  return parseBoolEnv(process.env.ADMIN_COOKIE_SECURE, isProd());
 }
 
 export function setAdminSessionCookie(
