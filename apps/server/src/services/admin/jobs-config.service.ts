@@ -9,6 +9,7 @@ import type {
 import { BadRequestError, NotFoundError } from "../../utils/errors";
 import { isJobRunnable } from "../../jobs/jobs.registry";
 import { isUpdatePrematchOddsJobMeta } from "../../jobs/jobs.meta";
+import { isFinishedFixturesJobMeta } from "../../jobs/jobs.meta";
 
 /**
  * Canonical job key for job-specific meta validation.
@@ -16,6 +17,7 @@ import { isUpdatePrematchOddsJobMeta } from "../../jobs/jobs.meta";
  * NOTE: We intentionally keep job keys as strings (not enums) to keep Prisma/job definitions simple.
  */
 const UPDATE_PREMATCH_ODDS_JOB_KEY = "update-prematch-odds" as const;
+const FINISHED_FIXTURES_JOB_KEY = "finished-fixtures" as const;
 
 type JobRow = AdminJobsListResponse["data"][number];
 type UpdateJobRow = AdminUpdateJobResponse["data"];
@@ -180,6 +182,38 @@ export class AdminJobsConfigService {
       ) {
         throw new BadRequestError(
           "Invalid meta for update-prematch-odds: bookmakerExternalIds and marketExternalIds must be non-empty arrays"
+        );
+      }
+      if (
+        patch.meta.daysAhead !== undefined &&
+        (!Number.isFinite(patch.meta.daysAhead) || patch.meta.daysAhead < 1)
+      ) {
+        throw new BadRequestError(
+          "Invalid meta for update-prematch-odds: daysAhead must be a positive number"
+        );
+      }
+    }
+
+    if (patch.meta !== undefined && jobId === FINISHED_FIXTURES_JOB_KEY) {
+      if (patch.meta === null) {
+        throw new BadRequestError(
+          "Invalid meta for finished-fixtures: expected a JSON object (not null)"
+        );
+      }
+
+      // Allow empty meta (backward compatible), but if user provides the key we validate it.
+      const m = patch.meta as Record<string, unknown>;
+      if (m["maxLiveAgeHours"] !== undefined && !isFinishedFixturesJobMeta(m)) {
+        throw new BadRequestError(
+          "Invalid meta for finished-fixtures: expected { maxLiveAgeHours: number }"
+        );
+      }
+      if (
+        typeof m["maxLiveAgeHours"] === "number" &&
+        (m["maxLiveAgeHours"] < 0.25 || m["maxLiveAgeHours"] > 168)
+      ) {
+        throw new BadRequestError(
+          "Invalid meta for finished-fixtures: maxLiveAgeHours must be between 0.25 and 168"
         );
       }
     }

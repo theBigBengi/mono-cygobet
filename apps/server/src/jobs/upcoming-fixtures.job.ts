@@ -2,11 +2,79 @@ import type { FastifyInstance } from "fastify";
 import { addDays, format } from "date-fns";
 import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
 import type { FixtureDTO } from "@repo/types/sport-data/common";
-import { JobTriggerBy, RunStatus, RunTrigger, prisma } from "@repo/db";
+import { JobTriggerBy, RunTrigger } from "@repo/db";
 import { seedFixtures } from "../etl/seeds/seed.fixtures";
 import { JobRunOpts, type StandardJobRunStats } from "../types/jobs";
 import { UPCOMING_FIXTURES_JOB } from "./jobs.definitions";
-import { getJobRowOrThrow } from "./jobs.db";
+import {
+  finishJobRunFailed,
+  finishJobRunSuccess,
+  finishJobRunSkipped,
+  getJobRowOrThrow,
+  startJobRun,
+} from "./jobs.db";
+import { clampInt, getMeta, isUpcomingFixturesJobMeta } from "./jobs.meta";
+
+// Fixture state for finished fixtures
+const FIXTURE_STATE_FT = "FT";
+
+// Days ahead to fetch fixtures for
+const DAYS_AHEAD = 3;
+
+function getAdapter() {
+  const token = process.env.SPORTMONKS_API_TOKEN;
+  const footballBaseUrl = process.env.SPORTMONKS_FOOTBALL_BASE_URL;
+  const coreBaseUrl = process.env.SPORTMONKS_CORE_BASE_URL;
+  const authMode =
+    (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
+
+  if (!token || !footballBaseUrl || !coreBaseUrl) {
+    throw new Error("Missing SPORTMONKS environment variables");
+  }
+  return new SportMonksAdapter({
+    token,
+    footballBaseUrl,
+    coreBaseUrl,
+    authMode,
+  });
+}
+
+async function skipJob(
+  jobRunId: number,
+  reason: string,
+  startedAtMs: number,
+  opts: JobRunOpts & { daysAhead?: number }
+) {
+  const from = format(new Date(), "yyyy-MM-dd");
+  const to = format(
+    addDays(new Date(), opts.daysAhead ?? DAYS_AHEAD),
+    "yyyy-MM-dd"
+  );
+
+  await finishJobRunSkipped({
+    id: jobRunId,
+    startedAtMs,
+    rowsAffected: 0,
+    meta: {
+      daysAhead: opts.daysAhead ?? DAYS_AHEAD,
+      dryRun: !!opts.dryRun,
+      window: { from, to },
+      reason,
+    },
+  });
+
+  return {
+    jobRunId,
+    batchId: null,
+    fetched: 0,
+    scheduled: 0,
+    total: 0,
+    ok: 0,
+    fail: 0,
+    window: { from, to },
+    skipped: true,
+  };
+}
 
 /**
  * upcoming-fixtures job
@@ -24,6 +92,8 @@ import { getJobRowOrThrow } from "./jobs.db";
  * - The job is gated by the `jobs` table (jobs.enabled).
  */
 export const upcomingFixturesJob = UPCOMING_FIXTURES_JOB;
+
+const DEFAULT_DAYS_AHEAD = UPCOMING_FIXTURES_JOB.meta?.daysAhead ?? DAYS_AHEAD;
 
 /**
  * isNotStarted()
@@ -49,71 +119,53 @@ function isNotStarted(fx: FixtureDTO): boolean {
  */
 export async function runUpcomingFixturesJob(
   fastify: FastifyInstance,
-  opts: JobRunOpts & { daysAhead?: number } = { daysAhead: 3 }
+  opts: JobRunOpts & { daysAhead?: number }
 ): Promise<
   StandardJobRunStats & {
     scheduled: number;
     window: { from: string; to: string };
   }
 > {
-  const daysAhead = opts.daysAhead ?? 3;
-
   // Jobs are seeded in DB. Missing row is a deployment/config error.
   const jobRow = await getJobRowOrThrow(upcomingFixturesJob.key);
+
+  const meta = getMeta<{ daysAhead?: number }>(jobRow.meta);
+  if (!isUpcomingFixturesJobMeta(meta)) {
+    throw new Error("Invalid job meta for upcoming-fixtures");
+  }
+  const daysAhead = clampInt(
+    opts.daysAhead ?? meta.daysAhead ?? DEFAULT_DAYS_AHEAD,
+    1,
+    30
+  );
 
   // Disabled should only prevent cron runs. Manual "Run" should still work.
   const isCronTrigger = opts.triggeredBy === JobTriggerBy.cron_scheduler;
 
+  // Determine the trigger type
   const trigger =
     opts.trigger ??
     (opts.triggeredBy === JobTriggerBy.cron_scheduler
       ? RunTrigger.auto
       : RunTrigger.manual);
 
-  const startedAtMs = Date.now();
-  const jobRun = await prisma.jobRuns.create({
-    data: {
-      jobKey: upcomingFixturesJob.key,
-      status: RunStatus.running,
-      trigger,
-      triggeredBy: opts.triggeredBy ?? null,
-      triggeredById: opts.triggeredById ?? null,
-      meta: { daysAhead, dryRun: !!opts.dryRun, ...opts.meta },
-    },
-    select: { id: true },
+  // Start the job run
+  const jobRun = await startJobRun({
+    jobKey: upcomingFixturesJob.key,
+    trigger,
+    triggeredBy: opts.triggeredBy ?? null,
+    triggeredById: opts.triggeredById ?? null,
+    meta: { daysAhead, dryRun: !!opts.dryRun, ...(opts.meta ?? {}) },
   });
+  const startedAtMs = jobRun.startedAtMs;
 
   // Date-only format works with SportMonks "between" endpoint and is URL-encoded in the adapter.
   const from = format(new Date(), "yyyy-MM-dd");
   const to = format(addDays(new Date(), daysAhead), "yyyy-MM-dd");
 
+  // If the job is disabled and the trigger is a cron scheduler, skip the job
   if (!jobRow.enabled && isCronTrigger) {
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.skipped,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: 0,
-        meta: {
-          window: { from, to },
-          daysAhead,
-          dryRun: !!opts.dryRun,
-          reason: "disabled",
-        },
-      },
-    });
-    return {
-      jobRunId: jobRun.id,
-      batchId: null,
-      fetched: 0,
-      scheduled: 0,
-      total: 0,
-      ok: 0,
-      fail: 0,
-      window: { from, to },
-      skipped: true,
-    };
+    return skipJob(jobRun.id, "disabled", startedAtMs, opts);
   }
 
   // Build adapter config from env. If env is missing, skip safely (avoids throwing on boot).
@@ -127,32 +179,7 @@ export async function runUpcomingFixturesJob(
     fastify.log.warn(
       "upcoming-fixtures: missing SPORTMONKS env vars; skipping"
     );
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.skipped,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: 0,
-        meta: {
-          daysAhead,
-          dryRun: !!opts.dryRun,
-          window: { from, to },
-          reason: "missing-env",
-        },
-      },
-    });
-    return {
-      jobRunId: jobRun.id,
-      batchId: null,
-      fetched: 0,
-      scheduled: 0,
-      total: 0,
-      ok: 0,
-      fail: 0,
-      window: { from, to },
-      skipped: true,
-    };
+    return skipJob(jobRun.id, "missing-env", startedAtMs, opts);
   }
 
   try {
@@ -172,21 +199,17 @@ export async function runUpcomingFixturesJob(
     const scheduled = fetched.filter(isNotStarted);
 
     if (!scheduled.length) {
-      await prisma.jobRuns.update({
-        where: { id: jobRun.id },
-        data: {
-          status: RunStatus.success,
-          finishedAt: new Date(),
-          durationMs: Date.now() - startedAtMs,
-          rowsAffected: 0,
-          meta: {
-            window: { from, to },
-            daysAhead,
-            dryRun: !!opts.dryRun,
-            countFetched: fetched.length,
-            countScheduled: 0,
-            reason: "no-upcoming-ns",
-          },
+      await finishJobRunSuccess({
+        id: jobRun.id,
+        startedAtMs,
+        rowsAffected: 0,
+        meta: {
+          window: { from, to },
+          daysAhead,
+          dryRun: !!opts.dryRun,
+          countFetched: fetched.length,
+          countScheduled: 0,
+          reason: "no-upcoming-ns",
         },
       });
 
@@ -205,20 +228,16 @@ export async function runUpcomingFixturesJob(
 
     // Dry run: report what we would do, but do not write to DB.
     if (opts.dryRun) {
-      await prisma.jobRuns.update({
-        where: { id: jobRun.id },
-        data: {
-          status: RunStatus.success,
-          finishedAt: new Date(),
-          durationMs: Date.now() - startedAtMs,
-          rowsAffected: 0,
-          meta: {
-            window: { from, to },
-            daysAhead,
-            dryRun: true,
-            countFetched: fetched.length,
-            countScheduled: scheduled.length,
-          },
+      await finishJobRunSuccess({
+        id: jobRun.id,
+        startedAtMs,
+        rowsAffected: 0,
+        meta: {
+          window: { from, to },
+          daysAhead,
+          dryRun: true,
+          countFetched: fetched.length,
+          countScheduled: scheduled.length,
         },
       });
 
@@ -243,24 +262,23 @@ export async function runUpcomingFixturesJob(
       dryRun: false,
     });
 
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.success,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: result?.total ?? scheduled.length,
-        meta: {
-          window: { from, to },
-          daysAhead,
-          dryRun: false,
-          countFetched: fetched.length,
-          countScheduled: scheduled.length,
-          batchId: result?.batchId ?? null,
-          ok: result?.ok ?? 0,
-          fail: result?.fail ?? 0,
-          total: result?.total ?? 0,
-        },
+    await finishJobRunSuccess({
+      id: jobRun.id,
+      startedAtMs,
+      rowsAffected: result?.total ?? scheduled.length,
+      meta: {
+        window: { from, to },
+        daysAhead,
+        dryRun: false,
+        countFetched: fetched.length,
+        countScheduled: scheduled.length,
+        batchId: result?.batchId ?? null,
+        ok: result?.ok ?? 0,
+        fail: result?.fail ?? 0,
+        total: result?.total ?? 0,
+        inserted: result?.inserted ?? 0,
+        updated: result?.updated ?? 0,
+        skipped: result?.skipped ?? 0,
       },
     });
 
@@ -275,22 +293,17 @@ export async function runUpcomingFixturesJob(
       window: { from, to },
       skipped: false,
     };
-  } catch (err: any) {
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.failed,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: 0,
-        errorMessage: String(err?.message ?? err).slice(0, 1000),
-        errorStack: String(err?.stack ?? "").slice(0, 2000),
-        meta: {
-          window: { from, to },
-          daysAhead,
-          dryRun: !!opts.dryRun,
-          jobKey: upcomingFixturesJob.key,
-        },
+  } catch (err: unknown) {
+    await finishJobRunFailed({
+      id: jobRun.id,
+      startedAtMs,
+      err,
+      rowsAffected: 0,
+      meta: {
+        window: { from, to },
+        daysAhead,
+        dryRun: !!opts.dryRun,
+        jobKey: upcomingFixturesJob.key,
       },
     });
     throw err;

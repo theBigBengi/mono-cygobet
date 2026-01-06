@@ -15,6 +15,8 @@
  * - Do NOT overwrite DB values on subsequent runs (admin can edit).
  */
 
+import { UpcomingFixturesJobMeta } from "@repo/types";
+
 /**
  * JobDefinition
  * -------------
@@ -50,7 +52,9 @@ export const UPCOMING_FIXTURES_JOB = {
   enabled: true,
   // Every 6 hours at minute 10 (offset to avoid hammering provider at minute 0).
   scheduleCron: "10 */6 * * *",
-  meta: {},
+  meta: {
+    daysAhead: 3,
+  } satisfies UpcomingFixturesJobMeta,
 } as const satisfies JobDefinition;
 
 /**
@@ -79,7 +83,9 @@ export const FINISHED_FIXTURES_JOB = {
   enabled: true,
   // Every hour at minute 0.
   scheduleCron: "0 * * * *",
-  meta: {},
+  meta: {
+    maxLiveAgeHours: 2,
+  },
 } as const satisfies JobDefinition;
 
 /**
@@ -97,6 +103,7 @@ export const UPDATE_PREMATCH_ODDS_JOB = {
   // Every hour at minute 0.
   scheduleCron: "0 * * * *",
   meta: {
+    daysAhead: 7,
     odds: {
       bookmakerExternalIds: [2],
       marketExternalIds: [1, 57],

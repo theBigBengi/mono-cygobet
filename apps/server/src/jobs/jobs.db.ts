@@ -1,4 +1,23 @@
-import { Prisma, prisma } from "@repo/db";
+import { JobTriggerBy, Prisma, RunStatus, RunTrigger, prisma } from "@repo/db";
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function toJsonObject(v: unknown): Prisma.InputJsonObject {
+  return isPlainObject(v) ? (v as Prisma.InputJsonObject) : {};
+}
+
+function coerceMeta(meta?: Record<string, unknown> | null): Prisma.InputJsonObject {
+  return toJsonObject(meta ?? {});
+}
+
+function normalizeError(err: unknown): { message: string; stack: string } {
+  const e = err as { message?: unknown; stack?: unknown };
+  const message = String(e?.message ?? err ?? "Unknown error").slice(0, 1000);
+  const stack = String(e?.stack ?? "").slice(0, 2000);
+  return { message, stack };
+}
 
 /**
  * Jobs DB helpers
@@ -59,4 +78,100 @@ export async function getJobRowOrThrow(jobKey: string): Promise<{
         ? (row.meta as Record<string, unknown>)
         : {},
   };
+}
+
+export type StartedJobRun = { id: number; startedAtMs: number };
+
+export async function startJobRun(args: {
+  jobKey: string;
+  trigger: RunTrigger;
+  triggeredBy: JobTriggerBy | null;
+  triggeredById: string | null;
+  meta?: Record<string, unknown>;
+}): Promise<StartedJobRun> {
+  const startedAtMs = Date.now();
+  const run = await prisma.jobRuns.create({
+    data: {
+      jobKey: args.jobKey,
+      status: RunStatus.running,
+      trigger: args.trigger,
+      triggeredBy: args.triggeredBy ?? null,
+      triggeredById: args.triggeredById ?? null,
+      meta: coerceMeta(args.meta),
+    },
+    select: { id: true },
+  });
+  return { id: run.id, startedAtMs };
+}
+
+async function finishJobRun(args: {
+  id: number;
+  startedAtMs: number;
+  status: Exclude<RunStatus, "running" | "queued">;
+  rowsAffected?: number;
+  meta?: Record<string, unknown>;
+  errorMessage?: string | null;
+  errorStack?: string | null;
+}) {
+  await prisma.jobRuns.update({
+    where: { id: args.id },
+    data: {
+      status: args.status,
+      finishedAt: new Date(),
+      durationMs: Date.now() - args.startedAtMs,
+      rowsAffected: args.rowsAffected ?? 0,
+      errorMessage: args.errorMessage ?? undefined,
+      errorStack: args.errorStack ?? undefined,
+      meta: coerceMeta(args.meta),
+    },
+  });
+}
+
+export async function finishJobRunSuccess(args: {
+  id: number;
+  startedAtMs: number;
+  rowsAffected?: number;
+  meta?: Record<string, unknown>;
+}) {
+  return finishJobRun({
+    id: args.id,
+    startedAtMs: args.startedAtMs,
+    status: RunStatus.success,
+    rowsAffected: args.rowsAffected,
+    meta: args.meta,
+  });
+}
+
+export async function finishJobRunSkipped(args: {
+  id: number;
+  startedAtMs: number;
+  rowsAffected?: number;
+  meta?: Record<string, unknown>;
+}) {
+  return finishJobRun({
+    id: args.id,
+    startedAtMs: args.startedAtMs,
+    status: RunStatus.skipped,
+    rowsAffected: args.rowsAffected,
+    meta: args.meta,
+  });
+}
+
+export async function finishJobRunFailed(args: {
+  id: number;
+  startedAtMs: number;
+  err: unknown;
+  rowsAffected?: number;
+  meta?: Record<string, unknown>;
+}) {
+  const { message, stack } = normalizeError(args.err);
+  return finishJobRun({
+    id: args.id,
+    startedAtMs: args.startedAtMs,
+    status: RunStatus.failed,
+    rowsAffected: args.rowsAffected ?? 0,
+    errorMessage: message,
+    errorStack: stack,
+    meta: args.meta,
+  });
 }

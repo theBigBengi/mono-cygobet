@@ -50,13 +50,29 @@ export async function seedFixtures(
     triggeredById?: string | null;
     dryRun?: boolean;
   }
-) {
+): Promise<{
+  batchId: number | null;
+  ok: number;
+  fail: number;
+  total: number;
+  inserted: number;
+  updated: number;
+  skipped: number;
+}> {
   // In dry-run mode, skip all database writes including batch tracking
   if (opts?.dryRun) {
     console.log(
       `🧪 DRY RUN MODE: ${fixtures?.length ?? 0} fixtures would be processed (no database changes)`
     );
-    return { batchId: null, ok: 0, fail: 0, total: fixtures?.length ?? 0 };
+    return {
+      batchId: null,
+      ok: 0,
+      fail: 0,
+      total: fixtures?.length ?? 0,
+      inserted: 0,
+      updated: 0,
+      skipped: fixtures?.length ?? 0,
+    };
   }
 
   let batchId = opts?.batchId;
@@ -119,6 +135,7 @@ export async function seedFixtures(
         {
           name: fixture.name,
           reason: "duplicate",
+          action: "skip",
         }
       )
     );
@@ -198,13 +215,28 @@ export async function seedFixtures(
 
   let ok = 0;
   let fail = 0;
+  let inserted = 0;
+  let updated = 0;
+  let skipped = duplicates.length;
 
   try {
     for (const group of chunk(uniqueFixtures, CHUNK_SIZE)) {
+      // Pre-fetch which fixtures already exist so we can label items as insert vs update.
+      // This keeps a single DB roundtrip per chunk (vs per-row).
+      const groupExternalIds = group.map((f) => safeBigInt(f.externalId));
+      const existing = await prisma.fixtures.findMany({
+        where: { externalId: { in: groupExternalIds } },
+        select: { externalId: true },
+      });
+      const existingSet = new Set(existing.map((r) => String(r.externalId)));
+
       // Process all fixtures in the chunk in parallel
       const chunkResults = await Promise.allSettled(
         group.map(async (fixture) => {
           try {
+            const extIdKey = String(safeBigInt(fixture.externalId));
+            const action = existingSet.has(extIdKey) ? "update" : "insert";
+
             if (!fixture.name) {
               throw new Error(
                 `No name specified for fixture (externalId: ${fixture.externalId})`
@@ -291,11 +323,14 @@ export async function seedFixtures(
               {
                 name: fixture.name,
                 externalId: fixture.externalId,
+                action,
               }
             );
 
-            return { success: true, fixture };
+            return { success: true, fixture, action };
           } catch (e: any) {
+            const extIdKey = String(safeBigInt(fixture.externalId));
+            const action = existingSet.has(extIdKey) ? "update" : "insert";
             const errorCode = e?.code || "UNKNOWN_ERROR";
             const errorMessage = e?.message || "Unknown error";
 
@@ -309,6 +344,7 @@ export async function seedFixtures(
                 externalId: fixture.externalId,
                 errorCode,
                 errorMessage: errorMessage.slice(0, 200),
+                action,
               }
             );
 
@@ -316,7 +352,7 @@ export async function seedFixtures(
               `❌ [${batchId}] Fixture failed: ${fixture.name} (ID: ${fixture.externalId}) - ${errorMessage}`
             );
 
-            return { success: false, fixture, error: errorMessage };
+            return { success: false, fixture, error: errorMessage, action };
           }
         })
       );
@@ -326,6 +362,8 @@ export async function seedFixtures(
         if (result.status === "fulfilled") {
           if (result.value.success) {
             ok++;
+            if (result.value.action === "insert") inserted++;
+            else if (result.value.action === "update") updated++;
           } else {
             fail++;
           }
@@ -339,13 +377,13 @@ export async function seedFixtures(
       itemsTotal: ok + fail,
       itemsSuccess: ok,
       itemsFailed: fail,
-      meta: { ok, fail },
+      meta: { ok, fail, inserted, updated, skipped },
     });
 
     console.log(
       `🎉 [${batchId}] Fixtures seeding completed: ${ok} success, ${fail} failed`
     );
-    return { batchId, ok, fail, total: ok + fail };
+    return { batchId, ok, fail, total: ok + fail, inserted, updated, skipped };
   } catch (e: any) {
     console.log(
       `💥 [${batchId}] Unexpected error during fixtures seeding: ${
@@ -357,9 +395,9 @@ export async function seedFixtures(
       itemsSuccess: ok,
       itemsFailed: fail,
       errorMessage: String(e?.message ?? e).slice(0, 500),
-      meta: { ok, fail },
+      meta: { ok, fail, inserted, updated, skipped },
     });
 
-    return { batchId, ok, fail, total: ok + fail };
+    return { batchId, ok, fail, total: ok + fail, inserted, updated, skipped };
   }
 }

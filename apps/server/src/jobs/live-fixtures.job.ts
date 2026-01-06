@@ -1,10 +1,16 @@
 import type { FastifyInstance } from "fastify";
 import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
-import { JobTriggerBy, prisma, RunStatus, RunTrigger } from "@repo/db";
+import { JobTriggerBy, RunTrigger } from "@repo/db";
 import { seedFixtures } from "../etl/seeds/seed.fixtures";
 import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
 import { LIVE_FIXTURES_JOB } from "./jobs.definitions";
-import { getJobRowOrThrow } from "./jobs.db";
+import {
+  finishJobRunFailed,
+  finishJobRunSkipped,
+  finishJobRunSuccess,
+  getJobRowOrThrow,
+  startJobRun,
+} from "./jobs.db";
 
 /**
  * live-fixtures job
@@ -50,34 +56,23 @@ export async function runLiveFixturesJob(
       ? RunTrigger.auto
       : RunTrigger.manual);
 
-  const startedAtMs = Date.now();
-  const jobRun = await prisma.jobRuns.create({
-    data: {
-      jobKey: liveFixturesJob.key,
-      status: RunStatus.running,
-      trigger,
-      triggeredBy: opts.triggeredBy ?? null,
-      triggeredById: opts.triggeredById ?? null,
-      meta: {
-        dryRun: !!opts.dryRun,
-        ...(opts.meta ?? {}),
-      },
-    },
-    select: { id: true },
+  const jobRun = await startJobRun({
+    jobKey: liveFixturesJob.key,
+    trigger,
+    triggeredBy: opts.triggeredBy ?? null,
+    triggeredById: opts.triggeredById ?? null,
+    meta: { dryRun: !!opts.dryRun, ...(opts.meta ?? {}) },
   });
+  const startedAtMs = jobRun.startedAtMs;
 
   if (!jobRow.enabled && isCronTrigger) {
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.skipped,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: 0,
-        meta: {
-          dryRun: !!opts.dryRun,
-          reason: "disabled",
-        },
+    await finishJobRunSkipped({
+      id: jobRun.id,
+      startedAtMs,
+      rowsAffected: 0,
+      meta: {
+        dryRun: !!opts.dryRun,
+        reason: "disabled",
       },
     });
     return {
@@ -102,18 +97,14 @@ export async function runLiveFixturesJob(
     fastify.log.warn(
       "live-fixtures: missing SPORTMONKS env vars; skipping job"
     );
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.skipped,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: 0,
-        meta: {
-          dryRun: !!opts.dryRun,
-          reason: "missing-env",
-          ...(opts.meta ?? {}),
-        },
+    await finishJobRunSkipped({
+      id: jobRun.id,
+      startedAtMs,
+      rowsAffected: 0,
+      meta: {
+        dryRun: !!opts.dryRun,
+        reason: "missing-env",
+        ...(opts.meta ?? {}),
       },
     });
     return {
@@ -140,18 +131,14 @@ export async function runLiveFixturesJob(
     });
 
     if (opts.dryRun) {
-      await prisma.jobRuns.update({
-        where: { id: jobRun.id },
-        data: {
-          status: RunStatus.success,
-          finishedAt: new Date(),
-          durationMs: Date.now() - startedAtMs,
-          rowsAffected: 0,
-          meta: {
-            dryRun: true,
-            fetched: fixtures.length,
-            ...(opts.meta ?? {}),
-          },
+      await finishJobRunSuccess({
+        id: jobRun.id,
+        startedAtMs,
+        rowsAffected: 0,
+        meta: {
+          dryRun: true,
+          fetched: fixtures.length,
+          ...(opts.meta ?? {}),
         },
       });
       return {
@@ -173,21 +160,20 @@ export async function runLiveFixturesJob(
       dryRun: false,
     });
 
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.success,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: result?.total ?? fixtures.length,
-        meta: {
-          fetched: fixtures.length,
-          batchId: result?.batchId ?? null,
-          ok: result?.ok ?? 0,
-          fail: result?.fail ?? 0,
-          total: result?.total ?? 0,
-          ...(opts.meta ?? {}),
-        },
+    await finishJobRunSuccess({
+      id: jobRun.id,
+      startedAtMs,
+      rowsAffected: result?.total ?? fixtures.length,
+      meta: {
+        fetched: fixtures.length,
+        batchId: result?.batchId ?? null,
+        ok: result?.ok ?? 0,
+        fail: result?.fail ?? 0,
+        total: result?.total ?? 0,
+        inserted: result?.inserted ?? 0,
+        updated: result?.updated ?? 0,
+        skipped: result?.skipped ?? 0,
+        ...(opts.meta ?? {}),
       },
     });
 
@@ -200,20 +186,15 @@ export async function runLiveFixturesJob(
       fail: result?.fail,
       skipped: false,
     };
-  } catch (err: any) {
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.failed,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: 0,
-        errorMessage: String(err?.message ?? err).slice(0, 1000),
-        errorStack: String(err?.stack ?? "").slice(0, 2000),
-        meta: {
-          dryRun: !!opts.dryRun,
-          ...(opts.meta ?? {}),
-        },
+  } catch (err: unknown) {
+    await finishJobRunFailed({
+      id: jobRun.id,
+      startedAtMs,
+      err,
+      rowsAffected: 0,
+      meta: {
+        dryRun: !!opts.dryRun,
+        ...(opts.meta ?? {}),
       },
     });
     throw err;

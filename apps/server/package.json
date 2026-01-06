@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit",
     "start": "tsx src/server.ts",
+    "jobs": "tsx src/jobs/jobs.cli.ts",
     "seed": "tsx src/etl/seeds/seed.cli.ts",
     "seed:dry": "tsx src/etl/seeds/seed.cli.ts --dry-run"
   },

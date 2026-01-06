@@ -1,4 +1,8 @@
-import type { UpdatePrematchOddsJobMeta } from "@repo/types";
+import type {
+  UpdatePrematchOddsJobMeta,
+  UpcomingFixturesJobMeta,
+  FinishedFixturesJobMeta,
+} from "@repo/types";
 
 /**
  * Runtime validators for `jobs.meta`.
@@ -27,6 +31,26 @@ function isNumberArray(v: unknown): v is number[] {
 }
 
 /**
+ * Generic meta extraction (type-level only)
+ * ----------------------------------------
+ * Intentionally generic: does not know job keys or fields.
+ *
+ * NOTE:
+ * - This is a *type cast* helper. It does not validate runtime shape.
+ * - Runtime validation should be done elsewhere (e.g. admin PATCH validation) or via the
+ *   job-specific `isXxxJobMeta` guards below when needed.
+ */
+export function getMeta<T>(meta: Record<string, unknown>): T {
+  if (!isPlainObject(meta)) throw new Error("Invalid meta: expected object");
+  return meta as unknown as T;
+}
+
+export function clampInt(n: number, min: number, max: number): number {
+  const x = Math.trunc(n);
+  return Math.max(min, Math.min(max, x));
+}
+
+/**
  * Validate canonical meta schema for `update-prematch-odds`.
  *
  * Expected shape:
@@ -50,5 +74,22 @@ export function isUpdatePrematchOddsJobMeta(
   return (
     isNumberArray(odds["bookmakerExternalIds"]) &&
     isNumberArray(odds["marketExternalIds"])
+  );
+}
+
+export function isUpcomingFixturesJobMeta(
+  v: unknown
+): v is UpcomingFixturesJobMeta {
+  if (!isPlainObject(v)) return false;
+  return typeof v["daysAhead"] === "number" && Number.isFinite(v["daysAhead"]);
+}
+
+export function isFinishedFixturesJobMeta(
+  v: unknown
+): v is FinishedFixturesJobMeta {
+  if (!isPlainObject(v)) return false;
+  return (
+    typeof v["maxLiveAgeHours"] === "number" &&
+    Number.isFinite(v["maxLiveAgeHours"])
   );
 }

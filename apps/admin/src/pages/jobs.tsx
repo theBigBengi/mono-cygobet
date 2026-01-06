@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -48,14 +48,21 @@ import { CheckCircle2, XCircle } from "lucide-react";
 
 import { useJobsFromDb, useJobRunsFromDb } from "@/hooks/use-jobs";
 import { jobsService } from "@/services/jobs.service";
+import { batchesService } from "@/services/batches.service";
 import { useBookmakersFromProvider } from "@/hooks/use-bookmakers";
 import { useMarketsFromProvider } from "@/hooks/use-markets";
 import type { AdminJobRunsListResponse } from "@repo/types";
 import type { AdminJobsListResponse } from "@repo/types";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import type { UpdatePrematchOddsJobMeta } from "@repo/types";
+import type {
+  FinishedFixturesJobMeta,
+  UpdatePrematchOddsJobMeta,
+  UpcomingFixturesJobMeta,
+} from "@repo/types";
 
 const UPDATE_PREMATCH_ODDS_JOB_KEY = "update-prematch-odds" as const;
+const UPCOMING_FIXTURES_JOB_KEY = "upsert-upcoming-fixtures" as const;
+const FINISHED_FIXTURES_JOB_KEY = "finished-fixtures" as const;
 
 type JobsTab = "runs" | "jobs";
 type RunRow = AdminJobRunsListResponse["data"][0];
@@ -383,6 +390,7 @@ export default function JobsPage() {
 
   const [selectedRun, setSelectedRun] = useState<RunRow | null>(null);
   const [runDrawerOpen, setRunDrawerOpen] = useState(false);
+  const [inspectBatchOpen, setInspectBatchOpen] = useState(false);
   const [jobDrawerOpen, setJobDrawerOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobRow | null>(null);
   const [jobForm, setJobForm] = useState<{
@@ -391,16 +399,57 @@ export default function JobsPage() {
     schedule: ScheduleState;
     oddsBookmakerExternalIds: string[];
     oddsMarketExternalIds: string[];
+    upcomingDaysAhead: number;
+    prematchDaysAhead: number;
+    finishedMaxLiveAgeHours: number;
   } | null>(null);
+
+  const selectedRunMeta = useMemo(() => {
+    return (selectedRun?.meta ?? {}) as Record<string, unknown>;
+  }, [selectedRun]);
+
+  const selectedRunBatchId = useMemo((): number | null => {
+    const v = selectedRunMeta["batchId"];
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+    if (typeof v === "string" && /^\d+$/.test(v)) return Number(v);
+    return null;
+  }, [selectedRunMeta]);
+
+  const batchItemsQuery = useQuery({
+    queryKey: ["batch-items", selectedRunBatchId],
+    queryFn: () => batchesService.getBatchItems(selectedRunBatchId!, 1, 100),
+    enabled: inspectBatchOpen && selectedRunBatchId !== null,
+    staleTime: 15000,
+  });
 
   const openRun = (r: RunRow) => {
     setSelectedRun(r);
+    setInspectBatchOpen(false);
     setRunDrawerOpen(true);
   };
 
   const openJob = (j: JobRow) => {
     const oddsMeta = (j.meta ?? {}) as Record<string, unknown>;
     const odds = (oddsMeta["odds"] ?? {}) as Record<string, unknown>;
+    const upcomingMeta = (j.meta ?? {}) as Record<string, unknown>;
+    const upcomingDaysAhead =
+      j.key === UPCOMING_FIXTURES_JOB_KEY &&
+      typeof upcomingMeta["daysAhead"] === "number" &&
+      Number.isFinite(upcomingMeta["daysAhead"])
+        ? Math.max(1, Math.trunc(upcomingMeta["daysAhead"] as number))
+        : 3;
+    const prematchDaysAhead =
+      j.key === UPDATE_PREMATCH_ODDS_JOB_KEY &&
+      typeof oddsMeta["daysAhead"] === "number" &&
+      Number.isFinite(oddsMeta["daysAhead"])
+        ? Math.max(1, Math.trunc(oddsMeta["daysAhead"] as number))
+        : 7;
+    const finishedMaxLiveAgeHours =
+      j.key === FINISHED_FIXTURES_JOB_KEY &&
+      typeof oddsMeta["maxLiveAgeHours"] === "number" &&
+      Number.isFinite(oddsMeta["maxLiveAgeHours"])
+        ? Math.max(1, Math.trunc(oddsMeta["maxLiveAgeHours"] as number))
+        : 2;
     const defaultOddsBookmakers =
       j.key === "update-prematch-odds" ? (["2"] as string[]) : [];
     const defaultOddsMarkets =
@@ -418,6 +467,9 @@ export default function JobsPage() {
         const v = asStringArray(odds["marketExternalIds"]);
         return v.length ? v : defaultOddsMarkets;
       })(),
+      upcomingDaysAhead,
+      prematchDaysAhead,
+      finishedMaxLiveAgeHours,
     });
     setJobDrawerOpen(true);
   };
@@ -429,6 +481,7 @@ export default function JobsPage() {
         description?: string | null;
         enabled?: boolean;
         scheduleCron?: string | null;
+        meta?: Record<string, unknown> | null;
       };
     }) => jobsService.updateJob(vars.jobKey, vars.patch),
     onSuccess: () => {
@@ -830,7 +883,13 @@ export default function JobsPage() {
       </Tabs>
 
       {/* Run drawer (right panel) */}
-      <Sheet open={runDrawerOpen} onOpenChange={setRunDrawerOpen}>
+      <Sheet
+        open={runDrawerOpen}
+        onOpenChange={(open) => {
+          setRunDrawerOpen(open);
+          if (!open) setInspectBatchOpen(false);
+        }}
+      >
         <SheetContent
           hideClose
           side="right"
@@ -901,51 +960,265 @@ export default function JobsPage() {
 
               <div className="flex-1 min-h-0 overflow-y-auto p-6 pt-4 space-y-4">
                 {(() => {
-                  const meta = (selectedRun.meta ?? {}) as Record<
-                    string,
-                    unknown
-                  >;
-                  const ok = typeof meta["ok"] === "number" ? meta["ok"] : 0;
+                  const ok =
+                    typeof selectedRunMeta["ok"] === "number"
+                      ? (selectedRunMeta["ok"] as number)
+                      : 0;
                   const fail =
-                    typeof meta["fail"] === "number" ? meta["fail"] : 0;
+                    typeof selectedRunMeta["fail"] === "number"
+                      ? (selectedRunMeta["fail"] as number)
+                      : 0;
                   const total =
-                    typeof meta["total"] === "number" ? meta["total"] : 0;
-                  const batchId = meta["batchId"];
+                    typeof selectedRunMeta["total"] === "number"
+                      ? (selectedRunMeta["total"] as number)
+                      : 0;
+
+                  const inserted =
+                    typeof selectedRunMeta["inserted"] === "number"
+                      ? (selectedRunMeta["inserted"] as number)
+                      : null;
+                  const updated =
+                    typeof selectedRunMeta["updated"] === "number"
+                      ? (selectedRunMeta["updated"] as number)
+                      : null;
+                  const skipped =
+                    typeof selectedRunMeta["skipped"] === "number"
+                      ? (selectedRunMeta["skipped"] as number)
+                      : null;
+                  const duplicates =
+                    typeof selectedRunMeta["duplicates"] === "number"
+                      ? (selectedRunMeta["duplicates"] as number)
+                      : null;
+
+                  const hasWriteStats =
+                    inserted !== null ||
+                    updated !== null ||
+                    skipped !== null ||
+                    duplicates !== null;
+
                   const batchIdLabel =
-                    typeof batchId === "string" || typeof batchId === "number"
-                      ? String(batchId)
+                    selectedRunBatchId !== null
+                      ? String(selectedRunBatchId)
                       : "—";
 
                   return (
-                    <div className="rounded-lg border p-4">
-                      <div className="text-sm font-medium">Result</div>
-                      <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
-                        <div className="text-muted-foreground">
-                          OK
-                          <div className="text-foreground font-medium">
-                            {ok}
+                    <>
+                      <div className="rounded-lg border p-4">
+                        <div className="text-sm font-medium">Result</div>
+                        <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
+                          <div className="text-muted-foreground">
+                            OK
+                            <div className="text-foreground font-medium">
+                              {ok}
+                            </div>
+                          </div>
+                          <div className="text-muted-foreground">
+                            Fail
+                            <div className="text-foreground font-medium">
+                              {fail}
+                            </div>
+                          </div>
+                          <div className="text-muted-foreground">
+                            Total
+                            <div className="text-foreground font-medium">
+                              {total}
+                            </div>
                           </div>
                         </div>
-                        <div className="text-muted-foreground">
-                          Fail
-                          <div className="text-foreground font-medium">
-                            {fail}
+
+                        {hasWriteStats ? (
+                          <div className="mt-3 grid grid-cols-4 gap-3 text-xs">
+                            <div className="text-muted-foreground">
+                              Inserted
+                              <div className="text-foreground font-medium">
+                                {inserted ?? "—"}
+                              </div>
+                            </div>
+                            <div className="text-muted-foreground">
+                              Updated
+                              <div className="text-foreground font-medium">
+                                {updated ?? "—"}
+                              </div>
+                            </div>
+                            <div className="text-muted-foreground">
+                              Skipped
+                              <div className="text-foreground font-medium">
+                                {skipped ?? "—"}
+                              </div>
+                            </div>
+                            <div className="text-muted-foreground">
+                              Duplicates
+                              <div className="text-foreground font-medium">
+                                {duplicates ?? "—"}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-muted-foreground">
-                          Total
-                          <div className="text-foreground font-medium">
-                            {total}
+                        ) : null}
+
+                        <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                          <div>
+                            batchId:{" "}
+                            <span className="font-mono text-foreground">
+                              {batchIdLabel}
+                            </span>
                           </div>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={selectedRunBatchId === null}
+                            onClick={() => setInspectBatchOpen((v) => !v)}
+                          >
+                            {inspectBatchOpen ? "Hide items" : "Inspect items"}
+                          </Button>
                         </div>
                       </div>
-                      <div className="mt-3 text-xs text-muted-foreground">
-                        batchId:{" "}
-                        <span className="font-mono text-foreground">
-                          {batchIdLabel}
-                        </span>
-                      </div>
-                    </div>
+
+                      {inspectBatchOpen && selectedRunBatchId !== null ? (
+                        <div className="rounded-lg border p-4">
+                          <div className="text-sm font-medium">
+                            Batch items (first 100)
+                          </div>
+                          {batchItemsQuery.isLoading ? (
+                            <div className="mt-2 text-xs text-muted-foreground">
+                              Loading…
+                            </div>
+                          ) : batchItemsQuery.isError ? (
+                            <div className="mt-2 text-xs text-destructive">
+                              Failed to load batch items
+                            </div>
+                          ) : (
+                            (() => {
+                              const items = batchItemsQuery.data?.data ?? [];
+                              const insertedItems = items.filter((it) => {
+                                const m = (it.meta ?? {}) as Record<
+                                  string,
+                                  unknown
+                                >;
+                                return m["action"] === "insert";
+                              });
+                              const updatedItems = items.filter((it) => {
+                                const m = (it.meta ?? {}) as Record<
+                                  string,
+                                  unknown
+                                >;
+                                return m["action"] === "update";
+                              });
+                              const successItems = items.filter(
+                                (it) => it.status === "success"
+                              );
+                              const failedItems = items.filter(
+                                (it) => it.status === "failed"
+                              );
+                              const skippedItems = items.filter(
+                                (it) => it.status === "skipped"
+                              );
+
+                              const hasActionLabels =
+                                insertedItems.length > 0 ||
+                                updatedItems.length > 0;
+
+                              const renderList = (
+                                title: string,
+                                list: typeof items
+                              ) => (
+                                <div className="mt-3">
+                                  <div className="text-xs font-medium">
+                                    {title} ({list.length})
+                                  </div>
+                                  {list.length ? (
+                                    <div className="mt-2 space-y-1">
+                                      {list.slice(0, 20).map((it) => {
+                                        const m = (it.meta ?? {}) as Record<
+                                          string,
+                                          unknown
+                                        >;
+                                        const name =
+                                          typeof m["name"] === "string"
+                                            ? m["name"]
+                                            : null;
+                                        return (
+                                          <div
+                                            key={it.id}
+                                            className="text-xs text-muted-foreground flex items-start justify-between gap-3"
+                                          >
+                                            <span className="font-mono text-foreground">
+                                              {it.itemKey ?? "—"}
+                                            </span>
+                                            <span className="truncate">
+                                              {name ?? ""}
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                      —
+                                    </div>
+                                  )}
+                                </div>
+                              );
+
+                              return (
+                                <>
+                                  <div className="mt-2 text-xs text-muted-foreground">
+                                    {hasActionLabels ? (
+                                      <>
+                                        Showing items labeled as{" "}
+                                        <span className="font-mono text-foreground">
+                                          insert/update
+                                        </span>
+                                        .
+                                      </>
+                                    ) : (
+                                      <>
+                                        This batch doesn’t include{" "}
+                                        <span className="font-mono text-foreground">
+                                          action
+                                        </span>{" "}
+                                        labels yet — showing status-based items
+                                        instead.
+                                      </>
+                                    )}
+                                  </div>
+                                  <div className="mt-2 text-xs text-muted-foreground">
+                                    total:{" "}
+                                    <span className="font-mono text-foreground">
+                                      {items.length}
+                                    </span>
+                                    {" • "}success:{" "}
+                                    <span className="font-mono text-foreground">
+                                      {successItems.length}
+                                    </span>
+                                    {" • "}failed:{" "}
+                                    <span className="font-mono text-foreground">
+                                      {failedItems.length}
+                                    </span>
+                                    {" • "}skipped:{" "}
+                                    <span className="font-mono text-foreground">
+                                      {skippedItems.length}
+                                    </span>
+                                  </div>
+
+                                  {hasActionLabels ? (
+                                    <>
+                                      {renderList("Inserted", insertedItems)}
+                                      {renderList("Updated", updatedItems)}
+                                    </>
+                                  ) : (
+                                    <>
+                                      {renderList("Success", successItems)}
+                                      {renderList("Failed", failedItems)}
+                                      {renderList("Skipped", skippedItems)}
+                                    </>
+                                  )}
+                                </>
+                              );
+                            })()
+                          )}
+                        </div>
+                      ) : null}
+                    </>
                   );
                 })()}
 
@@ -1073,64 +1346,165 @@ export default function JobsPage() {
                   </div>
 
                   {selectedJob.key === "update-prematch-odds" && (
+                    <>
+                      <div>
+                        <div className="text-sm font-medium">Job metadata</div>
+                        <div className="text-xs text-muted-foreground">
+                          Controls job-specific parameters. Bookmakers, markets
+                          and days ahead.
+                        </div>
+
+                        <div className="mt-3 space-y-3 rounded-lg border p-4">
+                          <div className="grid gap-2">
+                            <Label className="text-xs text-muted-foreground">
+                              Days ahead
+                            </Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={30}
+                              value={jobForm.prematchDaysAhead}
+                              onChange={(e) => {
+                                const n = Math.trunc(Number(e.target.value));
+                                setJobForm((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        prematchDaysAhead: Number.isFinite(n)
+                                          ? Math.max(1, Math.min(30, n))
+                                          : 1,
+                                      }
+                                    : prev
+                                );
+                              }}
+                            />
+                          </div>
+
+                          <div className="grid gap-2">
+                            <Label className="text-xs text-muted-foreground">
+                              Bookmakers (external IDs)
+                            </Label>
+                            <MultiSelectCombobox
+                              options={bookmakerOptions}
+                              selectedValues={jobForm.oddsBookmakerExternalIds}
+                              onSelectionChange={(values) =>
+                                setJobForm((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        oddsBookmakerExternalIds: values.map(
+                                          (v) => String(v)
+                                        ),
+                                      }
+                                    : prev
+                                )
+                              }
+                              placeholder="Select bookmakers..."
+                              searchPlaceholder="Search bookmakers..."
+                              emptyMessage="No bookmakers found."
+                            />
+                          </div>
+
+                          <div className="grid gap-2">
+                            <Label className="text-xs text-muted-foreground">
+                              Markets (external IDs)
+                            </Label>
+                            <MultiSelectCombobox
+                              options={marketOptions}
+                              selectedValues={jobForm.oddsMarketExternalIds}
+                              onSelectionChange={(values) =>
+                                setJobForm((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        oddsMarketExternalIds: values.map((v) =>
+                                          String(v)
+                                        ),
+                                      }
+                                    : prev
+                                )
+                              }
+                              placeholder="Select markets..."
+                              searchPlaceholder="Search markets..."
+                              emptyMessage="No markets found."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {selectedJob.key === UPCOMING_FIXTURES_JOB_KEY && (
                     <div className="space-y-3 rounded-lg border p-4">
                       <div>
                         <div className="text-sm font-medium">
-                          Odds parameters
+                          Upcoming fixtures parameters
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Controls which bookmakers/markets the job fetches and
-                          seeds.
+                          Controls how many days ahead we fetch NS fixtures.
                         </div>
                       </div>
 
                       <div className="grid gap-2">
                         <Label className="text-xs text-muted-foreground">
-                          Bookmakers (external IDs)
+                          Days ahead
                         </Label>
-                        <MultiSelectCombobox
-                          options={bookmakerOptions}
-                          selectedValues={jobForm.oddsBookmakerExternalIds}
-                          onSelectionChange={(values) =>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={30}
+                          value={jobForm.upcomingDaysAhead}
+                          onChange={(e) => {
+                            const n = Math.trunc(Number(e.target.value));
                             setJobForm((prev) =>
                               prev
                                 ? {
                                     ...prev,
-                                    oddsBookmakerExternalIds: values.map((v) =>
-                                      String(v)
-                                    ),
+                                    upcomingDaysAhead: Number.isFinite(n)
+                                      ? Math.max(1, Math.min(30, n))
+                                      : 1,
                                   }
                                 : prev
-                            )
-                          }
-                          placeholder="Select bookmakers..."
-                          searchPlaceholder="Search bookmakers..."
-                          emptyMessage="No bookmakers found."
+                            );
+                          }}
                         />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedJob.key === FINISHED_FIXTURES_JOB_KEY && (
+                    <div className="space-y-3 rounded-lg border p-4">
+                      <div>
+                        <div className="text-sm font-medium">
+                          Finished fixtures parameters
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Re-check LIVE fixtures older than this threshold.
+                        </div>
                       </div>
 
                       <div className="grid gap-2">
                         <Label className="text-xs text-muted-foreground">
-                          Markets (external IDs)
+                          Max live age (hours)
                         </Label>
-                        <MultiSelectCombobox
-                          options={marketOptions}
-                          selectedValues={jobForm.oddsMarketExternalIds}
-                          onSelectionChange={(values) =>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={168}
+                          value={jobForm.finishedMaxLiveAgeHours}
+                          onChange={(e) => {
+                            const n = Math.trunc(Number(e.target.value));
                             setJobForm((prev) =>
                               prev
                                 ? {
                                     ...prev,
-                                    oddsMarketExternalIds: values.map((v) =>
-                                      String(v)
-                                    ),
+                                    finishedMaxLiveAgeHours: Number.isFinite(n)
+                                      ? Math.max(1, Math.min(168, n))
+                                      : 1,
                                   }
                                 : prev
-                            )
-                          }
-                          placeholder="Select markets..."
-                          searchPlaceholder="Search markets..."
-                          emptyMessage="No markets found."
+                            );
+                          }}
                         />
                       </div>
                     </div>
@@ -1667,6 +2041,7 @@ export default function JobsPage() {
                       ...(selectedJob.key === UPDATE_PREMATCH_ODDS_JOB_KEY
                         ? {
                             meta: {
+                              daysAhead: jobForm.prematchDaysAhead,
                               odds: {
                                 bookmakerExternalIds:
                                   jobForm.oddsBookmakerExternalIds
@@ -1678,6 +2053,20 @@ export default function JobsPage() {
                               },
                             } satisfies UpdatePrematchOddsJobMeta,
                           }
+                        : {}),
+                      ...(selectedJob.key === UPCOMING_FIXTURES_JOB_KEY
+                        ? ({
+                            meta: {
+                              daysAhead: jobForm.upcomingDaysAhead,
+                            } satisfies UpcomingFixturesJobMeta,
+                          } as const)
+                        : {}),
+                      ...(selectedJob.key === FINISHED_FIXTURES_JOB_KEY
+                        ? ({
+                            meta: {
+                              maxLiveAgeHours: jobForm.finishedMaxLiveAgeHours,
+                            } satisfies FinishedFixturesJobMeta,
+                          } as const)
                         : {}),
                     };
                     updateJobMutation.mutate({

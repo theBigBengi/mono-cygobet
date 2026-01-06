@@ -3,13 +3,19 @@ import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
 import {
   FixtureState as DbFixtureState,
   JobTriggerBy,
-  RunStatus,
   RunTrigger,
   prisma,
 } from "@repo/db";
 import { JobRunOpts } from "../types/jobs";
 import { FINISHED_FIXTURES_JOB } from "./jobs.definitions";
-import { getJobRowOrThrow } from "./jobs.db";
+import {
+  finishJobRunFailed,
+  finishJobRunSkipped,
+  finishJobRunSuccess,
+  getJobRowOrThrow,
+  startJobRun,
+} from "./jobs.db";
+import { clampInt, getMeta, isFinishedFixturesJobMeta } from "./jobs.meta";
 // NOTE: We now have a dedicated `jobRuns` table for job executions (see prisma schema).
 
 /**
@@ -24,6 +30,9 @@ import { getJobRowOrThrow } from "./jobs.db";
  *   and update our DB state + result + derived scores.
  */
 export const finishedFixturesJob = FINISHED_FIXTURES_JOB;
+
+const DEFAULT_MAX_LIVE_AGE_HOURS =
+  FINISHED_FIXTURES_JOB.meta?.maxLiveAgeHours ?? 2;
 
 /**
  * Extract numeric scores from a normalized result string.
@@ -98,10 +107,25 @@ export async function runFinishedFixturesJob(
   fastify: FastifyInstance,
   opts: JobRunOpts & { maxLiveAgeHours?: number } = { maxLiveAgeHours: 2 }
 ) {
-  const maxLiveAgeHours = opts.maxLiveAgeHours ?? 2;
-
   // Jobs are seeded in DB. Missing row is a deployment/config error.
   const jobRow = await getJobRowOrThrow(finishedFixturesJob.key);
+
+  const meta = getMeta<{
+    maxLiveAgeHours?: number;
+  }>(jobRow.meta);
+  if (!isFinishedFixturesJobMeta(meta)) {
+    // Backward compatible: allow missing/invalid meta and fall back to default.
+    // (PATCH route validation should prevent invalid writes going forward.)
+  }
+  const maxLiveAgeHours = clampInt(
+    opts.maxLiveAgeHours ??
+      (isFinishedFixturesJobMeta(meta)
+        ? meta.maxLiveAgeHours
+        : DEFAULT_MAX_LIVE_AGE_HOURS) ??
+      DEFAULT_MAX_LIVE_AGE_HOURS,
+    1,
+    168
+  );
 
   // Disabled should only prevent cron runs. Manual "Run" should still work.
   const isCronTrigger = opts.triggeredBy === JobTriggerBy.cron_scheduler;
@@ -113,35 +137,27 @@ export async function runFinishedFixturesJob(
       ? RunTrigger.auto
       : RunTrigger.manual);
 
-  const startedAtMs = Date.now();
-  const jobRun = await prisma.jobRuns.create({
-    data: {
-      jobKey: finishedFixturesJob.key,
-      status: RunStatus.running,
-      trigger,
-      triggeredBy: opts.triggeredBy ?? null,
-      triggeredById: opts.triggeredById ?? null,
+  const jobRun = await startJobRun({
+    jobKey: finishedFixturesJob.key,
+    trigger,
+    triggeredBy: opts.triggeredBy ?? null,
+    triggeredById: opts.triggeredById ?? null,
+    meta: {
+      maxLiveAgeHours,
+      dryRun: !!opts.dryRun,
+    },
+  });
+  const startedAtMs = jobRun.startedAtMs;
+
+  if (!jobRow.enabled && isCronTrigger) {
+    await finishJobRunSkipped({
+      id: jobRun.id,
+      startedAtMs,
+      rowsAffected: 0,
       meta: {
         maxLiveAgeHours,
         dryRun: !!opts.dryRun,
-      },
-    },
-    select: { id: true, startedAt: true },
-  });
-
-  if (!jobRow.enabled && isCronTrigger) {
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.skipped,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: 0,
-        meta: {
-          maxLiveAgeHours,
-          dryRun: !!opts.dryRun,
-          reason: "disabled",
-        },
+        reason: "disabled",
       },
     });
     return { candidates: 0, fetched: 0, updated: 0, skipped: true };
@@ -158,18 +174,14 @@ export async function runFinishedFixturesJob(
     fastify.log.warn(
       "finished-fixtures: missing SPORTMONKS env vars; skipping job"
     );
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.skipped,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: 0,
-        meta: {
-          maxLiveAgeHours,
-          dryRun: !!opts.dryRun,
-          reason: "missing-env",
-        },
+    await finishJobRunSkipped({
+      id: jobRun.id,
+      startedAtMs,
+      rowsAffected: 0,
+      meta: {
+        maxLiveAgeHours,
+        dryRun: !!opts.dryRun,
+        reason: "missing-env",
       },
     });
     return {
@@ -199,18 +211,14 @@ export async function runFinishedFixturesJob(
     });
 
     if (!candidates.length) {
-      await prisma.jobRuns.update({
-        where: { id: jobRun.id },
-        data: {
-          status: RunStatus.success,
-          finishedAt: new Date(),
-          durationMs: Date.now() - startedAtMs,
-          rowsAffected: 0,
-          meta: {
-            maxLiveAgeHours,
-            dryRun: !!opts.dryRun,
-            reason: "no-candidates",
-          },
+      await finishJobRunSuccess({
+        id: jobRun.id,
+        startedAtMs,
+        rowsAffected: 0,
+        meta: {
+          maxLiveAgeHours,
+          dryRun: !!opts.dryRun,
+          reason: "no-candidates",
         },
       });
       return {
@@ -228,19 +236,15 @@ export async function runFinishedFixturesJob(
       .filter((n) => Number.isFinite(n));
 
     if (!ids.length) {
-      await prisma.jobRuns.update({
-        where: { id: jobRun.id },
-        data: {
-          status: RunStatus.success,
-          finishedAt: new Date(),
-          durationMs: Date.now() - startedAtMs,
-          rowsAffected: 0,
-          meta: {
-            maxLiveAgeHours,
-            dryRun: !!opts.dryRun,
-            reason: "no-valid-external-ids",
-            candidates: candidates.length,
-          },
+      await finishJobRunSuccess({
+        id: jobRun.id,
+        startedAtMs,
+        rowsAffected: 0,
+        meta: {
+          maxLiveAgeHours,
+          dryRun: !!opts.dryRun,
+          reason: "no-valid-external-ids",
+          candidates: candidates.length,
         },
       });
       return {
@@ -274,19 +278,15 @@ export async function runFinishedFixturesJob(
     }
 
     if (!fetched.length) {
-      await prisma.jobRuns.update({
-        where: { id: jobRun.id },
-        data: {
-          status: RunStatus.success,
-          finishedAt: new Date(),
-          durationMs: Date.now() - startedAtMs,
-          rowsAffected: 0,
-          meta: {
-            maxLiveAgeHours,
-            dryRun: !!opts.dryRun,
-            reason: "no-finished-fixtures",
-            candidates: candidates.length,
-          },
+      await finishJobRunSuccess({
+        id: jobRun.id,
+        startedAtMs,
+        rowsAffected: 0,
+        meta: {
+          maxLiveAgeHours,
+          dryRun: !!opts.dryRun,
+          reason: "no-finished-fixtures",
+          candidates: candidates.length,
         },
       });
       return {
@@ -300,19 +300,15 @@ export async function runFinishedFixturesJob(
 
     // Dry run: report what we would do, but do not write to DB.
     if (opts.dryRun) {
-      await prisma.jobRuns.update({
-        where: { id: jobRun.id },
-        data: {
-          status: RunStatus.success,
-          finishedAt: new Date(),
-          durationMs: Date.now() - startedAtMs,
-          rowsAffected: 0,
-          meta: {
-            maxLiveAgeHours,
-            dryRun: true,
-            candidates: candidates.length,
-            fetched: fetched.length,
-          },
+      await finishJobRunSuccess({
+        id: jobRun.id,
+        startedAtMs,
+        rowsAffected: 0,
+        meta: {
+          maxLiveAgeHours,
+          dryRun: true,
+          candidates: candidates.length,
+          fetched: fetched.length,
         },
       });
       return {
@@ -357,21 +353,17 @@ export async function runFinishedFixturesJob(
       }
     }
 
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.success,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: updated,
-        meta: {
-          maxLiveAgeHours,
-          dryRun: false,
-          candidates: candidates.length,
-          fetched: fetched.length,
-          updated,
-          failed,
-        },
+    await finishJobRunSuccess({
+      id: jobRun.id,
+      startedAtMs,
+      rowsAffected: updated,
+      meta: {
+        maxLiveAgeHours,
+        dryRun: false,
+        candidates: candidates.length,
+        fetched: fetched.length,
+        updated,
+        failed,
       },
     });
 
@@ -383,21 +375,16 @@ export async function runFinishedFixturesJob(
       failed,
       skipped: false,
     };
-  } catch (err: any) {
-    await prisma.jobRuns.update({
-      where: { id: jobRun.id },
-      data: {
-        status: RunStatus.failed,
-        finishedAt: new Date(),
-        durationMs: Date.now() - startedAtMs,
-        rowsAffected: 0,
-        errorMessage: String(err?.message ?? err).slice(0, 1000),
-        errorStack: String(err?.stack ?? "").slice(0, 2000),
-        meta: {
-          maxLiveAgeHours,
-          dryRun: !!opts.dryRun,
-          jobKey: finishedFixturesJob.key,
-        },
+  } catch (err: unknown) {
+    await finishJobRunFailed({
+      id: jobRun.id,
+      startedAtMs,
+      err,
+      rowsAffected: 0,
+      meta: {
+        maxLiveAgeHours,
+        dryRun: !!opts.dryRun,
+        jobKey: finishedFixturesJob.key,
       },
     });
     throw err;

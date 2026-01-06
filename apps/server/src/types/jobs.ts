@@ -9,11 +9,11 @@ export type JobRunOpts = {
   trigger?: RunTrigger;
   triggeredBy?: JobTriggerBy | null;
   triggeredById?: string | null;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
   idempotencyKey?: string;
 };
 
-export type JobRunResult<T = any> = {
+export type JobRunResult<T = unknown> = {
   jobRunId: number;
   meta: T;
 };

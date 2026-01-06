@@ -21,7 +21,16 @@ export async function seedOdds(
     triggeredById?: string | null;
     dryRun?: boolean;
   }
-): Promise<{ batchId: number; ok: number; fail: number; total: number }> {
+): Promise<{
+  batchId: number;
+  ok: number;
+  fail: number;
+  total: number;
+  inserted: number;
+  updated: number;
+  skipped: number;
+  duplicates: number;
+}> {
   // ---------- batch: reuse or create ----------
   let batchId = opts?.batchId;
 
@@ -47,7 +56,16 @@ export async function seedOdds(
       itemsFailed: 0,
       meta: { reason: "no-input" },
     });
-    return { batchId, ok: 0, fail: 0, total: 0 };
+    return {
+      batchId,
+      ok: 0,
+      fail: 0,
+      total: 0,
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      duplicates: 0,
+    };
   }
 
   console.log(`🎲 Starting odds seeding: ${odds.length} odds to process`);
@@ -56,6 +74,9 @@ export async function seedOdds(
   const seen = new Set<string>();
   const uniqueOdds: OddsDTO[] = [];
   const duplicates: OddsDTO[] = [];
+  let inserted = 0;
+  let updated = 0;
+  let skipped = 0;
 
   try {
     console.log(
@@ -88,6 +109,7 @@ export async function seedOdds(
           {
             name: duplicate.name || duplicate.label || "Unknown",
             reason: "duplicate",
+            action: "skip",
           }
         )
       );
@@ -105,6 +127,7 @@ export async function seedOdds(
           {
             name: odd.name || odd.label || "Unknown",
             reason: "dryRun",
+            action: "dryRun",
           }
         )
       );
@@ -113,9 +136,24 @@ export async function seedOdds(
         itemsTotal: uniqueOdds.length,
         itemsSuccess: 0,
         itemsFailed: 0,
-        meta: { dryRun: true },
+        meta: {
+          dryRun: true,
+          inserted: 0,
+          updated: 0,
+          skipped: uniqueOdds.length,
+          duplicates: duplicates.length,
+        },
       });
-      return { batchId, ok: 0, fail: 0, total: uniqueOdds.length };
+      return {
+        batchId,
+        ok: 0,
+        fail: 0,
+        total: uniqueOdds.length,
+        inserted: 0,
+        updated: 0,
+        skipped: uniqueOdds.length,
+        duplicates: duplicates.length,
+      };
     }
 
     // First, collect all unique external IDs and batch lookup relationships
@@ -213,12 +251,29 @@ export async function seedOdds(
       const chunkResults: Array<{
         success: boolean;
         odd: OddsDTO;
+        action: "insert" | "update";
         error?: string;
         errorCode?: string;
       }> = [];
 
+      // Determine insert vs update for this chunk with one DB query.
+      const existingInChunk = await prisma.odds.findMany({
+        where: {
+          externalId: { in: group.map((o) => safeBigInt(o.externalId)) },
+        },
+        select: { externalId: true },
+      });
+      const existingSet = new Set(
+        existingInChunk.map((r) => String(r.externalId))
+      );
+
       for (const odd of group) {
         try {
+          const extIdKey = String(safeBigInt(odd.externalId));
+          const action: "insert" | "update" = existingSet.has(extIdKey)
+            ? "update"
+            : "insert";
+
           // Validate required fields
           if (!odd.name && !odd.label) {
             throw new Error("Odd must have either name or label");
@@ -304,8 +359,12 @@ export async function seedOdds(
           // Collect fixtures to flag as having odds (will batch update later)
           fixturesToFlag.add(fixtureId);
 
-          chunkResults.push({ success: true, odd });
+          chunkResults.push({ success: true, odd, action });
         } catch (e: any) {
+          const extIdKey = String(safeBigInt(odd.externalId));
+          const action: "insert" | "update" = existingSet.has(extIdKey)
+            ? "update"
+            : "insert";
           const errorCode = e?.code || "UNKNOWN_ERROR";
           const errorMessage = String(e?.message || "Unknown error").slice(
             0,
@@ -314,6 +373,7 @@ export async function seedOdds(
           chunkResults.push({
             success: false,
             odd,
+            action,
             error: `[${errorCode}] ${errorMessage}`,
             errorCode,
           });
@@ -332,6 +392,7 @@ export async function seedOdds(
           {
             name: result.odd.name || result.odd.label || "Unknown",
             externalId: result.odd.externalId,
+            action: result.action,
             ...(result.success
               ? {}
               : {
@@ -355,6 +416,8 @@ export async function seedOdds(
       for (const result of chunkResults) {
         if (result.success) {
           ok++;
+          if (result.action === "insert") inserted++;
+          else updated++;
         } else {
           fail++;
           console.log(
@@ -393,13 +456,25 @@ export async function seedOdds(
         fixturesResolved: fixtureMap.size,
         bookmakersResolved: bookmakerMap.size,
         missingBookmakersCreated: missingBookmakerIds.length,
+        inserted,
+        updated,
+        skipped,
       },
     });
 
     console.log(
       `🎉 [${batchId}] Odds seeding completed: ${ok} success, ${fail} failed, ${duplicates.length} duplicates skipped`
     );
-    return { batchId, ok, fail, total: ok + fail };
+    return {
+      batchId,
+      ok,
+      fail,
+      total: ok + fail,
+      inserted,
+      updated,
+      skipped,
+      duplicates: duplicates.length,
+    };
   } catch (error) {
     console.error(`💥 [${batchId}] Odds seeding failed:`, error);
 
@@ -407,7 +482,13 @@ export async function seedOdds(
       itemsTotal: uniqueOdds.length,
       itemsSuccess: 0,
       itemsFailed: uniqueOdds.length,
-      meta: { error: String(error).slice(0, 500) },
+      meta: {
+        error: String(error).slice(0, 500),
+        duplicates: duplicates.length,
+        inserted,
+        updated,
+        skipped,
+      },
     });
 
     return {
@@ -415,6 +496,10 @@ export async function seedOdds(
       ok: 0,
       fail: uniqueOdds.length,
       total: uniqueOdds.length,
+      inserted,
+      updated,
+      skipped,
+      duplicates: duplicates.length,
     };
   }
 }

@@ -49,7 +49,7 @@ type Runner = (fastify: FastifyInstance, opts: JobRunOpts) => Promise<unknown>;
 const RUNNERS: Record<string, Runner> = {
   [UPCOMING_FIXTURES_JOB.key]: async (fastify, opts) => {
     const { runUpcomingFixturesJob } = await import("./upcoming-fixtures.job");
-    return runUpcomingFixturesJob(fastify, { daysAhead: 3, ...opts });
+    return runUpcomingFixturesJob(fastify, opts);
   },
   [LIVE_FIXTURES_JOB.key]: async (fastify, opts) => {
     const { runLiveFixturesJob } = await import("./live-fixtures.job");
@@ -57,12 +57,12 @@ const RUNNERS: Record<string, Runner> = {
   },
   [FINISHED_FIXTURES_JOB.key]: async (fastify, opts) => {
     const { runFinishedFixturesJob } = await import("./finished-fixtures.job");
-    return runFinishedFixturesJob(fastify, { maxLiveAgeHours: 2, ...opts });
+    return runFinishedFixturesJob(fastify, opts);
   },
   [UPDATE_PREMATCH_ODDS_JOB.key]: async (fastify, opts) => {
     const { runUpdatePrematchOddsJob } =
       await import("./update-prematch-odds.job");
-    return runUpdatePrematchOddsJob(fastify, { daysAhead: 7, ...opts });
+    return runUpdatePrematchOddsJob(fastify, opts);
   },
 };
 
