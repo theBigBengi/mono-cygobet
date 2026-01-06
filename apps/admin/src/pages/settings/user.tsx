@@ -71,7 +71,7 @@ export default function UserSettingsPage() {
         data
       );
     },
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success("Profile updated successfully");
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
       // Refresh auth context to update user name
