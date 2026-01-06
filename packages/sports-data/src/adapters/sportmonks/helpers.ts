@@ -314,6 +314,14 @@ export function extractTeams(
   return { homeId, awayId };
 }
 
+function calculateOddsValue(value: string): string {
+  return value;
+
+  // return String(
+  //   Number(value) > 1.5 ? Math.ceil(Number(value)) : Math.floor(Number(value))
+  // );
+}
+
 export function buildOdds(f: FixtureSportmonks): OddsDTO[] {
   const odds = f.odds;
 
@@ -328,11 +336,7 @@ export function buildOdds(f: FixtureSportmonks): OddsDTO[] {
       // We want to round the value to integer
       // if 1.5+, we want to round to 2
       // if 1.4-, we want to round to 1
-      value: String(
-        Number(o.value) > 1.5
-          ? Math.ceil(Number(o.value))
-          : Math.floor(Number(o.value))
-      ),
+      value: calculateOddsValue(o.value),
       marketDescription: o.market_description,
       marketName: o.market?.name,
       winning: o.winning,
