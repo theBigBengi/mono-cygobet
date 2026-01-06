@@ -1,14 +1,40 @@
 // src/schemas/fixtures.schemas.ts
 
-const idSchema = {
-  oneOf: [{ type: "string" }, { type: "number" }],
-};
+const idSchema = { type: "integer" };
 
 export const upcomingMobileFixturesQuerystringSchema = {
   type: "object",
   properties: {
-    from: { type: "string" }, // ISO datetime
-    to: { type: "string" }, // ISO datetime
+    // Accept ISO datetime string OR unix seconds/millis (number or numeric string).
+    from: { anyOf: [{ type: "string" }, { type: "number" }] },
+    to: { anyOf: [{ type: "string" }, { type: "number" }] },
+    leagues: {
+      anyOf: [
+        { type: "string" }, // "1,2,3"
+        { type: "number" },
+        {
+          type: "array",
+          items: { anyOf: [{ type: "string" }, { type: "number" }] },
+        },
+      ],
+    },
+    markets: {
+      anyOf: [
+        { type: "string" }, // "1,2,3"
+        { type: "number" },
+        {
+          type: "array",
+          items: { anyOf: [{ type: "string" }, { type: "number" }] },
+        },
+      ],
+    },
+    hasOdds: { type: "boolean", default: false },
+    include: {
+      anyOf: [
+        { type: "string" }, // "odds,country"
+        { type: "array", items: { type: "string" } },
+      ],
+    },
     page: { type: "integer", minimum: 1, default: 1 },
     perPage: { type: "integer", minimum: 1, maximum: 200, default: 30 },
   },
@@ -23,24 +49,93 @@ export const upcomingMobileFixturesResponseSchema = {
       type: "array",
       items: {
         type: "object",
-        required: ["id", "kickoffAt", "league", "homeTeam", "awayTeam"],
+        required: [
+          "id",
+          "name",
+          "kickoffAt",
+          "startTs",
+          "state",
+          "stage",
+          "round",
+        ],
         properties: {
           id: idSchema,
+          name: { type: "string" },
           kickoffAt: { type: "string" },
+          startTs: { type: "integer" },
+          state: { type: "string" },
+          stage: { anyOf: [{ type: "string" }, { type: "null" }] },
+          round: { anyOf: [{ type: "string" }, { type: "null" }] },
           league: {
             type: "object",
             required: ["id", "name"],
-            properties: { id: idSchema, name: { type: "string" } },
+            properties: {
+              id: idSchema,
+              name: { type: "string" },
+              imagePath: { anyOf: [{ type: "string" }, { type: "null" }] },
+            },
+          },
+          country: {
+            anyOf: [
+              { type: "null" },
+              {
+                type: "object",
+                required: ["id", "name", "imagePath"],
+                properties: {
+                  id: idSchema,
+                  name: { type: "string" },
+                  imagePath: { anyOf: [{ type: "string" }, { type: "null" }] },
+                },
+              },
+            ],
           },
           homeTeam: {
             type: "object",
             required: ["id", "name"],
-            properties: { id: idSchema, name: { type: "string" } },
+            properties: {
+              id: idSchema,
+              name: { type: "string" },
+              imagePath: { anyOf: [{ type: "string" }, { type: "null" }] },
+            },
           },
           awayTeam: {
             type: "object",
             required: ["id", "name"],
-            properties: { id: idSchema, name: { type: "string" } },
+            properties: {
+              id: idSchema,
+              name: { type: "string" },
+              imagePath: { anyOf: [{ type: "string" }, { type: "null" }] },
+            },
+          },
+          odds: {
+            type: "array",
+            items: {
+              type: "object",
+              required: [
+                "id",
+                "value",
+                "label",
+                "marketName",
+                "probability",
+                "winning",
+                "name",
+                "handicap",
+                "total",
+                "sortOrder",
+              ],
+              properties: {
+                id: idSchema,
+                value: { type: "string" },
+                label: { type: "string" },
+                marketName: { type: "string" },
+                probability: { anyOf: [{ type: "string" }, { type: "null" }] },
+                winning: { type: "boolean" },
+                name: { anyOf: [{ type: "string" }, { type: "null" }] },
+                handicap: { anyOf: [{ type: "string" }, { type: "null" }] },
+                total: { anyOf: [{ type: "string" }, { type: "null" }] },
+                sortOrder: { type: "integer" },
+              },
+            },
           },
         },
       },
@@ -57,5 +152,3 @@ export const upcomingMobileFixturesResponseSchema = {
     },
   },
 };
-
-

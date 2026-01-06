@@ -4,20 +4,79 @@ import {
   upcomingMobileFixturesResponseSchema,
 } from "../../schemas/fixtures.schemas";
 import { getUpcomingFixtures } from "../../services/api/api.fixtures.service";
+import { parseOptionalDate } from "../../utils/dates";
+import type {
+  ApiUpcomingFixturesInclude,
+  ApiUpcomingFixturesQuery,
+} from "@repo/types";
 
-function parseOptionalIsoDate(value: unknown): Date | null {
-  if (typeof value !== "string" || !value.trim()) return null;
-  const t = Date.parse(value);
-  if (Number.isNaN(t)) return null;
-  return new Date(t);
+const INVALID_DATE_MESSAGE =
+  "Invalid 'from'/'to'. Use ISO datetime (e.g. 2026-01-06T00:00:00Z) or unix seconds/millis.";
+
+function parseBooleanOrDefault(value: unknown, defaultValue: boolean): boolean {
+  if (value == null) return defaultValue;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const s = value.trim().toLowerCase();
+    if (s === "true" || s === "1" || s === "yes") return true;
+    if (s === "false" || s === "0" || s === "no") return false;
+  }
+  return defaultValue;
 }
 
-function toUnixSeconds(d: Date): number {
-  return Math.floor(d.getTime() / 1000);
+function parseCsvOrArray(value: unknown): string[] {
+  if (value == null) return [];
+  if (Array.isArray(value))
+    return value.map(String).flatMap((s) => s.split(","));
+  return String(value).split(",");
 }
 
-const INT32_MAX = 2_147_483_647;
-const INT32_MIN = -2_147_483_648;
+function parseLeagueIds(value: unknown): number[] {
+  const parts = parseCsvOrArray(value)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const ids = parts
+    .map((s) => Number(s))
+    .filter((n) => Number.isInteger(n) && n > 0);
+  return Array.from(new Set(ids));
+}
+
+function parseBigIntIds(value: unknown): bigint[] {
+  const parts = parseCsvOrArray(value)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const ids: bigint[] = [];
+  for (const p of parts) {
+    // Disallow decimals/scientific notation
+    if (!/^\d+$/.test(p)) continue;
+    try {
+      const n = BigInt(p);
+      if (n > 0n) ids.push(n);
+    } catch {
+      // ignore invalid
+    }
+  }
+  return Array.from(new Set(ids));
+}
+
+function parseInclude(value: unknown): Set<ApiUpcomingFixturesInclude> {
+  const allowed: ApiUpcomingFixturesInclude[] = [
+    "odds",
+    "teams",
+    "league",
+    "country",
+  ];
+  const allowedSet = new Set<string>(allowed);
+  const parts = parseCsvOrArray(value)
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const include = new Set<ApiUpcomingFixturesInclude>();
+  for (const p of parts) {
+    if (allowedSet.has(p)) include.add(p as ApiUpcomingFixturesInclude);
+  }
+  return include;
+}
 
 const mobileFixturesRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
@@ -39,45 +98,59 @@ const mobileFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply) => {
-      const q = req.query as {
-        from?: string;
-        to?: string;
-        page?: number;
-        perPage?: number;
-      };
+      const q = req.query as ApiUpcomingFixturesQuery;
 
       const now = new Date();
-      const from = parseOptionalIsoDate(q.from) ?? now;
+      const from = parseOptionalDate(q.from) ?? now;
       const to =
-        parseOptionalIsoDate(q.to) ??
-        new Date(now.getTime() + 72 * 60 * 60 * 1000); // 3 days from now
+        parseOptionalDate(q.to) ??
+        new Date(now.getTime() + 72 * 60 * 60 * 1000);
 
-      if (to.getTime() < from.getTime()) {
-        return reply.code(400).send({
+      if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+        return reply.status(400).send({
           status: "error",
-          message: "`to` must be after `from`",
+          message: INVALID_DATE_MESSAGE,
         });
       }
-
-      // DB stores timestamps as INT4 (32-bit). Guard to avoid 500s on out-of-range queries.
-      const fromTs = toUnixSeconds(from);
-      const toTs = toUnixSeconds(to);
-      if (
-        fromTs > INT32_MAX ||
-        toTs > INT32_MAX ||
-        fromTs < INT32_MIN ||
-        toTs < INT32_MIN
-      ) {
-        return reply.code(400).send({
+      if (from.getTime() > to.getTime()) {
+        return reply.status(400).send({
           status: "error",
-          message: "`from`/`to` out of supported range",
+          message: "'from' must be <= 'to'",
         });
       }
 
       const page = Math.max(1, Number(q.page ?? 1));
       const perPage = Math.max(1, Math.min(200, Number(q.perPage ?? 30)));
 
-      const result = await getUpcomingFixtures({ from, to, page, perPage });
+      const leagueIds = parseLeagueIds(q.leagues);
+      if (q.leagues != null && leagueIds.length === 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'leagues'. Use comma-separated ids like '1,2,3'.",
+        });
+      }
+
+      const marketExternalIds = parseBigIntIds(q.markets);
+      if (q.markets != null && marketExternalIds.length === 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'markets'. Use comma-separated ids like '1,2,3'.",
+        });
+      }
+
+      const hasOdds = parseBooleanOrDefault(q.hasOdds, false);
+      const include = parseInclude(q.include);
+
+      const result = await getUpcomingFixtures({
+        from,
+        to,
+        page,
+        perPage,
+        leagueIds,
+        marketExternalIds,
+        hasOdds,
+        include,
+      });
 
       return reply.send({
         status: "success",

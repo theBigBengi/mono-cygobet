@@ -390,7 +390,12 @@ export async function seedOdds(
             ? undefined
             : (result.error || "Unknown error").slice(0, 500),
           {
-            name: result.odd.name || result.odd.label || "Unknown",
+            name: result.odd.name,
+            label: result.odd.label,
+            value: result.odd.value,
+            startingAt: result.odd.startingAt,
+            fixtureName: result.odd.fixtureName,
+            fixtureExternalIds: result.odd.fixtureExternalId,
             externalId: result.odd.externalId,
             action: result.action,
             ...(result.success
