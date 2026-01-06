@@ -100,7 +100,15 @@ export async function seedFixtures(
       itemsFailed: 0,
       meta: { reason: "no-input" },
     });
-    return { batchId, ok: 0, fail: 0, total: 0 };
+    return {
+      batchId,
+      ok: 0,
+      fail: 0,
+      total: 0,
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+    };
   }
 
   console.log(
