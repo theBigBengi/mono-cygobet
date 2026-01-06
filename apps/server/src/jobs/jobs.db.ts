@@ -4,8 +4,38 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
+/**
+ * Get environment tag for job run metadata.
+ *
+ * This is used ONLY for tracking/debugging purposes in job run metadata.
+ * It does NOT control whether jobs run or not.
+ *
+ * Detection logic:
+ * - Primary: Checks NODE_ENV === "production"
+ * - Fallback: If NODE_ENV is not set, checks for production indicators:
+ *   - RENDER=true (Render.com production environment)
+ *   - VERCEL=true (Vercel production environment)
+ *
+ * Note: Most deployment platforms automatically set NODE_ENV=production.
+ * If your platform doesn't, you can either:
+ * 1. Set NODE_ENV=production explicitly in your environment variables
+ * 2. Rely on the fallback detection (if supported)
+ *
+ * @returns "PRODUCTION" if production environment detected, otherwise "DEVELOPMENT"
+ */
 function getEnvironmentTag(): "PRODUCTION" | "DEVELOPMENT" {
-  return process.env.NODE_ENV === "production" ? "PRODUCTION" : "DEVELOPMENT";
+  // Primary check: NODE_ENV
+  if (process.env.NODE_ENV === "production") {
+    return "PRODUCTION";
+  }
+
+  // Vercel sets VERCEL=true in production
+  if (process.env.VERCEL === "1" || process.env.VERCEL === "true") {
+    return "PRODUCTION";
+  }
+
+  // Default to DEVELOPMENT
+  return "DEVELOPMENT";
 }
 
 function toJsonObject(v: unknown): Prisma.InputJsonObject {
