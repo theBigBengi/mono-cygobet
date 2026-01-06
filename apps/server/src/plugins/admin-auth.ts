@@ -27,17 +27,7 @@ export default fp(async function adminAuthPlugin(fastify) {
   ): Promise<AdminAuthContext | null> {
     if (req.adminAuthResolved) return req.adminAuth;
 
-    // Try cookie first (desktop browsers)
-    let rawToken = req.cookies?.[ADMIN_SESSION_COOKIE_NAME];
-
-    // If no cookie token, try Authorization header (mobile browsers fallback)
-    if (!rawToken) {
-      const authHeader = req.headers.authorization;
-      if (authHeader?.startsWith("Bearer ")) {
-        rawToken = authHeader.slice(7); // Remove "Bearer " prefix
-      }
-    }
-
+    const rawToken = req.cookies?.[ADMIN_SESSION_COOKIE_NAME];
     const resolved = await adminSessionDb.resolve(rawToken);
 
     req.adminAuthResolved = true;

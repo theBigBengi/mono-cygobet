@@ -47,22 +47,6 @@ function toErrorMessage(body: unknown, fallback: string): string {
   return fallback;
 }
 
-// Detect mobile browsers that struggle with cross-origin cookies
-function isMobileBrowser(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent.toLowerCase();
-  return /mobile|android|iphone|ipad|ipod|blackberry|opera mini|iemobile/i.test(
-    ua
-  );
-}
-
-// Store session token for mobile browsers (fallback when cookies fail)
-let mobileSessionToken: string | null = null;
-
-export function setMobileSessionToken(token: string | null) {
-  mobileSessionToken = token;
-}
-
 export async function adminFetch<T>(
   path: string,
   init?: RequestInit
@@ -78,11 +62,6 @@ export async function adminFetch<T>(
   const hasBody = typeof init?.body !== "undefined" && init?.body !== null;
   if (hasBody && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
-  }
-
-  // For mobile browsers, try Authorization header as fallback
-  if (isMobileBrowser() && mobileSessionToken && !path.includes("/login")) {
-    headers.set("Authorization", `Bearer ${mobileSessionToken}`);
   }
 
   const res = await fetch(url, {

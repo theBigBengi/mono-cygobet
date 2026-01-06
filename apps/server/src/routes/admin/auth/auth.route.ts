@@ -45,12 +45,7 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply): Promise<AdminAuthOkResponse> => {
       const { rawSessionToken, expires } = await service.login(req.body);
 
-      setAdminSessionCookie(
-        reply,
-        rawSessionToken,
-        expires,
-        req.headers["user-agent"]
-      );
+      setAdminSessionCookie(reply, rawSessionToken, expires);
 
       return reply.send({ status: "success", message: "Logged in" });
     }
@@ -69,7 +64,7 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
       // Idempotent: safe even if cookie/session is missing.
       await service.logout(rawToken);
 
-      clearAdminSessionCookie(reply, req.headers["user-agent"]);
+      clearAdminSessionCookie(reply);
 
       // Also clear memoized auth context for this request (if any downstream hooks run).
       req.adminAuthResolved = true;
