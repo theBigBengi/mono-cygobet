@@ -19,7 +19,7 @@ function getAdminApiBaseUrl(): string {
 
   if (import.meta.env.PROD && !baseUrl) {
     throw new Error(
-      "Missing VITE_ADMIN_API_BASE_URL (or VITE_API_URL) in production. Set VITE_ADMIN_API_BASE_URL to your admin API origin, e.g. http://localhost:4000",
+      "Missing VITE_ADMIN_API_BASE_URL (or VITE_API_URL) in production. Set VITE_ADMIN_API_BASE_URL to your admin API origin, e.g. http://localhost:4000"
     );
   }
 
@@ -41,12 +41,32 @@ function toErrorMessage(body: unknown, fallback: string): string {
   if (typeof body === "string") return body;
   if (typeof body === "object") {
     const maybeMessage = (body as { message?: unknown }).message;
-    if (typeof maybeMessage === "string" && maybeMessage.trim()) return maybeMessage;
+    if (typeof maybeMessage === "string" && maybeMessage.trim())
+      return maybeMessage;
   }
   return fallback;
 }
 
-export async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
+// Detect mobile browsers that struggle with cross-origin cookies
+function isMobileBrowser(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent.toLowerCase();
+  return /mobile|android|iphone|ipad|ipod|blackberry|opera mini|iemobile/i.test(
+    ua
+  );
+}
+
+// Store session token for mobile browsers (fallback when cookies fail)
+let mobileSessionToken: string | null = null;
+
+export function setMobileSessionToken(token: string | null) {
+  mobileSessionToken = token;
+}
+
+export async function adminFetch<T>(
+  path: string,
+  init?: RequestInit
+): Promise<T> {
   if (!path.startsWith("/admin/")) {
     throw new Error(`adminFetch path must start with "/admin/". Got: ${path}`);
   }
@@ -60,6 +80,11 @@ export async function adminFetch<T>(path: string, init?: RequestInit): Promise<T
     headers.set("content-type", "application/json");
   }
 
+  // For mobile browsers, try Authorization header as fallback
+  if (isMobileBrowser() && mobileSessionToken && !path.includes("/login")) {
+    headers.set("Authorization", `Bearer ${mobileSessionToken}`);
+  }
+
   const res = await fetch(url, {
     ...init,
     headers,
@@ -69,11 +94,12 @@ export async function adminFetch<T>(path: string, init?: RequestInit): Promise<T
   const body = await readBodyBestEffort(res);
 
   if (!res.ok) {
-    const message = toErrorMessage(body, `Admin API error ${res.status}: ${res.statusText}`);
+    const message = toErrorMessage(
+      body,
+      `Admin API error ${res.status}: ${res.statusText}`
+    );
     throw new AdminApiError(message, res.status, body);
   }
 
   return body as T;
 }
-
-
