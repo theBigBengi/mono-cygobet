@@ -1,0 +1,292 @@
+/**
+ * User Settings Tab
+ * 
+ * Allows users to:
+ * - View and edit their name
+ * - Change password
+ * - View account information (email, role, last login)
+ */
+
+import * as React from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useAdminAuth } from "@/auth";
+import { apiGet, apiPost } from "@/lib/adminApi";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface UserProfile {
+  id: number;
+  email: string;
+  role: string;
+  name: string | null;
+  lastLoginAt?: string | null;
+}
+
+interface UpdateProfileBody {
+  name?: string | null;
+}
+
+interface ChangePasswordBody {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export function UserSettingsTab() {
+  const { me } = useAdminAuth();
+  const queryClient = useQueryClient();
+
+  // Fetch full user profile (including lastLoginAt if available)
+  const { data: profile, isLoading } = useQuery<UserProfile>({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      // For now, use /me endpoint. In future, could use /admin/auth/profile
+      const res = await apiGet<{ status: string; data: UserProfile }>(
+        "/admin/auth/me"
+      );
+      return res.data;
+    },
+    enabled: !!me,
+  });
+
+  const [name, setName] = React.useState(me?.name ?? "");
+  const [currentPassword, setCurrentPassword] = React.useState("");
+  const [newPassword, setNewPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+
+  React.useEffect(() => {
+    if (profile?.name !== undefined) {
+      setName(profile.name ?? "");
+    }
+  }, [profile]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: UpdateProfileBody) => {
+      // TODO: Backend endpoint needed: POST /admin/auth/profile
+      // Should accept: { name?: string | null }
+      return apiPost<{ status: string; message: string }>(
+        "/admin/auth/profile",
+        data
+      );
+    },
+    onSuccess: () => {
+      toast.success("Profile updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      // Refresh auth context
+      queryClient.invalidateQueries({ queryKey: ["admin-auth"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update profile");
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: ChangePasswordBody) => {
+      // TODO: Backend endpoint needed: POST /admin/auth/change-password
+      // Should accept: { currentPassword: string, newPassword: string }
+      return apiPost<{ status: string; message: string }>(
+        "/admin/auth/change-password",
+        {
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }
+      );
+    },
+    onSuccess: () => {
+      toast.success("Password changed successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to change password");
+    },
+  });
+
+  const handleUpdateName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (name === profile?.name) {
+      toast.info("No changes to save");
+      return;
+    }
+    updateProfileMutation.mutate({
+      name: name.trim() || undefined,
+    });
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+
+    changePasswordMutation.mutate({
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Profile Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Information</CardTitle>
+          <CardDescription>
+            View your account information and activity
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2">
+            <Label>Email</Label>
+            <Input value={profile?.email ?? me?.email ?? ""} disabled />
+            <p className="text-sm text-muted-foreground">
+              Email cannot be changed
+            </p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Role</Label>
+            <Input value={profile?.role ?? me?.role ?? ""} disabled />
+          </div>
+
+          {profile?.lastLoginAt && (
+            <div className="grid gap-2">
+              <Label>Last Login</Label>
+              <Input
+                value={
+                  profile.lastLoginAt
+                    ? new Date(profile.lastLoginAt).toLocaleString()
+                    : "Never"
+                }
+                disabled
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Update Name */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Update Name</CardTitle>
+          <CardDescription>Change your display name</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleUpdateName} className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={updateProfileMutation.isPending || name === profile?.name}
+            >
+              {updateProfileMutation.isPending ? "Saving..." : "Save Name"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Change Password */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Change Password</CardTitle>
+          <CardDescription>
+            Update your password to keep your account secure
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="current-password">Current Password</Label>
+              <Input
+                id="current-password"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                minLength={8}
+              />
+              <p className="text-sm text-muted-foreground">
+                Password must be at least 8 characters
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                minLength={8}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={changePasswordMutation.isPending}
+              variant="default"
+            >
+              {changePasswordMutation.isPending
+                ? "Changing Password..."
+                : "Change Password"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+

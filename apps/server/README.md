@@ -1,5 +1,14 @@
 # API
 
+## Jobs scheduler (cron)
+
+This API process can run DB-backed cron jobs via `node-cron` (see `src/plugins/jobs-scheduler.ts`).
+
+- **JOBS_SCHEDULER_ENABLED**: set to disable the scheduler on a given instance.
+  - Default: enabled
+  - Disable values: `0`, `false`, `no`, `off`
+  - Example: `JOBS_SCHEDULER_ENABLED=false pnpm --filter server dev`
+
 ## Seeding
 
 The seeding system supports seeding various entities from the SportMonks API. Use CLI flags to specify what to seed.

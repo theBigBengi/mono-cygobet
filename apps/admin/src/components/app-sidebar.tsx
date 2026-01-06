@@ -69,6 +69,15 @@ const data = {
         },
       ],
     },
+    {
+      title: "Settings",
+      items: [
+        {
+          title: "Settings",
+          url: "/settings",
+        },
+      ],
+    },
   ],
 };
 

@@ -36,7 +36,14 @@ const app: FastifyPluginAsync<AppOptions> = async (
     const schema = {
       type: "object",
       required: [],
-      properties: {},
+      properties: {
+        /**
+         * Jobs scheduler toggle (cron inside the API process).
+         * - Default: enabled
+         * - Set to "false"/"0"/"no"/"off" to disable on a given instance
+         */
+        JOBS_SCHEDULER_ENABLED: { type: "string" },
+      },
     };
 
     const options = {

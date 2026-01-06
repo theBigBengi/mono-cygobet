@@ -4,12 +4,21 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
+function getEnvironmentTag(): "PRODUCTION" | "DEVELOPMENT" {
+  return process.env.NODE_ENV === "production" ? "PRODUCTION" : "DEVELOPMENT";
+}
+
 function toJsonObject(v: unknown): Prisma.InputJsonObject {
   return isPlainObject(v) ? (v as Prisma.InputJsonObject) : {};
 }
 
-function coerceMeta(meta?: Record<string, unknown> | null): Prisma.InputJsonObject {
-  return toJsonObject(meta ?? {});
+function coerceMeta(
+  meta?: Record<string, unknown> | null
+): Prisma.InputJsonObject {
+  const base = toJsonObject(meta ?? {});
+  // Always record which environment produced the run for debugging/ops.
+  // We intentionally overwrite any incoming value because the process environment is the source of truth.
+  return { ...base, environment: getEnvironmentTag() };
 }
 
 function normalizeError(err: unknown): { message: string; stack: string } {
