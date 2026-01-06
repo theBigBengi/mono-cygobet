@@ -1,2 +1,8 @@
-{}
-
+{
+    "rewrites": [
+      {
+        "source": "/admin/:path*",
+        "destination": "https://mono-cygobet.onrender.com/admin/:path*"
+      }
+    ]
+  }
