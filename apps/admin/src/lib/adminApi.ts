@@ -13,15 +13,11 @@ export class AdminApiError extends Error {
 function getAdminApiBaseUrl(): string {
   const baseUrl =
     (import.meta.env.VITE_ADMIN_API_BASE_URL as string | undefined) ??
-    // Backward compat with existing config in this app
     (import.meta.env.VITE_API_URL as string | undefined) ??
     "";
 
-  if (import.meta.env.PROD && !baseUrl) {
-    throw new Error(
-      "Missing VITE_ADMIN_API_BASE_URL (or VITE_API_URL) in production. Set VITE_ADMIN_API_BASE_URL to your admin API origin, e.g. http://localhost:4000"
-    );
-  }
+  // ❌ אל תזרוק error בפרודקשן
+  // same-origin הוא מצב חוקי לחלוטין
 
   return baseUrl;
 }
