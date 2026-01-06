@@ -1,8 +1,12 @@
 {
     "rewrites": [
       {
-        "source": "/admin/:path*",
+        "source": "/admin/api/:path*",
         "destination": "https://mono-cygobet.onrender.com/admin/:path*"
+      },
+      {
+        "source": "/(.*)",
+        "destination": "/index.html"
       }
     ]
   }
