@@ -1,0 +1,12 @@
+// apps/mobile/babel.config.js
+module.exports = function (api) {
+    api.cache(true);
+  
+    return {
+      presets: ["babel-preset-expo"],
+      plugins: [
+        // Required if you're using expo-router
+        "expo-router/babel",
+      ],
+    };
+  };

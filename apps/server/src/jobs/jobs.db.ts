@@ -24,9 +24,6 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
  * @returns "PRODUCTION" if production environment detected, otherwise "DEVELOPMENT"
  */
 function getEnvironmentTag(): "PRODUCTION" | "DEVELOPMENT" {
-  console.log("process.env.NODE_ENV", process.env.NODE_ENV);
-  console.log("process.env.RENDER", process.env.RENDER);
-  console.log("process.env.VERCEL", process.env.VERCEL);
   // Primary check: NODE_ENV
   if (process.env.NODE_ENV === "production") {
     return "PRODUCTION";

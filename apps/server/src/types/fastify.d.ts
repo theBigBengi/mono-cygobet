@@ -1,6 +1,7 @@
 import "fastify";
 import type { preHandlerHookHandler, FastifyRequest } from "fastify";
 import type { AdminAuthContext } from "../auth/admin-auth.types";
+import type { UserAuthContext } from "../auth/user-auth.types";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -26,6 +27,17 @@ declare module "fastify" {
       requireAuth: preHandlerHookHandler;
       requireAdmin: preHandlerHookHandler;
     };
+
+    userAuth: {
+      resolve: (req: FastifyRequest) => Promise<UserAuthContext | null>;
+      assertAuth: (req: FastifyRequest) => Promise<UserAuthContext>;
+      requireAuth: preHandlerHookHandler;
+    };
+
+    jwt: {
+      sign: (payload: Record<string, unknown>) => string;
+      verify: <T = Record<string, unknown>>(token: string) => T;
+    };
   }
 
   interface FastifyRequest {
@@ -39,5 +51,16 @@ declare module "fastify" {
      * Internal per-request memoization flag to avoid repeated DB lookups.
      */
     adminAuthResolved: boolean;
+
+    /**
+     * User auth context (JWT access token), resolved from Authorization header.
+     * - null: resolved and unauthenticated
+     * - object: resolved and authenticated
+     */
+    userAuth: UserAuthContext | null;
+    /**
+     * Internal per-request memoization flag to avoid repeated DB lookups.
+     */
+    userAuthResolved: boolean;
   }
 }

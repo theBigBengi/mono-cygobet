@@ -2,8 +2,8 @@ import AutoLoad, { AutoloadPluginOptions } from "@fastify/autoload";
 import fastifyEnv from "@fastify/env";
 import fastifyCookie from "@fastify/cookie";
 import fastifyCors from "@fastify/cors";
+import fastifyJwt from "@fastify/jwt";
 import { FastifyPluginAsync } from "fastify";
-// import fastifyJwt from "@fastify/jwt";
 import * as path from "path";
 
 export type AppOptions = {
@@ -56,7 +56,16 @@ const app: FastifyPluginAsync<AppOptions> = async (
 
     // Register core plugins
     fastify.register(fastifyCookie);
-    // fastify.register(fastifyJwt, { secret: process.env.JWT_SECRET! });
+    
+    // Register JWT for user auth (access tokens)
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      fastify.log.warn("JWT_SECRET not set - user auth will not work");
+    } else {
+      await fastify.register(fastifyJwt, {
+        secret: jwtSecret,
+      });
+    }
 
     // Register CORS
     fastify.register(fastifyCors, {

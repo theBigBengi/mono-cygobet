@@ -13,3 +13,4 @@ export * from "./admin/seasons.schemas";
 export * from "./admin/bookmakers.schemas";
 export * from "./admin/fixtures.schemas";
 export * from "./admin/odds.schemas";
+export * from "./auth/user-auth.schemas";

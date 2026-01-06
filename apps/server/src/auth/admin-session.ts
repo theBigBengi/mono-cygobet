@@ -6,15 +6,12 @@ import {
   ADMIN_SESSION_TTL_MS,
 } from "../constants/admin-auth.constants";
 import type { AdminAuthUser } from "./admin-auth.types";
+import { sha256Hex, generateRandomToken } from "../utils/crypto";
 
 type DbClient = Pick<typeof prisma, "sessions" | "users">;
 
-function sha256Hex(input: string): string {
-  return crypto.createHash("sha256").update(input, "utf8").digest("hex");
-}
-
 export function generateAdminSessionToken(): string {
-  return crypto.randomBytes(ADMIN_SESSION_TOKEN_BYTES).toString("hex");
+  return generateRandomToken(ADMIN_SESSION_TOKEN_BYTES);
 }
 
 /**
