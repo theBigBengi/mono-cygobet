@@ -1,0 +1,78 @@
+// src/services/admin/admin-auth.service.ts
+import type { FastifyInstance } from "fastify";
+import * as bcrypt from "bcrypt";
+import { prisma } from "@repo/db";
+import { BadRequestError, UnauthorizedError } from "../../utils/errors";
+import { ADMIN_ROLE } from "../../constants/roles.constants";
+import {
+  adminSessionDb,
+  computeAdminSessionExpiry,
+  generateAdminSessionToken,
+  hashAdminSessionToken,
+} from "../../auth/admin-session";
+
+export class AdminAuthService {
+  constructor(private fastify: FastifyInstance) {}
+
+  /**
+   * Helper for future extensibility (admin/user provisioning).
+   * Not used by the admin login flow directly.
+   */
+  async hashPassword(plain: string): Promise<string> {
+    const saltRounds = 12;
+    return bcrypt.hash(plain, saltRounds);
+  }
+
+  async login(input: {
+    email: string;
+    password: string;
+  }): Promise<{ rawSessionToken: string; expires: Date; userId: number }> {
+    const email = input.email?.trim().toLowerCase();
+    const password = input.password;
+
+    if (!email || !password) {
+      throw new BadRequestError("Email and password are required");
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { email },
+      select: { id: true, email: true, role: true, password: true },
+    });
+
+    // Avoid user enumeration: keep errors consistent.
+    const invalid = () => new UnauthorizedError("Invalid email or password");
+
+    if (!user) throw invalid();
+    if (user.role !== ADMIN_ROLE) throw invalid();
+    if (!user.password) throw invalid();
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) throw invalid();
+
+    const now = new Date();
+
+    const rawSessionToken = generateAdminSessionToken();
+    const tokenHash = hashAdminSessionToken(rawSessionToken);
+    const expires = computeAdminSessionExpiry(now);
+
+    await prisma.$transaction([
+      prisma.sessions.create({
+        data: { userId: user.id, sessionToken: tokenHash, expires },
+        select: { id: true },
+      }),
+      prisma.users.update({
+        where: { id: user.id },
+        data: { lastLoginAt: now },
+        select: { id: true },
+      }),
+    ]);
+
+    this.fastify.log.info({ userId: user.id }, "admin login success");
+
+    return { rawSessionToken, expires, userId: user.id };
+  }
+
+  async logout(rawSessionToken: string | undefined): Promise<void> {
+    await adminSessionDb.deleteByRawToken(rawSessionToken);
+  }
+}

@@ -1,52 +1,25 @@
-// Get API base URL from environment or use relative path for proxy
-const getApiUrl = (): string => {
-  // In production, use environment variable if set
-  // Otherwise, use relative paths which will work with Vercel rewrites
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  // Use relative paths - works with Vite proxy in dev and Vercel rewrites in prod
-  return "";
-};
+import { adminFetch } from "@/lib/adminApi";
+
+// Backwards-compatible wrappers used across the admin UI services.
+// All calls are routed through `adminFetch` to ensure:
+// - credentials: "include" (httpOnly cookie auth)
+// - consistent JSON parsing
+// - consistent error handling via AdminApiError
 
 export async function apiGet<T>(path: string): Promise<T> {
-  const baseUrl = getApiUrl();
-  const url = `${baseUrl}${path}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`API error ${res.status}: ${res.statusText}`);
-  }
-  return res.json() as Promise<T>;
+  return adminFetch<T>(path, { method: "GET" });
 }
 
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
-  const baseUrl = getApiUrl();
-  const url = `${baseUrl}${path}`;
-  const res = await fetch(url, {
+  return adminFetch<T>(path, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
+    body: typeof body === "undefined" ? undefined : JSON.stringify(body),
   });
-  if (!res.ok) {
-    throw new Error(`API error ${res.status}: ${res.statusText}`);
-  }
-  return res.json() as Promise<T>;
 }
 
 export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
-  const baseUrl = getApiUrl();
-  const url = `${baseUrl}${path}`;
-  const res = await fetch(url, {
+  return adminFetch<T>(path, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
+    body: typeof body === "undefined" ? undefined : JSON.stringify(body),
   });
-  if (!res.ok) {
-    throw new Error(`API error ${res.status}: ${res.statusText}`);
-  }
-  return res.json() as Promise<T>;
 }

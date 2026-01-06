@@ -8,17 +8,83 @@ datasource db {
   // The 'url' property is deprecated in Prisma 5. Move your connection URL to prisma.config.ts.
 }
 
+model accounts {
+  id                Int     @id @default(autoincrement())
+  userId            Int     @map("user_id")
+  type              String  @db.VarChar(255)
+  provider          String  @db.VarChar(255)
+  providerAccountId String  @map("provider_account_id") @db.VarChar(255)
+  refreshToken      String? @map("refresh_token")
+  accessToken       String? @map("access_token")
+  expiresAt         Int?    @map("expires_at")
+  idToken           String? @map("id_token")
+  scope             String?
+  sessionState      String? @map("session_state")
+  tokenType         String? @map("token_type")
+  user              users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model sessions {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  expires      DateTime @db.Timestamptz(6)
+  sessionToken String   @map("session_token") @db.VarChar(255)
+  users        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionToken])
+  @@map("sessions")
+}
+
 model users {
-  image       String?
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  id          Int           @id @default(autoincrement())
-  name        String?       @db.VarChar(255)
-  email       String        @unique @db.VarChar(255)
-  password    String?
-  username    String?       @unique @db.VarChar(50)
-  predictions predictions[]
+  image           String?
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  id              Int               @id @default(autoincrement())
+  name            String?           @db.VarChar(255)
+  email           String            @unique @db.VarChar(255)
+  password        String?
+  username        String?           @unique @db.VarChar(50)
+  predictions     predictions[]
+  accounts        accounts[]
+  sessions        sessions[]
+  role            userRole          @default(user)
+  refreshSessions refreshSessions[]
+  emailVerifiedAt DateTime?         @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt     DateTime?         @map("last_login_at") @db.Timestamptz(6)
 
   @@index([username], map: "idx_users_username")
+}
+
+model refreshSessions {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenHash], map: "refresh_sessions_token_hash_uniq")
+  @@index([userId])
+  @@map("refresh_sessions")
+}
+
+model verificationToken {
+  identifier String
+  expires    DateTime @db.Timestamptz(6)
+  token      String
+
+  @@id([identifier, token])
+  @@map("verification_token")
+}
+
+enum userRole {
+  admin
+  user
+
+  @@map("user_role")
 }
 
 model bookmakers {

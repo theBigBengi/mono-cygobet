@@ -284,6 +284,16 @@ export interface AdminRunAllJobsResponse {
   message: string;
 }
 
+export interface AdminMeResponse {
+  status: "success";
+  data: {
+    id: number;
+    email: string;
+    role: string;
+    name: string | null;
+  };
+}
+
 export interface AdminTeamsListResponse {
   status: string;
   data: Array<{

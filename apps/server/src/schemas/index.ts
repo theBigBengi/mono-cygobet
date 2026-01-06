@@ -2,6 +2,7 @@
 // Central export for all schemas
 
 export * from "./admin/admin.schemas";
+export * from "./admin/auth.schemas";
 export * from "./admin/health.schemas";
 export * from "./health.schemas";
 export * from "./fixtures.schemas";
