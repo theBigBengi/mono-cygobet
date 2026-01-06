@@ -75,4 +75,71 @@ export class AdminAuthService {
   async logout(rawSessionToken: string | undefined): Promise<void> {
     await adminSessionDb.deleteByRawToken(rawSessionToken);
   }
+
+  /**
+   * Update admin user profile (name)
+   */
+  async updateProfile(
+    userId: number,
+    input: { name?: string | null }
+  ): Promise<{ id: number; email: string; role: string; name: string | null }> {
+    const name = input.name?.trim() || null;
+
+    const user = await prisma.users.update({
+      where: { id: userId },
+      data: { name },
+      select: { id: true, email: true, role: true, name: true },
+    });
+
+    this.fastify.log.info({ userId }, "admin profile updated");
+
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name ?? null,
+    };
+  }
+
+  /**
+   * Change admin user password
+   */
+  async changePassword(
+    userId: number,
+    input: { currentPassword: string; newPassword: string }
+  ): Promise<void> {
+    const { currentPassword, newPassword } = input;
+
+    if (!newPassword || newPassword.length < 8) {
+      throw new BadRequestError("Password must be at least 8 characters");
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { id: true, password: true },
+    });
+
+    if (!user || !user.password) {
+      throw new UnauthorizedError("User not found or has no password");
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedError("Current password is incorrect");
+    }
+
+    const newPasswordHash = await this.hashPassword(newPassword);
+
+    await prisma.users.update({
+      where: { id: userId },
+      data: { password: newPasswordHash },
+      select: { id: true },
+    });
+
+    this.fastify.log.info({ userId }, "admin password changed");
+  }
 }

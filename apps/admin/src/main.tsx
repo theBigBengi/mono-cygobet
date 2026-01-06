@@ -25,9 +25,9 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       {/* Auth provider wraps everything so all routes can access auth state */}
       <AdminAuthProvider>
-        <QueryProvider>
-          <App />
-        </QueryProvider>
+      <QueryProvider>
+        <App />
+      </QueryProvider>
       </AdminAuthProvider>
     </BrowserRouter>
   </StrictMode>,

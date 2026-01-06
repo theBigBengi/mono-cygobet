@@ -291,6 +291,7 @@ export interface AdminMeResponse {
     email: string;
     role: string;
     name: string | null;
+    lastLoginAt: string | null;
   };
 }
 

@@ -50,10 +50,10 @@ const data = {
           title: "Bookmakers",
           url: "/bookmakers",
         },
-            {
-              title: "Odds",
-              url: "/odds",
-            },
+        {
+          title: "Odds",
+          url: "/odds",
+        },
         {
           title: "Fixtures",
           url: "/fixtures",
@@ -73,8 +73,12 @@ const data = {
       title: "Settings",
       items: [
         {
-          title: "Settings",
-          url: "/settings",
+          title: "User",
+          url: "/settings/user",
+        },
+        {
+          title: "System",
+          url: "/settings/system",
         },
       ],
     },
@@ -120,7 +124,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {item.items.map((subItem) => {
-                      const isActive = location.pathname === subItem.url;
+                      // Check if current path starts with the item URL for nested routes
+                      const isActive =
+                        location.pathname === subItem.url ||
+                        (subItem.url !== "/" &&
+                          location.pathname.startsWith(subItem.url));
                       return (
                         <SidebarMenuItem key={subItem.title}>
                           <SidebarMenuButton asChild isActive={isActive}>

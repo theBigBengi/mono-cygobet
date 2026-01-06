@@ -793,6 +793,7 @@ export default function JobsPage() {
                         <TableHead>Run ID</TableHead>
                         <TableHead>Job</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Env</TableHead>
                         <TableHead>StartedAt</TableHead>
                         <TableHead>FinishedAt</TableHead>
                         <TableHead>Duration</TableHead>
@@ -823,6 +824,15 @@ export default function JobsPage() {
                             <StatusBadge status={r.status} />
                           </TableCell>
                           <TableCell className="text-xs whitespace-nowrap">
+                            {(() => {
+                              const meta = (r.meta ?? {}) as Record<string, unknown>;
+                              const env = meta["environment"];
+                              return env === "PRODUCTION" || env === "DEVELOPMENT"
+                                ? env
+                                : "—";
+                            })()}
+                          </TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">
                             {formatDateTime(r.startedAt)}
                           </TableCell>
                           <TableCell className="text-xs whitespace-nowrap">
@@ -841,7 +851,7 @@ export default function JobsPage() {
                       {!filteredRuns.length && (
                         <TableRow>
                           <TableCell
-                            colSpan={7}
+                            colSpan={8}
                             className="text-center text-sm text-muted-foreground py-8"
                           >
                             No runs found.

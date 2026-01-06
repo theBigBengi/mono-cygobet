@@ -10,6 +10,8 @@ import OddsPage from "@/pages/odds";
 import SyncCenterPage from "@/pages/sync-center";
 import JobsPage from "@/pages/jobs";
 import SettingsPage from "@/pages/settings";
+import UserSettingsPage from "@/pages/settings/user";
+import SystemSettingsPage from "@/pages/settings/system";
 import LoginPage from "@/pages/login";
 import { AdminLayout } from "@/components/layout";
 
@@ -39,6 +41,8 @@ export const routes: RouteObject[] = [
       { path: "/fixtures", element: <FixturesPage /> },
       { path: "/jobs", element: <JobsPage /> },
       { path: "/settings", element: <SettingsPage /> },
+      { path: "/settings/user", element: <UserSettingsPage /> },
+      { path: "/settings/system", element: <SystemSettingsPage /> },
       {
         path: "*",
         element: (

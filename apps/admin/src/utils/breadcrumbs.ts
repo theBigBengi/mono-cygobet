@@ -13,6 +13,8 @@ export const ROUTE_LABELS: Record<string, string> = {
   "/fixtures": "Fixtures",
   "/jobs": "Jobs",
   "/settings": "Settings",
+  "/settings/user": "User Settings",
+  "/settings/system": "System Settings",
 };
 
 /**

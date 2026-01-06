@@ -1,5 +1,6 @@
 // src/routes/admin/auth/auth.route.ts
 import { FastifyPluginAsync } from "fastify";
+import { prisma } from "@repo/db";
 import { AdminAuthService } from "../../../services/admin/admin-auth.service";
 import {
   setAdminSessionCookie,
@@ -10,12 +11,27 @@ import {
   adminLoginBodySchema,
   adminAuthOkResponseSchema,
   adminMeResponseSchema,
+  adminUpdateProfileBodySchema,
+  adminChangePasswordBodySchema,
+  adminUpdateProfileResponseSchema,
 } from "../../../schemas/admin/auth.schemas";
 
 type AdminAuthOkResponse = { status: "success"; message: string };
 type AdminMeResponse = {
   status: "success";
+  data: {
+    id: number;
+    email: string;
+    role: string;
+    name: string | null;
+    lastLoginAt: string | null;
+  };
+};
+
+type AdminUpdateProfileResponse = {
+  status: "success";
   data: { id: number; email: string; role: string; name: string | null };
+  message: string;
 };
 
 type AdminLoginBody = {
@@ -28,8 +44,11 @@ type AdminLoginBody = {
  * ----------------
  * Mounted under `/admin/auth` by Fastify autoload folder prefix.
  *
- * - POST /admin/auth/login
- * - POST /admin/auth/logout
+ * - POST   /admin/auth/login
+ * - POST   /admin/auth/logout
+ * - GET    /admin/auth/me
+ * - POST   /admin/auth/profile
+ * - POST   /admin/auth/change-password
  */
 const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new AdminAuthService(fastify);
@@ -86,14 +105,79 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
       // Avoid double DB lookups; use the memoized request context.
       const ctx = req.adminAuth;
       if (!ctx) throw new Error("Admin auth context missing");
+
+      // Fetch user with lastLoginAt from database
+      const user = await prisma.users.findUnique({
+        where: { id: ctx.user.id },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          name: true,
+          lastLoginAt: true,
+        },
+      });
+
+      if (!user) throw new Error("User not found");
+
       return reply.send({
         status: "success",
         data: {
-          id: ctx.user.id,
-          email: ctx.user.email,
-          role: ctx.user.role,
-          name: ctx.user.name ?? null,
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          name: user.name ?? null,
+          lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
         },
+      });
+    }
+  );
+
+  fastify.post<{
+    Body: { name?: string | null };
+    Reply: AdminUpdateProfileResponse;
+  }>(
+    "/profile",
+    {
+      schema: {
+        body: adminUpdateProfileBodySchema,
+        response: { 200: adminUpdateProfileResponseSchema },
+      },
+    },
+    async (req, reply): Promise<AdminUpdateProfileResponse> => {
+      const ctx = req.adminAuth;
+      if (!ctx) throw new Error("Admin auth context missing");
+
+      const updated = await service.updateProfile(ctx.user.id, req.body);
+
+      return reply.send({
+        status: "success",
+        data: updated,
+        message: "Profile updated successfully",
+      });
+    }
+  );
+
+  fastify.post<{
+    Body: { currentPassword: string; newPassword: string };
+    Reply: AdminAuthOkResponse;
+  }>(
+    "/change-password",
+    {
+      schema: {
+        body: adminChangePasswordBodySchema,
+        response: { 200: adminAuthOkResponseSchema },
+      },
+    },
+    async (req, reply): Promise<AdminAuthOkResponse> => {
+      const ctx = req.adminAuth;
+      if (!ctx) throw new Error("Admin auth context missing");
+
+      await service.changePassword(ctx.user.id, req.body);
+
+      return reply.send({
+        status: "success",
+        message: "Password changed successfully",
       });
     }
   );

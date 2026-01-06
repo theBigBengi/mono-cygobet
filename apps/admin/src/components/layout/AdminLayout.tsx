@@ -14,7 +14,7 @@ export function AdminLayout() {
       <AppSidebar />
       <SidebarInset className="h-svh flex flex-col overflow-hidden">
         <AdminHeader />
-        <div className="flex flex-1 flex-col overflow-hidden min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
