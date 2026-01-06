@@ -21,7 +21,8 @@ function getAdminCookieSameSite(): "lax" | "none" | "strict" {
   const v = (process.env.ADMIN_COOKIE_SAMESITE ?? "").trim().toLowerCase();
   if (v === "none") return "none";
   if (v === "strict") return "strict";
-  return "lax";
+  // Default to "none" in production for cross-origin support
+  return isProd() ? "none" : "lax";
 }
 
 function getAdminCookieSecure(sameSite: "lax" | "none" | "strict"): boolean {
