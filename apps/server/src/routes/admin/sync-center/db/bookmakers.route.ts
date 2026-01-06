@@ -2,8 +2,15 @@
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "@repo/db";
 import { BookmakersService } from "../../../../services/bookmakers.service";
-import { AdminBookmakersListResponse, AdminBookmakerResponse } from "@repo/types";
-import { getPagination, createPaginationResponse, parseId } from "../../../../utils/routes";
+import {
+  AdminBookmakersListResponse,
+  AdminBookmakerResponse,
+} from "@repo/types";
+import {
+  getPagination,
+  createPaginationResponse,
+  parseId,
+} from "../../../../utils/routes";
 import {
   listBookmakersQuerystringSchema,
   listBookmakersResponseSchema,
@@ -101,7 +108,7 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
           message: "Bookmaker fetched from database successfully",
         });
       } catch (error: any) {
-        if (error.statusCode === 404) {
+        if ((error?.status ?? error?.statusCode) === 404) {
           return reply.code(404).send({
             status: "error",
             message: error.message,
@@ -149,4 +156,3 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
 };
 
 export default adminBookmakersDbRoutes;
-

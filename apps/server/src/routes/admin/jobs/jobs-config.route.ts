@@ -78,7 +78,7 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
         });
       } catch (e: unknown) {
         if (e instanceof AppError) {
-          return reply.status(e.statusCode).send({
+          return reply.status(e.status).send({
             status: "error",
             data: null,
             message: e.message,

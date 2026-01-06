@@ -270,7 +270,7 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
           message: "Fixture fetched from database successfully",
         });
       } catch (error: any) {
-        if (error.statusCode === 404) {
+        if ((error?.status ?? error?.statusCode) === 404) {
           return reply.code(404).send({
             status: "error",
             message: error.message,
@@ -378,7 +378,7 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
           message: "Fixture updated successfully",
         });
       } catch (error: any) {
-        if (error.statusCode === 404) {
+        if ((error?.status ?? error?.statusCode) === 404) {
           return reply.code(404).send({
             status: "error",
             message: error.message,
