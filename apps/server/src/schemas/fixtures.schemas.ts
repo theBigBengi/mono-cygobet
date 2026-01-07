@@ -2,6 +2,29 @@
 
 const idSchema = { type: "integer" };
 
+/**
+ * Minimal schema for PUBLIC upcoming fixtures endpoint.
+ * Only supports pagination and optional days parameter.
+ * No filters (leagues, markets, include, etc.) to keep contract minimal.
+ *
+ * Validation behavior:
+ * - `additionalProperties: false` ensures unknown query params (e.g., ?foo=1) return 400.
+ * - Fastify automatically validates querystring and returns 400 on validation failure.
+ */
+export const publicUpcomingFixturesQuerystringSchema = {
+  type: "object",
+  properties: {
+    page: { type: "integer", minimum: 1, default: 1 },
+    perPage: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+    days: { type: "integer", minimum: 1, maximum: 5, default: 5 },
+  },
+  additionalProperties: false, // Strict: reject unknown params (returns 400)
+};
+
+/**
+ * Full schema for PROTECTED upcoming fixtures endpoint.
+ * Supports flexible from/to dates and all filters.
+ */
 export const upcomingMobileFixturesQuerystringSchema = {
   type: "object",
   properties: {
@@ -36,15 +59,16 @@ export const upcomingMobileFixturesQuerystringSchema = {
       ],
     },
     page: { type: "integer", minimum: 1, default: 1 },
-    perPage: { type: "integer", minimum: 1, maximum: 200, default: 30 },
+    perPage: { type: "integer", minimum: 1, maximum: 50, default: 20 },
   },
 };
 
 export const upcomingMobileFixturesResponseSchema = {
   type: "object",
-  required: ["status", "data", "pagination"],
+  required: ["status", "data", "pagination", "message"],
   properties: {
     status: { type: "string", enum: ["success"] },
+    message: { type: "string" },
     data: {
       type: "array",
       items: {

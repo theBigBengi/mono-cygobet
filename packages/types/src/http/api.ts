@@ -85,6 +85,9 @@ export type ApiUpcomingFixturesResponse = {
   };
 };
 
+// Generic alias for "fixtures list" responses used across endpoints.
+export type ApiFixturesListResponse = ApiUpcomingFixturesResponse;
+
 export interface ApiUserProfileResponse {
   user: {
     id: number;

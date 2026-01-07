@@ -69,6 +69,10 @@ export type MobileUpcomingFixturesResult = {
   };
 };
 
+/**
+ * Get upcoming fixtures (generic, used by both public and protected endpoints).
+ * Supports all filters and includes.
+ */
 export async function getUpcomingFixtures(
   params: GetUpcomingFixturesParams
 ): Promise<MobileUpcomingFixturesResult> {
@@ -182,6 +186,120 @@ export async function getUpcomingFixtures(
       awayTeam: maybeTeam(includeTeams, r.awayTeam),
       country,
       odds: includeOdds ? r.odds : undefined,
+    };
+  });
+
+  return {
+    data,
+    pagination: {
+      page,
+      perPage,
+      totalItems,
+      totalPages: Math.ceil(totalItems / perPage),
+    },
+  };
+}
+
+/**
+ * Get public upcoming fixtures (minimal, no user-aware logic).
+ * - No userId
+ * - No user-specific filters
+ * - Always includes league, teams, country (hardcoded for public)
+ */
+export async function getPublicUpcomingFixtures(params: {
+  from: Date;
+  to: Date;
+  page: number;
+  perPage: number;
+}): Promise<MobileUpcomingFixturesResult> {
+  const { from, to, page, perPage } = params;
+
+  const fromTs = toUnixSeconds(from);
+  const toTs = toUnixSeconds(to);
+  const skip = (page - 1) * perPage;
+  const take = perPage;
+
+  const where: Prisma.fixturesWhereInput = {
+    startTs: { gte: fromTs, lte: toTs },
+    state: "NS",
+  };
+
+  const totalItems = await prisma.fixtures.count({ where });
+
+  const rows = await prisma.fixtures.findMany({
+    where,
+    orderBy: { startTs: "asc" },
+    skip,
+    take,
+    select: {
+      id: true,
+      name: true,
+      startIso: true,
+      startTs: true,
+      state: true,
+      stageRoundName: true,
+      leagueId: true,
+      homeTeamId: true,
+      awayTeamId: true,
+      // Public endpoint always includes league, teams, country
+      league: {
+        select: {
+          id: true,
+          name: true,
+          imagePath: true,
+          country: { select: { id: true, name: true, imagePath: true } },
+        },
+      },
+      homeTeam: {
+        select: { id: true, name: true, imagePath: true },
+      },
+      awayTeam: {
+        select: { id: true, name: true, imagePath: true },
+      },
+    },
+  });
+
+  const data: ApiUpcomingFixturesResponse["data"] = rows.map((r) => {
+    const country = r.league?.country
+      ? {
+          id: r.league.country.id,
+          name: r.league.country.name,
+          imagePath: r.league.country.imagePath,
+        }
+      : null;
+
+    const { stage, round } = splitStageRound(r.stageRoundName);
+
+    return {
+      id: r.id,
+      name: r.name,
+      kickoffAt: r.startIso,
+      startTs: r.startTs,
+      state: String(r.state),
+      stage,
+      round,
+      league: r.league
+        ? {
+            id: r.league.id,
+            name: r.league.name,
+            imagePath: r.league.imagePath ?? null,
+          }
+        : undefined,
+      homeTeam: r.homeTeam
+        ? {
+            id: r.homeTeam.id,
+            name: r.homeTeam.name,
+            imagePath: r.homeTeam.imagePath ?? null,
+          }
+        : undefined,
+      awayTeam: r.awayTeam
+        ? {
+            id: r.awayTeam.id,
+            name: r.awayTeam.name,
+            imagePath: r.awayTeam.imagePath ?? null,
+          }
+        : undefined,
+      country,
     };
   });
 

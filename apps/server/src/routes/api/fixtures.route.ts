@@ -1,9 +1,13 @@
 import { FastifyPluginAsync } from "fastify";
 import {
+  publicUpcomingFixturesQuerystringSchema,
   upcomingMobileFixturesQuerystringSchema,
   upcomingMobileFixturesResponseSchema,
 } from "../../schemas/fixtures.schemas";
-import { getUpcomingFixtures } from "../../services/api/api.fixtures.service";
+import {
+  getUpcomingFixtures,
+  getPublicUpcomingFixtures,
+} from "../../services/api/api.fixtures.service";
 import { parseOptionalDate } from "../../utils/dates";
 import type {
   ApiUpcomingFixturesInclude,
@@ -79,9 +83,80 @@ function parseInclude(value: unknown): Set<ApiUpcomingFixturesInclude> {
 }
 
 const mobileFixturesRoutes: FastifyPluginAsync = async (fastify) => {
+  /**
+   * PUBLIC endpoint: GET /api/public/fixtures/upcoming
+   *
+   * Route mounting: This file is in routes/api/, so Fastify autoload mounts it at /api.
+   * The route path "/public/fixtures/upcoming" becomes "/api/public/fixtures/upcoming".
+   * Mobile app calls this with baseUrl (host-only, e.g., "http://localhost:4000") + "/api/public/fixtures/upcoming".
+   *
+   * - No authentication required.
+   * - Returns upcoming fixtures in the next `days` (default 5, max 5) from "now".
+   * - Minimal contract: only supports page, perPage, and optional days.
+   * - Always includes league, teams, country (hardcoded for public).
+   * - Uses dedicated public service method (no user-aware logic).
+   */
+  fastify.get(
+    "/public/fixtures/upcoming",
+    {
+      schema: {
+        querystring: publicUpcomingFixturesQuerystringSchema,
+        response: {
+          200: upcomingMobileFixturesResponseSchema,
+          400: {
+            type: "object",
+            required: ["status", "message"],
+            properties: {
+              status: { type: "string", enum: ["error"] },
+              message: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      const q = req.query as Record<string, unknown>;
+
+      const now = new Date();
+      const days = Math.max(1, Math.min(5, Number(q.days ?? 5)));
+      const from = now;
+      const to = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+      const page = Math.max(1, Number(q.page ?? 1));
+      const perPage = Math.max(1, Math.min(50, Number(q.perPage ?? 20)));
+
+      // Use dedicated public service method (no filters, always includes league/teams/country)
+      const result = await getPublicUpcomingFixtures({
+        from,
+        to,
+        page,
+        perPage,
+      });
+
+      return reply.send({
+        status: "success",
+        data: result.data,
+        pagination: result.pagination,
+        message: "Upcoming fixtures fetched successfully",
+      });
+    }
+  );
+
+  /**
+   * PROTECTED endpoint: GET /api/fixtures/upcoming
+   *
+   * Route mounting: This file is in routes/api/, so Fastify autoload mounts it at /api.
+   * The route path "/fixtures/upcoming" becomes "/api/fixtures/upcoming".
+   * Mobile app calls this with baseUrl (host-only, e.g., "http://localhost:4000") + "/api/fixtures/upcoming".
+   *
+   * - Requires auth + onboarding completion via userAuth.requireOnboardingComplete.
+   * - Can be used as the "protected home" upcoming fixtures feed.
+   * - Supports flexible from/to window and filters, with a default 5-day window.
+   */
   fastify.get(
     "/fixtures/upcoming",
     {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
       schema: {
         querystring: upcomingMobileFixturesQuerystringSchema,
         response: {
@@ -104,7 +179,7 @@ const mobileFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       const from = parseOptionalDate(q.from) ?? now;
       const to =
         parseOptionalDate(q.to) ??
-        new Date(now.getTime() + 72 * 60 * 60 * 1000);
+        new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
 
       if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
         return reply.status(400).send({
@@ -120,7 +195,7 @@ const mobileFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const page = Math.max(1, Number(q.page ?? 1));
-      const perPage = Math.max(1, Math.min(200, Number(q.perPage ?? 30)));
+      const perPage = Math.max(1, Math.min(50, Number(q.perPage ?? 20)));
 
       const leagueIds = parseLeagueIds(q.leagues);
       if (q.leagues != null && leagueIds.length === 0) {
@@ -156,6 +231,7 @@ const mobileFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         status: "success",
         data: result.data,
         pagination: result.pagination,
+        message: "Upcoming fixtures fetched successfully",
       });
     }
   );

@@ -26,7 +26,8 @@ export default function RootLayout() {
         <ThemeProvider
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
         >
-          <Stack>
+          {/* Explicitly start the app on the public home group */}
+          <Stack initialRouteName="(public)">
             {/* Public entry: no auth required */}
             <Stack.Screen name="(public)" options={{ headerShown: false }} />
 

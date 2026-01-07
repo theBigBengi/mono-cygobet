@@ -6,7 +6,13 @@ import app from "./app";
 // Create Fastify instance
 const fastify = Fastify({
   logger: true,
-  ajv: { customOptions: { coerceTypes: true, allowUnionTypes: true } },
+  ajv: {
+    customOptions: {
+      coerceTypes: true,
+      allowUnionTypes: true,
+      removeAdditional: false, // Reject requests with additional properties (enforces additionalProperties: false)
+    },
+  },
   // querystringParser: (str) => qs.parse(str, { comma: true, allowDots: true }),
 });
 

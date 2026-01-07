@@ -19,11 +19,13 @@ This document defines the authoritative rules and invariants for the onboarding 
 ## 2. Server Responsibilities
 
 ### Profile Existence
+
 - Every user **MUST** have exactly one `user_profiles` row.
 - Profile creation **MUST** be enforced in all user creation paths (email/password, Google OAuth, admin-created users).
 - `ensureUserProfile()` **MUST** be used in transactions that create users.
 
 ### Computation of onboardingRequired
+
 - `isOnboardingRequired(client, userId)` is the **single source of truth**.
 - A user is considered `onboardingRequired === true` if **any** of the following holds:
   - `user_profiles.onboarding_done` is `false` or the profile row is missing.
@@ -31,6 +33,7 @@ This document defines the authoritative rules and invariants for the onboarding 
 - No other code path **MAY** compute onboarding logic independently.
 
 ### Guard Rules (403 ONBOARDING_REQUIRED)
+
 - Protected routes that require a fully onboarded user **MUST** use `fastify.userAuth.requireOnboardingComplete`.
 - `requireOnboardingComplete` **MUST**:
   - Assert authentication (deny guests with 401 `UNAUTHORIZED`).
@@ -48,6 +51,7 @@ This document defines the authoritative rules and invariants for the onboarding 
 ## 3. Mobile Responsibilities
 
 ### Routing Rules
+
 - `status === "loading"`:
   - **MUST NOT** redirect to login.
   - **MUST** show loading UI.
@@ -58,12 +62,14 @@ This document defines the authoritative rules and invariants for the onboarding 
   - When `user.onboardingRequired === false` → **MUST** allow access to protected routes.
 
 ### Onboarding Group Behavior
+
 - Onboarding routes (e.g. `/(onboarding)/username`) **MUST**:
   - Be accessible only when `status === "authed"` and `user.onboardingRequired === true`.
   - Redirect authed users with `onboardingRequired === false` to the protected app.
   - Redirect guests to login.
 
 ### Persistence Behavior
+
 - Onboarding state **MUST NOT** be stored locally outside `user.onboardingRequired`.
 - On every app start / session restore:
   - `/auth/me` **MUST** be called (after refresh) to obtain `onboardingRequired`.
@@ -76,11 +82,13 @@ This document defines the authoritative rules and invariants for the onboarding 
 ## 4. API Contract
 
 ### /auth/me
+
 - **MUST** return:
   - `id, email, username, name, image, role`.
   - `onboardingRequired: boolean` computed via `isOnboardingRequired()`.
 
 ### /auth/onboarding/complete
+
 - **Purpose**: finalize onboarding by setting username and marking onboarding as done.
 - **Requirements**:
   - **Authentication**: user identity **MUST** come from the access token (not client-provided IDs).
@@ -99,6 +107,7 @@ This document defines the authoritative rules and invariants for the onboarding 
 ## 5. Error Handling
 
 ### 403 ONBOARDING_REQUIRED
+
 - Server:
   - **MUST** return HTTP 403 with error code `"ONBOARDING_REQUIRED"` when onboarding is required on a protected route.
 - Mobile:
@@ -107,6 +116,7 @@ This document defines the authoritative rules and invariants for the onboarding 
   - **MUST NOT** clear tokens on `ONBOARDING_REQUIRED`.
 
 ### Other Errors
+
 - Auth errors (401) **MUST** follow auth contract rules (clear tokens, require re-login).
 - Network errors **MUST** preserve tokens and allow retry.
 
@@ -132,6 +142,7 @@ This document defines the authoritative rules and invariants for the onboarding 
 ## Contract Enforcement
 
 Any change to onboarding behavior **MUST** remain consistent with this contract:
+
 - Server remains the single source of truth for `onboardingRequired`.
 - Client derives onboarding state only from `/auth/me`.
 - Guards and routing **MUST** respect the invariants above.
@@ -155,3 +166,4 @@ Any change to onboarding behavior **MUST** remain consistent with this contract:
 - Protected routes **MUST NOT** call `/auth/me` directly; onboarding state comes from `/auth/me` via AuthProvider only.
 - Profile route **MUST** use `/api/users/profile` as its source of domain data.
 - `ONBOARDING_REQUIRED` responses **MUST NOT** cause logout.
+- Protected home fixtures endpoint (`/fixtures/upcoming`) **MUST** use `fastify.userAuth.requireOnboardingComplete` on the server so onboarding users cannot access it.

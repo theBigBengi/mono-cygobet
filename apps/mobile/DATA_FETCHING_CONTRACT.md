@@ -34,6 +34,10 @@ Authoritative rules for server data access in `apps/mobile`.
 - Each feature **MUST** define a `*.keys.ts` module.
   - Example: `features/profile/profile.keys.ts`.
 - Keys **MUST** be array/tuple-based (`["profile", "me"] as const`) and exported from the keys module.
+- **Query keys MUST reflect ONLY real request inputs** (no unused params).
+  - Example: If a protected endpoint doesn't use `days`, the protected query key must NOT include `days`.
+  - This prevents unnecessary cache fragmentation and ensures keys accurately represent the request.
+  - **Rule**: Query keys only include real request inputs that are actually sent to the server.
 
 ---
 
@@ -125,5 +129,32 @@ For every new feature under `apps/mobile/features/<feature>`:
 - If UI needs `Date` objects:
   - Convert in React Query using `select` inside `useXxxQuery`.
   - **Do not** perform string-to-Date conversion inside components.
+
+---
+
+## 11. Query String Encoding for Arrays
+
+- **Arrays MUST be encoded as repeated keys** (not comma-separated strings).
+  - Example: `leagues=[1,2]` → `leagues=1&leagues=2` (NOT `leagues=1,2` or `leagues=[1,2]`).
+- This ensures proper server-side parsing and prevents ambiguity.
+- Use `URLSearchParams.append()` for arrays, `URLSearchParams.set()` for scalars.
+- **Rule**: Arrays must be encoded via repeated keys in the query string.
+
+## 12. Fixtures Feature Example
+
+- **Public fixtures** (`GET /api/public/fixtures/upcoming`):
+  - **MUST** use `features/fixtures/fixtures.api.ts` with `apiFetch` (no auth).
+  - **MUST** fetch via `usePublicUpcomingFixturesQuery` in `fixtures.queries.ts`.
+  - **MUST NOT** require auth or call protected endpoints.
+  - **Minimal contract**: Public fixtures query accepts only `page`, `perPage`, and optional `days` (max 5).
+    - Server schema enforces this with `additionalProperties: false` (rejects unknown params with 400).
+    - No filters (leagues, markets, include, etc.) are accepted on the public endpoint.
+  - Query key includes `days` (public endpoint uses it).
+- **Protected fixtures** (`GET /api/fixtures/upcoming`):
+  - **MUST** use `apiFetchWithAuthRetry` and the protected endpoint.
+  - **MUST** fetch via `useProtectedUpcomingFixturesQuery` and be enabled only when `isReadyForProtected(status, user)` is true.
+  - **MUST** set `meta: { scope: "user" }` so logout can clear user fixtures cache.
+  - Query key does NOT include `days` (protected endpoint doesn't use it; server enforces its own window).
+  - Supports full filter set (from/to, leagues, markets, include, etc.) when needed.
 
 This contract is authoritative for future data fetching behavior in `apps/mobile`. Any deviation is a bug.
