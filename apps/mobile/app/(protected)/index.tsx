@@ -1,4 +1,7 @@
 // app/(protected)/index.tsx
+// Protected home screen:
+// - Entry point for authenticated + onboarded users.
+// - Kept intentionally simple; domain data should come from feature hooks.
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 

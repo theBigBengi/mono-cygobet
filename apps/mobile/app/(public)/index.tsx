@@ -1,4 +1,7 @@
 // app/(public)/index.tsx
+// Public "home" screen:
+// - Never calls protected endpoints.
+// - Shows "Go to Login" for guests, "Go to Profile" for authed users.
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth/useAuth";

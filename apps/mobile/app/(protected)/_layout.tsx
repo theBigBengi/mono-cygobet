@@ -8,6 +8,11 @@ import {
   Pressable,
 } from "react-native";
 import { useAuth } from "@/lib/auth/useAuth";
+import {
+  isReadyForOnboarding,
+  isReadyForProtected,
+  isAuthedButUserMissing,
+} from "@/lib/auth/authGuards";
 
 export default function ProtectedLayout() {
   const { status, user, bootstrap } = useAuth();
@@ -26,7 +31,7 @@ export default function ProtectedLayout() {
   }
 
   // If authed but user is still null (e.g. /auth/me network issue), treat as soft-loading
-  if (status === "authed" && !user) {
+  if (isAuthedButUserMissing(status, user)) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
@@ -39,11 +44,21 @@ export default function ProtectedLayout() {
   }
 
   // If authed but onboarding required, redirect to onboarding
-  if (status === "authed" && user?.onboardingRequired) {
+  if (isReadyForOnboarding(status, user)) {
     return <Redirect href={"/(onboarding)/username" as any} />;
   }
 
-  return <Slot />;
+  // Fully authed + onboarding complete
+  if (isReadyForProtected(status, user)) {
+    return <Slot />;
+  }
+
+  // Fallback: shouldn't normally happen, but keep UX safe
+  return (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

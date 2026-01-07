@@ -1,4 +1,8 @@
 // lib/auth/AuthProvider.tsx
+// Central auth state for the mobile app.
+// - Owns: auth status, current user, access token and auth errors.
+// - Wires auth behavior into the HTTP client (refresh, logout, getAccessToken).
+// - Does NOT own domain data (profiles, feeds, etc.) – those live in React Query.
 import React, { createContext, useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import {
@@ -11,7 +15,9 @@ import * as authApi from "./auth.api";
 import * as authStorage from "./auth.storage";
 import type { AuthState, AuthStatus, User } from "./auth.types";
 import type { RefreshResult } from "./refresh.types";
+import { queryClient } from "../query/queryClient";
 
+// Public shape of the auth context exposed via useAuth().
 interface AuthContextValue extends AuthState {
   bootstrap: () => Promise<void>;
   login: (emailOrUsername: string, password: string) => Promise<void>;
@@ -19,6 +25,7 @@ interface AuthContextValue extends AuthState {
   refreshAccessToken: () => Promise<RefreshResult>;
 }
 
+// Internal React context; components must use useAuth() helper instead of this.
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 interface AuthProviderProps {
@@ -31,16 +38,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Single-flight refresh lock to prevent concurrent refresh calls
+  // Single-flight refresh lock to prevent concurrent refresh calls.
+  // This guarantees only one /auth/refresh is in flight at a time.
   const refreshPromiseRef = React.useRef<Promise<RefreshResult> | null>(null);
 
-  // Ref to store latest access token (prevents stale closure in callback)
+  // Ref to store latest access token (prevents stale closure in callback).
+  // apiClient reads from this via getAccessTokenCallback.
   const accessTokenRef = React.useRef<string | null>(null);
 
   /**
-   * Refresh access token using stored refresh token
-   * Uses single-flight pattern to prevent concurrent refresh calls
-   * Returns rich result to distinguish between auth failures and network errors
+   * Refresh access token using stored refresh token.
+   *
+   * Responsibilities:
+   * - Enforce single-flight behavior (shared promise).
+   * - Differentiate between:
+   *   - "unauthorized" (401) → clear tokens.
+   *   - "network"/"unknown" → keep tokens and allow retry.
+   *   - "no_refresh_token" → nothing to do (guest).
    */
   const refreshAccessToken = useCallback(async (): Promise<RefreshResult> => {
     // If a refresh is already in progress, return that promise
@@ -95,7 +109,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   /**
-   * Bootstrap: check for existing session on app start
+   * Bootstrap: check for existing session on app start.
+   *
+   * Flow:
+   * - If no refresh token → guest.
+   * - If refresh fails with auth error → guest + clear tokens.
+   * - If refresh fails with network/unknown → stay "loading" but keep tokens.
+   * - If refresh succeeds → fetch /auth/me and move to "authed".
    */
   const bootstrap = useCallback(async () => {
     try {
@@ -170,7 +190,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [refreshAccessToken]);
 
   /**
-   * Logout: clear tokens and user data
+   * Logout: clear tokens, user data and user-scoped React Query cache.
+   *
+   * Notes:
+   * - Makes a best-effort /auth/logout call if refresh token exists.
+   * - Regardless of network outcome, local state is always reset to "guest".
    */
   const logout = useCallback(async () => {
     try {
@@ -193,11 +217,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       setStatus("guest");
       setError(null);
+
+      // Clear only user-scoped cached server data on explicit logout.
+      // Queries that set meta: { scope: "user" } will be removed.
+      queryClient.removeQueries({
+        predicate: (query) => query.meta?.scope === "user",
+      });
     }
   }, []);
 
   /**
-   * Login with email/username and password
+   * Login with email/username and password.
+   *
+   * Flow:
+   * - Call /auth/login to receive tokens.
+   * - Persist refresh token and store access token in memory.
+   * - Call /auth/me once to populate User in context.
+   * - On /auth/me network failure → status="authed", user=null (soft-loading).
+   * - On /auth/me 401 → attempt single refresh and retry once, else logout.
    */
   const login = useCallback(
     async (emailOrUsername: string, password: string) => {
@@ -267,15 +304,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [refreshAccessToken, logout]
   );
 
-  // Set refresh and logout callbacks for API client
-  // Use ref for access token callback to avoid stale closure
+  // Set refresh and logout callbacks for the HTTP client.
+  // Use ref for access token callback to avoid stale closure.
   useEffect(() => {
     setRefreshCallback(refreshAccessToken);
     setLogoutCallback(logout);
     setGetAccessTokenCallback(() => accessTokenRef.current);
   }, [refreshAccessToken, logout]);
 
-  // Bootstrap on mount
+  // Bootstrap on initial mount.
   useEffect(() => {
     bootstrap();
   }, [bootstrap]);
@@ -295,7 +332,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 }
 
 /**
- * Hook to access auth context
+ * Hook to access auth context.
+ * - Throws if used outside AuthProvider so misconfiguration fails fast.
  */
 export function useAuth(): AuthContextValue {
   const context = React.useContext(AuthContext);

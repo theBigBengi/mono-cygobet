@@ -1,83 +1,25 @@
 // app/(protected)/profile.tsx
-import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-} from "react-native";
+// Protected profile screen:
+// - Only accessible when auth is "authed" and onboarding is complete (guarded in layout).
+// - Reads server data exclusively via useProfileQuery() (React Query).
+// - Provides navigation back to protected home and a Logout button.
+import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
-import { ApiError } from "@/lib/http/apiError";
-import * as authApi from "@/lib/auth/auth.api";
 import { useAuth } from "@/lib/auth/useAuth";
-
-type ProfileState =
-  | { status: "idle" | "loading" }
-  | { status: "success"; data: import("@repo/types").ApiUserProfileResponse }
-  | {
-      status: "error";
-      error: string;
-      code?: string;
-    };
+import { useProfileQuery } from "@/features/profile/profile.queries";
+import {
+  isApiError,
+  isNetworkError,
+  isNoAccessTokenError,
+  isOnboardingRequiredError,
+} from "@/lib/query/queryErrors";
+import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
+import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 
 export default function ProfileScreen() {
   const { logout } = useAuth();
   const router = useRouter();
-  const [state, setState] = useState<ProfileState>({ status: "loading" });
-
-  const loadProfile = async () => {
-    setState({ status: "loading" });
-    try {
-      const data = await authApi.getProfile();
-      setState({ status: "success", data });
-    } catch (err) {
-      if (err instanceof ApiError) {
-        // Contract-compliant handling
-        if (err.status === 403 && err.code === "ONBOARDING_REQUIRED") {
-          // Onboarding redirect is handled globally by apiClient/layouts
-          setState({
-            status: "error",
-            error: "Onboarding required. Redirecting to onboarding...",
-            code: err.code,
-          });
-          return;
-        }
-        if (err.code === "NO_ACCESS_TOKEN") {
-          setState({
-            status: "error",
-            error: "Auth not ready yet. Please retry.",
-            code: err.code,
-          });
-          return;
-        }
-        if (err.status === 0) {
-          setState({
-            status: "error",
-            error: "You appear to be offline. Please check your connection.",
-            code: "NETWORK_ERROR",
-          });
-          return;
-        }
-        setState({
-          status: "error",
-          error: err.message || "Failed to load profile.",
-          code: err.code,
-        });
-        return;
-      }
-
-      setState({
-        status: "error",
-        error: "Failed to load profile. Please try again.",
-      });
-    }
-  };
-
-  useEffect(() => {
-    void loadProfile();
-  }, []);
+  const { data, isLoading, isError, error, refetch } = useProfileQuery();
 
   const handleLogout = async () => {
     try {
@@ -88,44 +30,53 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleBack = () => {
-    router.replace("/(public)" as any);
+  const handleGoHome = () => {
+    // Replace the current route with protected home so we don't stack history.
+    router.replace("/(protected)" as any);
   };
 
-  if (state.status === "loading") {
+  if (isLoading) {
+    return <QueryLoadingView message="Loading profile..." />;
+  }
+
+  if (isError) {
+    let message = "Failed to load profile. Please try again.";
+
+    const err: unknown = error;
+    if (err && isApiError(err)) {
+      if (isOnboardingRequiredError(err)) {
+        message = "Onboarding required. Please complete onboarding first.";
+      } else if (isNoAccessTokenError(err)) {
+        message = "Auth not ready yet. Please retry.";
+      } else if (isNetworkError(err)) {
+        message = "You were disconnected. Please check your connection.";
+      } else {
+        message = String((err as any).message ?? message);
+      }
+    }
+
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.loadingText}>Loading profile...</Text>
-      </View>
+      <QueryErrorView
+        message={message}
+        onRetry={() => refetch()}
+        extraActions={
+          <Pressable
+            style={[styles.button, styles.secondaryButton]}
+            onPress={handleLogout}
+          >
+            <Text style={styles.buttonText}>Logout</Text>
+          </Pressable>
+        }
+      />
     );
   }
 
-  if (state.status === "error") {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>{state.error}</Text>
-        <Pressable style={styles.button} onPress={loadProfile}>
-          <Text style={styles.buttonText}>Retry</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.button, styles.secondaryButton]}
-          onPress={handleLogout}
-        >
-          <Text style={styles.buttonText}>Logout</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.button, styles.backButton]}
-          onPress={handleBack}
-        >
-          <Text style={styles.buttonText}>Back</Text>
-        </Pressable>
-      </View>
-    );
+  if (!data) {
+    // Should not happen when enabled, but guard just in case.
+    return <QueryLoadingView message="Loading profile..." />;
   }
 
-  const { user, profile } =
-    state.status === "success" ? state.data : ({} as any);
+  const { user, profile } = data;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -186,15 +137,15 @@ export default function ProfileScreen() {
         </Text>
       </View>
 
-      <Pressable style={styles.button} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Logout</Text>
+      <Pressable
+        style={[styles.button, styles.secondaryButton]}
+        onPress={handleGoHome}
+      >
+        <Text style={styles.buttonText}>Go to Home</Text>
       </Pressable>
 
-      <Pressable
-        style={[styles.button, styles.backButton]}
-        onPress={handleBack}
-      >
-        <Text style={styles.buttonText}>Back</Text>
+      <Pressable style={styles.button} onPress={handleLogout}>
+        <Text style={styles.buttonText}>Logout</Text>
       </Pressable>
     </ScrollView>
   );

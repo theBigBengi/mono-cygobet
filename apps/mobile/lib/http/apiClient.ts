@@ -1,8 +1,13 @@
 // lib/http/apiClient.ts
+// Low-level HTTP client for the mobile app.
+// - Responsible for constructing URLs, headers and parsing responses.
+// - Knows about auth/refresh/onboarding, but NOT about feature-specific domains.
 import { getApiBaseUrl } from "../env";
 import { ApiError } from "./apiError";
 import type { RefreshResult } from "../auth/refresh.types";
 
+// Options accepted by apiFetch / apiFetchWithAuthRetry.
+// Screens must never construct this directly – only feature API modules.
 type ApiFetchOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   headers?: Record<string, string>;
@@ -10,11 +15,13 @@ type ApiFetchOptions = {
   accessToken?: string | null;
 };
 
+// Callbacks are injected by AuthProvider so this module stays framework-agnostic.
 type RefreshCallback = () => Promise<RefreshResult>;
 type LogoutCallback = () => Promise<void>;
 type GetAccessTokenCallback = () => string | null;
 type OnboardingRequiredCallback = () => void;
 
+// These module-level refs are how the HTTP layer talks back to auth + routing.
 let refreshCallback: RefreshCallback | null = null;
 let logoutCallback: LogoutCallback | null = null;
 let getAccessTokenCallback: GetAccessTokenCallback | null = null;
@@ -53,7 +60,9 @@ export function setOnboardingRequiredCallback(
 }
 
 /**
- * Base API fetch function
+ * Base API fetch function (NO auth retry).
+ * - Used by public endpoints (e.g. login, register, refresh).
+ * - Throws ApiError on non-2xx responses.
  */
 export async function apiFetch<T>(
   path: string,
@@ -61,15 +70,18 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { method = "GET", headers = {}, body, accessToken } = options;
 
+  // Build absolute URL from configured API base.
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
 
+  // Always request JSON back; send JSON bodies by default.
   const requestHeaders: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
     ...headers,
   };
 
+  // Attach Authorization header only when we actually have a token.
   if (accessToken) {
     requestHeaders.Authorization = `Bearer ${accessToken}`;
   }
@@ -79,12 +91,14 @@ export async function apiFetch<T>(
     headers: requestHeaders,
   };
 
+  // Avoid sending "undefined" as a body – only send if explicitly provided.
   if (body !== undefined) {
     requestOptions.body = JSON.stringify(body);
   }
 
   let response: Response;
   try {
+    // NOTE: fetch itself can throw for network failures, CORS, etc.
     response = await fetch(url, requestOptions);
   } catch (error) {
     // Network errors (server not running, CORS, etc.)
@@ -102,7 +116,7 @@ export async function apiFetch<T>(
     throw error;
   }
 
-  // Handle 204 No Content
+  // Handle 204 No Content explicitly – React Query callers expect a value.
   if (response.status === 204) {
     return null as T;
   }
@@ -119,6 +133,7 @@ export async function apiFetch<T>(
     responseBody = await response.text();
   }
 
+  // Convert all HTTP errors into a structured ApiError.
   if (!response.ok) {
     throw ApiError.fromResponse(response.status, responseBody);
   }
@@ -127,8 +142,9 @@ export async function apiFetch<T>(
 }
 
 /**
- * API fetch with automatic token refresh on 401
- * Retries the original request once after refresh
+ * API fetch with automatic token refresh on 401.
+ * - Used ONLY by feature API modules for protected endpoints.
+ * - Never called directly from screens or React components.
  *
  * Precedence rule:
  * 1. Determine token: options.accessToken ?? getAccessTokenCallback?.()
