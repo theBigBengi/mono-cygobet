@@ -18,7 +18,7 @@ export default function OnboardingLayout() {
   if (status !== "authed" || !user?.onboardingRequired) {
     // If authed but onboarding not required, redirect to protected app
     if (status === "authed" && user && !user.onboardingRequired) {
-      return <Redirect href={"/(protected)/account" as any} />;
+      return <Redirect href={"/(protected)/index" as any} />;
     }
     // Otherwise redirect to login
     return <Redirect href={"/(auth)/login" as any} />;

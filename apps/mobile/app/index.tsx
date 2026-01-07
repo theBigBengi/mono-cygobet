@@ -36,5 +36,3 @@ export default function RootIndex() {
   // Guest → Public Home
   return <Redirect href={"/(public)" as any} />;
 }
-
-

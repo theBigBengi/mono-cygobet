@@ -5,7 +5,7 @@
 
 import React from "react";
 import { Text, TextProps, StyleSheet } from "react-native";
-import { typography, colors } from "@/theme";
+import { useTheme } from "@/lib/theme";
 
 type TypographyVariant = "title" | "subtitle" | "body" | "caption";
 type TextColor = "primary" | "secondary" | "danger";
@@ -22,13 +22,14 @@ export function AppText({
   style,
   ...props
 }: AppTextProps) {
-  const variantStyle = typography[variant];
+  const { theme } = useTheme();
+  const variantStyle = theme.typography[variant];
   const colorValue =
     color === "primary"
-      ? colors.textPrimary
+      ? theme.colors.textPrimary
       : color === "secondary"
-        ? colors.textSecondary
-        : colors.danger;
+        ? theme.colors.textSecondary
+        : theme.colors.danger;
 
   return (
     <Text

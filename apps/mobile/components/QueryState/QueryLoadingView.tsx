@@ -14,7 +14,11 @@ export function QueryLoadingView({ message }: QueryLoadingViewProps) {
     <Screen>
       <ActivityIndicator size="large" />
       {message ? (
-        <AppText variant="body" color="secondary" style={sharedStyles.emptyTextMargin}>
+        <AppText
+          variant="body"
+          color="secondary"
+          style={sharedStyles.emptyTextMargin}
+        >
           {message}
         </AppText>
       ) : null}

@@ -5,28 +5,32 @@
 
 import React from "react";
 import { View, ViewProps, StyleSheet } from "react-native";
-import { colors, spacing, radius } from "@/theme";
+import { useTheme } from "@/lib/theme";
 
 interface CardProps extends ViewProps {
   children: React.ReactNode;
 }
 
 export function Card({ children, style, ...props }: CardProps) {
+  const { theme } = useTheme();
+
   return (
-    <View style={[styles.card, style]} {...props}>
+    <View
+      style={[
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+          borderWidth: 1,
+          borderRadius: theme.radius.md,
+          padding: theme.spacing.md,
+          marginBottom: theme.spacing.sm,
+        },
+        style,
+      ]}
+      {...props}
+    >
       {children}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-});
 

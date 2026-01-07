@@ -1,16 +1,19 @@
 // components/ui/styles.ts
 // Shared styles for common UI patterns.
 // Screens should import and use these instead of creating their own.
+// Spacing-based styles are constants (theme-independent).
+// Color-based styles are functions that use theme.
 
 import { StyleSheet } from "react-native";
-import { spacing, colors, radius } from "@/theme";
+import { useTheme } from "@/lib/theme";
 
+// Spacing-based styles (theme-independent)
 export const sharedStyles = StyleSheet.create({
   sectionGap: {
-    marginBottom: spacing.lg,
+    marginBottom: 24, // spacing.lg
   },
   listGap: {
-    marginBottom: spacing.sm,
+    marginBottom: 8, // spacing.sm
   },
   centered: {
     flex: 1,
@@ -18,39 +21,39 @@ export const sharedStyles = StyleSheet.create({
     alignItems: "center",
   },
   titleMargin: {
-    marginBottom: spacing.sm,
+    marginBottom: 8, // spacing.sm
   },
   subtitleMargin: {
-    marginBottom: spacing.lg,
+    marginBottom: 24, // spacing.lg
   },
   buttonContainer: {
-    marginTop: spacing.lg,
+    marginTop: 24, // spacing.lg
   },
   emptyTextMargin: {
-    marginTop: spacing.md,
+    marginTop: 16, // spacing.md
   },
   cardMargin: {
-    marginBottom: spacing.lg,
+    marginBottom: 24, // spacing.lg
   },
   profileTitle: {
-    marginBottom: spacing.lg,
+    marginBottom: 24, // spacing.lg
     textAlign: "center" as const,
   },
   labelMargin: {
-    marginBottom: spacing.xs,
+    marginBottom: 4, // spacing.xs
   },
   sectionTitleMargin: {
-    marginBottom: spacing.sm,
+    marginBottom: 8, // spacing.sm
   },
-  // FixtureCard specific styles
+  // FixtureCard layout styles (theme-independent)
   fixtureHeaderRow: {
-    marginBottom: spacing.sm,
+    marginBottom: 8, // spacing.sm
   },
   fixtureTeamSection: {
     flex: 1,
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: spacing.xs,
+    gap: 4, // spacing.xs
   },
   fixtureTeamName: {
     flex: 1,
@@ -63,42 +66,51 @@ export const sharedStyles = StyleSheet.create({
     fontWeight: "600" as const,
   },
   fixtureDivider: {
-    marginVertical: spacing.sm,
+    marginVertical: 8, // spacing.sm
   },
   fixtureOddsRow: {
-    gap: spacing.xs,
-  },
-  fixtureOddsButton: {
-    flex: 1,
-    height: 60,
-    backgroundColor: colors.surface,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    gap: 4, // spacing.xs
   },
   fixtureOddsButtonContent: {
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
     height: "100%",
   },
-  fixtureOddsButtonPressed: {
-    opacity: 0.7,
-    backgroundColor: colors.border,
-  },
-  fixtureOddsButtonSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  fixtureOddsLabelSelected: {
-    color: colors.primaryText,
-    fontWeight: "600" as const,
-  },
-  fixtureOddsValueSelected: {
-    color: colors.primaryText,
-  },
   fixtureOddsValue: {
     fontWeight: "600" as const,
   },
 });
+
+// Color-dependent styles (theme-aware)
+// These must be used within components that have access to useTheme()
+export function useFixtureStyles() {
+  const { theme } = useTheme();
+
+  return {
+    fixtureOddsButton: {
+      flex: 1,
+      height: 60,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+    },
+    fixtureOddsButtonPressed: {
+      opacity: 0.7,
+      backgroundColor: theme.colors.border,
+    },
+    fixtureOddsButtonSelected: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    fixtureOddsLabelSelected: {
+      color: theme.colors.primaryText,
+      fontWeight: "600" as const,
+    },
+    fixtureOddsValueSelected: {
+      color: theme.colors.primaryText,
+    },
+  };
+}

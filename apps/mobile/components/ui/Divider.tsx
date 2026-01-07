@@ -2,22 +2,27 @@
 // Simple divider line component.
 
 import React from "react";
-import { View, StyleSheet } from "react-native";
-import { colors } from "@/theme";
+import { View } from "react-native";
+import { useTheme } from "@/lib/theme";
 
 interface DividerProps {
   style?: View["props"]["style"];
 }
 
 export function Divider({ style }: DividerProps) {
-  return <View style={[styles.divider, style]} />;
-}
+  const { theme } = useTheme();
 
-const styles = StyleSheet.create({
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    width: "100%",
-  },
-});
+  return (
+    <View
+      style={[
+        {
+          height: 1,
+          backgroundColor: theme.colors.border,
+          width: "100%",
+        },
+        style,
+      ]}
+    />
+  );
+}
 

@@ -1,12 +1,14 @@
 // Root layout for the Expo Router app.
 // Composition order:
 // - QueryClientProvider: provides React Query cache to the whole app.
+// - ThemeProvider: provides theme context (light/dark mode support).
 // - AuthProvider: manages auth state and wires auth into the HTTP client.
-// - ThemeProvider + Stack: UI/theme + navigation.
+// - AppStartGate: handles app initialization (bootstrap + prefetch).
+// - Stack: Navigation.
 import {
   DarkTheme,
   DefaultTheme,
-  ThemeProvider,
+  ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -14,47 +16,58 @@ import "react-native-reanimated";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import { Provider as JotaiProvider } from "jotai";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { ThemeProvider, useTheme } from "@/lib/theme";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { queryClient } from "@/lib/query/queryClient";
+import { AppStartGate } from "@/components/AppStart/AppStartGate";
+
+function AppContent() {
+  const { colorScheme } = useTheme();
+
+  return (
+    <NavigationThemeProvider
+      value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+    >
+      <AppStartGate>
+        {/* Explicitly start the app on the public home group */}
+        <Stack
+          initialRouteName="(public)"
+          screenOptions={{ headerShown: false }}
+        >
+          {/* Public entry: no auth required */}
+          <Stack.Screen name="(public)" options={{ headerShown: false }} />
+
+          {/* Auth routes (login/register) */}
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+
+          {/* Onboarding routes (username, etc.) */}
+          <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+
+          {/* Protected routes (require auth + onboarding complete) */}
+          <Stack.Screen name="(protected)" options={{ headerShown: false }} />
+
+          {/* Example modal (kept from template)  */}
+          <Stack.Screen
+            name="modal"
+            options={{ presentation: "modal", headerShown: false }}
+          />
+        </Stack>
+        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+      </AppStartGate>
+    </NavigationThemeProvider>
+  );
+}
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <JotaiProvider>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <ThemeProvider
-            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-          >
-          {/* Explicitly start the app on the public home group */}
-          <Stack initialRouteName="(public)">
-            {/* Public entry: no auth required */}
-            <Stack.Screen name="(public)" options={{ headerShown: false }} />
-
-            {/* Auth routes (login/register) */}
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-
-            {/* Onboarding routes (username, etc.) */}
-            <Stack.Screen
-              name="(onboarding)"
-              options={{ headerShown: false }}
-            />
-
-            {/* Protected routes (require auth + onboarding complete) */}
-            <Stack.Screen name="(protected)" options={{ headerShown: false }} />
-
-            {/* Example modal (kept from template) */}
-            <Stack.Screen
-              name="modal"
-              options={{ presentation: "modal", title: "Modal" }}
-            />
-          </Stack>
-          <StatusBar style="auto" />
+        <ThemeProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
         </ThemeProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+      </QueryClientProvider>
     </JotaiProvider>
   );
 }

@@ -5,8 +5,9 @@
 // - Optional scroll support
 
 import React from "react";
-import { SafeAreaView, ScrollView, StyleSheet, ViewStyle } from "react-native";
-import { colors, spacing } from "@/theme";
+import { ScrollView, ViewStyle } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "@/lib/theme";
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -19,14 +20,24 @@ export function Screen({
   scroll = false,
   contentContainerStyle,
 }: ScreenProps) {
-  const containerStyle = [styles.container];
+  const { theme } = useTheme();
 
   if (scroll) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: theme.colors.background,
+        }}
+      >
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
+          style={{ flex: 1 }}
+          contentContainerStyle={[
+            {
+              padding: theme.spacing.md,
+            },
+            contentContainerStyle,
+          ]}
         >
           {children}
         </ScrollView>
@@ -34,24 +45,17 @@ export function Screen({
     );
   }
 
-  return <SafeAreaView style={containerStyle}>{children}</SafeAreaView>;
+  return (
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: theme.colors.background,
+        padding: theme.spacing.md,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {children}
+    </SafeAreaView>
+  );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: spacing.md,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: spacing.md,
-  },
-});
-

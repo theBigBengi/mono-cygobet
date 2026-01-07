@@ -1,5 +1,6 @@
-// theme/spacing.ts
+// lib/theme/spacing.ts
 // Consistent spacing tokens.
+// Pure data - no logic, no React, no hooks.
 
 export const spacing = {
   xs: 4,

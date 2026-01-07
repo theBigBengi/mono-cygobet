@@ -19,7 +19,7 @@ export default function PublicIndex() {
   const { status } = useAuth();
 
   const { data, isLoading, isError, error, refetch } =
-    usePublicUpcomingFixturesQuery({ page: 1, perPage: 20 });
+    usePublicUpcomingFixturesQuery({ page: 1, perPage: 20, days: 5 });
 
   const handleGoToLogin = () => {
     router.push("/(auth)/login" as any);

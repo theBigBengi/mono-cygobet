@@ -28,7 +28,11 @@ export default function ProtectedHomeScreen() {
   };
 
   if (isLoading) {
-    return <QueryLoadingView message="Loading upcoming fixtures..." />;
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <QueryLoadingView message="Loading upcoming fixtures..." />
+      </View>
+    );
   }
 
   if (isError) {

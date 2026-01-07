@@ -1,5 +1,6 @@
-// theme/typography.ts
+// lib/theme/typography.ts
 // Typography variants with consistent sizing and weights.
+// Pure data - no logic, no React, no hooks.
 
 export const typography = {
   title: {

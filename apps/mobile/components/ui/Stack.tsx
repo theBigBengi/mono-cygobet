@@ -3,8 +3,7 @@
 // - Standardized spacing
 
 import React from "react";
-import { View, ViewProps, StyleSheet } from "react-native";
-import { spacing } from "@/theme";
+import { View, ViewProps } from "react-native";
 
 interface StackProps extends ViewProps {
   children: React.ReactNode;
@@ -15,7 +14,9 @@ export function Stack({ children, style, gap, ...props }: StackProps) {
   return (
     <View
       style={[
-        styles.stack,
+        {
+          flexDirection: "column",
+        },
         gap !== undefined && { gap },
         style,
       ]}
@@ -25,10 +26,4 @@ export function Stack({ children, style, gap, ...props }: StackProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  stack: {
-    flexDirection: "column",
-  },
-});
 

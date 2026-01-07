@@ -27,7 +27,7 @@ export default function ProtectedLayout() {
   }
 
   if (status === "guest") {
-    return <Redirect href={"/(auth)/login" as any} />;
+    return <Redirect href={"/(public)" as any} />;
   }
 
   // If authed but user is still null (e.g. /auth/me network issue), treat as soft-loading

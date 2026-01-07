@@ -6,7 +6,7 @@
 
 import React from "react";
 import { Pressable, StyleSheet, PressableProps } from "react-native";
-import { colors, spacing, radius } from "@/theme";
+import { useTheme } from "@/lib/theme";
 import { AppText } from "./AppText";
 
 type ButtonVariant = "primary" | "secondary" | "danger";
@@ -25,20 +25,38 @@ export function Button({
   style,
   ...pressableProps
 }: ButtonProps) {
+  const { theme } = useTheme();
+
   const variantStyle =
     variant === "primary"
-      ? styles.primary
+      ? { backgroundColor: theme.colors.primary }
       : variant === "secondary"
-        ? styles.secondary
-        : styles.danger;
+        ? {
+            backgroundColor: theme.colors.surface,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+          }
+        : { backgroundColor: theme.colors.danger };
+
+  const buttonTextColor =
+    variant === "primary" || variant === "danger"
+      ? theme.colors.primaryText
+      : theme.colors.textPrimary;
 
   return (
     <Pressable
       style={({ pressed }) => [
-        styles.button,
-        variantStyle,
-        disabled && styles.disabled,
-        pressed && styles.pressed,
+        {
+          paddingVertical: theme.spacing.sm,
+          paddingHorizontal: theme.spacing.lg,
+          borderRadius: theme.radius.sm,
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 44,
+          ...variantStyle,
+          ...(disabled && { opacity: 0.5 }),
+          ...(pressed && { opacity: 0.8 }),
+        },
         style,
       ]}
       disabled={disabled}
@@ -47,10 +65,10 @@ export function Button({
       <AppText
         variant="body"
         style={[
-          styles.buttonText,
-          variant === "primary" || variant === "danger"
-            ? styles.buttonTextPrimary
-            : styles.buttonTextSecondary,
+          {
+            fontWeight: "600",
+            color: buttonTextColor,
+          },
         ]}
       >
         {label}
@@ -58,41 +76,4 @@ export function Button({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.sm,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-  },
-  primary: {
-    backgroundColor: colors.primary,
-  },
-  secondary: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  danger: {
-    backgroundColor: colors.danger,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  buttonText: {
-    fontWeight: "600",
-  },
-  buttonTextPrimary: {
-    color: colors.primaryText,
-  },
-  buttonTextSecondary: {
-    color: colors.textPrimary,
-  },
-});
 

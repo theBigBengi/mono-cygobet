@@ -48,7 +48,7 @@ export default function UsernameScreen() {
       // Refresh user data to get updated onboardingRequired status
       await bootstrap();
       // Navigate to protected app
-      router.replace("/(protected)/account" as any);
+      router.replace("/(protected)/index" as any);
     } catch (err) {
       console.error("Onboarding completion failed:", err);
       if (err instanceof Error) {

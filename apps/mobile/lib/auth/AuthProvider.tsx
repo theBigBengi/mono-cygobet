@@ -18,7 +18,7 @@ import type { RefreshResult } from "./refresh.types";
 import { queryClient } from "../query/queryClient";
 
 // Public shape of the auth context exposed via useAuth().
-interface AuthContextValue extends AuthState {
+export interface AuthContextValue extends AuthState {
   bootstrap: () => Promise<void>;
   login: (emailOrUsername: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -122,14 +122,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setStatus("loading");
       setError(null);
 
+      console.log("Bootstrap: checking for refresh token");
       const refreshToken = await authStorage.getRefreshToken();
+      console.log("Bootstrap: refreshToken exists:", !!refreshToken);
       if (!refreshToken) {
+        console.log("Bootstrap: no refresh token, setting status to guest");
         setStatus("guest");
         return;
       }
 
       // Refresh access token
+      console.log("Bootstrap: calling refreshAccessToken");
       const refreshResult = await refreshAccessToken();
+      console.log(
+        "Bootstrap: refreshResult:",
+        refreshResult.ok ? "ok" : `failed: ${refreshResult.reason}`
+      );
+
       if (!refreshResult.ok) {
         // Auth failure: clear tokens and go to guest
         if (
@@ -154,11 +163,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       accessTokenRef.current = refreshResult.accessToken;
 
       // Fetch user info (me() will automatically use the access token via callback)
+      console.log("Bootstrap: calling /auth/me");
       const userData = await authApi.me();
+      console.log(
+        "Bootstrap: /auth/me succeeded, userData:",
+        userData ? "received" : "null"
+      );
       setUser(userData);
       setStatus("authed");
+      console.log("Bootstrap: set status to authed");
     } catch (err) {
       console.error("Bootstrap failed:", err);
+      console.error("Bootstrap error details:", {
+        isApiError: err instanceof ApiError,
+        status: err instanceof ApiError ? err.status : "unknown",
+        code: err instanceof ApiError ? err.code : "unknown",
+        message: err instanceof Error ? err.message : String(err),
+      });
 
       // Only clear tokens on 401 (auth failure), but not NO_ACCESS_TOKEN
       // NO_ACCESS_TOKEN means token is missing (timing issue), not expired
@@ -312,10 +333,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setGetAccessTokenCallback(() => accessTokenRef.current);
   }, [refreshAccessToken, logout]);
 
-  // Bootstrap on initial mount.
-  useEffect(() => {
-    bootstrap();
-  }, [bootstrap]);
+  // Bootstrap on initial mount - DISABLED: AppStart orchestrator handles this
+  // useEffect(() => {
+  //   bootstrap();
+  // }, [bootstrap]);
 
   const value: AuthContextValue = {
     status,

@@ -8,8 +8,8 @@
 import React from "react";
 import { View, Image, Pressable, StyleSheet } from "react-native";
 import { Card, AppText, Row, Stack } from "@/components/ui";
-import { sharedStyles } from "@/components/ui/styles";
-import { colors } from "@/theme";
+import { sharedStyles, useFixtureStyles } from "@/components/ui/styles";
+import { useTheme } from "@/lib/theme";
 import {
   formatKickoffDate,
   formatKickoffTime,
@@ -65,6 +65,8 @@ function TeamLogo({
   imagePath?: string | null;
   teamName: string;
 }) {
+  const { theme } = useTheme();
+
   if (imagePath) {
     return (
       <Image
@@ -76,7 +78,12 @@ function TeamLogo({
   }
   // Placeholder circle
   return (
-    <View style={styles.teamLogoPlaceholder}>
+    <View
+      style={[
+        styles.teamLogoPlaceholder,
+        { backgroundColor: theme.colors.border },
+      ]}
+    >
       <AppText variant="caption" color="secondary">
         {teamName.charAt(0).toUpperCase()}
       </AppText>
@@ -159,12 +166,14 @@ function OddsButton({
   onPress?: () => void;
   isSelected?: boolean;
 }) {
+  const fixtureStyles = useFixtureStyles();
+
   return (
     <Pressable
       style={({ pressed }) => [
-        sharedStyles.fixtureOddsButton,
-        isSelected && sharedStyles.fixtureOddsButtonSelected,
-        pressed && sharedStyles.fixtureOddsButtonPressed,
+        fixtureStyles.fixtureOddsButton,
+        isSelected && fixtureStyles.fixtureOddsButtonSelected,
+        pressed && fixtureStyles.fixtureOddsButtonPressed,
       ]}
       onPress={onPress}
     >
@@ -172,7 +181,9 @@ function OddsButton({
         <AppText
           variant="caption"
           color={isSelected ? "primary" : "secondary"}
-          style={isSelected ? sharedStyles.fixtureOddsLabelSelected : undefined}
+          style={
+            isSelected ? fixtureStyles.fixtureOddsLabelSelected : undefined
+          }
         >
           {label}
         </AppText>
@@ -180,7 +191,7 @@ function OddsButton({
           variant="body"
           style={[
             sharedStyles.fixtureOddsValue,
-            isSelected && sharedStyles.fixtureOddsValueSelected,
+            isSelected && fixtureStyles.fixtureOddsValueSelected,
           ]}
         >
           {value}
@@ -260,7 +271,6 @@ const styles = StyleSheet.create({
     width: LOGO_SIZE,
     height: LOGO_SIZE,
     borderRadius: LOGO_SIZE / 2,
-    backgroundColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
