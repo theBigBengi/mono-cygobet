@@ -1,10 +1,11 @@
 // src/plugins/user-auth.ts
 import fp from "fastify-plugin";
 import type { preHandlerHookHandler, FastifyRequest } from "fastify";
-import { UnauthorizedError } from "../utils/errors";
+import { UnauthorizedError, ForbiddenError } from "../utils/errors/app-error";
 import type { UserAuthContext } from "../auth/user-auth.types";
 import { verifyAccessToken } from "../auth/user-tokens";
 import { prisma } from "@repo/db";
+import { isOnboardingRequired } from "../auth/user-onboarding";
 
 export default fp(async function userAuthPlugin(fastify) {
   // Typed request context for resolved user auth (memoized per-request)
@@ -77,9 +78,29 @@ export default fp(async function userAuthPlugin(fastify) {
     await assertAuth(req);
   };
 
+  /**
+   * Require auth AND onboarding completion
+   * Blocks access if onboarding is required
+   */
+  const requireOnboardingComplete: preHandlerHookHandler = async (req) => {
+    const ctx = await assertAuth(req);
+
+    // Check onboarding status
+    const onboardingRequired = await isOnboardingRequired(prisma, ctx.user.id);
+
+    if (onboardingRequired) {
+      const error = new ForbiddenError(
+        "Onboarding required. Please complete onboarding first."
+      );
+      error.code = "ONBOARDING_REQUIRED";
+      throw error;
+    }
+  };
+
   fastify.decorate("userAuth", {
     resolve,
     assertAuth,
     requireAuth,
+    requireOnboardingComplete,
   });
 });

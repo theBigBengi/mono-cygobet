@@ -2,6 +2,8 @@
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "@repo/db";
 import { UserAuthService } from "../../services/auth/user-auth.service";
+import { UserOnboardingService } from "../../services/auth/user-onboarding.service";
+import { isOnboardingRequired } from "../../auth/user-onboarding";
 import {
   userRegisterBodySchema,
   userLoginBodySchema,
@@ -12,6 +14,8 @@ import {
   userRefreshResponseSchema,
   userLogoutResponseSchema,
   userMeResponseSchema,
+  userOnboardingCompleteBodySchema,
+  userOnboardingCompleteResponseSchema,
 } from "../../schemas/auth/user-auth.schemas";
 
 type UserRegisterBody = {
@@ -66,6 +70,7 @@ type UserMeResponse = {
   name: string | null;
   image: string | null;
   role: string;
+  onboardingRequired: boolean;
 };
 
 /**
@@ -82,6 +87,7 @@ type UserMeResponse = {
  */
 const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new UserAuthService(fastify);
+  const onboardingService = new UserOnboardingService(fastify);
 
   fastify.post<{ Body: UserRegisterBody; Reply: UserAuthResponse }>(
     "/register",
@@ -180,6 +186,12 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
 
       if (!user) throw new Error("User not found");
 
+      // Compute onboarding status (authoritative server-side check)
+      const onboardingRequired = await isOnboardingRequired(
+        prisma,
+        user.id
+      );
+
       return reply.send({
         id: user.id,
         email: user.email,
@@ -187,7 +199,33 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
         name: user.name,
         image: user.image,
         role: user.role,
+        onboardingRequired,
       });
+    }
+  );
+
+  fastify.post<{
+    Body: { username: string };
+    Reply: { success: boolean };
+  }>(
+    "/onboarding/complete",
+    {
+      schema: {
+        body: userOnboardingCompleteBodySchema,
+        response: { 200: userOnboardingCompleteResponseSchema },
+      },
+      preHandler: [fastify.userAuth.requireAuth],
+    },
+    async (req, reply) => {
+      const ctx = req.userAuth;
+      if (!ctx) throw new Error("User auth context missing");
+
+      // Use authenticated user ID from token, not client-provided
+      const result = await onboardingService.completeOnboarding(
+        ctx.user.id,
+        req.body.username
+      );
+      return reply.send(result);
     }
   );
 };

@@ -13,10 +13,12 @@ type ApiFetchOptions = {
 type RefreshCallback = () => Promise<RefreshResult>;
 type LogoutCallback = () => Promise<void>;
 type GetAccessTokenCallback = () => string | null;
+type OnboardingRequiredCallback = () => void;
 
 let refreshCallback: RefreshCallback | null = null;
 let logoutCallback: LogoutCallback | null = null;
 let getAccessTokenCallback: GetAccessTokenCallback | null = null;
+let onboardingRequiredCallback: OnboardingRequiredCallback | null = null;
 
 /**
  * Set the refresh callback for token refresh on 401
@@ -39,6 +41,15 @@ export function setGetAccessTokenCallback(
   callback: GetAccessTokenCallback
 ): void {
   getAccessTokenCallback = callback;
+}
+
+/**
+ * Set the onboarding required callback for routing to onboarding on 403
+ */
+export function setOnboardingRequiredCallback(
+  callback: OnboardingRequiredCallback
+): void {
+  onboardingRequiredCallback = callback;
 }
 
 /**
@@ -199,7 +210,20 @@ export async function apiFetchWithAuthRetry<T>(
       }
     }
 
-    // Non-401 error, throw as-is
+    // Step 5: Handle 403 ONBOARDING_REQUIRED
+    // Do not logout, just route to onboarding
+    if (
+      error instanceof ApiError &&
+      error.status === 403 &&
+      error.code === "ONBOARDING_REQUIRED"
+    ) {
+      if (onboardingRequiredCallback) {
+        onboardingRequiredCallback();
+      }
+      throw error;
+    }
+
+    // Non-401/403 error, throw as-is
     throw error;
   }
 }

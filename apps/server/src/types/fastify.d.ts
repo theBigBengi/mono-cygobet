@@ -32,6 +32,7 @@ declare module "fastify" {
       resolve: (req: FastifyRequest) => Promise<UserAuthContext | null>;
       assertAuth: (req: FastifyRequest) => Promise<UserAuthContext>;
       requireAuth: preHandlerHookHandler;
+      requireOnboardingComplete: preHandlerHookHandler;
     };
 
     jwt: {

@@ -92,7 +92,15 @@ export const userLogoutResponseSchema = {
 
 export const userMeResponseSchema = {
   type: "object",
-  required: ["id", "email", "username", "name", "image", "role"],
+  required: [
+    "id",
+    "email",
+    "username",
+    "name",
+    "image",
+    "role",
+    "onboardingRequired",
+  ],
   additionalProperties: false,
   properties: {
     id: { type: "integer" },
@@ -101,6 +109,24 @@ export const userMeResponseSchema = {
     name: { anyOf: [{ type: "string" }, { type: "null" }] },
     image: { anyOf: [{ type: "string" }, { type: "null" }] },
     role: { type: "string" },
+    onboardingRequired: { type: "boolean" },
   },
 } as const;
 
+export const userOnboardingCompleteBodySchema = {
+  type: "object",
+  required: ["username"],
+  additionalProperties: false,
+  properties: {
+    username: { type: "string", minLength: 3, maxLength: 50 },
+  },
+} as const;
+
+export const userOnboardingCompleteResponseSchema = {
+  type: "object",
+  required: ["success"],
+  additionalProperties: false,
+  properties: {
+    success: { type: "boolean" },
+  },
+} as const;

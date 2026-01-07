@@ -8,6 +8,7 @@ import {
   ConflictError,
 } from "../../utils/errors";
 import { ADMIN_ROLE, USER_ROLE } from "../../constants/roles.constants";
+import { ensureUserProfile } from "../../auth/user-onboarding";
 import type {
   AdminUsersListResponse,
   AdminCreateUserResponse,
@@ -199,15 +200,22 @@ export class AdminUsersService {
 
     const passwordHash = await this.hashPassword(password);
 
-    const user = await prisma.users.create({
-      data: {
-        email,
-        password: passwordHash,
-        name,
-        username,
-        role,
-      },
-      select: selectUser,
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.users.create({
+        data: {
+          email,
+          password: passwordHash,
+          name,
+          username,
+          role,
+        },
+        select: selectUser,
+      });
+
+      // Ensure profile exists for newly created user
+      await ensureUserProfile(tx, created.id);
+
+      return created;
     });
 
     this.fastify.log.info(

@@ -44,6 +44,7 @@ export type User = {
   name: string | null;
   image: string | null;
   role: string;
+  onboardingRequired: boolean;
 };
 
 export type AuthStatus = "loading" | "guest" | "authed";

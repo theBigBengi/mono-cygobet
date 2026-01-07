@@ -80,3 +80,30 @@ export async function logout(
     body: refreshToken ? { refreshToken } : {},
   });
 }
+
+/**
+ * Complete onboarding by setting username
+ */
+export async function completeOnboarding(
+  username: string
+): Promise<{ success: boolean }> {
+  return apiFetchWithAuthRetry<{ success: boolean }>(
+    "/auth/onboarding/complete",
+    {
+      method: "POST",
+      body: { username },
+    }
+  );
+}
+
+/**
+ * Get full user profile (user + profile domain data)
+ */
+export async function getProfile() {
+  return apiFetchWithAuthRetry<import("@repo/types").ApiUserProfileResponse>(
+    "/api/users/profile",
+    {
+      method: "GET",
+    }
+  );
+}

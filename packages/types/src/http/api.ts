@@ -84,3 +84,22 @@ export type ApiUpcomingFixturesResponse = {
     totalPages: number | null;
   };
 };
+
+export interface ApiUserProfileResponse {
+  user: {
+    id: number;
+    email: string;
+    username: string | null;
+    name: string | null;
+    image: string | null;
+    role: string;
+  };
+  profile: {
+    level: number;
+    dailyStreak: number;
+    lastClaimAt: string | null;
+    favouriteTeamId: number | null;
+    favouriteLeagueId: number | null;
+    onboardingDone: boolean;
+  };
+}

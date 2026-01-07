@@ -7,7 +7,7 @@ import {
   BadRequestError,
   UnauthorizedError,
   ConflictError,
-} from "../../utils/errors";
+} from "../../utils/errors/app-error";
 import { USER_ROLE } from "../../constants/roles.constants";
 import { generateAccessToken } from "../../auth/user-tokens";
 import {
@@ -16,6 +16,10 @@ import {
   rotateUserRefreshSessionTx,
   revokeUserRefreshSessionByRawToken,
 } from "../../auth/user-refresh-session";
+import {
+  ensureUserProfile,
+  isOnboardingRequired,
+} from "../../auth/user-onboarding";
 
 export class UserAuthService {
   private googleClient: OAuth2Client | null = null;
@@ -90,7 +94,7 @@ export class UserAuthService {
 
     const now = new Date();
 
-    // Create user and refresh session in transaction
+    // Create user, profile, and refresh session in transaction
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.users.create({
         data: {
@@ -108,6 +112,9 @@ export class UserAuthService {
           role: true,
         },
       });
+
+      // Ensure profile exists (onboarding_done defaults to false)
+      await ensureUserProfile(tx, user.id);
 
       const { rawToken: refreshToken } = await createUserRefreshSession(
         tx,
@@ -186,13 +193,16 @@ export class UserAuthService {
 
     const now = new Date();
 
-    // Create refresh session and update lastLoginAt in transaction
+    // Create refresh session, ensure profile, and update lastLoginAt in transaction
     const result = await prisma.$transaction(async (tx) => {
       const { rawToken: refreshToken } = await createUserRefreshSession(
         tx,
         user.id,
         now
       );
+
+      // Ensure profile exists for any user logging in (idempotent)
+      await ensureUserProfile(tx, user.id);
 
       await tx.users.update({
         where: { id: user.id },
@@ -328,6 +338,9 @@ export class UserAuthService {
               providerAccountId,
             },
           });
+
+          // Ensure profile exists for existing user (idempotent)
+          await ensureUserProfile(tx, user.id);
         } else {
           // Create new user
           // Only set emailVerifiedAt if Google says the email is verified
@@ -362,6 +375,9 @@ export class UserAuthService {
               providerAccountId,
             },
           });
+
+          // Ensure profile exists for new user (onboarding_done defaults to false)
+          await ensureUserProfile(tx, user.id);
         }
       }
 

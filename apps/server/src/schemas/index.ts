@@ -14,3 +14,4 @@ export * from "./admin/bookmakers.schemas";
 export * from "./admin/fixtures.schemas";
 export * from "./admin/odds.schemas";
 export * from "./auth/user-auth.schemas";
+export * from "./user-profile.schemas";

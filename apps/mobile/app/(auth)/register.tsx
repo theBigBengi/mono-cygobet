@@ -1,4 +1,4 @@
-// app/(auth)/login.tsx
+// app/(auth)/register.tsx
 import { useState } from "react";
 import {
   View,
@@ -11,51 +11,82 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth/useAuth";
+import * as authApi from "@/lib/auth/auth.api";
 
-export default function LoginScreen() {
-  const [emailOrUsername, setEmailOrUsername] = useState("");
+export default function RegisterScreen() {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const { login, error } = useAuth();
   const router = useRouter();
 
-  const handleLogin = async () => {
-    if (!emailOrUsername.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter both email/username and password");
+  const handleRegister = async () => {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      Alert.alert("Error", "Please enter email and password to register");
       return;
     }
 
+    // Derive a temporary username from email (validated and sanitized)
+    const emailLocalPart = trimmedEmail.split("@")[0] || "user";
+    const base = emailLocalPart.replace(/[^a-zA-Z0-9_-]/g, "");
+    let derivedUsername = base || "user";
+    if (derivedUsername.length < 3) {
+      derivedUsername = derivedUsername.padEnd(3, "0");
+    }
+    if (derivedUsername.length > 40) {
+      derivedUsername = derivedUsername.slice(0, 40);
+    }
+    // Add short suffix to reduce collision risk
+    const suffix = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(2, "0");
+    const finalUsername = `${derivedUsername}-${suffix}`.slice(0, 50);
+
     setIsLoading(true);
     try {
-      await login(emailOrUsername.trim(), password);
-      // Navigation is handled by protected layout based on onboardingRequired
-      // If onboarding required, protected layout will redirect to onboarding
-      // If not, user can access protected routes
+      await authApi.register({
+        email: trimmedEmail,
+        username: finalUsername,
+        password: trimmedPassword,
+        name: null,
+      });
+
+      // After successful registration, log the user in
+      await login(trimmedEmail, trimmedPassword);
+
+      // Navigation is handled by protected/onboarding layouts based on onboardingRequired
       router.replace("/(protected)/account" as any);
     } catch (err) {
-      // Error is already set in auth context
-      console.error("Login failed:", err);
+      console.error("Registration failed:", err);
+      if (err instanceof Error) {
+        Alert.alert("Error", err.message);
+      } else {
+        Alert.alert("Error", "Registration failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const goToRegister = () => {
-    router.replace("/(auth)/register" as any);
+  const goToLogin = () => {
+    router.replace("/(auth)/login" as any);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
-      <Text style={styles.subtitle}>Enter your credentials</Text>
+      <Text style={styles.title}>Create Account</Text>
+      <Text style={styles.subtitle}>Sign up to get started</Text>
 
       <View style={styles.form}>
         <TextInput
           style={styles.input}
-          placeholder="Email or Username"
-          value={emailOrUsername}
-          onChangeText={setEmailOrUsername}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
@@ -77,19 +108,20 @@ export default function LoginScreen() {
 
         <Pressable
           style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleLogin}
+          onPress={handleRegister}
           disabled={isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Login</Text>
+            <Text style={styles.buttonText}>Register</Text>
           )}
         </Pressable>
+
         <View style={styles.toggleRow}>
-          <Text style={styles.toggleText}>Don&apos;t have an account?</Text>
-          <Pressable onPress={goToRegister} disabled={isLoading}>
-            <Text style={styles.toggleLink}>Sign up</Text>
+          <Text style={styles.toggleText}>Already have an account?</Text>
+          <Pressable onPress={goToLogin} disabled={isLoading}>
+            <Text style={styles.toggleLink}>Log in</Text>
           </Pressable>
         </View>
       </View>
