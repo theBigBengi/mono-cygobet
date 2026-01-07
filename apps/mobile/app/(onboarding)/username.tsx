@@ -54,7 +54,10 @@ export default function UsernameScreen() {
       if (err instanceof Error) {
         Alert.alert("Error", err.message);
       } else {
-        Alert.alert("Error", "Failed to complete onboarding. Please try again.");
+        Alert.alert(
+          "Error",
+          "Failed to complete onboarding. Please try again."
+        );
       }
     } finally {
       setIsLoading(false);
@@ -64,9 +67,7 @@ export default function UsernameScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Complete Your Profile</Text>
-      <Text style={styles.subtitle}>
-        Choose a username to get started
-      </Text>
+      <Text style={styles.subtitle}>Choose a username to get started</Text>
 
       <TextInput
         style={styles.input}
@@ -144,4 +145,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-

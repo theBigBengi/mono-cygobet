@@ -233,3 +233,12 @@ All code changes must:
 6. Not break UI state consistency
 
 **This contract is authoritative. Violations are bugs.**
+
+---
+
+## 12. Routing & Endpoint Usage Rules
+
+- Public main screen **MUST NOT** call protected endpoints.
+- Protected screens **MUST NOT** call `/auth/me` directly (AuthProvider/bootstrap owns it).
+- Profile screen **MUST** only call `/api/users/profile` for domain data.
+- `ONBOARDING_REQUIRED` errors **MUST NOT** trigger logout.

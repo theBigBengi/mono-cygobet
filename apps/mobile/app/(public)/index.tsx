@@ -4,26 +4,35 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth/useAuth";
 
 export default function PublicIndex() {
-  const { status } = useAuth();
   const router = useRouter();
+  const { status } = useAuth();
 
-  const handleGoToAccount = () => {
-    if (status === "guest") {
-      router.push("/(auth)/login" as any);
-    } else {
-      router.push("/(protected)/account" as any);
-    }
+  const handleGoToLogin = () => {
+    router.push("/(auth)/login" as any);
+  };
+
+  const handleGoToProfile = () => {
+    router.push("/(protected)/profile" as any);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome</Text>
-      <Text style={styles.subtitle}>Public Screen</Text>
-      <Pressable style={styles.button} onPress={handleGoToAccount}>
-        <Text style={styles.buttonText}>Go to Account</Text>
-      </Pressable>
+      <Text style={styles.subtitle}>This is the public home screen</Text>
+
       {status === "guest" && (
-        <Text style={styles.hint}>You&apos;ll be redirected to login</Text>
+        <Pressable style={styles.button} onPress={handleGoToLogin}>
+          <Text style={styles.buttonText}>Go to Login</Text>
+        </Pressable>
+      )}
+
+      {status === "authed" && (
+        <Pressable
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleGoToProfile}
+        >
+          <Text style={styles.buttonText}>Go to Profile</Text>
+        </Pressable>
       )}
     </View>
   );
@@ -59,9 +68,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  hint: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: 8,
+  secondaryButton: {
+    backgroundColor: "#555",
   },
 });

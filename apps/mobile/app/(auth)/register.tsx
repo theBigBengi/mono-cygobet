@@ -59,7 +59,7 @@ export default function RegisterScreen() {
       await login(trimmedEmail, trimmedPassword);
 
       // Navigation is handled by protected/onboarding layouts based on onboardingRequired
-      router.replace("/(protected)/account" as any);
+      router.replace("/(protected)/profile" as any);
     } catch (err) {
       console.error("Registration failed:", err);
       if (err instanceof Error) {

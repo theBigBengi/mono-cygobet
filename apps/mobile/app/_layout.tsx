@@ -10,25 +10,33 @@ import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <AuthProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack>
+          {/* Public entry */}
+          <Stack.Screen name="(public)" options={{ headerShown: false }} />
+
+          {/* Auth routes */}
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+
+          {/* Onboarding routes */}
+          <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+
+          {/* Protected routes */}
+          <Stack.Screen name="(protected)" options={{ headerShown: false }} />
+
+          {/* Example modal (kept from template) */}
           <Stack.Screen
             name="modal"
             options={{ presentation: "modal", title: "Modal" }}
           />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
     </AuthProvider>
   );
 }

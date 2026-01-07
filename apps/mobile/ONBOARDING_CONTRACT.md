@@ -146,3 +146,12 @@ Any change to onboarding behavior **MUST** remain consistent with this contract:
   - Returns merged `user` + `profile` data for the authenticated user.
   - While `onboardingRequired === true`, calls to this endpoint **MUST** receive 403 `ONBOARDING_REQUIRED`.
   - Once onboarding is completed (`onboardingRequired === false`), calls **MUST** succeed with 200 OK.
+
+---
+
+## 7. Routing & Endpoint Usage Rules
+
+- Public main route **MUST NOT** call any protected endpoints.
+- Protected routes **MUST NOT** call `/auth/me` directly; onboarding state comes from `/auth/me` via AuthProvider only.
+- Profile route **MUST** use `/api/users/profile` as its source of domain data.
+- `ONBOARDING_REQUIRED` responses **MUST NOT** cause logout.

@@ -31,8 +31,8 @@ export default function LoginScreen() {
       await login(emailOrUsername.trim(), password);
       // Navigation is handled by protected layout based on onboardingRequired
       // If onboarding required, protected layout will redirect to onboarding
-      // If not, user can access protected routes
-      router.replace("/(protected)/account" as any);
+      // If not, user can access protected routes (profile)
+      router.replace("/(protected)/profile" as any);
     } catch (err) {
       // Error is already set in auth context
       console.error("Login failed:", err);
