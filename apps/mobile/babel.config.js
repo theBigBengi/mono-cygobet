@@ -4,9 +4,6 @@ module.exports = function (api) {
   
     return {
       presets: ["babel-preset-expo"],
-      plugins: [
-        // Required if you're using expo-router
-        "expo-router/babel",
-      ],
+  
     };
   };
