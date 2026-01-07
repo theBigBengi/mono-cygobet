@@ -53,8 +53,26 @@ model users {
   refreshSessions refreshSessions[]
   emailVerifiedAt DateTime?         @map("email_verified_at") @db.Timestamptz(6)
   lastLoginAt     DateTime?         @map("last_login_at") @db.Timestamptz(6)
+  userProfiles    userProfiles[]
 
   @@index([username], map: "idx_users_username")
+}
+
+model userProfiles {
+  userId            Int       @unique(map: "user_profiles_user_id_unique") @map("user_id")
+  level             Int       @default(1)
+  dailyStreak       Int       @default(0) @map("daily_streak")
+  lastClaimAt       DateTime? @map("last_claim_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id                Int       @id @default(autoincrement())
+  favouriteTeamId   Int?      @map("favourite_team_id")
+  favouriteLeagueId Int?      @map("favourite_league_id")
+  onboardingDone    Boolean   @default(false) @map("onboarding_done")
+  onboardingDoneAt  DateTime? @map("onboarding_done_at") @db.Timestamptz(6)
+  users             users     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([lastClaimAt(sort: Desc)], map: "user_profile_last_claim_idx")
+  @@map("user_profiles")
 }
 
 model refreshSessions {

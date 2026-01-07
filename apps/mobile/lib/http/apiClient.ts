@@ -1,6 +1,7 @@
 // lib/http/apiClient.ts
 import { getApiBaseUrl } from "../env";
 import { ApiError } from "./apiError";
+import type { RefreshResult } from "../auth/refresh.types";
 
 type ApiFetchOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
@@ -9,7 +10,7 @@ type ApiFetchOptions = {
   accessToken?: string | null;
 };
 
-type RefreshCallback = () => Promise<string | null>;
+type RefreshCallback = () => Promise<RefreshResult>;
 type LogoutCallback = () => Promise<void>;
 type GetAccessTokenCallback = () => string | null;
 
@@ -134,12 +135,28 @@ export async function apiFetchWithAuthRetry<T>(
   const accessToken =
     providedToken ?? (getAccessTokenCallback ? getAccessTokenCallback() : null);
 
+  // Step 1.5: Fail fast if no access token available
+  // Prevents unnecessary 401 → refresh → logout cycle when token simply missing
+  // This error should be caught by caller (e.g., bootstrap) to handle gracefully
+  if (!accessToken) {
+    throw new ApiError(
+      401,
+      "NO_ACCESS_TOKEN",
+      "Auth not ready yet. Please retry."
+    );
+  }
+
   // Step 2: Call request
   try {
     return await apiFetch<T>(path, { ...restOptions, accessToken });
   } catch (error) {
-    // Step 3: Only retry on 401 Unauthorized
-    if (error instanceof ApiError && error.status === 401) {
+    // Step 3: Only retry on 401 Unauthorized (but not NO_ACCESS_TOKEN)
+    // NO_ACCESS_TOKEN means token is missing, not expired - let caller handle it
+    if (
+      error instanceof ApiError &&
+      error.status === 401 &&
+      error.code !== "NO_ACCESS_TOKEN"
+    ) {
       if (!refreshCallback) {
         // No refresh mechanism available, logout if possible
         if (logoutCallback) {
@@ -149,13 +166,20 @@ export async function apiFetchWithAuthRetry<T>(
       }
 
       // Attempt to refresh token (single-flight is handled in refresh callback)
-      const newAccessToken = await refreshCallback();
+      const refreshResult = await refreshCallback();
 
-      if (!newAccessToken) {
-        // Refresh failed, logout and throw original error
-        if (logoutCallback) {
-          await logoutCallback();
+      if (!refreshResult.ok) {
+        // Only logout on definite auth failure (invalid/revoked/missing token)
+        // Network/unknown errors should preserve tokens for retry
+        if (
+          refreshResult.reason === "unauthorized" ||
+          refreshResult.reason === "no_refresh_token"
+        ) {
+          if (logoutCallback) {
+            await logoutCallback();
+          }
         }
+        // Network/unknown: keep tokens, bubble the error to caller/UI
         throw error;
       }
 
@@ -163,7 +187,7 @@ export async function apiFetchWithAuthRetry<T>(
       try {
         return await apiFetch<T>(path, {
           ...restOptions,
-          accessToken: newAccessToken,
+          accessToken: refreshResult.accessToken,
         });
       } catch (retryError) {
         // Retry failed (could be 401 again or different error)

@@ -10,12 +10,13 @@ import { ApiError } from "../http/apiError";
 import * as authApi from "./auth.api";
 import * as authStorage from "./auth.storage";
 import type { AuthState, AuthStatus, User } from "./auth.types";
+import type { RefreshResult } from "./refresh.types";
 
 interface AuthContextValue extends AuthState {
   bootstrap: () => Promise<void>;
   login: (emailOrUsername: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  refreshAccessToken: () => Promise<string | null>;
+  refreshAccessToken: () => Promise<RefreshResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -31,7 +32,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [error, setError] = useState<string | null>(null);
 
   // Single-flight refresh lock to prevent concurrent refresh calls
-  const refreshPromiseRef = React.useRef<Promise<string | null> | null>(null);
+  const refreshPromiseRef = React.useRef<Promise<RefreshResult> | null>(null);
 
   // Ref to store latest access token (prevents stale closure in callback)
   const accessTokenRef = React.useRef<string | null>(null);
@@ -39,19 +40,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
   /**
    * Refresh access token using stored refresh token
    * Uses single-flight pattern to prevent concurrent refresh calls
+   * Returns rich result to distinguish between auth failures and network errors
    */
-  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
+  const refreshAccessToken = useCallback(async (): Promise<RefreshResult> => {
     // If a refresh is already in progress, return that promise
     if (refreshPromiseRef.current) {
       return refreshPromiseRef.current;
     }
 
     // Start new refresh
-    refreshPromiseRef.current = (async () => {
+    refreshPromiseRef.current = (async (): Promise<RefreshResult> => {
       try {
         const refreshToken = await authStorage.getRefreshToken();
         if (!refreshToken) {
-          return null;
+          return { ok: false, reason: "no_refresh_token" };
         }
 
         const response = await authApi.refresh(refreshToken);
@@ -63,7 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setAccessToken(response.accessToken);
         accessTokenRef.current = response.accessToken;
 
-        return response.accessToken;
+        return { ok: true, accessToken: response.accessToken };
       } catch (err) {
         console.error("Failed to refresh access token:", err);
 
@@ -73,10 +75,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
           await authStorage.clearRefreshToken();
           setAccessToken(null);
           accessTokenRef.current = null;
+          return { ok: false, reason: "unauthorized" };
         }
-        // For network errors (status 0) or other errors, keep tokens for retry
 
-        return null;
+        // Network error (status 0)
+        if (err instanceof ApiError && err.status === 0) {
+          return { ok: false, reason: "network" };
+        }
+
+        // Other errors
+        return { ok: false, reason: "unknown" };
       } finally {
         // Clear the promise ref so next refresh can proceed
         refreshPromiseRef.current = null;
@@ -101,15 +109,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       // Refresh access token
-      const newAccessToken = await refreshAccessToken();
-      if (!newAccessToken) {
-        setStatus("guest");
+      const refreshResult = await refreshAccessToken();
+      if (!refreshResult.ok) {
+        // Auth failure: clear tokens and go to guest
+        if (
+          refreshResult.reason === "unauthorized" ||
+          refreshResult.reason === "no_refresh_token"
+        ) {
+          setStatus("guest");
+          return;
+        }
+
+        // Network or unknown error: keep tokens, show loading with error
+        // User can retry when network is available
+        setError(
+          "Cannot reach server. Please check your connection and try again."
+        );
+        setStatus("loading"); // Keep loading state, allow retry
         return;
       }
 
       // Set access token before fetching user info (so me() can use it)
-      setAccessToken(newAccessToken);
-      accessTokenRef.current = newAccessToken;
+      setAccessToken(refreshResult.accessToken);
+      accessTokenRef.current = refreshResult.accessToken;
 
       // Fetch user info (me() will automatically use the access token via callback)
       const userData = await authApi.me();
@@ -118,9 +140,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (err) {
       console.error("Bootstrap failed:", err);
 
-      // Only clear tokens on 401 (auth failure)
-      // Network errors should keep tokens for retry
-      if (err instanceof ApiError && err.status === 401) {
+      // Only clear tokens on 401 (auth failure), but not NO_ACCESS_TOKEN
+      // NO_ACCESS_TOKEN means token is missing (timing issue), not expired
+      if (
+        err instanceof ApiError &&
+        err.status === 401 &&
+        err.code !== "NO_ACCESS_TOKEN"
+      ) {
         setError(
           err instanceof Error ? err.message : "Failed to initialize auth"
         );
@@ -130,14 +156,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         accessTokenRef.current = null;
         setUser(null);
       } else {
-        // Network error or other error - keep tokens, show error state
-        // User can retry later when network is available
+        // Network error, NO_ACCESS_TOKEN, or other error - keep tokens, show loading with error
+        // User can retry later when network is available or token is set
         setError(
           err instanceof Error
             ? err.message
             : "Failed to connect. Please check your connection and try again."
         );
-        setStatus("guest"); // Could also use "loading" with retry UI
+        setStatus("loading"); // Keep loading state, allow retry
         // Tokens remain stored for retry
       }
     }
@@ -207,8 +233,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
           // 401 error: token pipeline issue, attempt refresh once
           if (meError instanceof ApiError && meError.status === 401) {
-            const newToken = await refreshAccessToken();
-            if (newToken) {
+            const refreshResult = await refreshAccessToken();
+            if (refreshResult.ok) {
               // Retry /auth/me with new token
               try {
                 const userData = await authApi.me();
@@ -221,7 +247,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 throw new Error("Authentication failed. Please log in again.");
               }
             } else {
-              // Refresh failed, logout
+              // Refresh failed (auth failure), logout
               await logout();
               throw new Error("Authentication failed. Please log in again.");
             }
