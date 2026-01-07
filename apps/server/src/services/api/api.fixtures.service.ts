@@ -138,10 +138,13 @@ export async function getUpcomingFixtures(
       odds: includeOdds
         ? {
             take: 200,
-            orderBy: { startingAtTimestamp: "asc" },
-            ...(marketExternalIds.length
-              ? { where: { marketExternalId: { in: marketExternalIds } } }
-              : {}),
+            // Filter for marketExternalId = 1 if no specific marketExternalIds provided
+            // Otherwise use the provided marketExternalIds
+            where: marketExternalIds.length
+              ? { marketExternalId: { in: marketExternalIds } }
+              : { marketExternalId: 1n },
+            // Sort by sortOrder for consistent ordering
+            orderBy: { sortOrder: "asc" },
             select: {
               id: true,
               value: true,
@@ -256,6 +259,24 @@ export async function getPublicUpcomingFixtures(params: {
       awayTeam: {
         select: { id: true, name: true, imagePath: true },
       },
+      // Include odds for marketExternalId = 1, sorted by sortOrder
+      odds: {
+        where: { marketExternalId: 1n },
+        orderBy: { sortOrder: "asc" },
+        take: 200,
+        select: {
+          id: true,
+          value: true,
+          label: true,
+          marketName: true,
+          probability: true,
+          winning: true,
+          name: true,
+          handicap: true,
+          total: true,
+          sortOrder: true,
+        },
+      },
     },
   });
 
@@ -300,6 +321,21 @@ export async function getPublicUpcomingFixtures(params: {
           }
         : undefined,
       country,
+      odds:
+        r.odds && r.odds.length > 0
+          ? r.odds.map((o) => ({
+              id: o.id,
+              value: o.value,
+              label: o.label,
+              marketName: o.marketName ?? null,
+              probability: o.probability ?? null,
+              winning: o.winning,
+              name: o.name ?? null,
+              handicap: o.handicap ?? null,
+              total: o.total ?? null,
+              sortOrder: o.sortOrder,
+            }))
+          : undefined,
     };
   });
 

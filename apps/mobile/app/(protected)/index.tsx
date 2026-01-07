@@ -2,7 +2,6 @@
 // Protected home screen:
 // - Entry point for authenticated + onboarded users.
 // - Shows upcoming fixtures from the PROTECTED endpoint.
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useProtectedUpcomingFixturesQuery } from "@/features/fixtures/fixtures.queries";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
@@ -12,6 +11,11 @@ import {
   isNetworkError,
   isOnboardingRequiredError,
 } from "@/lib/query/queryErrors";
+import { View } from "react-native";
+import { Screen, AppText, Button } from "@/components/ui";
+import { FixtureCardRow } from "@/features/fixtures/components/FixtureCardRow";
+import { FloatingSubmitPicksButton } from "@/components/Picks/FloatingSubmitPicksButton";
+import { sharedStyles } from "@/components/ui/styles";
 
 export default function ProtectedHomeScreen() {
   const router = useRouter();
@@ -50,9 +54,7 @@ export default function ProtectedHomeScreen() {
         message={message}
         onRetry={() => refetch()}
         extraActions={
-          <Pressable style={styles.button} onPress={handleGoToProfile}>
-            <Text style={styles.buttonText}>Go to Profile</Text>
-          </Pressable>
+          <Button label="Go to Profile" onPress={handleGoToProfile} />
         }
       />
     );
@@ -61,89 +63,40 @@ export default function ProtectedHomeScreen() {
   const fixtures = data?.data ?? [];
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Home</Text>
-      <Text style={styles.subtitle}>
-        Protected upcoming fixtures (auth + onboarding required)
-      </Text>
+    <View style={{ flex: 1 }}>
+      <Screen scroll contentContainerStyle={{ paddingBottom: 100 }}>
+        <AppText variant="title" style={sharedStyles.titleMargin}>
+          Home
+        </AppText>
+        <AppText
+          variant="subtitle"
+          color="secondary"
+          style={sharedStyles.subtitleMargin}
+        >
+          Protected upcoming fixtures (auth + onboarding required)
+        </AppText>
 
-      {fixtures.map((fx) => (
-        <View key={fx.id} style={styles.fixtureCard}>
-          <Text style={styles.leagueName}>
-            {fx.league?.name ?? "Unknown league"}
-          </Text>
-          <Text style={styles.fixtureTeams}>
-            {fx.homeTeam?.name ?? "Home"} vs {fx.awayTeam?.name ?? "Away"}
-          </Text>
-          <Text style={styles.kickoff}>Kickoff: {fx.kickoffAt}</Text>
-        </View>
-      ))}
+        {fixtures.map((fx) => (
+          <FixtureCardRow key={fx.id} fixture={fx} />
+        ))}
 
-      {fixtures.length === 0 && (
-        <Text style={styles.emptyText}>No fixtures found.</Text>
-      )}
+        {fixtures.length === 0 && (
+          <AppText
+            variant="body"
+            color="secondary"
+            style={sharedStyles.emptyTextMargin}
+          >
+            No fixtures found.
+          </AppText>
+        )}
 
-      <Pressable style={styles.button} onPress={handleGoToProfile}>
-        <Text style={styles.buttonText}>Go to Profile</Text>
-      </Pressable>
-    </ScrollView>
+        <Button
+          label="Go to Profile"
+          onPress={handleGoToProfile}
+          style={sharedStyles.buttonContainer}
+        />
+      </Screen>
+      <FloatingSubmitPicksButton />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#fff",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 24,
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 12,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  fixtureCard: {
-    width: "100%",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 12,
-    marginBottom: 12,
-  },
-  leagueName: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  fixtureTeams: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  kickoff: {
-    fontSize: 12,
-    color: "#666",
-  },
-  emptyText: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 16,
-  },
-});

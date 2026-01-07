@@ -1,0 +1,48 @@
+// components/ui/AppText.tsx
+// Consistent typography component.
+// - Maps to theme typography variants
+// - Maps to theme colors
+
+import React from "react";
+import { Text, TextProps, StyleSheet } from "react-native";
+import { typography, colors } from "@/theme";
+
+type TypographyVariant = "title" | "subtitle" | "body" | "caption";
+type TextColor = "primary" | "secondary" | "danger";
+
+interface AppTextProps extends Omit<TextProps, "style"> {
+  variant?: TypographyVariant;
+  color?: TextColor;
+  style?: TextProps["style"];
+}
+
+export function AppText({
+  variant = "body",
+  color = "primary",
+  style,
+  ...props
+}: AppTextProps) {
+  const variantStyle = typography[variant];
+  const colorValue =
+    color === "primary"
+      ? colors.textPrimary
+      : color === "secondary"
+        ? colors.textSecondary
+        : colors.danger;
+
+  return (
+    <Text
+      style={[
+        {
+          fontSize: variantStyle.fontSize,
+          fontWeight: variantStyle.fontWeight,
+          lineHeight: variantStyle.lineHeight,
+          color: colorValue,
+        },
+        style,
+      ]}
+      {...props}
+    />
+  );
+}
+

@@ -1,6 +1,8 @@
 // components/QueryState/QueryErrorView.tsx
+// Error state component using UI layer.
 import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { Screen, AppText, Button } from "@/components/ui";
+import { sharedStyles } from "@/components/ui/styles";
 
 interface QueryErrorViewProps {
   message: string;
@@ -14,44 +16,16 @@ export function QueryErrorView({
   extraActions,
 }: QueryErrorViewProps) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.errorText}>{message}</Text>
+    <Screen>
+      <AppText variant="body" color="danger" style={sharedStyles.emptyTextMargin}>
+        {message}
+      </AppText>
 
       {onRetry ? (
-        <Pressable style={styles.button} onPress={onRetry}>
-          <Text style={styles.buttonText}>Retry</Text>
-        </Pressable>
+        <Button label="Retry" onPress={onRetry} style={sharedStyles.buttonContainer} />
       ) : null}
 
       {extraActions}
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: "#FF3B30",
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

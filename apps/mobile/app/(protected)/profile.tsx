@@ -3,7 +3,6 @@
 // - Only accessible when auth is "authed" and onboarding is complete (guarded in layout).
 // - Reads server data exclusively via useProfileQuery() (React Query).
 // - Provides navigation back to protected home and a Logout button.
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useProfileQuery } from "@/features/profile/profile.queries";
@@ -15,6 +14,8 @@ import {
 } from "@/lib/query/queryErrors";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
+import { Screen, AppText, Button, Card } from "@/components/ui";
+import { sharedStyles } from "@/components/ui/styles";
 
 export default function ProfileScreen() {
   const { logout } = useAuth();
@@ -60,12 +61,7 @@ export default function ProfileScreen() {
         message={message}
         onRetry={() => refetch()}
         extraActions={
-          <Pressable
-            style={[styles.button, styles.secondaryButton]}
-            onPress={handleLogout}
-          >
-            <Text style={styles.buttonText}>Logout</Text>
-          </Pressable>
+          <Button label="Logout" variant="danger" onPress={handleLogout} />
         }
       />
     );
@@ -79,142 +75,77 @@ export default function ProfileScreen() {
   const { user, profile } = data;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Profile</Text>
+    <Screen scroll>
+      <AppText variant="title" style={sharedStyles.profileTitle}>
+        Profile
+      </AppText>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>User</Text>
-        <Text style={styles.label}>
-          ID: <Text style={styles.value}>{user.id}</Text>
-        </Text>
-        <Text style={styles.label}>
-          Email: <Text style={styles.value}>{user.email}</Text>
-        </Text>
-        <Text style={styles.label}>
-          Username: <Text style={styles.value}>{user.username ?? "—"}</Text>
-        </Text>
-        <Text style={styles.label}>
-          Name: <Text style={styles.value}>{user.name ?? "—"}</Text>
-        </Text>
-        <Text style={styles.label}>
-          Role: <Text style={styles.value}>{user.role}</Text>
-        </Text>
-      </View>
+      <Card style={sharedStyles.cardMargin}>
+        <AppText variant="subtitle" style={sharedStyles.sectionTitleMargin}>
+          User
+        </AppText>
+        <AppText variant="body" style={sharedStyles.labelMargin}>
+          ID: <AppText variant="body">{user.id}</AppText>
+        </AppText>
+        <AppText variant="body" style={sharedStyles.labelMargin}>
+          Email: <AppText variant="body">{user.email}</AppText>
+        </AppText>
+        <AppText variant="body" style={sharedStyles.labelMargin}>
+          Username: <AppText variant="body">{user.username ?? "—"}</AppText>
+        </AppText>
+        <AppText variant="body" style={sharedStyles.labelMargin}>
+          Name: <AppText variant="body">{user.name ?? "—"}</AppText>
+        </AppText>
+        <AppText variant="body">
+          Role: <AppText variant="body">{user.role}</AppText>
+        </AppText>
+      </Card>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Profile</Text>
-        <Text style={styles.label}>
-          Level: <Text style={styles.value}>{profile.level}</Text>
-        </Text>
-        <Text style={styles.label}>
-          Daily Streak: <Text style={styles.value}>{profile.dailyStreak}</Text>
-        </Text>
-        <Text style={styles.label}>
+      <Card style={sharedStyles.cardMargin}>
+        <AppText variant="subtitle" style={sharedStyles.sectionTitleMargin}>
+          Profile
+        </AppText>
+        <AppText variant="body" style={sharedStyles.labelMargin}>
+          Level: <AppText variant="body">{profile.level}</AppText>
+        </AppText>
+        <AppText variant="body" style={sharedStyles.labelMargin}>
+          Daily Streak: <AppText variant="body">{profile.dailyStreak}</AppText>
+        </AppText>
+        <AppText variant="body" style={sharedStyles.labelMargin}>
           Last Claim At:{" "}
-          <Text style={styles.value}>
+          <AppText variant="body">
             {profile.lastClaimAt ? profile.lastClaimAt : "—"}
-          </Text>
-        </Text>
-        <Text style={styles.label}>
+          </AppText>
+        </AppText>
+        <AppText variant="body" style={sharedStyles.labelMargin}>
           Favourite Team ID:{" "}
-          <Text style={styles.value}>
+          <AppText variant="body">
             {profile.favouriteTeamId != null ? profile.favouriteTeamId : "—"}
-          </Text>
-        </Text>
-        <Text style={styles.label}>
+          </AppText>
+        </AppText>
+        <AppText variant="body" style={sharedStyles.labelMargin}>
           Favourite League ID:{" "}
-          <Text style={styles.value}>
+          <AppText variant="body">
             {profile.favouriteLeagueId != null
               ? profile.favouriteLeagueId
               : "—"}
-          </Text>
-        </Text>
-        <Text style={styles.label}>
+          </AppText>
+        </AppText>
+        <AppText variant="body">
           Onboarding Done:{" "}
-          <Text style={styles.value}>
+          <AppText variant="body">
             {profile.onboardingDone ? "Yes" : "No"}
-          </Text>
-        </Text>
-      </View>
+          </AppText>
+        </AppText>
+      </Card>
 
-      <Pressable
-        style={[styles.button, styles.secondaryButton]}
+      <Button
+        label="Go to Home"
+        variant="secondary"
         onPress={handleGoHome}
-      >
-        <Text style={styles.buttonText}>Go to Home</Text>
-      </Pressable>
-
-      <Pressable style={styles.button} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Logout</Text>
-      </Pressable>
-    </ScrollView>
+        style={sharedStyles.buttonContainer}
+      />
+      <Button label="Logout" variant="danger" onPress={handleLogout} />
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    backgroundColor: "#fff",
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#fff",
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#666",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 14,
-    color: "#444",
-    marginBottom: 4,
-  },
-  value: {
-    fontWeight: "500",
-    color: "#000",
-  },
-  errorText: {
-    fontSize: 16,
-    color: "#FF3B30",
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  secondaryButton: {
-    backgroundColor: "#555",
-  },
-  backButton: {
-    backgroundColor: "#999",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

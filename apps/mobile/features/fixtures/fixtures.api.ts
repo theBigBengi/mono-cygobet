@@ -89,7 +89,7 @@ export async function fetchProtectedUpcomingFixtures(
     leagues,
     markets,
     hasOdds,
-    include = "league,teams,country",
+    include = "league,teams,country,odds",
   } = params;
 
   const queryString = buildQuery({

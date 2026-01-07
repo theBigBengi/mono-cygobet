@@ -13,6 +13,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { QueryClientProvider } from "@tanstack/react-query";
 
+import { Provider as JotaiProvider } from "jotai";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { queryClient } from "@/lib/query/queryClient";
@@ -21,11 +22,12 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ThemeProvider
-          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-        >
+    <JotaiProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ThemeProvider
+            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+          >
           {/* Explicitly start the app on the public home group */}
           <Stack initialRouteName="(public)">
             {/* Public entry: no auth required */}
@@ -53,5 +55,6 @@ export default function RootLayout() {
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
+    </JotaiProvider>
   );
 }

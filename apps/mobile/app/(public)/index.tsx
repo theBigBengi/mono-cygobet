@@ -2,13 +2,17 @@
 // Public "home" screen:
 // - Never calls protected endpoints.
 // - Shows "Go to Login" for guests, "Go to Profile" for authed users.
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth/useAuth";
 import { usePublicUpcomingFixturesQuery } from "@/features/fixtures/fixtures.queries";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { isApiError, isNetworkError } from "@/lib/query/queryErrors";
+import { View } from "react-native";
+import { Screen, AppText, Button } from "@/components/ui";
+import { FixtureCardRow } from "@/features/fixtures/components/FixtureCardRow";
+import { FloatingSubmitPicksButton } from "@/components/Picks/FloatingSubmitPicksButton";
+import { sharedStyles } from "@/components/ui/styles";
 
 export default function PublicIndex() {
   const router = useRouter();
@@ -50,9 +54,7 @@ export default function PublicIndex() {
         onRetry={() => refetch()}
         extraActions={
           status === "guest" ? (
-            <Pressable style={styles.button} onPress={handleGoToLogin}>
-              <Text style={styles.buttonText}>Go to Login</Text>
-            </Pressable>
+            <Button label="Go to Login" onPress={handleGoToLogin} />
           ) : null
         }
       />
@@ -62,101 +64,51 @@ export default function PublicIndex() {
   const fixtures = data?.data ?? [];
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Upcoming Fixtures</Text>
-      <Text style={styles.subtitle}>Public fixtures in the next 5 days</Text>
-
-      {fixtures.map((fx) => (
-        <View key={fx.id} style={styles.fixtureCard}>
-          <Text style={styles.leagueName}>
-            {fx.league?.name ?? "Unknown league"}
-          </Text>
-          <Text style={styles.fixtureTeams}>
-            {fx.homeTeam?.name ?? "Home"} vs {fx.awayTeam?.name ?? "Away"}
-          </Text>
-          <Text style={styles.kickoff}>Kickoff: {fx.kickoffAt}</Text>
-        </View>
-      ))}
-
-      {fixtures.length === 0 && (
-        <Text style={styles.emptyText}>No fixtures found.</Text>
-      )}
-
-      {status === "guest" && (
-        <Pressable style={styles.button} onPress={handleGoToLogin}>
-          <Text style={styles.buttonText}>Go to Login</Text>
-        </Pressable>
-      )}
-
-      {status === "authed" && (
-        <Pressable
-          style={[styles.button, styles.secondaryButton]}
-          onPress={handleGoToProfile}
+    <View style={{ flex: 1 }}>
+      <Screen scroll contentContainerStyle={{ paddingBottom: 100 }}>
+        <AppText variant="title" style={sharedStyles.titleMargin}>
+          Upcoming Fixtures
+        </AppText>
+        <AppText
+          variant="subtitle"
+          color="secondary"
+          style={sharedStyles.subtitleMargin}
         >
-          <Text style={styles.buttonText}>Go to Profile</Text>
-        </Pressable>
-      )}
-    </ScrollView>
+          Public fixtures in the next 5 days
+        </AppText>
+
+        {fixtures.map((fx) => (
+          <FixtureCardRow key={fx.id} fixture={fx} />
+        ))}
+
+        {fixtures.length === 0 && (
+          <AppText
+            variant="body"
+            color="secondary"
+            style={sharedStyles.emptyTextMargin}
+          >
+            No fixtures found.
+          </AppText>
+        )}
+
+        {status === "guest" && (
+          <Button
+            label="Go to Login"
+            onPress={handleGoToLogin}
+            style={sharedStyles.buttonContainer}
+          />
+        )}
+
+        {status === "authed" && (
+          <Button
+            label="Go to Profile"
+            variant="secondary"
+            onPress={handleGoToProfile}
+            style={sharedStyles.buttonContainer}
+          />
+        )}
+      </Screen>
+      <FloatingSubmitPicksButton />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#fff",
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: "#666",
-    marginBottom: 24,
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    backgroundColor: "#555",
-  },
-  fixtureCard: {
-    width: "100%",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 12,
-    marginBottom: 12,
-  },
-  leagueName: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  fixtureTeams: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  kickoff: {
-    fontSize: 12,
-    color: "#666",
-  },
-  emptyText: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 16,
-  },
-});

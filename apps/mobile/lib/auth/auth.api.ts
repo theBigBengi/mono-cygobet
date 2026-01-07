@@ -11,6 +11,7 @@ import type {
   UserLogoutResponse,
   UserGoogleResponse,
 } from "./auth.types";
+import type { ApiUserProfileResponse } from "@repo/types";
 
 /**
  * Login with email/username and password.
@@ -120,10 +121,7 @@ export async function completeOnboarding(
  *   not directly from screens.
  */
 export async function getProfile() {
-  return apiFetchWithAuthRetry<import("@repo/types").ApiUserProfileResponse>(
-    "/api/users/profile",
-    {
-      method: "GET",
-    }
-  );
+  return apiFetchWithAuthRetry<ApiUserProfileResponse>("/api/users/profile", {
+    method: "GET",
+  });
 }

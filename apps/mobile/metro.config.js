@@ -6,14 +6,17 @@ const workspaceRoot = path.resolve(projectRoot, "../..");
 
 const config = getDefaultConfig(projectRoot);
 
-// Monorepo: allow resolving from workspace root
-config.watchFolders = [workspaceRoot];
+// Monorepo: extend watchFolders to include workspace root
+config.watchFolders = [...(config.watchFolders || []), workspaceRoot];
 
-// Prevent duplicate React copies
-config.resolver.disableHierarchicalLookup = true;
+// Monorepo: extend nodeModulesPaths for workspace resolution
+const workspaceNodeModules = path.resolve(workspaceRoot, "node_modules");
 config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, "node_modules"),
-  path.resolve(workspaceRoot, "node_modules"),
+  ...(config.resolver.nodeModulesPaths || []),
+  workspaceNodeModules,
 ];
+
+// Fix for Jotai: disable package exports to avoid import.meta issues
+config.resolver.unstable_enablePackageExports = false;
 
 module.exports = config;

@@ -1,6 +1,9 @@
 // components/QueryState/QueryLoadingView.tsx
+// Loading state component using UI layer.
 import React from "react";
-import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { ActivityIndicator } from "react-native";
+import { Screen, AppText } from "@/components/ui";
+import { sharedStyles } from "@/components/ui/styles";
 
 interface QueryLoadingViewProps {
   message?: string;
@@ -8,24 +11,13 @@ interface QueryLoadingViewProps {
 
 export function QueryLoadingView({ message }: QueryLoadingViewProps) {
   return (
-    <View style={styles.container}>
+    <Screen>
       <ActivityIndicator size="large" />
-      {message ? <Text style={styles.message}>{message}</Text> : null}
-    </View>
+      {message ? (
+        <AppText variant="body" color="secondary" style={sharedStyles.emptyTextMargin}>
+          {message}
+        </AppText>
+      ) : null}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  message: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-  },
-});
