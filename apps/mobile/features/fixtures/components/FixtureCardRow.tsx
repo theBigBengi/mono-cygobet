@@ -8,36 +8,9 @@ import {
   usePickForFixture,
   useTogglePickHook,
 } from "@/features/picks/picks.hooks";
+import type { ApiFixturesListResponse } from "@repo/types";
 
-type FixtureItem = {
-  id: number;
-  kickoffAt: string;
-  league?: { name?: string | null; imagePath?: string | null } | null;
-  homeTeam?: {
-    id: number;
-    name?: string | null;
-    imagePath?: string | null;
-  } | null;
-  awayTeam?: {
-    id: number;
-    name?: string | null;
-    imagePath?: string | null;
-  } | null;
-  odds?:
-    | {
-        id: number;
-        value: string;
-        label: string;
-        marketName: string | null;
-        probability: string | null;
-        winning: boolean;
-        name: string | null;
-        handicap: string | null;
-        total: string | null;
-        sortOrder: number;
-      }[]
-    | null;
-};
+type FixtureItem = ApiFixturesListResponse["data"][0];
 
 interface FixtureCardRowProps {
   fixture: FixtureItem;

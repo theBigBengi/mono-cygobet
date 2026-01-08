@@ -1,52 +1,24 @@
 // features/fixtures/components/FixtureCard.tsx
 // Presentation-only fixture card component with match layout.
-// - Uses Card, Row, Stack, AppText, Button from UI layer
-// - Accepts fixture object (type from @repo/types)
+// - Uses Card, Row, Stack, AppText from UI layer
+// - Accepts fixture object (type from @repo/types via feature types)
 // - Shows: Home team | Date+Time | Away team (top row)
 // - Shows: 3 equal odds buttons (1, X, 2) (bottom row)
 
 import React from "react";
-import { View, Image, Pressable, StyleSheet } from "react-native";
+import { View, Image, Pressable } from "react-native";
 import { Card, AppText, Row, Stack } from "@/components/ui";
-import { sharedStyles, useFixtureStyles } from "@/components/ui/styles";
 import { useTheme } from "@/lib/theme";
+import type { ApiFixturesListResponse } from "@repo/types";
 import {
   formatKickoffDate,
   formatKickoffTime,
   getTeamDisplayName,
-  extractMatchOdds,
-} from "../fixtures.ui";
+} from "../utils/fixtureFormat";
+import { extractMatchOdds } from "../utils/fixtureOdds";
+import { fixtureStyles, useFixtureThemeStyles } from "../styles";
 
-// Type matching the API response structure
-type FixtureItem = {
-  id: number;
-  kickoffAt: string;
-  league?: { name?: string | null; imagePath?: string | null } | null;
-  homeTeam?: {
-    id: number;
-    name?: string | null;
-    imagePath?: string | null;
-  } | null;
-  awayTeam?: {
-    id: number;
-    name?: string | null;
-    imagePath?: string | null;
-  } | null;
-  odds?:
-    | {
-        id: number;
-        value: string;
-        label: string;
-        marketName: string | null;
-        probability: string | null;
-        winning: boolean;
-        name: string | null;
-        handicap: string | null;
-        total: string | null;
-        sortOrder: number;
-      }[]
-    | null;
-};
+type FixtureItem = ApiFixturesListResponse["data"][0];
 
 interface FixtureCardProps {
   fixture: FixtureItem;
@@ -55,8 +27,6 @@ interface FixtureCardProps {
   selectedPick?: "1" | "X" | "2" | null;
   onPick?: (pick: "1" | "X" | "2") => void;
 }
-
-const LOGO_SIZE = 32;
 
 function TeamLogo({
   imagePath,
@@ -71,7 +41,7 @@ function TeamLogo({
     return (
       <Image
         source={{ uri: imagePath }}
-        style={styles.teamLogo}
+        style={fixtureStyles.teamLogo}
         resizeMode="contain"
       />
     );
@@ -80,7 +50,7 @@ function TeamLogo({
   return (
     <View
       style={[
-        styles.teamLogoPlaceholder,
+        fixtureStyles.teamLogoPlaceholder,
         { backgroundColor: theme.colors.border },
       ]}
     >
@@ -105,14 +75,14 @@ function TeamSection({
   const isHome = side === "home";
 
   return (
-    <View style={sharedStyles.fixtureTeamSection}>
+    <View style={fixtureStyles.teamSection}>
       {isHome ? (
         <>
           {/* Home: Name first, then logo */}
           <AppText
             variant="body"
             numberOfLines={1}
-            style={sharedStyles.fixtureTeamName}
+            style={fixtureStyles.teamName}
           >
             {teamName}
           </AppText>
@@ -125,7 +95,7 @@ function TeamSection({
           <AppText
             variant="body"
             numberOfLines={1}
-            style={sharedStyles.fixtureTeamName}
+            style={fixtureStyles.teamName}
           >
             {teamName}
           </AppText>
@@ -144,11 +114,11 @@ function KickoffSection({
   const timeLabel = formatKickoffTime(kickoffAt);
 
   return (
-    <Stack style={sharedStyles.fixtureKickoffSection}>
+    <Stack style={fixtureStyles.kickoffSection}>
       <AppText variant="caption" color="secondary">
         {dateLabel}
       </AppText>
-      <AppText variant="body" style={sharedStyles.fixtureKickoffTime}>
+      <AppText variant="body" style={fixtureStyles.kickoffTime}>
         {timeLabel}
       </AppText>
     </Stack>
@@ -166,32 +136,30 @@ function OddsButton({
   onPress?: () => void;
   isSelected?: boolean;
 }) {
-  const fixtureStyles = useFixtureStyles();
+  const themeStyles = useFixtureThemeStyles();
 
   return (
     <Pressable
       style={({ pressed }) => [
-        fixtureStyles.fixtureOddsButton,
-        isSelected && fixtureStyles.fixtureOddsButtonSelected,
-        pressed && fixtureStyles.fixtureOddsButtonPressed,
+        themeStyles.oddsButton,
+        isSelected && themeStyles.oddsButtonSelected,
+        pressed && themeStyles.oddsButtonPressed,
       ]}
       onPress={onPress}
     >
-      <Row style={sharedStyles.fixtureOddsButtonContent}>
+      <Row style={fixtureStyles.oddsButtonContent}>
         <AppText
           variant="caption"
           color={isSelected ? "primary" : "secondary"}
-          style={
-            isSelected ? fixtureStyles.fixtureOddsLabelSelected : undefined
-          }
+          style={isSelected ? themeStyles.oddsLabelSelected : undefined}
         >
           {label}
         </AppText>
         <AppText
           variant="body"
           style={[
-            sharedStyles.fixtureOddsValue,
-            isSelected && fixtureStyles.fixtureOddsValueSelected,
+            fixtureStyles.oddsValue,
+            isSelected && themeStyles.oddsValueSelected,
           ]}
         >
           {value}
@@ -230,14 +198,14 @@ export function FixtureCard({
   return (
     <Card>
       {/* Header Row: Home | Date+Time | Away */}
-      <Row style={sharedStyles.fixtureHeaderRow}>
+      <Row style={fixtureStyles.headerRow}>
         <TeamSection team={fixture.homeTeam} side="home" />
         <KickoffSection kickoffAt={fixture.kickoffAt} />
         <TeamSection team={fixture.awayTeam} side="away" />
       </Row>
 
       {/* Odds Row: 1 | X | 2 */}
-      <Row style={sharedStyles.fixtureOddsRow}>
+      <Row style={fixtureStyles.oddsRow}>
         <OddsButton
           label="1"
           value={home}
@@ -260,18 +228,3 @@ export function FixtureCard({
     </Card>
   );
 }
-
-const styles = StyleSheet.create({
-  teamLogo: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-    borderRadius: LOGO_SIZE / 2,
-  },
-  teamLogoPlaceholder: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-    borderRadius: LOGO_SIZE / 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

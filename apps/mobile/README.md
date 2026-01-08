@@ -67,9 +67,15 @@ apps/mobile/
 ├── features/                # Feature modules
 │   ├── fixtures/            # Fixtures feature
 │   │   ├── components/     # FixtureCard, FixtureCardRow
+│   │   ├── utils/          # Feature utilities
+│   │   │   ├── fixtureFormat.ts # Formatting helpers (date, time, names)
+│   │   │   └── fixtureOdds.ts   # Odds extraction/mapping logic
 │   │   ├── fixtures.api.ts # API calls
 │   │   ├── fixtures.queries.ts # React Query hooks
-│   │   └── fixtures.ui.ts  # Presentation utilities
+│   │   ├── fixtures.keys.ts    # Query keys
+│   │   ├── fixtures.mutations.ts # Mutations
+│   │   ├── styles.ts       # Feature-specific styles
+│   │   └── types.ts         # Feature type aliases (uses @repo/types)
 │   ├── picks/               # Betting picks feature
 │   │   ├── picks.store.ts  # Jotai atoms
 │   │   ├── picks.hooks.ts  # React hooks
