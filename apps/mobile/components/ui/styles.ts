@@ -89,7 +89,7 @@ export function useFixtureStyles() {
   return {
     fixtureOddsButton: {
       flex: 1,
-      height: 60,
+      height: 40,
       backgroundColor: theme.colors.surface,
       borderRadius: theme.radius.sm,
       borderWidth: 1,

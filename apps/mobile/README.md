@@ -148,8 +148,19 @@ Border radius: `sm: 8px`, `md: 12px`, `lg: 16px`
 #### Theme Provider (`lib/theme/ThemeProvider.tsx`)
 
 - Provides `useTheme()` hook for accessing theme
-- Automatically adapts to system color scheme changes
+- Manages theme mode state internally (default: "system")
+- Supports three modes: "system" | "light" | "dark"
+- Automatically adapts to system color scheme changes when mode is "system"
+- Exposes `setMode()` function for manual theme switching (memory-only, no persistence)
 - Wraps the entire app at root layout level
+
+**Theme Mode Policy:**
+- **"system"** (default): Follows device color scheme, automatically updates when OS changes
+- **"light"**: Forces light theme regardless of system setting
+- **"dark"**: Forces dark theme regardless of system setting
+- Mode is controlled by `ThemeProvider` (infrastructure-level state)
+- Persistence is intentionally not implemented yet (mode resets on app reload)
+- Future: Settings screen will allow users to switch mode and persist preference
 
 ### UI Components (`components/ui/`)
 
@@ -214,13 +225,15 @@ export default function ExampleScreen() {
 import { useTheme } from "@/lib/theme";
 
 export function MyComponent() {
-  const { theme } = useTheme();
+  const { theme, colorScheme, mode, setMode } = useTheme();
   // Access theme.colors, theme.spacing, theme.typography, theme.radius
-  // Access theme.colorScheme for current scheme ("light" | "dark")
+  // Access colorScheme for current scheme ("light" | "dark")
+  // Access mode for current mode ("system" | "light" | "dark")
+  // Use setMode("light" | "dark" | "system") to switch theme mode
 }
 ```
 
-**For Screens**: Never import theme directly. Use UI components that handle theme internally.
+**For Screens**: Never import theme directly. Use UI components that handle theme internally. Screens should not manage theme state - theme mode is infrastructure-level.
 
 ## ✨ Features
 
