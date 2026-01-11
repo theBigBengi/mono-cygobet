@@ -39,22 +39,22 @@ model sessions {
 }
 
 model users {
-  image             String?
-  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  id                Int                 @id @default(autoincrement())
-  name              String?             @db.VarChar(255)
-  email             String              @unique @db.VarChar(255)
-  password          String?
-  username          String?             @unique @db.VarChar(50)
-  predictions       predictions[]
-  accounts          accounts[]
-  sessions          sessions[]
-  role              userRole            @default(user)
-  refreshSessions   refreshSessions[]
-  emailVerifiedAt   DateTime?           @map("email_verified_at") @db.Timestamptz(6)
-  lastLoginAt       DateTime?           @map("last_login_at") @db.Timestamptz(6)
-  userProfiles      userProfiles[]
-  publicPredictions publicPredictions[]
+  image           String?
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  id              Int               @id @default(autoincrement())
+  name            String?           @db.VarChar(255)
+  email           String            @unique @db.VarChar(255)
+  password        String?
+  username        String?           @unique @db.VarChar(50)
+  predictions     predictions[]
+  accounts        accounts[]
+  sessions        sessions[]
+  role            userRole          @default(user)
+  refreshSessions refreshSessions[]
+  emailVerifiedAt DateTime?         @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt     DateTime?         @map("last_login_at") @db.Timestamptz(6)
+  userProfiles    userProfiles[]
+  // publicPredictions publicPredictions[]
 
   @@index([username], map: "idx_users_username")
 }
@@ -130,30 +130,30 @@ model countries {
 }
 
 model fixtures {
-  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
-  id                Int                 @id @default(autoincrement())
-  leagueId          Int?                @map("league_id")
-  seasonId          Int?                @map("season_id")
-  homeTeamId        Int                 @map("home_team_id")
-  awayTeamId        Int                 @map("away_team_id")
-  name              String
-  startIso          String              @map("start_iso")
-  startTs           Int                 @map("start_ts")
-  state             FixtureState        @default(NS)
-  result            String?
-  homeScore         Int?                @map("home_score")
-  awayScore         Int?                @map("away_score")
-  stageRoundName    String?             @map("stage_round_name")
-  externalId        BigInt              @unique @map("external_id")
-  hasOdds           Boolean             @default(false) @map("has_odds")
-  awayTeam          teams               @relation("fixtures_away_team_idToteams", fields: [awayTeamId], references: [id], onUpdate: NoAction)
-  homeTeam          teams               @relation("fixtures_home_team_idToteams", fields: [homeTeamId], references: [id], onUpdate: NoAction)
-  league            leagues?            @relation(fields: [leagueId], references: [id], onUpdate: NoAction)
-  season            seasons?            @relation(fields: [seasonId], references: [id], onUpdate: NoAction)
-  odds              odds[]
-  predictions       predictions[]
-  publicPredictions publicPredictions[]
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id             Int           @id @default(autoincrement())
+  leagueId       Int?          @map("league_id")
+  seasonId       Int?          @map("season_id")
+  homeTeamId     Int           @map("home_team_id")
+  awayTeamId     Int           @map("away_team_id")
+  name           String
+  startIso       String        @map("start_iso")
+  startTs        Int           @map("start_ts")
+  state          FixtureState  @default(NS)
+  result         String?
+  homeScore      Int?          @map("home_score")
+  awayScore      Int?          @map("away_score")
+  stageRoundName String?       @map("stage_round_name")
+  externalId     BigInt        @unique @map("external_id")
+  hasOdds        Boolean       @default(false) @map("has_odds")
+  awayTeam       teams         @relation("fixtures_away_team_idToteams", fields: [awayTeamId], references: [id], onUpdate: NoAction)
+  homeTeam       teams         @relation("fixtures_home_team_idToteams", fields: [homeTeamId], references: [id], onUpdate: NoAction)
+  league         leagues?      @relation(fields: [leagueId], references: [id], onUpdate: NoAction)
+  season         seasons?      @relation(fields: [seasonId], references: [id], onUpdate: NoAction)
+  odds           odds[]
+  predictions    predictions[]
+  // publicPredictions publicPredictions[]
 
   @@unique([homeTeamId, awayTeamId, startTs], map: "fixtures_home_away_start_uniq")
   @@index([id, startTs])
@@ -220,27 +220,27 @@ model odds {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model predictions {
-  id                         Int       @id @default(autoincrement())
-  createdAt                  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                  DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
-  userId                     Int       @map("user_id")
-  fixtureId                  Int       @map("fixture_id")
-  prediction                 String
-  settled                    Boolean   @default(false)
-  winningCorrectScore        Boolean   @default(false) @map("winning_correct_score")
-  winningMatchWinner         Boolean   @default(false) @map("winning_match_winner")
-  possibleMatchWinnerPoints  String    @default("0") @map("possible_match_winner_points")
-  possibleCorrectScorePoints String    @default("0") @map("possible_correct_score_points")
-  stakeCoins                 Int?      @map("stake_coins")
-  trophiesDelta              Int?      @map("trophies_delta")
-  pointsDelta                Int?      @map("points_delta")
-  winningCoins               Int?      @map("winning_coins")
-  settledAt                  DateTime? @map("settled_at")
-  seenAt                     DateTime? @map("seen_at")
-  frozenOdds                 Json      @map("frozen_odds")
-  placedAt                   DateTime  @default(now()) @map("placed_at") @db.Timestamptz(6)
-  fixtures                   fixtures  @relation(fields: [fixtureId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                      users     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                 Int       @id @default(autoincrement())
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  userId             Int       @map("user_id")
+  fixtureId          Int       @map("fixture_id")
+  prediction         String
+  settled            Boolean   @default(false)
+  // winningCorrectScore        Boolean   @default(false) @map("winning_correct_score")
+  winningMatchWinner Boolean   @default(false) @map("winning_match_winner")
+  // possibleMatchWinnerPoints  String    @default("0") @map("possible_match_winner_points")
+  // possibleCorrectScorePoints String    @default("0") @map("possible_correct_score_points")
+  // stakeCoins                 Int?      @map("stake_coins")
+  // trophiesDelta              Int?      @map("trophies_delta")
+  // pointsDelta                Int?      @map("points_delta")
+  // winningCoins               Int?      @map("winning_coins")
+  settledAt          DateTime? @map("settled_at")
+  seenAt             DateTime? @map("seen_at")
+  frozenOdds         Json      @map("frozen_odds")
+  placedAt           DateTime  @default(now()) @map("placed_at") @db.Timestamptz(6)
+  fixtures           fixtures  @relation(fields: [fixtureId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              users     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([userId, fixtureId], map: "public_predictions_uniq")
   @@index([fixtureId, settled], map: "pred_fixture_settled_idx")
@@ -411,36 +411,36 @@ enum PublicPredictionStatus {
   @@map("public_prediction_status")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model publicPredictions {
-  id                         Int                    @id @default(autoincrement())
-  createdAt                  DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                  DateTime               @default(now()) @map("updated_at") @db.Timestamptz(6)
-  userId                     Int                    @map("user_id")
-  fixtureId                  Int                    @map("fixture_id")
-  prediction                 String
-  status                     PublicPredictionStatus @default(upcoming)
-  settled                    Boolean                @default(false)
-  winningCorrectScore        Boolean                @default(false) @map("winning_correct_score")
-  winningMatchWinner         Boolean                @default(false) @map("winning_match_winner")
-  possibleMatchWinnerPoints  String                 @default("0") @map("possible_match_winner_points")
-  possibleCorrectScorePoints String                 @default("0") @map("possible_correct_score_points")
-  stakeCoins                 Int?                   @map("stake_coins")
-  winningCoins               Int?                   @map("winning_coins")
-  winningPoints              String?                @map("winning_points")
-  frozenOdds                 Json                   @map("frozen_odds")
-  placedAt                   DateTime               @default(now()) @map("placed_at") @db.Timestamptz(6)
-  fixtures                   fixtures               @relation(fields: [fixtureId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                      users                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+// /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+// model publicPredictions {
+//   id                         Int                    @id @default(autoincrement())
+//   createdAt                  DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+//   updatedAt                  DateTime               @default(now()) @map("updated_at") @db.Timestamptz(6)
+//   userId                     Int                    @map("user_id")
+//   fixtureId                  Int                    @map("fixture_id")
+//   prediction                 String
+//   status                     PublicPredictionStatus @default(upcoming)
+//   settled                    Boolean                @default(false)
+//   winningCorrectScore        Boolean                @default(false) @map("winning_correct_score")
+//   winningMatchWinner         Boolean                @default(false) @map("winning_match_winner")
+//   possibleMatchWinnerPoints  String                 @default("0") @map("possible_match_winner_points")
+//   possibleCorrectScorePoints String                 @default("0") @map("possible_correct_score_points")
+//   stakeCoins                 Int?                   @map("stake_coins")
+//   winningCoins               Int?                   @map("winning_coins")
+//   winningPoints              String?                @map("winning_points")
+//   frozenOdds                 Json                   @map("frozen_odds")
+//   placedAt                   DateTime               @default(now()) @map("placed_at") @db.Timestamptz(6)
+//   fixtures                   fixtures               @relation(fields: [fixtureId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+//   users                      users                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([userId, fixtureId], map: "public_predictions_uniq")
-  @@index([userId, placedAt(sort: Desc)], map: "pp_user_placed_desc_idx")
-  @@index([fixtureId], map: "idx_public_predictions_fixture_id")
-  @@index([fixtureId, userId], map: "idx_public_predictions_fixture_user")
-  @@index([userId], map: "idx_public_predictions_user_id")
-  @@index([fixtureId], map: "pp_fixture_idx")
-  @@index([settled], map: "pp_settled_idx")
-  @@index([status], map: "pp_status_idx")
-  @@index([userId], map: "pp_user_idx")
-  @@map("public_predictions")
-}
+//   @@unique([userId, fixtureId], map: "public_predictions_uniq")
+//   @@index([userId, placedAt(sort: Desc)], map: "pp_user_placed_desc_idx")
+//   @@index([fixtureId], map: "idx_public_predictions_fixture_id")
+//   @@index([fixtureId, userId], map: "idx_public_predictions_fixture_user")
+//   @@index([userId], map: "idx_public_predictions_user_id")
+//   @@index([fixtureId], map: "pp_fixture_idx")
+//   @@index([settled], map: "pp_settled_idx")
+//   @@index([status], map: "pp_status_idx")
+//   @@index([userId], map: "pp_user_idx")
+//   @@map("public_predictions")
+// }
