@@ -283,15 +283,15 @@ export function MyComponent() {
 
 From the monorepo root:
 
-```bash
+   ```bash
 pnpm install
-```
+   ```
 
 ### Running the App
 
 From `apps/mobile/`:
 
-```bash
+   ```bash
 # Start Expo development server
 pnpm start
 

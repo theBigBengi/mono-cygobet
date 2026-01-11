@@ -16,9 +16,26 @@ import { Screen, AppText, Button } from "@/components/ui";
 import { FixtureCardRow } from "@/features/fixtures/components/FixtureCardRow";
 import { FloatingSubmitPicksButton } from "@/components/Picks/FloatingSubmitPicksButton";
 import { sharedStyles } from "@/components/ui/styles";
+import { useAppBarConfig, AppBarButton } from "@/app-shell/appbar";
 
 export default function ProtectedHomeScreen() {
   const router = useRouter();
+
+  // Configure AppBar for this screen
+  useAppBarConfig({
+    visible: true,
+    variant: "default",
+    slots: {
+      center: <AppText variant="subtitle">Home</AppText>,
+      right: (
+        <AppBarButton
+          onPress={() => router.push("/(protected)/profile" as any)}
+        >
+          <AppText variant="body">Profile</AppText>
+        </AppBarButton>
+      ),
+    },
+  });
 
   const { data, isLoading, isError, error, refetch } =
     useProtectedUpcomingFixturesQuery({ page: 1, perPage: 20 });
@@ -68,18 +85,7 @@ export default function ProtectedHomeScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen scroll contentContainerStyle={{ paddingBottom: 100 }}>
-        <AppText variant="title" style={sharedStyles.titleMargin}>
-          Home
-        </AppText>
-        <AppText
-          variant="subtitle"
-          color="secondary"
-          style={sharedStyles.subtitleMargin}
-        >
-          Protected upcoming fixtures (auth + onboarding required)
-        </AppText>
-
+      <Screen scroll>
         {fixtures.map((fx) => (
           <FixtureCardRow key={fx.id} fixture={fx} />
         ))}
@@ -93,12 +99,6 @@ export default function ProtectedHomeScreen() {
             No fixtures found.
           </AppText>
         )}
-
-        <Button
-          label="Go to Profile"
-          onPress={handleGoToProfile}
-          style={sharedStyles.buttonContainer}
-        />
       </Screen>
       <FloatingSubmitPicksButton />
     </View>

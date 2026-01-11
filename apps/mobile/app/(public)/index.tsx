@@ -65,7 +65,7 @@ export default function PublicIndex() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen scroll contentContainerStyle={{ paddingBottom: 100 }}>
+      <Screen scroll>
         <AppText variant="title" style={sharedStyles.titleMargin}>
           Upcoming Fixtures
         </AppText>

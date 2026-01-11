@@ -16,11 +16,26 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { Screen, AppText, Button, Card } from "@/components/ui";
 import { sharedStyles } from "@/components/ui/styles";
+import { useAppBarConfig, AppBarButton } from "@/app-shell/appbar";
 
 export default function ProfileScreen() {
   const { logout } = useAuth();
   const router = useRouter();
   const { data, isLoading, isError, error, refetch } = useProfileQuery();
+
+  // Configure AppBar for this screen
+  useAppBarConfig({
+    visible: true,
+    variant: "default",
+    slots: {
+      left: (
+        <AppBarButton onPress={() => router.back()}>
+          <AppText variant="body">←</AppText>
+        </AppBarButton>
+      ),
+      center: <AppText variant="subtitle">Profile</AppText>,
+    },
+  });
 
   const handleLogout = async () => {
     try {

@@ -3,4 +3,4 @@
 
 export * from "./picks.types";
 export * from "./picks.hooks";
-
+export { bootstrapPicks } from "./picks.bootstrap";
