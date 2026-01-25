@@ -7,10 +7,9 @@ import type { AuthContextValue } from "@/lib/auth/AuthProvider";
 import { isNetworkError } from "@/lib/query/queryErrors";
 import type { AppStartError, AppStartStatus } from "./appStart.types";
 import {
-  fetchPublicUpcomingFixtures,
-  fetchProtectedUpcomingFixtures,
-} from "@/features/fixtures/fixtures.api";
-import { fixturesKeys } from "@/features/fixtures/fixtures.keys";
+  fetchUpcomingFixtures,
+  fixturesKeys,
+} from "@/domains/fixtures";
 
 /**
  * Prefetch initial data based on current auth state.
@@ -23,37 +22,25 @@ export async function prefetchInitialData(
   setError: (error: AppStartError | null) => void
 ): Promise<void> {
   const { status, user } = auth;
-  console.log("AppStart: prefetchInitialData - status:", status, "user:", user ? "exists" : "null");
+  console.log(
+    "AppStart: prefetchInitialData - status:",
+    status,
+    "user:",
+    user ? "exists" : "null"
+  );
 
   if (status === "guest") {
-    // Guest: prefetch public fixtures
-    console.log("AppStart: prefetch public start");
-    try {
-      const params = { page: 1, perPage: 20, days: 5 };
-      const queryKey = fixturesKeys.publicUpcoming(params);
-
-      await queryClient.prefetchQuery({
-        queryKey,
-        queryFn: () => fetchPublicUpcomingFixtures(params),
-      });
-
-      console.log("AppStart: prefetch public end");
-      setStatus("ready");
-      console.log("AppStart: ready (guest)");
-    } catch (error) {
-      console.log("AppStart: prefetch public error", error);
-      handlePrefetchError(error, setStatus, setError);
-    }
+    // Guest: no prefetch needed, just mark ready for login screen
+    console.log("AppStart: guest, skipping prefetch");
+    setStatus("ready");
+    console.log("AppStart: ready (guest - will show login)");
   } else if (status === "authed") {
     // Authed: check user state
     if (!user) {
-      // User is null (network issue during /auth/me)
-      console.log("AppStart: authed but user is null");
-      setStatus("error");
-      setError({
-        message: "Failed to load user data. Please retry.",
-        kind: "unknown",
-      });
+      // User is null (network issue during /auth/me) - soft loading, allow UI to open
+      console.log("AppStart: authed but user is null (soft loading), marking ready");
+      setStatus("ready");
+      console.log("AppStart: ready (authed but user not loaded yet - soft loading)");
       return;
     }
 
@@ -67,11 +54,11 @@ export async function prefetchInitialData(
       console.log("AppStart: prefetch protected start");
       try {
         const params = { page: 1, perPage: 20 };
-        const queryKey = fixturesKeys.protectedUpcoming(params);
+        const queryKey = fixturesKeys.upcoming(params);
 
         await queryClient.prefetchQuery({
           queryKey,
-          queryFn: () => fetchProtectedUpcomingFixtures(params),
+          queryFn: () => fetchUpcomingFixtures(params),
           meta: { scope: "user" },
         });
 
@@ -121,4 +108,3 @@ function handlePrefetchError(
   setError(appError);
   console.log(`AppStart: error kind=${appError.kind}`);
 }
-

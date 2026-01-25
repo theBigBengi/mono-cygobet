@@ -1,0 +1,152 @@
+// domains/groups/groups.api.ts
+// Domain API module for groups.
+// - Encapsulates HTTP calls for groups data.
+// - Feature-agnostic: no knowledge of who uses it.
+
+import type {
+  ApiCreateGroupBody,
+  ApiUpdateGroupBody,
+  ApiPublishGroupBody,
+  ApiPublishGroupResponse,
+  ApiGroupResponse,
+  ApiGroupsResponse,
+  ApiGroupFixturesResponse,
+  ApiSaveGroupPredictionsBatchBody,
+  ApiSaveGroupPredictionsBatchResponse,
+} from "@repo/types";
+import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
+import { buildQuery } from "@/lib/http/queryBuilder";
+
+/**
+ * Create a new group.
+ * - Requires authentication.
+ * - Returns the created group.
+ */
+export async function createGroup(
+  body: ApiCreateGroupBody
+): Promise<ApiGroupResponse> {
+  return apiFetchWithAuthRetry<ApiGroupResponse>("/api/groups", {
+    method: "POST",
+    body,
+  });
+}
+
+/**
+ * Fetch all groups created by the authenticated user.
+ * - Requires authentication.
+ * - Returns list of groups sorted by createdAt DESC.
+ */
+export async function fetchMyGroups(): Promise<ApiGroupsResponse> {
+  return apiFetchWithAuthRetry<ApiGroupsResponse>("/api/groups", {
+    method: "GET",
+  });
+}
+
+/**
+ * Fetch a group by ID.
+ * - Requires authentication.
+ * - Returns the group if user is the creator.
+ * - Optionally includes fixtures with predictions when include="fixtures".
+ */
+export async function fetchGroupById(
+  id: number,
+  options?: { include?: "fixtures" }
+): Promise<ApiGroupResponse> {
+  const queryString = buildQuery(
+    options?.include ? { include: options.include } : {}
+  );
+  return apiFetchWithAuthRetry<ApiGroupResponse>(
+    `/api/groups/${id}${queryString}`,
+    {
+      method: "GET",
+    }
+  );
+}
+
+/**
+ * Update a group.
+ * - Requires authentication.
+ * - Returns the updated group.
+ * - Only updates fields that are provided.
+ */
+export async function updateGroup(
+  id: number,
+  body: ApiUpdateGroupBody
+): Promise<ApiGroupResponse> {
+  return apiFetchWithAuthRetry<ApiGroupResponse>(`/api/groups/${id}`, {
+    method: "PATCH",
+    body,
+  });
+}
+
+/**
+ * Publish a group (change status from "draft" to "active" and update name/privacy).
+ * - Requires authentication.
+ * - Returns the published group.
+ * - Only works for draft groups.
+ */
+export async function publishGroup(
+  id: number,
+  body: ApiPublishGroupBody
+): Promise<ApiPublishGroupResponse> {
+  return apiFetchWithAuthRetry<ApiPublishGroupResponse>(
+    `/api/groups/${id}/publish`,
+    {
+      method: "POST",
+      body,
+    }
+  );
+}
+
+/**
+ * Fetch fixtures attached to a specific group.
+ * - Requires authentication.
+ */
+export async function fetchGroupFixtures(
+  id: number
+): Promise<ApiGroupFixturesResponse> {
+  return apiFetchWithAuthRetry<ApiGroupFixturesResponse>(
+    `/api/groups/${id}/fixtures`,
+    {
+      method: "GET",
+    }
+  );
+}
+
+/**
+ * Save or update a prediction for a specific fixture in a group.
+ * - Requires authentication.
+ * - Verifies that the user is a group member.
+ */
+export async function saveGroupPrediction(
+  groupId: number,
+  fixtureId: number,
+  prediction: { home: number; away: number }
+): Promise<{ status: "success"; message: string }> {
+  return apiFetchWithAuthRetry<{ status: "success"; message: string }>(
+    `/api/groups/${groupId}/predictions/${fixtureId}`,
+    {
+      method: "PUT",
+      body: prediction,
+    }
+  );
+}
+
+/**
+ * Save or update multiple predictions for fixtures in a group in a single batch request.
+ * - Requires authentication.
+ * - Verifies that the user is a group member.
+ * - Updates all predictions in a single transaction.
+ */
+export async function saveGroupPredictionsBatch(
+  groupId: number,
+  body: ApiSaveGroupPredictionsBatchBody
+): Promise<ApiSaveGroupPredictionsBatchResponse> {
+  return apiFetchWithAuthRetry<ApiSaveGroupPredictionsBatchResponse>(
+    `/api/groups/${groupId}/predictions`,
+    {
+      method: "PUT",
+      body,
+    }
+  );
+}

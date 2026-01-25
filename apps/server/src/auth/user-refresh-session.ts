@@ -5,7 +5,7 @@ import {
   hashRefreshToken,
   computeRefreshTokenExpiry,
 } from "./user-tokens";
-import type { UserAuthUser } from "./user-auth.types";
+import type { UserAuthUser } from "../types/auth";
 
 type DbClient = Pick<typeof prisma, "refreshSessions" | "users">;
 

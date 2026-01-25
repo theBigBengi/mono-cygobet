@@ -117,7 +117,11 @@ export type FixtureDTO = {
   /** Provider raw result string (nullable) -> fixtures.result */
   result: string | null;
 
-  stageRoundName: string;
+  /** Stage name -> fixtures.stage */
+  stage: string | null;
+
+  /** Round name -> fixtures.round */
+  round: string | null;
 
   hasOdds: boolean;
 

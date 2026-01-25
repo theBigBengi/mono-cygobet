@@ -38,6 +38,7 @@ export const syncResponseSchema = {
         ok: { type: "number" },
         fail: { type: "number" },
         total: { type: "number" },
+        firstError: { type: "string" },
       },
     },
     message: { type: "string" },

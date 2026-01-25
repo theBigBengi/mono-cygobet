@@ -2,11 +2,16 @@
 
 export const userRegisterBodySchema = {
   type: "object",
-  required: ["email", "username", "password"],
+  required: ["email", "password"],
   additionalProperties: false,
   properties: {
     email: { type: "string", format: "email" },
-    username: { type: "string", minLength: 3, maxLength: 50 },
+    username: {
+      anyOf: [
+        { type: "string", minLength: 3, maxLength: 50 },
+        { type: "null" },
+      ],
+    },
     password: { type: "string", minLength: 8, maxLength: 200 },
     name: { anyOf: [{ type: "string", maxLength: 255 }, { type: "null" }] },
   },

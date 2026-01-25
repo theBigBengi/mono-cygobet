@@ -7,21 +7,6 @@ import { toUnixSeconds } from "../../utils/dates";
 
 type ApiUpcomingFixtureItem = ApiUpcomingFixturesResponse["data"][number];
 
-function splitStageRound(value: string | null | undefined): {
-  stage: string | null;
-  round: string | null;
-} {
-  const s = typeof value === "string" ? value.trim() : "";
-  if (!s) return { stage: null, round: null };
-  const parts = s
-    .split(" - ")
-    .map((p) => p.trim())
-    .filter(Boolean);
-  if (parts.length >= 2)
-    return { stage: parts[0]!, round: parts.slice(1).join(" - ") };
-  return { stage: s, round: null };
-}
-
 function maybeLeague(
   include: boolean,
   league:
@@ -115,7 +100,8 @@ export async function getUpcomingFixtures(
       startIso: true,
       startTs: true,
       state: true,
-      stageRoundName: true,
+      stage: true,
+      round: true,
       leagueId: true,
       homeTeamId: true,
       awayTeamId: true,
@@ -142,7 +128,7 @@ export async function getUpcomingFixtures(
             // Otherwise use the provided marketExternalIds
             where: marketExternalIds.length
               ? { marketExternalId: { in: marketExternalIds } }
-              : { marketExternalId: 1n },
+              : {},
             // Sort by sortOrder for consistent ordering
             orderBy: { sortOrder: "asc" },
             select: {
@@ -159,11 +145,11 @@ export async function getUpcomingFixtures(
             },
           }
         : undefined,
-    },
+    } as any,
   });
 
   // Map the rows to the strongly-typed payloads
-  data = rows.map((r) => {
+  data = (rows as any[]).map((r: any) => {
     const country = includeCountry
       ? r.league?.country
         ? {
@@ -174,168 +160,19 @@ export async function getUpcomingFixtures(
         : null
       : undefined;
 
-    const { stage, round } = splitStageRound(r.stageRoundName);
-
     return {
       id: r.id,
       name: r.name,
       kickoffAt: r.startIso,
       startTs: r.startTs,
       state: String(r.state),
-      stage,
-      round,
+      stage: r.stage ?? null,
+      round: r.round ?? null,
       league: maybeLeague(includeLeague, r.league),
       homeTeam: maybeTeam(includeTeams, r.homeTeam),
       awayTeam: maybeTeam(includeTeams, r.awayTeam),
       country,
       odds: includeOdds ? r.odds : undefined,
-    };
-  });
-
-  return {
-    data,
-    pagination: {
-      page,
-      perPage,
-      totalItems,
-      totalPages: Math.ceil(totalItems / perPage),
-    },
-  };
-}
-
-/**
- * Get public upcoming fixtures (minimal, no user-aware logic).
- * - No userId
- * - No user-specific filters
- * - Always includes league, teams, country (hardcoded for public)
- */
-export async function getPublicUpcomingFixtures(params: {
-  from: Date;
-  to: Date;
-  page: number;
-  perPage: number;
-}): Promise<MobileUpcomingFixturesResult> {
-  const { from, to, page, perPage } = params;
-
-  const fromTs = toUnixSeconds(from);
-  const toTs = toUnixSeconds(to);
-  const skip = (page - 1) * perPage;
-  const take = perPage;
-
-  const where: Prisma.fixturesWhereInput = {
-    startTs: { gte: fromTs, lte: toTs },
-    state: "NS",
-  };
-
-  const totalItems = await prisma.fixtures.count({ where });
-
-  const rows = await prisma.fixtures.findMany({
-    where,
-    orderBy: { startTs: "asc" },
-    skip,
-    take,
-    select: {
-      id: true,
-      name: true,
-      startIso: true,
-      startTs: true,
-      state: true,
-      stageRoundName: true,
-      leagueId: true,
-      homeTeamId: true,
-      awayTeamId: true,
-      // Public endpoint always includes league, teams, country
-      league: {
-        select: {
-          id: true,
-          name: true,
-          imagePath: true,
-          country: { select: { id: true, name: true, imagePath: true } },
-        },
-      },
-      homeTeam: {
-        select: { id: true, name: true, imagePath: true },
-      },
-      awayTeam: {
-        select: { id: true, name: true, imagePath: true },
-      },
-      // Include odds for marketExternalId = 1, sorted by sortOrder
-      odds: {
-        where: { marketExternalId: 1n },
-        orderBy: { sortOrder: "asc" },
-        take: 200,
-        select: {
-          id: true,
-          value: true,
-          label: true,
-          marketName: true,
-          probability: true,
-          winning: true,
-          name: true,
-          handicap: true,
-          total: true,
-          sortOrder: true,
-        },
-      },
-    },
-  });
-
-  const data: ApiUpcomingFixturesResponse["data"] = rows.map((r) => {
-    const country = r.league?.country
-      ? {
-          id: r.league.country.id,
-          name: r.league.country.name,
-          imagePath: r.league.country.imagePath,
-        }
-      : null;
-
-    const { stage, round } = splitStageRound(r.stageRoundName);
-
-    return {
-      id: r.id,
-      name: r.name,
-      kickoffAt: r.startIso,
-      startTs: r.startTs,
-      state: String(r.state),
-      stage,
-      round,
-      league: r.league
-        ? {
-            id: r.league.id,
-            name: r.league.name,
-            imagePath: r.league.imagePath ?? null,
-          }
-        : undefined,
-      homeTeam: r.homeTeam
-        ? {
-            id: r.homeTeam.id,
-            name: r.homeTeam.name,
-            imagePath: r.homeTeam.imagePath ?? null,
-          }
-        : undefined,
-      awayTeam: r.awayTeam
-        ? {
-            id: r.awayTeam.id,
-            name: r.awayTeam.name,
-            imagePath: r.awayTeam.imagePath ?? null,
-          }
-        : undefined,
-      country,
-      odds:
-        r.odds && r.odds.length > 0
-          ? r.odds.map((o) => ({
-              id: o.id,
-              value: o.value,
-              label: o.label,
-              marketName: o.marketName ?? null,
-              probability: o.probability ?? null,
-              winning: o.winning,
-              name: o.name ?? null,
-              handicap: o.handicap ?? null,
-              total: o.total ?? null,
-              sortOrder: o.sortOrder,
-            }))
-          : undefined,
     };
   });
 

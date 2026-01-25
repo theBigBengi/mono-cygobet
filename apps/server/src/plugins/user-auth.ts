@@ -2,7 +2,7 @@
 import fp from "fastify-plugin";
 import type { preHandlerHookHandler, FastifyRequest } from "fastify";
 import { UnauthorizedError, ForbiddenError } from "../utils/errors/app-error";
-import type { UserAuthContext } from "../auth/user-auth.types";
+import type { UserAuthContext } from "../types/auth";
 import { verifyAccessToken } from "../auth/user-tokens";
 import { prisma } from "@repo/db";
 import { isOnboardingRequired } from "../auth/user-onboarding";

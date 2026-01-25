@@ -5,7 +5,7 @@ import {
   ADMIN_SESSION_TOKEN_BYTES,
   ADMIN_SESSION_TTL_MS,
 } from "../constants/admin-auth.constants";
-import type { AdminAuthUser } from "./admin-auth.types";
+import type { AdminAuthUser } from "../types/auth";
 import { sha256Hex, generateRandomToken } from "../utils/crypto";
 
 type DbClient = Pick<typeof prisma, "sessions" | "users">;

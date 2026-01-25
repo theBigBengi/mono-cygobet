@@ -5,10 +5,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
 export default function ModalScreen() {
-  // Modal routes: AppBar is automatically hidden by AppShell's modal policy.
-  // No need to configure AppBar here - the shell handles it centrally.
-  // To show AppBar in this modal, explicitly use:
-  // useAppBarConfig({ visible: true });
+  // Modal route - full screen presentation
 
   return (
     <ThemedView style={styles.container}>

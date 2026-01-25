@@ -240,8 +240,7 @@ This document defines the authoritative rules and invariants for the mobile app 
 
 - Public screens (e.g. `/(public)/index`) **MUST NOT** call protected endpoints (those guarded by auth/onboarding).
 - Protected endpoints (e.g. `/fixtures/upcoming`) **MUST** remain guarded by auth + onboarding where applicable.
-- Public fixtures feed **MUST** use the public fixtures endpoint (`/public/fixtures/upcoming`) via fixtures feature hooks.
-- Protected fixtures feed **MUST** use the protected fixtures endpoint (`/fixtures/upcoming`) via fixtures feature hooks.
+- Fixtures feed **MUST** use the fixtures endpoint (`/fixtures/upcoming`) via fixtures feature hooks.
 
 ## Contract Compliance
 

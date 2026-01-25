@@ -58,6 +58,7 @@ export async function seedFixtures(
   inserted: number;
   updated: number;
   skipped: number;
+  firstError?: string;
 }> {
   // In dry-run mode, skip all database writes including batch tracking
   if (opts?.dryRun) {
@@ -289,38 +290,42 @@ export async function seedFixtures(
             const dbState = coerceDbFixtureState(fixture.state);
 
             // Upsert fixture: update if exists, create if not
+            const updatePayload = {
+              name: fixture.name,
+              leagueId: leagueId ?? null,
+              seasonId: seasonId ?? null,
+              homeTeamId,
+              awayTeamId,
+              startIso,
+              startTs: fixture.startTs,
+              state: dbState,
+              result: fixture.result ?? null,
+              homeScore: homeScore ?? null,
+              awayScore: awayScore ?? null,
+              stage: fixture.stage ?? null,
+              round: fixture.round ?? null,
+              updatedAt: new Date(),
+            };
+            const createPayload = {
+              externalId: safeBigInt(fixture.externalId),
+              name: fixture.name,
+              leagueId: leagueId ?? null,
+              seasonId: seasonId ?? null,
+              homeTeamId,
+              awayTeamId,
+              startIso,
+              startTs: fixture.startTs,
+              state: dbState,
+              result: fixture.result ?? null,
+              homeScore: homeScore ?? null,
+              awayScore: awayScore ?? null,
+              stage: fixture.stage ?? null,
+              round: fixture.round ?? null,
+            };
             await prisma.fixtures.upsert({
               where: { externalId: safeBigInt(fixture.externalId) },
-              update: {
-                name: fixture.name,
-                leagueId: leagueId ?? null,
-                seasonId: seasonId ?? null,
-                homeTeamId,
-                awayTeamId,
-                startIso,
-                startTs: fixture.startTs,
-                state: dbState,
-                result: fixture.result ?? null,
-                homeScore: homeScore ?? null,
-                awayScore: awayScore ?? null,
-                stageRoundName: fixture.stageRoundName ?? null,
-                updatedAt: new Date(),
-              },
-              create: {
-                externalId: safeBigInt(fixture.externalId),
-                name: fixture.name,
-                leagueId: leagueId ?? null,
-                seasonId: seasonId ?? null,
-                homeTeamId,
-                awayTeamId,
-                startIso,
-                startTs: fixture.startTs,
-                state: dbState,
-                result: fixture.result ?? null,
-                homeScore: homeScore ?? null,
-                awayScore: awayScore ?? null,
-                stageRoundName: fixture.stageRoundName ?? null,
-              },
+              update: updatePayload as any,
+              create: createPayload as any,
             });
 
             await trackSeedItem(
@@ -388,10 +393,32 @@ export async function seedFixtures(
       meta: { ok, fail, inserted, updated, skipped },
     });
 
+    let firstError: string | undefined;
+    if (fail > 0 && batchId) {
+      const failedItem = await prisma.seedItems.findFirst({
+        where: { batchId, status: RunStatus.failed },
+        select: { errorMessage: true, meta: true },
+      });
+      if (failedItem?.errorMessage) {
+        const meta = failedItem.meta as { errorCode?: string; errorMessage?: string } | null;
+        firstError = meta?.errorMessage ?? failedItem.errorMessage;
+        if (meta?.errorCode) firstError = `[${meta.errorCode}] ${firstError}`;
+      }
+    }
+
     console.log(
       `🎉 [${batchId}] Fixtures seeding completed: ${ok} success, ${fail} failed`
     );
-    return { batchId, ok, fail, total: ok + fail, inserted, updated, skipped };
+    return {
+      batchId,
+      ok,
+      fail,
+      total: ok + fail,
+      inserted,
+      updated,
+      skipped,
+      ...(firstError && { firstError }),
+    };
   } catch (e: any) {
     console.log(
       `💥 [${batchId}] Unexpected error during fixtures seeding: ${
@@ -406,6 +433,15 @@ export async function seedFixtures(
       meta: { ok, fail, inserted, updated, skipped },
     });
 
-    return { batchId, ok, fail, total: ok + fail, inserted, updated, skipped };
+    return {
+      batchId,
+      ok,
+      fail,
+      total: ok + fail,
+      inserted,
+      updated,
+      skipped,
+      firstError: String(e?.message ?? e).slice(0, 500),
+    };
   }
 }

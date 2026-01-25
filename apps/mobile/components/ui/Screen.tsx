@@ -1,16 +1,22 @@
 // components/ui/Screen.tsx
 // Consistent screen layout wrapper.
-// - Uses SafeAreaView (excluding top edge - AppBar handles top safe area)
+// - Uses SafeAreaView (excluding top edge - top safe area is handled globally)
 // - Applies consistent padding and background
 // - Optional scroll support
+// - Optional pull-to-refresh when scroll + onRefresh provided
 //
 // SAFE AREA POLICY:
-// - Top edge is excluded because AppBar (wrapped in SafeAreaView) handles it
+// - Top edge is excluded because top safe area is handled globally
 // - Only bottom/left/right edges apply safe area padding
-// - This prevents double top offset when AppBar is visible
+// - This prevents double top offset
 
-import React from "react";
-import { ScrollView, ViewStyle } from "react-native";
+import React, { useCallback, useState } from "react";
+import {
+  Platform,
+  RefreshControl,
+  ScrollView,
+  ViewStyle,
+} from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -25,18 +31,32 @@ interface ScreenProps {
   children: React.ReactNode;
   scroll?: boolean;
   contentContainerStyle?: ViewStyle;
+  /** Optional. When provided with scroll=true, enables pull-to-refresh. */
+  onRefresh?: () => void | Promise<void>;
 }
 
 export function Screen({
   children,
   scroll = false,
   contentContainerStyle,
+  onRefresh,
 }: ScreenProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Exclude top edge - AppBar (in AppShell) handles top safe area
-  // Exclude bottom edge - BottomTabs (in AppShell) handles bottom safe area
+  const handleRefresh = useCallback(async () => {
+    if (!onRefresh) return;
+    setRefreshing(true);
+    try {
+      await Promise.resolve(onRefresh());
+    } finally {
+      setRefreshing(false);
+    }
+  }, [onRefresh]);
+
+  // Exclude top edge - top safe area is handled globally
+  // Exclude bottom edge - bottom safe area is handled globally
   // Only apply safe area to left/right edges
   const safeAreaEdges: ("top" | "bottom" | "left" | "right")[] = [
     "left",
@@ -48,6 +68,16 @@ export function Screen({
   // TAB_BAR_HEIGHT is a constant (56px), we add safe area bottom inset
   const tabBarHeight = TAB_BAR_HEIGHT + insets.bottom;
   const defaultBottomPadding = scroll ? tabBarHeight : 0;
+
+  const refreshControl =
+    scroll && onRefresh ? (
+      <RefreshControl
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        tintColor={theme.colors.primary}
+        colors={Platform.OS === "android" ? [theme.colors.primary] : undefined}
+      />
+    ) : undefined;
 
   if (scroll) {
     return (
@@ -68,6 +98,7 @@ export function Screen({
             },
             contentContainerStyle,
           ]}
+          refreshControl={refreshControl}
         >
           {children}
         </ScrollView>

@@ -8,4 +8,5 @@ export { Card } from "./Card";
 export { Divider } from "./Divider";
 export { Row } from "./Row";
 export { Stack } from "./Stack";
+export { TeamLogo } from "./TeamLogo";
 

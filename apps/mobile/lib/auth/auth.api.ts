@@ -32,10 +32,11 @@ export async function login(
  * Register a new user.
  * - Public endpoint.
  * - Server may enforce additional validation (email uniqueness, etc.).
+ * - Username is optional (can be set later during onboarding).
  */
 export async function register(input: {
   email: string;
-  username: string;
+  username?: string | null;
   password: string;
   name?: string | null;
 }): Promise<UserRegisterResponse> {

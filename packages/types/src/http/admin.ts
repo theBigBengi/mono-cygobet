@@ -650,7 +650,8 @@ export interface AdminFixturesListResponse {
     result: string | null;
     homeScore: number | null;
     awayScore: number | null;
-    stageRoundName: string | null;
+    stage: string | null;
+    round: string | null;
     leagueId: number | null;
     seasonId: number | null;
     homeTeamId: number;
@@ -703,7 +704,8 @@ export interface AdminFixtureResponse {
     result: string | null;
     homeScore: number | null;
     awayScore: number | null;
-    stageRoundName: string | null;
+    stage: string | null;
+    round: string | null;
     leagueId: number | null;
     seasonId: number | null;
     homeTeamId: number;
@@ -780,6 +782,8 @@ export interface AdminSyncFixturesResponse {
     ok: number;
     fail: number;
     total: number;
+    /** First error message when fail > 0 (for debugging). */
+    firstError?: string;
   };
   message: string;
 }

@@ -33,11 +33,15 @@ export class UserOnboardingService {
       throw new BadRequestError("Username must be at most 50 characters long");
     }
 
-    // Validate username format (alphanumeric, underscore, hyphen)
-    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    // Validate username format - allow Hebrew, English letters, numbers, underscore, hyphen
+    // Hebrew Unicode range: \u0590-\u05FF
+    // English letters: a-zA-Z
+    // Numbers: 0-9
+    // Special: _-
+    const usernameRegex = /^[\u0590-\u05FFa-zA-Z0-9_-]+$/;
     if (!usernameRegex.test(trimmedUsername)) {
       throw new BadRequestError(
-        "Username can only contain letters, numbers, underscores, and hyphens"
+        "Username can only contain Hebrew/English letters, numbers, underscores, and hyphens"
       );
     }
 

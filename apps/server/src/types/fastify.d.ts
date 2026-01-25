@@ -1,7 +1,6 @@
 import "fastify";
 import type { preHandlerHookHandler, FastifyRequest } from "fastify";
-import type { AdminAuthContext } from "../auth/admin-auth.types";
-import type { UserAuthContext } from "../auth/user-auth.types";
+import type { AdminAuthContext, UserAuthContext } from "./auth";
 
 declare module "fastify" {
   interface FastifyInstance {

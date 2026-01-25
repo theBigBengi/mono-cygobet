@@ -1,0 +1,560 @@
+// src/routes/api/groups.route.ts
+// Routes for groups (create, list, get).
+
+import { FastifyPluginAsync } from "fastify";
+import {
+  createGroup,
+  getMyGroups,
+  getGroupById,
+  updateGroup,
+  publishGroup,
+  getGroupFixtures,
+  saveGroupPrediction,
+  saveGroupPredictionsBatch,
+} from "../../services/api/groups";
+import type { GroupFixturesFilter } from "../../types/groups";
+import type {
+  ApiCreateGroupBody,
+  ApiUpdateGroupBody,
+  ApiPublishGroupBody,
+  ApiGroupResponse,
+  ApiGroupsResponse,
+  ApiGroupFixturesResponse,
+  ApiSaveGroupPredictionsBatchBody,
+  ApiSaveGroupPredictionsBatchResponse,
+} from "@repo/types";
+import {
+  createGroupBodySchema,
+  getGroupParamsSchema,
+  groupResponseSchema,
+  groupsResponseSchema,
+  groupFixturesResponseSchema,
+  groupFixturesFilterQuerystringSchema,
+  saveGroupPredictionsBatchBodySchema,
+  saveGroupPredictionsBatchResponseSchema,
+  publishGroupBodySchema,
+  publishGroupResponseSchema,
+} from "../../schemas/api";
+
+/** Parse req.query into GroupFixturesFilter. Used only by GET :id and GET :id/fixtures. */
+function parseGroupFixturesFilterFromQuery(
+  q: Record<string, unknown>
+): GroupFixturesFilter | undefined {
+  const filter: GroupFixturesFilter = {};
+
+  if (q.next != null) {
+    const n = typeof q.next === "string" ? parseInt(q.next, 10) : Number(q.next);
+    if (!isNaN(n) && n >= 1) filter.next = n;
+  }
+  if (q.nearestDateOnly != null) {
+    const v = q.nearestDateOnly;
+    filter.nearestDateOnly =
+      v === true || v === "true" || v === "1" || v === 1;
+  }
+  if (q.leagueIds != null) {
+    const arr = parseNumArray(q.leagueIds);
+    if (arr.length > 0) filter.leagueIds = arr;
+  }
+  if (q.teamIds != null) {
+    const arr = parseNumArray(q.teamIds);
+    if (arr.length > 0) filter.teamIds = arr;
+  }
+  if (q.fromTs != null) {
+    const n = typeof q.fromTs === "string" ? parseInt(q.fromTs, 10) : Number(q.fromTs);
+    if (!isNaN(n)) filter.fromTs = n;
+  }
+  if (q.toTs != null) {
+    const n = typeof q.toTs === "string" ? parseInt(q.toTs, 10) : Number(q.toTs);
+    if (!isNaN(n)) filter.toTs = n;
+  }
+  if (q.states != null) {
+    const arr = parseStringArray(q.states);
+    if (arr.length > 0) filter.states = arr;
+  }
+  if (q.stages != null) {
+    const arr = parseStringArray(q.stages);
+    if (arr.length > 0) filter.stages = arr;
+  }
+  if (q.rounds != null) {
+    const arr = parseNumArray(q.rounds);
+    if (arr.length > 0) filter.rounds = arr;
+  }
+
+  return Object.keys(filter).length > 0 ? filter : undefined;
+}
+
+function parseNumArray(v: unknown): number[] {
+  if (Array.isArray(v)) {
+    return v.map((x) => (typeof x === "string" ? parseInt(x, 10) : Number(x))).filter((n) => !isNaN(n));
+  }
+  if (typeof v === "string") {
+    return v.split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n));
+  }
+  return [];
+}
+
+function parseStringArray(v: unknown): string[] {
+  if (Array.isArray(v)) {
+    return v.map((x) => String(x).trim()).filter(Boolean);
+  }
+  if (typeof v === "string") {
+    return v.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+const groupsRoutes: FastifyPluginAsync = async (fastify) => {
+  /**
+   * POST /api/groups
+   *
+   * Route mounting: This file is in routes/api/, so Fastify autoload mounts it at /api.
+   * The route path "/groups" becomes "/api/groups".
+   *
+   * - Requires auth + onboarding completion.
+   * - Creates a new group with the authenticated user as creator.
+   * - Default values: status = "draft", privacy = "private" if not provided.
+   */
+  fastify.post<{ Body: ApiCreateGroupBody; Reply: ApiGroupResponse }>(
+    "/groups",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        body: createGroupBodySchema,
+        response: {
+          200: groupResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const body = req.body;
+      const creatorId = req.userAuth.user.id;
+
+      const result = await createGroup({
+        name: body.name,
+        privacy: body.privacy,
+        fixtureIds: body.fixtureIds,
+        selectionMode: body.selectionMode,
+        teamIds: body.teamIds,
+        leagueIds: body.leagueIds,
+        creatorId,
+      });
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * GET /api/groups
+   *
+   * - Requires auth + onboarding completion.
+   * - Returns all groups created by the authenticated user.
+   * - Sorted by createdAt DESC.
+   */
+  fastify.get<{ Reply: ApiGroupsResponse }>(
+    "/groups",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        response: {
+          200: groupsResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const creatorId = req.userAuth.user.id;
+      const result = await getMyGroups(creatorId);
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * GET /api/groups/:id
+   *
+   * - Requires auth + onboarding completion.
+   * - Returns a group by ID.
+   * - Verifies that the user is the creator.
+   * - Returns 404 if group doesn't exist or user is not the creator.
+   * - Optional ?include=fixtures plus filter params (next, nearestDateOnly, leagueIds, teamIds, fromTs, toTs, states, stages, rounds).
+   */
+  fastify.get<{
+    Params: { id: number };
+    Querystring: Record<string, unknown>;
+    Reply: ApiGroupResponse;
+  }>("/groups/:id", {
+    preHandler: fastify.userAuth.requireOnboardingComplete,
+    schema: {
+      params: getGroupParamsSchema,
+      querystring: groupFixturesFilterQuerystringSchema,
+      response: {
+        200: groupResponseSchema,
+      },
+    },
+  }, async (req, reply) => {
+    if (!req.userAuth) {
+      return reply.status(401).send({
+        status: "error",
+        message: "Unauthorized",
+      } as any);
+    }
+
+    const id = Number(req.params.id);
+    const creatorId = req.userAuth.user.id;
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.status(400).send({
+        status: "error",
+        message: "Invalid 'id'. Must be a positive integer.",
+      } as any);
+    }
+
+    const includeFixtures = req.query.include === "fixtures";
+    const filters = parseGroupFixturesFilterFromQuery(req.query as Record<string, unknown>);
+    const result = await getGroupById(id, creatorId, includeFixtures, filters);
+
+    return reply.send(result);
+  });
+
+  /**
+   * PATCH /api/groups/:id
+   *
+   * - Requires auth + onboarding completion.
+   * - Updates a group by ID.
+   * - Verifies that the user is the creator.
+   * - Only updates fields that are provided.
+   * - Returns 404 if group doesn't exist or user is not the creator.
+   */
+  fastify.patch<{
+    Params: { id: number };
+    Body: ApiUpdateGroupBody;
+    Reply: ApiGroupResponse;
+  }>(
+    "/groups/:id",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        body: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              minLength: 1,
+            },
+            privacy: {
+              type: "string",
+              enum: ["private", "public"],
+            },
+            status: {
+              type: "string",
+              enum: ["draft", "active", "ended"],
+            },
+            fixtureIds: {
+              type: "array",
+              items: {
+                type: "number",
+              },
+            },
+          },
+        },
+        response: {
+          200: groupResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const creatorId = req.userAuth.user.id;
+      const body = req.body;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await updateGroup(id, {
+        name: body.name,
+        privacy: body.privacy,
+        fixtureIds: body.fixtureIds,
+        creatorId,
+      });
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * POST /api/groups/:id/publish
+   *
+   * - Requires auth + onboarding completion.
+   * - Publishes a group by changing status from "draft" to "active".
+   * - Verifies that the user is the creator.
+   * - Verifies that the group is in "draft" status.
+   * - Optionally updates name and privacy during publish.
+   * - Returns 404 if group doesn't exist or user is not the creator.
+   * - Returns error if group is not in "draft" status.
+   */
+  fastify.post<{
+    Params: { id: number };
+    Body: ApiPublishGroupBody;
+    Reply: ApiGroupResponse;
+  }>(
+    "/groups/:id/publish",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        body: publishGroupBodySchema,
+        response: {
+          200: publishGroupResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const creatorId = req.userAuth.user.id;
+      const body = req.body;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await publishGroup(id, {
+        name: body.name,
+        privacy: body.privacy,
+        creatorId,
+      });
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * GET /api/groups/:id/fixtures
+   *
+   * - Requires auth + onboarding completion.
+   * - Returns fixtures attached to the given group.
+   * - Verifies that the user is the creator.
+   * - Optional filter params: next, nearestDateOnly, leagueIds, teamIds, fromTs, toTs, states, stages, rounds.
+   */
+  fastify.get<{
+    Params: { id: number };
+    Querystring: Record<string, unknown>;
+    Reply: ApiGroupFixturesResponse;
+  }>("/groups/:id/fixtures", {
+    preHandler: fastify.userAuth.requireOnboardingComplete,
+    schema: {
+      params: getGroupParamsSchema,
+      querystring: groupFixturesFilterQuerystringSchema,
+      response: {
+        200: groupFixturesResponseSchema,
+      },
+    },
+  }, async (req, reply) => {
+    if (!req.userAuth) {
+      return reply.status(401).send({
+        status: "error",
+        message: "Unauthorized",
+      } as any);
+    }
+
+    const id = Number(req.params.id);
+    const creatorId = req.userAuth.user.id;
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.status(400).send({
+        status: "error",
+        message: "Invalid 'id'. Must be a positive integer.",
+      } as any);
+    }
+
+    const filters = parseGroupFixturesFilterFromQuery(req.query as Record<string, unknown>);
+    const result = await getGroupFixtures(id, creatorId, filters);
+
+    return reply.send(result);
+  });
+
+  /**
+   * PUT /api/groups/:id/predictions/:fixtureId
+   *
+   * - Requires auth + onboarding completion.
+   * - Saves or updates a prediction for a specific fixture in a group.
+   * - Verifies that the user is a group member.
+   * - Verifies that the fixture belongs to the group.
+   */
+  fastify.put<{
+    Params: { id: number; fixtureId: number };
+    Body: { home: number; away: number };
+    Reply: { status: "success"; message: string };
+  }>(
+    "/groups/:id/predictions/:fixtureId",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: {
+          type: "object",
+          required: ["id", "fixtureId"],
+          properties: {
+            id: {
+              type: "number",
+              minimum: 1,
+            },
+            fixtureId: {
+              type: "number",
+              minimum: 1,
+            },
+          },
+        },
+        body: {
+          type: "object",
+          required: ["home", "away"],
+          properties: {
+            home: {
+              type: "number",
+              minimum: 0,
+              maximum: 9,
+            },
+            away: {
+              type: "number",
+              minimum: 0,
+              maximum: 9,
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            required: ["status", "message"],
+            properties: {
+              status: { type: "string", enum: ["success"] },
+              message: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const groupId = Number(req.params.id);
+      const fixtureId = Number(req.params.fixtureId);
+      const userId = req.userAuth.user.id;
+      const { home, away } = req.body;
+
+      if (!Number.isInteger(groupId) || groupId <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      if (!Number.isInteger(fixtureId) || fixtureId <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'fixtureId'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await saveGroupPrediction(groupId, fixtureId, userId, {
+        home,
+        away,
+      });
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * PUT /api/groups/:id/predictions
+   *
+   * - Requires auth + onboarding completion.
+   * - Saves or updates multiple predictions for fixtures in a group.
+   * - Verifies that the user is a group member.
+   * - Verifies that all fixtures belong to the group.
+   * - Updates all predictions in a single transaction.
+   */
+  fastify.put<{
+    Params: { id: number };
+    Body: ApiSaveGroupPredictionsBatchBody;
+    Reply: ApiSaveGroupPredictionsBatchResponse;
+  }>(
+    "/groups/:id/predictions",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        body: saveGroupPredictionsBatchBodySchema,
+        response: {
+          200: saveGroupPredictionsBatchResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const groupId = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+      const { predictions } = req.body;
+
+      if (!Number.isInteger(groupId) || groupId <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await saveGroupPredictionsBatch(
+        groupId,
+        userId,
+        predictions
+      );
+
+      return reply.send(result);
+    }
+  );
+};
+
+export default groupsRoutes;

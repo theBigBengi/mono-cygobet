@@ -4,7 +4,7 @@ import type { preHandlerHookHandler, FastifyRequest } from "fastify";
 import { ForbiddenError, UnauthorizedError } from "../utils/errors";
 import { ADMIN_SESSION_COOKIE_NAME } from "../constants/admin-auth.constants";
 import { ADMIN_ROLE } from "../constants/roles.constants";
-import type { AdminAuthContext } from "../auth/admin-auth.types";
+import type { AdminAuthContext } from "../types/auth";
 import { adminSessionDb } from "../auth/admin-session";
 
 const PUBLIC_ADMIN_PATHS = new Set<string>([

@@ -4,7 +4,10 @@
 
 import React, { useEffect, useRef } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { appStartStatusAtom, appStartErrorAtom } from "@/lib/appStart/appStart.state";
+import {
+  appStartStatusAtom,
+  appStartErrorAtom,
+} from "@/lib/appStart/appStart.state";
 import { runAppStart } from "@/lib/appStart/appStart.run";
 import { prefetchInitialData } from "@/lib/appStart/appStart.prefetch";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -34,28 +37,35 @@ export function AppStartGate({ children }: AppStartGateProps) {
   useEffect(() => {
     if (bootstrapRanRef.current) return;
     bootstrapRanRef.current = true;
-    
+
     setStatus("booting");
     setError(null);
     runAppStart(auth);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
-  // Effect 2: Prefetch when auth state is ready (status is booting and auth.status is not loading)
+  // Effect 2: Load user if authed, then prefetch
   useEffect(() => {
-    // Only prefetch if we're still in booting state
+    // Only proceed if we're still in booting state
     if (status !== "booting") return;
-    
+
     // Wait for auth status to stabilize (not loading)
     if (auth.status === "loading") {
       console.log("AppStartGate: auth.status is still loading, waiting...");
       return;
     }
 
-    // Auth state has stabilized, now prefetch
+    // If authed but user not loaded yet, load user first
+    if (auth.status === "authed" && !auth.user) {
+      console.log("AppStartGate: auth status is authed, loading user");
+      auth.loadUser();
+      return; // Wait for user to load before prefetch
+    }
+
+    // Auth state has stabilized (and user loaded if authed), now prefetch
     console.log("AppStartGate: auth state stabilized, starting prefetch");
     prefetchInitialData(queryClient, auth, setStatus, setError);
-  }, [status, auth.status, auth.user, setStatus, setError]);
+  }, [status, auth.status, auth.user, auth, setStatus, setError]);
 
   const handleRetry = () => {
     bootstrapRanRef.current = false;
@@ -81,4 +91,3 @@ export function AppStartGate({ children }: AppStartGateProps) {
   // status === "ready"
   return <>{children}</>;
 }
-

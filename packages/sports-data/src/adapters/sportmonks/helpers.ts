@@ -376,8 +376,8 @@ export function buildFixtures(f: FixtureSportmonks): FixtureDTO | null {
     startTs: coerceEpochSeconds(f.starting_at_timestamp, f.starting_at),
     state: mapSmShortToApp(f?.state?.short_name) as FixtureState,
     result: pickScoreString(f?.scores),
-    stageRoundName:
-      `${f?.stage?.name ?? ""} - ${f?.round?.name ?? ""}`.trim() || "",
+    stage: f?.stage?.name ?? null,
+    round: f?.round?.name ?? null,
     hasOdds: f.has_odds,
     leagueName: f.league?.name ?? "",
     countryName: f.league?.country?.name ?? "",

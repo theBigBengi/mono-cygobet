@@ -142,19 +142,10 @@ For every new feature under `apps/mobile/features/<feature>`:
 
 ## 12. Fixtures Feature Example
 
-- **Public fixtures** (`GET /api/public/fixtures/upcoming`):
-  - **MUST** use `features/fixtures/fixtures.api.ts` with `apiFetch` (no auth).
-  - **MUST** fetch via `usePublicUpcomingFixturesQuery` in `fixtures.queries.ts`.
-  - **MUST NOT** require auth or call protected endpoints.
-  - **Minimal contract**: Public fixtures query accepts only `page`, `perPage`, and optional `days` (max 5).
-    - Server schema enforces this with `additionalProperties: false` (rejects unknown params with 400).
-    - No filters (leagues, markets, include, etc.) are accepted on the public endpoint.
-  - Query key includes `days` (public endpoint uses it).
-- **Protected fixtures** (`GET /api/fixtures/upcoming`):
-  - **MUST** use `apiFetchWithAuthRetry` and the protected endpoint.
-  - **MUST** fetch via `useProtectedUpcomingFixturesQuery` and be enabled only when `isReadyForProtected(status, user)` is true.
+- **Fixtures** (`GET /api/fixtures/upcoming`):
+  - **MUST** use `apiFetchWithAuthRetry` and the fixtures endpoint.
+  - **MUST** fetch via `useUpcomingFixturesQuery` and be enabled only when `isReadyForProtected(status, user)` is true.
   - **MUST** set `meta: { scope: "user" }` so logout can clear user fixtures cache.
-  - Query key does NOT include `days` (protected endpoint doesn't use it; server enforces its own window).
   - Supports full filter set (from/to, leagues, markets, include, etc.) when needed.
 
 This contract is authoritative for future data fetching behavior in `apps/mobile`. Any deviation is a bug.

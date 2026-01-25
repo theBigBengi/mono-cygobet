@@ -20,6 +20,7 @@ import { queryClient } from "../query/queryClient";
 // Public shape of the auth context exposed via useAuth().
 export interface AuthContextValue extends AuthState {
   bootstrap: () => Promise<void>;
+  loadUser: () => Promise<void>;
   login: (emailOrUsername: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<RefreshResult>;
@@ -113,9 +114,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
    *
    * Flow:
    * - If no refresh token → guest.
-   * - If refresh fails with auth error → guest + clear tokens.
-   * - If refresh fails with network/unknown → stay "loading" but keep tokens.
    * - If refresh succeeds → fetch /auth/me and move to "authed".
+   * - If refresh fails with auth error (401, forbidden) → guest + clear tokens (no retry).
+   * - If refresh fails with infrastructure error (network, timeout, transaction) → retry once, then guest if fails again.
+   * - If /auth/me fails (any error) → guest + clear tokens.
+   *
+   * Critical:
+   * - Retry only for infrastructure errors (network, timeout, transaction), not auth errors.
+   * - Maximum one retry (total of two attempts).
+   * - ALL failures MUST end loading state and go to guest.
    */
   const bootstrap = useCallback(async () => {
     try {
@@ -131,47 +138,87 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
 
-      // Refresh access token
-      console.log("Bootstrap: calling refreshAccessToken");
-      const refreshResult = await refreshAccessToken();
+      // First refresh attempt
+      console.log("Bootstrap: calling refreshAccessToken (attempt 1)");
+      let refreshResult = await refreshAccessToken();
       console.log(
         "Bootstrap: refreshResult:",
         refreshResult.ok ? "ok" : `failed: ${refreshResult.reason}`
       );
 
+      // If refresh failed → check reason and handle accordingly
       if (!refreshResult.ok) {
-        // Auth failure: clear tokens and go to guest
-        if (
-          refreshResult.reason === "unauthorized" ||
-          refreshResult.reason === "no_refresh_token"
-        ) {
+        const reason = refreshResult.reason;
+
+        // Auth error (401, forbidden) → immediate guest (no retry)
+        if (reason === "unauthorized") {
+          console.log("Bootstrap: auth error, clearing tokens and setting status to guest");
+          await authStorage.clearRefreshToken();
+          setAccessToken(null);
+          accessTokenRef.current = null;
+          setUser(null);
           setStatus("guest");
           return;
         }
 
-        // Network or unknown error: keep tokens, show loading with error
-        // User can retry when network is available
-        setError(
-          "Cannot reach server. Please check your connection and try again."
-        );
-        setStatus("loading"); // Keep loading state, allow retry
-        return;
+        // Infrastructure error (network, timeout, transaction) → retry once
+        // CRITICAL: Do NOT clear tokens on infrastructure failures
+        // Even if retry fails, keep status="authed" and allow later retry
+        if (reason === "network" || reason === "unknown") {
+          console.log(`Bootstrap: infrastructure error (${reason}), waiting before retry`);
+          // Short delay before retry (1 second)
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          console.log("Bootstrap: calling refreshAccessToken (attempt 2 - final)");
+          const retryResult = await refreshAccessToken();
+          console.log(
+            "Bootstrap: retry refreshResult:",
+            retryResult.ok ? "ok" : `failed: ${retryResult.reason}`
+          );
+
+          // If retry also failed → keep tokens, set status="authed" with no access token
+          // This allows UI to open and refresh can succeed later
+          if (!retryResult.ok) {
+            // Check if retry also failed with auth error (shouldn't happen, but handle safely)
+            if (retryResult.reason === "unauthorized") {
+              console.log("Bootstrap: retry failed with auth error, clearing tokens and setting status to guest");
+              await authStorage.clearRefreshToken();
+              setAccessToken(null);
+              accessTokenRef.current = null;
+              setUser(null);
+              setStatus("guest");
+              return;
+            }
+
+            // Infrastructure failure after retry → keep status="authed", no access token
+            // Refresh token is NOT cleared - session is still valid
+            console.log("Bootstrap: retry failed with infrastructure error, keeping tokens and setting status to authed (no access token)");
+            setAccessToken(null);
+            accessTokenRef.current = null;
+            // user remains null (not loaded yet)
+            setStatus("authed");
+            console.log("Bootstrap: status set to authed despite refresh failure (infrastructure issue, not auth failure)");
+            return;
+          }
+
+          // Retry succeeded → use the result
+          refreshResult = retryResult;
+        }
+
+        // no_refresh_token → guest (should not happen at this point, but handle safely)
+        if (reason === "no_refresh_token") {
+          console.log("Bootstrap: no refresh token, setting status to guest");
+          setStatus("guest");
+          return;
+        }
       }
 
-      // Set access token before fetching user info (so me() can use it)
+      // Refresh succeeded → set access token and mark as authed
+      // User data will be loaded separately via loadUser()
       setAccessToken(refreshResult.accessToken);
       accessTokenRef.current = refreshResult.accessToken;
-
-      // Fetch user info (me() will automatically use the access token via callback)
-      console.log("Bootstrap: calling /auth/me");
-      const userData = await authApi.me();
-      console.log(
-        "Bootstrap: /auth/me succeeded, userData:",
-        userData ? "received" : "null"
-      );
-      setUser(userData);
       setStatus("authed");
-      console.log("Bootstrap: set status to authed");
+      console.log("Bootstrap: refresh succeeded, set status to authed (user not loaded yet)");
     } catch (err) {
       console.error("Bootstrap failed:", err);
       console.error("Bootstrap error details:", {
@@ -181,34 +228,90 @@ export function AuthProvider({ children }: AuthProviderProps) {
         message: err instanceof Error ? err.message : String(err),
       });
 
-      // Only clear tokens on 401 (auth failure), but not NO_ACCESS_TOKEN
-      // NO_ACCESS_TOKEN means token is missing (timing issue), not expired
+      // CRITICAL: Unexpected errors in bootstrap should NOT clear tokens
+      // Only clear tokens if we can determine it's an auth failure
+      // For infrastructure/unexpected errors, keep status="authed" to allow retry later
+      if (err instanceof ApiError && err.status === 401) {
+        console.log("Bootstrap: unexpected auth error in catch, clearing tokens and setting status to guest");
+        await authStorage.clearRefreshToken();
+        setAccessToken(null);
+        accessTokenRef.current = null;
+        setUser(null);
+        setStatus("guest");
+        setError(null);
+        return;
+      }
+
+      // Infrastructure/unexpected error → keep status="authed", no access token
+      // Refresh token is NOT cleared - session might still be valid
+      console.log("Bootstrap: unexpected error (not auth), keeping tokens and setting status to authed (no access token)");
+      setAccessToken(null);
+      accessTokenRef.current = null;
+      // user remains null (not loaded yet)
+      setStatus("authed");
+      setError(null);
+      console.log("Bootstrap: status set to authed despite error (infrastructure issue, not auth failure)");
+    }
+  }, [refreshAccessToken]);
+
+  /**
+   * Load user data from /auth/me.
+   *
+   * This is a separate step after bootstrap determines auth state.
+   * - Should be called only if status === "authed".
+   * - Network errors: keep status="authed", user=null (soft-loading).
+   * - Auth errors (401): clear tokens, status="guest".
+   */
+  const loadUser = useCallback(async () => {
+    // Only load user if already authed (bootstrap succeeded)
+    if (status !== "authed") {
+      console.log("LoadUser: status is not authed, skipping");
+      return;
+    }
+
+    try {
+      console.log("LoadUser: calling /auth/me");
+      const userData = await authApi.me();
+      console.log("LoadUser: /auth/me succeeded, userData:", userData ? "received" : "null");
+      setUser(userData);
+      setError(null);
+    } catch (err) {
+      console.error("LoadUser: /auth/me failed:", err);
+      console.error("LoadUser error details:", {
+        isApiError: err instanceof ApiError,
+        status: err instanceof ApiError ? err.status : "unknown",
+        code: err instanceof ApiError ? err.code : "unknown",
+        message: err instanceof Error ? err.message : String(err),
+      });
+
+      // CRITICAL: Only clear tokens on true auth failures (401 without NO_ACCESS_TOKEN code)
+      // 401 with "NO_ACCESS_TOKEN" means refresh failed (infrastructure), not auth failure
       if (
         err instanceof ApiError &&
         err.status === 401 &&
         err.code !== "NO_ACCESS_TOKEN"
       ) {
-        setError(
-          err instanceof Error ? err.message : "Failed to initialize auth"
-        );
-        setStatus("guest");
+        console.log("LoadUser: true auth error (401 without NO_ACCESS_TOKEN), clearing tokens and setting status to guest");
         await authStorage.clearRefreshToken();
         setAccessToken(null);
         accessTokenRef.current = null;
         setUser(null);
-      } else {
-        // Network error, NO_ACCESS_TOKEN, or other error - keep tokens, show loading with error
-        // User can retry later when network is available or token is set
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to connect. Please check your connection and try again."
-        );
-        setStatus("loading"); // Keep loading state, allow retry
-        // Tokens remain stored for retry
+        setStatus("guest");
+        setError(null);
+        return;
       }
+
+      // 401 with NO_ACCESS_TOKEN or network/other errors → keep status="authed", user=null
+      // This means refresh failed (infrastructure) or network issue, not auth failure
+      console.log("LoadUser: infrastructure/network error or NO_ACCESS_TOKEN, keeping status=authed, user=null");
+      setUser(null);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load user data. Please check your connection and retry."
+      );
     }
-  }, [refreshAccessToken]);
+  }, [status]);
 
   /**
    * Logout: clear tokens, user data and user-scoped React Query cache.
@@ -344,6 +447,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     accessToken,
     error,
     bootstrap,
+    loadUser,
     login,
     logout,
     refreshAccessToken,

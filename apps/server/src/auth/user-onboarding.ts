@@ -1,6 +1,6 @@
 // src/auth/user-onboarding.ts
 import { prisma } from "@repo/db";
-import type { UserAuthUser } from "./user-auth.types";
+import type { UserAuthUser } from "../types/auth";
 
 type DbClient = Pick<typeof prisma, "userProfiles" | "users">;
 

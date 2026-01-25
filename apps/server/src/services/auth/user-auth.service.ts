@@ -40,11 +40,11 @@ export class UserAuthService {
   }
 
   /**
-   * Register a new user with email/username/password
+   * Register a new user with email/password (username optional)
    */
   async register(input: {
     email: string;
-    username: string;
+    username?: string | null;
     password: string;
     name?: string | null;
   }): Promise<{
@@ -58,12 +58,12 @@ export class UserAuthService {
     refreshToken: string;
   }> {
     const email = input.email?.trim().toLowerCase();
-    const username = input.username?.trim();
+    const username = input.username?.trim() || null;
     const password = input.password;
     const name = input.name?.trim() || null;
 
-    if (!email || !username || !password) {
-      throw new BadRequestError("Email, username, and password are required");
+    if (!email || !password) {
+      throw new BadRequestError("Email and password are required");
     }
 
     // Validate email format (basic check, schema will do more)
@@ -80,13 +80,15 @@ export class UserAuthService {
       throw new ConflictError("Email already registered");
     }
 
-    // Check if username already exists
-    const existingUsername = await prisma.users.findUnique({
-      where: { username },
-      select: { id: true },
-    });
-    if (existingUsername) {
-      throw new ConflictError("Username already taken");
+    // Check if username already exists (only if provided)
+    if (username) {
+      const existingUsername = await prisma.users.findUnique({
+        where: { username },
+        select: { id: true },
+      });
+      if (existingUsername) {
+        throw new ConflictError("Username already taken");
+      }
     }
 
     // Hash password

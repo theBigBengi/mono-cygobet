@@ -62,6 +62,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       let totalFail = 0;
       let totalTotal = 0;
       let lastBatchId: number | null = null;
+      let firstErrorSeen: string | undefined;
 
       if (seasonId) {
         // Single season
@@ -117,11 +118,17 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               if (result.batchId) {
                 lastBatchId = result.batchId;
               }
+              if (result.firstError && firstErrorSeen === undefined) {
+                firstErrorSeen = result.firstError;
+              }
             }
           } catch (error) {
             // Continue with other seasons even if one fails
             totalFail += 1;
             totalTotal += 1;
+            if (firstErrorSeen === undefined && error instanceof Error) {
+              firstErrorSeen = error.message;
+            }
           }
         }
 
@@ -132,6 +139,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
             ok: totalOk,
             fail: totalFail,
             total: totalTotal,
+            ...(totalFail > 0 && firstErrorSeen && { firstError: firstErrorSeen }),
           },
           message: dryRun
             ? `Fixtures sync dry-run completed for ${dbSeasons.length} seasons`
@@ -152,6 +160,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           ok: result.ok,
           fail: result.fail,
           total: result.total,
+          ...(result.fail > 0 && result.firstError && { firstError: result.firstError }),
         },
         message: dryRun
           ? "Fixtures sync dry-run completed"
@@ -235,6 +244,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           ok: result.ok,
           fail: result.fail,
           total: result.total,
+          ...(result.fail > 0 && result.firstError && { firstError: result.firstError }),
         },
         message: dryRun
           ? `Fixture sync dry-run completed for ID ${fixtureId}`

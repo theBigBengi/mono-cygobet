@@ -377,7 +377,8 @@ export class SportMonksAdapter {
         options?.include?.includes("stage") &&
         options?.include?.includes("round")
       ) {
-        fixture.stageRoundName = `${f?.stage?.name} - ${f?.round?.name}`;
+        fixture.stage = f?.stage?.name ?? null;
+        fixture.round = f?.round?.name ?? null;
       }
 
       out.push(fixture);

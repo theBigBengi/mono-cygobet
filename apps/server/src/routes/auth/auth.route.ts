@@ -20,7 +20,7 @@ import {
 
 type UserRegisterBody = {
   email: string;
-  username: string;
+  username?: string | null;
   password: string;
   name?: string | null;
 };
@@ -187,10 +187,7 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
       if (!user) throw new Error("User not found");
 
       // Compute onboarding status (authoritative server-side check)
-      const onboardingRequired = await isOnboardingRequired(
-        prisma,
-        user.id
-      );
+      const onboardingRequired = await isOnboardingRequired(prisma, user.id);
 
       return reply.send({
         id: user.id,

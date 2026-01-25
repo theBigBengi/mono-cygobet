@@ -5,7 +5,7 @@
 // - Consistent padding, radius, alignment
 
 import React from "react";
-import { Pressable, StyleSheet, PressableProps } from "react-native";
+import { Pressable, PressableProps } from "react-native";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "./AppText";
 
@@ -27,38 +27,61 @@ export function Button({
 }: ButtonProps) {
   const { theme } = useTheme();
 
-  const variantStyle =
-    variant === "primary"
-      ? { backgroundColor: theme.colors.primary }
-      : variant === "secondary"
-        ? {
-            backgroundColor: theme.colors.surface,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-          }
-        : { backgroundColor: theme.colors.danger };
+  // Determine background color based on variant and disabled state
+  const getBackgroundColor = () => {
+    if (disabled) {
+      return theme.colors.surface;
+    }
+    if (variant === "primary") {
+      return theme.colors.primary;
+    }
+    if (variant === "secondary") {
+      return theme.colors.surface;
+    }
+    return theme.colors.danger;
+  };
 
-  const buttonTextColor =
-    variant === "primary" || variant === "danger"
-      ? theme.colors.primaryText
-      : theme.colors.textPrimary;
+  // Determine border style based on variant and disabled state
+  const getBorderStyle = () => {
+    if (disabled || variant === "secondary") {
+      return {
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+      };
+    }
+    return {};
+  };
+
+  // Determine text color based on variant and disabled state
+  const getTextColor = () => {
+    if (disabled) {
+      return theme.colors.textSecondary;
+    }
+    if (variant === "primary" || variant === "danger") {
+      return theme.colors.primaryText;
+    }
+    return theme.colors.textPrimary;
+  };
 
   return (
     <Pressable
-      style={({ pressed }) => [
-        {
+      style={(pressableState) => {
+        const baseStyle = {
           paddingVertical: theme.spacing.sm,
           paddingHorizontal: theme.spacing.lg,
           borderRadius: theme.radius.sm,
-          alignItems: "center",
-          justifyContent: "center",
+          alignItems: "center" as const,
+          justifyContent: "center" as const,
           minHeight: 44,
-          ...variantStyle,
-          ...(disabled && { opacity: 0.5 }),
-          ...(pressed && { opacity: 0.8 }),
-        },
-        style,
-      ]}
+          backgroundColor: getBackgroundColor(),
+          ...getBorderStyle(),
+          ...(pressableState.pressed && !disabled && { opacity: 0.8 }),
+        };
+
+        const customStyle =
+          typeof style === "function" ? style(pressableState) : style;
+        return [baseStyle, customStyle].filter(Boolean);
+      }}
       disabled={disabled}
       {...pressableProps}
     >
@@ -67,7 +90,7 @@ export function Button({
         style={[
           {
             fontWeight: "600",
-            color: buttonTextColor,
+            color: getTextColor(),
           },
         ]}
       >
@@ -76,4 +99,3 @@ export function Button({
     </Pressable>
   );
 }
-
