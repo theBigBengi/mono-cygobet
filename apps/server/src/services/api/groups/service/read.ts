@@ -11,7 +11,6 @@ import type {
 import { nowUnixSeconds } from "../../../../utils/dates";
 import type { GroupFixturesFilter } from "../../../../types/groups";
 import { applyGroupFixturesFilter } from "../fixtures-filter";
-import { parsePrediction } from "../helpers";
 import { GROUP_STATUS } from "../constants";
 import {
   buildDraftGroupItem,
@@ -21,9 +20,7 @@ import {
 } from "../builders";
 import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
-import type {
-  FixtureWithRelationsAndResult,
-} from "../types";
+import { mapGroupFixturesToApiFixtures } from "../helpers/fixture-mapper";
 
 /**
  * Get all groups the user is a member of (as creator or joined member).
@@ -113,18 +110,7 @@ export async function getGroupById(
   // Include fixtures if requested
   if (includeFixtures) {
     const rows = await repo.fetchGroupFixturesWithPredictions(id, userId);
-    const fixturesData: ApiFixturesListResponse["data"] = rows.map((row) => {
-      const prediction = parsePrediction(
-        row.groupPredictions[0]?.prediction,
-        row.groupPredictions[0] || null
-      );
-      // Service layer decides: use result from fixture, or null if not available
-      return formatFixtureFromDb(
-        row.fixtures,
-        prediction,
-        row.fixtures.result ?? null
-      );
-    }).filter((fixture: ApiFixturesListResponse["data"][0] | null): fixture is NonNullable<typeof fixture> => fixture !== null);
+    const fixturesData = mapGroupFixturesToApiFixtures(rows, userId);
 
     data.fixtures =
       filters != null
@@ -153,23 +139,7 @@ export async function getGroupFixtures(
   await assertGroupMember(id, userId);
 
   const rows = await repo.fetchGroupFixturesWithPredictions(id, userId);
-  const data: ApiFixturesListResponse["data"] = rows.map((row) => {
-    const predictionRow =
-      row.groupPredictions && row.groupPredictions.length > 0
-        ? row.groupPredictions[0]
-        : null;
-    const prediction = parsePrediction(
-      predictionRow?.prediction ?? null,
-      predictionRow
-    );
-    // Service layer decides: use result from fixture, or null if not available
-    // Minimal type assertion: Prisma's type inference doesn't narrow nested selects perfectly
-    return formatFixtureFromDb(
-      row.fixtures as FixtureWithRelationsAndResult,
-      prediction,
-      row.fixtures.result ?? null
-    );
-  }).filter((fixture): fixture is NonNullable<typeof fixture> => fixture !== null);
+  const data = mapGroupFixturesToApiFixtures(rows, userId);
 
   const finalData =
     filters != null ? applyGroupFixturesFilter(data, filters) : data;

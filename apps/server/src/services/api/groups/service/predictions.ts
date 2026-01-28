@@ -4,6 +4,7 @@
 import { NotFoundError } from "../../../../utils/errors";
 import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
+import { validateFixtureIdsBelongToGroup } from "../validators/group-validators";
 
 /**
  * Save or update a group prediction for a specific fixture.
@@ -71,16 +72,11 @@ export async function saveGroupPredictionsBatch(
 
   // Get all fixtures and verify they belong to the group
   const fixtureIds = predictions.map((p) => p.fixtureId);
-  const groupFixtures = await repo.findGroupFixturesByFixtureIds(
+  const groupFixtures = await validateFixtureIdsBelongToGroup(
     groupId,
-    fixtureIds
+    fixtureIds,
+    repo
   );
-
-  if (groupFixtures.length !== fixtureIds.length) {
-    throw new NotFoundError(
-      `One or more fixtures do not belong to group ${groupId}`
-    );
-  }
 
   // Create a map of fixtureId -> groupFixtureId for quick lookup
   const fixtureIdToGroupFixtureId = new Map(

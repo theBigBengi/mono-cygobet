@@ -164,7 +164,7 @@ export async function findGroupFixturesByFixtureIds(
 }
 
 // טיפוס מפורש ל-group fixture עם predictions
-type GroupFixtureWithPredictions = Prisma.groupFixturesGetPayload<{
+export type GroupFixtureWithPredictions = Prisma.groupFixturesGetPayload<{
   select: {
     id: true;
     fixtures: {

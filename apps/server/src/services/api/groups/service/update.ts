@@ -8,6 +8,7 @@ import type {
   ApiGroupPrivacy,
 } from "@repo/types";
 import type { Prisma } from "@repo/db";
+import type { groupPredictionMode, groupKoRoundMode } from "@repo/db";
 import { BadRequestError } from "../../../../utils/errors";
 import { GROUP_STATUS } from "../constants";
 import { buildGroupItem } from "../builders";
@@ -97,8 +98,10 @@ export async function publishGroup(
       correctDifferencePoints,
     }),
     ...(outcomePoints !== undefined && { outcomePoints }),
-    ...(predictionMode !== undefined && { predictionMode }),
-    ...(koRoundMode !== undefined && { koRoundMode }),
+    ...(predictionMode !== undefined && {
+      predictionMode: predictionMode as groupPredictionMode,
+    }),
+    ...(koRoundMode !== undefined && { koRoundMode: koRoundMode as groupKoRoundMode }),
   };
 
   // 3. Call repository to perform all updates in a single transaction
