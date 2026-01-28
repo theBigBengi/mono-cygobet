@@ -9,6 +9,9 @@ import { seedFixtures } from "./seed.fixtures";
 import { seedOdds } from "./seed.odds";
 import { seedJobsDefaults } from "./seed.jobs";
 import { format, addDays } from "date-fns";
+import { getLogger } from "../../logger";
+
+const log = getLogger("SeedCLI");
 
 /**
  * Seeding Order (based on foreign key dependencies):
@@ -119,24 +122,16 @@ const oddsFilters: string = oddsFiltersArg
     // Validate dependencies when running individual seeds
     if (!runAll) {
       if (hasLeagues && !hasCountries) {
-        console.warn(
-          "⚠️  WARNING: Leagues depend on countries. Make sure countries are seeded first."
-        );
+        log.warn("Leagues depend on countries. Make sure countries are seeded first.");
       }
       if (hasTeams && !hasCountries) {
-        console.warn(
-          "⚠️  WARNING: Teams depend on countries. Make sure countries are seeded first."
-        );
+        log.warn("Teams depend on countries. Make sure countries are seeded first.");
       }
       if (hasSeasons && !hasLeagues) {
-        console.warn(
-          "⚠️  WARNING: Seasons depend on leagues. Make sure leagues are seeded first."
-        );
+        log.warn("Seasons depend on leagues. Make sure leagues are seeded first.");
       }
       if (hasFixtures && (!hasLeagues || !hasTeams || !hasSeasons)) {
-        console.warn(
-          "⚠️  WARNING: Fixtures depend on leagues, seasons, and teams. Make sure all are seeded first."
-        );
+        log.warn("Fixtures depend on leagues, seasons, and teams. Make sure all are seeded first.");
       }
     }
 
@@ -209,7 +204,7 @@ const oddsFilters: string = oddsFiltersArg
     }
 
     if (runAll || hasOdds) {
-      console.log("🚀 Starting odds seeding...");
+      log.info("Starting odds seeding");
       const oddsDto = await adapter.fetchOddsBetween(oddsFrom, oddsTo, {
         filters: oddsFilters,
       });
@@ -217,15 +212,15 @@ const oddsFilters: string = oddsFiltersArg
     }
 
     if (runAll || hasJobs) {
-      console.log("🚀 Starting jobs seeding...");
+      log.info("Starting jobs seeding");
       // Jobs seeding is create-only: it guarantees required `jobs` rows exist without overwriting admin edits.
       await seedJobsDefaults({ dryRun });
     }
 
-    console.log("✅ Seeding completed successfully");
+    log.info("Seeding completed successfully");
     process.exit(0);
   } catch (err) {
-    console.error("❌ Seeding failed:", err);
+    log.error({ err }, "Seeding failed");
     process.exit(1);
   }
 })();

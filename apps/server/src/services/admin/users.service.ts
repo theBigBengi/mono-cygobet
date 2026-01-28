@@ -2,6 +2,9 @@
 import type { FastifyInstance } from "fastify";
 import * as bcrypt from "bcrypt";
 import { Prisma, prisma } from "@repo/db";
+import { getLogger } from "../../logger";
+
+const log = getLogger("AdminUsers");
 import {
   BadRequestError,
   NotFoundError,
@@ -218,7 +221,7 @@ export class AdminUsersService {
       return created;
     });
 
-    this.fastify.log.info(
+    log.info(
       { userId: user.id, email: user.email },
       "admin created user"
     );
@@ -345,7 +348,7 @@ export class AdminUsersService {
       select: selectUser,
     });
 
-    this.fastify.log.info({ userId: user.id }, "admin updated user");
+    log.info({ userId: user.id }, "admin updated user");
 
     return {
       id: user.id,

@@ -14,10 +14,11 @@
  *   tsx src/jobs/jobs.cli.ts --job=upcoming-fixtures --dry-run
  */
 import "dotenv/config";
-import Fastify from "fastify";
+import Fastify, { type FastifyInstance } from "fastify";
 import { JobTriggerBy, RunTrigger, prisma } from "@repo/db";
 import type { JobRunOpts } from "../types/jobs";
 import { RUNNABLE_JOBS } from "./jobs.registry";
+import { logger, getLogger } from "../logger";
 
 type CliOpts = {
   job?: string;
@@ -70,57 +71,38 @@ function parseArgs(argv: string[]): CliOpts {
   };
 }
 
-function printHelp() {
+function printHelp(cliLogger: ReturnType<typeof getLogger>) {
   const jobs = RUNNABLE_JOBS.map((j) => `- ${j.key}`).join("\n");
-  // eslint-disable-next-line no-console
-  console.log(
-    `
-Run server jobs from the CLI.
-
-Usage:
-  pnpm -F server jobs -- --list
-  pnpm -F server jobs -- --job=<jobKey> [--dry-run] [--daysAhead=<n>] [--maxLiveAgeHours=<n>] [--filters=<s>]
-
-Args:
-  --list                       List runnable jobs
-  --job / --j                  Job key to run (or pass as first positional)
-  --dry-run                    Run in dry-run mode (job dependent)
-
-Job-specific:
-  --daysAhead=<n>              upcoming-fixtures, update-prematch-odds
-  --maxLiveAgeHours=<n>        finished-fixtures
-  --filters=<s>                update-prematch-odds (optional override)
-
-Runnable jobs:
-${jobs}
-`.trim()
+  cliLogger.info(
+    `Run server jobs from the CLI. Usage: pnpm -F server jobs -- --list | --job=<jobKey> [--dry-run] ... Runnable jobs:\n${jobs}`
   );
 }
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
+  const cliLogger = getLogger("JobsCLI");
 
   // If invoked with no args, show help and exit 0 (friendly UX for `pnpm -F server jobs`)
   if (process.argv.slice(2).length === 0 || opts.help) {
-    printHelp();
+    printHelp(cliLogger);
     return;
   }
 
   if (opts.list) {
-    // eslint-disable-next-line no-console
-    console.log(RUNNABLE_JOBS.map((j) => j.key).join("\n"));
+    cliLogger.info(RUNNABLE_JOBS.map((j) => j.key).join("\n"));
     return;
   }
 
   if (!opts.job) {
-    printHelp();
+    printHelp(cliLogger);
     return;
   }
 
-  const fastify = Fastify({ logger: true });
+  // Pino logger is compatible with FastifyBaseLogger at runtime; TypeScript types don't match
+  const fastify = Fastify({ loggerInstance: logger }) as unknown as FastifyInstance;
 
   try {
-    fastify.log.info(
+    cliLogger.info(
       {
         job: opts.job,
         dryRun: opts.dryRun,
@@ -177,8 +159,7 @@ async function main() {
           return runUpdatePrematchOddsJob(fastify, runOpts);
         }
         default: {
-          // eslint-disable-next-line no-console
-          console.error(
+          cliLogger.error(
             `Unknown/non-runnable job '${jobKey}'. Use --list to see available jobs.`
           );
           process.exitCode = 1;
@@ -187,11 +168,9 @@ async function main() {
       }
     })();
 
-    fastify.log.info({ result: res }, "Job finished");
+    cliLogger.info({ result: res }, "Job finished");
   } catch (err: unknown) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    fastify.log.error({ err }, "Job failed");
+    cliLogger.error({ err }, "Job failed");
     process.exitCode = 1;
   } finally {
     try {

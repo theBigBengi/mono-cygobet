@@ -1,6 +1,9 @@
 // src/services/auth/user-onboarding.service.ts
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@repo/db";
+import { getLogger } from "../../logger";
+
+const log = getLogger("UserOnboarding");
 import {
   BadRequestError,
   ConflictError,
@@ -70,7 +73,7 @@ export class UserOnboardingService {
       await completeOnboarding(tx, userId, now);
     });
 
-    this.fastify.log.info({ userId }, "user onboarding completed");
+    log.info({ userId }, "user onboarding completed");
 
     return { success: true };
   }

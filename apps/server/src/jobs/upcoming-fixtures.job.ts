@@ -14,6 +14,9 @@ import {
   startJobRun,
 } from "./jobs.db";
 import { clampInt, getMeta, isUpcomingFixturesJobMeta } from "./jobs.meta";
+import { getLogger } from "../logger";
+
+const log = getLogger("UpcomingFixturesJob");
 
 // Fixture state for finished fixtures
 const FIXTURE_STATE_FT = "FT";
@@ -176,9 +179,7 @@ export async function runUpcomingFixturesJob(
     (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
 
   if (!token || !footballBaseUrl || !coreBaseUrl) {
-    fastify.log.warn(
-      "upcoming-fixtures: missing SPORTMONKS env vars; skipping"
-    );
+    log.warn("missing SPORTMONKS env vars; skipping");
     return skipJob(jobRun.id, "missing-env", startedAtMs, opts);
   }
 

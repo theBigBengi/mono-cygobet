@@ -2,10 +2,11 @@ import Fastify from "fastify";
 
 // import qs from "qs";
 import app from "./app";
+import { logger, getLogger } from "./logger";
 
 // Create Fastify instance
 const fastify = Fastify({
-  logger: true,
+  loggerInstance: logger,
   ajv: {
     customOptions: {
       coerceTypes: true,
@@ -16,17 +17,17 @@ const fastify = Fastify({
   // querystringParser: (str) => qs.parse(str, { comma: true, allowDots: true }),
 });
 
-// Initialize logger
-const logger = fastify.log;
+// Initialize logger for server-specific logging
+const serverLogger = getLogger("Server");
 
 // Register error handlers first
 process.on("uncaughtException", (e) => {
-  console.error("uncaughtException", e);
+  serverLogger.fatal({ err: e }, "uncaughtException");
   process.exit(1);
 });
 
 process.on("unhandledRejection", (e) => {
-  console.error("unhandledRejection", e);
+  serverLogger.fatal({ err: e }, "unhandledRejection");
   process.exit(1);
 });
 
@@ -35,12 +36,12 @@ fastify.register(app);
 
 // Handle graceful shutdown
 const gracefulShutdown = async (signal: string): Promise<void> => {
-  logger.info(`\n🛑 Received ${signal}. Shutting down server...`);
+  serverLogger.info({ signal }, "Received signal, shutting down server");
   try {
     await fastify.close();
     process.exit(0);
   } catch (err) {
-    logger.error({ err }, "Error during shutdown");
+    serverLogger.error({ err }, "Error during shutdown");
     process.exit(1);
   }
 };
@@ -51,26 +52,19 @@ process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 // Start listening
 const start = async () => {
   try {
-    console.log("Starting server...");
+    serverLogger.info("Starting server");
     await fastify.ready();
-    console.log("Fastify ready!");
-    console.log(fastify.printPlugins());
+    serverLogger.debug({ plugins: fastify.printPlugins() }, "Fastify ready");
 
     const port = parseInt(process.env.PORT || "4000", 10);
-    console.log(`Attempting to listen on port ${port}...`);
     await fastify.listen({
       port,
       host: "0.0.0.0", // Bind to all interfaces for cloud deployment
     });
 
-    logger.info(`🚀 Server listening on port ${port}`);
-    console.log(`🚀 Server listening on port ${port}`);
+    serverLogger.info({ port }, "Server listening");
   } catch (err) {
-    console.error("Failed to start server:", err);
-    if (err instanceof Error) {
-      console.error("Error stack:", err.stack);
-    }
-    logger.error({ err }, "Failed to start server");
+    serverLogger.error({ err }, "Failed to start server");
     process.exit(1);
   }
 };

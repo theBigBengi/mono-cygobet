@@ -3,6 +3,9 @@ import type { FastifyInstance } from "fastify";
 import * as bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
 import { prisma } from "@repo/db";
+import { getLogger } from "../../logger";
+
+const log = getLogger("UserAuth");
 import {
   BadRequestError,
   UnauthorizedError,
@@ -143,7 +146,7 @@ export class UserAuthService {
       };
     });
 
-    this.fastify.log.info({ userId: result.user.id }, "user registered");
+    log.info({ userId: result.user.id }, "user registered");
 
     return result;
   }
@@ -231,7 +234,7 @@ export class UserAuthService {
       };
     });
 
-    this.fastify.log.info({ userId: user.id }, "user login success");
+    log.info({ userId: user.id }, "user login success");
 
     return result;
   }
@@ -417,7 +420,7 @@ export class UserAuthService {
       };
     });
 
-    this.fastify.log.info(
+    log.info(
       { userId: result.user.id },
       "user google login success"
     );
@@ -479,7 +482,7 @@ export class UserAuthService {
       };
     });
 
-    this.fastify.log.info({ userId: result.userId }, "user token refreshed");
+    log.info({ userId: result.userId }, "user token refreshed");
 
     return {
       accessToken: result.accessToken,
@@ -493,7 +496,7 @@ export class UserAuthService {
   async logout(input: { refreshToken?: string }): Promise<void> {
     if (input.refreshToken) {
       await revokeUserRefreshSessionByRawToken(prisma, input.refreshToken);
-      this.fastify.log.info({}, "user logout (refresh token revoked)");
+      log.info("user logout (refresh token revoked)");
     }
     // Idempotent: if no token provided, just return success
   }

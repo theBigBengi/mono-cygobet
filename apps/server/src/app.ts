@@ -5,6 +5,9 @@ import fastifyCors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import { FastifyPluginAsync } from "fastify";
 import * as path from "path";
+import { getLogger } from "./logger";
+
+const log = getLogger("App");
 
 export type AppOptions = {
   // Place your custom options for app below here.
@@ -60,7 +63,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
     // Register JWT for user auth (access tokens)
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      fastify.log.warn("JWT_SECRET not set - user auth will not work");
+      log.warn("JWT_SECRET not set - user auth will not work");
     } else {
       await fastify.register(fastifyJwt, {
         secret: jwtSecret,
@@ -128,7 +131,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
 
     // Load plugins
     const pluginsDir = path.join(__dirname, "plugins");
-    console.log("Loading plugins from:", pluginsDir);
+    log.debug({ pluginsDir }, "Loading plugins");
     await fastify.register(AutoLoad, {
       dir: pluginsDir,
       options: opts,
@@ -149,7 +152,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
     // Note: if you add new route folders (e.g. `routes/mobile/*`), you may need to restart `pnpm -F server dev`
     // so the runtime autoload scan picks them up.
   } catch (err) {
-    console.error("Error in app plugin:", err);
+    log.error({ err }, "Error in app plugin");
     throw err;
   }
 };

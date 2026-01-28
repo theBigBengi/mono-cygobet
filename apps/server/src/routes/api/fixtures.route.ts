@@ -112,7 +112,6 @@ const mobileFixturesRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply) => {
       const q = req.query as ApiUpcomingFixturesQuery;
-      console.log("q", q);
       const now = new Date();
       const from = parseOptionalDate(q.from) ?? now;
       const to =

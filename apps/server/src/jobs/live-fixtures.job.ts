@@ -11,6 +11,9 @@ import {
   getJobRowOrThrow,
   startJobRun,
 } from "./jobs.db";
+import { getLogger } from "../logger";
+
+const log = getLogger("LiveFixturesJob");
 
 /**
  * live-fixtures job
@@ -94,9 +97,7 @@ export async function runLiveFixturesJob(
     (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
 
   if (!token || !footballBaseUrl || !coreBaseUrl) {
-    fastify.log.warn(
-      "live-fixtures: missing SPORTMONKS env vars; skipping job"
-    );
+    log.warn("missing SPORTMONKS env vars; skipping job");
     await finishJobRunSkipped({
       id: jobRun.id,
       startedAtMs,

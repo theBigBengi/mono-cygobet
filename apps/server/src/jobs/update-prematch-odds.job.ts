@@ -16,6 +16,9 @@ import {
 } from "./jobs.db";
 import { getMeta, isUpdatePrematchOddsJobMeta } from "./jobs.meta";
 import { UpdatePrematchOddsJobMeta } from "@repo/types";
+import { getLogger } from "../logger";
+
+const log = getLogger("UpdatePrematchOddsJob");
 
 /**
  * update-prematch-odds job
@@ -134,9 +137,7 @@ export async function runUpdatePrematchOddsJob(
     (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
 
   if (!token || !footballBaseUrl || !coreBaseUrl) {
-    fastify.log.warn(
-      "update-prematch-odds: missing SPORTMONKS env vars; skipping"
-    );
+    log.warn("missing SPORTMONKS env vars; skipping");
     await finishJobRunSkipped({
       id: jobRun.id,
       startedAtMs,
@@ -173,7 +174,7 @@ export async function runUpdatePrematchOddsJob(
     try {
       odds = await adapter.fetchOddsBetween(from, to, { filters });
     } catch (err: any) {
-      fastify.log.error({ err, from, to }, "fetchOddsBetween failed");
+      log.error({ err, from, to }, "fetchOddsBetween failed");
       throw err;
     }
 

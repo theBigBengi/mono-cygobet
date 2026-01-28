@@ -1,6 +1,9 @@
 import "dotenv/config";
 import * as bcrypt from "bcrypt";
 import { prisma } from "@repo/db";
+import { getLogger } from "../logger";
+
+const log = getLogger("CreateAdmin");
 
 function arg(name: string): string | undefined {
   const idx = process.argv.indexOf(name);
@@ -64,8 +67,7 @@ async function main() {
     select: { id: true, email: true, role: true, name: true },
   });
 
-  // eslint-disable-next-line no-console
-  console.log("Admin user ready:", user);
+  log.info({ user }, "Admin user ready");
 }
 
 main()
@@ -73,8 +75,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (err) => {
-    // eslint-disable-next-line no-console
-    console.error(err);
+    log.error({ err }, "Create admin failed");
     await prisma.$disconnect();
     process.exit(1);
   });

@@ -2,6 +2,9 @@ import fp from "fastify-plugin";
 import cron, { type ScheduledTask } from "node-cron";
 import { JobTriggerBy, prisma } from "@repo/db";
 import { RUNNABLE_JOBS } from "../jobs/jobs.registry";
+import { getLogger } from "../logger";
+
+const log = getLogger("JobsScheduler");
 
 /**
  * Jobs scheduler (cron)
@@ -173,9 +176,9 @@ export default fp(async (fastify) => {
         : !["0", "false", "no", "off"].includes(enabledEnv.toLowerCase());
 
     if (!schedulerEnabled) {
-      fastify.log.info(
+      log.info(
         { instanceId },
-        "⏭️ Job scheduler disabled (JOBS_SCHEDULER_ENABLED=false)"
+        "Job scheduler disabled (JOBS_SCHEDULER_ENABLED=false)"
       );
       return;
     }
@@ -186,6 +189,6 @@ export default fp(async (fastify) => {
     // Stop them on server close.
     fastify.addHook("onClose", async () => stopAll());
 
-    fastify.log.info({ instanceId }, "✅ Job scheduler started");
+    log.info({ instanceId }, "Job scheduler started");
   });
 });

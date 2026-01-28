@@ -3,6 +3,9 @@ import type { FastifyInstance } from "fastify";
 import * as bcrypt from "bcrypt";
 import { prisma } from "@repo/db";
 import { BadRequestError, UnauthorizedError } from "../../utils/errors";
+import { getLogger } from "../../logger";
+
+const log = getLogger("AdminAuth");
 import { ADMIN_ROLE } from "../../constants/roles.constants";
 import {
   adminSessionDb,
@@ -67,7 +70,7 @@ export class AdminAuthService {
       }),
     ]);
 
-    this.fastify.log.info({ userId: user.id }, "admin login success");
+    log.info({ userId: user.id }, "admin login success");
 
     return { rawSessionToken, expires, userId: user.id };
   }
@@ -91,7 +94,7 @@ export class AdminAuthService {
       select: { id: true, email: true, role: true, name: true },
     });
 
-    this.fastify.log.info({ userId }, "admin profile updated");
+    log.info({ userId }, "admin profile updated");
 
     return {
       id: user.id,
@@ -140,6 +143,6 @@ export class AdminAuthService {
       select: { id: true },
     });
 
-    this.fastify.log.info({ userId }, "admin password changed");
+    log.info({ userId }, "admin password changed");
   }
 }

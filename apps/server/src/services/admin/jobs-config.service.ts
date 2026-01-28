@@ -7,6 +7,9 @@ import type {
 } from "@repo/types";
 
 import { BadRequestError, NotFoundError } from "../../utils/errors";
+import { getLogger } from "../../logger";
+
+const log = getLogger("JobsConfig");
 import { isJobRunnable } from "../../jobs/jobs.registry";
 import { isUpdatePrematchOddsJobMeta } from "../../jobs/jobs.meta";
 import { isFinishedFixturesJobMeta } from "../../jobs/jobs.meta";
@@ -265,7 +268,7 @@ export class AdminJobsConfigService {
       try {
         await this.fastify.jobsScheduler?.rescheduleJob(updated.key);
       } catch (e) {
-        this.fastify.log.warn(
+        log.warn(
           { err: e, jobKey: updated.key },
           "Failed to reschedule job after update"
         );

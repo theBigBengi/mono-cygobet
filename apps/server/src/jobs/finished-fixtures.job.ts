@@ -16,6 +16,9 @@ import {
   startJobRun,
 } from "./jobs.db";
 import { clampInt, getMeta, isFinishedFixturesJobMeta } from "./jobs.meta";
+import { getLogger } from "../logger";
+
+const log = getLogger("FinishedFixturesJob");
 // NOTE: We now have a dedicated `jobRuns` table for job executions (see prisma schema).
 
 /**
@@ -171,9 +174,7 @@ export async function runFinishedFixturesJob(
     (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
 
   if (!token || !footballBaseUrl || !coreBaseUrl) {
-    fastify.log.warn(
-      "finished-fixtures: missing SPORTMONKS env vars; skipping job"
-    );
+    log.warn("missing SPORTMONKS env vars; skipping job");
     await finishJobRunSkipped({
       id: jobRun.id,
       startedAtMs,

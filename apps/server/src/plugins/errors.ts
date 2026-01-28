@@ -1,6 +1,9 @@
 // src/plugins/errors.ts
 import fp from "fastify-plugin";
 import { AppError, mapPgError } from "../utils/errors";
+import { getLogger } from "../logger";
+
+const log = getLogger("Errors");
 
 const PG_CODE_RE = /^\d{5}$/; // SQLSTATE is always 5 digits
 
@@ -20,7 +23,7 @@ function isPgError(e: unknown): e is Record<string, any> {
 
 export default fp(async function errors(fastify) {
   fastify.setErrorHandler((err, req, reply) => {
-    req.log.error({ err }, "request error");
+    log.error({ err, reqId: req.id }, "request error");
 
     let e: unknown = err;
 
