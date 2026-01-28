@@ -3,12 +3,7 @@
 
 import { NotFoundError } from "../../../../utils/errors";
 import { assertGroupMember } from "../permissions";
-import {
-  findGroupFixtureByGroupAndFixture,
-  findGroupFixturesByFixtureIds,
-  upsertGroupPrediction,
-  upsertGroupPredictionsBatch,
-} from "../repository";
+import { repository as repo } from "../repository";
 
 /**
  * Save or update a group prediction for a specific fixture.
@@ -25,7 +20,7 @@ export async function saveGroupPrediction(
   await assertGroupMember(groupId, userId);
 
   // Verify fixture belongs to group and get groupFixtureId
-  const groupFixture = await findGroupFixtureByGroupAndFixture(
+  const groupFixture = await repo.findGroupFixtureByGroupAndFixture(
     groupId,
     fixtureId
   );
@@ -40,7 +35,7 @@ export async function saveGroupPrediction(
   const predictionString = `${prediction.home}:${prediction.away}`;
 
   // Upsert prediction
-  await upsertGroupPrediction({
+  await repo.upsertGroupPrediction({
     userId,
     groupFixtureId: groupFixture.id,
     groupId,
@@ -76,7 +71,7 @@ export async function saveGroupPredictionsBatch(
 
   // Get all fixtures and verify they belong to the group
   const fixtureIds = predictions.map((p) => p.fixtureId);
-  const groupFixtures = await findGroupFixturesByFixtureIds(
+  const groupFixtures = await repo.findGroupFixturesByFixtureIds(
     groupId,
     fixtureIds
   );
@@ -110,7 +105,7 @@ export async function saveGroupPredictionsBatch(
   });
 
   // Update all predictions in a single transaction
-  await upsertGroupPredictionsBatch(groupId, userId, predictionsToUpsert);
+  await repo.upsertGroupPredictionsBatch(groupId, userId, predictionsToUpsert);
 
   return {
     status: "success",

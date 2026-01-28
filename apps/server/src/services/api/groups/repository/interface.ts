@@ -1,0 +1,156 @@
+// groups/repository/interface.ts
+// GroupsRepository interface - contract for all repository operations.
+
+import type { groupPrivacy, groupPredictionMode, groupKoRoundMode, groupSelectionMode } from "@repo/db";
+import type { Prisma } from "@repo/db";
+import type { FixtureWithRelationsAndResult } from "../types";
+
+type BatchPayload = { count: number };
+
+/**
+ * GroupsRepository interface - defines all repository methods used by services.
+ * This is a real contract, not just documentation.
+ */
+export interface GroupsRepository {
+  // Core operations
+  findGroupsByUserId(userId: number): Promise<Array<Prisma.groupsGetPayload<{}>>>;
+  findGroupById(id: number): Promise<Prisma.groupsGetPayload<{}> | null>;
+  createGroupWithMemberAndRules(data: {
+    name: string;
+    creatorId: number;
+    privacy: groupPrivacy;
+    selectionMode: "games" | "teams" | "leagues";
+    fixtureIds: number[];
+    teamIds: number[];
+    leagueIds: number[];
+    now: number;
+  }): Promise<Prisma.groupsGetPayload<{}>>;
+  updateGroupWithFixtures(
+    groupId: number,
+    updateData: Prisma.groupsUpdateInput,
+    fixtureIds?: number[]
+  ): Promise<Prisma.groupsGetPayload<{}>>;
+  publishGroupInternal(data: {
+    groupId: number;
+    status: "active";
+    name?: string;
+    privacy?: groupPrivacy;
+    onTheNosePoints?: number;
+    correctDifferencePoints?: number;
+    outcomePoints?: number;
+    predictionMode?: groupPredictionMode;
+    koRoundMode?: groupKoRoundMode;
+  }): Promise<Prisma.groupsGetPayload<{}>>;
+  deleteGroup(id: number): Promise<Prisma.groupsGetPayload<{}>>;
+  findGroupRules(groupId: number): Promise<{ selectionMode: groupSelectionMode } | null>;
+  findGroupMembersWithUsers(groupId: number): Promise<{
+    members: Array<{ userId: number }>;
+    users: Array<{ id: number; username: string | null }>;
+  }>;
+
+  // Fixtures operations
+  findGroupFixturesByGroupId(groupId: number): Promise<Array<{ fixtureId: number }>>;
+  deleteGroupFixtures(groupId: number, fixtureIds: number[]): Promise<BatchPayload | undefined>;
+  findGroupFixturesForFilters(groupId: number): Promise<Array<{
+    fixtureId: number;
+    fixtures: {
+      id: number;
+      round: string | null;
+      league: {
+        id: number;
+        name: string;
+        imagePath: string | null;
+        country: {
+          id: number;
+          name: string;
+          imagePath: string | null;
+        } | null;
+        seasons: Array<{ id: number }>;
+      } | null;
+    };
+  }>>;
+  findGroupFixtureByGroupAndFixture(
+    groupId: number,
+    fixtureId: number
+  ): Promise<{ id: number; groupId: number; fixtureId: number } | null>;
+  findGroupFixturesByFixtureIds(
+    groupId: number,
+    fixtureIds: number[]
+  ): Promise<Array<{ id: number; groupId: number; fixtureId: number }>>;
+  fetchGroupFixturesWithPredictions(
+    groupId: number,
+    userId: number
+  ): Promise<Array<{
+    id: number;
+    fixtures: FixtureWithRelationsAndResult;
+    groupPredictions: Array<{
+      prediction: string;
+      updatedAt: Date;
+      placedAt: Date;
+      settledAt: Date | null;
+      points: number | string | null;
+    }>;
+  }>>;
+  findGroupFixturesForOverview(groupId: number): Promise<Array<{
+    fixtureId: number;
+    fixtures: {
+      id: number;
+      name: string;
+      startTs: number;
+      state: string;
+      result: string | null;
+      homeTeam: {
+        id: number;
+        name: string;
+        imagePath: string | null;
+      };
+      awayTeam: {
+        id: number;
+        name: string;
+        imagePath: string | null;
+      };
+    };
+  }>>;
+
+  // Predictions operations
+  upsertGroupPrediction(data: {
+    userId: number;
+    groupFixtureId: number;
+    groupId: number;
+    prediction: string;
+  }): Promise<Prisma.groupPredictionsGetPayload<{}>>;
+  upsertGroupPredictionsBatch(
+    groupId: number,
+    userId: number,
+    predictions: Array<{
+      groupFixtureId: number;
+      prediction: string;
+    }>
+  ): Promise<Array<Prisma.groupPredictionsGetPayload<{}>>>;
+  findPredictionsForOverview(groupId: number): Promise<Array<{
+    userId: number;
+    groupFixtureId: number;
+    prediction: string;
+    groupFixtures: {
+      fixtureId: number;
+    };
+  }>>;
+
+  // Stats operations
+  findGroupsStatsBatch(
+    groupIds: number[],
+    userId: number,
+    now: number
+  ): Promise<{
+    memberCountByGroupId: Map<number, number>;
+    fixtureCountByGroupId: Map<number, number>;
+    predictionCountByGroupId: Map<number, number>;
+    hasUnpredictedGamesByGroupId: Set<number>;
+    nextGameByGroupId: Map<number, any | null>;
+    firstGameByGroupId: Map<number, any | null>;
+  }>;
+
+  // User operations (re-exported from users/repository)
+  getUserUsername(userId: number): Promise<string | null>;
+  countDraftGroupsByCreator(creatorId: number): Promise<number>;
+}

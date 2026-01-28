@@ -20,11 +20,7 @@ import {
   buildGroupItem,
 } from "../builders";
 import { assertGroupMember } from "../permissions";
-import {
-  findGroupsByUserId,
-  findGroupsStatsBatch,
-  fetchGroupFixturesWithPredictions,
-} from "../repository";
+import { repository as repo } from "../repository";
 import type {
   FixtureWithRelationsAndResult,
 } from "../types";
@@ -40,7 +36,7 @@ export async function getMyGroups(
   userId: number
 ): Promise<ApiGroupsResponse> {
   // Find all groups where user is either creator or a joined member
-  const groups = await findGroupsByUserId(userId);
+  const groups = await repo.findGroupsByUserId(userId);
 
   if (groups.length === 0) {
     return {
@@ -54,7 +50,7 @@ export async function getMyGroups(
   const groupIds = groups.map((g) => g.id);
 
   // Fetch all stats in batch (6 queries total instead of 5 per group)
-  const stats = await findGroupsStatsBatch(groupIds, userId, now);
+  const stats = await repo.findGroupsStatsBatch(groupIds, userId, now);
 
   // Build group items using batch stats
   // Format fixtures in one place (service layer) before passing to builders
@@ -116,7 +112,7 @@ export async function getGroupById(
 
   // Include fixtures if requested
   if (includeFixtures) {
-    const rows = await fetchGroupFixturesWithPredictions(id, userId);
+    const rows = await repo.fetchGroupFixturesWithPredictions(id, userId);
     const fixturesData: ApiFixturesListResponse["data"] = rows.map((row) => {
       const prediction = parsePrediction(
         row.groupPredictions[0]?.prediction,
@@ -128,7 +124,7 @@ export async function getGroupById(
         prediction,
         row.fixtures.result ?? null
       );
-    }).filter((fixture): fixture is NonNullable<typeof fixture> => fixture !== null);
+    }).filter((fixture: ApiFixturesListResponse["data"][0] | null): fixture is NonNullable<typeof fixture> => fixture !== null);
 
     data.fixtures =
       filters != null
@@ -156,7 +152,7 @@ export async function getGroupFixtures(
 ): Promise<ApiGroupFixturesResponse> {
   await assertGroupMember(id, userId);
 
-  const rows = await fetchGroupFixturesWithPredictions(id, userId);
+  const rows = await repo.fetchGroupFixturesWithPredictions(id, userId);
   const data: ApiFixturesListResponse["data"] = rows.map((row) => {
     const predictionRow =
       row.groupPredictions && row.groupPredictions.length > 0

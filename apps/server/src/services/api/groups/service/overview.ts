@@ -11,11 +11,7 @@ import {
   hasMatchStarted,
 } from "../helpers";
 import { assertGroupMember } from "../permissions";
-import {
-  findGroupMembersWithUsers,
-  findGroupFixturesForOverview,
-  findPredictionsForOverview,
-} from "../repository";
+import { repository as repo } from "../repository";
 
 /**
  * Get predictions overview for a group.
@@ -30,9 +26,9 @@ export async function getPredictionsOverview(
 
   // Fetch data in parallel for better performance
   const [membersWithUsers, groupFixtures, predictions] = await Promise.all([
-    findGroupMembersWithUsers(groupId),
-    findGroupFixturesForOverview(groupId),
-    findPredictionsForOverview(groupId),
+    repo.findGroupMembersWithUsers(groupId),
+    repo.findGroupFixturesForOverview(groupId),
+    repo.findPredictionsForOverview(groupId),
   ]);
 
   // Build participants and fixtures using pure functions

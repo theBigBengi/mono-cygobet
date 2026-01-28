@@ -2,9 +2,7 @@
 // Delete group service.
 
 import { assertGroupCreator } from "../permissions";
-import {
-  deleteGroup as deleteGroupInDb,
-} from "../repository";
+import { repository as repo } from "../repository";
 
 /**
  * Delete a group.
@@ -20,7 +18,7 @@ export async function deleteGroup(
   await assertGroupCreator(id, creatorId);
 
   // Delete the group (CASCADE will delete all related records)
-  await deleteGroupInDb(id);
+  await repo.deleteGroup(id);
 
   return {
     status: "success",

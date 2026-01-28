@@ -12,10 +12,7 @@ import { BadRequestError } from "../../../../utils/errors";
 import { GROUP_STATUS } from "../constants";
 import { buildGroupItem } from "../builders";
 import { assertGroupCreator } from "../permissions";
-import {
-  updateGroupWithFixtures,
-  publishGroupInternal,
-} from "../repository";
+import { repository as repo } from "../repository";
 
 /**
  * Update a group.
@@ -44,7 +41,7 @@ export async function updateGroup(
   }
 
   // Update the group and groupFixtures in a single transaction
-  const group = await updateGroupWithFixtures(id, updateData, fixtureIds);
+  const group = await repo.updateGroupWithFixtures(id, updateData, fixtureIds);
 
   const data = buildGroupItem(group);
 
@@ -105,7 +102,7 @@ export async function publishGroup(
   };
 
   // 3. Call repository to perform all updates in a single transaction
-  const group = await publishGroupInternal(publishData);
+  const group = await repo.publishGroupInternal(publishData);
 
   // 4. Build and return response
   const data = buildGroupItem(group);

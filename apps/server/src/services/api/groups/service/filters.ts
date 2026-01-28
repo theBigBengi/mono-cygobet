@@ -8,10 +8,7 @@ import type {
 } from "@repo/types";
 import { SELECTION_MODE } from "../constants";
 import { assertGroupMember } from "../permissions";
-import {
-  findGroupRules,
-  findGroupFixturesForFilters,
-} from "../repository";
+import { repository as repo } from "../repository";
 
 /**
  * Get games-filters (rounds as raw strings, leagues) for a group.
@@ -25,12 +22,12 @@ export async function getGroupGamesFilters(
 ): Promise<ApiGroupGamesFiltersResponse> {
   const { group } = await assertGroupMember(groupId, userId);
 
-  const groupRules = await findGroupRules(groupId);
+  const groupRules = await repo.findGroupRules(groupId);
 
   const mode = groupRules?.selectionMode || SELECTION_MODE.GAMES;
 
   // Get all fixtures for this group
-  const groupFixtures = await findGroupFixturesForFilters(groupId);
+  const groupFixtures = await repo.findGroupFixturesForFilters(groupId);
 
   // Extract unique leagues with currentSeason
   const leagueMap = new Map<number, ApiGroupGamesFiltersLeagueItem>();

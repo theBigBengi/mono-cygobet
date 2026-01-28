@@ -10,8 +10,7 @@ import { nowUnixSeconds } from "../../../../utils/dates";
 import { resolveGroupName } from "../helpers";
 import { SELECTION_MODE } from "../constants";
 import { buildGroupItem } from "../builders";
-import { getUserUsername, countDraftGroupsByCreator } from "../../users/repository";
-import { createGroupWithMemberAndRules } from "../repository";
+import { repository as repo } from "../repository";
 
 /**
  * Create a new group.
@@ -33,8 +32,8 @@ export async function createGroup(
   } = args;
 
   // Resolve group name
-  const username = await getUserUsername(creatorId);
-  const draftCount = await countDraftGroupsByCreator(creatorId);
+  const username = await repo.getUserUsername(creatorId);
+  const draftCount = await repo.countDraftGroupsByCreator(creatorId);
   const groupName = resolveGroupName(name, username || "User", draftCount);
 
   // Create group with member and rules in a single transaction
@@ -42,7 +41,7 @@ export async function createGroup(
     | "games"
     | "teams"
     | "leagues";
-  const result = await createGroupWithMemberAndRules({
+  const result = await repo.createGroupWithMemberAndRules({
     name: groupName,
     creatorId,
     privacy: privacy,
