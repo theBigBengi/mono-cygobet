@@ -3,6 +3,7 @@
 
 import { prisma } from "@repo/db";
 import type { Prisma } from "@repo/db";
+import { groupPrivacy, groupPredictionMode, groupKoRoundMode, groupSelectionMode } from "@repo/db";
 import { MEMBER_STATUS, GROUP_STATUS, SELECTION_MODE } from "../constants";
 import {
   resolveInitialFixturesInternal,
@@ -46,15 +47,10 @@ export async function findGroupById(id: number) {
  * Create a new group.
  */
 export async function createGroup(
-  data: {
-    name: string;
-    creatorId: number;
-    privacy: string;
-    status: "draft" | "active" | "ended";
-  }
-) {
+  data: Prisma.groupsCreateInput
+): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.groups.create({
-    data: data as Prisma.groupsCreateInput,
+    data,
   });
 }
 
@@ -120,22 +116,20 @@ async function createGroupRulesInternal(
  */
 export async function updateGroup(
   id: number,
-  data: {
-    name?: string;
-    privacy?: string;
-    status?: "draft" | "active" | "ended";
-  }
-) {
+  data: Prisma.groupsUpdateInput
+): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.groups.update({
     where: { id },
-    data: data as Prisma.groupsUpdateInput,
+    data,
   });
 }
 
 /**
  * Find group rules by group ID.
  */
-export async function findGroupRules(groupId: number) {
+export async function findGroupRules(
+  groupId: number
+): Promise<{ selectionMode: groupSelectionMode } | null> {
   return await prisma.groupRules.findUnique({
     where: { groupId },
     select: {
@@ -153,13 +147,13 @@ export async function publishGroupInternal(data: {
   groupId: number;
   status: typeof GROUP_STATUS.ACTIVE;
   name?: string;
-  privacy?: string;
+  privacy?: groupPrivacy;
   onTheNosePoints?: number;
   correctDifferencePoints?: number;
   outcomePoints?: number;
-  predictionMode?: string;
-  koRoundMode?: string;
-}) {
+  predictionMode?: groupPredictionMode;
+  koRoundMode?: groupKoRoundMode;
+}): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.$transaction(async (tx) => {
     // 1. Update groups table
     const updateData: Prisma.groupsUpdateInput = {
@@ -171,7 +165,7 @@ export async function publishGroupInternal(data: {
     }
 
     if (data.privacy !== undefined) {
-      updateData.privacy = data.privacy as "private" | "public";
+      updateData.privacy = data.privacy;
     }
 
     const group = await tx.groups.update({
@@ -201,16 +195,11 @@ export async function publishGroupInternal(data: {
       }
 
       if (data.predictionMode !== undefined) {
-        rulesUpdateData.predictionMode = data.predictionMode as
-          | "MatchWinner"
-          | "CorrectScore";
+        rulesUpdateData.predictionMode = data.predictionMode;
       }
 
       if (data.koRoundMode !== undefined) {
-        rulesUpdateData.koRoundMode = data.koRoundMode as
-          | "FullTime"
-          | "ExtraTime"
-          | "Penalties";
+        rulesUpdateData.koRoundMode = data.koRoundMode;
       }
 
       // Only update if there are fields to update
@@ -242,11 +231,11 @@ export async function publishGroupInternal(data: {
           correctDifferencePoints: data.correctDifferencePoints ?? 2,
           outcomePoints: data.outcomePoints ?? 1,
           predictionMode:
-            (data.predictionMode as "MatchWinner" | "CorrectScore") ??
-            "CorrectScore",
+            data.predictionMode ??
+            groupPredictionMode.CorrectScore,
           koRoundMode:
-            (data.koRoundMode as "FullTime" | "ExtraTime" | "Penalties") ??
-            "FullTime",
+            data.koRoundMode ??
+            groupKoRoundMode.FullTime,
         },
       });
     }
@@ -270,20 +259,20 @@ export async function deleteGroup(id: number) {
 export async function createGroupWithMemberAndRules(data: {
   name: string;
   creatorId: number;
-  privacy: string;
+  privacy: groupPrivacy;
   selectionMode: "games" | "teams" | "leagues";
   fixtureIds: number[];
   teamIds: number[];
   leagueIds: number[];
   now: number;
-}) {
+}): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.$transaction(async (tx) => {
     // Create group
     const group = await tx.groups.create({
       data: {
         name: data.name,
         creatorId: data.creatorId,
-        privacy: data.privacy as "private" | "public",
+        privacy: data.privacy,
         status: GROUP_STATUS.DRAFT,
       },
     });

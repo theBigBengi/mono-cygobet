@@ -2,10 +2,24 @@
 // Repository functions for group statistics.
 
 import { prisma } from "@repo/db";
+import type { Prisma } from "@repo/db";
 import { MEMBER_STATUS } from "../constants";
-import type { FixtureWithRelations } from "../types";
 import { FIXTURE_SELECT_BASE } from "../../fixtures/selects";
 import { buildUpcomingFixturesWhere } from "../../fixtures/queries";
+
+// טיפוס משותף ל-fixture עם base select
+type FixtureWithBaseSelect = Prisma.fixturesGetPayload<{
+  select: typeof FIXTURE_SELECT_BASE;
+}>;
+
+type GroupFixtureWithFixture = Prisma.groupFixturesGetPayload<{
+  select: {
+    groupId: true;
+    fixtures: {
+      select: typeof FIXTURE_SELECT_BASE;
+    };
+  };
+}>;
 
 /**
  * Find groups stats in batch for getMyGroups optimization.
@@ -22,8 +36,8 @@ export async function findGroupsStatsBatch(
       fixtureCountByGroupId: new Map<number, number>(),
       predictionCountByGroupId: new Map<number, number>(),
       hasUnpredictedGamesByGroupId: new Set<number>(),
-      nextGameByGroupId: new Map<number, FixtureWithRelations | null>(),
-      firstGameByGroupId: new Map<number, FixtureWithRelations | null>(),
+      nextGameByGroupId: new Map<number, FixtureWithBaseSelect | null>(),
+      firstGameByGroupId: new Map<number, FixtureWithBaseSelect | null>(),
     };
   }
 
@@ -130,36 +144,30 @@ export async function findGroupsStatsBatch(
     hasUnpredictedGamesByGroupId.add(item.groupId)
   );
 
-  const nextGameByGroupId = new Map<number, FixtureWithRelations | null>();
+  const nextGameByGroupId = new Map<number, FixtureWithBaseSelect | null>();
   // Group by groupId and take first (earliest) for each
-  const nextGamesByGroup = new Map<
-    number,
-    (typeof nextGamesRaw)[0]
-  >();
+  const nextGamesByGroup = new Map<number, GroupFixtureWithFixture>();
   nextGamesRaw.forEach((item) => {
     if (!nextGamesByGroup.has(item.groupId)) {
       nextGamesByGroup.set(item.groupId, item);
     }
   });
   nextGamesByGroup.forEach((item, groupId) => {
-    const rawFixture = item.fixtures as FixtureWithRelations | null | undefined;
-    nextGameByGroupId.set(groupId, rawFixture ?? null);
+    const rawFixture = item.fixtures ?? null;
+    nextGameByGroupId.set(groupId, rawFixture);
   });
 
-  const firstGameByGroupId = new Map<number, FixtureWithRelations | null>();
+  const firstGameByGroupId = new Map<number, FixtureWithBaseSelect | null>();
   // Group by groupId and take first (earliest) for each
-  const firstGamesByGroup = new Map<
-    number,
-    (typeof firstGamesRaw)[0]
-  >();
+  const firstGamesByGroup = new Map<number, GroupFixtureWithFixture>();
   firstGamesRaw.forEach((item) => {
     if (!firstGamesByGroup.has(item.groupId)) {
       firstGamesByGroup.set(item.groupId, item);
     }
   });
   firstGamesByGroup.forEach((item, groupId) => {
-    const rawFixture = item.fixtures as FixtureWithRelations | null | undefined;
-    firstGameByGroupId.set(groupId, rawFixture ?? null);
+    const rawFixture = item.fixtures ?? null;
+    firstGameByGroupId.set(groupId, rawFixture);
   });
 
   return {

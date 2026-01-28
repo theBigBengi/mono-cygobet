@@ -7,6 +7,7 @@ import type {
   ApiPublishGroupBody,
   ApiGroupPrivacy,
 } from "@repo/types";
+import type { Prisma } from "@repo/db";
 import { BadRequestError } from "../../../../utils/errors";
 import { GROUP_STATUS } from "../constants";
 import { buildGroupItem } from "../builders";
@@ -32,17 +33,14 @@ export async function updateGroup(
   await assertGroupCreator(id, creatorId);
 
   // Build update data
-  const updateData: {
-    name?: string;
-    privacy?: ApiGroupPrivacy;
-  } = {};
+  const updateData: Prisma.groupsUpdateInput = {};
 
   if (name !== undefined) {
     updateData.name = name.trim();
   }
 
   if (privacy !== undefined) {
-    updateData.privacy = privacy as ApiGroupPrivacy;
+    updateData.privacy = privacy;
   }
 
   // Update the group and groupFixtures in a single transaction
@@ -96,7 +94,7 @@ export async function publishGroup(
     groupId: id,
     status: GROUP_STATUS.ACTIVE as typeof GROUP_STATUS.ACTIVE,
     ...(name !== undefined && { name: name.trim() }),
-    ...(privacy !== undefined && { privacy: privacy as ApiGroupPrivacy }),
+    ...(privacy !== undefined && { privacy }),
     ...(onTheNosePoints !== undefined && { onTheNosePoints }),
     ...(correctDifferencePoints !== undefined && {
       correctDifferencePoints,

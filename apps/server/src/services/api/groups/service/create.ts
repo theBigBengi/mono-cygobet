@@ -45,7 +45,7 @@ export async function createGroup(
   const result = await createGroupWithMemberAndRules({
     name: groupName,
     creatorId,
-    privacy: privacy as ApiGroupPrivacy,
+    privacy: privacy,
     selectionMode: selMode,
     fixtureIds,
     teamIds: selMode === SELECTION_MODE.TEAMS ? teamIds ?? [] : [],

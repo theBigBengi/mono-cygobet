@@ -163,6 +163,25 @@ export async function findGroupFixturesByFixtureIds(
   });
 }
 
+// טיפוס מפורש ל-group fixture עם predictions
+type GroupFixtureWithPredictions = Prisma.groupFixturesGetPayload<{
+  select: {
+    id: true;
+    fixtures: {
+      select: typeof FIXTURE_SELECT_WITH_RESULT;
+    };
+    groupPredictions: {
+      select: {
+        prediction: true;
+        updatedAt: true;
+        placedAt: true;
+        settledAt: true;
+        points: true;
+      };
+    };
+  };
+}>;
+
 /**
  * Fetch group fixtures with predictions for a user.
  * Used by getGroupById and getGroupFixtures.
@@ -170,7 +189,7 @@ export async function findGroupFixturesByFixtureIds(
 export async function fetchGroupFixturesWithPredictions(
   groupId: number,
   userId: number
-) {
+): Promise<GroupFixtureWithPredictions[]> {
   const select = {
     id: true, // groupFixtureId needed for predictions
     fixtures: {
@@ -244,17 +263,14 @@ export async function findGroupFixturesForOverview(groupId: number) {
  */
 export async function updateGroupWithFixtures(
   groupId: number,
-  updateData: {
-    name?: string;
-    privacy?: string;
-  },
+  updateData: Prisma.groupsUpdateInput,
   fixtureIds?: number[]
-) {
+): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.$transaction(async (tx) => {
     // Update the group
     const updatedGroup = await tx.groups.update({
       where: { id: groupId },
-      data: updateData as Prisma.groupsUpdateInput,
+      data: updateData,
     });
 
     // Update groupFixtures if fixtureIds is provided

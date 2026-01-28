@@ -27,7 +27,7 @@ export async function getGroupGamesFilters(
 
   const groupRules = await findGroupRules(groupId);
 
-  const mode = (groupRules?.selectionMode as "leagues" | "teams" | "games") || SELECTION_MODE.GAMES;
+  const mode = groupRules?.selectionMode || SELECTION_MODE.GAMES;
 
   // Get all fixtures for this group
   const groupFixtures = await findGroupFixturesForFilters(groupId);

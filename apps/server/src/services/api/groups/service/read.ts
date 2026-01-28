@@ -123,9 +123,8 @@ export async function getGroupById(
         row.groupPredictions[0] || null
       );
       // Service layer decides: use result from fixture, or null if not available
-      // Minimal type assertion: Prisma's type inference doesn't narrow nested selects perfectly
       return formatFixtureFromDb(
-        row.fixtures as FixtureWithRelationsAndResult,
+        row.fixtures,
         prediction,
         row.fixtures.result ?? null
       );
