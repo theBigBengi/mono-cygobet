@@ -4,7 +4,7 @@
 
 import type { AuthContextValue } from "@/lib/auth/AuthProvider";
 import { bootstrapPicks } from "@/features/picks";
-import { bootstrapGroupGames } from "@/features/groups/games-selection";
+import { bootstrapGroupGames } from "@/features/group-creation/selection/games";
 
 /**
  * Run app start: bootstrap auth, picks, and group games.

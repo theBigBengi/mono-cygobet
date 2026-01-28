@@ -159,7 +159,161 @@ export const publishGroupBodySchema = {
       type: "string",
       enum: ["private", "public"],
     },
+    onTheNosePoints: {
+      type: "number",
+      minimum: 0,
+    },
+    correctDifferencePoints: {
+      type: "number",
+      minimum: 0,
+    },
+    outcomePoints: {
+      type: "number",
+      minimum: 0,
+    },
+    predictionMode: {
+      type: "string",
+    },
+    koRoundMode: {
+      type: "string",
+    },
   },
 };
 
 export const publishGroupResponseSchema = groupResponseSchema;
+
+/** League item in GET /api/groups/:id/games-filters response. */
+export const groupGamesFiltersLeagueItemSchema = {
+  type: "object",
+  required: ["id", "name"],
+  properties: {
+    id: { type: "number" },
+    name: { type: "string" },
+    imagePath: { type: ["string", "null"] },
+    country: {
+      type: ["object", "null"],
+      properties: {
+        id: { type: "number" },
+        name: { type: "string" },
+        code: { type: "string" },
+        flag: { type: ["string", "null"] },
+      },
+    },
+  },
+};
+
+/** Filters in games-filters data. Leagues: primary "round" + rounds; teams/games: empty. */
+export const groupGamesFiltersFiltersSchema = {
+  oneOf: [
+    {
+      type: "object",
+      required: ["primary", "rounds"],
+      properties: {
+        primary: { type: "string", enum: ["round"] },
+        rounds: {
+          type: "array",
+          items: { type: "string" },
+        },
+      },
+    },
+    {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
+  ],
+};
+
+/** Response from GET /api/groups/:id/games-filters. */
+export const groupGamesFiltersResponseSchema = {
+  type: "object",
+  required: ["status", "data", "message"],
+  properties: {
+    status: { type: "string", enum: ["success"] },
+    data: {
+      type: "object",
+      required: ["mode", "filters", "leagues"],
+      properties: {
+        mode: { type: "string", enum: ["leagues", "teams", "games"] },
+        filters: groupGamesFiltersFiltersSchema,
+        leagues: {
+          type: "array",
+          items: groupGamesFiltersLeagueItemSchema,
+        },
+      },
+    },
+    message: { type: "string" },
+  },
+};
+
+/** Participant item in predictions overview response. */
+export const predictionsOverviewParticipantSchema = {
+  type: "object",
+  required: ["id", "username", "number"],
+  properties: {
+    id: { type: "number" },
+    username: { type: ["string", "null"] },
+    number: { type: "number" },
+  },
+};
+
+/** Fixture item in predictions overview response. */
+export const predictionsOverviewFixtureSchema = {
+  type: "object",
+  required: ["id", "name", "homeTeam", "awayTeam", "result", "startTs", "state"],
+  properties: {
+    id: { type: "number" },
+    name: { type: "string" },
+    homeTeam: {
+      type: "object",
+      required: ["id", "name", "imagePath"],
+      properties: {
+        id: { type: "number" },
+        name: { type: "string" },
+        imagePath: { type: ["string", "null"] },
+      },
+    },
+    awayTeam: {
+      type: "object",
+      required: ["id", "name", "imagePath"],
+      properties: {
+        id: { type: "number" },
+        name: { type: "string" },
+        imagePath: { type: ["string", "null"] },
+      },
+    },
+    result: { type: ["string", "null"] },
+    startTs: { type: "number" },
+    state: { type: "string" },
+  },
+};
+
+/** Response from GET /api/groups/:id/predictions-overview. */
+export const predictionsOverviewResponseSchema = {
+  type: "object",
+  required: ["status", "data", "message"],
+  properties: {
+    status: { type: "string", enum: ["success"] },
+    data: {
+      type: "object",
+      required: ["participants", "fixtures", "predictions"],
+      properties: {
+        participants: {
+          type: "array",
+          items: predictionsOverviewParticipantSchema,
+        },
+        fixtures: {
+          type: "array",
+          items: predictionsOverviewFixtureSchema,
+        },
+        predictions: {
+          type: "object",
+          additionalProperties: {
+            type: ["string", "null"],
+          },
+        },
+      },
+    },
+    message: { type: "string" },
+  },
+};

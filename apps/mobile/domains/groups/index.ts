@@ -4,12 +4,15 @@
 export {
   useMyGroupsQuery,
   useGroupQuery,
+  useGroupGamesFiltersQuery,
   useCreateGroupMutation,
   useUpdateGroupMutation,
   usePublishGroupMutation,
   useGroupFixturesQuery,
   useSaveGroupPredictionMutation,
   useSaveGroupPredictionsBatchMutation,
+  useDeleteGroupMutation,
+  usePredictionsOverviewQuery,
 } from "./groups.hooks";
 export { groupsKeys } from "./groups.keys";
 export {
@@ -17,6 +20,7 @@ export {
   fetchMyGroups,
   fetchGroupById,
   fetchGroupFixtures,
+  fetchGroupGamesFilters,
 } from "./groups.api";
 export type {
   ApiCreateGroupBody,

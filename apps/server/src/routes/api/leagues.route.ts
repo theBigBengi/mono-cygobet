@@ -2,7 +2,7 @@
 // Routes for leagues listing (read-only, for pool creation flow).
 
 import { FastifyPluginAsync } from "fastify";
-import { getLeagues } from "../../services/api/api.leagues.service";
+import { getLeagues } from "../../services/api/leagues";
 import type { ApiLeaguesResponse, ApiLeaguesQuery } from "@repo/types";
 import {
   leaguesQuerystringSchema,
@@ -45,11 +45,25 @@ const leaguesRoutes: FastifyPluginAsync = async (fastify) => {
         q.onlyActiveSeasons === true ||
         String(q.onlyActiveSeasons ?? "").toLowerCase() === "true";
 
+      // Extract preset and search - they are mutually exclusive
+      const preset = q.preset === "popular" ? "popular" : undefined;
+      const search = q.search ? String(q.search).trim() : undefined;
+
+      // Validate: preset and search cannot be used together
+      if (preset && search) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Cannot use both 'preset' and 'search' parameters together.",
+        } as any);
+      }
+
       const result = await getLeagues({
         page,
         perPage,
         includeSeasons,
         onlyActiveSeasons,
+        preset,
+        search,
       });
 
       return reply.send(result);

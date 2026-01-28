@@ -63,11 +63,14 @@ export function Screen({
     "right",
   ];
 
-  // Calculate bottom padding to account for tab bar (when tabs are visible)
+  // Calculate bottom padding to account for floating tab bar (when tabs are visible)
   // This ensures content doesn't get hidden behind the tabs
-  // TAB_BAR_HEIGHT is a constant (56px), we add safe area bottom inset
-  const tabBarHeight = TAB_BAR_HEIGHT + insets.bottom;
-  const defaultBottomPadding = scroll ? tabBarHeight : 0;
+  // Tab bar height: 60px + safe area bottom inset
+  // Plus marginBottom: spacing.sm (8px) for the floating effect
+  const tabBarHeight = 60 + insets.bottom;
+  const tabBarMarginBottom = theme.spacing.sm; // 8px margin for floating effect
+  const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
+  const defaultBottomPadding = scroll ? totalTabBarSpace : 0;
 
   const refreshControl =
     scroll && onRefresh ? (
@@ -93,7 +96,7 @@ export function Screen({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             {
-              padding: theme.spacing.md,
+              // padding: theme.spacing.md,
               paddingBottom: defaultBottomPadding + theme.spacing.md,
             },
             contentContainerStyle,
@@ -109,13 +112,19 @@ export function Screen({
   return (
     <SafeAreaView
       edges={safeAreaEdges}
-      style={{
-        flex: 1,
-        backgroundColor: theme.colors.background,
-        padding: theme.spacing.md,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+      style={[
+        {
+          flex: 1,
+          backgroundColor: theme.colors.background,
+        },
+        contentContainerStyle?.padding === 0 || contentContainerStyle?.padding === undefined
+          ? {}
+          : { padding: theme.spacing.md },
+        contentContainerStyle?.alignItems === undefined
+          ? { alignItems: "center", justifyContent: "center" }
+          : {},
+        contentContainerStyle,
+      ]}
     >
       {children}
     </SafeAreaView>

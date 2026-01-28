@@ -5,13 +5,15 @@
 // - Active status → GroupLobbyActiveScreen
 // - Ended status → Simple ended message
 
-import React from "react";
-import { useLocalSearchParams } from "expo-router";
+import React, { useEffect } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSetAtom } from "jotai";
 import { Screen, AppText } from "@/components/ui";
-import { useGroupQuery } from "@/domains/groups";
+import { useGroupQuery, useGroupGamesFiltersQuery } from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useAuth } from "@/lib/auth/useAuth";
+import { globalBlockingOverlayAtom } from "@/lib/state/globalOverlay.atom";
 import {
   GroupLobbyDraftScreen,
   GroupLobbyActiveScreen,
@@ -27,12 +29,37 @@ import {
 
 export default function GroupLobbyScreen() {
   const params = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { user } = useAuth();
+  const setOverlay = useSetAtom(globalBlockingOverlayAtom);
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
 
   const { data, isLoading, error, refetch: refetchGroup } =
     useGroupQuery(groupId, { includeFixtures: true });
+
+  useGroupGamesFiltersQuery(groupId);
+
+  // Turn off global overlay when screen mounts
+  // Delay ensures the screen is painted before overlay disappears
+  // This prevents white screen flash during navigation transition
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setOverlay(false);
+    }, 1000); // Delay to allow screen to paint and transition to complete
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [setOverlay]);
+
+  // Navigate back to groups screen if group not found
+  useEffect(() => {
+    if (error || (!isLoading && !data)) {
+      // Navigate to groups tab when group is not found
+      router.replace("/(tabs)/groups" as any);
+    }
+  }, [error, data, isLoading, router]);
 
   const handleRefresh = React.useCallback(async () => {
     await refetchGroup();
@@ -43,14 +70,9 @@ export default function GroupLobbyScreen() {
     return <QueryLoadingView message="Loading pool..." />;
   }
 
-  // Error state
+  // Error state - show loading while navigating back
   if (error || !data) {
-    return (
-      <QueryErrorView
-        message="Group not found"
-        // No retry - user should navigate back
-      />
-    );
+    return <QueryLoadingView message="Redirecting..." />;
   }
 
   const group = data.data;

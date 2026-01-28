@@ -8,7 +8,8 @@ export const teamsQuerystringSchema = {
     perPage: { type: "number", default: 20, minimum: 1, maximum: 100 },
     leagueId: { type: "number", minimum: 1 },
     includeCountry: { type: "boolean", default: false },
-    search: { type: "string" },
+    search: { type: "string", minLength: 1 },
+    preset: { type: "string", enum: ["popular"] },
   },
 };
 

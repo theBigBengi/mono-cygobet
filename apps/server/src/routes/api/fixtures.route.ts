@@ -5,7 +5,7 @@ import {
 } from "../../schemas/fixtures.schemas";
 import {
   getUpcomingFixtures,
-} from "../../services/api/api.fixtures.service";
+} from "../../services/api/fixtures";
 import { parseOptionalDate } from "../../utils/dates";
 import type {
   ApiUpcomingFixturesInclude,

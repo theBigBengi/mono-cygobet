@@ -23,7 +23,7 @@ export function GroupLobbyMetaSection({
         <AppText variant="body" color="secondary">
           Created:
         </AppText>
-        <AppText variant="body" style={styles.metaValue}>
+        <AppText variant="body"  color="secondary" style={styles.metaValue}>
           {formatDate(createdAt)}
         </AppText>
       </View>
@@ -34,6 +34,7 @@ export function GroupLobbyMetaSection({
 const styles = StyleSheet.create({
   section: {
     marginBottom: 16,
+    fontSize: 12,
   },
   metaRow: {
     flexDirection: "row",
@@ -42,6 +43,6 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   metaValue: {
-    fontWeight: "500",
+   
   },
 });

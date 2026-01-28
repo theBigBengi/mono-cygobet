@@ -2,12 +2,14 @@
 // Wrapper component for group lobby screens with header.
 // Provides consistent header layout with status badge and optional group name.
 
-import React from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { GroupGamesHeader } from "@/features/groups/group-games/components/GroupGamesHeader";
+import { Ionicons } from "@expo/vector-icons";
+import { GroupGamesHeader } from "@/features/groups/predictions/components/GroupGamesHeader";
+import { GroupSettingsModal } from "./GroupSettingsModal";
 import type { ApiGroupStatus } from "@repo/types";
 
 const HEADER_HEIGHT = 64;
@@ -37,6 +39,7 @@ export function LobbyWithHeader({
 }: LobbyWithHeaderProps) {
   const router = useRouter();
   const { theme } = useTheme();
+  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const isActive = status === "active";
   const isDraft = status === "draft";
   
@@ -69,7 +72,17 @@ export function LobbyWithHeader({
       </AppText>
     ) : undefined;
 
-  const rightContent = (
+  const rightContent = isActive ? (
+    <Pressable onPress={() => setIsSettingsModalVisible(true)}>
+      <View style={styles.settingsButton}>
+        <Ionicons
+          name="options-outline"
+          size={20}
+          color={theme.colors.textPrimary}
+        />
+      </View>
+    </Pressable>
+  ) : (
     <View
       style={[
         styles.statusBadge,
@@ -101,11 +114,25 @@ export function LobbyWithHeader({
       <View style={styles.headerOverlay} pointerEvents="box-none">
         <GroupGamesHeader
           backOnly
-          onBack={() => router.back()}
+          onBack={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              // If no screen to go back to (e.g., after creating group with replace),
+              // navigate to groups tab
+              router.replace("/(tabs)/groups" as any);
+            }
+          }}
           leftContent={leftContent}
           rightContent={rightContent}
         />
       </View>
+      {isActive && (
+        <GroupSettingsModal
+          visible={isSettingsModalVisible}
+          onClose={() => setIsSettingsModalVisible(false)}
+        />
+      )}
     </View>
   );
 }
@@ -130,5 +157,12 @@ const styles = StyleSheet.create({
   groupNameText: {
     fontWeight: "600",
     maxWidth: 200,
+  },
+  settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 99,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

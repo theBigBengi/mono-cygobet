@@ -2,9 +2,7 @@
 // Odds extraction and mapping logic for fixtures.
 // Contains business heuristics for matching odds to outcomes (1/X/2).
 
-import type { ApiFixturesListResponse } from "@repo/types";
-
-type FixtureItem = ApiFixturesListResponse["data"][0];
+import type { FixtureItem } from "@/types/common";
 
 /**
  * Extract odds for 1/X/2 outcomes from odds array.

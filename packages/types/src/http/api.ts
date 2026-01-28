@@ -78,6 +78,7 @@ export type ApiUpcomingFixturesResponse = {
     } | null;
     homeTeam?: { id: number; name: string; imagePath: string | null };
     awayTeam?: { id: number; name: string; imagePath: string | null };
+    result?: string | null;
     odds?: Array<{
       id: number;
       value: string;
@@ -96,6 +97,7 @@ export type ApiUpcomingFixturesResponse = {
       updatedAt: string;
       placedAt: string;
       settled: boolean;
+      points: number | null;
     } | null;
   }>;
   pagination: {
@@ -148,6 +150,8 @@ export type ApiLeaguesQuery = {
   perPage?: number;
   includeSeasons?: boolean;
   onlyActiveSeasons?: boolean;
+  preset?: "popular";
+  search?: string;
 };
 
 /**
@@ -198,6 +202,7 @@ export type ApiTeamsQuery = {
   leagueId?: number;
   includeCountry?: boolean;
   search?: string;
+  preset?: "popular";
 };
 
 /**
@@ -270,6 +275,11 @@ export type ApiUpdateGroupBody = {
 export type ApiPublishGroupBody = {
   name?: string;
   privacy?: ApiGroupPrivacy;
+  onTheNosePoints?: number;
+  correctDifferencePoints?: number;
+  outcomePoints?: number;
+  predictionMode?: string;
+  koRoundMode?: string;
 };
 
 /**
@@ -369,5 +379,92 @@ export type ApiSaveGroupPredictionsBatchBody = {
  */
 export type ApiSaveGroupPredictionsBatchResponse = {
   status: "success";
+  message: string;
+};
+
+/**
+ * League item in GET /api/groups/:id/games-filters response.
+ */
+export type ApiGroupGamesFiltersLeagueItem = {
+  id: number;
+  name: string;
+  imagePath: string | null;
+  country?: ApiCountryItem | null;
+};
+
+/**
+ * Filters payload in games-filters response.
+ * For mode "leagues": primary "round" + rounds (raw strings, e.g. "12", "Quarter-finals").
+ * For mode "teams" | "games": no rounds.
+ */
+export type ApiGroupGamesFiltersFilters =
+  | { primary: "round"; rounds: string[] }
+  | Record<string, never>;
+
+/**
+ * Data payload for games-filters response.
+ * Explicit shape: mode, filters, leagues.
+ */
+export type ApiGroupGamesFiltersData = {
+  mode: "leagues" | "teams" | "games";
+  filters: ApiGroupGamesFiltersFilters;
+  leagues: ApiGroupGamesFiltersLeagueItem[];
+};
+
+/**
+ * Response from GET /api/groups/:id/games-filters.
+ */
+export type ApiGroupGamesFiltersResponse = {
+  status: "success";
+  data: ApiGroupGamesFiltersData;
+  message: string;
+};
+
+/**
+ * Participant item in predictions overview.
+ */
+export type ApiPredictionsOverviewParticipant = {
+  id: number; // user id
+  username: string | null;
+  number: number; // position/order in group (1, 2, 3...)
+};
+
+/**
+ * Fixture item in predictions overview.
+ */
+export type ApiPredictionsOverviewFixture = {
+  id: number;
+  name: string;
+  homeTeam: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+  };
+  awayTeam: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+  };
+  result: string | null; // final score (e.g., "2:1")
+  startTs: number;
+  state: string;
+};
+
+/**
+ * Data payload for predictions overview response.
+ * Predictions map: key is `${userId}_${fixtureId}`, value is "home:away" or null if no prediction.
+ */
+export type ApiPredictionsOverviewData = {
+  participants: ApiPredictionsOverviewParticipant[];
+  fixtures: ApiPredictionsOverviewFixture[];
+  predictions: Record<string, string | null>; // `${userId}_${fixtureId}` -> "home:away" | null
+};
+
+/**
+ * Response from GET /api/groups/:id/predictions-overview.
+ */
+export type ApiPredictionsOverviewResponse = {
+  status: "success";
+  data: ApiPredictionsOverviewData;
   message: string;
 };

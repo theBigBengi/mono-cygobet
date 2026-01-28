@@ -32,7 +32,7 @@ export function unifyFixtures(
         awayTeam: f.awayTeam || null,
         league: f.league || null,
         season: f.season || null,
-      } as FixtureDB);
+      });
     });
   }
 
@@ -43,7 +43,7 @@ export function unifyFixtures(
         ...f,
         leagueInDb: Boolean(f.leagueExternalId),
         seasonInDb: Boolean(f.seasonExternalId),
-      } as FixtureProvider);
+      });
     });
   }
 
@@ -103,7 +103,8 @@ export function unifyFixtures(
       startTs: db?.startTs || provider?.startTs || 0,
       state: db?.state || provider?.state || "",
       result: db?.result || provider?.result || null,
-      stageRoundName: db?.stageRoundName || provider?.stageRoundName || null,
+      stage: db?.stage ?? provider?.stage ?? null,
+      round: db?.round ?? provider?.round ?? null,
       source,
       status,
       dbData: db,

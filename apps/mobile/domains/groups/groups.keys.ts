@@ -14,4 +14,8 @@ export const groupsKeys = {
       ...(includeFixtures ? ["fixtures"] : []),
     ] as const,
   fixtures: (id: number) => [...groupsKeys.details(), id, "fixtures"] as const,
+  gamesFilters: (id: number) =>
+    [...groupsKeys.details(), id, "games-filters"] as const,
+  predictionsOverview: (id: number) =>
+    [...groupsKeys.details(), id, "predictions-overview"] as const,
 } as const;

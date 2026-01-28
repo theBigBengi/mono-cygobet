@@ -14,11 +14,13 @@ import { teamsKeys } from "./teams.keys";
  * Hook to fetch paginated list of teams.
  * - Enabled only when authenticated and onboarding complete.
  * - Supports optional filtering by leagueId.
+ * - Supports preset="popular" for popular teams.
+ * - Supports optional search by team name.
  * - Returns teams data with loading/error states.
  */
 export function useTeamsQuery(params: ApiTeamsQuery = {}) {
   const { status, user } = useAuth();
-  const { page = 1, perPage = 20, leagueId, includeCountry, search } = params;
+  const { page = 1, perPage = 20, leagueId, includeCountry, search, preset } = params;
 
   const enabled = isReadyForProtected(status, user);
 
@@ -29,9 +31,10 @@ export function useTeamsQuery(params: ApiTeamsQuery = {}) {
       leagueId,
       includeCountry,
       search,
+      preset,
     }),
     queryFn: () =>
-      fetchTeams({ page, perPage, leagueId, includeCountry, search }),
+      fetchTeams({ page, perPage, leagueId, includeCountry, search, preset }),
     enabled,
     meta: { scope: "user" },
   });

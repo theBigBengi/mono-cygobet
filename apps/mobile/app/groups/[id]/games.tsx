@@ -7,8 +7,8 @@ import { useLocalSearchParams } from "expo-router";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useGroupQuery } from "@/domains/groups";
-import { GroupGamesScreen } from "@/features/groups/group-games/screens/GroupGamesScreen";
-import { GroupGamesDraftScreen } from "@/features/groups/group-games/screens/GroupGamesDraftScreen";
+import { GroupGamesScreen } from "@/features/groups/predictions/screens/GroupGamesScreen";
+import { GroupGamesDraftScreen } from "@/features/groups/predictions/screens/GroupGamesDraftScreen";
 
 export default function GroupGamesRoute() {
   const params = useLocalSearchParams<{ id: string }>();

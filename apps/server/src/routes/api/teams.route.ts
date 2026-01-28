@@ -2,7 +2,7 @@
 // Routes for teams listing (read-only, for pool creation flow).
 
 import { FastifyPluginAsync } from "fastify";
-import { getTeams } from "../../services/api/api.teams.service";
+import { getTeams } from "../../services/api/teams";
 import type { ApiTeamsResponse, ApiTeamsQuery } from "@repo/types";
 import { teamsQuerystringSchema, teamsResponseSchema } from "../../schemas/api";
 
@@ -49,7 +49,17 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
         q.includeCountry === true ||
         String(q.includeCountry ?? "").toLowerCase() === "true";
 
+      // Extract preset and search - they are mutually exclusive
+      const preset = q.preset === "popular" ? "popular" : undefined;
       const search = q.search ? String(q.search).trim() : undefined;
+
+      // Validate: preset and search cannot be used together
+      if (preset && search) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Cannot use both 'preset' and 'search' parameters together.",
+        } as any);
+      }
 
       const result = await getTeams({
         page,
@@ -57,6 +67,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
         leagueId,
         includeCountry,
         search,
+        preset,
       });
 
       return reply.send(result);

@@ -11,5 +11,6 @@ export const teamsKeys = {
     leagueId?: number;
     includeCountry?: boolean;
     search?: string;
+    preset?: "popular";
   }) => [...teamsKeys.lists(), params] as const,
 } as const;

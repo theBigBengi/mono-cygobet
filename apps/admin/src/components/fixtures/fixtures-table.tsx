@@ -105,7 +105,7 @@ export function FixturesTable({
           (f) => f.externalId === selectedFixture.externalId
         );
         if (updatedFixture) {
-          // Convert to UnifiedFixture format
+          // Convert to UnifiedFixture format (API has stage/round as separate fields)
           setSelectedFixture({
             externalId: updatedFixture.externalId,
             name: updatedFixture.name,
@@ -113,7 +113,8 @@ export function FixturesTable({
             startTs: updatedFixture.startTs,
             state: updatedFixture.state,
             result: updatedFixture.result,
-            stageRoundName: updatedFixture.stageRoundName,
+            stage: updatedFixture.stage ?? null,
+            round: updatedFixture.round ?? null,
             source: "db",
             status: "ok",
             dbData: updatedFixture,
@@ -121,7 +122,7 @@ export function FixturesTable({
             season: updatedFixture.season,
             homeTeam: updatedFixture.homeTeam,
             awayTeam: updatedFixture.awayTeam,
-          } as UnifiedFixture);
+          });
         }
       }
     }
@@ -545,7 +546,7 @@ export function FixturesTable({
     if (mode === "provider") {
       setSelectedFixture(fixture as UnifiedFixture);
     } else {
-      // For DB mode, convert to UnifiedFixture format
+      // For DB mode, convert to UnifiedFixture format (API has stage/round as separate fields)
       const dbFixture = fixture as FixtureDBRow;
       setSelectedFixture({
         externalId: dbFixture.externalId,
@@ -554,7 +555,8 @@ export function FixturesTable({
         startTs: dbFixture.startTs,
         state: dbFixture.state,
         result: dbFixture.result,
-        stageRoundName: dbFixture.stageRoundName,
+        stage: dbFixture.stage ?? null,
+        round: dbFixture.round ?? null,
         source: "db",
         status: "ok",
         dbData: dbFixture,
@@ -562,7 +564,7 @@ export function FixturesTable({
         season: dbFixture.season,
         homeTeam: dbFixture.homeTeam,
         awayTeam: dbFixture.awayTeam,
-      } as UnifiedFixture);
+      });
     }
     setIsDialogOpen(true);
   };

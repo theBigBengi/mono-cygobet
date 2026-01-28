@@ -13,11 +13,13 @@ import { leaguesKeys } from "./leagues.keys";
 /**
  * Hook to fetch paginated list of leagues.
  * - Enabled only when authenticated and onboarding complete.
+ * - Supports preset="popular" for popular leagues.
+ * - Supports optional search by league name.
  * - Returns leagues data with loading/error states.
  */
 export function useLeaguesQuery(params: ApiLeaguesQuery = {}) {
   const { status, user } = useAuth();
-  const { page = 1, perPage = 20, includeSeasons, onlyActiveSeasons } = params;
+  const { page = 1, perPage = 20, includeSeasons, onlyActiveSeasons, preset, search } = params;
 
   const enabled = isReadyForProtected(status, user);
 
@@ -27,9 +29,11 @@ export function useLeaguesQuery(params: ApiLeaguesQuery = {}) {
       perPage,
       includeSeasons,
       onlyActiveSeasons,
+      preset,
+      search,
     }),
     queryFn: () =>
-      fetchLeagues({ page, perPage, includeSeasons, onlyActiveSeasons }),
+      fetchLeagues({ page, perPage, includeSeasons, onlyActiveSeasons, preset, search }),
     enabled,
     meta: { scope: "user" },
   });

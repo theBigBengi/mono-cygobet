@@ -300,7 +300,8 @@ export interface FixtureDB {
   result: string | null;
   homeScore: number | null;
   awayScore: number | null;
-  stageRoundName: string | null;
+  stage: string | null;
+  round: string | null;
   leagueId: number | null;
   seasonId: number | null;
   homeTeamId: number;
@@ -341,7 +342,8 @@ export interface FixtureProvider {
   startTs: number;
   state: string;
   result: string | null;
-  stageRoundName: string | null;
+  stage: string | null;
+  round: string | null;
   leagueExternalId: number | string | null;
   seasonExternalId: number | string | null;
   homeTeamExternalId: number | string;
@@ -360,7 +362,8 @@ export interface UnifiedFixture {
   startTs: number;
   state: string;
   result: string | null;
-  stageRoundName: string | null;
+  stage: string | null;
+  round: string | null;
   source: "db" | "provider" | "both";
   status: "ok" | "missing-in-db" | "extra-in-db" | "mismatch" | "new";
   dbData?: FixtureDB;

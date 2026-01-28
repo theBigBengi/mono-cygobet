@@ -1,9 +1,7 @@
 // utils/fixture.ts
 // Utility functions for fixture formatting and manipulation.
 
-import type { ApiFixturesListResponse } from "@repo/types";
-
-type FixtureItem = ApiFixturesListResponse["data"][0];
+import type { FixtureItem } from "@/types/common";
 
 /**
  * Format kickoff date label (e.g., "16 Apr").
@@ -204,9 +202,136 @@ export function groupFixturesByLeagueAndDate(
   return Object.values(grouped).sort((a, b) => {
     const timeA = a.kickoffIso ? new Date(a.kickoffIso).getTime() : 0;
     const timeB = b.kickoffIso ? new Date(b.kickoffIso).getTime() : 0;
+    if (timeA !== timeB) return timeA - timeB;
+    return a.leagueName.localeCompare(b.leagueName);
+  });
+}
+
+/**
+ * Group fixtures by league and date only (without time).
+ * Returns sorted array of groups, each containing fixtures with same league and date.
+ * Used for vertical card layout where time is displayed in the card itself.
+ */
+export function groupFixturesByLeagueAndDateOnly(
+  fixtures: FixtureItem[]
+): LeagueDateGroup[] {
+  const grouped: Record<string, LeagueDateGroup> = {};
+
+  // Guard against undefined or null fixtures
+  if (!fixtures || !Array.isArray(fixtures)) {
+    return [];
+  }
+
+  fixtures.forEach((fixture) => {
+    if (!fixture.kickoffAt) return;
+
+    const date = new Date(fixture.kickoffAt);
+    const dateKey = date.toISOString().split("T")[0]; // YYYY-MM-DD
+    const leagueName = fixture.league?.name ?? "Unknown league";
+
+    // Use league + date only (without time) as grouping key
+    const key = `${leagueName}|${dateKey}`;
+
+    if (!grouped[key]) {
+      grouped[key] = {
+        key,
+        leagueName,
+        dateKey,
+        kickoffIso: fixture.kickoffAt, // Use first fixture's kickoff time for sorting
+        fixtures: [],
+      };
+    }
+
+    grouped[key].fixtures.push(fixture);
+  });
+
+  // Sort fixtures within each group by kickoff time
+  Object.values(grouped).forEach((group) => {
+    group.fixtures.sort((a, b) => {
+      if (!a.kickoffAt || !b.kickoffAt) return 0;
+      return new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime();
+    });
+    // Update kickoffIso to the earliest fixture in the group for sorting
+    if (group.fixtures.length > 0 && group.fixtures[0].kickoffAt) {
+      group.kickoffIso = group.fixtures[0].kickoffAt;
+    }
+  });
+
+  // Sort groups chronologically, then by league name
+  return Object.values(grouped).sort((a, b) => {
+    const timeA = a.kickoffIso ? new Date(a.kickoffIso).getTime() : 0;
+    const timeB = b.kickoffIso ? new Date(b.kickoffIso).getTime() : 0;
     if (timeA !== timeB) {
       return timeA - timeB;
     }
     return a.leagueName.localeCompare(b.leagueName);
+  });
+}
+
+/**
+ * Group fixtures by round.
+ * Returns sorted array of groups, each containing fixtures with same round.
+ */
+export type RoundGroup = {
+  key: string;
+  round: string;
+  kickoffIso: string | null;
+  fixtures: FixtureItem[];
+};
+
+export function groupFixturesByRound(
+  fixtures: FixtureItem[]
+): RoundGroup[] {
+  const grouped: Record<string, RoundGroup> = {};
+
+  // Guard against undefined or null fixtures
+  if (!fixtures || !Array.isArray(fixtures)) {
+    return [];
+  }
+
+  fixtures.forEach((fixture) => {
+    const round = fixture.round ?? "No round";
+    const key = round;
+
+    if (!grouped[key]) {
+      grouped[key] = {
+        key,
+        round,
+        kickoffIso: fixture.kickoffAt,
+        fixtures: [],
+      };
+    }
+
+    grouped[key].fixtures.push(fixture);
+  });
+
+  // Sort fixtures within each group by kickoff time
+  Object.values(grouped).forEach((group) => {
+    group.fixtures.sort((a, b) => {
+      if (!a.kickoffAt || !b.kickoffAt) return 0;
+      return new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime();
+    });
+  });
+
+  // Sort groups by round (try to parse as number, otherwise alphabetically)
+  return Object.values(grouped).sort((a, b) => {
+    const roundA = a.round;
+    const roundB = b.round;
+    
+    // Try to parse as numbers
+    const numA = parseInt(roundA, 10);
+    const numB = parseInt(roundB, 10);
+    
+    if (!isNaN(numA) && !isNaN(numB)) {
+      return numA - numB;
+    }
+    
+    // If both are not numbers, sort alphabetically
+    if (isNaN(numA) && isNaN(numB)) {
+      return roundA.localeCompare(roundB);
+    }
+    
+    // Numbers come before non-numbers
+    return isNaN(numA) ? 1 : -1;
   });
 }

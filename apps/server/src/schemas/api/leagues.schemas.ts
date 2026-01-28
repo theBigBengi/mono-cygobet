@@ -8,6 +8,8 @@ export const leaguesQuerystringSchema = {
     perPage: { type: "number", default: 20, minimum: 1, maximum: 100 },
     includeSeasons: { type: "boolean", default: false },
     onlyActiveSeasons: { type: "boolean", default: false },
+    preset: { type: "string", enum: ["popular"] },
+    search: { type: "string", minLength: 1 },
   },
 };
 

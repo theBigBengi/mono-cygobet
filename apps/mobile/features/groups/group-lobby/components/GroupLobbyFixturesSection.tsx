@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Pressable, Dimensions } from "react-nativ
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { GroupLobbyFixtureCard } from "./GroupLobbyFixtureCard";
-import type { FixtureItem } from "../types";
+import type { FixtureItem } from "@/types/common";
 
 const GAME_CARD_WIDTH = 280;
 const CARD_SPACING = 12;
@@ -81,7 +81,7 @@ export function GroupLobbyFixturesSection({
               ? `Selected games (${gamesCount})`
               : "Selected games"}
           </AppText>
-          {gamesCount > 3 && (
+          {gamesCount   && (
             <Pressable
               onPress={onViewAll}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}

@@ -1,0 +1,211 @@
+// components/FloatingTabBar.tsx
+// Custom floating tab bar with blur effect and rounded corners
+
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { BlurView } from "expo-blur";
+import { useSetAtom, useAtomValue } from "jotai";
+import { useTheme } from "@/lib/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { HapticTab } from "./haptic-tab";
+import { AppText } from "./ui";
+import {
+  useHasSelectionForMode,
+  useSelectionLabelForMode,
+} from "@/features/group-creation/hooks/useSelectionState";
+import { currentSelectionModeAtom } from "@/features/group-creation/selection/mode.atom";
+import { createGroupModalVisibleAtom } from "@/features/group-creation/screens/create-group-modal.atom";
+
+export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const { theme, colorScheme } = useTheme();
+  const isDark = colorScheme === "dark";
+  const currentMode = useAtomValue(currentSelectionModeAtom);
+  const setModalVisible = useSetAtom(createGroupModalVisibleAtom);
+  const hasSelection = useHasSelectionForMode(currentMode);
+  const selectionCount = useSelectionLabelForMode(currentMode);
+  
+  // Extract count number from label (e.g., "3 Games" -> 3)
+  const countNumber = selectionCount
+    ? parseInt(selectionCount.split(" ")[0], 10) || 0
+    : 0;
+
+  return (
+    <View
+      style={styles.container}
+      pointerEvents="box-none"
+    >
+      <View
+        style={[
+          styles.tabBar,
+          {
+            borderRadius: 99,
+            borderColor: theme.colors.border,
+          },
+        ]}
+        pointerEvents="box-none"
+      >
+        <BlurView
+          intensity={80}
+          tint={isDark ? "dark" : "light"}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <View style={styles.content}>
+          {state.routes.map((route, index) => {
+            const { options } = descriptors[route.key];
+            const isFocused = state.index === index;
+
+            const onPress = () => {
+              // Special handling for home tab when there's a selection
+              if (route.name === "home" && hasSelection) {
+                // If we're already on home tab, open the modal
+                if (isFocused) {
+                  setModalVisible(true);
+                  return;
+                }
+                // If we're not on home tab, navigate to home first
+                // (normal navigation will happen below)
+              }
+
+              const event = navigation.emit({
+                type: "tabPress",
+                target: route.key,
+                canPreventDefault: true,
+              });
+
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(route.name, route.params);
+              }
+            };
+
+            const onLongPress = () => {
+              navigation.emit({
+                type: "tabLongPress",
+                target: route.key,
+              });
+            };
+
+            const color = isFocused
+              ? theme.colors.primary
+              : theme.colors.textSecondary;
+
+            const iconName =
+              route.name === "home"
+                ? "add"
+                : route.name === "groups"
+                ? "people"
+                : route.name === "profile"
+                ? "person"
+                : null;
+
+         
+
+            // Special rendering for home tab with selection
+            const showBadge = route.name === "home" && hasSelection;
+
+            return (
+              <HapticTab
+                key={route.key}
+                accessibilityRole="button"
+                accessibilityState={isFocused ? { selected: true } : {}}
+                accessibilityLabel={options.tabBarAccessibilityLabel}
+                onPress={onPress}
+                onLongPress={onLongPress}
+                style={styles.tab}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <View style={styles.tabContent} pointerEvents="box-none">
+                  {showBadge ? (
+                    <View
+                      style={[
+                        styles.badge,
+                        {
+                          backgroundColor: theme.colors.primary,
+                        },
+                      ]}
+                      pointerEvents="none"
+                    >
+                      <AppText
+                        variant="body"
+                        style={[
+                          styles.badgeText,
+                          {
+                            color: theme.colors.primaryText,
+                            fontWeight: "600",
+                          },
+                        ]}
+                      >
+                        {countNumber}
+                      </AppText>
+                    </View>
+                  ) : (
+                    iconName && (
+                      <Ionicons
+                        name={iconName as any}
+                        size={24}
+                        color={color}
+                      />
+                    )
+                  )}
+                </View>
+              </HapticTab>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    left: 64,
+    right: 64,
+    bottom: 30,
+    alignItems: "center",
+    zIndex: 1000,
+    // Shadow for iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    // Elevation for Android
+    elevation: 10,
+  },
+  tabBar: {
+    overflow: "hidden",
+    borderWidth: 1,
+    width: "100%",
+    minHeight: 56,
+  },
+  content: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    // paddingVertical: 8,
+    paddingHorizontal: 0,
+  },
+  tab: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 56,
+    paddingVertical: 8,
+  },
+  tabContent: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: {
+    fontSize: 16,
+  },
+});

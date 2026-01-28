@@ -1,18 +1,14 @@
 // components/Fixtures/GameCardBase.tsx
 // Base game card: home team | middle slot (children) | away team.
 // MatchPredictionCard-style layout (radius 16, positionInGroup). Used by
-// MatchPredictionCard, GroupGameCard, SelectedGameCard.
+// MatchPredictionCard, GameSelectionCard, SelectedGameCard.
 
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Card, AppText, TeamLogo } from "@/components/ui";
 import { getTeamDisplayName } from "@/utils/fixture";
-import type { ApiFixturesListResponse } from "@repo/types";
+import type { FixtureItem, PositionInGroup } from "@/types/common";
 import { useTheme } from "@/lib/theme";
-
-export type FixtureItem = ApiFixturesListResponse["data"][0];
-
-export type PositionInGroup = "single" | "top" | "middle" | "bottom";
 
 interface GameCardBaseProps {
   fixture: FixtureItem;

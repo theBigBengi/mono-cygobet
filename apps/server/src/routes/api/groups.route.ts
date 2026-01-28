@@ -6,11 +6,14 @@ import {
   createGroup,
   getMyGroups,
   getGroupById,
+  getGroupGamesFilters,
   updateGroup,
   publishGroup,
   getGroupFixtures,
   saveGroupPrediction,
   saveGroupPredictionsBatch,
+  deleteGroup,
+  getPredictionsOverview,
 } from "../../services/api/groups";
 import type { GroupFixturesFilter } from "../../types/groups";
 import type {
@@ -20,8 +23,10 @@ import type {
   ApiGroupResponse,
   ApiGroupsResponse,
   ApiGroupFixturesResponse,
+  ApiGroupGamesFiltersResponse,
   ApiSaveGroupPredictionsBatchBody,
   ApiSaveGroupPredictionsBatchResponse,
+  ApiPredictionsOverviewResponse,
 } from "@repo/types";
 import {
   createGroupBodySchema,
@@ -30,10 +35,12 @@ import {
   groupsResponseSchema,
   groupFixturesResponseSchema,
   groupFixturesFilterQuerystringSchema,
+  groupGamesFiltersResponseSchema,
   saveGroupPredictionsBatchBodySchema,
   saveGroupPredictionsBatchResponseSchema,
   publishGroupBodySchema,
   publishGroupResponseSchema,
+  predictionsOverviewResponseSchema,
 } from "../../schemas/api";
 
 /** Parse req.query into GroupFixturesFilter. Used only by GET :id and GET :id/fixtures. */
@@ -175,8 +182,8 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
         } as any);
       }
 
-      const creatorId = req.userAuth.user.id;
-      const result = await getMyGroups(creatorId);
+      const userId = req.userAuth.user.id;
+      const result = await getMyGroups(userId);
 
       return reply.send(result);
     }
@@ -213,7 +220,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const id = Number(req.params.id);
-    const creatorId = req.userAuth.user.id;
+    const userId = req.userAuth.user.id;
 
     if (!Number.isInteger(id) || id <= 0) {
       return reply.status(400).send({
@@ -224,7 +231,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
 
     const includeFixtures = req.query.include === "fixtures";
     const filters = parseGroupFixturesFilterFromQuery(req.query as Record<string, unknown>);
-    const result = await getGroupById(id, creatorId, includeFixtures, filters);
+    const result = await getGroupById(id, userId, includeFixtures, filters);
 
     return reply.send(result);
   });
@@ -355,6 +362,11 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
       const result = await publishGroup(id, {
         name: body.name,
         privacy: body.privacy,
+        onTheNosePoints: body.onTheNosePoints,
+        correctDifferencePoints: body.correctDifferencePoints,
+        outcomePoints: body.outcomePoints,
+        predictionMode: body.predictionMode,
+        koRoundMode: body.koRoundMode,
         creatorId,
       });
 
@@ -392,7 +404,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const id = Number(req.params.id);
-    const creatorId = req.userAuth.user.id;
+    const userId = req.userAuth.user.id;
 
     if (!Number.isInteger(id) || id <= 0) {
       return reply.status(400).send({
@@ -402,8 +414,50 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const filters = parseGroupFixturesFilterFromQuery(req.query as Record<string, unknown>);
-    const result = await getGroupFixtures(id, creatorId, filters);
+    const result = await getGroupFixtures(id, userId, filters);
 
+    return reply.send(result);
+  });
+
+  /**
+   * GET /api/groups/:id/games-filters
+   *
+   * - Requires auth + onboarding completion.
+   * - Verifies that the user is a group member (creator or joined).
+   * - Explicit shape: { mode, filters, leagues }. mode = selectionMode.
+   * - Leagues mode: filters.primary "round" + filters.rounds (raw strings, e.g. "12", "Quarter-finals").
+   * - Teams/games mode: filters {}.
+   */
+  fastify.get<{
+    Params: { id: number };
+    Reply: ApiGroupGamesFiltersResponse;
+  }>("/groups/:id/games-filters", {
+    preHandler: fastify.userAuth.requireOnboardingComplete,
+    schema: {
+      params: getGroupParamsSchema,
+      response: {
+        200: groupGamesFiltersResponseSchema,
+      },
+    },
+  }, async (req, reply) => {
+    if (!req.userAuth) {
+      return reply.status(401).send({
+        status: "error",
+        message: "Unauthorized",
+      } as any);
+    }
+
+    const id = Number(req.params.id);
+    const userId = req.userAuth.user.id;
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.status(400).send({
+        status: "error",
+        message: "Invalid 'id'. Must be a positive integer.",
+      } as any);
+    }
+
+    const result = await getGroupGamesFilters(id, userId);
     return reply.send(result);
   });
 
@@ -555,6 +609,105 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send(result);
     }
   );
+
+  /**
+   * DELETE /api/groups/:id
+   *
+   * - Requires auth + onboarding completion.
+   * - Deletes a group by ID.
+   * - Verifies that the user is the creator.
+   * - Returns 404 if group doesn't exist or user is not the creator.
+   */
+  fastify.delete<{
+    Params: { id: number };
+    Body?: Record<string, never>; // Allow empty body
+    Reply: { status: "success"; message: string };
+  }>(
+    "/groups/:id",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        body: {
+          type: "object",
+          additionalProperties: false,
+        },
+        response: {
+          200: {
+            type: "object",
+            required: ["status", "message"],
+            properties: {
+              status: { type: "string", enum: ["success"] },
+              message: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const creatorId = req.userAuth.user.id;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await deleteGroup(id, creatorId);
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * GET /api/groups/:id/predictions-overview
+   *
+   * - Requires auth + onboarding completion.
+   * - Verifies that the user is a group member (creator or joined).
+   * - Returns predictions overview with all participants, fixtures, and predictions.
+   */
+  fastify.get<{
+    Params: { id: number };
+    Reply: ApiPredictionsOverviewResponse;
+  }>("/groups/:id/predictions-overview", {
+    preHandler: fastify.userAuth.requireOnboardingComplete,
+    schema: {
+      params: getGroupParamsSchema,
+      response: {
+        200: predictionsOverviewResponseSchema,
+      },
+    },
+  }, async (req, reply) => {
+    if (!req.userAuth) {
+      return reply.status(401).send({
+        status: "error",
+        message: "Unauthorized",
+      } as any);
+    }
+
+    const id = Number(req.params.id);
+    const userId = req.userAuth.user.id;
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.status(400).send({
+        status: "error",
+        message: "Invalid 'id'. Must be a positive integer.",
+      } as any);
+    }
+
+    const result = await getPredictionsOverview(id, userId);
+
+    return reply.send(result);
+  });
 };
 
 export default groupsRoutes;

@@ -4,7 +4,7 @@
 // - Maps to theme colors
 
 import React from "react";
-import { Text, TextProps, StyleSheet } from "react-native";
+import { Text, TextProps,   } from "react-native";
 import { useTheme } from "@/lib/theme";
 
 type TypographyVariant = "title" | "subtitle" | "body" | "caption";

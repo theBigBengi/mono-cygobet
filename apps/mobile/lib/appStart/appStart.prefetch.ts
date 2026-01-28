@@ -1,19 +1,26 @@
 // lib/appStart/appStart.prefetch.ts
-// Prefetch fixtures based on current auth state.
+// Prefetch data based on current auth state.
 // Called after bootstrap completes and React state has updated.
+// Prefetch happens in background - app shows immediately.
 
 import type { QueryClient } from "@tanstack/react-query";
 import type { AuthContextValue } from "@/lib/auth/AuthProvider";
-import { isNetworkError } from "@/lib/query/queryErrors";
 import type { AppStartError, AppStartStatus } from "./appStart.types";
 import {
   fetchUpcomingFixtures,
   fixturesKeys,
 } from "@/domains/fixtures";
+import { fetchLeagues } from "@/domains/leagues/leagues.api";
+import { leaguesKeys } from "@/domains/leagues/leagues.keys";
+import { fetchTeams } from "@/domains/teams/teams.api";
+import { teamsKeys } from "@/domains/teams/teams.keys";
+import { fetchMyGroups } from "@/domains/groups/groups.api";
+import { groupsKeys } from "@/domains/groups/groups.keys";
 
 /**
  * Prefetch initial data based on current auth state.
  * Called after bootstrap completes and React state has updated.
+ * Marks app as ready immediately and performs prefetch in background.
  */
 export async function prefetchInitialData(
   queryClient: QueryClient,
@@ -50,25 +57,13 @@ export async function prefetchInitialData(
       setStatus("ready");
       console.log("AppStart: ready (onboarding required)");
     } else {
-      // Onboarding complete: prefetch protected fixtures
-      console.log("AppStart: prefetch protected start");
-      try {
-        const params = { page: 1, perPage: 20 };
-        const queryKey = fixturesKeys.upcoming(params);
-
-        await queryClient.prefetchQuery({
-          queryKey,
-          queryFn: () => fetchUpcomingFixtures(params),
-          meta: { scope: "user" },
-        });
-
-        console.log("AppStart: prefetch protected end");
-        setStatus("ready");
-        console.log("AppStart: ready (authed onboarded)");
-      } catch (error) {
-        console.log("AppStart: prefetch protected error", error);
-        handlePrefetchError(error, setStatus, setError);
-      }
+      // Onboarding complete: mark ready immediately, prefetch in background
+      console.log("AppStart: marking ready immediately, starting background prefetch");
+      setStatus("ready");
+      console.log("AppStart: ready (authed onboarded)");
+      
+      // Prefetch in background (fire-and-forget)
+      prefetchInBackground(queryClient);
     }
   } else if (status === "loading") {
     // Status is still loading - bootstrap might be retrying or network issue
@@ -87,24 +82,64 @@ export async function prefetchInitialData(
 }
 
 /**
- * Handle prefetch errors
+ * Prefetch data in background (fire-and-forget).
+ * Performs prefetch of leagues, teams, groups, and fixtures in parallel.
+ * Errors are logged but don't stop the app.
  */
-function handlePrefetchError(
-  error: unknown,
-  setStatus: (status: AppStartStatus) => void,
-  setError: (error: AppStartError | null) => void
-): void {
-  const appError: AppStartError = isNetworkError(error)
-    ? {
-        message: "Network error. Please check your connection and retry.",
-        kind: "network",
-      }
-    : {
-        message: "Failed to load fixtures. Please retry.",
-        kind: "unknown",
-      };
+function prefetchInBackground(queryClient: QueryClient): void {
+  console.log("AppStart: background prefetch started");
+  
+  // Prefetch all data in parallel
+  Promise.all([
+    // Prefetch fixtures (for fixtures mode)
+    queryClient
+      .prefetchQuery({
+        queryKey: fixturesKeys.upcoming({ page: 1, perPage: 20 }),
+        queryFn: () => fetchUpcomingFixtures({ page: 1, perPage: 20 }),
+        meta: { scope: "user" },
+      })
+      .catch((error) => {
+        console.log("AppStart: background prefetch fixtures error", error);
+      }),
 
-  setStatus("error");
-  setError(appError);
-  console.log(`AppStart: error kind=${appError.kind}`);
+    // Prefetch leagues (for leagues mode)
+    queryClient
+      .prefetchQuery({
+        queryKey: leaguesKeys.list({ page: 1, perPage: 20 }),
+        queryFn: () => fetchLeagues({ page: 1, perPage: 20 }),
+        meta: { scope: "user" },
+      })
+      .catch((error) => {
+        console.log("AppStart: background prefetch leagues error", error);
+      }),
+
+    // Prefetch teams (for teams mode)
+    queryClient
+      .prefetchQuery({
+        queryKey: teamsKeys.list({ page: 1, perPage: 20 }),
+        queryFn: () => fetchTeams({ page: 1, perPage: 20 }),
+        meta: { scope: "user" },
+      })
+      .catch((error) => {
+        console.log("AppStart: background prefetch teams error", error);
+      }),
+
+    // Prefetch groups (for groups screen)
+    queryClient
+      .prefetchQuery({
+        queryKey: groupsKeys.list(),
+        queryFn: () => fetchMyGroups(),
+        meta: { scope: "user" },
+      })
+      .catch((error) => {
+        console.log("AppStart: background prefetch groups error", error);
+      }),
+  ])
+    .then(() => {
+      console.log("AppStart: background prefetch completed");
+    })
+    .catch((error) => {
+      // This should not happen as each promise has its own catch
+      console.log("AppStart: unexpected background prefetch error", error);
+    });
 }

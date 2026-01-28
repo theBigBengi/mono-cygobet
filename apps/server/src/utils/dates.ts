@@ -43,3 +43,11 @@ export function parseOptionalDate(value: unknown): Date | null {
 export function toUnixSeconds(d: Date): number {
   return Math.floor(d.getTime() / 1000);
 }
+
+/**
+ * Get current Unix timestamp in seconds.
+ * Equivalent to toUnixSeconds(new Date()).
+ */
+export function nowUnixSeconds(): number {
+  return Math.floor(Date.now() / 1000);
+}

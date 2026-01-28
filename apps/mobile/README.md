@@ -22,7 +22,6 @@ This mobile app is part of a monorepo structure and provides:
 - **Authentication**: Login, registration, and secure token management
 - **Onboarding**: User onboarding flow for new accounts
 - **Fixtures Display**: Sports fixtures with odds
-- **Picks System**: User selection of picks (1/X/2) with Jotai state management
 - **Consistent UI**: Centralized design system with theme tokens and reusable components
 
 ## 🛠 Tech Stack
@@ -30,7 +29,7 @@ This mobile app is part of a monorepo structure and provides:
 - **Framework**: Expo ~54.0.31 with Expo Router ~6.0.21
 - **Language**: TypeScript
 - **State Management**:
-  - Jotai (for picks and app start state)
+  - Jotai (for app start state)
   - React Query (for server state)
 - **HTTP Client**: Axios with custom API client
 - **Storage**: Expo Secure Store (for auth tokens)
@@ -61,12 +60,11 @@ apps/mobile/
 ├── components/              # Reusable components
 │   ├── ui/                  # Base UI components (Screen, Button, Card, etc.)
 │   ├── AppStart/            # App initialization gate
-│   ├── Picks/               # Betting picks components
 │   └── QueryState/          # Loading/error state components
 │
 ├── features/                # Feature modules
 │   ├── fixtures/            # Fixtures feature
-│   │   ├── components/     # FixtureCard, FixtureCardRow
+│   │   ├── components/     # Fixture-related components
 │   │   ├── utils/          # Feature utilities
 │   │   │   ├── fixtureFormat.ts # Formatting helpers (date, time, names)
 │   │   │   └── fixtureOdds.ts   # Odds extraction/mapping logic
@@ -76,10 +74,6 @@ apps/mobile/
 │   │   ├── fixtures.mutations.ts # Mutations
 │   │   ├── styles.ts       # Feature-specific styles
 │   │   └── types.ts         # Feature type aliases (uses @repo/types)
-│   ├── picks/               # Betting picks feature
-│   │   ├── picks.store.ts  # Jotai atoms
-│   │   ├── picks.hooks.ts  # React hooks
-│   │   └── picks.types.ts  # TypeScript types
 │   └── profile/             # User profile feature
 │
 ├── lib/                     # Core libraries
@@ -257,13 +251,6 @@ export function MyComponent() {
 - **Fixture Cards**: Consistent card layout with team info, date/time, and odds
 - **Odds Display**: 1/X/2 odds with visual selection
 
-### Picks System
-
-- **Selection**: Users can select one pick per fixture (1, X, or 2)
-- **State Management**: Jotai atoms for picks state
-- **Floating Submit**: Submit button appears when picks are selected
-- **Visual Feedback**: Selected picks are highlighted in blue
-
 ### App Initialization
 
 - **Single Loading Gate**: App shows one loading screen during startup
@@ -340,7 +327,7 @@ eas build --profile production --platform ios
 - **Components**: PascalCase (e.g., `FixtureCard.tsx`)
 - **Utilities**: camelCase (e.g., `fixtures.ui.ts`)
 - **Hooks**: camelCase with `use` prefix (e.g., `useAuth.ts`)
-- **Types**: camelCase with `.types.ts` suffix (e.g., `picks.types.ts`)
+- **Types**: camelCase with `.types.ts` suffix (e.g., `fixtures.types.ts`)
 
 ## 🏗 Architecture
 
@@ -355,7 +342,7 @@ Expo Router uses file-based routing with route groups:
 
 ### State Management
 
-- **Jotai**: Client-side state (picks, app start status)
+- **Jotai**: Client-side state (app start status)
 - **React Query**: Server state (fixtures, profile, API data)
 - **Context API**: Auth state via `AuthProvider`
 
@@ -409,19 +396,11 @@ Expo Router uses file-based routing with route groups:
 3. **Auto Refresh**: Access token refreshed automatically on API calls
 4. **Logout**: Tokens cleared, user redirected to public routes
 
-### Picks System
-
-1. **Selection**: User taps odds button (1/X/2) on fixture card
-2. **State Update**: Jotai atom updates with fixture ID and pick
-3. **Visual Feedback**: Selected button highlighted in blue
-4. **Submit**: Floating button appears, logs picks on press
-
 ### Fixture Cards
 
 - **Layout**: Header row (teams + date/time) + Odds row (1/X/2 buttons)
 - **Team Display**: Home team (name + logo), Away team (logo + name)
 - **Odds**: Three equal-width buttons showing odds values
-- **Selection**: Integrated pick selection with visual feedback
 
 ## 📚 Additional Documentation
 

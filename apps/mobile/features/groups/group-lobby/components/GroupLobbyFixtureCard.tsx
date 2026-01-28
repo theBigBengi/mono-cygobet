@@ -3,7 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { formatKickoffTime, getTeamDisplayName } from "@/utils/fixture";
-import type { FixtureItem } from "../types";
+import type { FixtureItem } from "@/types/common";
 
 interface GroupLobbyFixtureCardProps {
   /**

@@ -4,13 +4,12 @@
 // Group name is displayed in the header instead.
 
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { Screen } from "@/components/ui";
+import { Screen, Card, AppText } from "@/components/ui";
 import type { ApiGroupItem } from "@repo/types";
 import {
   GroupLobbyFixturesSection,
-  GroupLobbyMetaSection,
   type FixtureItem,
 } from "../index";
 
@@ -52,6 +51,11 @@ export function GroupLobbyActiveScreen({
     router.push(`/groups/${group.id}/games` as any);
   };
 
+  // Handler for navigating to predictions overview
+  const handleViewPredictionsOverview = () => {
+    router.push(`/groups/${group.id}/predictions-overview` as any);
+  };
+
   return (
     <View style={styles.container}>
       <Screen
@@ -66,8 +70,17 @@ export function GroupLobbyActiveScreen({
           groupId={group.id}
         />
 
-        {/* Meta Section */}
-        <GroupLobbyMetaSection createdAt={group.createdAt} />
+        {/* Predictions Overview Section */}
+        <Card style={styles.predictionsOverviewCard}>
+          <Pressable
+            onPress={handleViewPredictionsOverview}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <AppText variant="body" style={styles.predictionsOverviewText}>
+              Predictions Overview
+            </AppText>
+          </Pressable>
+        </Card>
       </Screen>
     </View>
   );
@@ -79,5 +92,11 @@ const styles = StyleSheet.create({
   },
   screenContent: {
     paddingBottom: 16,
+  },
+  predictionsOverviewCard: {
+    marginBottom: 16,
+  },
+  predictionsOverviewText: {
+    fontWeight: "600",
   },
 });

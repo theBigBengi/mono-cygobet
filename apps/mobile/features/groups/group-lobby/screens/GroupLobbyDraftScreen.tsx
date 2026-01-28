@@ -2,23 +2,35 @@
 // Draft state screen for group lobby.
 // Shows editable name, status card, privacy settings, and publish button.
 
-import React from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useRef, useEffect, useState } from "react";
+import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
-import { Screen } from "@/components/ui";
+import { Screen, AppText } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import type { ApiGroupItem } from "@repo/types";
 import {
   GroupLobbyNameHeader,
   GroupLobbyStatusCard,
+  GroupLobbyScoringSection,
+  PredictionModeSelector,
+  KORoundModeSelector,
   GroupLobbyFixturesSection,
   GroupLobbyPrivacySection,
   GroupLobbyMetaSection,
   PublishGroupButton,
+  DeleteGroupButton,
   useGroupLobbyState,
   useGroupLobbyActions,
   type FixtureItem,
+  type PredictionMode,
+  type KORoundMode,
 } from "../index";
-import { usePublishGroupMutation, useUpdateGroupMutation } from "@/domains/groups";
+import {
+  usePublishGroupMutation,
+  useUpdateGroupMutation,
+  useDeleteGroupMutation,
+} from "@/domains/groups";
 
 interface GroupLobbyDraftScreenProps {
   /**
@@ -47,14 +59,31 @@ export function GroupLobbyDraftScreen({
   isCreator,
 }: GroupLobbyDraftScreenProps) {
   const router = useRouter();
+  const { theme, colorScheme } = useTheme();
+  const isDark = colorScheme === "dark";
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Manage local state for draft name and privacy
   const { draftName, draftPrivacy, setDraftName, setDraftPrivacy } =
     useGroupLobbyState(group.name, group.privacy);
 
+  // Manage local state for prediction mode (default to "result")
+  const [predictionMode, setPredictionMode] = useState<PredictionMode>("result");
+
+  // Manage local state for KO round mode (default to "90min")
+  const [koRoundMode, setKORoundMode] = useState<KORoundMode>("90min");
+
+  // Manage local state for scoring values
+  const [scoringValues, setScoringValues] = useState({
+    onTheNose: 3,
+    goalDifference: 2,
+    outcome: 1,
+  });
+
   // Local mutations - tied to this group
   const updateGroupMutation = useUpdateGroupMutation(group.id);
   const publishGroupMutation = usePublishGroupMutation(group.id);
+  const deleteGroupMutation = useDeleteGroupMutation(group.id);
 
   // Derive fixtures from group.fixtures
   const fixtures =
@@ -64,17 +93,71 @@ export function GroupLobbyDraftScreen({
   const { handlePublish } = useGroupLobbyActions(
     publishGroupMutation,
     draftName,
-    draftPrivacy
+    draftPrivacy,
+    scoringValues,
+    predictionMode,
+    koRoundMode
   );
 
   // Determine if name/privacy inputs should be editable
   const isEditable =
     !publishGroupMutation.isPending &&
-    !updateGroupMutation.isPending;
+    !updateGroupMutation.isPending &&
+    !deleteGroupMutation.isPending;
 
   // Handler for navigating to view all games
   const handleViewAllGames = () => {
     router.push(`/groups/${group.id}/games` as any);
+  };
+
+  // Cleanup fallback timer on unmount
+  useEffect(() => {
+    return () => {
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Handler for deleting the group
+  const handleDeleteGroup = () => {
+    Alert.alert(
+      "Delete Group Draft",
+      "Are you sure you want to delete the group? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deleteGroupMutation.mutate(undefined, {
+              onSuccess: () => {
+                // Try to go back first (for correct slide animation from right to left)
+                // This works when there's navigation history (e.g., came from groups list)
+                router.back();
+                
+                // Fallback: if back() didn't work (no history, e.g., just created group),
+                // navigate using replace after a short delay
+                // The timer will be cleared if component unmounts (back() worked)
+                fallbackTimerRef.current = setTimeout(() => {
+                  router.replace("/(tabs)/groups" as any);
+                  fallbackTimerRef.current = null;
+                }, 300);
+              },
+              onError: (error: any) => {
+                Alert.alert(
+                  "שגיאה",
+                  error?.message || "Delete group draft failed. Please try again."
+                );
+              },
+            });
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -84,6 +167,10 @@ export function GroupLobbyDraftScreen({
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
       >
+         {/* Status Section - Draft Badge */}
+         <GroupLobbyStatusCard status={group.status} isCreator={isCreator} />
+
+
         {/* Header Section - Group Name (Editable) */}
         <GroupLobbyNameHeader
           name={draftName}
@@ -92,15 +179,44 @@ export function GroupLobbyDraftScreen({
           isCreator={isCreator}
         />
 
-        {/* Status Section - Draft Badge */}
-        <GroupLobbyStatusCard status={group.status} isCreator={isCreator} />
-
-        {/* Selected Games Section */}
-        <GroupLobbyFixturesSection
+          {/* Selected Games Section */}
+          <GroupLobbyFixturesSection
           fixtures={fixtures}
           groupId={group.id}
           onViewAll={handleViewAllGames}
         />
+
+       
+        {/* Scoring System Section */}
+        {isCreator && (
+          <GroupLobbyScoringSection
+            initialOnTheNose={scoringValues.onTheNose}
+            initialGoalDifference={scoringValues.goalDifference}
+            initialOutcome={scoringValues.outcome}
+            onChange={(values) => setScoringValues(values)}
+            disabled={!isEditable}
+          />
+        )}
+
+        {/* Prediction Mode Selector Section */}
+        {isCreator && (
+          <PredictionModeSelector
+            value={predictionMode}
+            onChange={setPredictionMode}
+            disabled={!isEditable}
+          />
+        )}
+
+        {/* KO Round Mode Selector Section */}
+        {isCreator && (
+          <KORoundModeSelector
+            value={koRoundMode}
+            onChange={setKORoundMode}
+            disabled={!isEditable}
+          />
+        )}
+
+      
 
         {/* Privacy Toggle Section (Only for creators) */}
         <GroupLobbyPrivacySection
@@ -113,15 +229,45 @@ export function GroupLobbyDraftScreen({
 
         {/* Meta Section */}
         <GroupLobbyMetaSection createdAt={group.createdAt} />
+
+        <DeleteGroupButton
+          onPress={handleDeleteGroup}
+          isPending={deleteGroupMutation.isPending}
+          disabled={deleteGroupMutation.isPending}
+        />
       </Screen>
 
-      {/* Floating Publish Button (Only for creators) */}
+      {/* Floating Action Buttons (Only for creators) */}
       {isCreator && (
-        <PublishGroupButton
-          onPress={handlePublish}
-          isPending={publishGroupMutation.isPending}
-          disabled={publishGroupMutation.isPending || !draftName.trim()}
-        />
+        <>
+          <PublishGroupButton
+            onPress={handlePublish}
+            isPending={publishGroupMutation.isPending}
+            disabled={
+              publishGroupMutation.isPending ||
+              deleteGroupMutation.isPending ||
+              !draftName.trim()
+            }
+          />
+       
+        </>
+      )}
+
+      {/* Loading Overlay with Blur */}
+      {deleteGroupMutation.isPending && (
+        <View style={styles.overlay} pointerEvents="box-none">
+          <BlurView
+            intensity={80}
+            tint={isDark ? "dark" : "light"}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.overlayContent}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <AppText variant="body" style={styles.overlayText}>
+              Deleting group...
+            </AppText>
+          </View>
+        </View>
       )}
     </View>
   );
@@ -133,5 +279,18 @@ const styles = StyleSheet.create({
   },
   screenContent: {
     paddingBottom: 100, // Space for floating button
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10000,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  overlayContent: {
+    alignItems: "center",
+    gap: 16,
+  },
+  overlayText: {
+    marginTop: 12,
   },
 });

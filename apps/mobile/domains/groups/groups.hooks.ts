@@ -11,8 +11,10 @@ import type {
   ApiGroupResponse,
   ApiGroupsResponse,
   ApiGroupFixturesResponse,
+  ApiGroupGamesFiltersResponse,
   ApiSaveGroupPredictionsBatchBody,
   ApiSaveGroupPredictionsBatchResponse,
+  ApiPredictionsOverviewResponse,
 } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -24,8 +26,11 @@ import {
   updateGroup,
   publishGroup,
   fetchGroupFixtures,
+  fetchGroupGamesFilters,
   saveGroupPrediction,
   saveGroupPredictionsBatch,
+  deleteGroup,
+  fetchPredictionsOverview,
 } from "./groups.api";
 import { groupsKeys } from "./groups.keys";
 
@@ -69,6 +74,27 @@ export function useGroupQuery(
       fetchGroupById(id!, {
         include: options?.includeFixtures ? "fixtures" : undefined,
       }),
+    enabled,
+    meta: { scope: "user" },
+  });
+}
+
+/**
+ * Hook to fetch games-filters (rounds, leagues with currentSeason) for a group.
+ * - Enabled only when authenticated and onboarding complete and groupId is valid.
+ * - Used on group lobby; data is fetched but not yet consumed in UI.
+ */
+export function useGroupGamesFiltersQuery(groupId: number | null) {
+  const { status, user } = useAuth();
+
+  const enabled =
+    isReadyForProtected(status, user) &&
+    groupId !== null &&
+    !Number.isNaN(groupId);
+
+  return useQuery<ApiGroupGamesFiltersResponse, ApiError>({
+    queryKey: groupsKeys.gamesFilters(groupId ?? 0),
+    queryFn: () => fetchGroupGamesFilters(groupId as number),
     enabled,
     meta: { scope: "user" },
   });
@@ -226,5 +252,105 @@ export function useSaveGroupPredictionsBatchMutation(groupId: number | null) {
         });
       }
     },
+  });
+}
+
+/**
+ * Hook to delete a group.
+ * - Requires authentication.
+ * - Verifies that the user is the creator.
+ * - Uses optimistic updates to immediately remove the group from the list.
+ * - Rolls back on error, invalidates on success.
+ */
+export function useDeleteGroupMutation(groupId: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { status: "success"; message: string },
+    ApiError,
+    void,
+    { previousGroups: ApiGroupsResponse | undefined }
+  >({
+    mutationFn: () => {
+      if (!groupId) {
+        throw new Error("Group ID is required");
+      }
+      return deleteGroup(groupId);
+    },
+    // Optimistic update: remove group from list immediately
+    onMutate: async () => {
+      if (!groupId) {
+        return { previousGroups: undefined };
+      }
+
+      // Cancel any outgoing refetches to avoid overwriting our optimistic update
+      await queryClient.cancelQueries({ queryKey: groupsKeys.list() });
+
+      // Snapshot the previous value
+      const previousGroups = queryClient.getQueryData<ApiGroupsResponse>(
+        groupsKeys.list()
+      );
+
+      // Optimistically update the groups list by removing the deleted group
+      queryClient.setQueryData<ApiGroupsResponse>(
+        groupsKeys.list(),
+        (old) => {
+          if (!old) {
+            return old;
+          }
+          return {
+            ...old,
+            data: old.data.filter((group) => group.id !== groupId),
+          };
+        }
+      );
+
+      // Also remove the group detail from cache
+      queryClient.removeQueries({
+        queryKey: groupsKeys.detail(groupId),
+      });
+
+      // Return context with snapshot for potential rollback
+      return { previousGroups };
+    },
+    // On error, roll back to the previous value
+    onError: (err, variables, context) => {
+      if (context?.previousGroups) {
+        queryClient.setQueryData<ApiGroupsResponse>(
+          groupsKeys.list(),
+          context.previousGroups
+        );
+      }
+    },
+    // Always refetch after error or success to ensure consistency
+    onSettled: () => {
+      if (groupId) {
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.detail(groupId),
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to fetch predictions overview for a group.
+ * - Enabled only when authenticated and onboarding complete and groupId is valid.
+ * - Returns predictions overview data with loading/error states.
+ */
+export function usePredictionsOverviewQuery(groupId: number | null) {
+  const { status, user } = useAuth();
+
+  const enabled =
+    isReadyForProtected(status, user) &&
+    groupId !== null &&
+    !Number.isNaN(groupId);
+
+  return useQuery<ApiPredictionsOverviewResponse, ApiError>({
+    queryKey: groupsKeys.predictionsOverview(groupId ?? 0),
+    queryFn: () => fetchPredictionsOverview(groupId as number),
+    enabled,
+    meta: { scope: "user" },
   });
 }

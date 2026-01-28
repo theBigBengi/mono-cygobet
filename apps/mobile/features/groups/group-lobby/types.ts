@@ -1,9 +1,7 @@
-import type { ApiGroupPrivacy, ApiFixturesListResponse } from "@repo/types";
+import type { ApiGroupPrivacy } from "@repo/types";
 
-/**
- * Type alias for a single fixture item from the API response.
- */
-export type FixtureItem = ApiFixturesListResponse["data"][0];
+// Re-export common types for convenience
+export type { FixtureItem } from "@/types/common";
 
 /**
  * Props for components that need group lobby state.

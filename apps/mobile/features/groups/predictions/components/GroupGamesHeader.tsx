@@ -1,0 +1,125 @@
+import React from "react";
+import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { useTheme } from "@/lib/theme";
+import { Ionicons } from "@expo/vector-icons";
+
+export type GroupGamesViewMode = "list" | "single";
+
+interface GroupGamesHeaderFullProps {
+  backOnly?: false;
+  viewMode: GroupGamesViewMode;
+  onBack: () => void;
+  onFillRandom: () => void;
+  onToggleView: () => void;
+}
+
+interface GroupGamesHeaderBackOnlyProps {
+  backOnly: true;
+  onBack: () => void;
+  /** Optional content to show on the left (after back button, e.g. group name) */
+  leftContent?: React.ReactNode;
+  /** Optional content to show on the right (e.g. group status) */
+  rightContent?: React.ReactNode;
+  viewMode?: GroupGamesViewMode;
+  onFillRandom?: () => void;
+  onToggleView?: () => void;
+}
+
+export type GroupGamesHeaderProps =
+  | GroupGamesHeaderFullProps
+  | GroupGamesHeaderBackOnlyProps;
+
+/**
+ * Shared header for Group Games / Group Lobby screens.
+ * Back (left). When not backOnly: Dice + View toggle (right).
+ * All buttons are round with blur background.
+ * Gradient: transparent at bottom -> solid at top (theme-aware).
+ */
+export function GroupGamesHeader(props: GroupGamesHeaderProps) {
+  const { onBack, backOnly } = props;
+  const leftContent =
+    backOnly && "leftContent" in props ? props.leftContent : undefined;
+  const rightContent =
+    backOnly && "rightContent" in props ? props.rightContent : undefined;
+  const { theme, } = useTheme();
+ 
+  return (
+    <View
+      style={[
+        styles.container,
+        Platform.OS === "android" && { elevation: 0 },
+        { backgroundColor: theme.colors.background },
+      ]}
+      pointerEvents="box-none"
+    >
+      <View style={styles.leftRow}>
+        <Pressable onPress={onBack}>
+          <View style={[styles.iconButton, styles.iconButtonClip, { borderWidth: 0 , backgroundColor: theme.colors.background}]}>
+            <View style={styles.iconButtonInner}>
+              <Ionicons
+                name="chevron-back"
+                size={20}
+                color={theme.colors.textPrimary}
+              />
+            </View>
+          </View>
+        </Pressable>
+        {leftContent && leftContent}
+      </View>
+      {!backOnly ? (
+        <View style={styles.rightRow}>
+        <Pressable onPress={props.onFillRandom!}> 
+          <View style={[styles.iconButton, ]}>
+            <Ionicons name="dice-outline" size={20} color={theme.colors.textPrimary} />
+            </View>
+          </Pressable>
+          <Pressable onPress={props.onToggleView!}>
+            <View style={[styles.iconButton,  ]}>
+              <Ionicons name={props.viewMode === "list" ? "albums-outline" : "list-outline"} size={20} color={theme.colors.textPrimary} />
+            </View>
+          </Pressable>
+        </View>
+      ) : rightContent ? (
+        <View style={styles.rightRow}>{rightContent}</View>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 99,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  iconButtonClip: {
+    overflow: "hidden",
+  },
+  iconButtonInner: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  leftRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
+  rightRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+});

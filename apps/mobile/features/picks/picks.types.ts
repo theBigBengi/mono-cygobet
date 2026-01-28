@@ -2,9 +2,12 @@
 // Type definitions for picks feature.
 // Single stable storage contract with versioning.
 
+import type { FixtureId } from "@/types/common";
+
 export type PickOption = "1" | "X" | "2";
 
-export type FixtureId = number;
+// Re-export for convenience
+export type { FixtureId };
 
 /**
  * Runtime model: Pick data stored in memory

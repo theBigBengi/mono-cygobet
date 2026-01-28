@@ -505,17 +505,34 @@ export function FixtureDialog({
                         </div>
                       </div>
                     </div>
-                    {fixture.providerData.stageRoundName && (
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
-                          Stage/Round
-                        </label>
-                        <Input
-                          readOnly
-                          value={fixture.providerData.stageRoundName}
-                          className="text-xs h-8 bg-muted"
-                        />
-                      </div>
+                    {(fixture.providerData.stage ||
+                      fixture.providerData.round) && (
+                      <>
+                        {fixture.providerData.stage && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">
+                              Stage
+                            </label>
+                            <Input
+                              readOnly
+                              value={fixture.providerData.stage}
+                              className="text-xs h-8 bg-muted"
+                            />
+                          </div>
+                        )}
+                        {fixture.providerData.round && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">
+                              Round
+                            </label>
+                            <Input
+                              readOnly
+                              value={fixture.providerData.round}
+                              className="text-xs h-8 bg-muted"
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
                     {fixture.providerData.leagueName && (
                       <div className="space-y-1.5">
@@ -712,17 +729,33 @@ export function FixtureDialog({
                         </div>
                       </div>
                     </div>
-                    {fixture.dbData.stageRoundName && (
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
-                          Stage/Round
-                        </label>
-                        <Input
-                          readOnly
-                          value={fixture.dbData.stageRoundName}
-                          className="text-xs h-8 bg-muted"
-                        />
-                      </div>
+                    {(fixture.dbData.stage || fixture.dbData.round) && (
+                      <>
+                        {fixture.dbData.stage && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">
+                              Stage
+                            </label>
+                            <Input
+                              readOnly
+                              value={fixture.dbData.stage}
+                              className="text-xs h-8 bg-muted"
+                            />
+                          </div>
+                        )}
+                        {fixture.dbData.round && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">
+                              Round
+                            </label>
+                            <Input
+                              readOnly
+                              value={fixture.dbData.round}
+                              className="text-xs h-8 bg-muted"
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
                     {fixture.league && (
                       <div className="space-y-1.5">

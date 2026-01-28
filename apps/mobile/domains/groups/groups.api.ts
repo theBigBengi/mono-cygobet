@@ -11,8 +11,10 @@ import type {
   ApiGroupResponse,
   ApiGroupsResponse,
   ApiGroupFixturesResponse,
+  ApiGroupGamesFiltersResponse,
   ApiSaveGroupPredictionsBatchBody,
   ApiSaveGroupPredictionsBatchResponse,
+  ApiPredictionsOverviewResponse,
 } from "@repo/types";
 import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
 import { buildQuery } from "@/lib/http/queryBuilder";
@@ -114,6 +116,20 @@ export async function fetchGroupFixtures(
 }
 
 /**
+ * Fetch games-filters (rounds, leagues with currentSeason) for a group.
+ * - Requires authentication.
+ * - Verifies that the user is the creator.
+ */
+export async function fetchGroupGamesFilters(
+  groupId: number
+): Promise<ApiGroupGamesFiltersResponse> {
+  return apiFetchWithAuthRetry<ApiGroupGamesFiltersResponse>(
+    `/api/groups/${groupId}/games-filters`,
+    { method: "GET" }
+  );
+}
+
+/**
  * Save or update a prediction for a specific fixture in a group.
  * - Requires authentication.
  * - Verifies that the user is a group member.
@@ -147,6 +163,41 @@ export async function saveGroupPredictionsBatch(
     {
       method: "PUT",
       body,
+    }
+  );
+}
+
+/**
+ * Delete a group.
+ * - Requires authentication.
+ * - Verifies that the user is the creator.
+ * - Returns success message.
+ */
+export async function deleteGroup(
+  id: number
+): Promise<{ status: "success"; message: string }> {
+  return apiFetchWithAuthRetry<{ status: "success"; message: string }>(
+    `/api/groups/${id}`,
+    {
+      method: "DELETE",
+      body: {}, // Send empty body to satisfy Fastify's JSON parser
+    }
+  );
+}
+
+/**
+ * Fetch predictions overview for a group.
+ * - Requires authentication.
+ * - Verifies that the user is a group member.
+ * - Returns all participants, fixtures, and predictions.
+ */
+export async function fetchPredictionsOverview(
+  groupId: number
+): Promise<ApiPredictionsOverviewResponse> {
+  return apiFetchWithAuthRetry<ApiPredictionsOverviewResponse>(
+    `/api/groups/${groupId}/predictions-overview`,
+    {
+      method: "GET",
     }
   );
 }

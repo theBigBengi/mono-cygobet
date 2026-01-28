@@ -32,15 +32,15 @@ export function LeagueDateGroupSection({
             {leagueName}
           </AppText>
         </View>
-        {kickoffIso && (
-          <AppText
-            variant="caption"
-            color="secondary"
-            style={styles.headerText}
-          >
-            {formatDateHeader(dateKey, formatKickoffTime24(kickoffIso))}
-          </AppText>
-        )}
+        <AppText
+          variant="caption"
+          color="secondary"
+          style={styles.headerText}
+        >
+          {kickoffIso
+            ? formatDateHeader(dateKey, formatKickoffTime24(kickoffIso))
+            : formatDateHeader(dateKey)}
+        </AppText>
       </View>
       {children}
     </View>

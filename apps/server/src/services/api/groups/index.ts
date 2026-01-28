@@ -5,9 +5,12 @@ export {
   createGroup,
   getMyGroups,
   getGroupById,
+  getGroupGamesFilters,
   updateGroup,
   publishGroup,
   getGroupFixtures,
   saveGroupPrediction,
   saveGroupPredictionsBatch,
-} from "./service";
+  deleteGroup,
+  getPredictionsOverview,
+} from "./service/index";
