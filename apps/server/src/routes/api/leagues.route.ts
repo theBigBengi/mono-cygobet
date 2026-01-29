@@ -71,5 +71,4 @@ const leaguesRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING leaguesRoutes");
 export default leaguesRoutes;

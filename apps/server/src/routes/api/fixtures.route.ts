@@ -174,5 +174,4 @@ const mobileFixturesRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING mobileFixturesRoutes");
 export default mobileFixturesRoutes;

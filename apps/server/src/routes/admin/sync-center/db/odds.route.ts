@@ -166,5 +166,4 @@ const adminOddsDbRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminOddsDbRoutes");
 export default adminOddsDbRoutes;

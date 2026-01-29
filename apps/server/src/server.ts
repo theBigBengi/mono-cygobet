@@ -7,6 +7,7 @@ import { logger, getLogger } from "./logger";
 // Create Fastify instance
 const fastify = Fastify({
   loggerInstance: logger,
+  pluginTimeout: 30_000, // 30s; default 10s too low when routes autoload ~7s + plugins ~2s (userAuthRoutes last, heaviest)
   ajv: {
     customOptions: {
       coerceTypes: true,

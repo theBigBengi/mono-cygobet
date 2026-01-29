@@ -141,6 +141,5 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminSyncBookmakersRoutes");
 export default adminSyncBookmakersRoutes;
 

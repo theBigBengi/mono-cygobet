@@ -90,5 +90,4 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminJobsDbRoutes");
 export default adminJobsDbRoutes;

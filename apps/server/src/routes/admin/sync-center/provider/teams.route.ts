@@ -89,5 +89,4 @@ const adminTeamsProviderRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminTeamsProviderRoutes");
 export default adminTeamsProviderRoutes;

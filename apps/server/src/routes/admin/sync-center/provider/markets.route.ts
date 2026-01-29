@@ -43,5 +43,4 @@ const adminMarketsProviderRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminMarketsProviderRoutes");
 export default adminMarketsProviderRoutes;

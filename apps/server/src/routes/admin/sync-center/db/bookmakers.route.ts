@@ -155,5 +155,4 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminBookmakersDbRoutes");
 export default adminBookmakersDbRoutes;

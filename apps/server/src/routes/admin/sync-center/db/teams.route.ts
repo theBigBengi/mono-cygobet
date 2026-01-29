@@ -240,5 +240,4 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminTeamsDbRoutes");
 export default adminTeamsDbRoutes;

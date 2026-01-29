@@ -208,5 +208,4 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminCountriesDbRoutes");
 export default adminCountriesDbRoutes;

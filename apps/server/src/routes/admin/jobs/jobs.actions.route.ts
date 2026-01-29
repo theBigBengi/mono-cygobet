@@ -151,5 +151,4 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminJobsActionsRoutes");
 export default adminJobsActionsRoutes;

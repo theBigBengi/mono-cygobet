@@ -51,5 +51,4 @@ const adminCountriesProviderRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminCountriesProviderRoutes");
 export default adminCountriesProviderRoutes;

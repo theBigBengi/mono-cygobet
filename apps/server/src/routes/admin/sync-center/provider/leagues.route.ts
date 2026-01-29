@@ -72,5 +72,4 @@ const adminLeaguesProviderRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminLeaguesProviderRoutes");
 export default adminLeaguesProviderRoutes;

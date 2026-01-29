@@ -139,6 +139,5 @@ const adminSyncTeamsRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
-console.log("REGISTERING adminSyncTeamsRoutes");
 export default adminSyncTeamsRoutes;
 
