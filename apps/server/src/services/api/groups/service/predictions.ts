@@ -5,6 +5,9 @@ import { NotFoundError } from "../../../../utils/errors";
 import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
 import { validateFixtureIdsBelongToGroup } from "../validators/group-validators";
+import { getLogger } from "../../../../logger";
+
+const log = getLogger("groups.predictions");
 
 /**
  * Save or update a group prediction for a specific fixture.
@@ -18,6 +21,7 @@ export async function saveGroupPrediction(
   userId: number,
   prediction: { home: number; away: number }
 ): Promise<{ status: "success"; message: string }> {
+  log.debug({ groupId, fixtureId, userId, prediction }, "saveGroupPrediction - start");
   await assertGroupMember(groupId, userId);
 
   // Verify fixture belongs to group and get groupFixtureId
@@ -42,7 +46,7 @@ export async function saveGroupPrediction(
     groupId,
     prediction: predictionString,
   });
-
+  log.info({ groupId, fixtureId, userId }, "saveGroupPrediction - success");
   return {
     status: "success",
     message: "Prediction saved successfully",
@@ -60,7 +64,9 @@ export async function saveGroupPredictionsBatch(
   userId: number,
   predictions: Array<{ fixtureId: number; home: number; away: number }>
 ): Promise<{ status: "success"; message: string }> {
+  log.debug({ groupId, userId, count: predictions.length }, "saveGroupPredictionsBatch - start");
   if (predictions.length === 0) {
+    log.info({ groupId, userId }, "saveGroupPredictionsBatch - no predictions");
     return {
       status: "success",
       message: "No predictions to save",
@@ -102,7 +108,7 @@ export async function saveGroupPredictionsBatch(
 
   // Update all predictions in a single transaction
   await repo.upsertGroupPredictionsBatch(groupId, userId, predictionsToUpsert);
-
+  log.info({ groupId, userId, count: predictions.length }, "saveGroupPredictionsBatch - success");
   return {
     status: "success",
     message: `${predictions.length} prediction(s) saved successfully`,

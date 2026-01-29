@@ -21,6 +21,9 @@ import {
 import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
 import { mapGroupFixturesToApiFixtures } from "../helpers/fixture-mapper";
+import { getLogger } from "../../../../logger";
+
+const log = getLogger("groups.read");
 
 /**
  * Get all groups the user is a member of (as creator or joined member).
@@ -32,6 +35,7 @@ import { mapGroupFixturesToApiFixtures } from "../helpers/fixture-mapper";
 export async function getMyGroups(
   userId: number
 ): Promise<ApiGroupsResponse> {
+  log.debug({ userId }, "getMyGroups - start");
   // Find all groups where user is either creator or a joined member
   const groups = await repo.findGroupsByUserId(userId);
 
@@ -103,6 +107,7 @@ export async function getGroupById(
   includeFixtures?: boolean,
   filters?: GroupFixturesFilter
 ): Promise<ApiGroupResponse> {
+  log.debug({ id, userId, includeFixtures, filters }, "getGroupById - start");
   const { group } = await assertGroupMember(id, userId);
 
   const data: ApiGroupItem = buildGroupItem(group);
@@ -136,6 +141,7 @@ export async function getGroupFixtures(
   userId: number,
   filters?: GroupFixturesFilter
 ): Promise<ApiGroupFixturesResponse> {
+  log.debug({ id, userId, filters }, "getGroupFixtures - start");
   await assertGroupMember(id, userId);
 
   const rows = await repo.fetchGroupFixturesWithPredictions(id, userId);
@@ -144,6 +150,7 @@ export async function getGroupFixtures(
   const finalData =
     filters != null ? applyGroupFixturesFilter(data, filters) : data;
 
+  log.info({ id, userId, count: finalData.length }, "getGroupFixtures - fetched");
   return {
     status: "success",
     data: finalData,

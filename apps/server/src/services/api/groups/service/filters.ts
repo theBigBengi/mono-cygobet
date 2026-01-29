@@ -9,6 +9,9 @@ import type {
 import { SELECTION_MODE } from "../constants";
 import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
+import { getLogger } from "../../../../logger";
+
+const log = getLogger("groups.filters");
 
 /**
  * Get games-filters (rounds as raw strings, leagues) for a group.
@@ -20,6 +23,7 @@ export async function getGroupGamesFilters(
   groupId: number,
   userId: number
 ): Promise<ApiGroupGamesFiltersResponse> {
+  log.debug({ groupId, userId }, "getGroupGamesFilters - start");
   const { group } = await assertGroupMember(groupId, userId);
 
   const groupRules = await repo.findGroupRules(groupId);
@@ -84,6 +88,7 @@ export async function getGroupGamesFilters(
     leagues,
   };
 
+  log.info({ groupId, userId, mode, leaguesCount: leagues.length }, "getGroupGamesFilters - success");
   return {
     status: "success",
     data,

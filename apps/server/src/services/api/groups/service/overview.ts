@@ -12,6 +12,9 @@ import {
 } from "../helpers";
 import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
+import { getLogger } from "../../../../logger";
+
+const log = getLogger("groups.overview");
 
 /**
  * Get predictions overview for a group.
@@ -22,6 +25,7 @@ export async function getPredictionsOverview(
   groupId: number,
   userId: number
 ): Promise<PredictionsOverviewResponse> {
+  log.debug({ groupId, userId }, "getPredictionsOverview - start");
   await assertGroupMember(groupId, userId);
 
   // Fetch data in parallel for better performance

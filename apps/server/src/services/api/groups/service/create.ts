@@ -19,10 +19,11 @@ import { repository as repo } from "../repository";
  * If name is not provided or empty, generates automatic name: "$username Draft #N"
  * Creates groupFixtures from fixtureIds (games), or from upcoming fixtures by league/team (leagues/teams).
  */
+const log = getLogger("groups.create");
+
 export async function createGroup(
   args: ApiCreateGroupBody & { creatorId: number }
 ): Promise<ApiGroupResponse> {
-  const logger = getLogger("groups.create");
 
   const {
     name,
@@ -34,7 +35,7 @@ export async function createGroup(
     leagueIds = [],
   } = args;
 
-  logger.info({ creatorId, selectionMode }, "Creating group");
+  log.info({ creatorId, selectionMode }, "Creating group");
 
   try {
     // Resolve group name
@@ -60,7 +61,7 @@ export async function createGroup(
 
     const data = buildGroupItem(result);
 
-    logger.info({ groupId: result.id }, "Group created successfully");
+    log.info({ groupId: result.id }, "Group created successfully");
 
     return {
       status: "success",
@@ -68,7 +69,7 @@ export async function createGroup(
       message: "Group created successfully",
     };
   } catch (error) {
-    logger.error({ error, args }, "Failed to create group");
+    log.error({ error, args }, "Failed to create group");
     throw error;
   }
 }

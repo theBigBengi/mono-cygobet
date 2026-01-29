@@ -14,6 +14,9 @@ import { GROUP_STATUS } from "../constants";
 import { buildGroupItem } from "../builders";
 import { assertGroupCreator } from "../permissions";
 import { repository as repo } from "../repository";
+import { getLogger } from "../../../../logger";
+
+const log = getLogger("groups.update");
 
 /**
  * Update a group.
@@ -25,6 +28,7 @@ export async function updateGroup(
   id: number,
   args: ApiUpdateGroupBody & { creatorId: number }
 ): Promise<ApiGroupResponse> {
+  log.debug({ id, args: { ...args, fixtureIds: undefined } }, "updateGroup - start");
   const { creatorId, name, privacy, fixtureIds } = args;
 
   // Verify group exists and user is creator
@@ -45,7 +49,7 @@ export async function updateGroup(
   const group = await repo.updateGroupWithFixtures(id, updateData, fixtureIds);
 
   const data = buildGroupItem(group);
-
+  log.info({ id, creatorId }, "updateGroup - success");
   return {
     status: "success",
     data,
@@ -65,6 +69,7 @@ export async function publishGroup(
   id: number,
   args: ApiPublishGroupBody & { creatorId: number }
 ): Promise<ApiGroupResponse> {
+  log.debug({ id, args: { ...args, predictionMode: undefined, koRoundMode: undefined } }, "publishGroup - start");
   const {
     creatorId,
     name,
@@ -109,6 +114,7 @@ export async function publishGroup(
 
   // 4. Build and return response
   const data = buildGroupItem(group);
+  log.info({ id, creatorId }, "publishGroup - success");
 
   return {
     status: "success",
