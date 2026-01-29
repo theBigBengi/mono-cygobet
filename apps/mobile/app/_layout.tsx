@@ -54,7 +54,7 @@ function AppContent() {
             }}
           >
             {/* Index route - redirects based on auth status */}
-            <Stack.Screen name="index" options={{ headerShown: true }} />
+            <Stack.Screen name="index" options={{ headerShown: false }} />
 
             {/* Protected routes - only accessible when authenticated AND has username */}
             <Stack.Protected guard={isFullyAuthenticated}>
