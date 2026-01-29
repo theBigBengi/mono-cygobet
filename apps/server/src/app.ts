@@ -141,14 +141,14 @@ const app: FastifyPluginAsync<AppOptions> = async (
     // Load routes after plugins
     const routesDir = path.join(__dirname, "routes");
     console.log("Loading routes from:", routesDir);
-    // await fastify.register(AutoLoad, {
-    //   dir: routesDir,
-    //   options: opts,
-    //   // We nest admin routes under `routes/admin/sync-center/*`, which adds one more directory level.
-    //   // Example: routes/admin/sync-center/db/*.route.ts
-    //   maxDepth: 4,
-    //   forceESM: true,
-    // });
+    await fastify.register(AutoLoad, {
+      dir: routesDir,
+      options: opts,
+      // We nest admin routes under `routes/admin/sync-center/*`, which adds one more directory level.
+      // Example: routes/admin/sync-center/db/*.route.ts
+      maxDepth: 4,
+      forceESM: true,
+    });
     // Note: if you add new route folders (e.g. `routes/mobile/*`), you may need to restart `pnpm -F server dev`
     // so the runtime autoload scan picks them up.
   } catch (err) {
