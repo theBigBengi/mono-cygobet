@@ -15,6 +15,7 @@ import {
   adminUpdateProfileBodySchema,
   adminChangePasswordBodySchema,
   adminUpdateProfileResponseSchema,
+  adminRevokeAllResponseSchema,
 } from "../../../schemas/admin/auth.schemas";
 
 type AdminAuthOkResponse = { status: "success"; message: string };
@@ -91,6 +92,24 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
       req.adminAuth = null;
 
       return reply.send({ status: "success", message: "Logged out" });
+    }
+  );
+
+  fastify.post<{ Reply: { revoked: boolean } }>(
+    "/sessions/revoke-all",
+    {
+      schema: {
+        response: { 200: adminRevokeAllResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const ctx = req.adminAuth;
+      if (!ctx) throw new Error("Admin auth context missing");
+      await adminSessionDb.deleteAllByUserId(ctx.user.id);
+      clearAdminSessionCookie(reply);
+      req.adminAuthResolved = true;
+      req.adminAuth = null;
+      return reply.send({ revoked: true });
     }
   );
 

@@ -16,7 +16,7 @@ import * as authStorage from "./auth.storage";
 import { getTokenExpiry } from "./auth.utils";
 import * as netinfo from "@/lib/connectivity/netinfo";
 import { handleRefreshResult } from "./refreshResultHandler";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import type { AuthState, AuthStatus, User } from "./auth.types";
 import type { RefreshResult } from "./refresh.types";
 import { queryClient } from "../query/queryClient";
@@ -72,14 +72,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     refreshPromiseRef.current = (async (): Promise<RefreshResult> => {
       try {
         const refreshToken = await authStorage.getRefreshToken();
-        if (!refreshToken) {
+        // Web: refresh token is in HttpOnly cookie; no token in storage
+        if (!refreshToken && Platform.OS !== "web") {
           return { ok: false, reason: "no_refresh_token" };
         }
 
-        const response = await authApi.refresh(refreshToken);
+        const response = await authApi.refresh(refreshToken ?? null);
 
-        // Store new refresh token (rotation)
-        await authStorage.setRefreshToken(response.refreshToken);
+        // Store new refresh token (rotation) — native only; web uses cookie
+        if (Platform.OS !== "web") {
+          await authStorage.setRefreshToken(response.refreshToken);
+        }
 
         // Update access token in memory and ref
         setAccessToken(response.accessToken);
@@ -396,8 +399,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         setError(null);
 
-        // Persist refresh token
-        await authStorage.setRefreshToken(response.refreshToken);
+        // Persist refresh token — native only; web uses HttpOnly cookie
+        if (Platform.OS !== "web") {
+          await authStorage.setRefreshToken(response.refreshToken);
+        }
 
         // Set access token in memory and ref ref for HTTP client
         setAccessToken(response.accessToken);
@@ -447,8 +452,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setError(null);
         const response = await authApi.login(emailOrUsername, password);
 
-        // Store refresh token
-        await authStorage.setRefreshToken(response.refreshToken);
+        // Store refresh token — native only; web uses HttpOnly cookie
+        if (Platform.OS !== "web") {
+          await authStorage.setRefreshToken(response.refreshToken);
+        }
 
         // Set access token (so me() can use it via callback)
         setAccessToken(response.accessToken);
@@ -657,10 +664,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let wasOnline = netinfo.isOnlineSync();
     const unsub = netinfo.subscribe(async (online) => {
       // Only act on offline -> online transitions
-      if (!wasOnline && online) {
+        if (!wasOnline && online) {
         try {
           const refreshToken = await authStorage.getRefreshToken();
-          if (!refreshToken) {
+          // Web: refresh token is in cookie; proceed without stored token
+          if (!refreshToken && Platform.OS !== "web") {
             // nothing to recover
             wasOnline = online;
             return;
@@ -681,6 +689,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             }
 
             // Refresh ok - attempt to load user
+            if (!refreshResult.ok) {
+              wasOnline = online;
+              return;
+            }
             try {
               setAccessToken(refreshResult.accessToken);
               accessTokenRef.current = refreshResult.accessToken;

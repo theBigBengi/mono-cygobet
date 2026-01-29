@@ -1,9 +1,19 @@
 // src/routes/auth/auth.route.ts
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "@repo/db";
+import { BadRequestError } from "../../utils/errors/app-error";
 import { UserAuthService } from "../../services/auth/user-auth.service";
 import { UserOnboardingService } from "../../services/auth/user-onboarding.service";
 import { isOnboardingRequired } from "../../auth/user-onboarding";
+import {
+  setUserRefreshCookie,
+  clearUserRefreshCookie,
+} from "../../auth/user-refresh-cookies";
+import {
+  USER_REFRESH_COOKIE_NAME,
+  USER_REFRESH_TOKEN_TTL_MS,
+} from "../../constants/user-auth.constants";
+import { userRefreshSessionDb } from "../../auth/user-refresh-session";
 import {
   userRegisterBodySchema,
   userLoginBodySchema,
@@ -13,6 +23,7 @@ import {
   userAuthResponseSchema,
   userRefreshResponseSchema,
   userLogoutResponseSchema,
+  userRevokeAllResponseSchema,
   userMeResponseSchema,
   userOnboardingCompleteBodySchema,
   userOnboardingCompleteResponseSchema,
@@ -73,18 +84,12 @@ type UserMeResponse = {
   onboardingRequired: boolean;
 };
 
-/**
- * User Auth Routes
- * ----------------
- * Mounted under `/auth` by Fastify autoload folder prefix.
- *
- * - POST   /auth/register
- * - POST   /auth/login
- * - POST   /auth/google
- * - POST   /auth/refresh
- * - POST   /auth/logout
- * - GET    /auth/me
- */
+/** True when client is Expo Web (sends X-Client: web). Native does not send this. */
+function isWebClient(req: { headers: { [key: string]: string | string[] | undefined } }): boolean {
+  const v = req.headers["x-client"];
+  return v === "web" || (Array.isArray(v) && v.includes("web"));
+}
+
 const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new UserAuthService(fastify);
   const onboardingService = new UserOnboardingService(fastify);
@@ -99,6 +104,10 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply): Promise<UserAuthResponse> => {
       const result = await service.register(req.body);
+      if (isWebClient(req)) {
+        const expires = new Date(Date.now() + USER_REFRESH_TOKEN_TTL_MS);
+        setUserRefreshCookie(reply, result.refreshToken, expires);
+      }
       return reply.send(result);
     }
   );
@@ -113,6 +122,10 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply): Promise<UserAuthResponse> => {
       const result = await service.login(req.body);
+      if (isWebClient(req)) {
+        const expires = new Date(Date.now() + USER_REFRESH_TOKEN_TTL_MS);
+        setUserRefreshCookie(reply, result.refreshToken, expires);
+      }
       return reply.send(result);
     }
   );
@@ -127,6 +140,10 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply): Promise<UserAuthResponse> => {
       const result = await service.loginWithGoogle(req.body);
+      if (isWebClient(req)) {
+        const expires = new Date(Date.now() + USER_REFRESH_TOKEN_TTL_MS);
+        setUserRefreshCookie(reply, result.refreshToken, expires);
+      }
       return reply.send(result);
     }
   );
@@ -140,7 +157,17 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<UserRefreshResponse> => {
-      const result = await service.refresh(req.body);
+      const tokenFromCookie = req.cookies?.[USER_REFRESH_COOKIE_NAME];
+      const tokenFromBody = req.body?.refreshToken;
+      const refreshToken = tokenFromCookie ?? tokenFromBody;
+      if (!refreshToken) {
+        throw new BadRequestError("Refresh token is required");
+      }
+      const result = await service.refresh({ refreshToken });
+      if (isWebClient(req)) {
+        const expires = new Date(Date.now() + USER_REFRESH_TOKEN_TTL_MS);
+        setUserRefreshCookie(reply, result.refreshToken, expires);
+      }
       return reply.send(result);
     }
   );
@@ -154,8 +181,28 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<UserLogoutResponse> => {
-      await service.logout(req.body);
+      const tokenFromBody = req.body?.refreshToken;
+      const tokenFromCookie = req.cookies?.[USER_REFRESH_COOKIE_NAME];
+      const refreshToken = tokenFromBody ?? tokenFromCookie;
+      await service.logout({ refreshToken });
+      clearUserRefreshCookie(reply);
       return reply.send({ status: "success" });
+    }
+  );
+
+  fastify.post<{ Reply: { revoked: boolean } }>(
+    "/sessions/revoke-all",
+    {
+      schema: {
+        response: { 200: userRevokeAllResponseSchema },
+      },
+      preHandler: [fastify.userAuth.requireAuth],
+    },
+    async (req, reply) => {
+      const ctx = req.userAuth;
+      if (!ctx) throw new Error("User auth context missing");
+      await userRefreshSessionDb.revokeAllByUserId(ctx.user.id);
+      return reply.send({ revoked: true });
     }
   );
 

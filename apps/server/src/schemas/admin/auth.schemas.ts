@@ -83,3 +83,12 @@ export const adminUpdateProfileResponseSchema = {
     message: { type: "string" },
   },
 } as const;
+
+export const adminRevokeAllResponseSchema = {
+  type: "object",
+  required: ["revoked"],
+  additionalProperties: false,
+  properties: {
+    revoked: { type: "boolean" },
+  },
+} as const;

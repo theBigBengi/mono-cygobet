@@ -36,9 +36,10 @@ export const userGoogleBodySchema = {
   },
 } as const;
 
+// refreshToken optional: web sends cookie only; native sends body
 export const userRefreshBodySchema = {
   type: "object",
-  required: ["refreshToken"],
+  required: [],
   additionalProperties: false,
   properties: {
     refreshToken: { type: "string", minLength: 1 },
@@ -92,6 +93,15 @@ export const userLogoutResponseSchema = {
   additionalProperties: false,
   properties: {
     status: { type: "string", enum: ["success"] },
+  },
+} as const;
+
+export const userRevokeAllResponseSchema = {
+  type: "object",
+  required: ["revoked"],
+  additionalProperties: false,
+  properties: {
+    revoked: { type: "boolean" },
   },
 } as const;
 

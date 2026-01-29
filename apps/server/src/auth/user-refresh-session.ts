@@ -114,6 +114,21 @@ export async function revokeUserRefreshSessionByRawToken(
 }
 
 /**
+ * Revoke all refresh sessions for a user (e.g. lost device, suspected breach).
+ * Does not delete the user; only sets revokedAt on all active sessions.
+ */
+export async function revokeAllUserRefreshSessionsByUserId(
+  client: Pick<typeof prisma, "refreshSessions">,
+  userId: number
+): Promise<void> {
+  const now = new Date();
+  await client.refreshSessions.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: now },
+  });
+}
+
+/**
  * Rotate refresh token: revoke old session and create new one
  * This is the non-transaction version (uses global prisma via convenience wrapper)
  */
@@ -168,6 +183,8 @@ export const userRefreshSessionDb = {
     resolveUserRefreshSessionByRawToken(prisma, rawToken, now),
   revoke: (rawToken: string | undefined) =>
     revokeUserRefreshSessionByRawToken(prisma, rawToken),
+  revokeAllByUserId: (userId: number) =>
+    revokeAllUserRefreshSessionsByUserId(prisma, userId),
   rotate: (oldRawToken: string, userId: number, now?: Date) =>
     rotateUserRefreshSession(prisma, oldRawToken, userId, now),
 };

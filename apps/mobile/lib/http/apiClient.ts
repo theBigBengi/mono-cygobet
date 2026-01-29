@@ -2,9 +2,12 @@
 // Low-level HTTP client for the mobile app.
 // - Responsible for constructing URLs, headers and parsing responses.
 // - Knows about auth/refresh/onboarding, but NOT about feature-specific domains.
+import { Platform } from "react-native";
 import { getApiBaseUrl } from "../env";
 import { ApiError } from "./apiError";
 import type { RefreshResult } from "../auth/refresh.types";
+
+const isWeb = Platform.OS === "web";
 
 // Options accepted by apiFetch / apiFetchWithAuthRetry.
 // Screens must never construct this directly – only feature API modules.
@@ -81,6 +84,11 @@ export async function apiFetch<T>(
     ...headers,
   };
 
+  // Expo Web: send X-Client so server can set HttpOnly cookie; credentials for cookies
+  if (isWeb) {
+    requestHeaders["X-Client"] = "web";
+  }
+
   // Attach Authorization header only when we actually have a token.
   if (accessToken) {
     requestHeaders.Authorization = `Bearer ${accessToken}`;
@@ -89,6 +97,7 @@ export async function apiFetch<T>(
   const requestOptions: RequestInit = {
     method,
     headers: requestHeaders,
+    credentials: isWeb ? "include" : "same-origin",
   };
 
   // Avoid sending "undefined" as a body – only send if explicitly provided.

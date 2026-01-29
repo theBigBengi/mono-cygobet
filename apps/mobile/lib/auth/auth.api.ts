@@ -2,6 +2,7 @@
 // Auth-domain API module.
 // - Only this file talks directly to apiFetch/apiFetchWithAuthRetry.
 // - Screens and hooks must depend on these functions instead of raw HTTP.
+import { Platform } from "react-native";
 import { apiFetch, apiFetchWithAuthRetry } from "../http/apiClient";
 import type {
   UserLoginResponse,
@@ -47,16 +48,19 @@ export async function register(input: {
 }
 
 /**
- * Refresh access token using refresh token.
- * - Used only from AuthProvider refresh pipeline.
- * - Returns new access + rotated refresh token.
+ * Refresh access token using refresh token (native) or HttpOnly cookie (web).
+ * - Native: pass refreshToken, sent in body.
+ * - Web: pass null/empty; server reads from cookie, body omitted.
  */
 export async function refresh(
-  refreshToken: string
+  refreshToken: string | null
 ): Promise<UserRefreshResponse> {
+  const isWeb = Platform.OS === "web";
+  const body =
+    isWeb || !refreshToken ? {} : { refreshToken };
   return apiFetch<UserRefreshResponse>("/auth/refresh", {
     method: "POST",
-    body: { refreshToken },
+    body,
   });
 }
 

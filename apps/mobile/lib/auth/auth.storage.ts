@@ -24,16 +24,13 @@ const REFRESH_TOKEN_KEY = "user_refresh_token";
 const isWeb = Platform.OS === "web";
 
 /**
- * Get refresh token from secure storage
- * Uses SecureStore on native, localStorage on web
+ * Get refresh token from secure storage.
+ * Native: SecureStore. Web: HttpOnly cookie (not readable by JS) — returns null; refresh uses cookie.
  */
 export async function getRefreshToken(): Promise<string | null> {
   try {
     if (isWeb) {
-      // Web: use localStorage
-      if (typeof window !== "undefined" && window.localStorage) {
-        return window.localStorage.getItem(REFRESH_TOKEN_KEY);
-      }
+      // Web: refresh token is in HttpOnly cookie; we never read it here
       return null;
     } else {
       // Native: use SecureStore
@@ -53,18 +50,14 @@ export async function getRefreshToken(): Promise<string | null> {
 }
 
 /**
- * Store refresh token in secure storage
- * Uses SecureStore on native, localStorage on web
+ * Store refresh token in secure storage.
+ * Native: SecureStore. Web: server sets HttpOnly cookie — no-op here.
  */
 export async function setRefreshToken(token: string): Promise<void> {
   try {
     if (isWeb) {
-      // Web: use localStorage
-      if (typeof window !== "undefined" && window.localStorage) {
-        window.localStorage.setItem(REFRESH_TOKEN_KEY, token);
-        return;
-      }
-      throw new Error("localStorage is not available");
+      // Web: server sets HttpOnly cookie; do not store in localStorage (XSS-safe)
+      return;
     } else {
       // Native: use SecureStore
       if (SecureStore) {
@@ -90,17 +83,16 @@ export async function setRefreshToken(token: string): Promise<void> {
 }
 
 /**
- * Clear refresh token from secure storage
- * Uses SecureStore on native, localStorage on web
+ * Clear refresh token from secure storage.
+ * Native: SecureStore. Web: server clears cookie on logout — clear localStorage if any (migration).
  */
 export async function clearRefreshToken(): Promise<void> {
   try {
     if (isWeb) {
-      // Web: use localStorage
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.removeItem(REFRESH_TOKEN_KEY);
-        return;
       }
+      return;
     } else {
       // Native: use SecureStore
       if (SecureStore !== null) {

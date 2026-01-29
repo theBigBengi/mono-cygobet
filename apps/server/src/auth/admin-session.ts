@@ -92,6 +92,17 @@ export async function deleteAdminSessionByRawToken(
   await client.sessions.deleteMany({ where: { sessionToken: tokenHash } });
 }
 
+/**
+ * Delete all admin sessions for a user (revoke all sessions for that admin).
+ * Used when admin wants to log out from all devices.
+ */
+export async function deleteAllAdminSessionsByUserId(
+  client: Pick<typeof prisma, "sessions">,
+  userId: number
+): Promise<void> {
+  await client.sessions.deleteMany({ where: { userId } });
+}
+
 export async function resolveAdminSessionByRawToken(
   client: Pick<typeof prisma, "sessions">,
   rawToken: string | undefined,
@@ -136,6 +147,8 @@ export const adminSessionDb = {
     resolveAdminSessionByRawToken(prisma, rawToken, now),
   deleteByRawToken: (rawToken: string | undefined) =>
     deleteAdminSessionByRawToken(prisma, rawToken),
+  deleteAllByUserId: (userId: number) =>
+    deleteAllAdminSessionsByUserId(prisma, userId),
   renewByRawToken: (rawToken: string | undefined, now?: Date) =>
     renewAdminSessionByRawToken(prisma, rawToken, now),
 };
