@@ -21,6 +21,7 @@ import { queryClient } from "@/lib/query/queryClient";
 import { StatusBar } from "expo-status-bar";
 import { jotaiStore } from "@/lib/state/jotaiStore";
 import { AppStartGate } from "@/components/AppStart/AppStartGate";
+import { DegradedBanner } from "@/components/DegradedBanner";
 import { initializeGlobalErrorHandlers } from "@/lib/errors/globalErrorHandlers";
 import { handleError, getUserFriendlyMessage } from "@/lib/errors";
 import { View, Text, StyleSheet, Pressable } from "react-native";
@@ -46,6 +47,7 @@ function AppContent() {
         edges={["top"]}
       >
         <AppStartGate>
+          <DegradedBanner />
           <Stack
             screenOptions={{
               headerShown: true,

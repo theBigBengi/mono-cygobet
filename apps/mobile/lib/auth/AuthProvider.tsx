@@ -13,6 +13,10 @@ import {
 import { ApiError } from "../http/apiError";
 import * as authApi from "./auth.api";
 import * as authStorage from "./auth.storage";
+import { getTokenExpiry } from "./auth.utils";
+import * as netinfo from "@/lib/connectivity/netinfo";
+import { handleRefreshResult } from "./refreshResultHandler";
+import { AppState, AppStateStatus } from "react-native";
 import type { AuthState, AuthStatus, User } from "./auth.types";
 import type { RefreshResult } from "./refresh.types";
 import { queryClient } from "../query/queryClient";
@@ -343,7 +347,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           : "Failed to load user data. Please check your connection and retry."
       );
     }
-  }, [status]);
+  }, []);
 
   /**
    * Logout: clear tokens, user data and user-scoped React Query cache.
@@ -524,6 +528,195 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLogoutCallback(logout);
     setGetAccessTokenCallback(() => accessTokenRef.current);
   }, [refreshAccessToken, logout]);
+
+  /**
+   * Proactive refresh scheduler:
+   * - Watches accessToken and schedules a silent refresh ~2 minutes before expiry.
+   * - Uses single-flight refreshAccessToken().
+   * - On success: update accessToken (already done by refreshAccessToken).
+   * - On failure: map to existing rules (unauthorized -> unauthenticated, network/unknown -> degraded if refresh token exists).
+   */
+  const proactiveTimerRef = React.useRef<number | null>(null);
+  const scheduleProactiveRefresh = React.useCallback(
+    (token: string | null) => {
+      // Clear previous timer
+      if (proactiveTimerRef.current) {
+        try {
+          clearTimeout(proactiveTimerRef.current);
+        } catch {}
+        proactiveTimerRef.current = null;
+      }
+
+      const expiry = getTokenExpiry(token);
+      if (!expiry) return;
+
+      const now = Date.now();
+      const TWO_MIN = 2 * 60 * 1000;
+      const msUntilRefresh = expiry - now - TWO_MIN;
+
+      // If it's already within the window, refresh immediately (silent)
+      if (msUntilRefresh <= 0) {
+        (async () => {
+          try {
+            const result = await refreshAccessToken();
+            await handleRefreshResult(result, {
+              setAccessToken,
+              setUser,
+              setStatus,
+              accessTokenRef,
+            });
+          } catch {
+            // Ignore - handled by helper
+          }
+        })();
+        return;
+      }
+
+      // Schedule timer
+      try {
+        // use window.setTimeout vs global for RN compatibility
+        proactiveTimerRef.current = (setTimeout(async () => {
+          try {
+            const result = await refreshAccessToken();
+            await handleRefreshResult(result, {
+              setAccessToken,
+              setUser,
+              setStatus,
+              accessTokenRef,
+            });
+          } catch {
+            // noop
+          }
+        }, Math.max(0, msUntilRefresh)) as unknown) as number;
+      } catch {
+        // ignore scheduling errors
+      }
+    },
+    [refreshAccessToken]
+  );
+
+  // Watch accessToken changes to (re)schedule proactive refresh
+  useEffect(() => {
+    scheduleProactiveRefresh(accessToken);
+    return () => {
+      if (proactiveTimerRef.current) {
+        try {
+          clearTimeout(proactiveTimerRef.current);
+        } catch {}
+        proactiveTimerRef.current = null;
+      }
+    };
+  }, [accessToken, scheduleProactiveRefresh]);
+
+  /**
+   * AppState listener to refresh silently on resume if needed.
+   */
+  const lastAppStateRef = React.useRef<AppStateStatus | null>(null);
+  useEffect(() => {
+    const handleAppStateChange = (next: AppStateStatus) => {
+      const prev = lastAppStateRef.current;
+      lastAppStateRef.current = next;
+      if (prev !== "active" && next === "active") {
+        // App resumed
+        (async () => {
+          try {
+            if (status === "authenticated") {
+              const expiry = getTokenExpiry(accessToken);
+              const now = Date.now();
+              // small skew of 10s
+                if (!expiry || expiry <= now + 10_000) {
+                const result = await refreshAccessToken();
+                await handleRefreshResult(result, {
+                  setAccessToken,
+                  setUser,
+                  setStatus,
+                  accessTokenRef,
+                });
+              }
+            }
+          } catch {
+            // ignore
+          }
+        })();
+      }
+    };
+
+    lastAppStateRef.current = AppState.currentState;
+    const sub = AppState.addEventListener ? AppState.addEventListener("change", handleAppStateChange) : null;
+    return () => {
+      try {
+        if (sub && typeof sub.remove === "function") sub.remove();
+      } catch {}
+    };
+  }, [status, accessToken, refreshAccessToken]);
+
+  /**
+   * Connectivity subscription: when connection returns while in degraded, attempt recovery.
+   */
+  useEffect(() => {
+    let wasOnline = netinfo.isOnlineSync();
+    const unsub = netinfo.subscribe(async (online) => {
+      // Only act on offline -> online transitions
+      if (!wasOnline && online) {
+        try {
+          const refreshToken = await authStorage.getRefreshToken();
+          if (!refreshToken) {
+            // nothing to recover
+            wasOnline = online;
+            return;
+          }
+
+          if (status === "degraded") {
+            const refreshResult = await refreshAccessToken();
+            const handled = await handleRefreshResult(refreshResult, {
+              setAccessToken,
+              setUser,
+              setStatus,
+              accessTokenRef,
+            });
+            if (handled) {
+              // handled by mapping (unauthenticated/degraded)
+              wasOnline = online;
+              return;
+            }
+
+            // Refresh ok - attempt to load user
+            try {
+              setAccessToken(refreshResult.accessToken);
+              accessTokenRef.current = refreshResult.accessToken;
+              const userData = await authApi.me();
+              setUser(userData);
+              setError(null);
+              if (userData.onboardingRequired) {
+                setStatus("onboarding");
+              } else {
+                setStatus("authenticated");
+              }
+            } catch (meErr) {
+              if (meErr instanceof ApiError && meErr.status === 401 && meErr.code !== "NO_ACCESS_TOKEN") {
+                await authStorage.clearRefreshToken();
+                setAccessToken(null);
+                accessTokenRef.current = null;
+                setUser(null);
+                setStatus("unauthenticated");
+              } else {
+                // keep degraded
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+      wasOnline = online;
+    });
+
+    return () => {
+      try {
+        unsub();
+      } catch {}
+    };
+  }, [status, refreshAccessToken]);
 
   // Bootstrap on initial mount - DISABLED: AppStart orchestrator handles this
   // useEffect(() => {
