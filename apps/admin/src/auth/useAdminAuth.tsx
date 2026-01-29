@@ -21,6 +21,8 @@ import * as React from "react";
 import type { AdminMeResponse } from "@repo/types/http/admin";
 import { AdminApiError } from "@/lib/adminApi";
 import * as adminAuth from "./adminAuth";
+import SessionExpiredModal from "@/components/SessionExpiredModal";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Authentication status states
@@ -85,6 +87,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = React.useState<AdminAuthStatus>("idle");
   const [me, setMe] = React.useState<AdminMeResponse["data"] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = React.useState(false);
+  const navigate = useNavigate();
 
   /**
    * Bootstrap authentication check
@@ -173,6 +177,26 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Listen for global session-expired events dispatched by adminFetch.
+  React.useEffect(() => {
+    function onExpired() {
+      setShowSessionExpiredModal(true);
+    }
+    window.addEventListener("admin-session-expired", onExpired as EventListener);
+    return () => {
+      window.removeEventListener("admin-session-expired", onExpired as EventListener);
+    };
+  }, []);
+
+  async function handleExpiredConfirm() {
+    setShowSessionExpiredModal(false);
+    try {
+      await logout();
+    } finally {
+      navigate("/login", { replace: true });
+    }
+  }
+
   // Memoize context value to prevent unnecessary re-renders
   const value = React.useMemo<AdminAuthContextValue>(
     () => ({ status, me, error, bootstrap, login, logout }),
@@ -182,6 +206,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AdminAuthContext.Provider value={value}>
       {children}
+      <SessionExpiredModal open={showSessionExpiredModal} onConfirm={handleExpiredConfirm} />
     </AdminAuthContext.Provider>
   );
 }

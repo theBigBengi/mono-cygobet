@@ -112,6 +112,21 @@ export const UPDATE_PREMATCH_ODDS_JOB = {
 } as const satisfies JobDefinition;
 
 /**
+ * CLEANUP_EXPIRED_SESSIONS_JOB
+ * ----------------------------
+ * Purpose: remove expired admin sessions from the sessions table.
+ * Default schedule: every hour at minute 30 (configurable via DB row).
+ */
+export const CLEANUP_EXPIRED_SESSIONS_JOB = {
+  key: "cleanup-expired-sessions",
+  description: "Delete expired admin sessions from DB",
+  enabled: true,
+  // Every hour at minute 30.
+  scheduleCron: "30 * * * *",
+  meta: {},
+} as const satisfies JobDefinition;
+
+/**
  * JOB_DEFINITIONS
  * --------------
  * List of all “known jobs” and their default DB config.
@@ -124,6 +139,7 @@ export const JOB_DEFINITIONS = [
   LIVE_FIXTURES_JOB,
   FINISHED_FIXTURES_JOB,
   UPDATE_PREMATCH_ODDS_JOB,
+  CLEANUP_EXPIRED_SESSIONS_JOB,
 ] as const satisfies readonly JobDefinition[];
 
 export type JobKey = (typeof JOB_DEFINITIONS)[number]["key"];

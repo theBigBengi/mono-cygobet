@@ -13,6 +13,7 @@ import {
   generateAdminSessionToken,
   hashAdminSessionToken,
 } from "../../auth/admin-session";
+import { ADMIN_SESSION_MAX_CONCURRENT } from "../../constants/admin-auth.constants";
 
 export class AdminAuthService {
   constructor(private fastify: FastifyInstance) {}
@@ -58,17 +59,40 @@ export class AdminAuthService {
     const tokenHash = hashAdminSessionToken(rawSessionToken);
     const expires = computeAdminSessionExpiry(now);
 
-    await prisma.$transaction([
-      prisma.sessions.create({
+    // Enforce concurrent session limits atomically.
+    // Strategy: interactive transaction that:
+    // 1) finds active sessions for the user ordered by oldest first
+    // 2) if count >= MAX -> delete oldest sessions to make room
+    // 3) create new session and update lastLoginAt
+    const maxConcurrent = ADMIN_SESSION_MAX_CONCURRENT;
+
+    const created = await prisma.$transaction(async (tx) => {
+      // Find current active sessions (not expired)
+      const active = await tx.sessions.findMany({
+        where: { userId: user.id, expires: { gt: now } },
+        orderBy: { id: "asc" },
+        select: { id: true },
+      });
+
+      if (active.length >= maxConcurrent) {
+        const numToRemove = active.length - maxConcurrent + 1;
+        const idsToRemove = active.slice(0, numToRemove).map((s) => s.id);
+        await tx.sessions.deleteMany({ where: { id: { in: idsToRemove } } });
+      }
+
+      const sessionRow = await tx.sessions.create({
         data: { userId: user.id, sessionToken: tokenHash, expires },
         select: { id: true },
-      }),
-      prisma.users.update({
+      });
+
+      await tx.users.update({
         where: { id: user.id },
         data: { lastLoginAt: now },
         select: { id: true },
-      }),
-    ]);
+      });
+
+      return sessionRow;
+    });
 
     log.info({ userId: user.id }, "admin login success");
 

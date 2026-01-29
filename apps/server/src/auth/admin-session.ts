@@ -26,6 +26,46 @@ export function computeAdminSessionExpiry(now: Date = new Date()): Date {
   return new Date(now.getTime() + ADMIN_SESSION_TTL_MS);
 }
 
+/**
+ * Should we renew the session based on remaining lifetime.
+ * thresholdPct is an integer percent (0-100) of the TTL.
+ */
+export function shouldRenewSession(
+  expires: Date,
+  now: Date = new Date(),
+  thresholdPct: number = 25
+): boolean {
+  const ttl = ADMIN_SESSION_TTL_MS;
+  const remainingMs = expires.getTime() - now.getTime();
+  if (remainingMs <= 0) return false;
+  const remainingPct = (remainingMs / ttl) * 100;
+  return remainingPct <= thresholdPct;
+}
+
+/**
+ * Renew an admin session identified by the raw token.
+ * - Does not renew an already-expired session.
+ * - Uses updateMany for a safe conditional update and returns the new expiry if updated.
+ */
+export async function renewAdminSessionByRawToken(
+  client: Pick<typeof prisma, "sessions">,
+  rawToken: string | undefined,
+  now: Date = new Date()
+): Promise<Date | null> {
+  if (!rawToken) return null;
+  const tokenHash = hashAdminSessionToken(rawToken);
+  const newExpires = computeAdminSessionExpiry(now);
+
+  // Update only if not already expired (best-effort safety).
+  const res = await client.sessions.updateMany({
+    where: { sessionToken: tokenHash, expires: { gt: now } },
+    data: { expires: newExpires },
+  });
+
+  if (res.count === 0) return null;
+  return newExpires;
+}
+
 export async function createAdminSession(
   client: DbClient,
   userId: number,
@@ -96,4 +136,6 @@ export const adminSessionDb = {
     resolveAdminSessionByRawToken(prisma, rawToken, now),
   deleteByRawToken: (rawToken: string | undefined) =>
     deleteAdminSessionByRawToken(prisma, rawToken),
+  renewByRawToken: (rawToken: string | undefined, now?: Date) =>
+    renewAdminSessionByRawToken(prisma, rawToken, now),
 };

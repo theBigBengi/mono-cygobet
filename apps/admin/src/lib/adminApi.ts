@@ -69,6 +69,16 @@ export async function adminFetch<T>(
   const body = await readBodyBestEffort(res);
 
   if (!res.ok) {
+    // If session expired / unauthorized, dispatch a global event so the UI can
+    // surface a clear UX (modal) and clean local state.
+    if (typeof window !== "undefined" && res.status === 401) {
+      try {
+        window.dispatchEvent(new CustomEvent("admin-session-expired"));
+      } catch {
+        // best-effort
+      }
+    }
+
     const message = toErrorMessage(
       body,
       `Admin API error ${res.status}: ${res.statusText}`

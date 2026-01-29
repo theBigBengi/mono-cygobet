@@ -64,6 +64,12 @@ const RUNNERS: Record<string, Runner> = {
       await import("./update-prematch-odds.job");
     return runUpdatePrematchOddsJob(fastify, opts);
   },
+  [/* cleanup-expired-sessions */ "cleanup-expired-sessions"]: async (fastify, opts) => {
+    const { runCleanupExpiredSessionsJob } = await import(
+      "./cleanup-expired-sessions.job"
+    );
+    return runCleanupExpiredSessionsJob(fastify, opts);
+  },
 };
 
 /**
@@ -101,6 +107,12 @@ export const RUNNABLE_JOBS: RunnableJobDefinition[] = [
     description: UPDATE_PREMATCH_ODDS_JOB.description,
     scheduleCron: UPDATE_PREMATCH_ODDS_JOB.scheduleCron ?? null,
     run: RUNNERS[UPDATE_PREMATCH_ODDS_JOB.key]!,
+  },
+  {
+    key: "cleanup-expired-sessions",
+    description: "Delete expired admin sessions from DB",
+    scheduleCron: "30 * * * *",
+    run: RUNNERS["cleanup-expired-sessions"]!,
   },
 ];
 
