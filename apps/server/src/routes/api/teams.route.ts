@@ -75,4 +75,5 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING teamsRoutes");
 export default teamsRoutes;

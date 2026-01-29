@@ -26,4 +26,5 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
   });
 };
 
+console.log("REGISTERING healthRoutes");
 export default healthRoutes;

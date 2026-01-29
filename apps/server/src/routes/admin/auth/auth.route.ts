@@ -208,4 +208,5 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING adminAuthRoutes");
 export default adminAuthRoutes;

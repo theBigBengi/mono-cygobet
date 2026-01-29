@@ -95,11 +95,11 @@ export default fp(async function adminAuthPlugin(fastify) {
    * - Anything under `/admin/*` requires an ADMIN session, except the auth endpoints themselves.
    * - This is backend-first and ensures new admin routes are protected by default.
    */
-  // fastify.addHook("onRequest", async (req, reply) => {
-  //   const pathname = getPathname(req.url);
-  //   if (!pathname.startsWith("/admin")) return;
-  //   if (PUBLIC_ADMIN_PATHS.has(pathname)) return;
-  //   // Pass reply so renewal can set cookie when appropriate.
-  //   await assertAdmin(req, reply);
-  // });
+  fastify.addHook("onRequest", async (req, reply) => {
+    const pathname = getPathname(req.url);
+    if (!pathname.startsWith("/admin")) return;
+    if (PUBLIC_ADMIN_PATHS.has(pathname)) return;
+    // Pass reply so renewal can set cookie when appropriate.
+    await assertAdmin(req, reply);
+  });
 });

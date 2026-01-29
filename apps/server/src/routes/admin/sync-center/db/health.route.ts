@@ -39,4 +39,5 @@ const adminHealthRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING adminHealthRoutes");
 export default adminHealthRoutes;

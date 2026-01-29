@@ -227,4 +227,5 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING userAuthRoutes");
 export default userAuthRoutes;

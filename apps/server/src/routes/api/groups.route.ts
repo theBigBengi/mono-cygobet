@@ -710,4 +710,5 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
   });
 };
 
+console.log("REGISTERING groupsRoutes");
 export default groupsRoutes;

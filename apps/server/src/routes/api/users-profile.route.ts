@@ -80,4 +80,5 @@ const userProfileRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING userProfileRoutes");
 export default userProfileRoutes;
