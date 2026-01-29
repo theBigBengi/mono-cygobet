@@ -36,18 +36,21 @@ export async function prefetchInitialData(
     user ? "exists" : "null"
   );
 
-  if (status === "guest") {
-    // Guest: no prefetch needed, just mark ready for login screen
-    console.log("AppStart: guest, skipping prefetch");
+  if (status === "unauthenticated") {
+    // Unauthenticated: no prefetch needed, just mark ready for login screen
+    console.log("AppStart: unauthenticated, skipping prefetch");
     setStatus("ready");
-    console.log("AppStart: ready (guest - will show login)");
-  } else if (status === "authed") {
-    // Authed: check user state
+    console.log("AppStart: ready (unauthenticated - will show login)");
+    return;
+  }
+
+  if (status === "authenticated") {
+    // Authenticated: user should be present
     if (!user) {
-      // User is null (network issue during /auth/me) - soft loading, allow UI to open
-      console.log("AppStart: authed but user is null (soft loading), marking ready");
+      // Defensive: user missing despite authenticated state - try to mark ready but log
+      console.log("AppStart: authenticated but user is null (unexpected), marking ready");
       setStatus("ready");
-      console.log("AppStart: ready (authed but user not loaded yet - soft loading)");
+      console.log("AppStart: ready (authenticated but user not present)");
       return;
     }
 
@@ -56,29 +59,47 @@ export async function prefetchInitialData(
       console.log("AppStart: onboarding required, skipping prefetch");
       setStatus("ready");
       console.log("AppStart: ready (onboarding required)");
-    } else {
-      // Onboarding complete: mark ready immediately, prefetch in background
-      console.log("AppStart: marking ready immediately, starting background prefetch");
-      setStatus("ready");
-      console.log("AppStart: ready (authed onboarded)");
-      
-      // Prefetch in background (fire-and-forget)
-      prefetchInBackground(queryClient);
+      return;
     }
-  } else if (status === "loading") {
-    // Status is still loading - bootstrap might be retrying or network issue
-    // Do not turn this into error automatically, stay in booting state
-    console.log("AppStart: status still loading, staying in booting state");
-    // Don't change status - keep it as "booting" so the effect can retry
-  } else {
-    // Unknown status - should not happen
-    console.log("AppStart: unknown status:", status);
-    setStatus("error");
-    setError({
-      message: "Unexpected auth state. Please retry.",
-      kind: "unknown",
-    });
+
+    // Onboarding complete: mark ready immediately, prefetch in background
+    console.log("AppStart: marking ready immediately, starting background prefetch");
+    setStatus("ready");
+    console.log("AppStart: ready (authenticated onboarded)");
+
+    // Prefetch in background (fire-and-forget)
+    prefetchInBackground(queryClient);
+    return;
   }
+
+  if (status === "onboarding") {
+    console.log("AppStart: onboarding state, skipping prefetch and marking ready");
+    setStatus("ready");
+    return;
+  }
+
+  if (status === "degraded") {
+    // Degraded: network issues but session may exist. Mark ready and optionally prefetch limited data.
+    console.log("AppStart: degraded state, marking ready without background prefetch");
+    setStatus("ready");
+    return;
+  }
+
+  if (status === "idle" || status === "restoring") {
+    // Status is still restoring - bootstrap might be retrying or network issue
+    // Do not turn this into error automatically, stay in booting state
+    console.log("AppStart: status still restoring/idle, staying in booting state");
+    // Don't change status - keep it as "booting" so the effect can retry
+    return;
+  }
+
+  // Unknown status - should not happen
+  console.log("AppStart: unknown status:", status);
+  setStatus("error");
+  setError({
+    message: "Unexpected auth state. Please retry.",
+    kind: "unknown",
+  });
 }
 
 /**

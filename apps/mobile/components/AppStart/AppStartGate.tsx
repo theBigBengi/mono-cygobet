@@ -44,25 +44,25 @@ export function AppStartGate({ children }: AppStartGateProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
-  // Effect 2: Load user if authed, then prefetch
+  // Effect 2: Wait for auth to stabilize (restoring/idle -> final state), then load user if needed and prefetch
   useEffect(() => {
     // Only proceed if we're still in booting state
     if (status !== "booting") return;
 
-    // Wait for auth status to stabilize (not loading)
-    if (auth.status === "loading") {
-      console.log("AppStartGate: auth.status is still loading, waiting...");
+    // Wait for auth status to stabilize: idle/restoring are in-flight states
+    if (auth.status === "idle" || auth.status === "restoring") {
+      console.log("AppStartGate: auth.status is still restoring/idle, waiting...");
       return;
     }
 
-    // If authed but user not loaded yet, load user first
-    if (auth.status === "authed" && !auth.user) {
-      console.log("AppStartGate: auth status is authed, loading user");
+    // If authenticated but user missing - try loading user (defensive)
+    if (auth.status === "authenticated" && !auth.user) {
+      console.log("AppStartGate: auth status is authenticated but user missing, loading user");
       auth.loadUser();
       return; // Wait for user to load before prefetch
     }
 
-    // Auth state has stabilized (and user loaded if authed), now prefetch
+    // Auth state has stabilized (restored to unauthenticated/authenticated/onboarding/degraded), now prefetch
     console.log("AppStartGate: auth state stabilized, starting prefetch");
     prefetchInitialData(queryClient, auth, setStatus, setError);
   }, [status, auth.status, auth.user, auth, setStatus, setError]);

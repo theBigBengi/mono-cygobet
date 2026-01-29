@@ -47,7 +47,13 @@ export type User = {
   onboardingRequired: boolean;
 };
 
-export type AuthStatus = "loading" | "guest" | "authed";
+export type AuthStatus =
+  | "idle"
+  | "restoring"
+  | "authenticated"
+  | "onboarding"
+  | "unauthenticated"
+  | "degraded";
 
 export interface AuthState {
   status: AuthStatus;

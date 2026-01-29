@@ -35,7 +35,7 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [status, setStatus] = useState<AuthStatus>("loading");
+  const [status, setStatus] = useState<AuthStatus>("idle");
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,15 +127,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const bootstrap = useCallback(async () => {
     try {
-      setStatus("loading");
+      setStatus("restoring");
       setError(null);
 
       console.log("Bootstrap: checking for refresh token");
       const refreshToken = await authStorage.getRefreshToken();
       console.log("Bootstrap: refreshToken exists:", !!refreshToken);
       if (!refreshToken) {
-        console.log("Bootstrap: no refresh token, setting status to guest");
-        setStatus("guest");
+        console.log("Bootstrap: no refresh token, setting status to unauthenticated");
+        setStatus("unauthenticated");
         return;
       }
 
@@ -151,20 +151,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!refreshResult.ok) {
         const reason = refreshResult.reason;
 
-        // Auth error (401, forbidden) → immediate guest (no retry)
+        // Auth error (401, forbidden) → immediate unauthenticated (no retry)
         if (reason === "unauthorized") {
-          console.log("Bootstrap: auth error, clearing tokens and setting status to guest");
+          console.log("Bootstrap: auth error, clearing tokens and setting status to unauthenticated");
           await authStorage.clearRefreshToken();
           setAccessToken(null);
           accessTokenRef.current = null;
           setUser(null);
-          setStatus("guest");
+          setStatus("unauthenticated");
           return;
         }
 
         // Infrastructure error (network, timeout, transaction) → retry once
-        // CRITICAL: Do NOT clear tokens on infrastructure failures
-        // Even if retry fails, keep status="authed" and allow later retry
+        // Do NOT clear tokens on infrastructure failures
         if (reason === "network" || reason === "unknown") {
           console.log(`Bootstrap: infrastructure error (${reason}), waiting before retry`);
           // Short delay before retry (1 second)
@@ -177,28 +176,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
             retryResult.ok ? "ok" : `failed: ${retryResult.reason}`
           );
 
-          // If retry also failed → keep tokens, set status="authed" with no access token
-          // This allows UI to open and refresh can succeed later
           if (!retryResult.ok) {
             // Check if retry also failed with auth error (shouldn't happen, but handle safely)
             if (retryResult.reason === "unauthorized") {
-              console.log("Bootstrap: retry failed with auth error, clearing tokens and setting status to guest");
+              console.log("Bootstrap: retry failed with auth error, clearing tokens and setting status to unauthenticated");
               await authStorage.clearRefreshToken();
               setAccessToken(null);
               accessTokenRef.current = null;
               setUser(null);
-              setStatus("guest");
+              setStatus("unauthenticated");
               return;
             }
 
-            // Infrastructure failure after retry → keep status="authed", no access token
-            // Refresh token is NOT cleared - session is still valid
-            console.log("Bootstrap: retry failed with infrastructure error, keeping tokens and setting status to authed (no access token)");
+            // Infrastructure failure after retry → mark degraded (keep refresh token)
+            console.log("Bootstrap: retry failed with infrastructure error, keeping tokens and setting status to degraded");
             setAccessToken(null);
             accessTokenRef.current = null;
-            // user remains null (not loaded yet)
-            setStatus("authed");
-            console.log("Bootstrap: status set to authed despite refresh failure (infrastructure issue, not auth failure)");
+            setUser(null);
+            setStatus("degraded");
             return;
           }
 
@@ -206,21 +201,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
           refreshResult = retryResult;
         }
 
-        // no_refresh_token → guest (should not happen at this point, but handle safely)
+        // no_refresh_token → unauthenticated (should not happen at this point, but handle safely)
         if (reason === "no_refresh_token") {
-          console.log("Bootstrap: no refresh token, setting status to guest");
-          setStatus("guest");
+          console.log("Bootstrap: no refresh token, setting status to unauthenticated");
+          setStatus("unauthenticated");
           return;
         }
       }
 
-      // Refresh succeeded → set access token and mark as authed
-      // User data will be loaded separately via loadUser()
+      // Refresh succeeded → set access token and attempt to load user
       if (!refreshResult.ok) return;
       setAccessToken(refreshResult.accessToken);
       accessTokenRef.current = refreshResult.accessToken;
-      setStatus("authed");
-      console.log("Bootstrap: refresh succeeded, set status to authed (user not loaded yet)");
+      console.log("Bootstrap: refresh succeeded, attempting to load user");
+
+      try {
+        const userData = await authApi.me();
+        setUser(userData);
+        setError(null);
+        if (userData.onboardingRequired) {
+          setStatus("onboarding");
+          console.log("Bootstrap: user requires onboarding, status set to onboarding");
+          return;
+        }
+        setStatus("authenticated");
+        console.log("Bootstrap: user loaded, status set to authenticated");
+      } catch (meErr) {
+        console.error("Bootstrap: failed to load user after refresh:", meErr);
+        // Auth error -> clear tokens and mark unauthenticated
+        if (meErr instanceof ApiError && meErr.status === 401 && meErr.code !== "NO_ACCESS_TOKEN") {
+          console.log("Bootstrap: auth error loading user, clearing tokens and setting status to unauthenticated");
+          await authStorage.clearRefreshToken();
+          setAccessToken(null);
+          accessTokenRef.current = null;
+          setUser(null);
+          setStatus("unauthenticated");
+          setError(null);
+          return;
+        }
+
+        // Infrastructure failure -> degraded
+        console.log("Bootstrap: infrastructure error loading user, setting status to degraded");
+        setUser(null);
+        setStatus("degraded");
+        setError(null);
+        return;
+      }
     } catch (err) {
       console.error("Bootstrap failed:", err);
       console.error("Bootstrap error details:", {
@@ -230,29 +256,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
         message: err instanceof Error ? err.message : String(err),
       });
 
-      // CRITICAL: Unexpected errors in bootstrap should NOT clear tokens
-      // Only clear tokens if we can determine it's an auth failure
-      // For infrastructure/unexpected errors, keep status="authed" to allow retry later
+      // Unexpected errors:
+      // - If it's an auth error -> clear tokens and mark unauthenticated
       if (err instanceof ApiError && err.status === 401) {
-        console.log("Bootstrap: unexpected auth error in catch, clearing tokens and setting status to guest");
+        console.log("Bootstrap: unexpected auth error in catch, clearing tokens and setting status to unauthenticated");
         await authStorage.clearRefreshToken();
         setAccessToken(null);
         accessTokenRef.current = null;
         setUser(null);
-        setStatus("guest");
+        setStatus("unauthenticated");
         setError(null);
         return;
       }
 
-      // Infrastructure/unexpected error → keep status="authed", no access token
-      // Refresh token is NOT cleared - session might still be valid
-      console.log("Bootstrap: unexpected error (not auth), keeping tokens and setting status to authed (no access token)");
+      // Infrastructure/unexpected error -> degraded (keep refresh token)
+      console.log("Bootstrap: unexpected error (infrastructure), keeping tokens and setting status to degraded");
       setAccessToken(null);
       accessTokenRef.current = null;
-      // user remains null (not loaded yet)
-      setStatus("authed");
+      setUser(null);
+      setStatus("degraded");
       setError(null);
-      console.log("Bootstrap: status set to authed despite error (infrastructure issue, not auth failure)");
     }
   }, [refreshAccessToken]);
 
@@ -265,18 +288,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * - Auth errors (401): clear tokens, status="guest".
    */
   const loadUser = useCallback(async () => {
-    // Only load user if already authed (bootstrap succeeded)
-    if (status !== "authed") {
-      console.log("LoadUser: status is not authed, skipping");
-      return;
-    }
-
     try {
       console.log("LoadUser: calling /auth/me");
       const userData = await authApi.me();
       console.log("LoadUser: /auth/me succeeded, userData:", userData ? "received" : "null");
       setUser(userData);
       setError(null);
+      if (userData.onboardingRequired) {
+        setStatus("onboarding");
+        return;
+      }
+      setStatus("authenticated");
     } catch (err) {
       console.error("LoadUser: /auth/me failed:", err);
       console.error("LoadUser error details:", {
@@ -286,27 +308,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
         message: err instanceof Error ? err.message : String(err),
       });
 
-      // CRITICAL: Only clear tokens on true auth failures (401 without NO_ACCESS_TOKEN code)
-      // 401 with "NO_ACCESS_TOKEN" means refresh failed (infrastructure), not auth failure
-      if (
-        err instanceof ApiError &&
-        err.status === 401 &&
-        err.code !== "NO_ACCESS_TOKEN"
-      ) {
-        console.log("LoadUser: true auth error (401 without NO_ACCESS_TOKEN), clearing tokens and setting status to guest");
+      // Only clear tokens on true auth failures (401 without NO_ACCESS_TOKEN code)
+      if (err instanceof ApiError && err.status === 401 && err.code !== "NO_ACCESS_TOKEN") {
+        console.log("LoadUser: true auth error (401 without NO_ACCESS_TOKEN), clearing tokens and setting status to unauthenticated");
         await authStorage.clearRefreshToken();
         setAccessToken(null);
         accessTokenRef.current = null;
         setUser(null);
-        setStatus("guest");
+        setStatus("unauthenticated");
         setError(null);
         return;
       }
 
-      // 401 with NO_ACCESS_TOKEN or network/other errors → keep status="authed", user=null
-      // This means refresh failed (infrastructure) or network issue, not auth failure
-      console.log("LoadUser: infrastructure/network error or NO_ACCESS_TOKEN, keeping status=authed, user=null");
+      // Infrastructure/network/NO_ACCESS_TOKEN errors -> degraded if refresh token exists, else unauthenticated
+      const refreshToken = await authStorage.getRefreshToken();
+      if (refreshToken) {
+        console.log("LoadUser: infrastructure error and refresh token present, setting status to degraded");
+        setUser(null);
+        setStatus("degraded");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load user data due to network. Retry when connection is available."
+        );
+        return;
+      }
+
+      console.log("LoadUser: infrastructure error and no refresh token, setting status to unauthenticated");
       setUser(null);
+      setStatus("unauthenticated");
       setError(
         err instanceof Error
           ? err.message
@@ -341,7 +371,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setAccessToken(null);
       accessTokenRef.current = null;
       setUser(null);
-      setStatus("guest");
+      setStatus("unauthenticated");
       setError(null);
 
       // Clear only user-scoped cached server data on explicit logout.
@@ -383,7 +413,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } as any;
 
         setUser(userData);
-        setStatus("authed");
+        // Set explicit onboarding/authenticated state
+        if (userData.onboardingRequired) {
+          setStatus("onboarding");
+        } else {
+          setStatus("authenticated");
+        }
       } catch (err) {
         console.error("applyAuthResult failed:", err);
         throw err;
@@ -420,17 +455,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           const userData = await authApi.me();
           setUser(userData);
-          setStatus("authed");
+          if (userData.onboardingRequired) {
+            setStatus("onboarding");
+          } else {
+            setStatus("authenticated");
+          }
         } catch (meError) {
           // Handle /auth/me failure separately
-          // Network error: keep tokens, set status to authed with null user
+          // Network error: degraded if refresh token exists, else unauthenticated
           if (meError instanceof ApiError && meError.status === 0) {
+            const refreshToken = await authStorage.getRefreshToken();
+            if (refreshToken) {
+              setUser(null);
+              setStatus("degraded");
+              setError("Connected but unable to load user data. Please try again.");
+              return;
+            }
             setUser(null);
-            setStatus("authed"); // User is authed, just no user data yet (network issue)
-            setError(
-              "Connected but unable to load user data. Please try again."
-            );
-            // Don't throw - allow user to retry /auth/me later
+            setStatus("unauthenticated");
+            setError("Connected but unable to load user data. Please try again.");
             return;
           }
 
@@ -442,7 +485,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
               try {
                 const userData = await authApi.me();
                 setUser(userData);
-                setStatus("authed");
+                if (userData.onboardingRequired) {
+                  setStatus("onboarding");
+                } else {
+                  setStatus("authenticated");
+                }
                 return;
               } catch {
                 // Still failing after refresh, logout

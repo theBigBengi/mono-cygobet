@@ -15,7 +15,8 @@ import { useRouter } from "expo-router";
 
 import { Provider as JotaiProvider } from "jotai";
 import { ThemeProvider, useTheme } from "@/lib/theme";
-import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { useAuth, isAuthenticated, isOnboarding, isUnauthenticated } from "@/lib/auth/useAuth";
 import { queryClient } from "@/lib/query/queryClient";
 import { StatusBar } from "expo-status-bar";
 import { jotaiStore } from "@/lib/state/jotaiStore";
@@ -32,9 +33,9 @@ function AppContent() {
   const { status, user } = useAuth();
 
   // Check if user is authenticated AND has username
-  const isFullyAuthenticated = status === "authed" && !!user?.username;
+  const isFullyAuthenticated = isAuthenticated(status) && !!user?.username;
   // Check if user is authenticated but missing username
-  const needsUsername = status === "authed" && !user?.username;
+  const needsUsername = isAuthenticated(status) && !user?.username;
 
   return (
     <NavigationThemeProvider
@@ -76,7 +77,7 @@ function AppContent() {
             </Stack.Protected>
 
             {/* Auth routes - only accessible when not authenticated */}
-            <Stack.Protected guard={status === "guest"}>
+            <Stack.Protected guard={isUnauthenticated(status)}>
               <Stack.Screen name="sign-in" options={{ headerShown: false }} />
               <Stack.Screen name="sign-up" options={{ headerShown: false }} />
             </Stack.Protected>

@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ApiLeaguesResponse, ApiLeaguesQuery } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
-import { isReadyForProtected } from "@/lib/auth/authGuards";
+import { isReadyForProtected } from "@/lib/auth/guards";
 import { fetchLeagues } from "./leagues.api";
 import { leaguesKeys } from "./leagues.keys";
 
