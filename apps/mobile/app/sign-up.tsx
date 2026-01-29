@@ -21,7 +21,7 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, error } = useAuth();
+  const { login, error, applyAuthResult } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
 
@@ -43,16 +43,17 @@ export default function SignUpScreen() {
     setIsLoading(true);
     try {
       // Register the user (username is optional)
-      await authApi.register({
+      const response = await authApi.register({
         email: trimmedEmail,
         password: trimmedPassword,
         name: null,
       });
 
-      // After successful registration, log the user in automatically
-      await login(trimmedEmail, trimmedPassword);
+      // Treat the register response as the authenticated result.
+      // Apply tokens and user into AuthProvider without calling login().
+      await applyAuthResult(response);
 
-      // After successful login, index.tsx will handle redirect
+      // After successful auth application, index.tsx will handle redirect
       // - If user has username: redirects to /(tabs)/home
       // - If user has no username: redirects to /username
       router.replace("/");

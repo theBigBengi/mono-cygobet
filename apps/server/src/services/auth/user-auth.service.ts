@@ -130,8 +130,7 @@ export class UserAuthService {
       const accessToken = generateAccessToken(
         this.fastify,
         user.id,
-        user.role,
-        user.username
+        user.role
       );
 
       return {
@@ -218,8 +217,7 @@ export class UserAuthService {
       const accessToken = generateAccessToken(
         this.fastify,
         user.id,
-        user.role,
-        user.username
+        user.role
       );
 
       return {
@@ -403,8 +401,7 @@ export class UserAuthService {
       const accessToken = generateAccessToken(
         this.fastify,
         user.id,
-        user.role,
-        user.username
+        user.role
       );
 
       return {
@@ -471,8 +468,7 @@ export class UserAuthService {
       const accessToken = generateAccessToken(
         this.fastify,
         user.id,
-        user.role,
-        user.username
+        user.role
       );
 
       return {

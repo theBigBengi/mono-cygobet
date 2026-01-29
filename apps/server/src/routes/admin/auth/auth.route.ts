@@ -6,6 +6,7 @@ import {
   setAdminSessionCookie,
   clearAdminSessionCookie,
 } from "../../../auth/admin-cookies";
+import { adminSessionDb, createAdminSession } from "../../../auth/admin-session";
 import { ADMIN_SESSION_COOKIE_NAME } from "../../../constants/admin-auth.constants";
 import {
   adminLoginBodySchema,
@@ -173,7 +174,31 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
       const ctx = req.adminAuth;
       if (!ctx) throw new Error("Admin auth context missing");
 
-      await service.changePassword(ctx.user.id, req.body);
+      // Perform password update, session invalidation and new session creation
+      // atomically in a single DB transaction. Any failure will rollback and
+      // propagate the error to the requester.
+      await prisma.$transaction(async (tx) => {
+        // Update password using the transactional client (keeps same validation
+        // and hashing behavior as the service).
+        await service.changePassword(ctx.user.id, req.body, tx);
+
+        // Delete all existing sessions for the user.
+        await tx.sessions.deleteMany({ where: { userId: ctx.user.id } });
+
+        // Create a fresh session within the same transaction.
+        const { rawToken, expires, sessionId } = await createAdminSession(
+          tx,
+          ctx.user.id
+        );
+
+        // Set cookie and update memoized request auth context for the new session.
+        setAdminSessionCookie(reply, rawToken, expires);
+        req.adminAuthResolved = true;
+        req.adminAuth = {
+          user: ctx.user,
+          session: { id: sessionId, userId: ctx.user.id, expires },
+        };
+      });
 
       return reply.send({
         status: "success",

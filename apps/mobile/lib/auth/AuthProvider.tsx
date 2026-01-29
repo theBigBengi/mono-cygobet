@@ -24,6 +24,7 @@ export interface AuthContextValue extends AuthState {
   login: (emailOrUsername: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<RefreshResult>;
+  applyAuthResult: (response: import("./auth.types").AuthSuccessResponse) => Promise<void>;
 }
 
 // Internal React context; components must use useAuth() helper instead of this.
@@ -215,6 +216,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Refresh succeeded → set access token and mark as authed
       // User data will be loaded separately via loadUser()
+      if (!refreshResult.ok) return;
       setAccessToken(refreshResult.accessToken);
       accessTokenRef.current = refreshResult.accessToken;
       setStatus("authed");
@@ -351,6 +353,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   /**
+   * Apply auth result (from register/login/google) directly into provider state
+   * without making additional network requests. Used by sign-up flow to avoid
+   * calling login() after register (which would double-roundtrip).
+   */
+  const applyAuthResult = useCallback(
+    async (response: import("./auth.types").AuthSuccessResponse) => {
+      try {
+        setError(null);
+
+        // Persist refresh token
+        await authStorage.setRefreshToken(response.refreshToken);
+
+        // Set access token in memory and ref ref for HTTP client
+        setAccessToken(response.accessToken);
+        accessTokenRef.current = response.accessToken;
+
+        // Map returned minimal user shape into domain user (server /auth/register
+        // returns id,email,username,name,image but not role/onboarding flags).
+        const userData = {
+          id: response.user.id,
+          email: response.user.email,
+          username: response.user.username,
+          name: response.user.name,
+          image: response.user.image,
+          role: "user", // default role for newly registered users
+          onboardingRequired:
+            !response.user.username || response.user.username.trim().length === 0,
+        } as any;
+
+        setUser(userData);
+        setStatus("authed");
+      } catch (err) {
+        console.error("applyAuthResult failed:", err);
+        throw err;
+      }
+    },
+    []
+  );
+
+  /**
    * Login with email/username and password.
    *
    * Flow:
@@ -451,6 +493,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     refreshAccessToken,
+    applyAuthResult,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

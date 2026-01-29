@@ -109,7 +109,8 @@ export class AdminAuthService {
    */
   async changePassword(
     userId: number,
-    input: { currentPassword: string; newPassword: string }
+    input: { currentPassword: string; newPassword: string },
+    client: Pick<typeof prisma, "users"> = prisma
   ): Promise<void> {
     const { currentPassword, newPassword } = input;
 
@@ -117,7 +118,7 @@ export class AdminAuthService {
       throw new BadRequestError("Password must be at least 8 characters");
     }
 
-    const user = await prisma.users.findUnique({
+    const user = await client.users.findUnique({
       where: { id: userId },
       select: { id: true, password: true },
     });
@@ -137,7 +138,7 @@ export class AdminAuthService {
 
     const newPasswordHash = await this.hashPassword(newPassword);
 
-    await prisma.users.update({
+    await client.users.update({
       where: { id: userId },
       data: { password: newPasswordHash },
       select: { id: true },

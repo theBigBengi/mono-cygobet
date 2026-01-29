@@ -13,7 +13,6 @@ import {
 export type AccessTokenPayload = {
   sub: number; // userId
   role: string;
-  username: string | null;
   iat?: number;
   exp?: number;
 };
@@ -25,12 +24,10 @@ export function generateAccessToken(
   fastify: FastifyInstance,
   userId: number,
   role: string,
-  username: string | null
 ): string {
   const payload: AccessTokenPayload = {
     sub: userId,
     role,
-    username,
   };
 
   // Enforce TTL: convert milliseconds to seconds for expiresIn
