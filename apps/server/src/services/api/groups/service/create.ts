@@ -6,6 +6,7 @@ import type {
   ApiCreateGroupBody,
   ApiGroupPrivacy,
 } from "@repo/types";
+import { getLogger } from "../../../../logger";
 import { nowUnixSeconds } from "../../../../utils/dates";
 import { resolveGroupName } from "../helpers";
 import { SELECTION_MODE } from "../constants";
@@ -21,6 +22,8 @@ import { repository as repo } from "../repository";
 export async function createGroup(
   args: ApiCreateGroupBody & { creatorId: number }
 ): Promise<ApiGroupResponse> {
+  const logger = getLogger("groups.create");
+
   const {
     name,
     creatorId,
@@ -31,32 +34,41 @@ export async function createGroup(
     leagueIds = [],
   } = args;
 
-  // Resolve group name
-  const username = await repo.getUserUsername(creatorId);
-  const draftCount = await repo.countDraftGroupsByCreator(creatorId);
-  const groupName = resolveGroupName(name, username || "User", draftCount);
+  logger.info({ creatorId, selectionMode }, "Creating group");
 
-  // Create group with member and rules in a single transaction
-  const selMode = (selectionMode ?? SELECTION_MODE.GAMES) as
-    | "games"
-    | "teams"
-    | "leagues";
-  const result = await repo.createGroupWithMemberAndRules({
-    name: groupName,
-    creatorId,
-    privacy: privacy,
-    selectionMode: selMode,
-    fixtureIds,
-    teamIds: selMode === SELECTION_MODE.TEAMS ? teamIds ?? [] : [],
-    leagueIds: selMode === SELECTION_MODE.LEAGUES ? leagueIds ?? [] : [],
-    now: nowUnixSeconds(),
-  });
+  try {
+    // Resolve group name
+    const username = await repo.getUserUsername(creatorId);
+    const draftCount = await repo.countDraftGroupsByCreator(creatorId);
+    const groupName = resolveGroupName(name, username || "User", draftCount);
 
-  const data = buildGroupItem(result);
+    // Create group with member and rules in a single transaction
+    const selMode = (selectionMode ?? SELECTION_MODE.GAMES) as
+      | "games"
+      | "teams"
+      | "leagues";
+    const result = await repo.createGroupWithMemberAndRules({
+      name: groupName,
+      creatorId,
+      privacy: privacy,
+      selectionMode: selMode,
+      fixtureIds,
+      teamIds: selMode === SELECTION_MODE.TEAMS ? teamIds ?? [] : [],
+      leagueIds: selMode === SELECTION_MODE.LEAGUES ? leagueIds ?? [] : [],
+      now: nowUnixSeconds(),
+    });
 
-  return {
-    status: "success",
-    data,
-    message: "Group created successfully",
-  };
+    const data = buildGroupItem(result);
+
+    logger.info({ groupId: result.id }, "Group created successfully");
+
+    return {
+      status: "success",
+      data,
+      message: "Group created successfully",
+    };
+  } catch (error) {
+    logger.error({ error, args }, "Failed to create group");
+    throw error;
+  }
 }

@@ -15,11 +15,14 @@ const loggerOptions: pino.LoggerOptions = {
 };
 
 // Add pino-pretty transport only in development
+// Use worker thread transport (required for pino v7+)
 if (process.env.NODE_ENV !== "production") {
   loggerOptions.transport = {
     target: "pino-pretty",
     options: {
       colorize: true,
+      translateTime: "HH:MM:ss.l",
+      ignore: "pid,hostname",
     },
   };
 }
