@@ -95,4 +95,5 @@ const adminOddsProviderRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING adminOddsProviderRoutes");
 export default adminOddsProviderRoutes;

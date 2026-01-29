@@ -211,5 +211,6 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING adminBatchesRoutes");
 export default adminBatchesRoutes;
 

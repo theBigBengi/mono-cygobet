@@ -289,4 +289,5 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING adminSeasonsDbRoutes");
 export default adminSeasonsDbRoutes;

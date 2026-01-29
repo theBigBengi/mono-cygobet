@@ -100,4 +100,5 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING adminFixturesProviderRoutes");
 export default adminFixturesProviderRoutes;

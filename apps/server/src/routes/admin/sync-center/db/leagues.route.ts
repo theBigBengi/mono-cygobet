@@ -242,4 +242,5 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING adminLeaguesDbRoutes");
 export default adminLeaguesDbRoutes;

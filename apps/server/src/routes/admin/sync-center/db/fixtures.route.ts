@@ -391,4 +391,5 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING adminFixturesDbRoutes");
 export default adminFixturesDbRoutes;

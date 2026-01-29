@@ -244,5 +244,6 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
   );
 };
 
+console.log("REGISTERING adminFixturesSeasonProviderRoutes");
 export default adminFixturesSeasonProviderRoutes;
 

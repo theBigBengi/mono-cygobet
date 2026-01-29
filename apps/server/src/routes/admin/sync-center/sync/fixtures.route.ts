@@ -254,4 +254,5 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
   );
 };
 
+console.log("REGISTERING adminSyncFixturesRoutes");
 export default adminSyncFixturesRoutes;
