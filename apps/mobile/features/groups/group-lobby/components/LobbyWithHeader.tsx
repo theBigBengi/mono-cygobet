@@ -24,6 +24,10 @@ interface LobbyWithHeaderProps {
   children: React.ReactNode;
   status: ApiGroupStatus | string;
   groupName?: string;
+  /** For draft status: when provided, shows trash icon instead of "Draft" badge; icon triggers delete */
+  onDeleteGroup?: () => void;
+  /** For draft status: whether delete is in progress (disables trash icon) */
+  isDeleting?: boolean;
 }
 
 /**
@@ -36,6 +40,8 @@ export function LobbyWithHeader({
   children,
   status,
   groupName,
+  onDeleteGroup,
+  isDeleting = false,
 }: LobbyWithHeaderProps) {
   const router = useRouter();
   const { theme } = useTheme();
@@ -48,15 +54,15 @@ export function LobbyWithHeader({
       ? STATUS_LABELS[status as ApiGroupStatus]
       : (status as string);
   
-  const hasBackground = isActive || isDraft;
+  const hasBackground = isActive || (isDraft && !onDeleteGroup);
   const backgroundColor = isActive
     ? theme.colors.primary
-    : isDraft
+    : isDraft && !onDeleteGroup
       ? theme.colors.surface
       : undefined;
   const statusTextColor = isActive
     ? theme.colors.primaryText
-    : isDraft
+    : isDraft && !onDeleteGroup
       ? theme.colors.textPrimary
       : theme.colors.textSecondary;
   
@@ -79,6 +85,20 @@ export function LobbyWithHeader({
           name="options-outline"
           size={20}
           color={theme.colors.textPrimary}
+        />
+      </View>
+    </Pressable>
+  ) : isDraft && onDeleteGroup ? (
+    <Pressable
+      onPress={onDeleteGroup}
+      disabled={isDeleting}
+      style={({ pressed }) => [pressed && styles.iconPressed]}
+    >
+      <View style={styles.settingsButton}>
+        <Ionicons
+          name="trash-outline"
+          size={20}
+          color={isDeleting ? theme.colors.textSecondary : theme.colors.danger}
         />
       </View>
     </Pressable>
@@ -164,5 +184,8 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     justifyContent: "center",
     alignItems: "center",
+  },
+  iconPressed: {
+    opacity: 0.6,
   },
 });

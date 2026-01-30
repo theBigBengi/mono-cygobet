@@ -2,12 +2,10 @@
 // Draft state screen for group lobby.
 // Shows editable name, status card, privacy settings, and publish button.
 
-import React, { useRef, useEffect, useState } from "react";
-import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import { BlurView } from "expo-blur";
+import React, { useState } from "react";
+import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { Screen, AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { Screen } from "@/components/ui";
 import type { ApiGroupItem } from "@repo/types";
 import {
   GroupLobbyNameHeader,
@@ -20,7 +18,6 @@ import {
   GroupLobbyInviteAccessSection,
   GroupLobbyMetaSection,
   PublishGroupButton,
-  DeleteGroupButton,
   useGroupLobbyState,
   useGroupLobbyActions,
   type FixtureItem,
@@ -30,7 +27,6 @@ import {
 import {
   usePublishGroupMutation,
   useUpdateGroupMutation,
-  useDeleteGroupMutation,
 } from "@/domains/groups";
 
 interface GroupLobbyDraftScreenProps {
@@ -60,9 +56,6 @@ export function GroupLobbyDraftScreen({
   isCreator,
 }: GroupLobbyDraftScreenProps) {
   const router = useRouter();
-  const { theme, colorScheme } = useTheme();
-  const isDark = colorScheme === "dark";
-  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Manage local state for draft name, privacy, and invite access
   const {
@@ -90,7 +83,6 @@ export function GroupLobbyDraftScreen({
   // Local mutations - tied to this group
   const updateGroupMutation = useUpdateGroupMutation(group.id);
   const publishGroupMutation = usePublishGroupMutation(group.id);
-  const deleteGroupMutation = useDeleteGroupMutation(group.id);
 
   // Derive fixtures from group.fixtures
   const fixtures =
@@ -109,63 +101,11 @@ export function GroupLobbyDraftScreen({
 
   // Determine if name/privacy inputs should be editable
   const isEditable =
-    !publishGroupMutation.isPending &&
-    !updateGroupMutation.isPending &&
-    !deleteGroupMutation.isPending;
+    !publishGroupMutation.isPending && !updateGroupMutation.isPending;
 
   // Handler for navigating to view all games
   const handleViewAllGames = () => {
     router.push(`/groups/${group.id}/games` as any);
-  };
-
-  // Cleanup fallback timer on unmount
-  useEffect(() => {
-    return () => {
-      if (fallbackTimerRef.current) {
-        clearTimeout(fallbackTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Handler for deleting the group
-  const handleDeleteGroup = () => {
-    Alert.alert(
-      "Delete Group Draft",
-      "Are you sure you want to delete the group? This action cannot be undone.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            deleteGroupMutation.mutate(undefined, {
-              onSuccess: () => {
-                // Try to go back first (for correct slide animation from right to left)
-                // This works when there's navigation history (e.g., came from groups list)
-                router.back();
-                
-                // Fallback: if back() didn't work (no history, e.g., just created group),
-                // navigate using replace after a short delay
-                // The timer will be cleared if component unmounts (back() worked)
-                fallbackTimerRef.current = setTimeout(() => {
-                  router.replace("/(tabs)/groups" as any);
-                  fallbackTimerRef.current = null;
-                }, 300);
-              },
-              onError: (error: any) => {
-                Alert.alert(
-                  "שגיאה",
-                  error?.message || "Delete group draft failed. Please try again."
-                );
-              },
-            });
-          },
-        },
-      ]
-    );
   };
 
   return (
@@ -248,12 +188,6 @@ export function GroupLobbyDraftScreen({
 
         {/* Meta Section */}
         <GroupLobbyMetaSection createdAt={group.createdAt} />
-
-        <DeleteGroupButton
-          onPress={handleDeleteGroup}
-          isPending={deleteGroupMutation.isPending}
-          disabled={deleteGroupMutation.isPending}
-        />
       </Screen>
 
       {/* Floating Action Buttons (Only for creators) */}
@@ -262,31 +196,10 @@ export function GroupLobbyDraftScreen({
           <PublishGroupButton
             onPress={handlePublish}
             isPending={publishGroupMutation.isPending}
-            disabled={
-              publishGroupMutation.isPending ||
-              deleteGroupMutation.isPending ||
-              !draftName.trim()
-            }
+            disabled={publishGroupMutation.isPending || !draftName.trim()}
           />
        
         </>
-      )}
-
-      {/* Loading Overlay with Blur */}
-      {deleteGroupMutation.isPending && (
-        <View style={styles.overlay} pointerEvents="box-none">
-          <BlurView
-            intensity={80}
-            tint={isDark ? "dark" : "light"}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.overlayContent}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <AppText variant="body" style={styles.overlayText}>
-              Deleting group...
-            </AppText>
-          </View>
-        </View>
       )}
     </View>
   );
@@ -298,18 +211,5 @@ const styles = StyleSheet.create({
   },
   screenContent: {
     paddingBottom: 100, // Space for floating button
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 10000,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  overlayContent: {
-    alignItems: "center",
-    gap: 16,
-  },
-  overlayText: {
-    marginTop: 12,
   },
 });

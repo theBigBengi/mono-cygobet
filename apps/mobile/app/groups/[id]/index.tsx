@@ -5,14 +5,16 @@
 // - Active status → GroupLobbyActiveScreen
 // - Ended status → Simple ended message
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSetAtom } from "jotai";
+import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { BlurView } from "expo-blur";
 import { Screen, AppText } from "@/components/ui";
-import { useGroupQuery, useGroupGamesFiltersQuery } from "@/domains/groups";
+import { useGroupQuery, useGroupGamesFiltersQuery, useDeleteGroupMutation } from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
-import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useAuth } from "@/lib/auth/useAuth";
+import { useTheme } from "@/lib/theme";
 import { globalBlockingOverlayAtom } from "@/lib/state/globalOverlay.atom";
 import {
   GroupLobbyDraftScreen,
@@ -31,6 +33,7 @@ export default function GroupLobbyScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const { theme, colorScheme } = useTheme();
   const setOverlay = useSetAtom(globalBlockingOverlayAtom);
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
@@ -65,6 +68,46 @@ export default function GroupLobbyScreen() {
     await refetchGroup();
   }, [refetchGroup]);
 
+  const deleteGroupMutation = useDeleteGroupMutation(groupId ?? 0);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+    };
+  }, []);
+
+  const handleDeleteGroup = React.useCallback(() => {
+    Alert.alert(
+      "Delete Group Draft",
+      "Are you sure you want to delete the group? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deleteGroupMutation.mutate(undefined, {
+              onSuccess: () => {
+                router.back();
+                fallbackTimerRef.current = setTimeout(() => {
+                  router.replace("/(tabs)/groups" as any);
+                  fallbackTimerRef.current = null;
+                }, 300);
+              },
+              onError: (error: any) => {
+                Alert.alert(
+                  "שגיאה",
+                  error?.message || "Delete group draft failed. Please try again."
+                );
+              },
+            });
+          },
+        },
+      ]
+    );
+  }, [deleteGroupMutation, router]);
+
   // Loading state
   if (isLoading) {
     return <QueryLoadingView message="Loading pool..." />;
@@ -92,14 +135,36 @@ export default function GroupLobbyScreen() {
   }
 
   if (group.status === "draft") {
+    const isDark = colorScheme === "dark";
     return (
-      <LobbyWithHeader status={group.status}>
-        <GroupLobbyDraftScreen
-          group={group}
-          onRefresh={handleRefresh}
-          isCreator={isCreator}
-        />
-      </LobbyWithHeader>
+      <View style={styles.draftContainer}>
+        <LobbyWithHeader
+          status={group.status}
+          onDeleteGroup={isCreator ? handleDeleteGroup : undefined}
+          isDeleting={deleteGroupMutation.isPending}
+        >
+          <GroupLobbyDraftScreen
+            group={group}
+            onRefresh={handleRefresh}
+            isCreator={isCreator}
+          />
+        </LobbyWithHeader>
+        {deleteGroupMutation.isPending && (
+          <View style={styles.overlay} pointerEvents="box-none">
+            <BlurView
+              intensity={80}
+              tint={isDark ? "dark" : "light"}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.overlayContent}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <AppText variant="body" style={styles.overlayText}>
+                Deleting group...
+              </AppText>
+            </View>
+          </View>
+        )}
+      </View>
     );
   }
 
@@ -126,5 +191,24 @@ export default function GroupLobbyScreen() {
     </LobbyWithHeader>
   );
 }
+
+const styles = StyleSheet.create({
+  draftContainer: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10000,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  overlayContent: {
+    alignItems: "center",
+    gap: 16,
+  },
+  overlayText: {
+    marginTop: 12,
+  },
+});
 
 
