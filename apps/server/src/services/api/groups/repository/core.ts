@@ -139,6 +139,24 @@ export async function findGroupRules(
 }
 
 /**
+ * Find group rules with scoring fields (for settlement).
+ */
+export async function findGroupRulesWithScoring(groupId: number): Promise<{
+  onTheNosePoints: number;
+  correctDifferencePoints: number;
+  outcomePoints: number;
+} | null> {
+  return await prisma.groupRules.findUnique({
+    where: { groupId },
+    select: {
+      onTheNosePoints: true,
+      correctDifferencePoints: true,
+      outcomePoints: true,
+    },
+  });
+}
+
+/**
  * Publish a group with rules update in a single transaction.
  * Updates group status to "active" and optionally updates name, privacy, and groupRules.
  * Does not perform business validations - that's the service layer's responsibility.

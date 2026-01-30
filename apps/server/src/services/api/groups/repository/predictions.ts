@@ -1,8 +1,19 @@
 // groups/repository/predictions.ts
 // Repository functions for group predictions.
 
-import { prisma } from "@repo/db";
+import { prisma, FixtureState } from "@repo/db";
 import { MEMBER_STATUS } from "../constants";
+
+export type UnsettledPredictionForSettlement = {
+  id: number;
+  groupId: number;
+  groupFixtureId: number;
+  userId: number;
+  prediction: string;
+  fixtureResult: string;
+  fixtureHomeScore: number | null;
+  fixtureAwayScore: number | null;
+};
 
 /**
  * Upsert a group prediction.
@@ -93,4 +104,81 @@ export async function findPredictionsForOverview(
       },
     },
   });
+}
+
+/**
+ * Find unsettled predictions for finished (FT) fixtures.
+ * Used by the Settlement service to score and close predictions.
+ */
+export async function findUnsettledPredictionsForFinishedFixtures(): Promise<
+  UnsettledPredictionForSettlement[]
+> {
+  const rows = await prisma.groupPredictions.findMany({
+    where: {
+      settledAt: null,
+      groupFixtures: {
+        fixtures: {
+          state: FixtureState.FT,
+          result: { not: null },
+        },
+      },
+    },
+    select: {
+      id: true,
+      groupId: true,
+      groupFixtureId: true,
+      userId: true,
+      prediction: true,
+      groupFixtures: {
+        select: {
+          fixtures: {
+            select: {
+              result: true,
+              homeScore: true,
+              awayScore: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    groupId: r.groupId,
+    groupFixtureId: r.groupFixtureId,
+    userId: r.userId,
+    prediction: r.prediction,
+    fixtureResult: r.groupFixtures.fixtures.result ?? "",
+    fixtureHomeScore: r.groupFixtures.fixtures.homeScore,
+    fixtureAwayScore: r.groupFixtures.fixtures.awayScore,
+  }));
+}
+
+/**
+ * Settle multiple predictions in a single transaction (for Settlement service).
+ */
+export async function settleGroupPredictionsBatch(
+  updates: Array<{
+    id: number;
+    points: number;
+    winningCorrectScore: boolean;
+    winningMatchWinner: boolean;
+  }>
+): Promise<void> {
+  if (updates.length === 0) return;
+  const now = new Date();
+  await prisma.$transaction(
+    updates.map((u) =>
+      prisma.groupPredictions.update({
+        where: { id: u.id },
+        data: {
+          points: String(u.points),
+          settledAt: now,
+          winningCorrectScore: u.winningCorrectScore,
+          winningMatchWinner: u.winningMatchWinner,
+          updatedAt: now,
+        },
+      })
+    )
+  );
 }

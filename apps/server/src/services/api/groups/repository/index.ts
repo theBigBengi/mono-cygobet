@@ -9,6 +9,7 @@ import {
   findGroupById,
   deleteGroup,
   findGroupRules,
+  findGroupRulesWithScoring,
   publishGroupInternal,
   createGroupWithMemberAndRules,
   findGroupMembersWithUsers,
@@ -31,6 +32,8 @@ import {
   upsertGroupPrediction,
   upsertGroupPredictionsBatch,
   findPredictionsForOverview,
+  findUnsettledPredictionsForFinishedFixtures,
+  settleGroupPredictionsBatch,
 } from "./predictions";
 
 // Stats functions
@@ -55,6 +58,7 @@ export const repository: GroupsRepository = {
   publishGroupInternal,
   deleteGroup,
   findGroupRules,
+  findGroupRulesWithScoring,
   findGroupMembersWithUsers,
 
   // Fixtures operations
@@ -70,6 +74,8 @@ export const repository: GroupsRepository = {
   upsertGroupPrediction,
   upsertGroupPredictionsBatch,
   findPredictionsForOverview,
+  findUnsettledPredictionsForFinishedFixtures,
+  settleGroupPredictionsBatch,
 
   // Stats operations
   findGroupsStatsBatch,

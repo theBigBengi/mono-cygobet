@@ -17,6 +17,7 @@ import {
   UPCOMING_FIXTURES_JOB,
   LIVE_FIXTURES_JOB,
   FINISHED_FIXTURES_JOB,
+  SETTLEMENT_JOB,
   UPDATE_PREMATCH_ODDS_JOB,
 } from "./jobs.definitions";
 
@@ -58,6 +59,10 @@ const RUNNERS: Record<string, Runner> = {
   [FINISHED_FIXTURES_JOB.key]: async (fastify, opts) => {
     const { runFinishedFixturesJob } = await import("./finished-fixtures.job");
     return runFinishedFixturesJob(fastify, opts);
+  },
+  [SETTLEMENT_JOB.key]: async (fastify, opts) => {
+    const { runSettlementJob } = await import("./settlement.job");
+    return runSettlementJob(fastify, opts);
   },
   [UPDATE_PREMATCH_ODDS_JOB.key]: async (fastify, opts) => {
     const { runUpdatePrematchOddsJob } =
@@ -101,6 +106,12 @@ export const RUNNABLE_JOBS: RunnableJobDefinition[] = [
     description: FINISHED_FIXTURES_JOB.description,
     scheduleCron: FINISHED_FIXTURES_JOB.scheduleCron ?? null,
     run: RUNNERS[FINISHED_FIXTURES_JOB.key]!,
+  },
+  {
+    key: SETTLEMENT_JOB.key,
+    description: SETTLEMENT_JOB.description,
+    scheduleCron: SETTLEMENT_JOB.scheduleCron ?? null,
+    run: RUNNERS[SETTLEMENT_JOB.key]!,
   },
   {
     key: UPDATE_PREMATCH_ODDS_JOB.key,

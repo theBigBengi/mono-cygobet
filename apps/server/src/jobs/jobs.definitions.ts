@@ -127,6 +127,21 @@ export const CLEANUP_EXPIRED_SESSIONS_JOB = {
 } as const satisfies JobDefinition;
 
 /**
+ * SETTLEMENT_JOB
+ * --------------
+ * Purpose: score and close predictions for finished fixtures (runs after finished-fixtures).
+ */
+export const SETTLEMENT_JOB = {
+  key: "settlement",
+  description:
+    "Score and settle predictions for fixtures that have finished (FT)",
+  enabled: true,
+  // Every hour at minute 15 (after finished-fixtures at minute 0).
+  scheduleCron: "15 * * * *",
+  meta: {},
+} as const satisfies JobDefinition;
+
+/**
  * JOB_DEFINITIONS
  * --------------
  * List of all “known jobs” and their default DB config.
@@ -138,6 +153,7 @@ export const JOB_DEFINITIONS = [
   UPCOMING_FIXTURES_JOB,
   LIVE_FIXTURES_JOB,
   FINISHED_FIXTURES_JOB,
+  SETTLEMENT_JOB,
   UPDATE_PREMATCH_ODDS_JOB,
   CLEANUP_EXPIRED_SESSIONS_JOB,
 ] as const satisfies readonly JobDefinition[];

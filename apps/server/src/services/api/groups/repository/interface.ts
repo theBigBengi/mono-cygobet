@@ -43,6 +43,11 @@ export interface GroupsRepository {
   }): Promise<Prisma.groupsGetPayload<{}>>;
   deleteGroup(id: number): Promise<Prisma.groupsGetPayload<{}>>;
   findGroupRules(groupId: number): Promise<{ selectionMode: groupSelectionMode } | null>;
+  findGroupRulesWithScoring(groupId: number): Promise<{
+    onTheNosePoints: number;
+    correctDifferencePoints: number;
+    outcomePoints: number;
+  } | null>;
   findGroupMembersWithUsers(groupId: number): Promise<{
     members: Array<{ userId: number }>;
     users: Array<{ id: number; username: string | null }>;
@@ -135,6 +140,22 @@ export interface GroupsRepository {
       fixtureId: number;
     };
   }>>;
+  findUnsettledPredictionsForFinishedFixtures(): Promise<Array<{
+    id: number;
+    groupId: number;
+    groupFixtureId: number;
+    userId: number;
+    prediction: string;
+    fixtureResult: string;
+    fixtureHomeScore: number | null;
+    fixtureAwayScore: number | null;
+  }>>;
+  settleGroupPredictionsBatch(updates: Array<{
+    id: number;
+    points: number;
+    winningCorrectScore: boolean;
+    winningMatchWinner: boolean;
+  }>): Promise<void>;
 
   // Stats operations
   findGroupsStatsBatch(

@@ -147,6 +147,10 @@ async function main() {
           };
           return runFinishedFixturesJob(fastify, runOpts);
         }
+        case "settlement": {
+          const { runSettlementJob } = await import("./settlement.job");
+          return runSettlementJob(fastify, base);
+        }
         case "update-prematch-odds": {
           const { runUpdatePrematchOddsJob } =
             await import("./update-prematch-odds.job");
