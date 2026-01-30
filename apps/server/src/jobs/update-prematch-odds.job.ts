@@ -5,7 +5,7 @@ import type { OddsDTO } from "@repo/types/sport-data/common";
 import { JobTriggerBy, RunTrigger } from "@repo/db";
 
 import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
-import { seedOdds } from "../etl/seeds/seed.odds";
+import { syncOdds } from "../etl/sync/sync.odds";
 import { UPDATE_PREMATCH_ODDS_JOB } from "./jobs.definitions";
 import {
   finishJobRunFailed,
@@ -26,7 +26,7 @@ const log = getLogger("UpdatePrematchOddsJob");
  * Ported from groups-server `PrematchOddsWindowJob`.
  *
  * Fetches prematch odds for a rolling window (today -> today+daysAhead)
- * and upserts them into DB via `seedOdds`.
+ * and upserts them into DB via `syncOdds`.
  *
  * What controls this job:
  * - `jobs.enabled`: whether cron triggers should execute (manual runs still execute)
@@ -56,6 +56,10 @@ export async function runUpdatePrematchOddsJob(
 ): Promise<
   StandardJobRunStats & {
     window: { from: string; to: string };
+    inserted?: number;
+    updated?: number;
+    skippedCount?: number;
+    failed?: number;
   }
 > {
   // Jobs are seeded in DB. Missing row is a deployment/config error.
@@ -119,10 +123,7 @@ export async function runUpdatePrematchOddsJob(
     });
     return {
       jobRunId: jobRun.id,
-      batchId: null,
       fetched: 0,
-      ok: 0,
-      fail: 0,
       total: 0,
       window: { from, to },
       skipped: true,
@@ -150,10 +151,7 @@ export async function runUpdatePrematchOddsJob(
     });
     return {
       jobRunId: jobRun.id,
-      batchId: null,
       fetched: 0,
-      ok: 0,
-      fail: 0,
       total: 0,
       window: { from, to },
       skipped: true,
@@ -185,10 +183,7 @@ export async function runUpdatePrematchOddsJob(
       });
       return {
         jobRunId: jobRun.id,
-        batchId: null,
         fetched: 0,
-        ok: 0,
-        fail: 0,
         total: 0,
         window: { from, to },
         skipped: false,
@@ -212,52 +207,41 @@ export async function runUpdatePrematchOddsJob(
 
       return {
         jobRunId: jobRun.id,
-        batchId: null,
         fetched: odds.length,
-        ok: 0,
-        fail: 0,
         total: 0,
         window: { from, to },
         skipped: false,
       };
     }
 
-    const result = await seedOdds(odds, {
-      version: "v1",
-      trigger,
-      triggeredBy: opts.triggeredBy ? String(opts.triggeredBy) : null,
-      triggeredById: opts.triggeredById ?? null,
-      dryRun: false,
-    });
+    const result = await syncOdds(odds);
 
     await finishJobRunSuccess({
       id: jobRun.id,
       startedAtMs,
-      rowsAffected: result?.total ?? odds.length,
+      rowsAffected: result.total,
       meta: {
         window: { from, to },
         daysAhead,
         filters,
         dryRun: false,
         fetched: odds.length,
-        batchId: result?.batchId ?? null,
-        ok: result?.ok ?? 0,
-        fail: result?.fail ?? 0,
-        total: result?.total ?? 0,
-        inserted: result?.inserted ?? 0,
-        updated: result?.updated ?? 0,
-        skipped: result?.skipped ?? 0,
-        duplicates: result?.duplicates ?? 0,
+        inserted: result.inserted,
+        updated: result.updated,
+        skipped: result.skipped,
+        failed: result.failed,
+        total: result.total,
       },
     });
 
     return {
       jobRunId: jobRun.id,
-      batchId: result?.batchId ?? null,
       fetched: odds.length,
-      ok: result?.ok,
-      fail: result?.fail,
-      total: result?.total,
+      total: result.total,
+      inserted: result.inserted,
+      updated: result.updated,
+      skippedCount: result.skipped,
+      failed: result.failed,
       window: { from, to },
       skipped: false,
     };

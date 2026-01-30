@@ -1,0 +1,318 @@
+/**
+ * Sync layer for odds: incremental updates only. No seedBatches/seedItems.
+ * Caller is responsible for fetch; sync receives DTOs and writes (or skips) based on comparison.
+ */
+import type { OddsDTO } from "@repo/types/sport-data/common";
+import { prisma } from "@repo/db";
+import {
+  transformOddsDto,
+  type OddsTransformResult,
+} from "../transform/odds.transform";
+import { chunk, safeBigInt } from "../utils";
+import { getLogger } from "../../logger";
+
+const log = getLogger("SyncOdds");
+const CHUNK_SIZE = 8;
+
+export type SyncOddsResult = {
+  inserted: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  total: number;
+};
+
+type ExistingRow = {
+  externalId: bigint;
+  fixtureId: number;
+  bookmakerId: number | null;
+  marketExternalId: bigint;
+  marketDescription: string;
+  marketName: string;
+  sortOrder: number;
+  label: string;
+  name: string | null;
+  handicap: string | null;
+  total: string | null;
+  value: string;
+  probability: string | null;
+  winning: boolean;
+  startingAt: string;
+  startingAtTimestamp: number;
+};
+
+type ResolvedPayload = OddsTransformResult & {
+  fixtureId: number;
+  bookmakerId: number | null;
+};
+
+function isSameOdd(existing: ExistingRow, payload: ResolvedPayload): boolean {
+  return (
+    existing.fixtureId === payload.fixtureId &&
+    existing.bookmakerId === payload.bookmakerId &&
+    existing.marketExternalId === payload.marketExternalId &&
+    existing.marketDescription === payload.marketDescription &&
+    existing.marketName === payload.marketName &&
+    existing.sortOrder === payload.sortOrder &&
+    existing.label === payload.label &&
+    existing.name === payload.name &&
+    existing.handicap === payload.handicap &&
+    existing.total === payload.total &&
+    existing.value === payload.value &&
+    existing.probability === payload.probability &&
+    existing.winning === payload.winning &&
+    existing.startingAt === payload.startingAt &&
+    existing.startingAtTimestamp === payload.startingAtTimestamp
+  );
+}
+
+/** Build create and update payloads for odds upsert (single source of truth for field list). */
+function buildOddsUpsertArgs(
+  payload: OddsTransformResult,
+  resolvedPayload: ResolvedPayload
+) {
+  const create = {
+    externalId: payload.externalId,
+    fixtureId: resolvedPayload.fixtureId,
+    bookmakerId: resolvedPayload.bookmakerId,
+    marketExternalId: payload.marketExternalId,
+    marketDescription: payload.marketDescription,
+    marketName: payload.marketName,
+    sortOrder: payload.sortOrder,
+    label: payload.label,
+    name: payload.name,
+    handicap: payload.handicap,
+    total: payload.total,
+    value: payload.value,
+    probability: payload.probability,
+    winning: payload.winning,
+    startingAt: payload.startingAt,
+    startingAtTimestamp: payload.startingAtTimestamp,
+  };
+  const update = {
+    fixtureId: resolvedPayload.fixtureId,
+    bookmakerId: resolvedPayload.bookmakerId,
+    marketExternalId: payload.marketExternalId,
+    marketDescription: payload.marketDescription,
+    marketName: payload.marketName,
+    sortOrder: payload.sortOrder,
+    label: payload.label,
+    name: payload.name,
+    handicap: payload.handicap,
+    total: payload.total,
+    value: payload.value,
+    probability: payload.probability,
+    winning: payload.winning,
+    startingAt: payload.startingAt,
+    startingAtTimestamp: payload.startingAtTimestamp,
+    updatedAt: new Date(),
+  };
+  return { create, update };
+}
+
+/**
+ * Sync odds: transform, resolve FKs, compare with DB, then insert/update/skip.
+ * No fetch; no seedBatches/seedItems. Does not create missing bookmakers.
+ */
+export async function syncOdds(
+  odds: OddsDTO[],
+  opts?: { dryRun?: boolean }
+): Promise<SyncOddsResult> {
+  const dryRun = !!opts?.dryRun;
+  let inserted = 0;
+  let updated = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  if (!odds?.length) {
+    return { inserted: 0, updated: 0, skipped: 0, failed: 0, total: 0 };
+  }
+
+  // Dedup by externalId (same key as seed.odds)
+  const seen = new Set<string>();
+  const uniqueOdds: OddsDTO[] = [];
+  for (const o of odds) {
+    const key = String(o.externalId);
+    if (seen.has(key)) {
+      skipped += 1;
+      continue;
+    }
+    seen.add(key);
+    uniqueOdds.push(o);
+  }
+
+  // Batch resolve fixtures
+  const fixtureExternalIds = uniqueOdds
+    .map((o) => o.fixtureExternalId)
+    .filter((id): id is number => id != null);
+  const uniqueFixtureIds = [...new Set(fixtureExternalIds.map(String))];
+  const fixtureMap = new Map<string, number>();
+  if (uniqueFixtureIds.length > 0) {
+    const fixtures = await prisma.fixtures.findMany({
+      where: {
+        externalId: { in: uniqueFixtureIds.map((id) => safeBigInt(id)) },
+      },
+      select: { id: true, externalId: true },
+    });
+    for (const f of fixtures) {
+      fixtureMap.set(String(f.externalId), f.id);
+    }
+  }
+
+  // Batch resolve bookmakers (do not create missing)
+  const bookmakerExternalIds = uniqueOdds
+    .map((o) => o.bookmakerExternalId)
+    .filter((id): id is number => id != null);
+  const uniqueBookmakerIds = [...new Set(bookmakerExternalIds.map(String))];
+  const bookmakerMap = new Map<string, number>();
+  if (uniqueBookmakerIds.length > 0) {
+    const bookmakers = await prisma.bookmakers.findMany({
+      where: {
+        externalId: { in: uniqueBookmakerIds.map((id) => safeBigInt(id)) },
+      },
+      select: { id: true, externalId: true },
+    });
+    for (const b of bookmakers) {
+      bookmakerMap.set(String(b.externalId), b.id);
+    }
+  }
+
+  const fixturesToFlag = new Set<number>();
+
+  for (const group of chunk(uniqueOdds, CHUNK_SIZE)) {
+    const groupExternalIds = group.map((o) => safeBigInt(o.externalId));
+    const existingRows = await prisma.odds.findMany({
+      where: { externalId: { in: groupExternalIds } },
+      select: {
+        externalId: true,
+        fixtureId: true,
+        bookmakerId: true,
+        marketExternalId: true,
+        marketDescription: true,
+        marketName: true,
+        sortOrder: true,
+        label: true,
+        name: true,
+        handicap: true,
+        total: true,
+        value: true,
+        probability: true,
+        winning: true,
+        startingAt: true,
+        startingAtTimestamp: true,
+      },
+    });
+    const existingByExtId = new Map(
+      existingRows.map((r) => [String(r.externalId), r as ExistingRow])
+    );
+
+    const results = await Promise.allSettled(
+      group.map(async (odd) => {
+        const extIdKey = String(safeBigInt(odd.externalId));
+
+        // Bookmaker required but not in DB -> do not create; fail this odd
+        if (
+          odd.bookmakerExternalId != null &&
+          !bookmakerMap.has(String(odd.bookmakerExternalId))
+        ) {
+          log.warn(
+            { externalId: odd.externalId, bookmakerExternalId: odd.bookmakerExternalId },
+            "Bookmaker not found; skipping odd (sync does not create bookmakers)"
+          );
+          throw new Error(
+            `Bookmaker not found (externalId: ${odd.bookmakerExternalId})`
+          );
+        }
+
+        const fixtureId = fixtureMap.get(String(odd.fixtureExternalId));
+        if (!fixtureId) {
+          throw new Error(
+            `Fixture not found (externalId: ${odd.fixtureExternalId})`
+          );
+        }
+
+        const bookmakerId =
+          odd.bookmakerExternalId != null
+            ? bookmakerMap.get(String(odd.bookmakerExternalId)) ?? null
+            : null;
+
+        const payload = transformOddsDto(odd);
+        const resolvedPayload: ResolvedPayload = {
+          ...payload,
+          fixtureId,
+          bookmakerId,
+        };
+
+        const existing = existingByExtId.get(extIdKey);
+
+        const upsertArgs = buildOddsUpsertArgs(payload, resolvedPayload);
+
+        if (!existing) {
+          if (!dryRun) {
+            await prisma.odds.upsert({
+              where: { externalId: payload.externalId },
+              create: upsertArgs.create,
+              update: upsertArgs.update,
+            });
+          }
+          fixturesToFlag.add(fixtureId);
+          return "inserted" as const;
+        }
+
+        if (isSameOdd(existing, resolvedPayload)) {
+          return "skipped" as const;
+        }
+
+        if (!dryRun) {
+          await prisma.odds.upsert({
+            where: { externalId: payload.externalId },
+            create: upsertArgs.create,
+            update: upsertArgs.update,
+          });
+        }
+        fixturesToFlag.add(fixtureId);
+        return "updated" as const;
+      })
+    );
+
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i]!;
+      const odd = group[i]!;
+      if (r.status === "fulfilled") {
+        switch (r.value) {
+          case "inserted":
+            inserted += 1;
+            break;
+          case "updated":
+            updated += 1;
+            break;
+          case "skipped":
+            skipped += 1;
+            break;
+        }
+      } else {
+        log.warn(
+          { externalId: odd.externalId, reason: r.reason },
+          "Odd sync failed (Promise rejected)"
+        );
+        failed += 1;
+      }
+    }
+  }
+
+  // Post-process: flag fixtures as having odds (single query, like seed.odds)
+  if (fixturesToFlag.size > 0 && !dryRun) {
+    await prisma.fixtures.updateMany({
+      where: { id: { in: Array.from(fixturesToFlag) } },
+      data: { hasOdds: true },
+    });
+  }
+
+  return {
+    inserted,
+    updated,
+    skipped,
+    failed,
+    total: inserted + updated + skipped + failed,
+  };
+}
