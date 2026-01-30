@@ -9,6 +9,7 @@ import {
   parseId,
   parseIncludeString,
 } from "../../../../utils/routes";
+import { getErrorMessage } from "../../../../utils/error.utils";
 import {
   listTeamsQuerystringSchema,
   listTeamsResponseSchema,
@@ -131,10 +132,10 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
       let teamId: number;
       try {
         teamId = parseId(id);
-      } catch (error: any) {
+      } catch (error: unknown) {
         return reply.code(400).send({
           status: "error",
-          message: error.message,
+          message: getErrorMessage(error),
         } as any);
       }
 

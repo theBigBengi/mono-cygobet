@@ -4,6 +4,7 @@ import { Prisma, prisma } from "@repo/db";
 import { CountriesService } from "../../../../services/countries.service";
 import { AdminCountriesListResponse, AdminCountryResponse } from "@repo/types";
 import { getPagination, createPaginationResponse, parseId, parseIncludeString } from "../../../../utils/routes";
+import { getErrorMessage } from "../../../../utils/error.utils";
 import {
   listCountriesQuerystringSchema,
   listCountriesResponseSchema,
@@ -108,10 +109,10 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
       let countryId: number;
       try {
         countryId = parseId(id);
-      } catch (error: any) {
+      } catch (error: unknown) {
         return reply.code(400).send({
           status: "error",
-          message: error.message,
+          message: getErrorMessage(error),
         } as any);
       }
 

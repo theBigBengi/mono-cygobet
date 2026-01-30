@@ -9,6 +9,7 @@ import {
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
 import { transformOddsDto } from "../transform/odds.transform";
+import { getErrorMessage, getErrorCode } from "../../utils/error.utils";
 import { getLogger } from "../../logger";
 
 const log = getLogger("SeedOdds");
@@ -315,16 +316,13 @@ export async function seedOdds(
           fixturesToFlag.add(fixtureId);
 
           chunkResults.push({ success: true, odd, action });
-        } catch (e: any) {
+        } catch (e: unknown) {
           const extIdKey = String(safeBigInt(odd.externalId));
           const action: "insert" | "update" = existingSet.has(extIdKey)
             ? "update"
             : "insert";
-          const errorCode = e?.code || "UNKNOWN_ERROR";
-          const errorMessage = String(e?.message || "Unknown error").slice(
-            0,
-            500
-          );
+          const errorCode = getErrorCode(e);
+          const errorMessage = getErrorMessage(e).slice(0, 500);
           chunkResults.push({
             success: false,
             odd,

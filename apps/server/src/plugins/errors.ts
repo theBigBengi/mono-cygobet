@@ -1,6 +1,7 @@
 // src/plugins/errors.ts
 import fp from "fastify-plugin";
 import { AppError, mapPgError } from "../utils/errors";
+import { getErrorMessage, getErrorProp } from "../utils/error.utils";
 import { getLogger } from "../logger";
 
 const log = getLogger("Errors");
@@ -34,20 +35,24 @@ export default fp(async function errors(fastify) {
 
     // Status
     const status =
-      (e as any).status ??
-      (e as any).statusCode ??
+      getErrorProp<number>(e, "status") ??
+      getErrorProp<number>(e, "statusCode") ??
       (e instanceof AppError ? e.status : 500);
 
     // Body
     const body = {
       status: "error",
-      code: (e as any).code ?? (e instanceof AppError ? e.code : "INTERNAL"),
+      code:
+        getErrorProp<string>(e, "code") ??
+        (e instanceof AppError ? e.code : "INTERNAL"),
       message:
         e instanceof AppError
           ? e.message
-          : ((e as any).message ?? "Internal Server Error"),
+          : (getErrorMessage(e) || "Internal Server Error"),
       details:
-        process.env.NODE_ENV !== "production" ? (e as any).details : undefined,
+        process.env.NODE_ENV !== "production"
+          ? getErrorProp(e, "details")
+          : undefined,
     };
 
     reply.status(status).send(body);

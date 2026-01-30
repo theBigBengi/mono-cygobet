@@ -9,6 +9,7 @@ import {
   parseId,
   parseIncludeString,
 } from "../../../../utils/routes";
+import { getErrorMessage, getErrorProp } from "../../../../utils/error.utils";
 import {
   listFixturesQuerystringSchema,
   listFixturesResponseSchema,
@@ -223,10 +224,10 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
       let fixtureId: number;
       try {
         fixtureId = parseId(id);
-      } catch (error: any) {
+      } catch (error: unknown) {
         return reply.code(400).send({
           status: "error",
-          message: error.message,
+          message: getErrorMessage(error),
         } as any);
       }
 
@@ -270,11 +271,14 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
           data: mapFixtureToResponse(fixture),
           message: "Fixture fetched from database successfully",
         });
-      } catch (error: any) {
-        if ((error?.status ?? error?.statusCode) === 404) {
+      } catch (error: unknown) {
+        if (
+          (getErrorProp<number>(error, "status") ??
+            getErrorProp<number>(error, "statusCode")) === 404
+        ) {
           return reply.code(404).send({
             status: "error",
-            message: error.message,
+            message: getErrorMessage(error),
           } as any);
         }
         throw error;
@@ -339,10 +343,10 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
       let fixtureId: number;
       try {
         fixtureId = parseId(id);
-      } catch (error: any) {
+      } catch (error: unknown) {
         return reply.code(400).send({
           status: "error",
-          message: error.message,
+          message: getErrorMessage(error),
         } as any);
       }
 
@@ -378,11 +382,14 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
           data: mapFixtureToResponse(fixture),
           message: "Fixture updated successfully",
         });
-      } catch (error: any) {
-        if ((error?.status ?? error?.statusCode) === 404) {
+      } catch (error: unknown) {
+        if (
+          (getErrorProp<number>(error, "status") ??
+            getErrorProp<number>(error, "statusCode")) === 404
+        ) {
           return reply.code(404).send({
             status: "error",
-            message: error.message,
+            message: getErrorMessage(error),
           } as any);
         }
         throw error;

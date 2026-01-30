@@ -12,6 +12,7 @@ import {
   transformFixtureDto,
   isValidFixtureStateTransition,
 } from "../transform/fixtures.transform";
+import { getErrorMessage, getErrorCode } from "../../utils/error.utils";
 import { getLogger } from "../../logger";
 
 const log = getLogger("SeedFixtures");
@@ -339,11 +340,11 @@ export async function seedFixtures(
             );
 
             return { success: true, fixture, action };
-          } catch (e: any) {
+          } catch (e: unknown) {
             const extIdKey = String(safeBigInt(fixture.externalId));
             const action = existingSet.has(extIdKey) ? "update" : "insert";
-            const errorCode = e?.code || "UNKNOWN_ERROR";
-            const errorMessage = e?.message || "Unknown error";
+            const errorCode = getErrorCode(e);
+            const errorMessage = getErrorMessage(e);
 
             await trackSeedItem(
               batchId!,
@@ -418,13 +419,13 @@ export async function seedFixtures(
       skipped,
       ...(firstError && { firstError }),
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
     log.error({ batchId, err: e }, "Fixtures seeding failed");
     await finishSeedBatch(batchId!, RunStatus.failed, {
       itemsTotal: ok + fail,
       itemsSuccess: ok,
       itemsFailed: fail,
-      errorMessage: String(e?.message ?? e).slice(0, 500),
+      errorMessage: getErrorMessage(e).slice(0, 500),
       meta: { ok, fail, inserted, updated, skipped },
     });
 
@@ -436,7 +437,7 @@ export async function seedFixtures(
       inserted,
       updated,
       skipped,
-      firstError: String(e?.message ?? e).slice(0, 500),
+      firstError: getErrorMessage(e).slice(0, 500),
     };
   }
 }

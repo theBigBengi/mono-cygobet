@@ -11,6 +11,7 @@ import {
   createPaginationResponse,
   parseId,
 } from "../../../../utils/routes";
+import { getErrorMessage, getErrorProp } from "../../../../utils/error.utils";
 import {
   listBookmakersQuerystringSchema,
   listBookmakersResponseSchema,
@@ -84,10 +85,10 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
       let bookmakerId: number;
       try {
         bookmakerId = parseId(id);
-      } catch (error: any) {
+      } catch (error: unknown) {
         return reply.code(400).send({
           status: "error",
-          message: error.message,
+          message: getErrorMessage(error),
         } as any);
       }
 
@@ -107,11 +108,14 @@ const adminBookmakersDbRoutes: FastifyPluginAsync = async (fastify) => {
           data,
           message: "Bookmaker fetched from database successfully",
         });
-      } catch (error: any) {
-        if ((error?.status ?? error?.statusCode) === 404) {
+      } catch (error: unknown) {
+        if (
+          (getErrorProp<number>(error, "status") ??
+            getErrorProp<number>(error, "statusCode")) === 404
+        ) {
           return reply.code(404).send({
             status: "error",
-            message: error.message,
+            message: getErrorMessage(error),
           } as any);
         }
         throw error;

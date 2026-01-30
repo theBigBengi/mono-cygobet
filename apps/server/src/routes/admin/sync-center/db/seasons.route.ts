@@ -9,6 +9,7 @@ import {
   parseId,
   parseIncludeString,
 } from "../../../../utils/routes";
+import { getErrorMessage } from "../../../../utils/error.utils";
 import {
   listSeasonsQuerystringSchema,
   listSeasonsResponseSchema,
@@ -151,10 +152,10 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
       let seasonId: number;
       try {
         seasonId = parseId(id);
-      } catch (error: any) {
+      } catch (error: unknown) {
         return reply.code(400).send({
           status: "error",
-          message: error.message,
+          message: getErrorMessage(error),
         } as any);
       }
 
