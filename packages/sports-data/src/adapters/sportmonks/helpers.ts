@@ -2,6 +2,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 import { CircuitBreaker } from "../../circuit-breaker";
 import { SportsDataError } from "../../errors";
+import { Semaphore } from "../../semaphore";
 import type { SportsDataLogger } from "../../logger";
 import { noopLogger } from "../../logger";
 
@@ -70,6 +71,7 @@ export type SMHttpOptions = {
   defaultRetries?: number;
   defaultPerPage?: number;
   retryDelayMs?: number;
+  semaphore?: Semaphore;
 };
 
 const DEFAULT_HTTP_OPTIONS: Required<SMHttpOptions> = {
@@ -77,6 +79,7 @@ const DEFAULT_HTTP_OPTIONS: Required<SMHttpOptions> = {
   defaultRetries: 3,
   defaultPerPage: 50,
   retryDelayMs: 1000,
+  semaphore: new Semaphore(10),
 };
 
 /**
@@ -227,15 +230,17 @@ export class SMHttp {
       while (attempt <= retries) {
         try {
           this.circuitBreaker.assertClosed();
-          res = await fetch(url, {
-            headers:
-              this.authMode === "header"
-                ? {
-                    Authorization: `Bearer ${this.token}`,
-                    Accept: "application/json",
-                  }
-                : { Accept: "application/json" },
-          });
+          res = await this.opts.semaphore.run(() =>
+            fetch(url, {
+              headers:
+                this.authMode === "header"
+                  ? {
+                      Authorization: `Bearer ${this.token}`,
+                      Accept: "application/json",
+                    }
+                  : { Accept: "application/json" },
+            })
+          );
           if (!res.ok) {
             await res.text(); // Consume body
             if (res.status === 429 || res.status >= 500) {

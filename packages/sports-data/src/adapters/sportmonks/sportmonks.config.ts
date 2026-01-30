@@ -15,6 +15,7 @@ export interface SportMonksConfig {
   defaultPerPage: number;
   retryDelayMs: number;
   logger: SportsDataLogger;
+  maxConcurrency: number;
 }
 
 /**
@@ -58,5 +59,6 @@ export function validateConfig(
     defaultPerPage: opts.defaultPerPage ?? 50,
     retryDelayMs: opts.retryDelayMs ?? 1000,
     logger: opts.logger ?? noopLogger,
+    maxConcurrency: opts.maxConcurrency ?? 6,
   };
 }

@@ -30,6 +30,7 @@ import type { FixtureSportmonks } from "./sportmonks.types";
 import { validateConfig } from "./sportmonks.config";
 import type { SportMonksConfig } from "./sportmonks.config";
 import { SportsDataError } from "../../errors";
+import { Semaphore } from "../../semaphore";
 import type { SportsDataLogger } from "../../logger";
 import {
   SMHttp,
@@ -64,11 +65,16 @@ export class SportMonksAdapter implements ISportsDataAdapter {
     this.logger = this.config.logger;
 
     const { token, footballBaseUrl, coreBaseUrl, authMode } = this.config;
+
+    // Shared semaphore — all HTTP instances share the same rate limit
+    const semaphore = new Semaphore(this.config.maxConcurrency);
+
     const smHttpOptions = {
       logger: this.config.logger,
       defaultRetries: this.config.defaultRetries,
       defaultPerPage: this.config.defaultPerPage,
       retryDelayMs: this.config.retryDelayMs,
+      semaphore,
     };
 
     this.httpFootball = new SMHttp(token, footballBaseUrl, authMode, smHttpOptions);
