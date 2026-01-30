@@ -61,6 +61,11 @@ export function GroupLobbyActiveScreen({
     router.push(`/groups/${group.id}/ranking` as any);
   };
 
+  // Handler for navigating to invite
+  const handleViewInvite = () => {
+    router.push(`/groups/${group.id}/invite` as any);
+  };
+
   return (
     <View style={styles.container}>
       <Screen
@@ -83,6 +88,18 @@ export function GroupLobbyActiveScreen({
           >
             <AppText variant="body" style={styles.bannerText}>
               Ranking
+            </AppText>
+          </Pressable>
+        </Card>
+
+        {/* Invite Section */}
+        <Card style={styles.bannerCard}>
+          <Pressable
+            onPress={handleViewInvite}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <AppText variant="body" style={styles.bannerText}>
+              Invite
             </AppText>
           </Pressable>
         </Card>
