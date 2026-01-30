@@ -35,7 +35,7 @@ import type {
 } from "@repo/types";
 import { jobsService } from "@/services/jobs.service";
 import {
-  ScheduleState,
+  type ScheduleState,
   parseScheduleCron,
   buildCronFromSchedule,
   clampInt,
