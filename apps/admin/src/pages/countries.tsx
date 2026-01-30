@@ -7,7 +7,11 @@ import { countriesService } from "@/services/countries.service";
 import { unifyCountries, calculateDiffStats } from "@/utils/countries";
 import { CountriesTable } from "@/components/countries/countries-table";
 import { GenericSyncPage } from "./generic-sync-page";
-import type { AdminSyncCountriesResponse } from "@repo/types";
+import type {
+  AdminSyncCountriesResponse,
+  AdminCountriesListResponse,
+  AdminProviderCountriesResponse,
+} from "@repo/types";
 
 export default function CountriesPage() {
   const queryClient = useQueryClient();
@@ -57,7 +61,11 @@ export default function CountriesPage() {
   );
 
   return (
-    <GenericSyncPage
+    <GenericSyncPage<
+      import("@/types").UnifiedCountry,
+      AdminCountriesListResponse | undefined,
+      AdminProviderCountriesResponse | undefined
+    >
       entityLabel="Country"
       queryKeyPrefix="countries"
       batchName="seed-countries"

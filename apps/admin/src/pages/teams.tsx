@@ -7,7 +7,11 @@ import { teamsService } from "@/services/teams.service";
 import { unifyTeams, calculateDiffStats } from "@/utils/teams";
 import { TeamsTable } from "@/components/teams/teams-table";
 import { GenericSyncPage } from "./generic-sync-page";
-import type { AdminSyncTeamsResponse } from "@repo/types";
+import type {
+  AdminSyncTeamsResponse,
+  AdminTeamsListResponse,
+  AdminProviderTeamsResponse,
+} from "@repo/types";
 
 export default function TeamsPage() {
   const queryClient = useQueryClient();
@@ -57,7 +61,11 @@ export default function TeamsPage() {
   );
 
   return (
-    <GenericSyncPage
+    <GenericSyncPage<
+      import("@/types").UnifiedTeam,
+      AdminTeamsListResponse | undefined,
+      AdminProviderTeamsResponse | undefined
+    >
       entityLabel="Team"
       queryKeyPrefix="teams"
       batchName="seed-teams"

@@ -7,7 +7,11 @@ import { leaguesService } from "@/services/leagues.service";
 import { unifyLeagues, calculateDiffStats } from "@/utils/leagues";
 import { LeaguesTable } from "@/components/leagues/leagues-table";
 import { GenericSyncPage } from "./generic-sync-page";
-import type { AdminSyncLeaguesResponse } from "@repo/types";
+import type {
+  AdminSyncLeaguesResponse,
+  AdminLeaguesListResponse,
+  AdminProviderLeaguesResponse,
+} from "@repo/types";
 
 export default function LeaguesPage() {
   const queryClient = useQueryClient();
@@ -57,7 +61,11 @@ export default function LeaguesPage() {
   );
 
   return (
-    <GenericSyncPage
+    <GenericSyncPage<
+      import("@/types").UnifiedLeague,
+      AdminLeaguesListResponse | undefined,
+      AdminProviderLeaguesResponse | undefined
+    >
       entityLabel="League"
       queryKeyPrefix="leagues"
       batchName="seed-leagues"

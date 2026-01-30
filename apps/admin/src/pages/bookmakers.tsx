@@ -10,7 +10,11 @@ import { bookmakersService } from "@/services/bookmakers.service";
 import { unifyBookmakers, calculateDiffStats } from "@/utils/bookmakers";
 import { BookmakersTable } from "@/components/bookmakers/bookmakers-table";
 import { GenericSyncPage } from "./generic-sync-page";
-import type { AdminSyncBookmakersResponse } from "@repo/types";
+import type {
+  AdminSyncBookmakersResponse,
+  AdminBookmakersListResponse,
+  AdminProviderBookmakersResponse,
+} from "@repo/types";
 
 export default function BookmakersPage() {
   const queryClient = useQueryClient();
@@ -60,7 +64,11 @@ export default function BookmakersPage() {
   );
 
   return (
-    <GenericSyncPage
+    <GenericSyncPage<
+      import("@/types").UnifiedBookmaker,
+      AdminBookmakersListResponse | undefined,
+      AdminProviderBookmakersResponse | undefined
+    >
       entityLabel="Bookmaker"
       queryKeyPrefix="bookmakers"
       batchName="seed-bookmakers"

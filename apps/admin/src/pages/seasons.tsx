@@ -7,7 +7,11 @@ import { seasonsService } from "@/services/seasons.service";
 import { unifySeasons, calculateDiffStats } from "@/utils/seasons";
 import { SeasonsTable } from "@/components/seasons/seasons-table";
 import { GenericSyncPage } from "./generic-sync-page";
-import type { AdminSyncSeasonsResponse } from "@repo/types";
+import type {
+  AdminSyncSeasonsResponse,
+  AdminSeasonsListResponse,
+  AdminProviderSeasonsResponse,
+} from "@repo/types";
 
 export default function SeasonsPage() {
   const queryClient = useQueryClient();
@@ -57,7 +61,11 @@ export default function SeasonsPage() {
   );
 
   return (
-    <GenericSyncPage
+    <GenericSyncPage<
+      import("@/types").UnifiedSeason,
+      AdminSeasonsListResponse | undefined,
+      AdminProviderSeasonsResponse | undefined
+    >
       entityLabel="Season"
       queryKeyPrefix="seasons"
       batchName="seed-seasons"

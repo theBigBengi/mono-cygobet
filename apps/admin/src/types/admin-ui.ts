@@ -421,6 +421,8 @@ export interface OddsDB {
   label: string;
   value: string;
   probability: string | null;
+  handicap?: number | null;
+  total?: number | null;
   winning: boolean;
   startingAtTs: number;
   updatedAt: string;
@@ -438,6 +440,8 @@ export interface OddsProvider {
   label: string;
   value: string;
   probability: string;
+  handicap?: number | null;
+  total?: number | null;
   winning: boolean;
   startingAtTs: number;
 }

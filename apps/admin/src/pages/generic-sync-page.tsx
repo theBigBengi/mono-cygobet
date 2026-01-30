@@ -3,6 +3,7 @@ import { PageFilters } from "@/components/filters/page-filters";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BatchesTable } from "@/components/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { AdminBatchesListResponse } from "@repo/types";
 import type { ViewMode, DiffFilter } from "@/types";
 
 export interface DiffStats {
@@ -14,7 +15,11 @@ export interface DiffStats {
   ok: number;
 }
 
-export interface GenericSyncPageProps<TUnified> {
+export interface GenericSyncPageProps<
+  TUnified,
+  TDbData = unknown,
+  TProviderData = unknown,
+> {
   /** Label for toasts, e.g. "Country" */
   entityLabel: string;
   /** React Query key prefix, e.g. "countries" */
@@ -23,15 +28,15 @@ export interface GenericSyncPageProps<TUnified> {
   batchName: string;
 
   // Data hooks results
-  dbData: unknown;
+  dbData: TDbData;
   dbLoading: boolean;
   dbFetching: boolean;
   dbError: Error | null;
-  providerData: unknown;
+  providerData: TProviderData;
   providerLoading: boolean;
   providerFetching: boolean;
   providerError: Error | null;
-  batchesData: { data: unknown[] } | undefined;
+  batchesData: AdminBatchesListResponse | undefined;
   batchesLoading: boolean;
 
   // Unification
@@ -47,11 +52,11 @@ export interface GenericSyncPageProps<TUnified> {
     unifiedData: TUnified[];
     diffFilter: DiffFilter;
     onDiffFilterChange: (f: DiffFilter) => void;
-    dbData: unknown;
-    providerData: unknown;
+    dbData: TDbData;
+    providerData: TProviderData;
     isLoading: boolean;
     error: Error | null;
-    onSync?: (externalId: string) => void;
+    onSync?: (externalId: string) => Promise<void>;
   }) => React.ReactNode;
 
   /** Optional extra summary items */
@@ -60,7 +65,11 @@ export interface GenericSyncPageProps<TUnified> {
   children?: React.ReactNode;
 }
 
-export function GenericSyncPage<TUnified>({
+export function GenericSyncPage<
+  TUnified,
+  TDbData = unknown,
+  TProviderData = unknown,
+>({
   dbData,
   dbLoading,
   dbFetching,
@@ -75,15 +84,16 @@ export function GenericSyncPage<TUnified>({
   diffStats,
   syncById,
   renderTable,
-}: GenericSyncPageProps<TUnified>) {
+}: GenericSyncPageProps<TUnified, TDbData, TProviderData>) {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
 
   const isLoading = dbLoading || providerLoading;
   const isFetching = dbFetching || providerFetching;
   const hasError = dbError || providerError;
-  const isPartialData =
-    (dbData && !providerData) || (!dbData && providerData);
+  const isPartialData = Boolean(
+    (dbData && !providerData) || (!dbData && providerData)
+  );
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-3 sm:p-4 md:p-6">
