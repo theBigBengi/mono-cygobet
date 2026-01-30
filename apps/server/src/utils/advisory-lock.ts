@@ -58,7 +58,7 @@ export class AdvisoryLockTimeoutError extends Error {
  */
 export async function withAdvisoryLock<T>(
   jobKey: string,
-  fn: () => Promise<T>,
+  fn: (signal?: AbortSignal) => Promise<T>,
   options?: { timeoutMs?: number }
 ): Promise<T> {
   const connectionString = process.env.DATABASE_URL;
@@ -99,11 +99,13 @@ export async function withAdvisoryLock<T>(
     }
 
     if (timeoutMs != null && timeoutMs > 0) {
-      const workPromise = fn();
+      const controller = new AbortController();
+      const workPromise = fn(controller.signal);
       let timeoutId: ReturnType<typeof setTimeout> | null = null;
       const timerPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
           timedOut = true;
+          controller.abort();
           workPromise.catch(() => {}).finally(() => releaseLockAndClose());
           reject(new AdvisoryLockTimeoutError(jobKey, timeoutMs));
         }, timeoutMs);

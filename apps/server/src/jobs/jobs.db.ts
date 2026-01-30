@@ -220,3 +220,23 @@ export async function finishJobRunFailed(args: {
     meta: args.meta,
   });
 }
+
+/**
+ * Mark orphaned job runs (stuck in "running" for too long) as failed.
+ * Called periodically to prevent stale records from blocking admin UI signals.
+ */
+export async function markOrphanedJobRuns(maxAgeMs: number = 3 * 60 * 60 * 1000) {
+  const cutoff = new Date(Date.now() - maxAgeMs);
+  const result = await prisma.jobRuns.updateMany({
+    where: {
+      status: RunStatus.running,
+      startedAt: { lt: cutoff },
+    },
+    data: {
+      status: RunStatus.failed,
+      finishedAt: new Date(),
+      errorMessage: "Marked as failed by orphan detection (exceeded max age)",
+    },
+  });
+  return result.count;
+}

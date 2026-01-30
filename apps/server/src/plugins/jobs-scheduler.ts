@@ -138,10 +138,11 @@ export default fp(async (fastify) => {
         try {
           await withAdvisoryLock(
             lockKey,
-            () =>
+            (signal) =>
               runnable.run(fastify, {
                 triggeredBy: JobTriggerBy.cron_scheduler,
                 meta: { instanceId },
+                signal,
               }),
             { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
           );
@@ -217,8 +218,23 @@ export default fp(async (fastify) => {
     // Schedule all runnable jobs now (DB overrides registry defaults).
     await rescheduleAll();
 
+    // Sweep orphaned job_runs every 30 minutes
+    const ORPHAN_SWEEP_INTERVAL_MS = 30 * 60 * 1000;
+    const orphanTimer = setInterval(async () => {
+      try {
+        const { markOrphanedJobRuns } = await import("../jobs/jobs.db");
+        const count = await markOrphanedJobRuns();
+        if (count > 0) log.warn({ count }, "Marked orphaned job runs as failed");
+      } catch (err) {
+        log.error({ err }, "Orphan sweep failed");
+      }
+    }, ORPHAN_SWEEP_INTERVAL_MS);
+
     // Stop them on server close.
-    fastify.addHook("onClose", async () => stopAll());
+    fastify.addHook("onClose", async () => {
+      clearInterval(orphanTimer);
+      stopAll();
+    });
 
     log.info({ instanceId }, "Job scheduler started");
   });

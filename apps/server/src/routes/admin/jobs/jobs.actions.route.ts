@@ -71,7 +71,7 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const result: any = await withAdvisoryLock(
           lockKey,
-          () => runner(fastify, opts),
+          (signal) => runner(fastify, { ...opts, signal }),
           { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
         );
         const jobRunId =
@@ -158,7 +158,7 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
         try {
           const res: any = await withAdvisoryLock(
             lockKey,
-            () => job.run(fastify, opts),
+            (signal) => job.run(fastify, { ...opts, signal }),
             { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
           );
           ok++;

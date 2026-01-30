@@ -131,26 +131,28 @@ async function main() {
 
     const res = await withAdvisoryLock(
       lockKey,
-      async () => {
+      async (signal) => {
         switch (jobKey) {
           case "upsert-upcoming-fixtures": {
             const { runUpcomingFixturesJob } =
               await import("./upcoming-fixtures.job");
             const runOpts: JobRunOpts & { daysAhead?: number } = {
               ...base,
+              signal,
               ...(opts.daysAhead != null ? { daysAhead: opts.daysAhead } : {}),
             };
             return runUpcomingFixturesJob(fastify, runOpts);
           }
           case "upsert-live-fixtures": {
             const { runLiveFixturesJob } = await import("./live-fixtures.job");
-            return runLiveFixturesJob(fastify, base);
+            return runLiveFixturesJob(fastify, { ...base, signal });
           }
           case "finished-fixtures": {
             const { runFinishedFixturesJob } =
               await import("./finished-fixtures.job");
             const runOpts: JobRunOpts & { maxLiveAgeHours?: number } = {
               ...base,
+              signal,
               ...(opts.maxLiveAgeHours != null
                 ? { maxLiveAgeHours: opts.maxLiveAgeHours }
                 : {}),
@@ -165,6 +167,7 @@ async function main() {
               filters?: string;
             } = {
               ...base,
+              signal,
               ...(opts.daysAhead != null ? { daysAhead: opts.daysAhead } : {}),
               ...(opts.filters ? { filters: opts.filters } : {}),
             };
@@ -174,7 +177,7 @@ async function main() {
             const { runCleanupExpiredSessionsJob } = await import(
               "./cleanup-expired-sessions.job"
             );
-            return runCleanupExpiredSessionsJob(fastify, base);
+            return runCleanupExpiredSessionsJob(fastify, { ...base, signal });
           }
           default: {
             cliLogger.error(

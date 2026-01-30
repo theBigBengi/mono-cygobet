@@ -10,6 +10,7 @@ export type JobRunOpts = {
   triggeredBy?: JobTriggerBy | null;
   triggeredById?: string | null;
   meta?: Record<string, unknown>;
+  signal?: AbortSignal;
   idempotencyKey?: string;
 };
 

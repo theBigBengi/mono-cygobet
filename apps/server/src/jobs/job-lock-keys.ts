@@ -7,7 +7,7 @@
 
 const JOB_KEY_TO_LOCK_KEY: Record<string, string> = {
   "upsert-upcoming-fixtures": "sync:fixtures",
-  "upsert-live-fixtures": "sync:fixtures",
+  "upsert-live-fixtures": "sync:live-fixtures",
   "finished-fixtures": "sync:fixtures",
   "update-prematch-odds": "sync:odds",
   "cleanup-expired-sessions": "cleanup-expired-sessions",

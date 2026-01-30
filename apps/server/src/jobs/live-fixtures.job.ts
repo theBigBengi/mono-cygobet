@@ -144,7 +144,7 @@ export async function runLiveFixturesJob(
       };
     }
 
-    const result = await syncFixtures(fixtures, { dryRun: false });
+    const result = await syncFixtures(fixtures, { dryRun: false, signal: opts.signal });
 
     const ok = result.inserted + result.updated;
     await finishJobRunSuccess({

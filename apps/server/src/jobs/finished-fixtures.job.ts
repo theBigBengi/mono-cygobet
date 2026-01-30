@@ -196,6 +196,10 @@ export async function runFinishedFixturesJob(
      */
     let fetched: Awaited<ReturnType<typeof adapter.fetchFixturesByIds>> = [];
     for (const group of chunk(ids, 50)) {
+      if (opts.signal?.aborted) {
+        log.warn("finished-fixtures fetch aborted by signal");
+        break;
+      }
       const part = await adapter.fetchFixturesByIds(group, {
         includeScores: true,
         filters: { fixtureStates: "5" }, // 5 = Finished (FT)
@@ -250,7 +254,7 @@ export async function runFinishedFixturesJob(
     /**
      * 3) Write updates via syncFixtures (same transform + state validation as other jobs).
      */
-    const result = await syncFixtures(fetched, { dryRun: false });
+    const result = await syncFixtures(fetched, { dryRun: false, signal: opts.signal });
     const updated = result.updated;
     const failed = result.failed;
 

@@ -228,7 +228,7 @@ export async function runUpcomingFixturesJob(
       };
     }
 
-    const result = await syncFixtures(scheduled, { dryRun: false });
+    const result = await syncFixtures(scheduled, { dryRun: false, signal: opts.signal });
 
     const ok = result.inserted + result.updated;
     await finishJobRunSuccess({

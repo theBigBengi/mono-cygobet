@@ -82,7 +82,7 @@ function isSameFixture(
  */
 export async function syncFixtures(
   fixtures: FixtureDTO[],
-  opts?: { dryRun?: boolean }
+  opts?: { dryRun?: boolean; signal?: AbortSignal }
 ): Promise<SyncFixturesResult> {
   const dryRun = !!opts?.dryRun;
   let inserted = 0;
@@ -158,6 +158,10 @@ export async function syncFixtures(
   }
 
   for (const group of chunk(uniqueFixtures, CHUNK_SIZE)) {
+    if (opts?.signal?.aborted) {
+      log.warn("syncFixtures aborted by signal");
+      break;
+    }
     const groupExternalIds = group.map((f) => safeBigInt(f.externalId));
     const existingRows = await prisma.fixtures.findMany({
       where: { externalId: { in: groupExternalIds } },

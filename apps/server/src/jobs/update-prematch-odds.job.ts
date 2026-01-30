@@ -214,7 +214,7 @@ export async function runUpdatePrematchOddsJob(
       };
     }
 
-    const result = await syncOdds(odds);
+    const result = await syncOdds(odds, { signal: opts.signal });
 
     await finishJobRunSuccess({
       id: jobRun.id,

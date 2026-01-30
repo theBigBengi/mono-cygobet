@@ -116,7 +116,7 @@ function buildOddsUpsertArgs(
  */
 export async function syncOdds(
   odds: OddsDTO[],
-  opts?: { dryRun?: boolean }
+  opts?: { dryRun?: boolean; signal?: AbortSignal }
 ): Promise<SyncOddsResult> {
   const dryRun = !!opts?.dryRun;
   let inserted = 0;
@@ -180,6 +180,10 @@ export async function syncOdds(
   const fixturesToFlag = new Set<number>();
 
   for (const group of chunk(uniqueOdds, CHUNK_SIZE)) {
+    if (opts?.signal?.aborted) {
+      log.warn("syncOdds aborted by signal");
+      break;
+    }
     const groupExternalIds = group.map((o) => safeBigInt(o.externalId));
     const existingRows = await prisma.odds.findMany({
       where: { externalId: { in: groupExternalIds } },
