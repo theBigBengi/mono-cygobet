@@ -260,23 +260,22 @@ export async function findGroupFixturesForOverview(groupId: number) {
 
 /**
  * Update group with fixtures in a single transaction.
+ * When tx is provided, runs inside the given transaction (for atomic updates with groupRules, etc.).
  */
 export async function updateGroupWithFixtures(
   groupId: number,
   updateData: Prisma.groupsUpdateInput,
-  fixtureIds?: number[]
+  fixtureIds?: number[],
+  tx?: Prisma.TransactionClient
 ): Promise<Prisma.groupsGetPayload<{}>> {
-  return await prisma.$transaction(async (tx) => {
-    // Update the group
-    const updatedGroup = await tx.groups.update({
+  const run = async (txn: Prisma.TransactionClient) => {
+    const updatedGroup = await txn.groups.update({
       where: { id: groupId },
       data: updateData,
     });
 
-    // Update groupFixtures if fixtureIds is provided
     if (fixtureIds !== undefined) {
-      // Get current groupFixtures
-      const currentGroupFixtures = await tx.groupFixtures.findMany({
+      const currentGroupFixtures = await txn.groupFixtures.findMany({
         where: { groupId },
         select: { fixtureId: true },
       });
@@ -286,19 +285,15 @@ export async function updateGroupWithFixtures(
       );
       const newFixtureIds = new Set(fixtureIds);
 
-      // Find fixtures to remove (in current but not in new)
       const fixtureIdsToRemove = Array.from(currentFixtureIds).filter(
         (fixtureId) => !newFixtureIds.has(fixtureId)
       );
-
-      // Find fixtures to add (in new but not in current)
       const fixtureIdsToAdd = fixtureIds.filter(
         (fixtureId) => !currentFixtureIds.has(fixtureId)
       );
 
-      // Remove fixtures that are no longer in the list
       if (fixtureIdsToRemove.length > 0) {
-        await tx.groupFixtures.deleteMany({
+        await txn.groupFixtures.deleteMany({
           where: {
             groupId,
             fixtureId: { in: fixtureIdsToRemove },
@@ -306,9 +301,8 @@ export async function updateGroupWithFixtures(
         });
       }
 
-      // Add new fixtures
       if (fixtureIdsToAdd.length > 0) {
-        await tx.groupFixtures.createMany({
+        await txn.groupFixtures.createMany({
           data: fixtureIdsToAdd.map((fixtureId) => ({
             groupId,
             fixtureId,
@@ -319,5 +313,10 @@ export async function updateGroupWithFixtures(
     }
 
     return updatedGroup;
-  });
+  };
+
+  if (tx !== undefined) {
+    return run(tx);
+  }
+  return prisma.$transaction(run);
 }

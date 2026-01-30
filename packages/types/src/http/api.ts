@@ -274,6 +274,7 @@ export type ApiUpdateGroupBody = {
   name?: string;
   privacy?: ApiGroupPrivacy;
   fixtureIds?: number[];
+  inviteAccess?: ApiInviteAccess;
 };
 
 /**

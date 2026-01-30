@@ -321,6 +321,10 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
                 type: "number",
               },
             },
+            inviteAccess: {
+              type: "string",
+              enum: ["all", "admin_only"],
+            },
           },
         },
         response: {
@@ -351,6 +355,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
         name: body.name,
         privacy: body.privacy,
         fixtureIds: body.fixtureIds,
+        inviteAccess: body.inviteAccess,
         creatorId,
       });
 

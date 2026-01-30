@@ -8,6 +8,7 @@ import type {
   ApiGroupPrivacy,
 } from "@repo/types";
 import type { Prisma } from "@repo/db";
+import { prisma } from "@repo/db";
 import type { groupPredictionMode, groupKoRoundMode, groupInviteAccess } from "@repo/db";
 import { BadRequestError } from "../../../../utils/errors";
 import { GROUP_STATUS } from "../constants";
@@ -29,7 +30,7 @@ export async function updateGroup(
   args: ApiUpdateGroupBody & { creatorId: number }
 ): Promise<ApiGroupResponse> {
   log.debug({ id, args: { ...args, fixtureIds: undefined } }, "updateGroup - start");
-  const { creatorId, name, privacy, fixtureIds } = args;
+  const { creatorId, name, privacy, fixtureIds, inviteAccess } = args;
 
   // Verify group exists and user is creator
   await assertGroupCreator(id, creatorId);
@@ -45,8 +46,17 @@ export async function updateGroup(
     updateData.privacy = privacy;
   }
 
-  // Update the group and groupFixtures in a single transaction
-  const group = await repo.updateGroupWithFixtures(id, updateData, fixtureIds);
+  // Update group, groupFixtures, and optionally groupRules in a single transaction
+  const group = await (inviteAccess !== undefined
+    ? prisma.$transaction(async (tx) => {
+        const g = await repo.updateGroupWithFixtures(id, updateData, fixtureIds, tx);
+        await tx.groupRules.update({
+          where: { groupId: id },
+          data: { inviteAccess: inviteAccess as groupInviteAccess },
+        });
+        return g;
+      })
+    : repo.updateGroupWithFixtures(id, updateData, fixtureIds));
 
   const data = buildGroupItem(group);
   log.info({ id, creatorId }, "updateGroup - success");

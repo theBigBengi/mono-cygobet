@@ -135,11 +135,12 @@ export async function updateGroup(
  */
 export async function findGroupRules(
   groupId: number
-): Promise<{ selectionMode: groupSelectionMode } | null> {
+): Promise<{ selectionMode: groupSelectionMode; inviteAccess?: groupInviteAccess } | null> {
   return await prisma.groupRules.findUnique({
     where: { groupId },
     select: {
       selectionMode: true,
+      inviteAccess: true,
     },
   });
 }

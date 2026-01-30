@@ -36,7 +36,8 @@ export interface GroupsRepository {
   updateGroupWithFixtures(
     groupId: number,
     updateData: Prisma.groupsUpdateInput,
-    fixtureIds?: number[]
+    fixtureIds?: number[],
+    tx?: Prisma.TransactionClient
   ): Promise<Prisma.groupsGetPayload<{}>>;
   publishGroupInternal(data: {
     groupId: number;
@@ -51,7 +52,7 @@ export interface GroupsRepository {
     inviteAccess?: groupInviteAccess;
   }): Promise<Prisma.groupsGetPayload<{}>>;
   deleteGroup(id: number): Promise<Prisma.groupsGetPayload<{}>>;
-  findGroupRules(groupId: number): Promise<{ selectionMode: groupSelectionMode } | null>;
+  findGroupRules(groupId: number): Promise<{ selectionMode: groupSelectionMode; inviteAccess?: groupInviteAccess } | null>;
   findGroupMembersWithUsers(groupId: number): Promise<{
     members: Array<{ userId: number }>;
     users: Array<{ id: number; username: string | null }>;

@@ -170,7 +170,12 @@ export default function GroupLobbyScreen() {
 
   if (group.status === "active") {
     return (
-      <LobbyWithHeader status={group.status} groupName={group.name}>
+      <LobbyWithHeader
+        status={group.status}
+        groupName={group.name}
+        group={group}
+        isCreator={isCreator}
+      >
         <GroupLobbyActiveScreen
           group={group}
           onRefresh={handleRefresh}

@@ -112,6 +112,9 @@ export async function getGroupById(
 
   const data: ApiGroupItem = buildGroupItem(group);
 
+  const rules = await repo.findGroupRules(id);
+  data.inviteAccess = rules?.inviteAccess ?? "all";
+
   // Include fixtures if requested
   if (includeFixtures) {
     const rows = await repo.fetchGroupFixturesWithPredictions(id, userId);

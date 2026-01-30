@@ -10,7 +10,7 @@ import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { GroupGamesHeader } from "@/features/groups/predictions/components/GroupGamesHeader";
 import { GroupSettingsModal } from "./GroupSettingsModal";
-import type { ApiGroupStatus } from "@repo/types";
+import type { ApiGroupStatus, ApiGroupItem } from "@repo/types";
 
 const HEADER_HEIGHT = 64;
 
@@ -24,6 +24,10 @@ interface LobbyWithHeaderProps {
   children: React.ReactNode;
   status: ApiGroupStatus | string;
   groupName?: string;
+  /** For active groups: group data for settings modal (invite access, etc.) */
+  group?: ApiGroupItem;
+  /** For active groups: whether current user is the group creator (shows invite access in settings) */
+  isCreator?: boolean;
   /** For draft status: when provided, shows trash icon instead of "Draft" badge; icon triggers delete */
   onDeleteGroup?: () => void;
   /** For draft status: whether delete is in progress (disables trash icon) */
@@ -40,6 +44,8 @@ export function LobbyWithHeader({
   children,
   status,
   groupName,
+  group,
+  isCreator = false,
   onDeleteGroup,
   isDeleting = false,
 }: LobbyWithHeaderProps) {
@@ -151,6 +157,8 @@ export function LobbyWithHeader({
         <GroupSettingsModal
           visible={isSettingsModalVisible}
           onClose={() => setIsSettingsModalVisible(false)}
+          group={group}
+          isCreator={isCreator}
         />
       )}
     </View>

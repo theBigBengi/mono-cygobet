@@ -1,35 +1,66 @@
 // features/groups/group-lobby/components/GroupSettingsModal.tsx
 // Modal component for group settings.
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   View,
   StyleSheet,
   Pressable,
+  Switch,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { useUpdateGroupMutation } from "@/domains/groups";
+import type { ApiGroupItem, ApiInviteAccess } from "@repo/types";
 
 interface GroupSettingsModalProps {
   visible: boolean;
   onClose: () => void;
+  /** Group data for settings (invite access, etc.). Required to show invite toggle. */
+  group?: ApiGroupItem;
+  /** Whether current user is the group creator. Invite access toggle only shown when true. */
+  isCreator?: boolean;
 }
 
 /**
  * GroupSettingsModal
- * 
+ *
  * Modal component for displaying and managing group settings.
- * Currently shows only a title.
+ * Shows invite access toggle for private groups when user is the creator.
  */
 export function GroupSettingsModal({
   visible,
   onClose,
+  group,
+  isCreator = false,
 }: GroupSettingsModalProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const [inviteAccess, setInviteAccess] = useState<ApiInviteAccess>("all");
+
+  const updateGroupMutation = useUpdateGroupMutation(group?.id ?? null);
+
+  useEffect(() => {
+    if (group?.inviteAccess !== undefined) {
+      setInviteAccess(group.inviteAccess);
+    } else {
+      setInviteAccess("all");
+    }
+  }, [group?.inviteAccess]);
+
+  const showInviteToggle =
+    isCreator && group?.privacy === "private" && group?.id != null;
+  // Same convention as Draft (GroupLobbyInviteAccessSection): ON = all can share, OFF = admin only
+  const switchOn = inviteAccess === "all";
+
+  const handleInviteAccessChange = (value: boolean) => {
+    const newValue: ApiInviteAccess = value ? "all" : "admin_only";
+    setInviteAccess(newValue);
+    updateGroupMutation.mutate({ inviteAccess: newValue });
+  };
 
   return (
     <Modal
@@ -73,7 +104,32 @@ export function GroupSettingsModal({
         </View>
 
         <View style={styles.content}>
-          {/* Settings content will be added here */}
+          {showInviteToggle && (
+            <View style={styles.inviteRow}>
+              <View style={styles.inviteLabelContainer}>
+                <AppText variant="body" style={styles.inviteLabel}>
+                  Invite Sharing
+                </AppText>
+                <AppText variant="caption" color="secondary" style={styles.inviteHelper}>
+                  {switchOn
+                    ? "All members can share invite link"
+                    : "Only admins can share invite link"}
+                </AppText>
+              </View>
+              <Switch
+                value={switchOn}
+                onValueChange={handleInviteAccessChange}
+                disabled={updateGroupMutation.isPending}
+                trackColor={{
+                  false: theme.colors.border,
+                  true: theme.colors.primary,
+                }}
+                thumbColor={
+                  switchOn ? theme.colors.primaryText : theme.colors.surface
+                }
+              />
+            </View>
+          )}
         </View>
       </View>
     </Modal>
@@ -104,5 +160,22 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
+  },
+  inviteRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  inviteLabelContainer: {
+    flex: 1,
+    marginRight: 16,
+  },
+  inviteLabel: {
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  inviteHelper: {
+    marginTop: 0,
   },
 });
