@@ -67,6 +67,7 @@ export async function runLiveFixturesJob(
     meta: { dryRun: !!opts.dryRun, ...(opts.meta ?? {}) },
   });
   const startedAtMs = jobRun.startedAtMs;
+  log.info({ jobRunId: jobRun.id, dryRun: !!opts.dryRun }, "job started");
 
   if (!jobRow.enabled && isCronTrigger) {
     await finishJobRunSkipped({

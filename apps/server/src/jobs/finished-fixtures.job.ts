@@ -86,6 +86,7 @@ export async function runFinishedFixturesJob(
     },
   });
   const startedAtMs = jobRun.startedAtMs;
+  log.info({ jobRunId: jobRun.id, maxLiveAgeHours, dryRun: !!opts.dryRun }, "job started");
 
   if (!jobRow.enabled && isCronTrigger) {
     await finishJobRunSkipped({

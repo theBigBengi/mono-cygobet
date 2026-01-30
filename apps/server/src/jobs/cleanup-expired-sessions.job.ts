@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import { JobTriggerBy } from "@repo/db";
+import { JobTriggerBy, RunTrigger } from "@repo/db";
 import type { JobRunOpts } from "../types/jobs";
 import {
   finishJobRunFailed,
   finishJobRunSuccess,
+  finishJobRunSkipped,
   getJobRowOrThrow,
   startJobRun,
 } from "./jobs.db";
@@ -29,6 +30,18 @@ export async function runCleanupExpiredSessionsJob(
     meta: { ...(opts.meta ?? {}) },
   });
   const startedAtMs = jobRun.startedAtMs;
+  log.info({ jobRunId: jobRun.id }, "job started");
+
+  const isCronTrigger = opts.triggeredBy === JobTriggerBy.cron_scheduler;
+  if (!jobRow.enabled && isCronTrigger) {
+    await finishJobRunSkipped({
+      id: jobRun.id,
+      startedAtMs,
+      rowsAffected: 0,
+      meta: { reason: "disabled" },
+    });
+    return { deleted: 0 };
+  }
 
   try {
     const now = new Date();

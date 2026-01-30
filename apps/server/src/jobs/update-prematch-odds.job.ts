@@ -104,6 +104,7 @@ export async function runUpdatePrematchOddsJob(
     },
   });
   const startedAtMs = jobRun.startedAtMs;
+  log.info({ jobRunId: jobRun.id, daysAhead, filters, dryRun: !!opts.dryRun }, "job started");
 
   const from = format(new Date(), "yyyy-MM-dd");
   const to = format(addDays(new Date(), daysAhead), "yyyy-MM-dd");

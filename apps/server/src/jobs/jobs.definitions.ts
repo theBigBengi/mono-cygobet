@@ -100,8 +100,8 @@ export const UPDATE_PREMATCH_ODDS_JOB = {
   description:
     "Fetch prematch odds for a rolling window and upsert them into DB (markets 1,57; bookmaker 2)",
   enabled: true,
-  // Every hour at minute 0.
-  scheduleCron: "0 * * * *",
+  // Every hour at minute 15 (offset from finished-fixtures at :00 to avoid API burst).
+  scheduleCron: "15 * * * *",
   meta: {
     daysAhead: 7,
     odds: {

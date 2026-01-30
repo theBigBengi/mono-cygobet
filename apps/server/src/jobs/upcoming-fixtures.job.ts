@@ -18,9 +18,6 @@ import { getLogger } from "../logger";
 
 const log = getLogger("UpcomingFixturesJob");
 
-// Fixture state for finished fixtures
-const FIXTURE_STATE_FT = "FT";
-
 // Days ahead to fetch fixtures for
 const DAYS_AHEAD = 3;
 
@@ -143,6 +140,7 @@ export async function runUpcomingFixturesJob(
     meta: { daysAhead, dryRun: !!opts.dryRun, ...(opts.meta ?? {}) },
   });
   const startedAtMs = jobRun.startedAtMs;
+  log.info({ jobRunId: jobRun.id, daysAhead, dryRun: !!opts.dryRun }, "job started");
 
   // Date-only format works with provider "between" endpoint and is URL-encoded in the adapter.
   const from = format(new Date(), "yyyy-MM-dd");
