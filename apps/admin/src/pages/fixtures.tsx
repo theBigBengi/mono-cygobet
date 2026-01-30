@@ -179,7 +179,6 @@ export default function FixturesPage() {
     isLoading: dbLoading,
     isFetching: dbFetching,
     error: dbError,
-    refetch: refetchDb,
   } = useFixturesFromDb({
     perPage: 1000,
     leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
@@ -193,7 +192,6 @@ export default function FixturesPage() {
     isLoading: providerLoading,
     isFetching: providerFetching,
     error: providerError,
-    refetch: refetchProvider,
   } = useFixturesFromProvider(
     fromDate,
     toDate,
@@ -223,13 +221,10 @@ export default function FixturesPage() {
       fixturesService.syncById(id, false) as Promise<AdminSyncFixturesResponse>,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["fixtures", "db"] });
+      queryClient.invalidateQueries({ queryKey: ["fixtures", "provider"] });
       toast.success("Fixture synced successfully", {
         description: `Synced ${variables.name} (${variables.id})`,
       });
-      setTimeout(() => {
-        refetchDb();
-        refetchProvider();
-      }, 500);
     },
     onError: (error: Error, variables) => {
       const errorMessage = error.message || "Sync failed";
@@ -357,8 +352,8 @@ export default function FixturesPage() {
           </div>
         )}
 
-        {/* Summary Overview (hidden on mobile) */}
-        <div className="hidden sm:block overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-2 py-2 sm:py-1">
+        {/* Summary Overview */}
+        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-2 py-2 sm:py-1">
           <div className="flex items-center gap-3 sm:gap-4 text-xs pb-1 min-w-max">
             {isFetching ? (
               Array.from({ length: 6 }).map((_, i) => (
@@ -419,10 +414,7 @@ export default function FixturesPage() {
             }
             onUpdate={() => {
               queryClient.invalidateQueries({ queryKey: ["fixtures", "db"] });
-              setTimeout(() => {
-                refetchDb();
-                refetchProvider();
-              }, 500);
+              queryClient.invalidateQueries({ queryKey: ["fixtures", "provider"] });
             }}
           />
         )}

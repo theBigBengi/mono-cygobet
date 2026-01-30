@@ -1,203 +1,92 @@
-import { useState, useMemo, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PageFilters } from "@/components/filters/page-filters";
 import { useSeasonsFromDb, useSeasonsFromProvider } from "@/hooks/use-seasons";
 import { useBatches } from "@/hooks/use-batches";
-import { BatchesTable } from "@/components/table";
 import { seasonsService } from "@/services/seasons.service";
 import { unifySeasons, calculateDiffStats } from "@/utils/seasons";
 import { SeasonsTable } from "@/components/seasons/seasons-table";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { ViewMode, DiffFilter } from "@/types";
+import { GenericSyncPage } from "./generic-sync-page";
 import type { AdminSyncSeasonsResponse } from "@repo/types";
 
 export default function SeasonsPage() {
-  const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
-  const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
   const queryClient = useQueryClient();
 
-  const {
-    data: dbData,
-    isLoading: dbLoading,
-    isFetching: dbFetching,
-    error: dbError,
-  } = useSeasonsFromDb({
-    perPage: 1000,
-  });
-
+  const { data: dbData, isLoading: dbLoading, isFetching: dbFetching, error: dbError } =
+    useSeasonsFromDb({ perPage: 1000 });
   const {
     data: providerData,
     isLoading: providerLoading,
     isFetching: providerFetching,
     error: providerError,
   } = useSeasonsFromProvider();
+  const { data: batchesData, isLoading: batchesLoading } =
+    useBatches("seed-seasons", 20);
 
-  // Fetch batches (only seed-seasons batches)
-  const {
-    data: batchesData,
-    isLoading: batchesLoading,
-  } = useBatches("seed-seasons", 20);
-
-  // Unify and process data
   const unifiedData = useMemo(
     () => unifySeasons(dbData, providerData),
     [dbData, providerData]
   );
+  const diffStats = useMemo(() => calculateDiffStats(unifiedData), [unifiedData]);
 
-  // Sync mutation (bulk) - removed from UI for now
-  // Can be re-enabled when needed
-
-  // Sync single season mutation
-  const syncSeasonMutation = useMutation({
+  const syncMutation = useMutation({
     mutationFn: ({ id }: { id: string; name: string }) =>
       seasonsService.syncById(id, false) as Promise<AdminSyncSeasonsResponse>,
-    onSuccess: (_, variables) => {
+    onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["seasons", "db"] });
-      toast.success("Season synced successfully", {
-        description: `Synced ${variables.name} (${variables.id})`,
+      toast.success("Season synced", {
+        description: `${vars.name} synced.`,
       });
-      // Data will be refetched automatically via query invalidation
     },
-    onError: (error: Error, variables) => {
-      const errorMessage = error.message || "Sync failed";
-      toast.error("Season sync failed", {
-        description: `Failed to sync ${variables.name} (${variables.id}): ${errorMessage}`,
+    onError: (err: Error, vars) => {
+      toast.error("Sync failed", {
+        description: `${vars.name}: ${err.message}`,
       });
     },
   });
 
-  const handleSyncSeason = useCallback(
+  const syncById = useCallback(
     async (externalId: string) => {
-      // Find season name from unified data
       const season = unifiedData.find((s) => s.externalId === externalId);
-      const seasonName = season?.name || externalId;
-      await syncSeasonMutation.mutateAsync({
+      await syncMutation.mutateAsync({
         id: externalId,
-        name: seasonName,
+        name: season?.name || externalId,
       });
     },
-    [syncSeasonMutation, unifiedData]
+    [syncMutation, unifiedData]
   );
-
-  // Calculate diff stats
-  const diffStats = useMemo(
-    () => calculateDiffStats(unifiedData),
-    [unifiedData]
-  );
-
-  const isLoading = dbLoading || providerLoading;
-  const isFetching = dbFetching || providerFetching;
-  const hasError = dbError || providerError;
-  const isPartialData = (dbData && !providerData) || (!dbData && providerData);
 
   return (
-    <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-3 sm:p-4 md:p-6">
-      {/* Fixed Header Section */}
-      <div className="flex-shrink-0 space-y-2 mb-3 sm:mb-4">
-        {/* Filters */}
-        <PageFilters />
-
-        {/* Partial Data Warning */}
-        {isPartialData && (
-          <div className="border-b pb-2 text-xs text-muted-foreground">
-            {!providerData
-              ? "Provider data unavailable"
-              : "Database data unavailable"}
-          </div>
-        )}
-
-        {/* Error State */}
-        {hasError && !isPartialData && (
-          <div className="border-b pb-2 text-xs text-destructive">
-            {dbError ? "DB failed to load" : "Provider failed to load"}
-          </div>
-        )}
-
-        {/* Mode Switch */}
-        <Tabs
-          value={viewMode}
-          onValueChange={(v) =>
-            !isFetching && setViewMode(v as ViewMode | "history")
-          }
-        >
-          <TabsList>
-            <TabsTrigger value="provider" disabled={isFetching}>
-              Provider
-            </TabsTrigger>
-            <TabsTrigger value="db" disabled={isFetching}>
-              DB
-            </TabsTrigger>
-            <TabsTrigger value="history" disabled={isFetching}>
-              History
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        {/* Summary Overview */}
-        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-2 py-2 sm:py-1">
-          <div className="flex items-center gap-3 sm:gap-4 text-xs pb-1 min-w-max">
-            {isFetching ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-3 w-12" />
-              ))
-            ) : (
-              <>
-                <span className="text-muted-foreground">
-                  DB:{" "}
-                  <span className="text-foreground">{diffStats.dbCount}</span>
-                </span>
-                <span className="text-muted-foreground">
-                  Provider:{" "}
-                  <span className="text-foreground">
-                    {diffStats.providerCount}
-                  </span>
-                </span>
-                <span className="text-muted-foreground">
-                  Missing:{" "}
-                  <span className="text-foreground">{diffStats.missing}</span>
-                </span>
-                <span className="text-muted-foreground">
-                  Extra:{" "}
-                  <span className="text-foreground">{diffStats.extra}</span>
-                </span>
-                <span className="text-muted-foreground">
-                  Mismatch:{" "}
-                  <span className="text-foreground">{diffStats.mismatch}</span>
-                </span>
-                <span className="text-muted-foreground">
-                  OK: <span className="text-foreground">{diffStats.ok}</span>
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Scrollable Content Area */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {viewMode === "history" ? (
-          <BatchesTable
-            batches={batchesData?.data || []}
-            isLoading={batchesLoading}
-          />
-        ) : (
-          <SeasonsTable
-            mode={viewMode}
-            unifiedData={unifiedData}
-            diffFilter={diffFilter}
-            onDiffFilterChange={setDiffFilter}
-            dbData={dbData}
-            providerData={providerData}
-            isLoading={viewMode === "db" ? dbLoading : isLoading}
-            error={viewMode === "db" ? dbError : null}
-            onSyncSeason={
-              viewMode === "provider" ? handleSyncSeason : undefined
-            }
-          />
-        )}
-      </div>
-    </div>
+    <GenericSyncPage
+      entityLabel="Season"
+      queryKeyPrefix="seasons"
+      batchName="seed-seasons"
+      dbData={dbData}
+      dbLoading={dbLoading}
+      dbFetching={dbFetching}
+      dbError={dbError as Error | null}
+      providerData={providerData}
+      providerLoading={providerLoading}
+      providerFetching={providerFetching}
+      providerError={providerError as Error | null}
+      batchesData={batchesData}
+      batchesLoading={batchesLoading}
+      unifiedData={unifiedData}
+      diffStats={diffStats}
+      syncById={syncById}
+      renderTable={(props) => (
+        <SeasonsTable
+          mode={props.mode}
+          unifiedData={props.unifiedData}
+          diffFilter={props.diffFilter}
+          onDiffFilterChange={props.onDiffFilterChange}
+          dbData={props.dbData}
+          providerData={props.providerData}
+          isLoading={props.isLoading}
+          error={props.error}
+          onSyncSeason={props.onSync}
+        />
+      )}
+    />
   );
 }

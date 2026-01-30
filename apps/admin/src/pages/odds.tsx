@@ -42,18 +42,16 @@ export default function OddsPage() {
   const [appliedDateRange, setAppliedDateRange] = useState<
     DateRange | undefined
   >(defaultDateRange);
-  const [appliedBookmakerIds, setAppliedBookmakerIds] = useState<string[]>([
-    "2",
-  ]);
-  const [appliedMarketIds, setAppliedMarketIds] = useState<string[]>(["1"]);
+  const [appliedBookmakerIds, setAppliedBookmakerIds] = useState<string[]>([]);
+  const [appliedMarketIds, setAppliedMarketIds] = useState<string[]>([]);
   const [appliedWinningOnly, setAppliedWinningOnly] = useState(false);
 
   // Temp filters (UI-only until submit)
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>(
     defaultDateRange
   );
-  const [tempBookmakerIds, setTempBookmakerIds] = useState<string[]>(["2"]);
-  const [tempMarketIds, setTempMarketIds] = useState<string[]>(["1"]);
+  const [tempBookmakerIds, setTempBookmakerIds] = useState<string[]>([]);
+  const [tempMarketIds, setTempMarketIds] = useState<string[]>([]);
   const [tempWinningOnly, setTempWinningOnly] = useState(false);
 
   const hasUnsavedFilters = useMemo(() => {

@@ -3,11 +3,13 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type Row,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
+import { DataTableColumnHeader } from "./data-table-column-header";
 import { StatusBadge } from "./status-badge";
 import {
   Select,
@@ -44,6 +46,7 @@ interface BatchesTableProps {
 export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [sorting, setSorting] = useState([{ id: "startedAt", desc: true }]);
 
   const columns: ColumnDef<Batch>[] = [
     {
@@ -62,8 +65,22 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
       },
     },
     {
+      accessorKey: "version",
+      header: "Version",
+      cell: ({ row }: { row: Row<Batch> }) => {
+        const version = row.getValue("version") as string | null;
+        return (
+          <span className="text-xs font-mono text-muted-foreground">
+            {version || "—"}
+          </span>
+        );
+      },
+    },
+    {
       accessorKey: "status",
-      header: "Status",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
       cell: ({ row }: { row: Row<Batch> }) => {
         const status = row.getValue("status") as string;
         return <StatusBadge status={status} className="text-xs" />;
@@ -137,6 +154,9 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    onSortingChange: setSorting,
+    state: { sorting },
     initialState: {
       pagination: {
         pageSize: 10,

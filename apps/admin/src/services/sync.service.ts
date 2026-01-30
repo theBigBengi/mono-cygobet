@@ -32,21 +32,26 @@ export interface SyncAllResult {
 }
 
 export const syncService = {
-  async syncAll(params: SyncAllParams): Promise<SyncAllResult[]> {
+  async syncAll(
+    params: SyncAllParams,
+    onStepComplete?: (result: SyncAllResult) => void
+  ): Promise<SyncAllResult[]> {
     const results: SyncAllResult[] = [];
     const { dryRun = false, from, to, seasonId } = params;
 
     // Step 1: Countries
     try {
       const result = (await countriesService.sync(dryRun)) as AdminSyncCountriesResponse;
-      results.push({
+      const countriesResult = {
         step: "Countries",
-        status: "success",
+        status: "success" as const,
         batchId: result.data.batchId,
         ok: result.data.ok,
         fail: result.data.fail,
         total: result.data.total,
-      });
+      };
+      results.push(countriesResult);
+      onStepComplete?.(countriesResult);
     } catch (error) {
       results.push({
         step: "Countries",
@@ -63,38 +68,44 @@ export const syncService = {
     // Step 2: Leagues
     try {
       const result = (await leaguesService.sync(dryRun)) as AdminSyncLeaguesResponse;
-      results.push({
+      const leaguesResult = {
         step: "Leagues",
-        status: "success",
+        status: "success" as const,
         batchId: result.data.batchId,
         ok: result.data.ok,
         fail: result.data.fail,
         total: result.data.total,
-      });
+      };
+      results.push(leaguesResult);
+      onStepComplete?.(leaguesResult);
     } catch (error) {
-      results.push({
+      const leaguesErrorResult = {
         step: "Leagues",
-        status: "error",
+        status: "error" as const,
         batchId: null,
         ok: 0,
         fail: 0,
         total: 0,
         error: error instanceof Error ? error.message : "Unknown error",
-      });
+      };
+      results.push(leaguesErrorResult);
+      onStepComplete?.(leaguesErrorResult);
       return results;
     }
 
     // Step 3: Seasons
     try {
       const result = (await seasonsService.sync(dryRun)) as AdminSyncSeasonsResponse;
-      results.push({
+      const seasonsResult = {
         step: "Seasons",
-        status: "success",
+        status: "success" as const,
         batchId: result.data.batchId,
         ok: result.data.ok,
         fail: result.data.fail,
         total: result.data.total,
-      });
+      };
+      results.push(seasonsResult);
+      onStepComplete?.(seasonsResult);
     } catch (error) {
       results.push({
         step: "Seasons",
@@ -111,24 +122,28 @@ export const syncService = {
     // Step 4: Teams
     try {
       const result = (await teamsService.sync(dryRun)) as AdminSyncTeamsResponse;
-      results.push({
+      const teamsResult = {
         step: "Teams",
-        status: "success",
+        status: "success" as const,
         batchId: result.data.batchId,
         ok: result.data.ok,
         fail: result.data.fail,
         total: result.data.total,
-      });
+      };
+      results.push(teamsResult);
+      onStepComplete?.(teamsResult);
     } catch (error) {
-      results.push({
+      const teamsErrorResult = {
         step: "Teams",
-        status: "error",
+        status: "error" as const,
         batchId: null,
         ok: 0,
         fail: 0,
         total: 0,
         error: error instanceof Error ? error.message : "Unknown error",
-      });
+      };
+      results.push(teamsErrorResult);
+      onStepComplete?.(teamsErrorResult);
       return results;
     }
 
@@ -136,80 +151,72 @@ export const syncService = {
     try {
       const { fetchAllFixtureStates = true } = params;
       // Fixtures sync: if seasonId or date range provided, use those; otherwise sync by all seasons in DB
+      let fixturesResult;
       if (seasonId) {
-        const fixturesResult = await apiPost<AdminSyncFixturesResponse>(
+        fixturesResult = await apiPost<AdminSyncFixturesResponse>(
           "/admin/sync-center/sync/fixtures",
           { dryRun, seasonId, fetchAllFixtureStates }
         );
-        results.push({
-          step: "Fixtures",
-          status: "success",
-          batchId: fixturesResult.data.batchId,
-          ok: fixturesResult.data.ok,
-          fail: fixturesResult.data.fail,
-          total: fixturesResult.data.total,
-        });
       } else if (from && to) {
-        const fixturesResult = await apiPost<AdminSyncFixturesResponse>(
+        fixturesResult = await apiPost<AdminSyncFixturesResponse>(
           "/admin/sync-center/sync/fixtures",
           { dryRun, from, to, fetchAllFixtureStates }
         );
-        results.push({
-          step: "Fixtures",
-          status: "success",
-          batchId: fixturesResult.data.batchId,
-          ok: fixturesResult.data.ok,
-          fail: fixturesResult.data.fail,
-          total: fixturesResult.data.total,
-        });
       } else {
-        // Sync fixtures for all seasons in database
-        const fixturesResult = await apiPost<AdminSyncFixturesResponse>(
+        fixturesResult = await apiPost<AdminSyncFixturesResponse>(
           "/admin/sync-center/sync/fixtures",
           { dryRun, fetchAllFixtureStates }
         );
-        results.push({
-          step: "Fixtures",
-          status: "success",
-          batchId: fixturesResult.data.batchId,
-          ok: fixturesResult.data.ok,
-          fail: fixturesResult.data.fail,
-          total: fixturesResult.data.total,
-        });
       }
-    } catch (error) {
-      results.push({
+      const fixturesResultData = {
         step: "Fixtures",
-        status: "error",
+        status: "success" as const,
+        batchId: fixturesResult.data.batchId,
+        ok: fixturesResult.data.ok,
+        fail: fixturesResult.data.fail,
+        total: fixturesResult.data.total,
+      };
+      results.push(fixturesResultData);
+      onStepComplete?.(fixturesResultData);
+    } catch (error) {
+      const fixturesErrorResult = {
+        step: "Fixtures",
+        status: "error" as const,
         batchId: null,
         ok: 0,
         fail: 0,
         total: 0,
         error: error instanceof Error ? error.message : "Unknown error",
-      });
+      };
+      results.push(fixturesErrorResult);
+      onStepComplete?.(fixturesErrorResult);
     }
 
     // Step 6: Bookmakers (optional, doesn't block)
     try {
       const result = (await bookmakersService.sync(dryRun)) as AdminSyncBookmakersResponse;
-      results.push({
+      const bookmakersResult = {
         step: "Bookmakers",
-        status: "success",
+        status: "success" as const,
         batchId: result.data.batchId,
         ok: result.data.ok,
         fail: result.data.fail,
         total: result.data.total,
-      });
+      };
+      results.push(bookmakersResult);
+      onStepComplete?.(bookmakersResult);
     } catch (error) {
-      results.push({
+      const bookmakersErrorResult = {
         step: "Bookmakers",
-        status: "error",
+        status: "error" as const,
         batchId: null,
         ok: 0,
         fail: 0,
         total: 0,
         error: error instanceof Error ? error.message : "Unknown error",
-      });
+      };
+      results.push(bookmakersErrorResult);
+      onStepComplete?.(bookmakersErrorResult);
     }
 
     return results;

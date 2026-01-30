@@ -255,6 +255,17 @@ export function OddsTable({
           },
         },
         {
+          id: "value",
+          header: "Value",
+          enableSorting: false,
+          cell: ({ row }: { row: Row<GroupedOdds> }) => {
+            const firstOdd = row.original.odds?.[0];
+            return (
+              <span className="text-xs font-mono">{firstOdd?.value ?? "—"}</span>
+            );
+          },
+        },
+        {
           accessorKey: "winning",
           header: ({ column }: { column: Column<GroupedOdds, unknown> }) => (
             <DataTableColumnHeader column={column} title="Settled" />
@@ -350,6 +361,16 @@ export function OddsTable({
         cell: ({ row }: { row: Row<OddsDBRow> }) => (
           <span className="text-xs sm:text-sm">
             {(row.getValue("bookmakerName") as string) || "—"}
+          </span>
+        ),
+      },
+      {
+        id: "value",
+        header: "Value",
+        accessorFn: (row: OddsDBRow) => row.value,
+        cell: ({ row }: { row: Row<OddsDBRow> }) => (
+          <span className="text-xs font-mono">
+            {row.original.value ?? "—"}
           </span>
         ),
       },
@@ -519,9 +540,11 @@ export function OddsTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-24 text-center text-sm text-muted-foreground"
                 >
-                  No odds found.
+                  {table.getState().globalFilter
+                    ? "No results match your filters"
+                    : "No data synced yet — use the Sync Center to get started"}
                 </TableCell>
               </TableRow>
             )}
@@ -887,6 +910,22 @@ export function OddsTable({
                           <span>{selectedOdd.providerData.probability}</span>
                         </div>
                       )}
+                      {selectedOdd.providerData.handicap != null && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">
+                            Handicap:{" "}
+                          </span>
+                          <span>{selectedOdd.providerData.handicap}</span>
+                        </div>
+                      )}
+                      {selectedOdd.providerData.total != null && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">
+                            Total:{" "}
+                          </span>
+                          <span>{selectedOdd.providerData.total}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -909,6 +948,22 @@ export function OddsTable({
                             Probability:{" "}
                           </span>
                           <span>{selectedOdd.dbData.probability}</span>
+                        </div>
+                      )}
+                      {selectedOdd.dbData.handicap != null && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">
+                            Handicap:{" "}
+                          </span>
+                          <span>{selectedOdd.dbData.handicap}</span>
+                        </div>
+                      )}
+                      {selectedOdd.dbData.total != null && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">
+                            Total:{" "}
+                          </span>
+                          <span>{selectedOdd.dbData.total}</span>
                         </div>
                       )}
                       {selectedOdd.dbData.updatedAt && (

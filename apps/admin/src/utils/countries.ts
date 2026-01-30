@@ -115,10 +115,10 @@ export function unifyCountries(
       active: db?.active ?? false,
       source,
       status,
-      dbData: db,
+      dbData: db ? { ...db, active: db.active ?? false } : undefined,
       providerData: provider,
       leaguesCount: db?.leaguesCount ?? 0,
-      updatedAt: (db as any)?.updatedAt,
+      updatedAt: (db as { updatedAt?: string })?.updatedAt,
     });
   });
 

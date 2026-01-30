@@ -77,6 +77,8 @@ export function FixturesTable({
     {
       "name-db": false,
       "state-db": false,
+      stage: false,
+      round: false,
     }
   );
   const [pagination, setPagination] = useState({
@@ -431,6 +433,30 @@ export function FixturesTable({
           ),
         },
         {
+          id: "stage",
+          accessorKey: "stage",
+          header: "Stage",
+          enableSorting: false,
+          cell: ({ row }: { row: Row<FixtureDBRow> }) => {
+            const fixture = row.original as { stage?: string | null };
+            return (
+              <span className="text-xs">{fixture.stage || "—"}</span>
+            );
+          },
+        },
+        {
+          id: "round",
+          accessorKey: "round",
+          header: "Round",
+          enableSorting: false,
+          cell: ({ row }: { row: Row<FixtureDBRow> }) => {
+            const fixture = row.original as { round?: string | null };
+            return (
+              <span className="text-xs">{fixture.round || "—"}</span>
+            );
+          },
+        },
+        {
           id: "result",
           header: "Result",
           enableSorting: false,
@@ -665,9 +691,11 @@ export function FixturesTable({
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
-                    className="h-24 text-center"
+                    className="h-24 text-center text-sm text-muted-foreground"
                   >
-                    No fixtures found.
+                    {table.getState().globalFilter
+                      ? "No results match your filters"
+                      : "No data synced yet — use the Sync Center to get started"}
                   </TableCell>
                 </TableRow>
               );

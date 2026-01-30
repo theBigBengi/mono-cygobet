@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from "lucide-react";
+import type { SyncAllResult } from "@/services/sync.service";
 
 const SYNC_STEPS = [
   "Countries",
@@ -31,6 +32,7 @@ export default function SyncCenterPage() {
   const [dryRun, setDryRun] = useState(false);
   const [seasonId, setSeasonId] = useState<string>("");
   const [fetchAllFixtureStates, setFetchAllFixtureStates] = useState(true);
+  const [liveResults, setLiveResults] = useState<SyncAllResult[]>([]);
 
   const queryClient = useQueryClient();
 
@@ -48,6 +50,7 @@ export default function SyncCenterPage() {
   // Sync All mutation
   const syncAllMutation = useMutation({
     mutationFn: async () => {
+      setLiveResults([]);
       const params: {
         dryRun: boolean;
         seasonId?: number;
@@ -61,7 +64,9 @@ export default function SyncCenterPage() {
         params.seasonId = Number(seasonId);
       }
 
-      return syncService.syncAll(params);
+      return syncService.syncAll(params, (stepResult) => {
+        setLiveResults((prev) => [...prev, stepResult]);
+      });
     },
     onSuccess: (results) => {
       const allSuccess = results.every((r) => r.status === "success");
@@ -99,6 +104,7 @@ export default function SyncCenterPage() {
 
   const isSyncing = syncAllMutation.isPending;
   const syncResults = syncAllMutation.data || [];
+  const displayResults = isSyncing ? liveResults : syncResults;
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
@@ -182,17 +188,17 @@ export default function SyncCenterPage() {
             </Button>
 
             {/* Sync Progress/Results */}
-            {syncResults.length > 0 && (
+            {displayResults.length > 0 && (
               <div className="space-y-2 mt-4">
                 <Label className="text-sm font-semibold">Sync Results:</Label>
                 <div className="space-y-2">
                   {SYNC_STEPS.map((step, index) => {
-                    const result = syncResults.find((r) => r.step === step);
+                    const result = displayResults.find((r) => r.step === step);
                     const isCompleted = result !== undefined;
                     const isSuccess = result?.status === "success";
                     const isError = result?.status === "error";
                     const isPending =
-                      isSyncing && !isCompleted && index < syncResults.length + 1;
+                      isSyncing && !isCompleted && index <= displayResults.length;
 
                     return (
                       <div

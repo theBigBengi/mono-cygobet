@@ -186,6 +186,20 @@ export function TeamsTable({
           },
         },
         {
+          id: "founded",
+          accessorKey: "founded",
+          header: "Founded",
+          enableSorting: false,
+          cell: ({ row }: { row: Row<UnifiedTeam> }) => {
+            const team = row.original;
+            const founded =
+              team.providerData?.founded ?? team.dbData?.founded;
+            return (
+              <span className="text-xs">{founded ?? "—"}</span>
+            );
+          },
+        },
+        {
           id: "country",
           header: "Country",
           enableSorting: false,
@@ -496,11 +510,11 @@ export function TeamsTable({
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
-                    className="h-24 text-center"
+                    className="h-24 text-center text-sm text-muted-foreground"
                   >
-                    {tableData.length === 0
-                      ? `No teams found (tableData is empty, mode: ${mode})`
-                      : `No rows after filtering/pagination (tableData: ${tableData.length}, rows: ${rows?.length || 0})`}
+                    {table.getState().globalFilter
+                      ? "No results match your filters"
+                      : "No data synced yet — use the Sync Center to get started"}
                   </TableCell>
                 </TableRow>
               );

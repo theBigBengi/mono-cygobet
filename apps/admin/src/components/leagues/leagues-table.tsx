@@ -78,7 +78,7 @@ export function LeaguesTable({
   const [globalFilter, setGlobalFilter] = useState("");
   const [columnVisibility, setColumnVisibility] = useColumnVisibility(
     "leagues-table",
-    {}
+    { subType: false }
   );
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -193,6 +193,34 @@ export function LeaguesTable({
               <span className="text-xs sm:text-sm">
                 {league.providerData?.type || "—"}
               </span>
+            );
+          },
+        },
+        {
+          id: "subType",
+          accessorKey: "subType",
+          header: "Sub-Type",
+          enableSorting: false,
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const league = row.original;
+            const subType =
+              league.providerData?.subType ?? league.dbData?.subType;
+            return (
+              <span className="text-xs">{subType || "—"}</span>
+            );
+          },
+        },
+        {
+          id: "shortCode",
+          accessorKey: "shortCode",
+          header: "Short Code",
+          enableSorting: false,
+          cell: ({ row }: { row: Row<UnifiedLeague> }) => {
+            const league = row.original;
+            const code =
+              league.providerData?.shortCode ?? league.dbData?.shortCode;
+            return (
+              <span className="text-xs font-mono">{code || "—"}</span>
             );
           },
         },
@@ -481,11 +509,11 @@ export function LeaguesTable({
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
-                    className="h-24 text-center"
+                    className="h-24 text-center text-sm text-muted-foreground"
                   >
-                    {tableData.length === 0
-                      ? `No leagues found (tableData is empty, mode: ${mode})`
-                      : `No rows after filtering/pagination (tableData: ${tableData.length}, rows: ${rows?.length || 0})`}
+                    {table.getState().globalFilter
+                      ? "No results match your filters"
+                      : "No data synced yet — use the Sync Center to get started"}
                   </TableCell>
                 </TableRow>
               );

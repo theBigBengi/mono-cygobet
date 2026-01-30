@@ -475,11 +475,11 @@ export function SeasonsTable({
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
-                    className="h-24 text-center"
+                    className="h-24 text-center text-sm text-muted-foreground"
                   >
-                    {tableData.length === 0
-                      ? `No seasons found (tableData is empty, mode: ${mode})`
-                      : `No rows after filtering/pagination (tableData: ${tableData.length}, rows: ${rows?.length || 0})`}
+                    {table.getState().globalFilter
+                      ? "No results match your filters"
+                      : "No data synced yet — use the Sync Center to get started"}
                   </TableCell>
                 </TableRow>
               );

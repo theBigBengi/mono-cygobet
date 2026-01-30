@@ -46,7 +46,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { usersService } from "@/services/users.service";
 import type { AdminUsersListResponse } from "@repo/types";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, CheckCircle2 } from "lucide-react";
 
 type User = AdminUsersListResponse["data"]["users"][number];
 
@@ -317,6 +317,7 @@ export default function UsersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10"></TableHead>
                       <TableHead>ID</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Name</TableHead>
@@ -330,10 +331,30 @@ export default function UsersPage() {
                   <TableBody>
                     {users.map((user) => (
                       <TableRow key={user.id}>
+                        <TableCell className="w-10">
+                          {user.image ? (
+                            <img
+                              src={user.image}
+                              alt=""
+                              className="h-8 w-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+                              {(user.name?.[0] ?? user.email[0]).toUpperCase()}
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="font-mono text-xs">
                           {user.id}
                         </TableCell>
-                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            {user.email}
+                            {user.emailVerifiedAt && (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{user.name || "—"}</TableCell>
                         <TableCell>{user.username || "—"}</TableCell>
                         <TableCell>

@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CloudSync } from "lucide-react";
+import { CloudSync, CheckCircle2, XCircle } from "lucide-react";
 import {
   TablePagination,
   TableControls,
@@ -302,6 +302,24 @@ export function CountriesTable({
           ),
         },
         {
+          accessorKey: "active",
+          header: "Active",
+          enableSorting: false,
+          cell: ({ row }: { row: Row<CountryDBRow> }) => {
+            const active = (row.original as { active?: boolean | null })
+              .active;
+            if (active == null)
+              return (
+                <span className="text-xs text-muted-foreground">—</span>
+              );
+            return active ? (
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            ) : (
+              <XCircle className="h-4 w-4 text-muted-foreground" />
+            );
+          },
+        },
+        {
           accessorKey: "iso2",
           header: ({
             column,
@@ -532,11 +550,11 @@ export function CountriesTable({
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
-                    className="h-24 text-center"
+                    className="h-24 text-center text-sm text-muted-foreground"
                   >
-                    {tableData.length === 0
-                      ? `No countries found (tableData is empty, mode: ${mode})`
-                      : `No rows after filtering/pagination (tableData: ${tableData.length}, rows: ${rows?.length || 0})`}
+                    {table.getState().globalFilter
+                      ? "No results match your filters"
+                      : "No data synced yet — use the Sync Center to get started"}
                   </TableCell>
                 </TableRow>
               );
