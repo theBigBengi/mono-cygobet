@@ -1,7 +1,10 @@
 // src/etl/seeds/seed.jobs.ts
 import { Prisma, RunStatus, RunTrigger, prisma } from "@repo/db";
 import { JOB_DEFINITIONS } from "../../jobs/jobs.definitions";
+import { getLogger } from "../../logger";
 import { startSeedBatch, trackSeedItem, finishSeedBatch } from "./seed.utils";
+
+const log = getLogger("SeedJobs");
 
 /**
  * Seed jobs defaults into DB (create-only).
@@ -22,8 +25,9 @@ import { startSeedBatch, trackSeedItem, finishSeedBatch } from "./seed.utils";
 export async function seedJobsDefaults(opts?: { dryRun?: boolean }) {
   // Dry-run mode is used to preview what would happen without touching the DB.
   if (opts?.dryRun) {
-    console.log(
-      `🧪 DRY RUN MODE: ${JOB_DEFINITIONS.length} jobs would be created if missing (no database changes)`
+    log.info(
+      { count: JOB_DEFINITIONS.length },
+      "Dry run mode; no DB changes"
     );
     return { batchId: null, ok: 0, fail: 0, total: JOB_DEFINITIONS.length };
   }
@@ -93,18 +97,20 @@ export async function seedJobsDefaults(opts?: { dryRun?: boolean }) {
       meta: { ok, fail, skipped },
     });
 
-    console.log(
-      `✅ [${batchId}] Jobs defaults seeded: created=${ok}, skipped=${skipped}, failed=${fail}`
+    log.info(
+      { batchId, ok, skipped, fail },
+      "Jobs defaults seeded"
     );
     return { batchId, ok, fail, total: ok + fail + skipped };
   } catch (e: unknown) {
     // Any unexpected error marks the seed batch failed so it's visible in DB.
+    const msg = e instanceof Error ? e.message : String(e);
     fail++;
     await finishSeedBatch(batchId, RunStatus.failed, {
       itemsTotal: ok + fail + skipped,
       itemsSuccess: ok,
       itemsFailed: fail,
-      errorMessage: String((e as any)?.message ?? e).slice(0, 500),
+      errorMessage: msg.slice(0, 500),
       meta: { ok, fail, skipped },
     });
     throw e;

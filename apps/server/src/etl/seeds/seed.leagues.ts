@@ -9,7 +9,9 @@ import {
   normShortCode,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
+import { getLogger } from "../../logger";
 
+const log = getLogger("SeedLeagues");
 const CHUNK_SIZE = 8;
 
 export async function seedLeagues(
@@ -25,8 +27,9 @@ export async function seedLeagues(
 ) {
   // In dry-run mode, skip all database writes including batch tracking
   if (opts?.dryRun) {
-    console.log(
-      `🧪 DRY RUN MODE: ${leagues?.length ?? 0} leagues would be processed (no database changes)`
+    log.info(
+      { count: leagues?.length ?? 0 },
+      "Dry run mode; no DB changes"
     );
     return { batchId: null, ok: 0, fail: 0, total: leagues?.length ?? 0 };
   }
@@ -59,9 +62,7 @@ export async function seedLeagues(
     return { batchId, ok: 0, fail: 0, total: 0 };
   }
 
-  console.log(
-    `🏆 Starting leagues seeding: ${leagues.length} leagues to process`
-  );
+  log.info({ count: leagues.length }, "Starting leagues seeding");
 
   // De-dupe input
   const seen = new Set<string>();
@@ -79,8 +80,9 @@ export async function seedLeagues(
   }
 
   if (duplicates.length > 0) {
-    console.log(
-      `⚠️  Input contained ${duplicates.length} duplicate leagues, processing ${uniqueLeagues.length} unique items`
+    log.warn(
+      { duplicates: duplicates.length, unique: uniqueLeagues.length },
+      "Input contained duplicate leagues; processing unique items"
     );
     const duplicatePromises = duplicates.map((league) =>
       trackSeedItem(
@@ -116,8 +118,9 @@ export async function seedLeagues(
       countryMap.set(String(country.externalId), country.id);
     }
 
-    console.log(
-      `✅ [${batchId}] Country lookup completed: ${countries.length}/${uniqueCountryIds.length} countries found`
+    log.info(
+      { batchId, found: countries.length, requested: uniqueCountryIds.length },
+      "Country lookup completed"
     );
   }
 
@@ -159,11 +162,11 @@ export async function seedLeagues(
               where: { externalId: safeBigInt(league.externalId) },
               update: {
                 name: league.name,
-                shortCode: shortCode ?? undefined,
-                imagePath: league.imagePath ?? undefined,
+                shortCode: shortCode ?? null,
+                imagePath: league.imagePath ?? null,
                 countryId: countryId,
                 type: league.type,
-                subType: league.subType ?? undefined,
+                subType: league.subType ?? null,
                 updatedAt: new Date(),
               },
               create: {
@@ -189,9 +192,12 @@ export async function seedLeagues(
             );
 
             return { success: true, league };
-          } catch (e: any) {
-            const errorCode = e?.code || "UNKNOWN_ERROR";
-            const errorMessage = e?.message || "Unknown error";
+          } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            const errorCode =
+              e && typeof e === "object" && "code" in e
+                ? String((e as { code?: string }).code)
+                : "UNKNOWN_ERROR";
 
             await trackSeedItem(
               batchId!,
@@ -206,8 +212,9 @@ export async function seedLeagues(
               }
             );
 
-            console.log(
-              `❌ [${batchId}] League failed: ${league.name} (ID: ${league.externalId}) - ${errorMessage}`
+            log.error(
+              { batchId, leagueName: league.name, externalId: league.externalId, err: e },
+              "League failed"
             );
 
             return { success: false, league, error: errorMessage };
@@ -236,21 +243,19 @@ export async function seedLeagues(
       meta: { ok, fail },
     });
 
-    console.log(
-      `🎉 [${batchId}] Leagues seeding completed: ${ok} success, ${fail} failed`
+    log.info(
+      { batchId, ok, fail },
+      "Leagues seeding completed"
     );
     return { batchId, ok, fail, total: ok + fail };
-  } catch (e: any) {
-    console.log(
-      `💥 [${batchId}] Unexpected error during leagues seeding: ${
-        e?.message || "Unknown error"
-      }`
-    );
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    log.error({ batchId, err: e }, "Unexpected error during leagues seeding");
     await finishSeedBatch(batchId!, RunStatus.failed, {
       itemsTotal: ok + fail,
       itemsSuccess: ok,
       itemsFailed: fail,
-      errorMessage: String(e?.message ?? e).slice(0, 500),
+      errorMessage: msg.slice(0, 500),
       meta: { ok, fail },
     });
 

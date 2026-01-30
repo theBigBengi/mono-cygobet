@@ -10,7 +10,9 @@ import {
   validateFounded,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
+import { getLogger } from "../../logger";
 
+const log = getLogger("SeedTeams");
 const CHUNK_SIZE = 8;
 
 export async function seedTeams(
@@ -26,8 +28,9 @@ export async function seedTeams(
 ) {
   // In dry-run mode, skip all database writes including batch tracking
   if (opts?.dryRun) {
-    console.log(
-      `🧪 DRY RUN MODE: ${teams?.length ?? 0} teams would be processed (no database changes)`
+    log.info(
+      { count: teams?.length ?? 0 },
+      "Dry run mode; no DB changes"
     );
     return { batchId: null, ok: 0, fail: 0, total: teams?.length ?? 0 };
   }
@@ -60,7 +63,7 @@ export async function seedTeams(
     return { batchId, ok: 0, fail: 0, total: 0 };
   }
 
-  console.log(`⚽ Starting teams seeding: ${teams.length} teams to process`);
+  log.info({ count: teams.length }, "Starting teams seeding");
 
   // De-dupe input
   const seen = new Set<string>();
@@ -78,8 +81,9 @@ export async function seedTeams(
   }
 
   if (duplicates.length > 0) {
-    console.log(
-      `⚠️  Input contained ${duplicates.length} duplicate teams, processing ${uniqueTeams.length} unique items`
+    log.warn(
+      { duplicates: duplicates.length, unique: uniqueTeams.length },
+      "Input contained duplicate teams; processing unique items"
     );
     const duplicatePromises = duplicates.map((team) =>
       trackSeedItem(
@@ -115,8 +119,9 @@ export async function seedTeams(
       countryMap.set(String(country.externalId), country.id);
     }
 
-    console.log(
-      `✅ [${batchId}] Country lookup completed: ${countries.length}/${uniqueCountryIds.length} countries found`
+    log.info(
+      { batchId, found: countries.length, requested: uniqueCountryIds.length },
+      "Country lookup completed"
     );
   }
 
@@ -147,11 +152,11 @@ export async function seedTeams(
               where: { externalId: safeBigInt(team.externalId) },
               update: {
                 name: team.name,
-                shortCode: shortCode ?? undefined,
-                imagePath: team.imagePath ?? undefined,
-                founded: founded ?? undefined,
-                type: team.type ?? undefined,
-                countryId: countryId ?? undefined,
+                shortCode: shortCode ?? null,
+                imagePath: team.imagePath ?? null,
+                founded: founded ?? null,
+                type: team.type ?? null,
+                countryId: countryId ?? null,
                 updatedAt: new Date(),
               },
               create: {
@@ -177,9 +182,12 @@ export async function seedTeams(
             );
 
             return { success: true, team };
-          } catch (e: any) {
-            const errorCode = e?.code || "UNKNOWN_ERROR";
-            const errorMessage = e?.message || "Unknown error";
+          } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            const errorCode =
+              e && typeof e === "object" && "code" in e
+                ? String((e as { code?: string }).code)
+                : "UNKNOWN_ERROR";
 
             await trackSeedItem(
               batchId!,
@@ -194,8 +202,9 @@ export async function seedTeams(
               }
             );
 
-            console.log(
-              `❌ [${batchId}] Team failed: ${team.name} (ID: ${team.externalId}) - ${errorMessage}`
+            log.error(
+              { batchId, teamName: team.name, externalId: team.externalId, err: e },
+              "Team failed"
             );
 
             return { success: false, team, error: errorMessage };
@@ -224,21 +233,19 @@ export async function seedTeams(
       meta: { ok, fail },
     });
 
-    console.log(
-      `🎉 [${batchId}] Teams seeding completed: ${ok} success, ${fail} failed`
+    log.info(
+      { batchId, ok, fail },
+      "Teams seeding completed"
     );
     return { batchId, ok, fail, total: ok + fail };
-  } catch (e: any) {
-    console.log(
-      `💥 [${batchId}] Unexpected error during teams seeding: ${
-        e?.message || "Unknown error"
-      }`
-    );
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    log.error({ batchId, err: e }, "Unexpected error during teams seeding");
     await finishSeedBatch(batchId!, RunStatus.failed, {
       itemsTotal: ok + fail,
       itemsSuccess: ok,
       itemsFailed: fail,
-      errorMessage: String(e?.message ?? e).slice(0, 500),
+      errorMessage: msg.slice(0, 500),
       meta: { ok, fail },
     });
 

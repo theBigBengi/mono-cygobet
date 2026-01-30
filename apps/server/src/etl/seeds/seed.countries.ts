@@ -9,7 +9,9 @@ import {
   normIso,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
+import { getLogger } from "../../logger";
 
+const log = getLogger("SeedCountries");
 const CHUNK_SIZE = 8;
 
 export async function seedCountries(
@@ -25,8 +27,9 @@ export async function seedCountries(
 ) {
   // In dry-run mode, skip all database writes including batch tracking
   if (opts?.dryRun) {
-    console.log(
-      `🧪 DRY RUN MODE: ${countries?.length ?? 0} countries would be processed (no database changes)`
+    log.info(
+      { count: countries?.length ?? 0 },
+      "Dry run mode; no DB changes"
     );
     return { batchId: null, ok: 0, fail: 0, total: countries?.length ?? 0 };
   }
@@ -59,9 +62,7 @@ export async function seedCountries(
     return { batchId, ok: 0, fail: 0, total: 0 };
   }
 
-  console.log(
-    `🌍 Starting countries seeding: ${countries.length} countries to process`
-  );
+  log.info({ count: countries.length }, "Starting countries seeding");
 
   // De-dupe input
   const seen = new Set<string>();
@@ -79,8 +80,9 @@ export async function seedCountries(
   }
 
   if (duplicates.length > 0) {
-    console.log(
-      `⚠️  Input contained ${duplicates.length} duplicate countries, processing ${uniqueCountries.length} unique items`
+    log.warn(
+      { duplicates: duplicates.length, unique: uniqueCountries.length },
+      "Input contained duplicate countries; processing unique items"
     );
     const duplicatePromises = duplicates.map((country) =>
       trackSeedItem(
@@ -119,9 +121,9 @@ export async function seedCountries(
               where: { externalId: safeBigInt(country.externalId) },
               update: {
                 name: country.name,
-                imagePath: country.imagePath ?? undefined,
-                iso2: iso2 ?? undefined,
-                iso3: iso3 ?? undefined,
+                imagePath: country.imagePath ?? null,
+                iso2: iso2 ?? null,
+                iso3: iso3 ?? null,
                 updatedAt: new Date(),
               },
               create: {
@@ -145,9 +147,12 @@ export async function seedCountries(
             );
 
             return { success: true, country };
-          } catch (e: any) {
-            const errorCode = e?.code || "UNKNOWN_ERROR";
-            const errorMessage = e?.message || "Unknown error";
+          } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            const errorCode =
+              e && typeof e === "object" && "code" in e
+                ? String((e as { code?: string }).code)
+                : "UNKNOWN_ERROR";
 
             await trackSeedItem(
               batchId!,
@@ -162,8 +167,9 @@ export async function seedCountries(
               }
             );
 
-            console.log(
-              `❌ [${batchId}] Country failed: ${country.name} (ID: ${country.externalId}) - ${errorMessage}`
+            log.error(
+              { batchId, countryName: country.name, externalId: country.externalId, err: e },
+              "Country failed"
             );
 
             return { success: false, country, error: errorMessage };
@@ -192,21 +198,19 @@ export async function seedCountries(
       meta: { ok, fail },
     });
 
-    console.log(
-      `🎉 [${batchId}] Countries seeding completed: ${ok} success, ${fail} failed`
+    log.info(
+      { batchId, ok, fail },
+      "Countries seeding completed"
     );
     return { batchId, ok, fail, total: ok + fail };
-  } catch (e: any) {
-    console.log(
-      `💥 [${batchId}] Unexpected error during countries seeding: ${
-        e?.message || "Unknown error"
-      }`
-    );
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    log.error({ batchId, err: e }, "Unexpected error during countries seeding");
     await finishSeedBatch(batchId!, RunStatus.failed, {
       itemsTotal: ok + fail,
       itemsSuccess: ok,
       itemsFailed: fail,
-      errorMessage: String(e?.message ?? e).slice(0, 500),
+      errorMessage: msg.slice(0, 500),
       meta: { ok, fail },
     });
 

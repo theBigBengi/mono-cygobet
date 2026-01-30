@@ -108,22 +108,22 @@ const oddsFilters: string = oddsFiltersArg
   try {
     // Dry-run allows you to validate inputs and provider connectivity without touching DB.
     if (dryRun) {
-      console.log("🧪 DRY RUN MODE: No database changes will be made");
+      log.info({}, "Dry run mode; no database changes will be made");
     }
 
     // Validate dependencies when running individual seeds
     if (!runAll) {
       if (hasLeagues && !hasCountries) {
-        log.warn("Leagues depend on countries. Make sure countries are seeded first.");
+        log.warn({}, "Leagues depend on countries. Make sure countries are seeded first.");
       }
       if (hasTeams && !hasCountries) {
-        log.warn("Teams depend on countries. Make sure countries are seeded first.");
+        log.warn({}, "Teams depend on countries. Make sure countries are seeded first.");
       }
       if (hasSeasons && !hasLeagues) {
-        log.warn("Seasons depend on leagues. Make sure leagues are seeded first.");
+        log.warn({}, "Seasons depend on leagues. Make sure leagues are seeded first.");
       }
       if (hasFixtures && (!hasLeagues || !hasTeams || !hasSeasons)) {
-        log.warn("Fixtures depend on leagues, seasons, and teams. Make sure all are seeded first.");
+        log.warn({}, "Fixtures depend on leagues, seasons, and teams. Make sure all are seeded first.");
       }
     }
 
@@ -131,44 +131,44 @@ const oddsFilters: string = oddsFiltersArg
     // This ensures correct order when using --all or when multiple flags are used
 
     if (runAll || hasBookmakers) {
-      console.log("🚀 Starting bookmakers seeding...");
+      log.info({}, "Starting bookmakers seeding");
       const bookmakersDto = await adapter.fetchBookmakers();
       await seedBookmakers(bookmakersDto, { dryRun });
     }
 
     if (runAll || hasCountries) {
-      console.log("🚀 Starting countries seeding...");
+      log.info({}, "Starting countries seeding");
       const countriesDto = await adapter.fetchCountries();
       await seedCountries(countriesDto, { dryRun });
     }
 
     // Leagues and teams can run in parallel after countries (they both depend on countries)
     if (runAll || hasLeagues) {
-      console.log("🚀 Starting leagues seeding...");
+      log.info({}, "Starting leagues seeding");
       const leaguesDto = await adapter.fetchLeagues();
       await seedLeagues(leaguesDto, { dryRun });
     }
 
     if (runAll || hasTeams) {
-      console.log("🚀 Starting teams seeding...");
+      log.info({}, "Starting teams seeding");
       const teamsDto = await adapter.fetchTeams();
       await seedTeams(teamsDto, { dryRun });
     }
 
     // Seasons must come after leagues
     if (runAll || hasSeasons) {
-      console.log("🚀 Starting seasons seeding...");
+      log.info({}, "Starting seasons seeding");
       const seasonsDto = await adapter.fetchSeasons();
       await seedSeasons(seasonsDto, { dryRun });
     }
 
     // Fixtures must come after leagues, seasons, and teams
     if (runAll || hasFixtures) {
-      console.log("🚀 Starting fixtures seeding...");
+      log.info({}, "Starting fixtures seeding");
       if (fixtureStates) {
-        console.log(`   📋 Fetching fixtures with states: ${fixtureStates}`);
+        log.info({ fixtureStates }, "Fetching fixtures with states");
       } else {
-        console.log("   📋 Fetching all fixture states (NS, LIVE, FT, etc.)");
+        log.info({}, "Fetching all fixture states");
       }
       if (fixturesSeasonId) {
         const fixturesDto = await adapter.fetchFixturesBySeason(
@@ -196,7 +196,7 @@ const oddsFilters: string = oddsFiltersArg
     }
 
     if (runAll || hasOdds) {
-      log.info("Starting odds seeding");
+      log.info({}, "Starting odds seeding");
       const oddsDto = await adapter.fetchOddsBetween(oddsFrom, oddsTo, {
         filters: oddsFilters,
       });
@@ -204,12 +204,12 @@ const oddsFilters: string = oddsFiltersArg
     }
 
     if (runAll || hasJobs) {
-      log.info("Starting jobs seeding");
+      log.info({}, "Starting jobs seeding");
       // Jobs seeding is create-only: it guarantees required `jobs` rows exist without overwriting admin edits.
       await seedJobsDefaults({ dryRun });
     }
 
-    log.info("Seeding completed successfully");
+    log.info({}, "Seeding completed successfully");
     process.exit(0);
   } catch (err) {
     log.error({ err }, "Seeding failed");

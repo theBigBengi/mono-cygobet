@@ -4,9 +4,14 @@ import {
   startSeedBatch,
   trackSeedItem,
   finishSeedBatch,
+  chunk,
   safeBigInt,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
+import { getLogger } from "../../logger";
+
+const log = getLogger("SeedBookmakers");
+const CHUNK_SIZE = 8;
 
 /**
  * Seeds bookmakers.
@@ -27,8 +32,9 @@ export async function seedBookmakers(
 ) {
   // In dry-run mode, skip all database writes including batch tracking
   if (opts?.dryRun) {
-    console.log(
-      `🧪 DRY RUN MODE: ${bookmakers?.length ?? 0} bookmakers would be processed (no database changes)`
+    log.info(
+      { count: bookmakers?.length ?? 0 },
+      "Dry run mode; no DB changes"
     );
     return { batchId: null, ok: 0, fail: 0, total: bookmakers?.length ?? 0 };
   }
@@ -62,107 +68,149 @@ export async function seedBookmakers(
     return { batchId, ok: 0, fail: 0, total: 0 };
   }
 
-  console.log(
-    `🎰 Starting bookmakers seeding: ${bookmakers.length} bookmakers to process`
+  log.info(
+    { count: bookmakers.length },
+    "Starting bookmakers seeding"
   );
 
-  try {
-    console.log(
-      `🚀 [${batchId}] Starting bookmakers seeding with ${bookmakers.length} items`
+  // De-dupe input
+  const seen = new Set<string>();
+  const uniqueBookmakers: typeof bookmakers = [];
+  const duplicates: typeof bookmakers = [];
+
+  for (const bookmaker of bookmakers) {
+    const key = String(bookmaker.externalId);
+    if (seen.has(key)) {
+      duplicates.push(bookmaker);
+    } else {
+      seen.add(key);
+      uniqueBookmakers.push(bookmaker);
+    }
+  }
+
+  if (duplicates.length > 0) {
+    log.warn(
+      { duplicates: duplicates.length, unique: uniqueBookmakers.length },
+      "Input contained duplicate bookmakers; processing unique items"
     );
+    const duplicatePromises = duplicates.map((bookmaker) =>
+      trackSeedItem(
+        batchId!,
+        String(bookmaker.externalId),
+        RunStatus.skipped,
+        undefined,
+        {
+          name: bookmaker.name,
+          reason: "duplicate",
+        }
+      )
+    );
+    await Promise.allSettled(duplicatePromises);
+  }
 
-    let ok = 0;
-    let fail = 0;
+  let ok = 0;
+  let fail = 0;
 
-    // Upsert each bookmaker
-    for (const bookmaker of bookmakers) {
-      try {
-        // Use Prisma upsert to handle both create and update scenarios
-        await prisma.bookmakers.upsert({
-          where: { externalId: safeBigInt(bookmaker.externalId) },
-          update: {
-            name: bookmaker.name,
-            updatedAt: new Date(),
-          },
-          create: {
-            name: bookmaker.name,
-            externalId: safeBigInt(bookmaker.externalId),
-          },
-        });
+  try {
+    for (const group of chunk(uniqueBookmakers, CHUNK_SIZE)) {
+      const chunkResults = await Promise.allSettled(
+        group.map(async (bookmaker) => {
+          try {
+            await prisma.bookmakers.upsert({
+              where: { externalId: safeBigInt(bookmaker.externalId) },
+              update: {
+                name: bookmaker.name,
+                updatedAt: new Date(),
+              },
+              create: {
+                name: bookmaker.name,
+                externalId: safeBigInt(bookmaker.externalId),
+              },
+            });
 
-        // Track successful seeding
-        await trackSeedItem(
-          batchId!,
-          String(bookmaker.externalId),
-          RunStatus.success,
-          undefined,
-          {
-            name: bookmaker.name,
-            externalId: bookmaker.externalId,
+            await trackSeedItem(
+              batchId!,
+              String(bookmaker.externalId),
+              RunStatus.success,
+              undefined,
+              {
+                name: bookmaker.name,
+                externalId: bookmaker.externalId,
+              }
+            );
+
+            return { success: true, bookmaker };
+          } catch (error: unknown) {
+            const errorMessage = (error instanceof Error ? error.message : String(error)).slice(0, 500);
+            const errorCode =
+              error && typeof error === "object" && "code" in error
+                ? String((error as { code?: string }).code)
+                : "UNKNOWN_ERROR";
+
+            await trackSeedItem(
+              batchId!,
+              String(bookmaker.externalId),
+              RunStatus.failed,
+              `[${errorCode}] ${errorMessage}`,
+              {
+                name: bookmaker.name,
+                externalId: bookmaker.externalId,
+                errorCode,
+                errorMessage: errorMessage.slice(0, 200),
+              }
+            );
+
+            log.error(
+              { batchId, name: bookmaker.name, externalId: bookmaker.externalId, err: error },
+              "Bookmaker failed"
+            );
+
+            return { success: false, bookmaker, error: errorMessage };
           }
-        );
+        })
+      );
 
-        ok++;
-        console.log(
-          `✅ [${batchId}] Bookmaker seeded/updated: ${bookmaker.name} (${bookmaker.externalId})`
-        );
-      } catch (error: any) {
-        const errorCode = error?.code || "UNKNOWN_ERROR";
-        const errorMessage = String(error?.message || "Unknown error").slice(
-          0,
-          500
-        );
-
-        // Track failed seeding
-        await trackSeedItem(
-          batchId!,
-          String(bookmaker.externalId),
-          RunStatus.failed,
-          `[${errorCode}] ${errorMessage}`,
-          {
-            name: bookmaker.name,
-            externalId: bookmaker.externalId,
-            errorCode,
-            errorMessage: errorMessage.slice(0, 200),
+      for (const result of chunkResults) {
+        if (result.status === "fulfilled") {
+          if (result.value.success) {
+            ok++;
+          } else {
+            fail++;
           }
-        );
-
-        fail++;
-        console.log(
-          `❌ [${batchId}] Bookmaker failed: ${bookmaker.name} (${bookmaker.externalId}) - ${errorMessage}`
-        );
+        } else {
+          fail++;
+        }
       }
     }
 
-    // Finalize the batch
     await finishSeedBatch(batchId!, RunStatus.success, {
-      itemsTotal: bookmakers.length,
+      itemsTotal: ok + fail,
       itemsSuccess: ok,
       itemsFailed: fail,
-      meta: {
-        bookmakers: bookmakers.map((b) => b.name),
-      },
+      meta: { ok, fail },
     });
 
-    console.log(
-      `🎉 [${batchId}] Bookmakers seeding completed: ${ok} success, ${fail} failed`
+    log.info(
+      { batchId, ok, fail },
+      "Bookmakers seeding completed"
     );
     return { batchId, ok, fail, total: ok + fail };
   } catch (error) {
-    console.error(`💥 [${batchId}] Bookmakers seeding failed:`, error);
+    log.error({ batchId, err: error }, "Bookmakers seeding failed");
 
     await finishSeedBatch(batchId!, RunStatus.failed, {
-      itemsTotal: bookmakers.length,
-      itemsSuccess: 0,
-      itemsFailed: bookmakers.length,
-      meta: { error: String(error).slice(0, 500) },
+      itemsTotal: ok + fail,
+      itemsSuccess: ok,
+      itemsFailed: fail,
+      errorMessage: String(error).slice(0, 500),
+      meta: { ok, fail },
     });
 
     return {
       batchId,
-      ok: 0,
-      fail: bookmakers.length,
-      total: bookmakers.length,
+      ok,
+      fail,
+      total: ok + fail,
     };
   }
 }

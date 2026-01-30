@@ -9,7 +9,9 @@ import {
   normalizeDate,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
+import { getLogger } from "../../logger";
 
+const log = getLogger("SeedSeasons");
 const CHUNK_SIZE = 8;
 
 export async function seedSeasons(
@@ -25,8 +27,9 @@ export async function seedSeasons(
 ) {
   // In dry-run mode, skip all database writes including batch tracking
   if (opts?.dryRun) {
-    console.log(
-      `🧪 DRY RUN MODE: ${seasons?.length ?? 0} seasons would be processed (no database changes)`
+    log.info(
+      { count: seasons?.length ?? 0 },
+      "Dry run mode; no DB changes"
     );
     return { batchId: null, ok: 0, fail: 0, total: seasons?.length ?? 0 };
   }
@@ -59,9 +62,7 @@ export async function seedSeasons(
     return { batchId, ok: 0, fail: 0, total: 0 };
   }
 
-  console.log(
-    `📅 Starting seasons seeding: ${seasons.length} seasons to process`
-  );
+  log.info({ count: seasons.length }, "Starting seasons seeding");
 
   // De-dupe input
   const seen = new Set<string>();
@@ -79,8 +80,9 @@ export async function seedSeasons(
   }
 
   if (duplicates.length > 0) {
-    console.log(
-      `⚠️  Input contained ${duplicates.length} duplicate seasons, processing ${uniqueSeasons.length} unique items`
+    log.warn(
+      { duplicates: duplicates.length, unique: uniqueSeasons.length },
+      "Input contained duplicate seasons; processing unique items"
     );
     const duplicatePromises = duplicates.map((season) =>
       trackSeedItem(
@@ -116,8 +118,9 @@ export async function seedSeasons(
       leagueMap.set(String(league.externalId), league.id);
     }
 
-    console.log(
-      `✅ [${batchId}] League lookup completed: ${leagues.length}/${uniqueLeagueIds.length} leagues found`
+    log.info(
+      { batchId, found: leagues.length, requested: uniqueLeagueIds.length },
+      "League lookup completed"
     );
   }
 
@@ -178,9 +181,12 @@ export async function seedSeasons(
             );
 
             return { success: true, season };
-          } catch (e: any) {
-            const errorCode = e?.code || "UNKNOWN_ERROR";
-            const errorMessage = e?.message || "Unknown error";
+          } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            const errorCode =
+              e && typeof e === "object" && "code" in e
+                ? String((e as { code?: string }).code)
+                : "UNKNOWN_ERROR";
 
             await trackSeedItem(
               batchId!,
@@ -195,8 +201,9 @@ export async function seedSeasons(
               }
             );
 
-            console.log(
-              `❌ [${batchId}] Season failed: ${season.name} (ID: ${season.externalId}) - ${errorMessage}`
+            log.error(
+              { batchId, seasonName: season.name, externalId: season.externalId, err: e },
+              "Season failed"
             );
 
             return { success: false, season, error: errorMessage };
@@ -225,21 +232,19 @@ export async function seedSeasons(
       meta: { ok, fail },
     });
 
-    console.log(
-      `🎉 [${batchId}] Seasons seeding completed: ${ok} success, ${fail} failed`
+    log.info(
+      { batchId, ok, fail },
+      "Seasons seeding completed"
     );
     return { batchId, ok, fail, total: ok + fail };
-  } catch (e: any) {
-    console.log(
-      `💥 [${batchId}] Unexpected error during seasons seeding: ${
-        e?.message || "Unknown error"
-      }`
-    );
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    log.error({ batchId, err: e }, "Unexpected error during seasons seeding");
     await finishSeedBatch(batchId!, RunStatus.failed, {
       itemsTotal: ok + fail,
       itemsSuccess: ok,
       itemsFailed: fail,
-      errorMessage: String(e?.message ?? e).slice(0, 500),
+      errorMessage: msg.slice(0, 500),
       meta: { ok, fail },
     });
 
