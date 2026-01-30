@@ -174,8 +174,6 @@ export class SMHttp {
       let attempt = 0;
       let res: Response | undefined;
 
-      console.log({ url });
-
       // Retry logic for rate limiting (429) and server errors (5xx)
       while (attempt <= retries) {
         try {
@@ -314,16 +312,9 @@ export function extractTeams(
   return { homeId, awayId };
 }
 
-function calculateOddsValue(value: string): string {
-  return value;
-
-  // return String(
-  //   Number(value) > 1.5 ? Math.ceil(Number(value)) : Math.floor(Number(value))
-  // );
-}
-
 export function buildOdds(f: FixtureSportmonks): OddsDTO[] {
   const odds = f.odds;
+  if (!Array.isArray(odds)) return [];
 
   const out: OddsDTO[] = [];
 
@@ -333,10 +324,7 @@ export function buildOdds(f: FixtureSportmonks): OddsDTO[] {
       marketExternalId: o.market_id,
       externalId: o.id,
       name: o.name,
-      // We want to round the value to integer
-      // if 1.5+, we want to round to 2
-      // if 1.4-, we want to round to 1
-      value: calculateOddsValue(o.value),
+      value: o.value,
       marketDescription: o.market_description,
       marketName: o.market?.name,
       winning: o.winning,

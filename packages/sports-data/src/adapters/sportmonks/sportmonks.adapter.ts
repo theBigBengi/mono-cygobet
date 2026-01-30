@@ -175,7 +175,6 @@ export class SportMonksAdapter {
     const rows = await this.httpFootball.get<FixtureSportmonks>(
       `fixtures/between/${encodedFrom}/${encodedTo}`,
       {
-        // select: this.fixtureSelect,
         include: [...this.fixtureInclude, ...(options.include ?? [])],
         filters: options.filters,
         perPage: options.perPage ?? 50,
@@ -213,7 +212,6 @@ export class SportMonksAdapter {
     const rows = await this.httpFootball.get<FixtureSportmonks>(
       `fixtures/between/${encodedFrom}/${encodedTo}`,
       {
-        // select: this.fixtureSelect,
         include: [
           {
             name: "odds",
@@ -364,7 +362,6 @@ export class SportMonksAdapter {
 
       if (options?.include?.includes("odds")) {
         fixture.odds = buildOdds(f);
-        console.log(fixture.odds);
       }
 
       if (options?.include?.includes("participants")) {
