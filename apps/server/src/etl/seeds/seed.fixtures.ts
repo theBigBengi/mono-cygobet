@@ -39,8 +39,9 @@ export async function seedFixtures(
 }> {
   // In dry-run mode, skip all database writes including batch tracking
   if (opts?.dryRun) {
-    console.log(
-      `🧪 DRY RUN MODE: ${fixtures?.length ?? 0} fixtures would be processed (no database changes)`
+    log.info(
+      { count: fixtures?.length ?? 0 },
+      "Dry run mode; no DB changes"
     );
     return {
       batchId: null,
@@ -89,9 +90,7 @@ export async function seedFixtures(
     };
   }
 
-  console.log(
-    `⚽ Starting fixtures seeding: ${fixtures.length} fixtures to process`
-  );
+  log.info({ count: fixtures.length }, "Starting fixtures seeding");
 
   // De-dupe input
   const seen = new Set<string>();
@@ -109,8 +108,9 @@ export async function seedFixtures(
   }
 
   if (duplicates.length > 0) {
-    console.log(
-      `⚠️  Input contained ${duplicates.length} duplicate fixtures, processing ${uniqueFixtures.length} unique items`
+    log.warn(
+      { duplicates: duplicates.length, unique: uniqueFixtures.length },
+      "Duplicate fixtures found"
     );
     const duplicatePromises = duplicates.map((fixture) =>
       trackSeedItem(
@@ -147,8 +147,9 @@ export async function seedFixtures(
       leagueMap.set(String(league.externalId), league.id);
     }
 
-    console.log(
-      `✅ [${batchId}] League lookup completed: ${leagues.length}/${uniqueLeagueIds.length} leagues found`
+    log.info(
+      { batchId, found: leagues.length, total: uniqueLeagueIds.length },
+      "League lookup completed"
     );
   }
 
@@ -171,8 +172,9 @@ export async function seedFixtures(
       seasonMap.set(String(season.externalId), season.id);
     }
 
-    console.log(
-      `✅ [${batchId}] Season lookup completed: ${seasons.length}/${uniqueSeasonIds.length} seasons found`
+    log.info(
+      { batchId, found: seasons.length, total: uniqueSeasonIds.length },
+      "Season lookup completed"
     );
   }
 
@@ -194,8 +196,9 @@ export async function seedFixtures(
       teamMap.set(String(team.externalId), team.id);
     }
 
-    console.log(
-      `✅ [${batchId}] Team lookup completed: ${teams.length}/${allTeamIds.length} teams found`
+    log.info(
+      { batchId, found: teams.length, total: allTeamIds.length },
+      "Team lookup completed"
     );
   }
 
@@ -319,8 +322,8 @@ export async function seedFixtures(
             };
             await prisma.fixtures.upsert({
               where: { externalId: safeBigInt(payload.externalId) },
-              update: updatePayload as any,
-              create: createPayload as any,
+              update: updatePayload,
+              create: createPayload,
             });
 
             await trackSeedItem(
@@ -356,8 +359,9 @@ export async function seedFixtures(
               }
             );
 
-            console.log(
-              `❌ [${batchId}] Fixture failed: ${fixture.name} (ID: ${fixture.externalId}) - ${errorMessage}`
+            log.warn(
+              { batchId, externalId: fixture.externalId, error: errorMessage },
+              "Fixture seeding failed"
             );
 
             return { success: false, fixture, error: errorMessage, action };
@@ -403,9 +407,7 @@ export async function seedFixtures(
       }
     }
 
-    console.log(
-      `🎉 [${batchId}] Fixtures seeding completed: ${ok} success, ${fail} failed`
-    );
+    log.info({ batchId, ok, fail }, "Fixtures seeding completed");
     return {
       batchId,
       ok,
@@ -417,11 +419,7 @@ export async function seedFixtures(
       ...(firstError && { firstError }),
     };
   } catch (e: any) {
-    console.log(
-      `💥 [${batchId}] Unexpected error during fixtures seeding: ${
-        e?.message || "Unknown error"
-      }`
-    );
+    log.error({ batchId, err: e }, "Fixtures seeding failed");
     await finishSeedBatch(batchId!, RunStatus.failed, {
       itemsTotal: ok + fail,
       itemsSuccess: ok,

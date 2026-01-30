@@ -9,7 +9,9 @@ import {
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
 import { transformOddsDto } from "../transform/odds.transform";
+import { getLogger } from "../../logger";
 
+const log = getLogger("SeedOdds");
 const CHUNK_SIZE = 8;
 
 export async function seedOdds(
@@ -69,7 +71,7 @@ export async function seedOdds(
     };
   }
 
-  console.log(`🎲 Starting odds seeding: ${odds.length} odds to process`);
+  log.info({ count: odds.length }, "Starting odds seeding");
 
   // O(n) deduplication using Set
   const seen = new Set<string>();
@@ -80,9 +82,7 @@ export async function seedOdds(
   let skipped = 0;
 
   try {
-    console.log(
-      `🚀 [${batchId}] Starting odds seeding with ${odds.length} items`
-    );
+    log.info({ batchId, count: odds.length }, "Starting odds seeding batch");
 
     // O(n) deduplication using Set
     for (const odd of odds) {
@@ -96,8 +96,9 @@ export async function seedOdds(
     }
 
     if (duplicates.length > 0) {
-      console.log(
-        `⚠️ [${batchId}] Found ${duplicates.length} duplicate odds, processing ${uniqueOdds.length} unique items`
+      log.warn(
+        { batchId, duplicates: duplicates.length, unique: uniqueOdds.length },
+        "Duplicate odds found"
       );
 
       // Track skipped duplicates
@@ -209,10 +210,14 @@ export async function seedOdds(
     for (let i = 0; i < groups.length; i++) {
       const group = groups[i];
       if (!group) continue;
-      console.log(
-        `📦 [${batchId}] Processing chunk ${i + 1}/${groups.length} (${
-          group.length
-        } items)`
+      log.info(
+        {
+          batchId,
+          chunk: i + 1,
+          totalChunks: groups.length,
+          size: group.length,
+        },
+        "Processing chunk"
       );
 
       const chunkResults: Array<{
@@ -364,7 +369,7 @@ export async function seedOdds(
         (s) => s.status === "rejected"
       ).length;
       if (trackingFails > 0) {
-        console.log(`⚠️ [${batchId}] Tracking failures: ${trackingFails}`);
+        log.warn({ batchId, trackingFails }, "Seed item tracking failures");
       }
 
       // Update success/failure counts
@@ -375,21 +380,21 @@ export async function seedOdds(
           else updated++;
         } else {
           fail++;
-          console.log(
-            `❌ [${batchId}] Odd failed: ${
-              result.odd.name || result.odd.label || "Unknown"
-            } (ID: ${result.odd.externalId}) - ${result.error}`
+          log.warn(
+            { batchId, externalId: result.odd.externalId, error: result.error },
+            "Odd seeding failed"
           );
         }
       }
 
-      console.log(`✅ [${batchId}] Chunk processing completed`);
+      log.info({ batchId, chunk: i + 1 }, "Chunk completed");
     }
 
     // Batch update all fixtures to flag as having odds
     if (fixturesToFlag.size > 0) {
-      console.log(
-        `🏷️ [${batchId}] Updating ${fixturesToFlag.size} fixtures with hasOdds=true`
+      log.info(
+        { batchId, count: fixturesToFlag.size },
+        "Flagging fixtures with hasOdds"
       );
       await prisma.fixtures.updateMany({
         where: { id: { in: Array.from(fixturesToFlag) } },
@@ -412,8 +417,9 @@ export async function seedOdds(
         },
     });
 
-    console.log(
-      `🎉 [${batchId}] Odds seeding completed: ${ok} success, ${fail} failed, ${duplicates.length} duplicates skipped`
+    log.info(
+      { batchId, ok, fail, duplicates: duplicates.length },
+      "Odds seeding completed"
     );
     return {
       batchId,
@@ -426,7 +432,7 @@ export async function seedOdds(
       duplicates: duplicates.length,
     };
   } catch (error) {
-    console.error(`💥 [${batchId}] Odds seeding failed:`, error);
+    log.error({ batchId, err: error }, "Odds seeding failed");
 
     await finishSeedBatch(batchId!, RunStatus.failed, {
       itemsTotal: uniqueOdds.length,
