@@ -115,7 +115,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
       },
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Client"],
     });
 
     // app.ts (after registering core plugins, before routes)
