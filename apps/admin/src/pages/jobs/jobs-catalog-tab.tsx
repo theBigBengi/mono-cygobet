@@ -14,6 +14,7 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import type { AdminJobsListResponse } from "@repo/types";
 import {
   formatDateTime,
+  formatDurationMs,
   formatScheduleHuman,
   titleCaseWords,
   jobNameFromKey,
@@ -130,6 +131,24 @@ export function JobsCatalogTab({
                                 )}
                               </div>
                             </div>
+                            {j.lastRun && (
+                              <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
+                                <span>
+                                  {formatDurationMs(j.lastRun.durationMs)}
+                                </span>
+                                <span className="font-mono">
+                                  {j.lastRun.rowsAffected != null
+                                    ? `${j.lastRun.rowsAffected.toLocaleString()} rows`
+                                    : ""}
+                                </span>
+                                {j.lastRun.status === "success" &&
+                                  j.lastRun.rowsAffected === 0 && (
+                                    <span className="text-amber-600 font-medium">
+                                      no-op
+                                    </span>
+                                  )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CardContent>

@@ -59,7 +59,7 @@ const adminJobRunsDbRoutes: FastifyPluginAsync = async (fastify) => {
           : {}),
       };
 
-      const [runs, counts] = await Promise.all([
+      const [runs, counts, noOpCount] = await Promise.all([
         prisma.jobRuns.findMany({
           where: {
             ...whereClause,
@@ -94,6 +94,13 @@ const adminJobRunsDbRoutes: FastifyPluginAsync = async (fastify) => {
           where: whereClause,
           _count: { _all: true },
         }),
+        prisma.jobRuns.count({
+          where: {
+            ...whereClause,
+            status: RunStatus.success,
+            rowsAffected: 0,
+          },
+        }),
       ]);
 
       const last = runs.at(-1);
@@ -127,6 +134,7 @@ const adminJobRunsDbRoutes: FastifyPluginAsync = async (fastify) => {
             counts.find((c) => String(c.status) === "failed")?._count._all ?? 0,
           success:
             counts.find((c) => String(c.status) === "success")?._count._all ?? 0,
+          noOp: noOpCount,
         },
         message: "Job runs fetched successfully",
       });

@@ -13,7 +13,12 @@ import { StatusBadge } from "@/components/table/status-badge";
 import { batchesService } from "@/services/batches.service";
 import { toast } from "sonner";
 import type { AdminJobRunsListResponse } from "@repo/types";
-import { formatDateTime, formatDurationMs, jobNameFromKey } from "./jobs.utils";
+import {
+  formatDateTime,
+  formatDurationMs,
+  jobNameFromKey,
+  getRunReason,
+} from "./jobs.utils";
 
 type RunRow = AdminJobRunsListResponse["data"][0];
 
@@ -21,6 +26,95 @@ interface RunDetailDrawerProps {
   run: RunRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+function RunMetaDetails({
+  jobKey: _jobKey,
+  meta,
+}: {
+  jobKey: string;
+  meta: Record<string, unknown>;
+}) {
+  const window = meta["window"] as
+    | { from?: string; to?: string }
+    | undefined;
+  const fetched =
+    typeof meta["fetched"] === "number"
+      ? meta["fetched"]
+      : typeof meta["countFetched"] === "number"
+        ? meta["countFetched"]
+        : null;
+  const daysAhead =
+    typeof meta["daysAhead"] === "number" ? meta["daysAhead"] : null;
+
+  const rows: Array<{ label: string; value: string }> = [];
+
+  if (window?.from && window?.to) {
+    rows.push({
+      label: "Window",
+      value: `${window.from} → ${window.to}${daysAhead != null ? ` (${daysAhead}d)` : ""}`,
+    });
+  } else if (daysAhead != null) {
+    rows.push({ label: "Days ahead", value: String(daysAhead) });
+  }
+
+  if (typeof meta["filters"] === "string") {
+    rows.push({ label: "Filters", value: meta["filters"] as string });
+  }
+
+  if (typeof meta["maxLiveAgeHours"] === "number") {
+    rows.push({
+      label: "Max live age",
+      value: `${meta["maxLiveAgeHours"]}h`,
+    });
+  }
+
+  if (typeof meta["candidates"] === "number") {
+    rows.push({ label: "Candidates", value: String(meta["candidates"]) });
+  }
+
+  if (fetched != null) {
+    rows.push({
+      label: "Fetched from provider",
+      value: fetched.toLocaleString(),
+    });
+  }
+
+  if (typeof meta["countScheduled"] === "number") {
+    rows.push({
+      label: "Scheduled (NS)",
+      value: String(meta["countScheduled"]),
+    });
+  }
+
+  if (typeof meta["deleted"] === "number") {
+    rows.push({ label: "Deleted sessions", value: String(meta["deleted"]) });
+  }
+
+  if (typeof meta["reason"] === "string") {
+    rows.push({ label: "Reason", value: meta["reason"] as string });
+  }
+
+  if (!rows.length) return null;
+
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="text-sm font-medium">Job Details</div>
+      <div className="mt-3 space-y-2">
+        {rows.map((r) => (
+          <div
+            key={r.label}
+            className="flex items-baseline justify-between gap-3 text-xs"
+          >
+            <span className="text-muted-foreground">{r.label}</span>
+            <span className="font-mono text-foreground text-right truncate max-w-[60%]">
+              {r.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function RunDetailDrawer({ run, open, onOpenChange }: RunDetailDrawerProps) {
@@ -79,7 +173,14 @@ export function RunDetailDrawer({ run, open, onOpenChange }: RunDetailDrawerProp
                       </span>
                     </div>
                   </div>
-                  <StatusBadge status={run.status} />
+                  <div className="flex items-center gap-1.5">
+                    <StatusBadge status={run.status} />
+                    {run.status === "success" && getRunReason(runMeta) && (
+                      <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">
+                        {getRunReason(runMeta)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {run.job?.description ? (
@@ -120,7 +221,14 @@ export function RunDetailDrawer({ run, open, onOpenChange }: RunDetailDrawerProp
 
             <Separator />
 
+            {runMeta["dryRun"] === true && (
+              <div className="flex-shrink-0 mx-6 mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800">
+                DRY RUN — no data was written
+              </div>
+            )}
+
             <div className="flex-1 min-h-0 overflow-y-auto p-6 pt-4 space-y-4">
+              <RunMetaDetails jobKey={run.jobKey} meta={runMeta} />
               {(() => {
                 const ok =
                   typeof runMeta["ok"] === "number"

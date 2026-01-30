@@ -30,6 +30,7 @@ import {
   truncate,
   jobNameFromKey,
   getEnvLabel,
+  getRunReason,
 } from "./jobs.utils";
 
 type RunRow = AdminJobRunsListResponse["data"][0];
@@ -78,6 +79,7 @@ export function JobRunsTab({
       runningCount: serverSummary?.running ?? 0,
       failedCount: serverSummary?.failed ?? 0,
       successCount: serverSummary?.success ?? 0,
+      noOpCount: serverSummary?.noOp ?? 0,
     };
   }, [jobsCount, runsQuery.data]);
 
@@ -128,6 +130,10 @@ export function JobRunsTab({
               <span className="text-foreground">
                 {summary.successCount}
               </span>
+            </span>
+            <span className="text-muted-foreground">
+              No-op:{" "}
+              <span className="text-foreground">{summary.noOpCount}</span>
             </span>
           </div>
         </CardContent>
@@ -207,6 +213,7 @@ export function JobRunsTab({
                     <TableHead>StartedAt</TableHead>
                     <TableHead>FinishedAt</TableHead>
                     <TableHead>Duration</TableHead>
+                    <TableHead>Rows</TableHead>
                     <TableHead>Error</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -231,7 +238,19 @@ export function JobRunsTab({
                         </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        <StatusBadge status={r.status} />
+                        <div className="flex items-center gap-1.5">
+                          <StatusBadge status={r.status} />
+                          {r.status === "success" &&
+                            getRunReason(
+                              (r.meta ?? {}) as Record<string, unknown>
+                            ) && (
+                              <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">
+                                {getRunReason(
+                                  (r.meta ?? {}) as Record<string, unknown>
+                                )}
+                              </span>
+                            )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-xs whitespace-nowrap">
                         {getEnvLabel((r.meta ?? {}) as Record<string, unknown>)}
@@ -245,6 +264,11 @@ export function JobRunsTab({
                       <TableCell className="text-xs whitespace-nowrap">
                         {formatDurationMs(r.durationMs)}
                       </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap font-mono">
+                        {r.rowsAffected != null
+                          ? r.rowsAffected.toLocaleString()
+                          : "—"}
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {r.errorMessage
                           ? truncate(r.errorMessage, 120)
@@ -255,7 +279,7 @@ export function JobRunsTab({
                   {!runs.length && (
                     <TableRow>
                       <TableCell
-                        colSpan={8}
+                        colSpan={9}
                         className="text-center text-sm text-muted-foreground py-8"
                       >
                         No runs found.

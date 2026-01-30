@@ -260,6 +260,7 @@ export interface AdminJobRunsListResponse {
     running: number;
     failed: number;
     success: number;
+    noOp: number;
   };
   message: string;
 }

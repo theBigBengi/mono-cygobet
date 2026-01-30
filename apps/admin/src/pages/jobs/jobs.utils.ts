@@ -193,3 +193,25 @@ export function getEnvLabel(meta: Record<string, unknown>): string {
   const env = meta["environment"];
   return env === "PRODUCTION" || env === "DEVELOPMENT" ? String(env) : "—";
 }
+
+const REASON_LABELS: Record<string, string> = {
+  disabled: "Disabled",
+  "no-odds": "No odds",
+  "no-candidates": "No candidates",
+  "no-upcoming-ns": "No NS fixtures",
+  "no-valid-external-ids": "No valid IDs",
+  "no-finished-fixtures": "No finished",
+};
+
+export function getRunReason(meta: Record<string, unknown>): string | null {
+  const reason = meta["reason"];
+  if (typeof reason !== "string" || !reason) return null;
+  return REASON_LABELS[reason] ?? reason;
+}
+
+export function isNoOp(
+  meta: Record<string, unknown>,
+  rowsAffected: number | null
+): boolean {
+  return !!meta["reason"] || rowsAffected === 0;
+}
