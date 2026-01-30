@@ -317,3 +317,9 @@ export const predictionsOverviewResponseSchema = {
     message: { type: "string" },
   },
 };
+
+export const joinGroupByCodeBodySchema = {
+  type: "object",
+  required: ["code"],
+  properties: { code: { type: "string", minLength: 1 } },
+};

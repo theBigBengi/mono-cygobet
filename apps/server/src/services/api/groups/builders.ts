@@ -28,6 +28,7 @@ export function buildGroupItem(group: {
   creatorId: number;
   createdAt: Date;
   updatedAt: Date;
+  inviteCode?: string | null;
 }): {
   id: number;
   name: string;
@@ -36,6 +37,7 @@ export function buildGroupItem(group: {
   creatorId: number;
   createdAt: string;
   updatedAt: string;
+  inviteCode?: string | null;
 } {
   return {
     id: group.id,
@@ -45,6 +47,7 @@ export function buildGroupItem(group: {
     creatorId: group.creatorId,
     createdAt: group.createdAt.toISOString(),
     updatedAt: group.updatedAt.toISOString(),
+    inviteCode: group.inviteCode ?? null,
   };
 }
 

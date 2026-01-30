@@ -15,6 +15,10 @@ import {
   deleteGroup,
   getPredictionsOverview,
   getGroupRanking,
+  joinGroupByCode,
+  joinPublicGroup,
+  generateInviteCode,
+  getInviteCode,
 } from "../../services/api/groups";
 import type { GroupFixturesFilter } from "../../types/groups";
 import type {
@@ -28,6 +32,8 @@ import type {
   ApiSaveGroupPredictionsBatchBody,
   ApiSaveGroupPredictionsBatchResponse,
   ApiPredictionsOverviewResponse,
+  ApiJoinGroupByCodeBody,
+  ApiInviteCodeResponse,
 } from "@repo/types";
 import {
   createGroupBodySchema,
@@ -42,6 +48,7 @@ import {
   publishGroupBodySchema,
   publishGroupResponseSchema,
   predictionsOverviewResponseSchema,
+  joinGroupByCodeBodySchema,
 } from "../../schemas/api";
 
 /** Parse req.query into GroupFixturesFilter. Used only by GET :id and GET :id/fixtures. */
@@ -185,6 +192,43 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
 
       const userId = req.userAuth.user.id;
       const result = await getMyGroups(userId);
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * POST /api/groups/join
+   *
+   * - Requires auth + onboarding completion.
+   * - Joins a group by invite code. Body: { code }.
+   */
+  fastify.post<{
+    Body: ApiJoinGroupByCodeBody;
+    Reply: ApiGroupResponse;
+  }>(
+    "/groups/join",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        body: joinGroupByCodeBodySchema,
+        response: {
+          200: groupResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const userId = req.userAuth.user.id;
+      const { code } = req.body;
+
+      const result = await joinGroupByCode(code, userId);
 
       return reply.send(result);
     }
@@ -370,6 +414,158 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
         koRoundMode: body.koRoundMode,
         creatorId,
       });
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * POST /api/groups/:id/join
+   *
+   * - Requires auth + onboarding completion.
+   * - Joins the current user to a public group by ID.
+   */
+  fastify.post<{
+    Params: { id: number };
+    Reply: ApiGroupResponse;
+  }>(
+    "/groups/:id/join",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        response: {
+          200: groupResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await joinPublicGroup(id, userId);
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * GET /api/groups/:id/invite-code
+   *
+   * - Requires auth + onboarding completion.
+   * - Returns the invite code for the group (creator only). Group must be active.
+   */
+  fastify.get<{
+    Params: { id: number };
+    Reply: ApiInviteCodeResponse;
+  }>("/groups/:id/invite-code", {
+    preHandler: fastify.userAuth.requireOnboardingComplete,
+    schema: {
+      params: getGroupParamsSchema,
+      response: {
+        200: {
+          type: "object",
+          required: ["status", "data", "message"],
+          properties: {
+            status: { type: "string", enum: ["success"] },
+            data: {
+              type: "object",
+              required: ["inviteCode"],
+              properties: { inviteCode: { type: "string" } },
+            },
+            message: { type: "string" },
+          },
+        },
+      },
+    },
+  }, async (req, reply) => {
+    if (!req.userAuth) {
+      return reply.status(401).send({
+        status: "error",
+        message: "Unauthorized",
+      } as any);
+    }
+
+    const id = Number(req.params.id);
+    const userId = req.userAuth.user.id;
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.status(400).send({
+        status: "error",
+        message: "Invalid 'id'. Must be a positive integer.",
+      } as any);
+    }
+
+    const result = await getInviteCode(id, userId);
+
+    return reply.send(result);
+  });
+
+  /**
+   * POST /api/groups/:id/invite-code
+   *
+   * - Requires auth + onboarding completion.
+   * - Generates or regenerates the invite code for the group (creator only). Group must be active.
+   */
+  fastify.post<{
+    Params: { id: number };
+    Reply: ApiInviteCodeResponse;
+  }>(
+    "/groups/:id/invite-code",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        response: {
+          200: {
+            type: "object",
+            required: ["status", "data", "message"],
+            properties: {
+              status: { type: "string", enum: ["success"] },
+              data: {
+                type: "object",
+                required: ["inviteCode"],
+                properties: { inviteCode: { type: "string" } },
+              },
+              message: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await generateInviteCode(id, userId);
 
       return reply.send(result);
     }

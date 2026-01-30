@@ -288,6 +288,20 @@ export type ApiPublishGroupBody = {
 export type ApiPublishGroupResponse = ApiGroupResponse;
 
 /**
+ * Body for joining a group by invite code.
+ */
+export type ApiJoinGroupByCodeBody = { code: string };
+
+/**
+ * Response from GET/POST invite-code endpoints.
+ */
+export type ApiInviteCodeResponse = {
+  status: "success";
+  data: { inviteCode: string };
+  message: string;
+};
+
+/**
  * Group item returned by group endpoints.
  */
 export type ApiGroupItem = {
@@ -333,6 +347,10 @@ export type ApiGroupItem = {
    * Only included for active/ended groups.
    */
   hasUnpredictedGames?: boolean;
+  /**
+   * Invite code for the group (if generated). Only present when relevant.
+   */
+  inviteCode?: string | null;
 };
 
 /**
