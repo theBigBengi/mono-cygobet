@@ -268,6 +268,7 @@ model groups {
   // wager_tokens_amount     Int?
   // wager_custom            Json?
   privacy       groupPrivacy    @default(private)
+  inviteCode    String?         @unique @map("invite_code")
   groupFixtures groupFixtures[] @relation("groupFixturesRelation")
 
   // group_invites           groupInvites[]
@@ -318,6 +319,7 @@ model groupRules {
 
   koRoundMode    groupKoRoundMode    @default(FullTime) @map("ko_round_mode")
   predictionMode groupPredictionMode @default(CorrectScore) @map("prediction_mode")
+  maxMembers     Int                 @default(50) @map("max_members")
 
   // ruleType     String    @map("rule_type")
   // leagueId  Int?     @map("league_id")
