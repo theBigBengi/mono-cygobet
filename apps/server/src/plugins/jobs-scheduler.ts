@@ -2,6 +2,13 @@ import fp from "fastify-plugin";
 import cron, { type ScheduledTask } from "node-cron";
 import { JobTriggerBy, prisma } from "@repo/db";
 import { RUNNABLE_JOBS } from "../jobs/jobs.registry";
+import { getLockKeyForJob } from "../jobs/job-lock-keys";
+import {
+  AdvisoryLockNotAcquiredError,
+  AdvisoryLockTimeoutError,
+  DEFAULT_LOCK_TIMEOUT_MS,
+  withAdvisoryLock,
+} from "../utils/advisory-lock";
 import { getLogger } from "../logger";
 
 const log = getLogger("JobsScheduler");
@@ -16,8 +23,8 @@ const log = getLogger("JobsScheduler");
  * - The cron expression is sourced from DB (`jobs.scheduleCron`) so the admin UI can change it.
  * - We keep a `tasks` registry so we can stop/reschedule without restarting the API.
  * - We use a per-process in-memory lock so the same job won't overlap itself in this process.
- * - IMPORTANT: this is NOT a distributed lock. If you run multiple API instances, each instance
- *   can trigger the same cron unless you disable the scheduler on all but one instance.
+ * - We use a Postgres advisory lock (via withAdvisoryLock) so the same logical operation
+ *   cannot run in parallel across instances (cron vs admin vs CLI); second attempt skips or fails.
  */
 
 // Simple per-process locks so the same job doesn't overlap itself.
@@ -123,14 +130,38 @@ export default fp(async (fastify) => {
     // Null cron means "not scheduled".
     if (!cronExpr) return;
 
-    // Create the cron task. We wrap with `guard()` to prevent overlapping runs in this process.
+    // Create the cron task. We wrap with `guard()` (in-process) and `withAdvisoryLock` (cross-instance).
     const task = cron.schedule(
       cronExpr,
       guard(jobKey, async () => {
-        await runnable.run(fastify, {
-          triggeredBy: JobTriggerBy.cron_scheduler,
-          meta: { instanceId },
-        });
+        const lockKey = getLockKeyForJob(jobKey);
+        try {
+          await withAdvisoryLock(
+            lockKey,
+            () =>
+              runnable.run(fastify, {
+                triggeredBy: JobTriggerBy.cron_scheduler,
+                meta: { instanceId },
+              }),
+            { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
+          );
+        } catch (err) {
+          if (err instanceof AdvisoryLockNotAcquiredError) {
+            log.info(
+              { jobKey, lockKey },
+              "Job skipped: lock already held by another process"
+            );
+            return;
+          }
+          if (err instanceof AdvisoryLockTimeoutError) {
+            log.warn(
+              { jobKey, lockKey, timeoutMs: err.timeoutMs },
+              "Job timed out (caller rejected; lock released after job finishes)"
+            );
+            return;
+          }
+          throw err;
+        }
       })
     );
     tasks.set(jobKey, task);

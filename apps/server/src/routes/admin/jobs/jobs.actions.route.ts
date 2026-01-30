@@ -1,5 +1,12 @@
 import { FastifyPluginAsync } from "fastify";
 import type { AdminRunAllJobsResponse, AdminRunJobResponse } from "@repo/types";
+import { getLockKeyForJob } from "../../../jobs/job-lock-keys";
+import {
+  AdvisoryLockNotAcquiredError,
+  AdvisoryLockTimeoutError,
+  DEFAULT_LOCK_TIMEOUT_MS,
+  withAdvisoryLock,
+} from "../../../utils/advisory-lock";
 import {
   RUNNABLE_JOBS,
   getJobRunner,
@@ -38,6 +45,8 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
         response: {
           200: { type: "object" },
           404: { type: "object" },
+          409: { type: "object" },
+          408: { type: "object" },
         },
       },
     },
@@ -57,9 +66,14 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const opts = makeAdminRunOpts(req.body);
+      const lockKey = getLockKeyForJob(jobId);
 
       try {
-        const result: any = await runner(fastify, opts);
+        const result: any = await withAdvisoryLock(
+          lockKey,
+          () => runner(fastify, opts),
+          { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
+        );
         const jobRunId =
           typeof result?.jobRunId === "number" ? result.jobRunId : null;
 
@@ -75,6 +89,28 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
             : "Job triggered successfully",
         });
       } catch (err: any) {
+        if (err instanceof AdvisoryLockNotAcquiredError) {
+          return reply.status(409).send({
+            status: "error",
+            data: {
+              jobKey: jobId,
+              jobRunId: null,
+              result: null,
+            },
+            message: "Job already running (lock not acquired)",
+          });
+        }
+        if (err instanceof AdvisoryLockTimeoutError) {
+          return reply.status(408).send({
+            status: "error",
+            data: {
+              jobKey: jobId,
+              jobRunId: null,
+              result: null,
+            },
+            message: "Job timed out (lock will be released when job finishes)",
+          });
+        }
         return reply.status(500).send({
           status: "error",
           data: {
@@ -118,8 +154,13 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
 
       // Run sequentially for safety (avoid spiking provider / DB load)
       for (const job of RUNNABLE_JOBS) {
+        const lockKey = getLockKeyForJob(job.key);
         try {
-          const res: any = await job.run(fastify, opts);
+          const res: any = await withAdvisoryLock(
+            lockKey,
+            () => job.run(fastify, opts),
+            { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
+          );
           ok++;
           results.push({
             jobKey: job.key,
@@ -128,11 +169,17 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
           });
         } catch (e: any) {
           fail++;
+          const errorMessage =
+            e instanceof AdvisoryLockNotAcquiredError
+              ? "Lock not acquired (job already running elsewhere)"
+              : e instanceof AdvisoryLockTimeoutError
+                ? "Job timed out (lock will be released when job finishes)"
+                : String(e?.message ?? e ?? "Unknown error");
           results.push({
             jobKey: job.key,
             jobRunId: null,
             status: "error",
-            error: String(e?.message ?? e ?? "Unknown error"),
+            error: errorMessage,
           });
         }
       }

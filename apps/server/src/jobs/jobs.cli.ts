@@ -17,7 +17,14 @@ import "dotenv/config";
 import Fastify, { type FastifyInstance } from "fastify";
 import { JobTriggerBy, RunTrigger, prisma } from "@repo/db";
 import type { JobRunOpts } from "../types/jobs";
+import { getLockKeyForJob } from "./job-lock-keys";
 import { RUNNABLE_JOBS } from "./jobs.registry";
+import {
+  AdvisoryLockNotAcquiredError,
+  AdvisoryLockTimeoutError,
+  DEFAULT_LOCK_TIMEOUT_MS,
+  withAdvisoryLock,
+} from "../utils/advisory-lock";
 import { logger, getLogger } from "../logger";
 
 type CliOpts = {
@@ -120,56 +127,86 @@ async function main() {
     };
 
     const jobKey = opts.job;
+    const lockKey = getLockKeyForJob(jobKey);
 
-    const res = await (async () => {
-      switch (jobKey) {
-        case "upsert-upcoming-fixtures": {
-          const { runUpcomingFixturesJob } =
-            await import("./upcoming-fixtures.job");
-          const runOpts: JobRunOpts & { daysAhead?: number } = {
-            ...base,
-            ...(opts.daysAhead != null ? { daysAhead: opts.daysAhead } : {}),
-          };
-          return runUpcomingFixturesJob(fastify, runOpts);
-        }
-        case "upsert-live-fixtures": {
-          const { runLiveFixturesJob } = await import("./live-fixtures.job");
-          return runLiveFixturesJob(fastify, base);
-        }
-        case "finished-fixtures": {
-          const { runFinishedFixturesJob } =
-            await import("./finished-fixtures.job");
-          const runOpts: JobRunOpts & { maxLiveAgeHours?: number } = {
-            ...base,
-            ...(opts.maxLiveAgeHours != null
-              ? { maxLiveAgeHours: opts.maxLiveAgeHours }
-              : {}),
-          };
-          return runFinishedFixturesJob(fastify, runOpts);
-        }
-        case "update-prematch-odds": {
-          const { runUpdatePrematchOddsJob } =
-            await import("./update-prematch-odds.job");
-          const runOpts: JobRunOpts & { daysAhead?: number; filters?: string } =
-            {
+    const res = await withAdvisoryLock(
+      lockKey,
+      async () => {
+        switch (jobKey) {
+          case "upsert-upcoming-fixtures": {
+            const { runUpcomingFixturesJob } =
+              await import("./upcoming-fixtures.job");
+            const runOpts: JobRunOpts & { daysAhead?: number } = {
+              ...base,
+              ...(opts.daysAhead != null ? { daysAhead: opts.daysAhead } : {}),
+            };
+            return runUpcomingFixturesJob(fastify, runOpts);
+          }
+          case "upsert-live-fixtures": {
+            const { runLiveFixturesJob } = await import("./live-fixtures.job");
+            return runLiveFixturesJob(fastify, base);
+          }
+          case "finished-fixtures": {
+            const { runFinishedFixturesJob } =
+              await import("./finished-fixtures.job");
+            const runOpts: JobRunOpts & { maxLiveAgeHours?: number } = {
+              ...base,
+              ...(opts.maxLiveAgeHours != null
+                ? { maxLiveAgeHours: opts.maxLiveAgeHours }
+                : {}),
+            };
+            return runFinishedFixturesJob(fastify, runOpts);
+          }
+          case "update-prematch-odds": {
+            const { runUpdatePrematchOddsJob } =
+              await import("./update-prematch-odds.job");
+            const runOpts: JobRunOpts & {
+              daysAhead?: number;
+              filters?: string;
+            } = {
               ...base,
               ...(opts.daysAhead != null ? { daysAhead: opts.daysAhead } : {}),
               ...(opts.filters ? { filters: opts.filters } : {}),
             };
-          return runUpdatePrematchOddsJob(fastify, runOpts);
+            return runUpdatePrematchOddsJob(fastify, runOpts);
+          }
+          case "cleanup-expired-sessions": {
+            const { runCleanupExpiredSessionsJob } = await import(
+              "./cleanup-expired-sessions.job"
+            );
+            return runCleanupExpiredSessionsJob(fastify, base);
+          }
+          default: {
+            cliLogger.error(
+              `Unknown/non-runnable job '${jobKey}'. Use --list to see available jobs.`
+            );
+            process.exitCode = 1;
+            return null;
+          }
         }
-        default: {
-          cliLogger.error(
-            `Unknown/non-runnable job '${jobKey}'. Use --list to see available jobs.`
-          );
-          process.exitCode = 1;
-          return null;
-        }
-      }
-    })();
+      },
+      { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
+    );
 
+    if (res === null) return;
     cliLogger.info({ result: res }, "Job finished");
   } catch (err: unknown) {
+    if (err instanceof AdvisoryLockNotAcquiredError) {
+      cliLogger.info(
+        { jobKey: opts.job },
+        "Lock not acquired, job already running elsewhere"
+      );
+      process.exitCode = 1;
+      return;
+    }
+    if (err instanceof AdvisoryLockTimeoutError) {
+      cliLogger.warn(
+        { jobKey: opts.job, timeoutMs: err.timeoutMs },
+        "Job timed out (lock will be released when job finishes)"
+      );
+      process.exitCode = 1;
+      return;
+    }
     cliLogger.error({ err }, "Job failed");
     process.exitCode = 1;
   } finally {

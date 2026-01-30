@@ -8,6 +8,14 @@ import {
   syncResponseSchema,
 } from "../../../../schemas/admin/admin.schemas";
 import { prisma } from "@repo/db";
+import {
+  AdvisoryLockNotAcquiredError,
+  AdvisoryLockTimeoutError,
+  DEFAULT_LOCK_TIMEOUT_MS,
+  withAdvisoryLock,
+} from "../../../../utils/advisory-lock";
+
+const LOCK_KEY = "sync:fixtures";
 
 const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sync/fixtures - Sync fixtures from provider to database
@@ -37,6 +45,8 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         },
         response: {
           200: syncResponseSchema,
+          409: { type: "object" },
+          408: { type: "object" },
         },
       },
     },
@@ -49,33 +59,28 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         fetchAllFixtureStates = true,
       } = req.body ?? {};
 
-      let allFixturesDto: any[] = [];
-      let totalOk = 0;
-      let totalFail = 0;
-      let totalTotal = 0;
-      let lastBatchId: number | null = null;
-      let firstErrorSeen: string | undefined;
+      // All fetches outside the lock (no API time under lock)
+      let batchesToSeed: { fixturesDto: any[] }[] = [];
+      let dbSeasonsCount = 0;
 
       if (seasonId) {
-        // Single season
         const fixturesDto = await adapter.fetchFixturesBySeason(seasonId, {
           fixtureStates: fetchAllFixtureStates ? undefined : "1",
         });
-        allFixturesDto = fixturesDto;
+        batchesToSeed = [{ fixturesDto }];
       } else if (from && to) {
-        // Date range
         const fixturesDto = await adapter.fetchFixturesBetween(from, to, {
           filters: fetchAllFixtureStates
             ? undefined
             : { fixtureStates: "1" },
         });
-        allFixturesDto = fixturesDto;
+        batchesToSeed = [{ fixturesDto }];
       } else {
-        // Fetch all seasons from database and seed fixtures for each
         const dbSeasons = await prisma.seasons.findMany({
           select: { externalId: true },
           orderBy: { name: "asc" },
         });
+        dbSeasonsCount = dbSeasons.length;
 
         if (dbSeasons.length === 0) {
           return reply.code(400).send({
@@ -90,7 +95,6 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           });
         }
 
-        // Fetch fixtures for each season
         for (const season of dbSeasons) {
           try {
             const fixturesDto = await adapter.fetchFixturesBySeason(
@@ -100,64 +104,105 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               }
             );
             if (fixturesDto.length > 0) {
-              const result = await seedFixtures(fixturesDto, {
+              batchesToSeed.push({ fixturesDto });
+            }
+          } catch {
+            // Continue with other seasons; we'll still seed what we have
+          }
+        }
+      }
+
+      try {
+        return await withAdvisoryLock(
+          LOCK_KEY,
+          async () => {
+            let totalOk = 0;
+            let totalFail = 0;
+            let totalTotal = 0;
+            let lastBatchId: number | null = null;
+            let firstErrorSeen: string | undefined;
+
+            if (batchesToSeed.length === 1 && !dbSeasonsCount) {
+              const batch = batchesToSeed[0]!;
+              const result = await seedFixtures(batch.fixturesDto, {
                 dryRun,
                 triggeredBy: "admin-ui",
               });
-              totalOk += result.ok;
-              totalFail += result.fail;
-              totalTotal += result.total;
-              if (result.batchId) {
-                lastBatchId = result.batchId;
-              }
-              if (result.firstError && firstErrorSeen === undefined) {
-                firstErrorSeen = result.firstError;
-              }
+              return reply.send({
+                status: "success",
+                data: {
+                  batchId: result.batchId,
+                  ok: result.ok,
+                  fail: result.fail,
+                  total: result.total,
+                  ...(result.fail > 0 &&
+                    result.firstError && { firstError: result.firstError }),
+                },
+                message: dryRun
+                  ? "Fixtures sync dry-run completed"
+                  : "Fixtures synced successfully from provider to database",
+              });
             }
-          } catch (error) {
-            // Continue with other seasons even if one fails
-            totalFail += 1;
-            totalTotal += 1;
-            if (firstErrorSeen === undefined && error instanceof Error) {
-              firstErrorSeen = error.message;
-            }
-          }
-        }
 
-        return reply.send({
-          status: "success",
-          data: {
-            batchId: lastBatchId,
-            ok: totalOk,
-            fail: totalFail,
-            total: totalTotal,
-            ...(totalFail > 0 && firstErrorSeen && { firstError: firstErrorSeen }),
+            for (const { fixturesDto } of batchesToSeed) {
+              if (fixturesDto.length === 0) continue;
+              try {
+                const result = await seedFixtures(fixturesDto, {
+                  dryRun,
+                  triggeredBy: "admin-ui",
+                });
+                totalOk += result.ok;
+                totalFail += result.fail;
+                totalTotal += result.total;
+                if (result.batchId) lastBatchId = result.batchId;
+                if (result.firstError && firstErrorSeen === undefined)
+                  firstErrorSeen = result.firstError;
+              } catch (error) {
+                totalFail += 1;
+                totalTotal += 1;
+                if (
+                  firstErrorSeen === undefined &&
+                  error instanceof Error
+                ) {
+                  firstErrorSeen = error.message;
+                }
+              }
+            }
+
+            return reply.send({
+              status: "success",
+              data: {
+                batchId: lastBatchId,
+                ok: totalOk,
+                fail: totalFail,
+                total: totalTotal,
+                ...(totalFail > 0 &&
+                  firstErrorSeen && { firstError: firstErrorSeen }),
+              },
+              message: dryRun
+                ? `Fixtures sync dry-run completed for ${dbSeasonsCount || batchesToSeed.length} seasons`
+                : `Fixtures synced successfully from provider to database for ${dbSeasonsCount || batchesToSeed.length} seasons`,
+            });
           },
-          message: dryRun
-            ? `Fixtures sync dry-run completed for ${dbSeasons.length} seasons`
-            : `Fixtures synced successfully from provider to database for ${dbSeasons.length} seasons`,
-        });
+          { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
+        );
+      } catch (err) {
+        if (err instanceof AdvisoryLockNotAcquiredError) {
+          return reply.status(409).send({
+            status: "error",
+            data: { batchId: null, ok: 0, fail: 0, total: 0 },
+            message: "Fixtures sync already running",
+          } as AdminSyncFixturesResponse);
+        }
+        if (err instanceof AdvisoryLockTimeoutError) {
+          return reply.status(408).send({
+            status: "error",
+            data: { batchId: null, ok: 0, fail: 0, total: 0 },
+            message: "Fixtures sync timed out",
+          } as AdminSyncFixturesResponse);
+        }
+        throw err;
       }
-
-      // Single batch for seasonId or date range
-      const result = await seedFixtures(allFixturesDto, {
-        dryRun,
-        triggeredBy: "admin-ui",
-      });
-
-      return reply.send({
-        status: "success",
-        data: {
-          batchId: result.batchId,
-          ok: result.ok,
-          fail: result.fail,
-          total: result.total,
-          ...(result.fail > 0 && result.firstError && { firstError: result.firstError }),
-        },
-        message: dryRun
-          ? "Fixtures sync dry-run completed"
-          : "Fixtures synced successfully from provider to database",
-      });
     }
   );
 
@@ -180,6 +225,8 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         body: syncBodySchema,
         response: {
           200: syncResponseSchema,
+          409: { type: "object" },
+          408: { type: "object" },
         },
       },
     },
@@ -202,7 +249,6 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const fixtureDto = await adapter.fetchFixtureById(fixtureId);
-
       if (!fixtureDto) {
         return reply.code(404).send({
           status: "error",
@@ -216,24 +262,48 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const result = await seedFixtures([fixtureDto], {
-        dryRun,
-        triggeredBy: "admin-ui",
-      });
-
-      return reply.send({
-        status: "success",
-        data: {
-          batchId: result.batchId,
-          ok: result.ok,
-          fail: result.fail,
-          total: result.total,
-          ...(result.fail > 0 && result.firstError && { firstError: result.firstError }),
-        },
-        message: dryRun
-          ? `Fixture sync dry-run completed for ID ${fixtureId}`
-          : `Fixture synced successfully from provider to database (ID: ${fixtureId})`,
-      });
+      try {
+        return await withAdvisoryLock(
+          LOCK_KEY,
+          async () => {
+            const result = await seedFixtures([fixtureDto], {
+              dryRun,
+              triggeredBy: "admin-ui",
+            });
+            return reply.send({
+              status: "success",
+              data: {
+                batchId: result.batchId,
+                ok: result.ok,
+                fail: result.fail,
+                total: result.total,
+                ...(result.fail > 0 &&
+                  result.firstError && { firstError: result.firstError }),
+              },
+              message: dryRun
+                ? `Fixture sync dry-run completed for ID ${fixtureId}`
+                : `Fixture synced successfully from provider to database (ID: ${fixtureId})`,
+            });
+          },
+          { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
+        );
+      } catch (err) {
+        if (err instanceof AdvisoryLockNotAcquiredError) {
+          return reply.status(409).send({
+            status: "error",
+            data: { batchId: null, ok: 0, fail: 0, total: 0 },
+            message: "Fixtures sync already running",
+          } as AdminSyncFixturesResponse);
+        }
+        if (err instanceof AdvisoryLockTimeoutError) {
+          return reply.status(408).send({
+            status: "error",
+            data: { batchId: null, ok: 0, fail: 0, total: 0 },
+            message: "Fixtures sync timed out",
+          } as AdminSyncFixturesResponse);
+        }
+        throw err;
+      }
     }
   );
 };

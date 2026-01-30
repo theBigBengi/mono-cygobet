@@ -7,6 +7,14 @@ import {
   syncBodySchema,
   syncResponseSchema,
 } from "../../../../schemas/admin/admin.schemas";
+import {
+  AdvisoryLockNotAcquiredError,
+  AdvisoryLockTimeoutError,
+  DEFAULT_LOCK_TIMEOUT_MS,
+  withAdvisoryLock,
+} from "../../../../utils/advisory-lock";
+
+const LOCK_KEY = "sync:bookmakers";
 
 const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sync/bookmakers - Sync bookmakers from provider to database
@@ -20,30 +28,54 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
         body: syncBodySchema,
         response: {
           200: syncResponseSchema,
+          409: { type: "object" },
+          408: { type: "object" },
         },
       },
     },
     async (req, reply): Promise<AdminSyncBookmakersResponse> => {
       const { dryRun = false } = req.body ?? {};
-
       const bookmakersDto = await adapter.fetchBookmakers();
-      const result = await seedBookmakers(bookmakersDto, { 
-        dryRun,
-        triggeredBy: "admin-ui"
-      });
-
-      return reply.send({
-        status: "success",
-        data: {
-          batchId: result.batchId,
-          ok: result.ok,
-          fail: result.fail,
-          total: result.total,
-        },
-        message: dryRun
-          ? "Bookmakers sync dry-run completed"
-          : "Bookmakers synced successfully from provider to database",
-      });
+      try {
+        return await withAdvisoryLock(
+          LOCK_KEY,
+          async () => {
+            const result = await seedBookmakers(bookmakersDto, {
+              dryRun,
+              triggeredBy: "admin-ui",
+            });
+            return reply.send({
+              status: "success",
+              data: {
+                batchId: result.batchId,
+                ok: result.ok,
+                fail: result.fail,
+                total: result.total,
+              },
+              message: dryRun
+                ? "Bookmakers sync dry-run completed"
+                : "Bookmakers synced successfully from provider to database",
+            });
+          },
+          { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
+        );
+      } catch (err) {
+        if (err instanceof AdvisoryLockNotAcquiredError) {
+          return reply.status(409).send({
+            status: "error",
+            data: { batchId: null, ok: 0, fail: 0, total: 0 },
+            message: "Bookmakers sync already running",
+          } as AdminSyncBookmakersResponse);
+        }
+        if (err instanceof AdvisoryLockTimeoutError) {
+          return reply.status(408).send({
+            status: "error",
+            data: { batchId: null, ok: 0, fail: 0, total: 0 },
+            message: "Bookmakers sync timed out",
+          } as AdminSyncBookmakersResponse);
+        }
+        throw err;
+      }
     }
   );
 
@@ -66,13 +98,14 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
         body: syncBodySchema,
         response: {
           200: syncResponseSchema,
+          409: { type: "object" },
+          408: { type: "object" },
         },
       },
     },
     async (req, reply): Promise<AdminSyncBookmakersResponse> => {
       const { id } = req.params;
       const { dryRun = false } = req.body ?? {};
-
       const bookmakerId = Number(id);
       if (isNaN(bookmakerId)) {
         return reply.status(400).send({
@@ -86,12 +119,10 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
           message: `Invalid bookmaker ID: ${id}`,
         });
       }
-
       const bookmakersDto = await adapter.fetchBookmakers();
       const bookmakerDto = bookmakersDto.find(
         (b) => b.externalId === bookmakerId
       );
-
       if (!bookmakerDto) {
         return reply.status(404).send({
           status: "error",
@@ -104,24 +135,46 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
           message: `Bookmaker with ID ${bookmakerId} not found in provider`,
         });
       }
-
-      const result = await seedBookmakers([bookmakerDto], { 
-        dryRun,
-        triggeredBy: "admin-ui"
-      });
-
-      return reply.send({
-        status: "success",
-        data: {
-          batchId: result.batchId,
-          ok: result.ok,
-          fail: result.fail,
-          total: result.total,
-        },
-        message: dryRun
-          ? `Bookmaker sync dry-run completed for ID ${bookmakerId}`
-          : `Bookmaker synced successfully from provider to database (ID: ${bookmakerId})`,
-      });
+      try {
+        return await withAdvisoryLock(
+          LOCK_KEY,
+          async () => {
+            const result = await seedBookmakers([bookmakerDto], {
+              dryRun,
+              triggeredBy: "admin-ui",
+            });
+            return reply.send({
+              status: "success",
+              data: {
+                batchId: result.batchId,
+                ok: result.ok,
+                fail: result.fail,
+                total: result.total,
+              },
+              message: dryRun
+                ? `Bookmaker sync dry-run completed for ID ${bookmakerId}`
+                : `Bookmaker synced successfully from provider to database (ID: ${bookmakerId})`,
+            });
+          },
+          { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
+        );
+      } catch (err) {
+        if (err instanceof AdvisoryLockNotAcquiredError) {
+          return reply.status(409).send({
+            status: "error",
+            data: { batchId: null, ok: 0, fail: 0, total: 0 },
+            message: "Bookmakers sync already running",
+          } as AdminSyncBookmakersResponse);
+        }
+        if (err instanceof AdvisoryLockTimeoutError) {
+          return reply.status(408).send({
+            status: "error",
+            data: { batchId: null, ok: 0, fail: 0, total: 0 },
+            message: "Bookmakers sync timed out",
+          } as AdminSyncBookmakersResponse);
+        }
+        throw err;
+      }
     }
   );
 };
