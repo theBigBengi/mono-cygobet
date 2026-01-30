@@ -1,7 +1,7 @@
 // groups/repository/interface.ts
 // GroupsRepository interface - contract for all repository operations.
 
-import type { groupPrivacy, groupPredictionMode, groupKoRoundMode, groupSelectionMode } from "@repo/db";
+import type { groupPrivacy, groupPredictionMode, groupKoRoundMode, groupSelectionMode, groupInviteAccess } from "@repo/db";
 import type { Prisma } from "@repo/db";
 import type { FixtureWithRelationsAndResult } from "../types";
 
@@ -31,6 +31,7 @@ export interface GroupsRepository {
     teamIds: number[];
     leagueIds: number[];
     now: number;
+    inviteAccess?: "all" | "admin_only";
   }): Promise<Prisma.groupsGetPayload<{}>>;
   updateGroupWithFixtures(
     groupId: number,
@@ -47,6 +48,7 @@ export interface GroupsRepository {
     outcomePoints?: number;
     predictionMode?: groupPredictionMode;
     koRoundMode?: groupKoRoundMode;
+    inviteAccess?: groupInviteAccess;
   }): Promise<Prisma.groupsGetPayload<{}>>;
   deleteGroup(id: number): Promise<Prisma.groupsGetPayload<{}>>;
   findGroupRules(groupId: number): Promise<{ selectionMode: groupSelectionMode } | null>;

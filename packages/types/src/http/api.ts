@@ -245,6 +245,11 @@ export type ApiGroupPrivacy = "private" | "public";
 export type ApiGroupStatus = "draft" | "active" | "ended";
 
 /**
+ * Who can access the invite link: all members or admins/owner only.
+ */
+export type ApiInviteAccess = "all" | "admin_only";
+
+/**
  * Body for creating a group.
  */
 export type ApiCreateGroupBody = {
@@ -258,6 +263,8 @@ export type ApiCreateGroupBody = {
   teamIds?: number[];
   /** Used when selectionMode is "leagues". Exactly one league. */
   leagueIds?: number[];
+  /** Who can access the invite link. Default "all". */
+  inviteAccess?: ApiInviteAccess;
 };
 
 /**
@@ -280,6 +287,7 @@ export type ApiPublishGroupBody = {
   outcomePoints?: number;
   predictionMode?: string;
   koRoundMode?: string;
+  inviteAccess?: ApiInviteAccess;
 };
 
 /**
@@ -347,6 +355,8 @@ export type ApiGroupItem = {
    * Only included for active/ended groups.
    */
   hasUnpredictedGames?: boolean;
+  /** Who can access the invite link. */
+  inviteAccess?: ApiInviteAccess;
   /**
    * Invite code for the group (if generated). Only present when relevant.
    */

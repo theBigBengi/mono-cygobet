@@ -3,7 +3,7 @@
 
 import { prisma } from "@repo/db";
 import type { Prisma } from "@repo/db";
-import { groupPrivacy, groupPredictionMode, groupKoRoundMode, groupSelectionMode, groupMembersStatus } from "@repo/db";
+import { groupPrivacy, groupPredictionMode, groupKoRoundMode, groupSelectionMode, groupMembersStatus, groupInviteAccess } from "@repo/db";
 import { MEMBER_STATUS, GROUP_STATUS, SELECTION_MODE } from "../constants";
 import {
   resolveInitialFixturesInternal,
@@ -78,8 +78,11 @@ async function createGroupRulesInternal(
   groupId: number,
   selectionMode: "games" | "teams" | "leagues",
   teamIds: number[],
-  leagueIds: number[]
+  leagueIds: number[],
+  inviteAccess?: "all" | "admin_only"
 ): Promise<void> {
+  const inviteAccessData =
+    inviteAccess !== undefined ? { inviteAccess: inviteAccess as groupInviteAccess } : {};
   if (selectionMode === "games") {
     await tx.groupRules.create({
       data: {
@@ -87,6 +90,7 @@ async function createGroupRulesInternal(
         selectionMode: SELECTION_MODE.GAMES,
         groupTeamsIds: [],
         groupLeaguesIds: [],
+        ...inviteAccessData,
       },
     });
   } else if (selectionMode === "leagues") {
@@ -96,6 +100,7 @@ async function createGroupRulesInternal(
         selectionMode: SELECTION_MODE.LEAGUES,
         groupTeamsIds: [],
         groupLeaguesIds: leagueIds,
+        ...inviteAccessData,
       },
     });
   } else {
@@ -106,6 +111,7 @@ async function createGroupRulesInternal(
         selectionMode: SELECTION_MODE.TEAMS,
         groupTeamsIds: teamIds,
         groupLeaguesIds: [],
+        ...inviteAccessData,
       },
     });
   }
@@ -153,6 +159,7 @@ export async function publishGroupInternal(data: {
   outcomePoints?: number;
   predictionMode?: groupPredictionMode;
   koRoundMode?: groupKoRoundMode;
+  inviteAccess?: groupInviteAccess;
 }): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.$transaction(async (tx) => {
     // 1. Update groups table
@@ -202,6 +209,10 @@ export async function publishGroupInternal(data: {
         rulesUpdateData.koRoundMode = data.koRoundMode;
       }
 
+      if (data.inviteAccess !== undefined) {
+        rulesUpdateData.inviteAccess = data.inviteAccess;
+      }
+
       // Only update if there are fields to update
       if (Object.keys(rulesUpdateData).length > 0) {
         await tx.groupRules.update({
@@ -236,6 +247,8 @@ export async function publishGroupInternal(data: {
           koRoundMode:
             data.koRoundMode ??
             groupKoRoundMode.FullTime,
+          inviteAccess:
+            data.inviteAccess ?? groupInviteAccess.all,
         },
       });
     }
@@ -265,6 +278,7 @@ export async function createGroupWithMemberAndRules(data: {
   teamIds: number[];
   leagueIds: number[];
   now: number;
+  inviteAccess?: "all" | "admin_only";
 }): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.$transaction(async (tx) => {
     // Create group
@@ -302,7 +316,14 @@ export async function createGroupWithMemberAndRules(data: {
       data.now
     );
 
-    await createGroupRulesInternal(tx, group.id, selMode, modeTeams, modeLeagues);
+    await createGroupRulesInternal(
+      tx,
+      group.id,
+      selMode,
+      modeTeams,
+      modeLeagues,
+      data.inviteAccess
+    );
 
     await attachFixturesToGroupInternal(tx, group.id, fixtureIdsToUse);
 

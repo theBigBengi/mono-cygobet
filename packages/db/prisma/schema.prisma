@@ -300,6 +300,13 @@ enum groupPredictionMode {
   @@map("group_prediction_mode")
 }
 
+enum groupInviteAccess {
+  all
+  admin_only
+
+  @@map("group_invite_access")
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model groupRules {
   id        Int      @id @default(autoincrement())
@@ -320,6 +327,7 @@ model groupRules {
   koRoundMode    groupKoRoundMode    @default(FullTime) @map("ko_round_mode")
   predictionMode groupPredictionMode @default(CorrectScore) @map("prediction_mode")
   maxMembers     Int                 @default(50) @map("max_members")
+  inviteAccess   groupInviteAccess   @default(all) @map("invite_access")
 
   // ruleType     String    @map("rule_type")
   // leagueId  Int?     @map("league_id")

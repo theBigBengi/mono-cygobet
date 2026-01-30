@@ -25,3 +25,8 @@ export const SELECTION_MODE = {
   TEAMS: "teams",
   LEAGUES: "leagues",
 } as const;
+
+export const INVITE_ACCESS = {
+  ALL: "all",
+  ADMIN_ONLY: "admin_only",
+} as const;

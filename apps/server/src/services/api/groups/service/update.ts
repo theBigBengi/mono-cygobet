@@ -8,7 +8,7 @@ import type {
   ApiGroupPrivacy,
 } from "@repo/types";
 import type { Prisma } from "@repo/db";
-import type { groupPredictionMode, groupKoRoundMode } from "@repo/db";
+import type { groupPredictionMode, groupKoRoundMode, groupInviteAccess } from "@repo/db";
 import { BadRequestError } from "../../../../utils/errors";
 import { GROUP_STATUS } from "../constants";
 import { buildGroupItem } from "../builders";
@@ -79,6 +79,7 @@ export async function publishGroup(
     outcomePoints,
     predictionMode,
     koRoundMode,
+    inviteAccess,
   } = args;
 
   // 1. Business validations
@@ -107,6 +108,7 @@ export async function publishGroup(
       predictionMode: predictionMode as groupPredictionMode,
     }),
     ...(koRoundMode !== undefined && { koRoundMode: koRoundMode as groupKoRoundMode }),
+    ...(inviteAccess !== undefined && { inviteAccess: inviteAccess as groupInviteAccess }),
   };
 
   // 3. Call repository to perform all updates in a single transaction

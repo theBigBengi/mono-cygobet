@@ -63,11 +63,26 @@ export async function getInviteCode(
     throw new BadRequestError("Group is not active");
   }
 
-  // For private groups, check membership
+  // For private groups, check membership (reuse member for admin_only check below)
+  let memberFromCheck: Awaited<ReturnType<typeof repo.findGroupMember>> = null;
   if (group.privacy === GROUP_PRIVACY.PRIVATE && group.creatorId !== userId) {
-    const member = await repo.findGroupMember(groupId, userId);
-    if (!member || member.status !== MEMBER_STATUS.JOINED) {
+    memberFromCheck = await repo.findGroupMember(groupId, userId);
+    if (!memberFromCheck || memberFromCheck.status !== MEMBER_STATUS.JOINED) {
       throw new ForbiddenError("Only group members can view the invite code");
+    }
+  }
+
+  // Fetch invite access rule
+  const rules = await prisma.groupRules.findUnique({
+    where: { groupId },
+    select: { inviteAccess: true },
+  });
+
+  // If admin_only, check role (creator is always allowed as owner)
+  if (rules?.inviteAccess === "admin_only" && group.creatorId !== userId) {
+    const member = memberFromCheck ?? (await repo.findGroupMember(groupId, userId));
+    if (!member || (member.role !== "admin" && member.role !== "owner")) {
+      throw new ForbiddenError("Only admins can share the invite link for this group");
     }
   }
 

@@ -33,6 +33,7 @@ export async function createGroup(
     selectionMode = "games",
     teamIds = [],
     leagueIds = [],
+    inviteAccess,
   } = args;
 
   log.info({ creatorId, selectionMode }, "Creating group");
@@ -57,6 +58,7 @@ export async function createGroup(
       teamIds: selMode === SELECTION_MODE.TEAMS ? teamIds ?? [] : [],
       leagueIds: selMode === SELECTION_MODE.LEAGUES ? leagueIds ?? [] : [],
       now: nowUnixSeconds(),
+      ...(inviteAccess !== undefined && { inviteAccess }),
     });
 
     const data = buildGroupItem(result);
