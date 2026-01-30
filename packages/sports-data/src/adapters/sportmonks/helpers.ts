@@ -251,12 +251,13 @@ export class SMHttp {
                       Accept: "application/json",
                     }
                   : { Accept: "application/json" },
+              signal: AbortSignal.timeout(30_000),
             })
           );
           if (!res.ok) {
             await res.text(); // Consume body
             if (res.status === 429 || res.status >= 500) {
-              if (res.status >= 500) this.circuitBreaker.recordFailure();
+              this.circuitBreaker.recordFailure();
               attempt++;
               if (attempt > retries) {
                 if (res.status === 429) {
@@ -427,7 +428,9 @@ export function mapSmShortToApp(
   )
     return "LIVE";
 
-  // Default fallback for unknown live states
+  // Default fallback for unknown states — log so we notice new states from provider
+  // eslint-disable-next-line no-console
+  console.warn(`[mapSmShortToApp] Unknown fixture state: "${stateType}" — mapped to CAN`);
   return "CAN";
 }
 
@@ -450,6 +453,7 @@ export function pickScoreString(
     (s) => s.score.participant.toLowerCase() === "away"
   )?.score.goals;
 
+  if (homeScore == null || awayScore == null) return null;
   return `${homeScore}:${awayScore}`;
 }
 

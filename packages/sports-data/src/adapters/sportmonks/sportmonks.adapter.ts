@@ -251,10 +251,9 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       }
     );
 
-    let out: OddsDTO[] = [];
-
+    const out: OddsDTO[] = [];
     for (const f of rows) {
-      out = [...out, ...buildOdds(f)];
+      out.push(...buildOdds(f));
     }
     this.logger.info("fetchOddsBetween", {
       count: out.length,
