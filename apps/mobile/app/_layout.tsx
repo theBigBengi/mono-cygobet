@@ -76,6 +76,10 @@ function AppContent() {
                 options={{ title: "Invite", headerShown: true }}
               />
               <Stack.Screen
+                name="groups/join"
+                options={{ title: "Joining...", headerShown: true }}
+              />
+              <Stack.Screen
                 name="modal"
                 options={{ presentation: "modal", headerShown: true }}
               />

@@ -7,7 +7,8 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { Screen, AppText } from "@/components/ui";
+import { Screen, AppText, Button } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import { useMyGroupsQuery } from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
@@ -17,8 +18,12 @@ import type { ApiGroupItem } from "@repo/types";
 
 export default function GroupsScreen() {
   const router = useRouter();
-
+  const { theme } = useTheme();
   const { data, isLoading, error, refetch } = useMyGroupsQuery();
+
+  const handleJoinWithCode = () => {
+    router.push("/groups/join");
+  };
 
   const handleGroupPress = (groupId: number) => {
     // Navigate to group details - Stack screen at root level
@@ -61,6 +66,12 @@ export default function GroupsScreen() {
             >
               You don&apos;t have any groups yet
             </AppText>
+            <Button
+              label="Join with code"
+              variant="secondary"
+              onPress={handleJoinWithCode}
+              style={[styles.joinButton, { marginTop: theme.spacing.lg }]}
+            />
           </View>
         </Screen>
       </View>
@@ -71,6 +82,14 @@ export default function GroupsScreen() {
   return (
     <View style={styles.root}>
       <Screen scroll onRefresh={async () => { await refetch(); }}>
+        <View style={[styles.joinRow, { marginBottom: theme.spacing.md }]}>
+          <Button
+            label="Join with code"
+            variant="secondary"
+            onPress={handleJoinWithCode}
+            style={styles.joinButton}
+          />
+        </View>
         {groups.map((group) => {
           if (group.status === "draft") {
             return (
@@ -110,5 +129,11 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     textAlign: "center",
+  },
+  joinRow: {
+    width: "100%",
+  },
+  joinButton: {
+    width: "100%",
   },
 });
