@@ -3,7 +3,7 @@
 
 import { prisma } from "@repo/db";
 import type { Prisma } from "@repo/db";
-import { groupPrivacy, groupPredictionMode, groupKoRoundMode, groupSelectionMode } from "@repo/db";
+import { groupPrivacy, groupPredictionMode, groupKoRoundMode, groupSelectionMode, groupMembersStatus } from "@repo/db";
 import { MEMBER_STATUS, GROUP_STATUS, SELECTION_MODE } from "../constants";
 import {
   resolveInitialFixturesInternal,
@@ -339,4 +339,44 @@ export async function findGroupMembersWithUsers(groupId: number) {
   });
 
   return { members, users };
+}
+
+/**
+ * Count joined members in a group.
+ */
+export async function countGroupMembers(groupId: number): Promise<number> {
+  return prisma.groupMembers.count({
+    where: { groupId, status: MEMBER_STATUS.JOINED },
+  });
+}
+
+/**
+ * Find a group by its invite code.
+ */
+export async function findGroupByInviteCode(inviteCode: string) {
+  return prisma.groups.findFirst({
+    where: { inviteCode } as Prisma.groupsWhereInput,
+  });
+}
+
+/**
+ * Find an existing group member record (any status).
+ */
+export async function findGroupMember(groupId: number, userId: number) {
+  return prisma.groupMembers.findUnique({
+    where: { groupId_userId: { groupId, userId } },
+  });
+}
+
+/**
+ * Update a group member record.
+ */
+export async function updateGroupMember(
+  id: number,
+  data: { status: string }
+) {
+  return prisma.groupMembers.update({
+    where: { id },
+    data: { status: data.status as groupMembersStatus },
+  });
 }

@@ -12,6 +12,12 @@ import {
   publishGroupInternal,
   createGroupWithMemberAndRules,
   findGroupMembersWithUsers,
+  updateGroup,
+  createGroupMember,
+  countGroupMembers,
+  findGroupByInviteCode,
+  findGroupMember,
+  updateGroupMember,
 } from "./core";
 
 // Fixtures functions
@@ -56,6 +62,12 @@ export const repository: GroupsRepository = {
   deleteGroup,
   findGroupRules,
   findGroupMembersWithUsers,
+  updateGroup,
+  createGroupMember,
+  countGroupMembers,
+  findGroupByInviteCode,
+  findGroupMember,
+  updateGroupMember,
 
   // Fixtures operations
   findGroupFixturesByGroupId,

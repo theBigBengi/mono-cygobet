@@ -15,6 +15,13 @@ export interface GroupsRepository {
   // Core operations
   findGroupsByUserId(userId: number): Promise<Array<Prisma.groupsGetPayload<{}>>>;
   findGroupById(id: number): Promise<Prisma.groupsGetPayload<{}> | null>;
+  createGroupMember(data: {
+    groupId: number;
+    userId: number;
+    role: "owner" | "member";
+    status: "joined";
+  }): Promise<Prisma.groupMembersGetPayload<{}>>;
+  updateGroup(id: number, data: Prisma.groupsUpdateInput): Promise<Prisma.groupsGetPayload<{}>>;
   createGroupWithMemberAndRules(data: {
     name: string;
     creatorId: number;
@@ -153,4 +160,10 @@ export interface GroupsRepository {
   // User operations (re-exported from users/repository)
   getUserUsername(userId: number): Promise<string | null>;
   countDraftGroupsByCreator(creatorId: number): Promise<number>;
+
+  // Invite/Join operations
+  countGroupMembers(groupId: number): Promise<number>;
+  findGroupByInviteCode(inviteCode: string): Promise<Prisma.groupsGetPayload<{}> | null>;
+  findGroupMember(groupId: number, userId: number): Promise<Prisma.groupMembersGetPayload<{}> | null>;
+  updateGroupMember(id: number, data: { status: string }): Promise<Prisma.groupMembersGetPayload<{}>>;
 }

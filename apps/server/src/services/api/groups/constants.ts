@@ -9,7 +9,16 @@ export const GROUP_STATUS = {
 
 export const MEMBER_STATUS = {
   JOINED: "joined",
+  LEFT: "left",
+  PENDING: "pending",
 } as const;
+
+export const GROUP_PRIVACY = {
+  PRIVATE: "private",
+  PUBLIC: "public",
+} as const;
+
+export const DEFAULT_MAX_MEMBERS = 50;
 
 export const SELECTION_MODE = {
   GAMES: "games",

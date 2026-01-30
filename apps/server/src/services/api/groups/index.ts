@@ -15,4 +15,8 @@ export {
   getPredictionsOverview,
   getGroupRanking,
   settlePredictionsForFixtures,
+  joinGroupByCode,
+  joinPublicGroup,
+  generateInviteCode,
+  getInviteCode,
 } from "./service/index";
