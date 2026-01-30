@@ -8,6 +8,7 @@ import {
   safeBigInt,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
+import { transformOddsDto } from "../transform/odds.transform";
 
 const CHUNK_SIZE = 8;
 
@@ -199,40 +200,6 @@ export async function seedOdds(
       }
     }
 
-    // Create missing bookmakers on the fly
-    const missingBookmakerIds = uniqueBookmakerIds.filter(
-      (id) => !bookmakerMap.has(id)
-    );
-    if (missingBookmakerIds.length > 0) {
-      console.log(
-        `ℹ️ [${batchId}] Creating ${missingBookmakerIds.length} missing bookmakers`
-      );
-
-      for (const bookmakerExternalId of missingBookmakerIds) {
-        const anyOdd = uniqueOdds.find(
-          (odd) => odd.bookmakerExternalId === Number(bookmakerExternalId)
-        );
-        const bookmakerName =
-          anyOdd?.bookmakerName || `Bookmaker ${bookmakerExternalId}`;
-
-        try {
-          const newBookmaker = await prisma.bookmakers.upsert({
-            where: { externalId: safeBigInt(bookmakerExternalId) },
-            update: { name: bookmakerName },
-            create: {
-              externalId: safeBigInt(bookmakerExternalId),
-              name: bookmakerName,
-            },
-          });
-          bookmakerMap.set(bookmakerExternalId, newBookmaker.id);
-        } catch (error) {
-          console.log(
-            `⚠️ [${batchId}] Failed to create bookmaker ${bookmakerExternalId}: ${error}`
-          );
-        }
-      }
-    }
-
     // Process odds in chunks
     const groups = chunk(uniqueOdds, CHUNK_SIZE);
     let ok = 0;
@@ -274,28 +241,16 @@ export async function seedOdds(
             ? "update"
             : "insert";
 
-          // Validate required fields
-          if (!odd.name && !odd.label) {
-            throw new Error("Odd must have either name or label");
-          }
-          if (odd.value == null || odd.value === "") {
-            throw new Error("Odd value is required");
-          }
-          const valueNum =
-            typeof odd.value === "number" ? odd.value : parseFloat(odd.value);
-          if (!Number.isFinite(valueNum) || valueNum < 1) {
+          if (
+            odd.bookmakerExternalId != null &&
+            !bookmakerMap.has(String(odd.bookmakerExternalId))
+          ) {
             throw new Error(
-              `Odd value must be a valid number > 1, got: ${odd.value}`
+              `Bookmaker not found (externalId: ${odd.bookmakerExternalId}). Sync bookmakers first.`
             );
           }
-          if (!odd.fixtureExternalId) {
-            throw new Error("Fixture external ID is required");
-          }
-          if (odd.startingAtTs == null || !Number.isFinite(odd.startingAtTs)) {
-            throw new Error(
-              "startingAtTs (unix seconds) is required and must be finite"
-            );
-          }
+
+          const payload = transformOddsDto(odd);
 
           // Resolve relationship IDs from the pre-built maps
           const fixtureId = fixtureMap.get(String(odd.fixtureExternalId));
@@ -310,49 +265,44 @@ export async function seedOdds(
               ? (bookmakerMap.get(String(odd.bookmakerExternalId)) ?? null)
               : null;
 
-          // Use Unix timestamp as source of truth (always UTC)
-          // This avoids timezone parsing issues with ambiguous datetime strings like "2025-08-23 14:00:00"
-          // The API's startingAt field is ambiguous (no timezone), so we derive it from the authoritative startingAtTs
-          const startingAt = new Date(odd.startingAtTs * 1000).toISOString();
-
           // Use Prisma upsert to handle both create and update scenarios
           await prisma.odds.upsert({
-            where: { externalId: safeBigInt(odd.externalId) },
-            update: {
-              fixtureId: fixtureId,
-              bookmakerId: bookmakerId ?? undefined,
-              marketExternalId: safeBigInt(odd.marketExternalId),
-              marketDescription: odd.marketDescription,
-              marketName: odd.marketName,
-              sortOrder: odd.sortOrder,
-              label: odd.label,
-              name: odd.name ?? undefined,
-              handicap: odd.handicap ?? undefined,
-              total: odd.total ?? undefined,
-              value: odd.value,
-              probability: odd.probability ?? undefined,
-              winning: odd.winning,
-              startingAt: startingAt,
-              startingAtTimestamp: odd.startingAtTs,
-              updatedAt: new Date(),
-            },
+            where: { externalId: payload.externalId },
             create: {
-              externalId: safeBigInt(odd.externalId),
-              fixtureId: fixtureId,
-              bookmakerId: bookmakerId ?? null,
-              marketExternalId: safeBigInt(odd.marketExternalId),
-              marketDescription: odd.marketDescription,
-              marketName: odd.marketName,
-              sortOrder: odd.sortOrder,
-              label: odd.label,
-              name: odd.name ?? null,
-              handicap: odd.handicap ?? null,
-              total: odd.total ?? null,
-              value: odd.value,
-              probability: odd.probability ?? null,
-              winning: odd.winning,
-              startingAt: startingAt,
-              startingAtTimestamp: odd.startingAtTs,
+              externalId: payload.externalId,
+              fixtureId,
+              bookmakerId,
+              marketExternalId: payload.marketExternalId,
+              marketDescription: payload.marketDescription,
+              marketName: payload.marketName,
+              sortOrder: payload.sortOrder,
+              label: payload.label,
+              name: payload.name,
+              handicap: payload.handicap,
+              total: payload.total,
+              value: payload.value,
+              probability: payload.probability,
+              winning: payload.winning,
+              startingAt: payload.startingAt,
+              startingAtTimestamp: payload.startingAtTimestamp,
+            },
+            update: {
+              fixtureId,
+              bookmakerId,
+              marketExternalId: payload.marketExternalId,
+              marketDescription: payload.marketDescription,
+              marketName: payload.marketName,
+              sortOrder: payload.sortOrder,
+              label: payload.label,
+              name: payload.name,
+              handicap: payload.handicap,
+              total: payload.total,
+              value: payload.value,
+              probability: payload.probability,
+              winning: payload.winning,
+              startingAt: payload.startingAt,
+              startingAtTimestamp: payload.startingAtTimestamp,
+              updatedAt: new Date(),
             },
           });
 
@@ -441,14 +391,10 @@ export async function seedOdds(
       console.log(
         `🏷️ [${batchId}] Updating ${fixturesToFlag.size} fixtures with hasOdds=true`
       );
-      await Promise.allSettled(
-        Array.from(fixturesToFlag).map((id) =>
-          prisma.fixtures.update({
-            where: { id },
-            data: { hasOdds: true },
-          })
-        )
-      );
+      await prisma.fixtures.updateMany({
+        where: { id: { in: Array.from(fixturesToFlag) } },
+        data: { hasOdds: true },
+      });
     }
 
     // Finalize the batch
@@ -456,15 +402,14 @@ export async function seedOdds(
       itemsTotal: uniqueOdds.length,
       itemsSuccess: ok,
       itemsFailed: fail,
-      meta: {
-        duplicates: duplicates.length,
-        fixturesResolved: fixtureMap.size,
-        bookmakersResolved: bookmakerMap.size,
-        missingBookmakersCreated: missingBookmakerIds.length,
-        inserted,
-        updated,
-        skipped,
-      },
+        meta: {
+          duplicates: duplicates.length,
+          fixturesResolved: fixtureMap.size,
+          bookmakersResolved: bookmakerMap.size,
+          inserted,
+          updated,
+          skipped,
+        },
     });
 
     console.log(
