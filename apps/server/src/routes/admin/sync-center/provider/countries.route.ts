@@ -24,20 +24,29 @@ const adminCountriesProviderRoutes: FastifyPluginAsync = async (fastify) => {
           (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
       });
 
-      // Fetch countries with leagues included
-      const countriesWithLeagues = await adapter.fetchCountries({
-        include: [{ name: "leagues", fields: ["id"] }],
-      });
+      const [countries, leagues] = await Promise.all([
+        adapter.fetchCountries(),
+        adapter.fetchLeagues(),
+      ]);
 
-      const data = countriesWithLeagues.map((c) => {
-        const providerLeagues = c.leagues || [];
+      const leaguesCountByCountryId = leagues.reduce<Record<string, number>>(
+        (acc, league) => {
+          const key = String(league.countryExternalId ?? "");
+          acc[key] = (acc[key] ?? 0) + 1;
+          return acc;
+        },
+        {}
+      );
+
+      const data = countries.map((c) => {
+        const countryKey = String(c.externalId);
         return {
           externalId: c.externalId,
           name: c.name,
           imagePath: c.imagePath ?? null,
           iso2: c.iso2 ?? null,
           iso3: c.iso3 ?? null,
-          availableLeaguesCount: providerLeagues.length, // Total leagues from provider
+          availableLeaguesCount: leaguesCountByCountryId[countryKey] ?? 0,
         };
       });
 

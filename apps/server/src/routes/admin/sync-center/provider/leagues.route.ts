@@ -25,15 +25,7 @@ const adminLeaguesProviderRoutes: FastifyPluginAsync = async (fastify) => {
           (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
       });
 
-      // Fetch leagues with country included (adapter returns formatted country data)
-      const leaguesDto = await adapter.fetchLeagues({
-        include: [
-          {
-            name: "country",
-            fields: ["id", "name", "image_path", "iso2", "iso3"],
-          },
-        ],
-      });
+      const leaguesDto = await adapter.fetchLeagues();
 
       // Get all country external IDs from DB to check availability
       const dbCountries = await prisma.countries.findMany({
@@ -58,7 +50,7 @@ const adminLeaguesProviderRoutes: FastifyPluginAsync = async (fastify) => {
             name: l.name,
             imagePath: l.imagePath ?? null,
             countryExternalId: l.countryExternalId ?? null,
-            country: l.country ?? null, // Adapter already formats the country data
+            country: null,
             countryInDb,
             shortCode: l.shortCode ?? null,
             type: l.type ?? null,
