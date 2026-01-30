@@ -56,7 +56,7 @@ export function validateConfig(
     authMode,
     defaultRetries: opts.defaultRetries ?? 3,
     defaultPerPage: opts.defaultPerPage ?? 50,
-    retryDelayMs: opts.retryDelayMs ?? 300,
+    retryDelayMs: opts.retryDelayMs ?? 1000,
     logger: opts.logger ?? noopLogger,
   };
 }

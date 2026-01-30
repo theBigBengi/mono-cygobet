@@ -7,6 +7,7 @@ export type SportsDataErrorCode =
   | "RATE_LIMIT"
   | "SERVER_ERROR"
   | "NETWORK_ERROR"
+  | "CIRCUIT_OPEN"
   | "UNKNOWN";
 
 export class SportsDataError extends Error {

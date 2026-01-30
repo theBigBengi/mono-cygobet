@@ -1,5 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
 
+import { CircuitBreaker } from "../../circuit-breaker";
 import { SportsDataError } from "../../errors";
 import type { SportsDataLogger } from "../../logger";
 import { noopLogger } from "../../logger";
@@ -75,7 +76,7 @@ const DEFAULT_HTTP_OPTIONS: Required<SMHttpOptions> = {
   logger: noopLogger,
   defaultRetries: 3,
   defaultPerPage: 50,
-  retryDelayMs: 300,
+  retryDelayMs: 1000,
 };
 
 /**
@@ -84,6 +85,7 @@ const DEFAULT_HTTP_OPTIONS: Required<SMHttpOptions> = {
  */
 export class SMHttp {
   private readonly opts: Required<SMHttpOptions>;
+  private circuitBreaker: CircuitBreaker;
 
   constructor(
     private token: string,
@@ -92,6 +94,10 @@ export class SMHttp {
     options: SMHttpOptions = {}
   ) {
     this.opts = { ...DEFAULT_HTTP_OPTIONS, ...options };
+    this.circuitBreaker = new CircuitBreaker({
+      failureThreshold: 5,
+      resetTimeoutMs: 30_000,
+    });
   }
 
   private get logger(): SportsDataLogger {
@@ -220,6 +226,7 @@ export class SMHttp {
       // Retry logic for rate limiting (429) and server errors (5xx)
       while (attempt <= retries) {
         try {
+          this.circuitBreaker.assertClosed();
           res = await fetch(url, {
             headers:
               this.authMode === "header"
@@ -232,6 +239,7 @@ export class SMHttp {
           if (!res.ok) {
             await res.text(); // Consume body
             if (res.status === 429 || res.status >= 500) {
+              if (res.status >= 500) this.circuitBreaker.recordFailure();
               attempt++;
               if (attempt > retries) {
                 if (res.status === 429) {
@@ -255,13 +263,34 @@ export class SMHttp {
                   res.status
                 );
               }
-              const delayMs = this.retryDelayMs * attempt;
+              // Respect Retry-After header (value in seconds) for 429
+              if (res.status === 429) {
+                const retryAfter = res.headers.get("Retry-After");
+                if (retryAfter) {
+                  const retryAfterMs = parseInt(retryAfter, 10) * 1000;
+                  if (
+                    Number.isFinite(retryAfterMs) &&
+                    retryAfterMs > 0
+                  ) {
+                    this.logger.warn("SMHttp get retry (Retry-After)", {
+                      attempt,
+                      status: 429,
+                      delayMs: retryAfterMs,
+                    });
+                    await sleep(retryAfterMs);
+                    continue;
+                  }
+                }
+              }
+              const jitter = Math.floor(Math.random() * 200);
+              const delayMs =
+                this.retryDelayMs * Math.pow(2, attempt - 1) + jitter;
               this.logger.warn("SMHttp get retry", {
                 attempt,
                 status: res.status,
                 delayMs,
               });
-              await sleep(delayMs); // Exponential backoff
+              await sleep(delayMs);
               continue;
             }
             this.logger.error("SMHttp get failed", {
@@ -274,8 +303,23 @@ export class SMHttp {
               res.status
             );
           }
+          this.circuitBreaker.recordSuccess();
           break;
         } catch (err) {
+          if (
+            err instanceof SportsDataError &&
+            err.code === "CIRCUIT_OPEN"
+          ) {
+            throw err;
+          }
+          // Only record failure for network errors (not re-thrown HTTP errors
+          // that already recorded their failure in the if-block above)
+          if (
+            !(err instanceof SportsDataError) ||
+            (err.code !== "SERVER_ERROR" && err.code !== "RATE_LIMIT")
+          ) {
+            this.circuitBreaker.recordFailure();
+          }
           attempt++;
           if (attempt > retries) {
             if (err instanceof SportsDataError) {
@@ -296,7 +340,9 @@ export class SMHttp {
               err
             );
           }
-          const delayMs = this.retryDelayMs * attempt;
+          const jitter = Math.floor(Math.random() * 200);
+          const delayMs =
+            this.retryDelayMs * Math.pow(2, attempt - 1) + jitter;
           this.logger.warn("SMHttp get retry", {
             attempt,
             status: undefined,
