@@ -7,38 +7,15 @@ import {
   chunk,
   safeBigInt,
 } from "./seed.utils";
+import { RunStatus, RunTrigger, prisma } from "@repo/db";
 import {
-  FixtureState as DbFixtureState,
-  RunStatus,
-  RunTrigger,
-  prisma,
-} from "@repo/db";
+  transformFixtureDto,
+  isValidFixtureStateTransition,
+} from "../transform/fixtures.transform";
+import { getLogger } from "../../logger";
 
+const log = getLogger("SeedFixtures");
 const CHUNK_SIZE = 8;
-
-function coerceDbFixtureState(state: FixtureDTO["state"]): DbFixtureState {
-  // `FixtureDTO.state` is from `@repo/types` (string union).
-  // Prisma expects its own `FixtureState` type; values are the same (e.g. "NS", "LIVE", ...).
-  return state as unknown as DbFixtureState;
-}
-
-// Helper to parse scores from result string (e.g., "2-1" -> { home: 2, away: 1 })
-function parseScores(result: string | null | undefined): {
-  homeScore: number | null;
-  awayScore: number | null;
-} {
-  if (!result) return { homeScore: null, awayScore: null };
-
-  const match = result.match(/^(\d+)-(\d+)$/);
-  if (match && match[1] && match[2]) {
-    return {
-      homeScore: parseInt(match[1], 10),
-      awayScore: parseInt(match[2], 10),
-    };
-  }
-
-  return { homeScore: null, awayScore: null };
-}
 
 export async function seedFixtures(
   fixtures: FixtureDTO[],
@@ -230,14 +207,16 @@ export async function seedFixtures(
 
   try {
     for (const group of chunk(uniqueFixtures, CHUNK_SIZE)) {
-      // Pre-fetch which fixtures already exist so we can label items as insert vs update.
-      // This keeps a single DB roundtrip per chunk (vs per-row).
+      // Pre-fetch which fixtures already exist (externalId + state for validation).
       const groupExternalIds = group.map((f) => safeBigInt(f.externalId));
-      const existing = await prisma.fixtures.findMany({
+      const existingRows = await prisma.fixtures.findMany({
         where: { externalId: { in: groupExternalIds } },
-        select: { externalId: true },
+        select: { externalId: true, state: true },
       });
-      const existingSet = new Set(existing.map((r) => String(r.externalId)));
+      const existingByExtId = new Map(
+        existingRows.map((r) => [String(r.externalId), r])
+      );
+      const existingSet = new Set(existingRows.map((r) => String(r.externalId)));
 
       // Process all fixtures in the chunk in parallel
       const chunkResults = await Promise.allSettled(
@@ -258,72 +237,88 @@ export async function seedFixtures(
               );
             }
 
+            const payload = transformFixtureDto(fixture);
+
+            // State validation: if updating, disallow invalid state transitions.
+            const existing = existingByExtId.get(extIdKey);
+            if (existing && !isValidFixtureStateTransition(existing.state, payload.state)) {
+              log.warn(
+                { externalId: fixture.externalId, current: existing.state, next: payload.state },
+                "Invalid fixture state transition; skipping update"
+              );
+              await trackSeedItem(
+                batchId!,
+                String(fixture.externalId),
+                RunStatus.skipped,
+                undefined,
+                {
+                  name: fixture.name,
+                  externalId: fixture.externalId,
+                  reason: "invalid-state-transition",
+                  action: "skip",
+                }
+              );
+              return { success: false, fixture, action, skipped: true };
+            }
+
             const leagueId =
-              fixture.leagueExternalId != null
-                ? (leagueMap.get(String(fixture.leagueExternalId)) ?? null)
+              payload.leagueExternalId != null
+                ? (leagueMap.get(String(payload.leagueExternalId)) ?? null)
                 : null;
 
             const seasonId =
-              fixture.seasonExternalId != null
-                ? (seasonMap.get(String(fixture.seasonExternalId)) ?? null)
+              payload.seasonExternalId != null
+                ? (seasonMap.get(String(payload.seasonExternalId)) ?? null)
                 : null;
 
-            const homeTeamId = teamMap.get(String(fixture.homeTeamExternalId));
+            const homeTeamId = teamMap.get(String(payload.homeTeamExternalId));
             if (!homeTeamId) {
               throw new Error(
-                `Home team not found (externalId: ${fixture.homeTeamExternalId})`
+                `Home team not found (externalId: ${payload.homeTeamExternalId})`
               );
             }
 
-            const awayTeamId = teamMap.get(String(fixture.awayTeamExternalId));
+            const awayTeamId = teamMap.get(String(payload.awayTeamExternalId));
             if (!awayTeamId) {
               throw new Error(
-                `Away team not found (externalId: ${fixture.awayTeamExternalId})`
+                `Away team not found (externalId: ${payload.awayTeamExternalId})`
               );
             }
 
-            // Derive startIso from startTs (Unix seconds)
-            const startIso = new Date(fixture.startTs * 1000).toISOString();
-
-            // Parse scores from result string
-            const { homeScore, awayScore } = parseScores(fixture.result);
-            const dbState = coerceDbFixtureState(fixture.state);
-
-            // Upsert fixture: update if exists, create if not
             const updatePayload = {
-              name: fixture.name,
+              name: payload.name,
               leagueId: leagueId ?? null,
               seasonId: seasonId ?? null,
               homeTeamId,
               awayTeamId,
-              startIso,
-              startTs: fixture.startTs,
-              state: dbState,
-              result: fixture.result ?? null,
-              homeScore: homeScore ?? null,
-              awayScore: awayScore ?? null,
-              stage: fixture.stage ?? null,
-              round: fixture.round ?? null,
+              startIso: payload.startIso,
+              startTs: payload.startTs,
+              state: payload.state,
+              result: payload.result,
+              homeScore: payload.homeScore,
+              awayScore: payload.awayScore,
+              stage: payload.stage,
+              round: payload.round,
               updatedAt: new Date(),
             };
             const createPayload = {
-              externalId: safeBigInt(fixture.externalId),
-              name: fixture.name,
+              externalId: safeBigInt(payload.externalId),
+              name: payload.name,
               leagueId: leagueId ?? null,
               seasonId: seasonId ?? null,
               homeTeamId,
               awayTeamId,
-              startIso,
-              startTs: fixture.startTs,
-              state: dbState,
-              result: fixture.result ?? null,
-              homeScore: homeScore ?? null,
-              awayScore: awayScore ?? null,
-              stage: fixture.stage ?? null,
-              round: fixture.round ?? null,
+              startIso: payload.startIso,
+              startTs: payload.startTs,
+              state: payload.state,
+              result: payload.result,
+              homeScore: payload.homeScore,
+              awayScore: payload.awayScore,
+              stage: payload.stage,
+              round: payload.round,
             };
             await prisma.fixtures.upsert({
-              where: { externalId: safeBigInt(fixture.externalId) },
+              where: { externalId: safeBigInt(payload.externalId) },
               update: updatePayload as any,
               create: createPayload as any,
             });
@@ -370,13 +365,15 @@ export async function seedFixtures(
         })
       );
 
-      // Count successes and failures from this chunk
+      // Count successes, failures, and skips from this chunk
       for (const result of chunkResults) {
         if (result.status === "fulfilled") {
           if (result.value.success) {
             ok++;
             if (result.value.action === "insert") inserted++;
             else if (result.value.action === "update") updated++;
+          } else if ("skipped" in result.value && result.value.skipped) {
+            skipped++;
           } else {
             fail++;
           }

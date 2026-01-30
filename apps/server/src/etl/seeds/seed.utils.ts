@@ -1,6 +1,10 @@
 // src/etl/seeds/seed.utils.ts
 import type { Prisma } from "@repo/db";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
+import { chunk, safeBigInt } from "../utils";
+
+// Re-export for seeds that import from seed.utils
+export { chunk, safeBigInt };
 
 // Safely coerce unknown JSON to an object for merging
 function toJsonObject(v: unknown): Prisma.InputJsonObject {
@@ -104,49 +108,9 @@ export async function finishSeedBatch(
 }
 
 /**
- * Shared utility functions for seeding operations
- * These functions provide common functionality used across multiple seed files
+ * Shared utility functions for seeding operations.
+ * chunk and safeBigInt are in etl/utils.ts and re-exported here.
  */
-
-/**
- * Safely converts a value to BigInt, preventing NaN → BigInt conversion errors
- * @param value - Value to convert to BigInt
- * @returns BigInt value or throws error if conversion fails
- */
-export function safeBigInt(value: number | string | bigint): bigint {
-  if (typeof value === "bigint") return value;
-
-  if (typeof value === "string") {
-    const s = value.trim();
-    if (s.length === 0)
-      throw new Error("Invalid BigInt conversion: empty string");
-    try {
-      return BigInt(s);
-    } catch {
-      throw new Error(
-        `Invalid BigInt conversion: cannot parse "${value}" as BigInt`
-      );
-    }
-  }
-
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) {
-      throw new Error(`Invalid BigInt conversion: ${value} is not finite`);
-    }
-    // Prevent silent precision loss
-    if (!Number.isInteger(value)) {
-      throw new Error(`Invalid BigInt conversion: ${value} is not an integer`);
-    }
-    if (Math.abs(value) > Number.MAX_SAFE_INTEGER) {
-      throw new Error(
-        `Invalid BigInt conversion: ${value} exceeds MAX_SAFE_INTEGER; pass as string`
-      );
-    }
-    return BigInt(value);
-  }
-
-  throw new Error(`Invalid BigInt conversion: unexpected type ${typeof value}`);
-}
 
 /**
  * Normalizes date strings to date-only format (YYYY-MM-DD) with validation
@@ -270,20 +234,6 @@ export function normalizeDateTimeStrict(s: string): string {
     throw new Error(`Invalid datetime: "${s}"`);
   }
   return d.toISOString();
-}
-
-/**
- * Utility function to split an array into smaller chunks.
- * Used for processing large datasets in parallel without overwhelming the database.
- *
- * @param arr - Array to chunk
- * @param size - Size of each chunk
- * @returns Array of arrays, each containing up to 'size' elements
- */
-export function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
 }
 
 /**

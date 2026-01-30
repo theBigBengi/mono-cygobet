@@ -3,7 +3,7 @@ import { addDays, format } from "date-fns";
 import { adapter } from "../utils/adapter";
 import type { FixtureDTO } from "@repo/types/sport-data/common";
 import { JobTriggerBy, RunTrigger } from "@repo/db";
-import { seedFixtures } from "../etl/seeds/seed.fixtures";
+import { syncFixtures } from "../etl/sync/sync.fixtures";
 import { JobRunOpts, type StandardJobRunStats } from "../types/jobs";
 import { UPCOMING_FIXTURES_JOB } from "./jobs.definitions";
 import {
@@ -228,42 +228,36 @@ export async function runUpcomingFixturesJob(
       };
     }
 
-    const result = await seedFixtures(scheduled, {
-      version: "v1",
-      trigger,
-      triggeredBy: opts.triggeredBy ?? null,
-      triggeredById: opts.triggeredById ?? null,
-      dryRun: false,
-    });
+    const result = await syncFixtures(scheduled, { dryRun: false });
 
+    const ok = result.inserted + result.updated;
     await finishJobRunSuccess({
       id: jobRun.id,
       startedAtMs,
-      rowsAffected: result?.total ?? scheduled.length,
+      rowsAffected: result.total,
       meta: {
         window: { from, to },
         daysAhead,
         dryRun: false,
         countFetched: fetched.length,
         countScheduled: scheduled.length,
-        batchId: result?.batchId ?? null,
-        ok: result?.ok ?? 0,
-        fail: result?.fail ?? 0,
-        total: result?.total ?? 0,
-        inserted: result?.inserted ?? 0,
-        updated: result?.updated ?? 0,
-        skipped: result?.skipped ?? 0,
+        ok,
+        fail: result.failed,
+        total: result.total,
+        inserted: result.inserted,
+        updated: result.updated,
+        skipped: result.skipped,
       },
     });
 
     return {
       jobRunId: jobRun.id,
-      batchId: result?.batchId ?? null,
+      batchId: null,
       fetched: fetched.length,
       scheduled: scheduled.length,
-      total: result?.total,
-      ok: result?.ok,
-      fail: result?.fail,
+      total: result.total,
+      ok,
+      fail: result.failed,
       window: { from, to },
       skipped: false,
     };

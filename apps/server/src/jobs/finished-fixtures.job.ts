@@ -1,11 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { adapter } from "../utils/adapter";
-import {
-  FixtureState as DbFixtureState,
-  JobTriggerBy,
-  RunTrigger,
-  prisma,
-} from "@repo/db";
+import { FixtureState as DbFixtureState, JobTriggerBy, RunTrigger, prisma } from "@repo/db";
+import { syncFixtures } from "../etl/sync/sync.fixtures";
+import { chunk } from "../etl/utils";
 import { JobRunOpts } from "../types/jobs";
 import { FINISHED_FIXTURES_JOB } from "./jobs.definitions";
 import {
@@ -19,81 +16,19 @@ import { clampInt, getMeta, isFinishedFixturesJobMeta } from "./jobs.meta";
 import { getLogger } from "../logger";
 
 const log = getLogger("FinishedFixturesJob");
-// NOTE: We now have a dedicated `jobRuns` table for job executions (see prisma schema).
 
 /**
  * finished-fixtures job
  * --------------------
  * Goal: keep our DB fixtures in sync when matches finish.
  *
- * Why this exists:
- * - We sometimes have fixtures stuck in LIVE in the DB.
- * - After a fixture has been LIVE "too long", we treat it as a candidate to re-check.
- * - We then ask the sports-data provider for the same fixtures, but only those now in FT (finished),
- *   and update our DB state + result + derived scores.
+ * Flow: find LIVE fixtures that are too old, re-fetch from provider (FT only),
+ * then sync via syncFixtures (same transform + state validation + persist as other jobs).
  */
 export const finishedFixturesJob = FINISHED_FIXTURES_JOB;
 
 const DEFAULT_MAX_LIVE_AGE_HOURS =
   FINISHED_FIXTURES_JOB.meta?.maxLiveAgeHours ?? 2;
-
-/**
- * Extract numeric scores from a normalized result string.
- * Accepts either "2-1" or "2:1" (we normalize ":" -> "-" elsewhere).
- *
- * Why we parse:
- * - Provider/DB result formats are strings, but we also store numeric score fields.
- * - Parsing here centralizes the logic and keeps DB writes consistent.
- */
-function parseScores(result: string | null | undefined): {
-  homeScore: number | null;
-  awayScore: number | null;
-} {
-  if (!result) return { homeScore: null, awayScore: null };
-  const match = result.trim().match(/^(\d+)[-:](\d+)$/);
-  if (!match) return { homeScore: null, awayScore: null };
-  return {
-    homeScore: Number(match[1]),
-    awayScore: Number(match[2]),
-  };
-}
-
-/**
- * Provider sometimes returns "0:0" while our DB/UI standard is "0-0".
- * Normalize to "-" so comparisons + DB values stay consistent.
- *
- * Why normalize:
- * - Prevents duplicate/unequal strings representing the same value.
- * - Makes UI and DB comparisons stable.
- */
-function normalizeResult(result: string | null | undefined): string | null {
-  if (!result) return null;
-  const trimmed = result.trim();
-  if (!trimmed) return null;
-  // keep DB consistent with admin update route: use "-"
-  return trimmed.replace(/:/g, "-");
-}
-
-/**
- * Prisma expects its own enum type. Provider/DTO state is a string union with the same values.
- * We intentionally coerce here (values must match the Prisma enum values in schema.prisma).
- *
- * Why cast:
- * - Provider states come as strings; Prisma expects its generated enum type.
- * - Values are aligned by design in our schema.
- */
-function coerceDbFixtureState(state: string): DbFixtureState {
-  // Provider DTOs use string values that match Prisma enum values (NS, LIVE, FT, CAN, INT, ...)
-  return state as unknown as DbFixtureState;
-}
-
-/** Small helper to avoid huge provider requests. */
-function chunk<T>(arr: T[], n: number): T[][] {
-  if (n <= 0) return [arr];
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
-  return out;
-}
 
 /**
  * Main runner called by the cron scheduler.
@@ -313,42 +248,16 @@ export async function runFinishedFixturesJob(
     }
 
     /**
-     * 3) Write updates back into our DB fixtures.
-     * We update:
-     * - state (FT)
-     * - result (normalized to "x-y")
-     * - derived homeScore/awayScore (nullable)
+     * 3) Write updates via syncFixtures (same transform + state validation as other jobs).
      */
-    let updated = 0;
-    let failed = 0;
-    for (const group of chunk(fetched, 50)) {
-      const ops = group.map((fx) => {
-        const result = normalizeResult(fx.result);
-        const { homeScore, awayScore } = parseScores(result);
-        const state = coerceDbFixtureState(String(fx.state));
-        return prisma.fixtures.update({
-          where: { externalId: BigInt(fx.externalId) },
-          data: {
-            state,
-            result,
-            homeScore,
-            awayScore,
-            updatedAt: new Date(),
-          },
-          select: { id: true },
-        });
-      });
-      const settled = await Promise.allSettled(ops);
-      for (const s of settled) {
-        if (s.status === "fulfilled") updated += 1;
-        else failed += 1;
-      }
-    }
+    const result = await syncFixtures(fetched, { dryRun: false });
+    const updated = result.updated;
+    const failed = result.failed;
 
     await finishJobRunSuccess({
       id: jobRun.id,
       startedAtMs,
-      rowsAffected: updated,
+      rowsAffected: result.total,
       meta: {
         maxLiveAgeHours,
         dryRun: false,
@@ -356,6 +265,8 @@ export async function runFinishedFixturesJob(
         fetched: fetched.length,
         updated,
         failed,
+        inserted: result.inserted,
+        skipped: result.skipped,
       },
     });
 

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { adapter } from "../utils/adapter";
 import { JobTriggerBy, RunTrigger } from "@repo/db";
-import { seedFixtures } from "../etl/seeds/seed.fixtures";
+import { syncFixtures } from "../etl/sync/sync.fixtures";
 import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
 import { LIVE_FIXTURES_JOB } from "./jobs.definitions";
 import {
@@ -144,27 +144,21 @@ export async function runLiveFixturesJob(
       };
     }
 
-    const result = await seedFixtures(fixtures, {
-      version: "v1",
-      trigger,
-      triggeredBy: (opts.triggeredBy as unknown as string) ?? null,
-      triggeredById: opts.triggeredById ?? null,
-      dryRun: false,
-    });
+    const result = await syncFixtures(fixtures, { dryRun: false });
 
+    const ok = result.inserted + result.updated;
     await finishJobRunSuccess({
       id: jobRun.id,
       startedAtMs,
-      rowsAffected: result?.total ?? fixtures.length,
+      rowsAffected: result.total,
       meta: {
         fetched: fixtures.length,
-        batchId: result?.batchId ?? null,
-        ok: result?.ok ?? 0,
-        fail: result?.fail ?? 0,
-        total: result?.total ?? 0,
-        inserted: result?.inserted ?? 0,
-        updated: result?.updated ?? 0,
-        skipped: result?.skipped ?? 0,
+        ok,
+        fail: result.failed,
+        total: result.total,
+        inserted: result.inserted,
+        updated: result.updated,
+        skipped: result.skipped,
         ...(opts.meta ?? {}),
       },
     });
@@ -172,10 +166,10 @@ export async function runLiveFixturesJob(
     return {
       jobRunId: jobRun.id,
       fetched: fixtures.length,
-      batchId: result?.batchId ?? null,
-      total: result?.total,
-      ok: result?.ok,
-      fail: result?.fail,
+      batchId: null,
+      total: result.total,
+      ok,
+      fail: result.failed,
       skipped: false,
     };
   } catch (err: unknown) {

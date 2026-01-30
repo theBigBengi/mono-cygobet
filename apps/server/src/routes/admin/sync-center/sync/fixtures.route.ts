@@ -1,6 +1,6 @@
 // src/routes/admin/sync/fixtures.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { seedFixtures } from "../../../../etl/seeds/seed.fixtures";
+import { syncFixtures } from "../../../../etl/sync/sync.fixtures";
 import { adapter } from "../../../../utils/adapter";
 import { AdminSyncFixturesResponse } from "@repo/types";
 import {
@@ -60,21 +60,21 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       } = req.body ?? {};
 
       // All fetches outside the lock (no API time under lock)
-      let batchesToSeed: { fixturesDto: any[] }[] = [];
+      let batchesToSync: { fixturesDto: any[] }[] = [];
       let dbSeasonsCount = 0;
 
       if (seasonId) {
         const fixturesDto = await adapter.fetchFixturesBySeason(seasonId, {
           fixtureStates: fetchAllFixtureStates ? undefined : "1",
         });
-        batchesToSeed = [{ fixturesDto }];
+        batchesToSync = [{ fixturesDto }];
       } else if (from && to) {
         const fixturesDto = await adapter.fetchFixturesBetween(from, to, {
           filters: fetchAllFixtureStates
             ? undefined
             : { fixtureStates: "1" },
         });
-        batchesToSeed = [{ fixturesDto }];
+        batchesToSync = [{ fixturesDto }];
       } else {
         const dbSeasons = await prisma.seasons.findMany({
           select: { externalId: true },
@@ -104,10 +104,10 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               }
             );
             if (fixturesDto.length > 0) {
-              batchesToSeed.push({ fixturesDto });
+              batchesToSync.push({ fixturesDto });
             }
           } catch {
-            // Continue with other seasons; we'll still seed what we have
+            // Continue with other seasons; we'll still sync what we have
           }
         }
       }
@@ -119,24 +119,24 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
             let totalOk = 0;
             let totalFail = 0;
             let totalTotal = 0;
-            let lastBatchId: number | null = null;
             let firstErrorSeen: string | undefined;
 
-            if (batchesToSeed.length === 1 && !dbSeasonsCount) {
-              const batch = batchesToSeed[0]!;
-              const result = await seedFixtures(batch.fixturesDto, {
+            if (batchesToSync.length === 1 && !dbSeasonsCount) {
+              const batch = batchesToSync[0]!;
+              const result = await syncFixtures(batch.fixturesDto, {
                 dryRun,
-                triggeredBy: "admin-ui",
               });
+              const ok = result.inserted + result.updated;
               return reply.send({
                 status: "success",
                 data: {
-                  batchId: result.batchId,
-                  ok: result.ok,
-                  fail: result.fail,
+                  batchId: null,
+                  ok,
+                  fail: result.failed,
                   total: result.total,
-                  ...(result.fail > 0 &&
-                    result.firstError && { firstError: result.firstError }),
+                  ...(result.failed > 0 && {
+                    firstError: "One or more fixtures failed to sync",
+                  }),
                 },
                 message: dryRun
                   ? "Fixtures sync dry-run completed"
@@ -144,19 +144,19 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               });
             }
 
-            for (const { fixturesDto } of batchesToSeed) {
+            for (const { fixturesDto } of batchesToSync) {
               if (fixturesDto.length === 0) continue;
               try {
-                const result = await seedFixtures(fixturesDto, {
+                const result = await syncFixtures(fixturesDto, {
                   dryRun,
-                  triggeredBy: "admin-ui",
                 });
-                totalOk += result.ok;
-                totalFail += result.fail;
+                const ok = result.inserted + result.updated;
+                totalOk += ok;
+                totalFail += result.failed;
                 totalTotal += result.total;
-                if (result.batchId) lastBatchId = result.batchId;
-                if (result.firstError && firstErrorSeen === undefined)
-                  firstErrorSeen = result.firstError;
+                if (result.failed > 0 && firstErrorSeen === undefined) {
+                  firstErrorSeen = "One or more fixtures failed to sync";
+                }
               } catch (error) {
                 totalFail += 1;
                 totalTotal += 1;
@@ -172,7 +172,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
             return reply.send({
               status: "success",
               data: {
-                batchId: lastBatchId,
+                batchId: null,
                 ok: totalOk,
                 fail: totalFail,
                 total: totalTotal,
@@ -180,8 +180,8 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
                   firstErrorSeen && { firstError: firstErrorSeen }),
               },
               message: dryRun
-                ? `Fixtures sync dry-run completed for ${dbSeasonsCount || batchesToSeed.length} seasons`
-                : `Fixtures synced successfully from provider to database for ${dbSeasonsCount || batchesToSeed.length} seasons`,
+                ? `Fixtures sync dry-run completed for ${dbSeasonsCount || batchesToSync.length} seasons`
+                : `Fixtures synced successfully from provider to database for ${dbSeasonsCount || batchesToSync.length} seasons`,
             });
           },
           { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
@@ -266,19 +266,20 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         return await withAdvisoryLock(
           LOCK_KEY,
           async () => {
-            const result = await seedFixtures([fixtureDto], {
+            const result = await syncFixtures([fixtureDto], {
               dryRun,
-              triggeredBy: "admin-ui",
             });
+            const ok = result.inserted + result.updated;
             return reply.send({
               status: "success",
               data: {
-                batchId: result.batchId,
-                ok: result.ok,
-                fail: result.fail,
+                batchId: null,
+                ok,
+                fail: result.failed,
                 total: result.total,
-                ...(result.fail > 0 &&
-                  result.firstError && { firstError: result.firstError }),
+                ...(result.failed > 0 && {
+                  firstError: "Fixture failed to sync",
+                }),
               },
               message: dryRun
                 ? `Fixture sync dry-run completed for ID ${fixtureId}`
