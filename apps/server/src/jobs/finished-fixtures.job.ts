@@ -8,6 +8,7 @@ import { FINISHED_FIXTURES_JOB } from "./jobs.definitions";
 import { getJobRowOrThrow } from "./jobs.db";
 import { clampInt, getMeta, isFinishedFixturesJobMeta } from "./jobs.meta";
 import { runJob } from "./run-job";
+import { settlePredictionsForFixtures } from "../services/api/groups/service/settlement";
 
 /**
  * finished-fixtures job
@@ -162,6 +163,20 @@ export async function runFinishedFixturesJob(
       });
       const updated = result.updated;
       const failed = result.failed;
+
+      // Settle predictions for FT fixtures
+      const ftFixtures = await prisma.fixtures.findMany({
+        where: {
+          externalId: { in: fetched.map((f) => BigInt(f.externalId)) },
+          state: DbFixtureState.FT,
+        },
+        select: { id: true },
+      });
+
+      const settlement = await settlePredictionsForFixtures(
+        ftFixtures.map((f) => f.id)
+      );
+
       return {
         result: {
           jobRunId,
@@ -181,6 +196,10 @@ export async function runFinishedFixturesJob(
           failed,
           inserted: result.inserted,
           skipped: result.skipped,
+          settlement: {
+            settled: settlement.settled,
+            skipped: settlement.skipped,
+          },
         },
       };
     },

@@ -1,0 +1,242 @@
+// groups/service/settlement.ts
+// Settlement service for calculating points on finished fixtures.
+
+import { prisma } from "@repo/db";
+import { getLogger } from "../../../../logger";
+import { calculateScore, type ScoringRules } from "../scoring";
+
+const log = getLogger("Settlement");
+
+export type SettlementResult = {
+  settled: number;
+  skipped: number;
+};
+
+/**
+ * Settle predictions for finished fixtures.
+ * 
+ * This function processes all unsettled predictions for the given fixture IDs,
+ * calculates their points based on group scoring rules, and updates them in a transaction.
+ * 
+ * Flow:
+ * 1. Load FT fixtures
+ * 2. Find group fixtures
+ * 3. Load scoring rules
+ * 4. Load unsettled predictions
+ * 5. Calculate scores
+ * 6. Batch update in transaction
+ * 
+ * @param fixtureIds - Array of fixture IDs to settle predictions for
+ * @returns Object with settled and skipped counts
+ */
+export async function settlePredictionsForFixtures(
+  fixtureIds: number[]
+): Promise<SettlementResult> {
+  // Early return if no fixture IDs provided
+  if (!fixtureIds.length) {
+    log.debug("No fixture IDs provided");
+    return { settled: 0, skipped: 0 };
+  }
+
+  log.info({ fixtureIds, count: fixtureIds.length }, "Starting settlement");
+
+  // Step 1: Load FT fixtures
+  const fixtures = await prisma.fixtures.findMany({
+    where: {
+      id: { in: fixtureIds },
+      state: "FT",
+    },
+    select: {
+      id: true,
+      homeScore: true,
+      awayScore: true,
+      state: true,
+    },
+  });
+
+  if (!fixtures.length) {
+    log.debug("No FT fixtures found");
+    return { settled: 0, skipped: 0 };
+  }
+
+  // Build fixture map
+  const fixtureMap = new Map(
+    fixtures.map((f) => [f.id, f])
+  );
+
+  log.debug({ fixtureCount: fixtures.length }, "Loaded FT fixtures");
+
+  // Step 2: Find group fixtures
+  const groupFixtures = await prisma.groupFixtures.findMany({
+    where: {
+      fixtureId: { in: fixtureIds },
+    },
+    select: {
+      id: true,
+      groupId: true,
+      fixtureId: true,
+    },
+  });
+
+  if (!groupFixtures.length) {
+    log.debug("No group fixtures found");
+    return { settled: 0, skipped: 0 };
+  }
+
+  // Build groupFixture map (groupFixtureId -> fixtureId)
+  const groupFixtureMap = new Map(
+    groupFixtures.map((gf) => [gf.id, gf.fixtureId])
+  );
+
+  // Build groupId map (groupFixtureId -> groupId)
+  const groupIdMap = new Map(
+    groupFixtures.map((gf) => [gf.id, gf.groupId])
+  );
+
+  log.debug({ groupFixtureCount: groupFixtures.length }, "Loaded group fixtures");
+
+  // Step 3: Load scoring rules
+  const uniqueGroupIds = Array.from(new Set(groupFixtures.map((gf) => gf.groupId)));
+  
+  const groupRules = await prisma.groupRules.findMany({
+    where: {
+      groupId: { in: uniqueGroupIds },
+    },
+    select: {
+      groupId: true,
+      predictionMode: true,
+      onTheNosePoints: true,
+      correctDifferencePoints: true,
+      outcomePoints: true,
+    },
+  });
+
+  // Build rules map
+  const rulesMap = new Map(
+    groupRules.map((r) => [
+      r.groupId,
+      {
+        predictionMode: r.predictionMode as "CorrectScore" | "MatchWinner",
+        onTheNosePoints: r.onTheNosePoints,
+        correctDifferencePoints: r.correctDifferencePoints,
+        outcomePoints: r.outcomePoints,
+      } as ScoringRules,
+    ])
+  );
+
+  log.debug({ rulesCount: groupRules.length }, "Loaded scoring rules");
+
+  // Step 4: Load unsettled predictions
+  const groupFixtureIds = groupFixtures.map((gf) => gf.id);
+
+  const predictions = await prisma.groupPredictions.findMany({
+    where: {
+      groupFixtureId: { in: groupFixtureIds },
+      settledAt: null,
+    },
+    select: {
+      id: true,
+      groupId: true,
+      groupFixtureId: true,
+      prediction: true,
+    },
+  });
+
+  if (!predictions.length) {
+    log.debug("No unsettled predictions found");
+    return { settled: 0, skipped: 0 };
+  }
+
+  log.info({ predictionCount: predictions.length }, "Loaded unsettled predictions");
+
+  // Step 5: Calculate scores
+  const updates: Array<{
+    id: number;
+    points: string;
+    winningCorrectScore: boolean;
+    winningMatchWinner: boolean;
+  }> = [];
+
+  let skipped = 0;
+
+  for (const pred of predictions) {
+    // Get fixture ID from groupFixture map
+    const fixtureId = groupFixtureMap.get(pred.groupFixtureId);
+    if (!fixtureId) {
+      log.warn({ predictionId: pred.id }, "Missing fixture ID for prediction");
+      skipped++;
+      continue;
+    }
+
+    // Get fixture from fixture map
+    const fixture = fixtureMap.get(fixtureId);
+    if (!fixture) {
+      log.warn({ predictionId: pred.id, fixtureId }, "Missing fixture for prediction");
+      skipped++;
+      continue;
+    }
+
+    // Check for null scores
+    if (fixture.homeScore == null || fixture.awayScore == null) {
+      log.warn({ predictionId: pred.id, fixtureId }, "Fixture has null scores");
+      skipped++;
+      continue;
+    }
+
+    // Get rules from rules map
+    const rules = rulesMap.get(pred.groupId);
+    if (!rules) {
+      log.warn({ predictionId: pred.id, groupId: pred.groupId }, "Missing rules for group");
+      skipped++;
+      continue;
+    }
+
+    // Calculate score
+    const result = calculateScore(
+      { prediction: pred.prediction },
+      {
+        homeScore: fixture.homeScore,
+        awayScore: fixture.awayScore,
+        state: fixture.state,
+      },
+      rules
+    );
+
+    updates.push({
+      id: pred.id,
+      points: String(result.points),
+      winningCorrectScore: result.winningCorrectScore,
+      winningMatchWinner: result.winningMatchWinner,
+    });
+  }
+
+  if (!updates.length) {
+    log.info({ skipped }, "No predictions to settle");
+    return { settled: 0, skipped };
+  }
+
+  // Step 6: Batch update in transaction
+  const now = new Date();
+
+  try {
+    await prisma.$transaction(
+      updates.map((update) =>
+        prisma.groupPredictions.update({
+          where: { id: update.id },
+          data: {
+            points: update.points,
+            winningCorrectScore: update.winningCorrectScore,
+            winningMatchWinner: update.winningMatchWinner,
+            settledAt: now,
+          },
+        })
+      )
+    );
+
+    log.info({ settled: updates.length, skipped }, "Settlement completed successfully");
+    return { settled: updates.length, skipped };
+  } catch (error) {
+    log.error({ error, updateCount: updates.length }, "Failed to settle predictions");
+    throw error;
+  }
+}
