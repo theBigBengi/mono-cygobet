@@ -21,6 +21,7 @@ import type {
   TeamDTO,
 } from "@repo/types/sport-data/common";
 import type { FixtureSportmonks } from "./sportmonks.types";
+import { SportsDataError } from "../../errors";
 import {
   SMHttp,
   IncludeNode,
@@ -60,19 +61,19 @@ export class SportMonksAdapter {
     } = {}
   ) {
     const token = opts.token ?? process.env.SPORTMONKS_API_TOKEN;
-    if (!token) throw new Error("SPORTMONKS_API_TOKEN is required");
+    if (!token) throw new SportsDataError("UNKNOWN", "API token is required");
 
     const authMode =
       opts.authMode ?? (process.env.SPORTMONKS_AUTH_MODE as "query" | "header");
-    if (!authMode) throw new Error("SPORTMONKS_AUTH_MODE is required");
+    if (!authMode) throw new SportsDataError("UNKNOWN", "Auth mode is required");
 
     const footballBaseUrl =
       opts.footballBaseUrl ?? process.env.SPORTMONKS_FOOTBALL_BASE_URL;
     if (!footballBaseUrl)
-      throw new Error("SPORTMONKS_FOOTBALL_BASE_URL is required");
+      throw new SportsDataError("UNKNOWN", "Football base URL is required");
     const coreBaseUrl =
       opts.coreBaseUrl ?? process.env.SPORTMONKS_CORE_BASE_URL;
-    if (!coreBaseUrl) throw new Error("SPORTMONKS_CORE_BASE_URL is required");
+    if (!coreBaseUrl) throw new SportsDataError("UNKNOWN", "Core base URL is required");
 
     // Initialize HTTP clients for both APIs
     this.httpFootball = new SMHttp(token, footballBaseUrl, authMode);

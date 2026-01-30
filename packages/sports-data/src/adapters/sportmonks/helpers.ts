@@ -1,5 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
 
+import { SportsDataError } from "../../errors";
+
 /** Environment-backed configuration defaults */
 
 import type {
@@ -190,18 +192,44 @@ export class SMHttp {
                 : { Accept: "application/json" },
           });
           if (!res.ok) {
-            const txt = await res.text();
+            await res.text(); // Consume body
             if (res.status === 429 || res.status >= 500) {
               attempt++;
+              if (attempt > retries) {
+                if (res.status === 429) {
+                  throw new SportsDataError(
+                    "RATE_LIMIT",
+                    "Rate limit exceeded",
+                    429
+                  );
+                }
+                throw new SportsDataError(
+                  "SERVER_ERROR",
+                  "Server error",
+                  res.status
+                );
+              }
               await sleep(300 * attempt); // Exponential backoff
               continue;
             }
-            throw new Error(`SportMonks ${res.status}: ${txt}`);
+            throw new SportsDataError(
+              "UNKNOWN",
+              "Request failed",
+              res.status
+            );
           }
           break;
         } catch (err) {
           attempt++;
-          if (attempt > retries) throw err;
+          if (attempt > retries) {
+            if (err instanceof SportsDataError) throw err;
+            throw new SportsDataError(
+              "NETWORK_ERROR",
+              "Network request failed",
+              undefined,
+              err
+            );
+          }
           await sleep(300 * attempt);
         }
       }

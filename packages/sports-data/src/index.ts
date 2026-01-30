@@ -3,6 +3,10 @@ dotenv.config();
 
 export { SportMonksAdapter } from "./adapters/sportmonks/sportmonks.adapter";
 export {
+  SportsDataError,
+  type SportsDataErrorCode,
+} from "./errors";
+export {
   SMHttp,
   type IncludeNode,
   mapSmShortToApp,
