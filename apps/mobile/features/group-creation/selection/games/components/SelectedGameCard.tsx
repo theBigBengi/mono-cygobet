@@ -6,7 +6,7 @@ import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/lib/theme";
 import { GameCardBase } from "@/components/Fixtures";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import {   MaterialIcons } from "@expo/vector-icons";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
 
 interface SelectedGameCardProps {

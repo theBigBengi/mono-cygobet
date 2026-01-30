@@ -11,6 +11,7 @@ import {
 } from "../../fixtures/queries";
 import { FIXTURE_SELECT_WITH_RESULT } from "../../fixtures/selects";
 import type { FixtureWithRelationsAndResult } from "../types";
+import { hasMatchStarted } from "../helpers";
 
 /**
  * Resolve initial fixtures based on selection mode (internal - always wraps transaction).
@@ -161,6 +162,43 @@ export async function findGroupFixturesByFixtureIds(
       },
     },
   });
+}
+
+/**
+ * Find fixture data by groupFixture ID (for single prediction validation).
+ */
+export async function findFixtureByGroupFixtureId(groupFixtureId: number) {
+  const gf = await prisma.groupFixtures.findUnique({
+    where: { id: groupFixtureId },
+    select: {
+      fixtures: {
+        select: { startTs: true, state: true, result: true },
+      },
+    },
+  });
+  return gf?.fixtures ?? null;
+}
+
+/**
+ * Find group fixtures whose matches have already started (for batch validation).
+ */
+export async function findStartedFixturesByGroupFixtureIds(
+  groupFixtureIds: number[]
+) {
+  if (groupFixtureIds.length === 0) return [];
+  const gfs = await prisma.groupFixtures.findMany({
+    where: { id: { in: groupFixtureIds } },
+    select: {
+      id: true,
+      fixtures: {
+        select: { startTs: true, state: true, result: true },
+      },
+    },
+  });
+  return gfs.filter(
+    (gf): gf is typeof gf & { fixtures: NonNullable<typeof gf.fixtures> } =>
+      gf.fixtures != null && hasMatchStarted(gf.fixtures)
+  );
 }
 
 // טיפוס מפורש ל-group fixture עם predictions

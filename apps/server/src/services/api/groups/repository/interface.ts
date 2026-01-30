@@ -87,6 +87,12 @@ export interface GroupsRepository {
     groupId: number,
     fixtureIds: number[]
   ): Promise<Array<{ id: number; groupId: number; fixtureId: number }>>;
+  findFixtureByGroupFixtureId(
+    groupFixtureId: number
+  ): Promise<{ startTs: number; state: string; result: string | null } | null>;
+  findStartedFixturesByGroupFixtureIds(
+    groupFixtureIds: number[]
+  ): Promise<Array<{ id: number }>>;
   fetchGroupFixturesWithPredictions(
     groupId: number,
     userId: number

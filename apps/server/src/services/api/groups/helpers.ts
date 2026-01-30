@@ -154,6 +154,18 @@ export function buildOverviewFixtures(
   });
 }
 
+/** States where the match hasn't actually started playing */
+const NON_STARTED_STATES = new Set([
+  "NS",
+  "TBD",
+  "PST",
+  "POSTP",
+  "CANC",
+  "CANCELLED",
+  "ABD",
+  "SUSP",
+]);
+
 /**
  * Check if a match has started based on result, start time, and state.
  *
@@ -170,8 +182,7 @@ export function hasMatchStarted(fixture: {
   // Check if start time is in the past
   const now = nowUnixSeconds();
   if (fixture.startTs > now) return false;
-  // Check state - common states: "NS" = Not Started, "LIVE" = Live, "FT" = Full Time, etc.
-  return fixture.state !== "NS" && fixture.state !== "TBD";
+  return !NON_STARTED_STATES.has(fixture.state);
 }
 
 /**
@@ -180,7 +191,7 @@ export function hasMatchStarted(fixture: {
  * @param predictions - Predictions data from repository
  * @param userId - The ID of the current user
  * @param fixtures - Array of fixtures
- * @returns Map of predictions keyed by `${userId}_${fixtureId}`
+ * @returns predictionsMap keyed by `${userId}_${fixtureId}` and fixtureStartedMap
  */
 export function buildPredictionsMap(
   predictions: Array<{
@@ -198,7 +209,7 @@ export function buildPredictionsMap(
     startTs: number;
     state: string;
   }>
-): Record<string, string | null> {
+): { predictionsMap: Record<string, string | null>; fixtureStartedMap: Map<number, boolean> } {
   // Create a map of fixtureId -> hasStarted for quick lookup
   const fixtureStartedMap = new Map(
     fixtures.map((f) => [f.id, hasMatchStarted(f)])
@@ -219,5 +230,5 @@ export function buildPredictionsMap(
     }
   }
 
-  return predictionsMap;
+  return { predictionsMap, fixtureStartedMap };
 }

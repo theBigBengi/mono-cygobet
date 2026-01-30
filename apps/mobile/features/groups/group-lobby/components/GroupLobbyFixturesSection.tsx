@@ -105,7 +105,7 @@ export function GroupLobbyFixturesSection({
       </Card>
 
       {/* Game Cards - outside the card, peeking from sides */}
-      {gamesCount > 0 && (
+      {/* {gamesCount > 0 && (
         <ScrollView
           ref={scrollViewRef}
           horizontal
@@ -128,7 +128,7 @@ export function GroupLobbyFixturesSection({
             </View>
           ))}
         </ScrollView>
-      )}
+      )} */}
     </View>
   );
 }

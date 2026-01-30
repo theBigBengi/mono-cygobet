@@ -1,11 +1,12 @@
 // groups/service/predictions.ts
 // Prediction services (saveGroupPrediction, saveGroupPredictionsBatch).
 
-import { NotFoundError } from "../../../../utils/errors";
+import { BadRequestError, NotFoundError } from "../../../../utils/errors";
 import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
 import { validateFixtureIdsBelongToGroup } from "../validators/group-validators";
 import { getLogger } from "../../../../logger";
+import { hasMatchStarted } from "../helpers";
 
 const log = getLogger("groups.predictions");
 
@@ -34,6 +35,12 @@ export async function saveGroupPrediction(
     throw new NotFoundError(
       `Fixture ${fixtureId} does not belong to group ${groupId}`
     );
+  }
+
+  // Fetch fixture to check if match has started
+  const fixture = await repo.findFixtureByGroupFixtureId(groupFixture.id);
+  if (fixture && hasMatchStarted(fixture)) {
+    throw new BadRequestError("Cannot save prediction after the match has started");
   }
 
   // Format prediction as string "home:away" (e.g., "2:1")
@@ -83,6 +90,16 @@ export async function saveGroupPredictionsBatch(
     fixtureIds,
     repo
   );
+
+  // Check that none of the fixtures have started
+  const startedFixtures = await repo.findStartedFixturesByGroupFixtureIds(
+    groupFixtures.map((gf) => gf.id)
+  );
+  if (startedFixtures.length > 0) {
+    throw new BadRequestError(
+      "Cannot save predictions for matches that have already started"
+    );
+  }
 
   // Create a map of fixtureId -> groupFixtureId for quick lookup
   const fixtureIdToGroupFixtureId = new Map(

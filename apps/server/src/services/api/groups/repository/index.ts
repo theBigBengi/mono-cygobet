@@ -27,6 +27,8 @@ import {
   findGroupFixturesForFilters,
   findGroupFixtureByGroupAndFixture,
   findGroupFixturesByFixtureIds,
+  findFixtureByGroupFixtureId,
+  findStartedFixturesByGroupFixtureIds,
   fetchGroupFixturesWithPredictions,
   findGroupFixturesForOverview,
   updateGroupWithFixtures,
@@ -75,6 +77,8 @@ export const repository: GroupsRepository = {
   findGroupFixturesForFilters,
   findGroupFixtureByGroupAndFixture,
   findGroupFixturesByFixtureIds,
+  findFixtureByGroupFixtureId,
+  findStartedFixturesByGroupFixtureIds,
   fetchGroupFixturesWithPredictions,
   findGroupFixturesForOverview,
 

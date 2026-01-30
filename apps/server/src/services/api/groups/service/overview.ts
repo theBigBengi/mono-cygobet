@@ -8,7 +8,6 @@ import {
   buildParticipants,
   buildOverviewFixtures,
   buildPredictionsMap,
-  hasMatchStarted,
 } from "../helpers";
 import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
@@ -40,13 +39,14 @@ export async function getPredictionsOverview(
   const fixtures = buildOverviewFixtures(groupFixtures);
 
   // Build predictions map
-  const predictionsMap = buildPredictionsMap(predictions, userId, fixtures);
+  const { predictionsMap, fixtureStartedMap } = buildPredictionsMap(
+    predictions,
+    userId,
+    fixtures
+  );
 
   // Initialize all possible combinations with null (for missing predictions)
   // Only for current user OR for matches that have started
-  const fixtureStartedMap = new Map(
-    fixtures.map((f) => [f.id, hasMatchStarted(f)])
-  );
   for (const participant of participants) {
     for (const fixture of fixtures) {
       const key = `${participant.id}_${fixture.id}`;

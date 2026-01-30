@@ -82,15 +82,27 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
     return "draw";
   };
 
-  // Check if match has started (if state is "NS" or startTs is in future, match hasn't started)
-  const hasMatchStarted = (state: string, result: string | null, startTs: number): boolean => {
-    // If there's a result, match has definitely finished (and started)
+  // States where the match hasn't actually started playing (aligned with server)
+  const NON_STARTED_STATES = new Set([
+    "NS",
+    "TBD",
+    "PST",
+    "POSTP",
+    "CANC",
+    "CANCELLED",
+    "ABD",
+    "SUSP",
+  ]);
+
+  const hasMatchStarted = (
+    state: string,
+    result: string | null,
+    startTs: number
+  ): boolean => {
     if (result) return true;
-    // Check if start time is in the future
     const now = Math.floor(Date.now() / 1000);
     if (startTs > now) return false;
-    // Check state - common states: "NS" = Not Started, "LIVE" = Live, "FT" = Full Time, etc.
-    return state !== "NS" && state !== "TBD";
+    return !NON_STARTED_STATES.has(state);
   };
 
   const totalWidth = fixtures.length * GAME_COLUMN_WIDTH;
