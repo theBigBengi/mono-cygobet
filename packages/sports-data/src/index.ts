@@ -11,7 +11,6 @@ export {
   createSportsDataAdapter,
   type AdapterConfig,
 } from "./adapter.factory";
-export type { SportMonksConfig } from "./adapters/sportmonks/sportmonks.config";
 export {
   SportsDataError,
   type SportsDataErrorCode,

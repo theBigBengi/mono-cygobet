@@ -5,7 +5,7 @@ import { AdminProviderMarketsResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 
 const adminMarketsProviderRoutes: FastifyPluginAsync = async (fastify) => {
-  // GET /admin/provider/markets - Get markets from SportMonks provider
+  // GET /admin/provider/markets - Get markets from sports-data provider
   fastify.get<{ Reply: AdminProviderMarketsResponse }>(
     "/markets",
     {

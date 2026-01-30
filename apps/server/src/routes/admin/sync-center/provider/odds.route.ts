@@ -5,7 +5,7 @@ import { AdminProviderOddsResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 
 const adminOddsProviderRoutes: FastifyPluginAsync = async (fastify) => {
-  // GET /admin/provider/odds - Get odds from SportMonks provider
+  // GET /admin/provider/odds - Get odds from sports-data provider
   fastify.get<{ Reply: AdminProviderOddsResponse }>(
     "/odds",
     {
@@ -17,7 +17,7 @@ const adminOddsProviderRoutes: FastifyPluginAsync = async (fastify) => {
             to: { type: "string" }, // YYYY-MM-DD
             bookmakerIds: { type: "string" }, // comma-separated bookmaker external IDs
             marketIds: { type: "string" }, // comma-separated market external IDs
-            fixtureStates: { type: "string" }, // comma-separated fixture states (SportMonks), optional - if not provided, returns all statuses
+            fixtureStates: { type: "string" }, // comma-separated fixture states, optional - if not provided, returns all statuses
           },
         },
         response: { 200: providerResponseSchema },
@@ -49,7 +49,7 @@ const adminOddsProviderRoutes: FastifyPluginAsync = async (fastify) => {
         toDate = to.toISOString().split("T")[0]!;
       }
 
-      // Build SportMonks odds filters string
+      // Build provider odds filters string
       const parts: string[] = [];
       const bookmakerIds = query.bookmakerIds
         ?.split(",")

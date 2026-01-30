@@ -6,7 +6,7 @@ import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas"
 import { prisma } from "@repo/db";
 
 const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
-  // GET /admin/provider/fixtures - Get fixtures from SportMonks provider
+  // GET /admin/provider/fixtures - Get fixtures from sports-data provider
   // Note: This endpoint requires date range parameters for fetching fixtures
   fastify.get<{ Reply: AdminProviderFixturesResponse }>(
     "/fixtures",
@@ -46,7 +46,7 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
         fromDateOnly = query.from.split("T")[0]!.split(" ")[0]!;
         toDateOnly = query.to.split("T")[0]!.split(" ")[0]!;
 
-        // For SportMonks API, use date-only format (YYYY-MM-DD) in the URL path
+        // Use date-only format (YYYY-MM-DD) in the URL path
         // The API expects dates in YYYY-MM-DD format, not full ISO strings
         fromDate = fromDateOnly;
         toDate = toDateOnly;

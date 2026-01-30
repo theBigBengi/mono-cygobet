@@ -29,7 +29,7 @@ const log = getLogger("FinishedFixturesJob");
  * Why this exists:
  * - We sometimes have fixtures stuck in LIVE in the DB.
  * - After a fixture has been LIVE "too long", we treat it as a candidate to re-check.
- * - We then ask SportMonks for the same fixtures, but only those now in FT (finished),
+ * - We then ask the sports-data provider for the same fixtures, but only those now in FT (finished),
  *   and update our DB state + result + derived scores.
  */
 export const finishedFixturesJob = FINISHED_FIXTURES_JOB;
@@ -229,7 +229,7 @@ export async function runFinishedFixturesJob(
       };
     }
 
-    // SportMonks expects numeric ids; our DB stores externalId as bigint.
+    // Provider expects numeric ids; our DB stores externalId as bigint.
     const ids = candidates
       .map((c) => Number(c.externalId))
       .filter((n) => Number.isFinite(n));
@@ -257,7 +257,7 @@ export async function runFinishedFixturesJob(
 
     /**
      * 2) Ask provider for the same fixtures, but only those that are now finished (FT).
-     * SportMonks "fixtureStates=5" == FT.
+     * Provider "fixtureStates=5" == FT.
      */
     let fetched: Awaited<ReturnType<typeof adapter.fetchFixturesByIds>> = [];
     for (const group of chunk(ids, 50)) {

@@ -67,7 +67,7 @@ async function skipJob(
  * Goal: Keep our DB populated with upcoming fixtures (NS) for a forward-looking window.
  *
  * What it does:
- * - Fetch fixtures from SportMonks between [today .. today+daysAhead]
+ * - Fetch fixtures from sports-data provider between [today .. today+daysAhead]
  * - Filter to NS (Not Started)
  * - Upsert them into our DB using the existing fixtures seeder (which uses Prisma upsert)
  * - Track job execution in `job_runs` (jobRuns)
@@ -144,7 +144,7 @@ export async function runUpcomingFixturesJob(
   });
   const startedAtMs = jobRun.startedAtMs;
 
-  // Date-only format works with SportMonks "between" endpoint and is URL-encoded in the adapter.
+  // Date-only format works with provider "between" endpoint and is URL-encoded in the adapter.
   const from = format(new Date(), "yyyy-MM-dd");
   const to = format(addDays(new Date(), daysAhead), "yyyy-MM-dd");
 

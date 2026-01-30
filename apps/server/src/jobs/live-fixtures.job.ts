@@ -21,7 +21,7 @@ const log = getLogger("LiveFixturesJob");
  * Goal: Keep our DB updated with fixtures that are currently in-play (LIVE/HT/etc.)
  *
  * What it does:
- * - Fetch live fixtures from SportMonks (livescores/inplay endpoint)
+ * - Fetch live fixtures from sports-data provider (livescores/inplay endpoint)
  * - Upsert them into our DB using the existing fixtures seeder (Prisma upsert)
  * - Track execution in `job_runs`
  *
@@ -40,7 +40,7 @@ export const liveFixturesJob = LIVE_FIXTURES_JOB;
  * 1) Read job config from DB (`jobs` table).
  * 2) Create a `job_runs` record (status=running) so UI can show progress.
  * 3) If job is disabled AND this trigger is cron => mark run as skipped and return.
- * 4) Build SportMonks adapter from env.
+ * 4) Build sports-data adapter from env.
  * 5) Fetch live fixtures, seed them, and update the run record with results.
  */
 export async function runLiveFixturesJob(

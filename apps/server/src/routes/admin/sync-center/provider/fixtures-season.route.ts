@@ -8,7 +8,7 @@ import { prisma } from "@repo/db";
 const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
   fastify
 ) => {
-  // GET /admin/provider/fixtures/season/:seasonId - Get fixtures from SportMonks provider by season ID
+  // GET /admin/provider/fixtures/season/:seasonId - Get fixtures from sports-data provider by season ID
   fastify.get<{
     Params: { seasonId: string };
     Querystring: {

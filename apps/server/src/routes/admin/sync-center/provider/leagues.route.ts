@@ -6,7 +6,7 @@ import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas"
 import { prisma } from "@repo/db";
 
 const adminLeaguesProviderRoutes: FastifyPluginAsync = async (fastify) => {
-  // GET /admin/leagues/provider - Get leagues from SportMonks provider
+  // GET /admin/leagues/provider - Get leagues from sports-data provider
   fastify.get<{ Reply: AdminProviderLeaguesResponse }>(
     "/leagues",
     {

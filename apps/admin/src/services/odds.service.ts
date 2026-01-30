@@ -32,7 +32,7 @@ export const oddsService = {
     to?: string; // YYYY-MM-DD
     bookmakerIds?: string[]; // external IDs
     marketIds?: string[]; // external IDs
-    fixtureStates?: string[]; // sportmonks fixture states, defaults to ["1"]
+    fixtureStates?: string[]; // provider fixture states, defaults to ["1"]
   }) {
     const searchParams = new URLSearchParams();
     if (params?.from) searchParams.append("from", params.from);

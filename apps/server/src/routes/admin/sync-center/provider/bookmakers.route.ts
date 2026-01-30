@@ -5,7 +5,7 @@ import { AdminProviderBookmakersResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 
 const adminBookmakersProviderRoutes: FastifyPluginAsync = async (fastify) => {
-  // GET /admin/provider/bookmakers - Get bookmakers from SportMonks provider
+  // GET /admin/provider/bookmakers - Get bookmakers from sports-data provider
   fastify.get<{ Reply: AdminProviderBookmakersResponse }>(
     "/bookmakers",
     {

@@ -30,8 +30,8 @@ const log = getLogger("UpdatePrematchOddsJob");
  *
  * What controls this job:
  * - `jobs.enabled`: whether cron triggers should execute (manual runs still execute)
- * - `jobs.meta.odds.bookmakerExternalIds`: which bookmakers to request from SportMonks
- * - `jobs.meta.odds.marketExternalIds`: which markets to request from SportMonks
+* - `jobs.meta.odds.bookmakerExternalIds`: which bookmakers to request from provider
+* - `jobs.meta.odds.marketExternalIds`: which markets to request from provider
  */
 export const updatePrematchOddsJob = UPDATE_PREMATCH_ODDS_JOB;
 
@@ -45,7 +45,7 @@ const DEFAULT_DAYS_AHEAD = UPDATE_PREMATCH_ODDS_JOB.meta?.daysAhead ?? 7;
  * Flow:
  * 1) Load job config from DB (must exist; jobs are seeded).
  * 2) Validate `jobs.meta` has the canonical odds config (no guessing).
- * 3) Build SportMonks filters string from meta (or allow explicit override via opts.filters).
+ * 3) Build provider filters string from meta (or allow explicit override via opts.filters).
  * 4) Create job_runs record.
  * 5) Skip if disabled + cron trigger.
  * 6) Fetch odds from provider, seed into DB, update run record with counts.
@@ -67,7 +67,7 @@ export async function runUpdatePrematchOddsJob(
   const marketExternalIds = meta.odds.marketExternalIds;
   const daysAhead = opts.daysAhead ?? meta.daysAhead ?? DEFAULT_DAYS_AHEAD;
 
-  // SportMonks expects a semicolon-delimited filters string.
+  // Provider expects a semicolon-delimited filters string.
   // Example: "bookmakers:2;markets:1,57;"
   const filtersFromMeta = `bookmakers:${bookmakerExternalIds.join(
     ","

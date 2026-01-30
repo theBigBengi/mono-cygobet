@@ -161,7 +161,7 @@ export async function runFixturesSeed(
  * - fixtures (and often markets/bookmakers tables depending on your schema/seeders).
  *
  * Note:
- * - `filters` is a SportMonks query string like `bookmakers:2;markets:1,57;...`
+ * - `filters` is a provider query string like `bookmakers:2;markets:1,57;...`
  */
 export async function runOddsSeed(
   startIso: string,
