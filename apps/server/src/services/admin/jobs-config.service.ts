@@ -38,6 +38,18 @@ function normalizeMeta(v: unknown): Record<string, unknown> {
 }
 
 /**
+ * Shallow-merge top-level keys of existing meta with incoming patch.
+ * For nested objects (e.g. `odds`), the incoming value replaces the existing one.
+ * This prevents losing sibling keys when the frontend only sends a subset.
+ */
+function mergeMeta(
+  existing: Record<string, unknown>,
+  incoming: Record<string, unknown>
+): Record<string, unknown> {
+  return { ...existing, ...incoming };
+}
+
+/**
  * Minimal type guard for Prisma errors.
  * Prisma uses `unknown` errors in TS; we only care about the `code` field for P2025.
  */
@@ -236,6 +248,16 @@ export class AdminJobsConfigService {
       throw new BadRequestError(`Invalid cron expression: '${scheduleCron}'`);
     }
 
+    let mergedMeta: Record<string, unknown> | undefined;
+    if (patch.meta !== undefined && patch.meta !== null) {
+      const current = await prisma.jobs.findUnique({
+        where: { key: jobId },
+        select: { meta: true },
+      });
+      if (!current) throw new NotFoundError(`Job '${jobId}' not found`);
+      mergedMeta = mergeMeta(normalizeMeta(current.meta), patch.meta);
+    }
+
     let updated: JobWithLastRun;
     try {
       updated = await prisma.jobs.update({
@@ -248,7 +270,9 @@ export class AdminJobsConfigService {
           ...(patch.scheduleCron !== undefined ? { scheduleCron } : {}),
           ...(patch.meta !== undefined
             ? {
-                meta: (patch.meta ?? {}) as unknown as Prisma.InputJsonValue,
+                meta: (patch.meta === null
+                  ? {}
+                  : mergedMeta ?? patch.meta) as unknown as Prisma.InputJsonValue,
               }
             : {}),
         },

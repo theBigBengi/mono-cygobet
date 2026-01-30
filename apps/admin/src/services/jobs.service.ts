@@ -12,6 +12,7 @@ export type GetJobRunsParams = {
   status?: string;
   limit?: number;
   cursor?: number | null;
+  search?: string;
 };
 
 export const jobsService = {
@@ -28,6 +29,7 @@ export const jobsService = {
     if (typeof params.limit === "number") sp.set("limit", String(params.limit));
     if (typeof params.cursor === "number")
       sp.set("cursor", String(params.cursor));
+    if (params.search) sp.set("search", params.search);
 
     const qs = sp.toString();
     return apiGet<AdminJobRunsListResponse>(

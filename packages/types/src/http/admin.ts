@@ -256,6 +256,11 @@ export interface AdminJobRunsListResponse {
     meta: Record<string, unknown>;
   }>;
   nextCursor: number | null;
+  summary: {
+    running: number;
+    failed: number;
+    success: number;
+  };
   message: string;
 }
 

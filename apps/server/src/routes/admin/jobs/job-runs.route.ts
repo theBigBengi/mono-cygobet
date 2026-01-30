@@ -11,6 +11,7 @@ const adminJobRunsDbRoutes: FastifyPluginAsync = async (fastify) => {
       status?: string;
       limit?: number;
       cursor?: number;
+      search?: string;
     };
     Reply: AdminJobRunsListResponse;
   }>(
@@ -24,6 +25,7 @@ const adminJobRunsDbRoutes: FastifyPluginAsync = async (fastify) => {
             status: { type: "string" },
             limit: { type: "number", default: 50 },
             cursor: { type: "number" },
+            search: { type: "string" },
           },
         },
         response: {
@@ -32,43 +34,67 @@ const adminJobRunsDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminJobRunsListResponse> => {
-      const { jobId, status, cursor } = req.query ?? {};
+      const { jobId, status, cursor, search } = req.query ?? {};
       const limit = Math.min(Math.max(req.query?.limit ?? 50, 1), 200);
 
       const statusEnum = status
         ? ((RunStatus as any)[status] ?? status)
         : undefined;
 
-      const runs = await prisma.jobRuns.findMany({
-        where: {
-          ...(jobId ? { jobKey: jobId } : {}),
-          ...(statusEnum ? { status: statusEnum } : {}),
-          ...(cursor ? { id: { lt: cursor } } : {}),
-        },
-        orderBy: [{ id: "desc" }],
-        take: limit,
-        select: {
-          id: true,
-          jobKey: true,
-          status: true,
-          trigger: true,
-          triggeredBy: true,
-          triggeredById: true,
-          startedAt: true,
-          finishedAt: true,
-          durationMs: true,
-          rowsAffected: true,
-          errorMessage: true,
-          errorStack: true,
-          meta: true,
-          job: {
-            select: {
-              key: true,
-              description: true,
+      const whereClause = {
+        ...(jobId ? { jobKey: jobId } : {}),
+        ...(statusEnum ? { status: statusEnum } : {}),
+        ...(search
+          ? {
+              OR: [
+                {
+                  jobKey: {
+                    contains: search,
+                    mode: "insensitive" as const,
+                  },
+                },
+                ...(/^\d+$/.test(search) ? [{ id: Number(search) }] : []),
+              ],
+            }
+          : {}),
+      };
+
+      const [runs, counts] = await Promise.all([
+        prisma.jobRuns.findMany({
+          where: {
+            ...whereClause,
+            ...(cursor ? { id: { lt: cursor } } : {}),
+          },
+          orderBy: [{ id: "desc" }],
+          take: limit,
+          select: {
+            id: true,
+            jobKey: true,
+            status: true,
+            trigger: true,
+            triggeredBy: true,
+            triggeredById: true,
+            startedAt: true,
+            finishedAt: true,
+            durationMs: true,
+            rowsAffected: true,
+            errorMessage: true,
+            errorStack: true,
+            meta: true,
+            job: {
+              select: {
+                key: true,
+                description: true,
+              },
             },
           },
-        },
-      });
+        }),
+        prisma.jobRuns.groupBy({
+          by: ["status"],
+          where: whereClause,
+          _count: { _all: true },
+        }),
+      ]);
 
       const last = runs.at(-1);
       const nextCursor = last?.id ?? null;
@@ -94,6 +120,14 @@ const adminJobRunsDbRoutes: FastifyPluginAsync = async (fastify) => {
           meta: (r.meta ?? {}) as Record<string, unknown>,
         })),
         nextCursor,
+        summary: {
+          running:
+            counts.find((c) => String(c.status) === "running")?._count._all ?? 0,
+          failed:
+            counts.find((c) => String(c.status) === "failed")?._count._all ?? 0,
+          success:
+            counts.find((c) => String(c.status) === "success")?._count._all ?? 0,
+        },
         message: "Job runs fetched successfully",
       });
     }

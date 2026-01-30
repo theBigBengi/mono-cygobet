@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -275,6 +275,7 @@ export default function JobsPage() {
   const [jobFilter, setJobFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState<string>("");
+  const deferredSearch = useDeferredValue(search);
 
   // Cursor pagination
   const [pageSize, setPageSize] = useState<number>(50);
@@ -287,7 +288,12 @@ export default function JobsPage() {
     cursor,
     jobId: jobFilter === "all" ? undefined : jobFilter,
     status: statusFilter === "all" ? undefined : statusFilter,
+    search: deferredSearch.trim() || undefined,
   });
+
+  useEffect(() => {
+    setCursorStack([null]);
+  }, [deferredSearch]);
 
   const { data: bookmakersProviderData } = useBookmakersFromProvider();
   const bookmakerOptions: MultiSelectOption[] = useMemo(() => {
@@ -320,34 +326,15 @@ export default function JobsPage() {
     return keys;
   }, [jobs]);
 
-  const filteredRuns = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return runs;
-    return runs.filter((r) => {
-      const nameFromKey = jobNameFromKey(r.jobKey).toLowerCase();
-      const key = r.jobKey.toLowerCase();
-      const meta = (r.meta ?? {}) as Record<string, unknown>;
-      const batchId = meta["batchId"];
-      const batchIdStr =
-        typeof batchId === "string" || typeof batchId === "number"
-          ? String(batchId)
-          : "";
-      return (
-        nameFromKey.includes(q) ||
-        key.includes(q) ||
-        String(r.id).includes(q) ||
-        batchIdStr.includes(q)
-      );
-    });
-  }, [runs, search]);
-
   const summary = useMemo(() => {
-    const totalJobs = jobs.length;
-    const runningCount = runs.filter((r) => r.status === "running").length;
-    const failedCount = runs.filter((r) => r.status === "failed").length;
-    const successCount = runs.filter((r) => r.status === "success").length;
-    return { totalJobs, runningCount, failedCount, successCount };
-  }, [jobs.length, runs]);
+    const serverSummary = runsQuery.data?.summary;
+    return {
+      totalJobs: jobs.length,
+      runningCount: serverSummary?.running ?? 0,
+      failedCount: serverSummary?.failed ?? 0,
+      successCount: serverSummary?.success ?? 0,
+    };
+  }, [jobs.length, runsQuery.data?.summary]);
 
   const refresh = async () => {
     await Promise.all([
@@ -801,7 +788,7 @@ export default function JobsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredRuns.map((r) => (
+                      {runs.map((r) => (
                         <TableRow
                           key={r.id}
                           className="cursor-pointer"
@@ -848,7 +835,7 @@ export default function JobsPage() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      {!filteredRuns.length && (
+                      {!runs.length && (
                         <TableRow>
                           <TableCell
                             colSpan={8}
@@ -865,7 +852,7 @@ export default function JobsPage() {
                 {/* Pagination (sticks to bottom of the card) */}
                 <div className="flex-shrink-0 px-4 py-3 border-t flex items-center justify-between">
                   <div className="text-xs text-muted-foreground">
-                    Showing {filteredRuns.length} runs
+                    Showing {runs.length} runs
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
