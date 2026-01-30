@@ -1,6 +1,6 @@
 // src/routes/admin/provider/seasons.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../../../utils/adapter";
 import { AdminProviderSeasonsResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 import { prisma } from "@repo/db";
@@ -17,14 +17,6 @@ const adminSeasonsProviderRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminProviderSeasonsResponse> => {
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
-
       // Fetch seasons from provider
       const seasonsDto = await adapter.fetchSeasons();
 

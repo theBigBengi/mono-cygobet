@@ -1,6 +1,6 @@
 // src/routes/admin/provider/countries.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../../../utils/adapter";
 import { AdminProviderCountriesResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 
@@ -16,14 +16,6 @@ const adminCountriesProviderRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminProviderCountriesResponse> => {
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
-
       const [countries, leagues] = await Promise.all([
         adapter.fetchCountries(),
         adapter.fetchLeagues(),

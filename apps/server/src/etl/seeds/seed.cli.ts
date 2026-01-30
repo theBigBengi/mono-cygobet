@@ -1,5 +1,5 @@
 // src/etl/seeds/seed.cli.ts
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../utils/adapter";
 import { seedBookmakers } from "./seed.bookmakers";
 import { seedCountries } from "./seed.countries";
 import { seedLeagues } from "./seed.leagues";
@@ -110,14 +110,6 @@ const oddsFilters: string = oddsFiltersArg
     if (dryRun) {
       console.log("🧪 DRY RUN MODE: No database changes will be made");
     }
-
-    // Adapter is created once and re-used for all seeds that need SportMonks.
-    const adapter = new SportMonksAdapter({
-      token: process.env.SPORTMONKS_API_TOKEN,
-      footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-      coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-      authMode: process.env.SPORTMONKS_AUTH_MODE as "query" | "header",
-    });
 
     // Validate dependencies when running individual seeds
     if (!runAll) {

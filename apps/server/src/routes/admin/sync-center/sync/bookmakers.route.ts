@@ -1,6 +1,6 @@
 // src/routes/admin/sync/bookmakers.route.ts
 import { FastifyPluginAsync } from "fastify";
-import SportMonksAdapter from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../../../utils/adapter";
 import { seedBookmakers } from "../../../../etl/seeds/seed.bookmakers";
 import { AdminSyncBookmakersResponse } from "@repo/types";
 import {
@@ -26,13 +26,6 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply): Promise<AdminSyncBookmakersResponse> => {
       const { dryRun = false } = req.body ?? {};
 
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
       const bookmakersDto = await adapter.fetchBookmakers();
       const result = await seedBookmakers(bookmakersDto, { 
         dryRun,
@@ -93,14 +86,6 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
           message: `Invalid bookmaker ID: ${id}`,
         });
       }
-
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
 
       const bookmakersDto = await adapter.fetchBookmakers();
       const bookmakerDto = bookmakersDto.find(

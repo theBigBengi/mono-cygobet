@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { addDays, format } from "date-fns";
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../utils/adapter";
 import type { FixtureDTO } from "@repo/types/sport-data/common";
 import { JobTriggerBy, RunTrigger } from "@repo/db";
 import { seedFixtures } from "../etl/seeds/seed.fixtures";
@@ -23,24 +23,6 @@ const FIXTURE_STATE_FT = "FT";
 
 // Days ahead to fetch fixtures for
 const DAYS_AHEAD = 3;
-
-function getAdapter() {
-  const token = process.env.SPORTMONKS_API_TOKEN;
-  const footballBaseUrl = process.env.SPORTMONKS_FOOTBALL_BASE_URL;
-  const coreBaseUrl = process.env.SPORTMONKS_CORE_BASE_URL;
-  const authMode =
-    (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
-
-  if (!token || !footballBaseUrl || !coreBaseUrl) {
-    throw new Error("Missing SPORTMONKS environment variables");
-  }
-  return new SportMonksAdapter({
-    token,
-    footballBaseUrl,
-    coreBaseUrl,
-    authMode,
-  });
-}
 
 async function skipJob(
   jobRunId: number,
@@ -171,12 +153,10 @@ export async function runUpcomingFixturesJob(
     return skipJob(jobRun.id, "disabled", startedAtMs, opts);
   }
 
-  // Build adapter config from env. If env is missing, skip safely (avoids throwing on boot).
+  // If env is missing, skip safely (adapter creation would have failed at boot).
   const token = process.env.SPORTMONKS_API_TOKEN;
   const footballBaseUrl = process.env.SPORTMONKS_FOOTBALL_BASE_URL;
   const coreBaseUrl = process.env.SPORTMONKS_CORE_BASE_URL;
-  const authMode =
-    (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
 
   if (!token || !footballBaseUrl || !coreBaseUrl) {
     log.warn("missing SPORTMONKS env vars; skipping");
@@ -184,14 +164,7 @@ export async function runUpcomingFixturesJob(
   }
 
   try {
-    const adapter = new SportMonksAdapter({
-      token,
-      footballBaseUrl,
-      coreBaseUrl,
-      authMode,
-    });
-
-    // Ask SportMonks for scheduled fixtures only (fixtureStates=1 == NS).
+    // Ask provider for scheduled fixtures only (fixtureStates=1 == NS).
     const fetched = await adapter.fetchFixturesBetween(from, to, {
       filters: { fixtureStates: "1" },
     });

@@ -1,7 +1,7 @@
 // src/routes/admin/sync/fixtures.route.ts
 import { FastifyPluginAsync } from "fastify";
 import { seedFixtures } from "../../../../etl/seeds/seed.fixtures";
-import SportMonksAdapter from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../../../utils/adapter";
 import { AdminSyncFixturesResponse } from "@repo/types";
 import {
   syncBodySchema,
@@ -48,14 +48,6 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         seasonId,
         fetchAllFixtureStates = true,
       } = req.body ?? {};
-
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
 
       let allFixturesDto: any[] = [];
       let totalOk = 0;
@@ -208,14 +200,6 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           message: `Invalid fixture ID: ${id}`,
         });
       }
-
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
 
       const fixtureDto = await adapter.fetchFixtureById(fixtureId);
 

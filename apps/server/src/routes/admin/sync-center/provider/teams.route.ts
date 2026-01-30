@@ -1,6 +1,6 @@
 // src/routes/admin/provider/teams.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../../../utils/adapter";
 import { AdminProviderTeamsResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 import { prisma } from "@repo/db";
@@ -17,14 +17,6 @@ const adminTeamsProviderRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminProviderTeamsResponse> => {
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
-
       // Fetch teams from provider
       const teamsDto = await adapter.fetchTeams();
 

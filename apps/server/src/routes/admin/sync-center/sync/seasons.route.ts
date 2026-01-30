@@ -1,7 +1,7 @@
 // src/routes/admin/sync/seasons.route.ts
 import { FastifyPluginAsync } from "fastify";
 import { seedSeasons } from "../../../../etl/seeds/seed.seasons";
-import SportMonksAdapter from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../../../utils/adapter";
 import { AdminSyncSeasonsResponse } from "@repo/types";
 import {
   syncBodySchema,
@@ -26,13 +26,6 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply): Promise<AdminSyncSeasonsResponse> => {
       const { dryRun = false } = req.body ?? {};
 
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
       const seasonsDto = await adapter.fetchSeasons();
 
       const result = await seedSeasons(seasonsDto, { 
@@ -94,14 +87,6 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
           message: "Invalid season ID",
         } as any);
       }
-
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
 
       const seasonDto = await adapter.fetchSeasonById(seasonId);
 

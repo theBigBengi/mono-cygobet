@@ -1,13 +1,9 @@
 // src/routes/admin/provider/fixtures.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../../../utils/adapter";
 import { AdminProviderFixturesResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 import { prisma } from "@repo/db";
-// Import helper functions - we need them to transform raw API data to DTOs
-// without duplicating the API call
-import { buildFixtures } from "@repo/sports-data/adapters/sportmonks/helpers";
-import type { FixtureDTO } from "@repo/types/sport-data/common";
 
 const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/provider/fixtures - Get fixtures from SportMonks provider
@@ -70,24 +66,10 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
         toDate = toDateOnly;
       }
 
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
-
       // Fetch fixtures between dates - get raw data with league, country, and odds
       const fixturesDto = await adapter.fetchFixturesBetween(fromDate, toDate, {
-        include: [
-          {
-            name: "odds",
-          },
-          {
-            name: "scores",
-          },
-        ],
+        includeOdds: true,
+        includeScores: true,
       });
 
       return reply.send({

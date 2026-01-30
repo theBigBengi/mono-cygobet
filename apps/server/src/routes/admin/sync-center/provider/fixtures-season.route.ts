@@ -1,6 +1,6 @@
 // src/routes/admin/provider/fixtures-season.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../../../utils/adapter";
 import { AdminProviderFixturesResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 import { prisma } from "@repo/db";
@@ -56,47 +56,22 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
         });
       }
 
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
+      // Fetch fixtures for the specific season (with league, country, odds for filtering)
+      const fixturesDto = await adapter.fetchFixturesBySeason(seasonIdNum, {
+        includeOdds: true,
       });
 
-      // Fetch fixtures for the specific season
-      const fixturesDto = await adapter.fetchFixturesBySeason(seasonIdNum);
-
-      // Access the internal httpFootball instance to get raw data with includes
-      const adapterInternal = adapter as any;
-      const seasonData = await adapterInternal.httpFootball.get(
-        `seasons/${seasonIdNum}`,
-        {
-          include: [
-            {
-              name: "fixtures",
-              include: [
-                { name: "state", fields: ["id", "short_name"] },
-                { name: "participants", fields: ["id"] },
-                { name: "round", fields: ["name"] },
-                { name: "stage", fields: ["name"] },
-                {
-                  name: "league",
-                  include: [{ name: "country" }],
-                },
-                {
-                  name: "odds",
-                },
-              ],
-            },
-          ],
+      // Fetch leagues to build league -> country map for country filtering
+      const leaguesDto = await adapter.fetchLeagues();
+      const leagueToCountryMap = new Map<string, string>();
+      for (const l of leaguesDto) {
+        if (l.countryExternalId != null) {
+          leagueToCountryMap.set(
+            String(l.externalId),
+            String(l.countryExternalId)
+          );
         }
-      );
-
-      // Flatten the fixtures from season response
-      let fixturesRaw = Array.isArray(seasonData)
-        ? seasonData.flatMap((season: any) => season.fixtures || [])
-        : seasonData?.fixtures || [];
+      }
 
       // Get leagues and countries from DB for filtering
       const dbLeagues = await prisma.leagues.findMany({
@@ -132,15 +107,6 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
               leagueExternalId && allowedLeagueExternalIds.has(leagueExternalId)
             );
           });
-          // Also filter fixturesRaw by league
-          fixturesRaw = fixturesRaw.filter((rf: any) => {
-            const leagueExternalId = rf.league?.id
-              ? String(rf.league.id)
-              : null;
-            return (
-              leagueExternalId && allowedLeagueExternalIds.has(leagueExternalId)
-            );
-          });
         }
       }
 
@@ -153,31 +119,13 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
           .filter(Boolean);
         if (countryExternalIds.length > 0) {
           const allowedCountryExternalIds = new Set(countryExternalIds);
-
-          // Create a map of fixture external IDs to country external IDs from raw data
-          const fixtureCountryMap = new Map<number, string>();
-          fixturesRaw.forEach((rf: any) => {
-            if (rf.id && rf.league?.country?.id) {
-              fixtureCountryMap.set(
-                Number(rf.id),
-                String(rf.league.country.id)
-              );
-            }
-          });
-
-          // Filter by country external ID from provider data
           filteredFixturesDto = filteredFixturesDto.filter((f) => {
-            const countryExternalId = fixtureCountryMap.get(f.externalId);
-            return (
-              countryExternalId &&
-              allowedCountryExternalIds.has(countryExternalId)
-            );
-          });
-          // Also filter fixturesRaw by country
-          fixturesRaw = fixturesRaw.filter((rf: any) => {
-            const countryExternalId = rf.league?.country?.id
-              ? String(rf.league.country.id)
+            const leagueExternalId = f.leagueExternalId
+              ? String(f.leagueExternalId)
               : null;
+            const countryExternalId = leagueExternalId
+              ? leagueToCountryMap.get(leagueExternalId)
+              : undefined;
             return (
               countryExternalId &&
               allowedCountryExternalIds.has(countryExternalId)
@@ -185,12 +133,6 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
           });
         }
       }
-
-      // Create a map of fixture external IDs to raw fixture data
-      const rawFixtureMap = new Map<number, any>();
-      fixturesRaw.forEach((f: any) => {
-        rawFixtureMap.set(Number(f.id), f);
-      });
 
       return reply.send({
         status: "success",
@@ -201,17 +143,6 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
           const seasonExternalId = f.seasonExternalId
             ? String(f.seasonExternalId)
             : null;
-          const homeTeamExternalId = String(f.homeTeamExternalId);
-          const awayTeamExternalId = String(f.awayTeamExternalId);
-
-          // Get raw fixture data for league, country, and odds
-          const rawFixture = rawFixtureMap.get(f.externalId);
-          const leagueName = rawFixture?.league?.name ?? null;
-          const countryName = rawFixture?.league?.country?.name ?? null;
-          const hasOdds =
-            rawFixture?.odds &&
-            Array.isArray(rawFixture.odds) &&
-            rawFixture.odds.length > 0;
 
           return {
             externalId: f.externalId,
@@ -232,9 +163,9 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
             seasonInDb: seasonExternalId
               ? dbSeasonExternalIds.has(seasonExternalId)
               : false,
-            leagueName,
-            countryName,
-            hasOdds: hasOdds ?? false,
+            leagueName: f.leagueName ?? null,
+            countryName: f.countryName ?? null,
+            hasOdds: f.hasOdds ?? false,
           };
         }),
         message: `Fixtures fetched from provider successfully for season ${seasonId}`,

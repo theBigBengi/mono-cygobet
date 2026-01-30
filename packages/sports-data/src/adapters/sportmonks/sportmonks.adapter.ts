@@ -20,6 +20,12 @@ import type {
   SeasonDTO,
   TeamDTO,
 } from "@repo/types/sport-data/common";
+import type {
+  FixtureFetchOptions,
+  FixturesBySeasonOptions,
+  OddsFetchOptions,
+} from "../../adapter.interface";
+import type { ISportsDataAdapter } from "../../adapter.interface";
 import type { FixtureSportmonks } from "./sportmonks.types";
 import { validateConfig } from "./sportmonks.config";
 import type { SportMonksConfig } from "./sportmonks.config";
@@ -28,11 +34,7 @@ import type { SportsDataLogger } from "../../logger";
 import {
   SMHttp,
   IncludeNode,
-  mapSmShortToApp,
-  pickScoreString,
-  extractTeams,
   buildOdds,
-  coerceEpochSeconds,
   buildFixtures,
 } from "./helpers";
 import type {
@@ -50,7 +52,7 @@ import type {
  * Main adapter class that implements SportsDataAdapter interface
  * Provides unified access to SportMonks football and core APIs
  */
-export class SportMonksAdapter {
+export class SportMonksAdapter implements ISportsDataAdapter {
   private readonly config: SportMonksConfig;
   private httpFootball: SMHttp;
   private httpCore: SMHttp;
@@ -100,6 +102,18 @@ export class SportMonksAdapter {
     },
   ];
 
+  /** Translates generic opts to SportMonks IncludeNode[]. Kept internal—not exposed in public API. */
+  private buildFixtureInclude(opts?: FixtureFetchOptions): IncludeNode[] {
+    const extra: IncludeNode[] = [];
+    if (opts?.includeScores === true) extra.push("scores");
+    if (opts?.includeOdds === true)
+      extra.push({
+        name: "odds",
+        include: [{ name: "bookmaker" }, { name: "market" }],
+      });
+    return extra;
+  }
+
   /* ----------------------- Fixture Methods ----------------------- */
 
   /**
@@ -111,33 +125,25 @@ export class SportMonksAdapter {
    */
   async fetchFixturesBySeason(
     seasonExternalId: number,
-    options: {
-      fixtureStates?: string;
-      include?: IncludeNode[];
-    } = {}
+    options: FixturesBySeasonOptions = {}
   ): Promise<FixtureDTO[]> {
     const startMs = performance.now();
     this.logger.info("fetchFixturesBySeason", { seasonExternalId });
+    const baseFixturesInclude: IncludeNode[] = [
+      { name: "state", fields: ["id", "short_name"] },
+      { name: "participants", fields: ["id"] },
+      { name: "round", fields: ["name"] },
+      { name: "stage", fields: ["name"] },
+      { name: "league", include: [{ name: "country" }] },
+      ...this.buildFixtureInclude(options),
+    ];
     const rows = await this.httpFootball.get<SmSeasonRaw>(
       `seasons/${seasonExternalId}`,
       {
-        include: [
-          {
-            name: "fixtures",
-            include: [
-              { name: "state", fields: ["id", "short_name"] },
-              { name: "participants", fields: ["id"] }, // meta always present
-              { name: "round", fields: ["name"] },
-              { name: "stage", fields: ["name"] },
-            ],
-          },
-          ...(options.include ?? []),
-        ],
+        include: [{ name: "fixtures", include: baseFixturesInclude }],
         filters: options.fixtureStates
-          ? {
-              fixtureStates: options.fixtureStates,
-            }
-          : undefined, // No filter = fetch all fixture states
+          ? { fixtureStates: options.fixtureStates }
+          : undefined,
       }
     );
 
@@ -166,23 +172,18 @@ export class SportMonksAdapter {
   async fetchFixturesBetween(
     startIso: string,
     endIso: string,
-    options: {
-      include?: IncludeNode[];
-      perPage?: number;
-      sortBy?: string;
-      order?: "asc" | "desc";
-      filters?: string | Record<string, string | number | boolean>;
-    } = {}
+    options: FixtureFetchOptions = {}
   ): Promise<FixtureDTO[]> {
     const startMs = performance.now();
     this.logger.info("fetchFixturesBetween", { startIso, endIso });
     const encodedFrom = encodeURIComponent(startIso);
     const encodedTo = encodeURIComponent(endIso);
+    const include = [...this.fixtureInclude, ...this.buildFixtureInclude(options)];
 
     const rows = await this.httpFootball.get<FixtureSportmonks>(
       `fixtures/between/${encodedFrom}/${encodedTo}`,
       {
-        include: [...this.fixtureInclude, ...(options.include ?? [])],
+        include,
         filters: options.filters,
         perPage: options.perPage ?? this.config.defaultPerPage,
         sortBy: options.sortBy ?? "starting_at",
@@ -209,11 +210,7 @@ export class SportMonksAdapter {
   async fetchOddsBetween(
     startIso: string,
     endIso: string,
-    options: {
-      include?: IncludeNode[];
-      perPage?: number;
-      filters?: string | Record<string, string | number | boolean>;
-    } = {}
+    options: OddsFetchOptions = {}
   ): Promise<OddsDTO[]> {
     const startMs = performance.now();
     this.logger.info("fetchOddsBetween", { startIso, endIso });
@@ -252,17 +249,17 @@ export class SportMonksAdapter {
    * Fetches currently live fixtures
    * Uses /fixtures/live endpoint
    */
-  async fetchLiveFixtures(options?: {
-    select?: string[];
-    include?: IncludeNode[];
-    perPage?: number;
-    filters?: string | Record<string, string | number | boolean>;
-  }): Promise<FixtureDTO[]> {
+  async fetchLiveFixtures(options?: FixtureFetchOptions): Promise<FixtureDTO[]> {
     const startMs = performance.now();
     this.logger.info("fetchLiveFixtures", {});
+    const include = [
+      ...this.fixtureInclude,
+      ...this.buildFixtureInclude(options),
+    ];
     const rows = await this.httpFootball.get<FixtureSportmonks>("livescores/inplay", {
-      include: [...this.fixtureInclude, ...(options?.include ?? [])],
+      include,
       perPage: options?.perPage ?? this.config.defaultPerPage,
+      filters: options?.filters,
     });
 
     const out: FixtureDTO[] = [];
@@ -304,28 +301,7 @@ export class SportMonksAdapter {
     this.logger.info("fetchFixtureById", { id });
     try {
       const fixtures = await this.fetchFixturesByIds([id], {
-        include: [
-          {
-            name: "participants",
-          },
-          {
-            name: "state",
-            fields: ["id", "short_name"],
-          },
-          {
-            name: "league",
-            include: [{ name: "country" }],
-          },
-          {
-            name: "round",
-            fields: ["name"],
-          },
-          {
-            name: "stage",
-            fields: ["name"],
-          },
-          "scores",
-        ],
+        includeScores: true,
       });
 
       const result = fixtures.length > 0 ? (fixtures[0] ?? null) : null;
@@ -356,12 +332,7 @@ export class SportMonksAdapter {
 
   async fetchFixturesByIds(
     externalIds: number[],
-    options?: {
-      select?: string[];
-      include?: IncludeNode[];
-      perPage?: number;
-      filters?: string | Record<string, string | number | boolean>;
-    }
+    options?: FixtureFetchOptions
   ): Promise<FixtureDTO[]> {
     const startMs = performance.now();
     this.logger.info("fetchFixturesByIds", {
@@ -372,42 +343,23 @@ export class SportMonksAdapter {
       return [];
     }
 
+    const include = [
+      ...this.fixtureInclude,
+      ...this.buildFixtureInclude(options),
+    ];
     const rows = await this.httpFootball.get<FixtureSportmonks>(
       `fixtures/multi/${externalIds.join(",")}`,
-      options
+      {
+        include,
+        filters: options?.filters,
+        perPage: options?.perPage,
+      }
     );
 
     const out: FixtureDTO[] = [];
     for (const f of rows) {
-      const { homeId, awayId } = extractTeams(f.participants);
-      const hasStageRound =
-        options?.include?.includes("stage") &&
-        options?.include?.includes("round");
-      const fixture: FixtureDTO = {
-        externalId: Number(f.id),
-        name: String(f.name ?? ""),
-        leagueExternalId: Number.isFinite(f.league_id)
-          ? Number(f.league_id)
-          : null,
-        seasonExternalId: Number.isFinite(f.season_id)
-          ? Number(f.season_id)
-          : null,
-        homeTeamExternalId: homeId ?? 0,
-        awayTeamExternalId: awayId ?? 0,
-        startIso: f.starting_at ?? "",
-        startTs: coerceEpochSeconds(f.starting_at_timestamp, f.starting_at),
-        state: mapSmShortToApp(f?.state?.short_name) as FixtureState,
-        result:
-          options?.include?.includes("scores") && f.state?.short_name === "FT"
-            ? pickScoreString(f?.scores)
-            : null,
-        stage: hasStageRound ? (f?.stage?.name ?? null) : null,
-        round: hasStageRound ? (f?.round?.name ?? null) : null,
-        hasOdds: f.has_odds ?? false,
-        leagueName: f.league?.name ?? "",
-        countryName: f.league?.country?.name ?? "",
-      };
-      out.push(fixture);
+      const fixture = buildFixtures(f);
+      if (fixture) out.push(fixture);
     }
     this.logger.info("fetchFixturesByIds", {
       count: out.length,
@@ -421,16 +373,12 @@ export class SportMonksAdapter {
   /**
    * Fetches all countries from SportMonks Core API
    * Countries are used to organize leagues and teams
-   * @param options - Optional includes (leagues, etc.)
    * @returns CountryDTO[]
    */
-  async fetchCountries(options?: {
-    include?: IncludeNode[];
-  }): Promise<CountryDTO[]> {
+  async fetchCountries(): Promise<CountryDTO[]> {
     this.logger.info("fetchCountries", {});
     const rows = await this.httpCore.get<SmCountryRaw>("countries", {
       select: ["id", "name", "image_path", "iso2", "iso3"],
-      include: options?.include,
       perPage: this.config.defaultPerPage,
       paginate: true,
     });
@@ -450,21 +398,13 @@ export class SportMonksAdapter {
    * Fetches a single country by ID from SportMonks Core API
    * Uses the countries/{ID} endpoint
    * @param id - The SportMonks country ID
-   * @param options - Optional includes (continent, leagues, regions)
    * @returns CountryDTO or null if not found
    */
-  async fetchCountryById(
-    id: number,
-    options?: {
-      include?: IncludeNode[];
-      select?: string[];
-    }
-  ): Promise<CountryDTO | null> {
+  async fetchCountryById(id: number): Promise<CountryDTO | null> {
     this.logger.info("fetchCountryById", { id });
     try {
       const rows = await this.httpCore.get<SmCountryRaw>(`countries/${id}`, {
-        select: options?.select ?? ["id", "name", "image_path", "iso2", "iso3"],
-        include: options?.include,
+        select: ["id", "name", "image_path", "iso2", "iso3"],
         paginate: false,
       });
 
@@ -500,12 +440,9 @@ export class SportMonksAdapter {
   /**
    * Fetches all leagues from SportMonks Football API
    * Leagues are the top-level competition structure
-   * @param options - Optional includes (country, etc.)
    * @returns LeagueDTO[]
    */
-  async fetchLeagues(options?: {
-    include?: IncludeNode[];
-  }): Promise<LeagueDTO[]> {
+  async fetchLeagues(): Promise<LeagueDTO[]> {
     this.logger.info("fetchLeagues", {});
     const rows = await this.httpFootball.get<SmLeagueRaw>("leagues", {
       select: [
@@ -517,7 +454,6 @@ export class SportMonksAdapter {
         "type",
         "sub_type",
       ],
-      include: options?.include,
       perPage: this.config.defaultPerPage,
       paginate: true,
     });
@@ -889,5 +825,3 @@ export class SportMonksAdapter {
     }
   }
 }
-
-export default SportMonksAdapter;

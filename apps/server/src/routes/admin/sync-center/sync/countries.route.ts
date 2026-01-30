@@ -1,6 +1,6 @@
 // src/routes/admin/sync/countries.route.ts
 import { FastifyPluginAsync } from "fastify";
-import SportMonksAdapter from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../../../utils/adapter";
 import { seedCountries } from "../../../../etl/seeds/seed.countries";
 import { AdminSyncCountriesResponse } from "@repo/types";
 import {
@@ -26,13 +26,6 @@ const adminSyncCountriesRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply): Promise<AdminSyncCountriesResponse> => {
       const { dryRun = false } = req.body ?? {};
 
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
       const countriesDto = await adapter.fetchCountries();
       const result = await seedCountries(countriesDto, {
         dryRun,
@@ -93,14 +86,6 @@ const adminSyncCountriesRoutes: FastifyPluginAsync = async (fastify) => {
           message: `Invalid country ID: ${id}`,
         });
       }
-
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
 
       const countryDto = await adapter.fetchCountryById(countryId);
 

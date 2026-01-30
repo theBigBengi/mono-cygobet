@@ -1,14 +1,12 @@
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { createSportsDataAdapter } from "@repo/sports-data";
 
-const token = process.env.SPORTMONKS_API_TOKEN;
-const footballBaseUrl = process.env.SPORTMONKS_FOOTBALL_BASE_URL;
-const coreBaseUrl = process.env.SPORTMONKS_CORE_BASE_URL;
-const authMode =
-  (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
-
-export const adapter = new SportMonksAdapter({
-  token,
-  footballBaseUrl,
-  coreBaseUrl,
-  authMode,
+export const adapter = createSportsDataAdapter({
+  provider: "sportmonks",
+  config: {
+    token: process.env.SPORTMONKS_API_TOKEN,
+    footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
+    coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
+    authMode:
+      (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
+  },
 });

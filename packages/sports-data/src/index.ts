@@ -1,23 +1,22 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-export { SportMonksAdapter } from "./adapters/sportmonks/sportmonks.adapter";
+export type {
+  ISportsDataAdapter,
+  FixtureFetchOptions,
+  FixturesBySeasonOptions,
+  OddsFetchOptions,
+} from "./adapter.interface";
+export {
+  createSportsDataAdapter,
+  type AdapterConfig,
+} from "./adapter.factory";
+export type { SportMonksConfig } from "./adapters/sportmonks/sportmonks.config";
 export {
   SportsDataError,
   type SportsDataErrorCode,
 } from "./errors";
 export { noopLogger, type SportsDataLogger } from "./logger";
-export {
-  SMHttp,
-  type SMHttpOptions,
-  type IncludeNode,
-  mapSmShortToApp,
-  pickScoreString,
-  extractTeams,
-  buildOdds,
-  coerceEpochSeconds,
-  buildFixtures,
-} from "./adapters/sportmonks/helpers";
 
 // NOTE:
 // This file is a library entrypoint. Do NOT run network calls at import time.

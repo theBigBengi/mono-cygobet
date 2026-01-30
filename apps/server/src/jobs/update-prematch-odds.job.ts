@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { addDays, format } from "date-fns";
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../utils/adapter";
 import type { OddsDTO } from "@repo/types/sport-data/common";
 import { JobTriggerBy, RunTrigger } from "@repo/db";
 
@@ -129,12 +129,10 @@ export async function runUpdatePrematchOddsJob(
     };
   }
 
-  // Build adapter config from env. If env is missing, skip safely.
+  // If env is missing, skip safely (adapter creation would have failed at boot).
   const token = process.env.SPORTMONKS_API_TOKEN;
   const footballBaseUrl = process.env.SPORTMONKS_FOOTBALL_BASE_URL;
   const coreBaseUrl = process.env.SPORTMONKS_CORE_BASE_URL;
-  const authMode =
-    (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
 
   if (!token || !footballBaseUrl || !coreBaseUrl) {
     log.warn("missing SPORTMONKS env vars; skipping");
@@ -163,13 +161,6 @@ export async function runUpdatePrematchOddsJob(
   }
 
   try {
-    const adapter = new SportMonksAdapter({
-      token,
-      footballBaseUrl,
-      coreBaseUrl,
-      authMode,
-    });
-
     let odds: OddsDTO[] = [];
     try {
       odds = await adapter.fetchOddsBetween(from, to, { filters });

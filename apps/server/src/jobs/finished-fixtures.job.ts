@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../utils/adapter";
 import {
   FixtureState as DbFixtureState,
   JobTriggerBy,
@@ -166,12 +166,10 @@ export async function runFinishedFixturesJob(
     return { candidates: 0, fetched: 0, updated: 0, skipped: true };
   }
 
-  // Build adapter config from env. If env is missing, skip safely (avoids throwing on boot).
+  // If env is missing, skip safely (adapter creation would have failed at boot).
   const token = process.env.SPORTMONKS_API_TOKEN;
   const footballBaseUrl = process.env.SPORTMONKS_FOOTBALL_BASE_URL;
   const coreBaseUrl = process.env.SPORTMONKS_CORE_BASE_URL;
-  const authMode =
-    (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
 
   if (!token || !footballBaseUrl || !coreBaseUrl) {
     log.warn("missing SPORTMONKS env vars; skipping job");
@@ -258,20 +256,13 @@ export async function runFinishedFixturesJob(
     }
 
     /**
-     * 2) Ask SportMonks for the same fixtures, but only those that are now finished (FT).
+     * 2) Ask provider for the same fixtures, but only those that are now finished (FT).
      * SportMonks "fixtureStates=5" == FT.
      */
-    const adapter = new SportMonksAdapter({
-      token,
-      footballBaseUrl,
-      coreBaseUrl,
-      authMode,
-    });
-
     let fetched: Awaited<ReturnType<typeof adapter.fetchFixturesByIds>> = [];
     for (const group of chunk(ids, 50)) {
       const part = await adapter.fetchFixturesByIds(group, {
-        include: ["state", "scores", "participants"],
+        includeScores: true,
         filters: { fixtureStates: "5" }, // 5 = Finished (FT)
         perPage: 50,
       });

@@ -1,7 +1,7 @@
 // src/routes/admin/sync/leagues.route.ts
 import { FastifyPluginAsync } from "fastify";
 import { seedLeagues } from "../../../../etl/seeds/seed.leagues";
-import SportMonksAdapter from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../../../../utils/adapter";
 import { AdminSyncLeaguesResponse } from "@repo/types";
 import {
   syncBodySchema,
@@ -26,13 +26,6 @@ const adminSyncLeaguesRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply): Promise<AdminSyncLeaguesResponse> => {
       const { dryRun = false } = req.body ?? {};
 
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
       const leaguesDto = await adapter.fetchLeagues();
 
       const result = await seedLeagues(leaguesDto, {
@@ -94,14 +87,6 @@ const adminSyncLeaguesRoutes: FastifyPluginAsync = async (fastify) => {
           message: `Invalid league ID: ${id}`,
         });
       }
-
-      const adapter = new SportMonksAdapter({
-        token: process.env.SPORTMONKS_API_TOKEN,
-        footballBaseUrl: process.env.SPORTMONKS_FOOTBALL_BASE_URL,
-        coreBaseUrl: process.env.SPORTMONKS_CORE_BASE_URL,
-        authMode:
-          (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query",
-      });
 
       const leagueDto = await adapter.fetchLeagueById(leagueId);
 

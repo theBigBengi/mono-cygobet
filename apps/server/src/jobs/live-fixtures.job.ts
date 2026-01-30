@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { SportMonksAdapter } from "@repo/sports-data/adapters/sportmonks";
+import { adapter } from "../utils/adapter";
 import { JobTriggerBy, RunTrigger } from "@repo/db";
 import { seedFixtures } from "../etl/seeds/seed.fixtures";
 import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
@@ -89,12 +89,10 @@ export async function runLiveFixturesJob(
     };
   }
 
-  // Build adapter config from env. If env is missing, skip safely (avoids throwing on boot).
+  // If env is missing, skip safely (adapter creation would have failed at boot).
   const token = process.env.SPORTMONKS_API_TOKEN;
   const footballBaseUrl = process.env.SPORTMONKS_FOOTBALL_BASE_URL;
   const coreBaseUrl = process.env.SPORTMONKS_CORE_BASE_URL;
-  const authMode =
-    (process.env.SPORTMONKS_AUTH_MODE as "query" | "header") || "query";
 
   if (!token || !footballBaseUrl || !coreBaseUrl) {
     log.warn("missing SPORTMONKS env vars; skipping job");
@@ -120,15 +118,8 @@ export async function runLiveFixturesJob(
   }
 
   try {
-    const adapter = new SportMonksAdapter({
-      token,
-      footballBaseUrl,
-      coreBaseUrl,
-      authMode,
-    });
-
     const fixtures = await adapter.fetchLiveFixtures({
-      include: ["state", "scores", "participants"],
+      includeScores: true,
     });
 
     if (opts.dryRun) {
