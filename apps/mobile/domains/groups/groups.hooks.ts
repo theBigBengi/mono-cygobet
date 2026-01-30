@@ -15,6 +15,7 @@ import type {
   ApiSaveGroupPredictionsBatchBody,
   ApiSaveGroupPredictionsBatchResponse,
   ApiPredictionsOverviewResponse,
+  ApiRankingResponse,
 } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -31,6 +32,7 @@ import {
   saveGroupPredictionsBatch,
   deleteGroup,
   fetchPredictionsOverview,
+  fetchGroupRanking,
 } from "./groups.api";
 import { groupsKeys } from "./groups.keys";
 
@@ -350,6 +352,26 @@ export function usePredictionsOverviewQuery(groupId: number | null) {
   return useQuery<ApiPredictionsOverviewResponse, ApiError>({
     queryKey: groupsKeys.predictionsOverview(groupId ?? 0),
     queryFn: () => fetchPredictionsOverview(groupId as number),
+    enabled,
+    meta: { scope: "user" },
+  });
+}
+
+/**
+ * Hook to fetch group ranking.
+ * - Enabled only when authenticated and onboarding complete and groupId is valid.
+ */
+export function useGroupRankingQuery(groupId: number | null) {
+  const { status, user } = useAuth();
+
+  const enabled =
+    isReadyForProtected(status, user) &&
+    groupId != null &&
+    !Number.isNaN(groupId);
+
+  return useQuery<ApiRankingResponse, ApiError>({
+    queryKey: groupsKeys.ranking(groupId ?? 0),
+    queryFn: () => fetchGroupRanking(groupId as number),
     enabled,
     meta: { scope: "user" },
   });

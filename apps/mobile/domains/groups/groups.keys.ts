@@ -18,4 +18,6 @@ export const groupsKeys = {
     [...groupsKeys.details(), id, "games-filters"] as const,
   predictionsOverview: (id: number) =>
     [...groupsKeys.details(), id, "predictions-overview"] as const,
+  ranking: (id: number) =>
+    [...groupsKeys.details(), id, "ranking"] as const,
 } as const;

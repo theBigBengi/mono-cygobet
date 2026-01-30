@@ -8,4 +8,5 @@ export { deleteGroup } from "./delete";
 export { saveGroupPrediction, saveGroupPredictionsBatch } from "./predictions";
 export { getGroupGamesFilters } from "./filters";
 export { getPredictionsOverview } from "./overview";
+export { getGroupRanking } from "./ranking";
 export { settlePredictionsForFixtures } from "./settlement";

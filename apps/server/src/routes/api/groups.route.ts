@@ -14,6 +14,7 @@ import {
   saveGroupPredictionsBatch,
   deleteGroup,
   getPredictionsOverview,
+  getGroupRanking,
 } from "../../services/api/groups";
 import type { GroupFixturesFilter } from "../../types/groups";
 import type {
@@ -705,6 +706,41 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const result = await getPredictionsOverview(id, userId);
+
+    return reply.send(result);
+  });
+
+  /**
+   * GET /api/groups/:id/ranking
+   *
+   * - Requires auth + onboarding completion.
+   * - Verifies that the user is a group member (creator or joined).
+   * - Returns group ranking with all joined members and aggregated stats.
+   */
+  fastify.get<{ Params: { id: number } }>("/groups/:id/ranking", {
+    preHandler: fastify.userAuth.requireOnboardingComplete,
+    schema: {
+      params: getGroupParamsSchema,
+    },
+  }, async (req, reply) => {
+    if (!req.userAuth) {
+      return reply.status(401).send({
+        status: "error",
+        message: "Unauthorized",
+      } as any);
+    }
+
+    const id = Number(req.params.id);
+    const userId = req.userAuth.user.id;
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.status(400).send({
+        status: "error",
+        message: "Invalid 'id'. Must be a positive integer.",
+      } as any);
+    }
+
+    const result = await getGroupRanking(id, userId);
 
     return reply.send(result);
   });

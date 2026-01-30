@@ -468,3 +468,25 @@ export type ApiPredictionsOverviewResponse = {
   data: ApiPredictionsOverviewData;
   message: string;
 };
+
+/**
+ * Ranking item in group ranking response.
+ */
+export type ApiRankingItem = {
+  rank: number;
+  userId: number;
+  username: string | null;
+  totalPoints: number;
+  predictionCount: number;
+  correctScoreCount: number;
+  correctOutcomeCount: number;
+};
+
+/**
+ * Response from GET /api/groups/:id/ranking.
+ */
+export type ApiRankingResponse = {
+  status: "success";
+  data: ApiRankingItem[];
+  message: string;
+};

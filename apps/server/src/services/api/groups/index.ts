@@ -13,5 +13,6 @@ export {
   saveGroupPredictionsBatch,
   deleteGroup,
   getPredictionsOverview,
+  getGroupRanking,
   settlePredictionsForFixtures,
 } from "./service/index";

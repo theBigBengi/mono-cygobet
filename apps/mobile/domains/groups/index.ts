@@ -13,6 +13,7 @@ export {
   useSaveGroupPredictionsBatchMutation,
   useDeleteGroupMutation,
   usePredictionsOverviewQuery,
+  useGroupRankingQuery,
 } from "./groups.hooks";
 export { groupsKeys } from "./groups.keys";
 export {

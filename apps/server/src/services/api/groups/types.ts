@@ -90,3 +90,19 @@ export type PredictionsOverviewResponse = {
   data: PredictionsOverviewData;
   message: string;
 };
+
+export type RankingItem = {
+  rank: number;
+  userId: number;
+  username: string | null;
+  totalPoints: number;
+  predictionCount: number;
+  correctScoreCount: number;
+  correctOutcomeCount: number;
+};
+
+export type RankingResponse = {
+  status: "success";
+  data: RankingItem[];
+  message: string;
+};

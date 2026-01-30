@@ -15,6 +15,7 @@ import type {
   ApiSaveGroupPredictionsBatchBody,
   ApiSaveGroupPredictionsBatchResponse,
   ApiPredictionsOverviewResponse,
+  ApiRankingResponse,
 } from "@repo/types";
 import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
 import { buildQuery } from "@/lib/http/queryBuilder";
@@ -196,6 +197,23 @@ export async function fetchPredictionsOverview(
 ): Promise<ApiPredictionsOverviewResponse> {
   return apiFetchWithAuthRetry<ApiPredictionsOverviewResponse>(
     `/api/groups/${groupId}/predictions-overview`,
+    {
+      method: "GET",
+    }
+  );
+}
+
+/**
+ * Fetch group ranking.
+ * - Requires authentication.
+ * - Verifies that the user is a group member.
+ * - Returns ranking with all joined members and aggregated stats.
+ */
+export async function fetchGroupRanking(
+  groupId: number
+): Promise<ApiRankingResponse> {
+  return apiFetchWithAuthRetry<ApiRankingResponse>(
+    `/api/groups/${groupId}/ranking`,
     {
       method: "GET",
     }
