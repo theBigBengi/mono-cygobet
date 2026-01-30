@@ -34,4 +34,16 @@ export class Semaphore {
       this.release();
     }
   }
+
+  getStats(): {
+    running: number;
+    queued: number;
+    maxConcurrency: number;
+  } {
+    return {
+      running: this.running,
+      queued: this.queue.length,
+      maxConcurrency: this.maxConcurrency,
+    };
+  }
 }

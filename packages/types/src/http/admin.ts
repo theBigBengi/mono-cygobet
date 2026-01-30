@@ -8,6 +8,7 @@ export interface AdminHealthResponse {
     status: string;
     connected: boolean;
   };
+  adapter?: Record<string, unknown>;
 }
 
 export interface AdminCountriesListResponse {

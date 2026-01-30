@@ -12,6 +12,12 @@ export {
   type AdapterConfig,
 } from "./adapter.factory";
 export {
+  CircuitBreaker,
+  type CircuitBreakerState,
+  type CircuitBreakerOptions,
+} from "./circuit-breaker";
+export { Semaphore } from "./semaphore";
+export {
   SportsDataError,
   type SportsDataErrorCode,
 } from "./errors";

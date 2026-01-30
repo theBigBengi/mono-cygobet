@@ -12,6 +12,7 @@ export const adminHealthResponseSchema = {
         connected: { type: "boolean" },
       },
     },
+    adapter: { type: "object" },
   },
 };
 

@@ -2,6 +2,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { AdminHealthResponse } from "@repo/types";
 import { prisma } from "@repo/db";
+import { adapter } from "../../../../utils/adapter";
 import { adminHealthResponseSchema } from "../../../../schemas/admin/health.schemas";
 
 const adminHealthRoutes: FastifyPluginAsync = async (fastify) => {
@@ -27,6 +28,8 @@ const adminHealthRoutes: FastifyPluginAsync = async (fastify) => {
         dbConnected = false;
       }
 
+      const adapterStats = adapter.getStats?.() ?? undefined;
+
       return {
         status: "ok",
         timestamp: new Date().toISOString(),
@@ -34,6 +37,7 @@ const adminHealthRoutes: FastifyPluginAsync = async (fastify) => {
           status: dbStatus,
           connected: dbConnected,
         },
+        adapter: adapterStats,
       };
     }
   );

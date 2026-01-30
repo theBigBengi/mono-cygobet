@@ -86,6 +86,18 @@ export class SportMonksAdapter implements ISportsDataAdapter {
     this.httpBase = new SMHttp(token, baseV3Url, authMode, smHttpOptions);
   }
 
+  getStats(): {
+    football: ReturnType<SMHttp["getStats"]>;
+    core: ReturnType<SMHttp["getStats"]>;
+    base: ReturnType<SMHttp["getStats"]>;
+  } {
+    return {
+      football: this.httpFootball.getStats(),
+      core: this.httpCore.getStats(),
+      base: this.httpBase.getStats(),
+    };
+  }
+
   /** Standard includes for fixture requests to get related data */
   private fixtureInclude: IncludeNode[] = [
     {

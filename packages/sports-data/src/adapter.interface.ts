@@ -70,4 +70,7 @@ export interface ISportsDataAdapter {
   fetchSeasonById(id: number): Promise<SeasonDTO | null>;
   fetchTeams(): Promise<TeamDTO[]>;
   fetchTeamById(id: number): Promise<TeamDTO | null>;
+
+  /** Returns health/stats for observability (circuit breaker state, semaphore depth, etc.) */
+  getStats?(): Record<string, unknown>;
 }

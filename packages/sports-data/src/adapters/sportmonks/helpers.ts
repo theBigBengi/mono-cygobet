@@ -100,7 +100,19 @@ export class SMHttp {
     this.circuitBreaker = new CircuitBreaker({
       failureThreshold: 5,
       resetTimeoutMs: 30_000,
+      logger: this.opts.logger,
+      name: this.baseUrl,
     });
+  }
+
+  getStats(): {
+    circuitBreaker: ReturnType<CircuitBreaker["getStats"]>;
+    semaphore: ReturnType<Semaphore["getStats"]>;
+  } {
+    return {
+      circuitBreaker: this.circuitBreaker.getStats(),
+      semaphore: this.opts.semaphore.getStats(),
+    };
   }
 
   private get logger(): SportsDataLogger {
