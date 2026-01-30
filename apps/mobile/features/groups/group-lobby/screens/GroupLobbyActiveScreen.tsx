@@ -56,6 +56,11 @@ export function GroupLobbyActiveScreen({
     router.push(`/groups/${group.id}/predictions-overview` as any);
   };
 
+  // Handler for navigating to ranking
+  const handleViewRanking = () => {
+    router.push(`/groups/${group.id}/ranking` as any);
+  };
+
   return (
     <View style={styles.container}>
       <Screen
@@ -69,6 +74,18 @@ export function GroupLobbyActiveScreen({
           fixtures={fixtures}
           groupId={group.id}
         />
+
+        {/* Ranking Section */}
+        <Card style={styles.bannerCard}>
+          <Pressable
+            onPress={handleViewRanking}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <AppText variant="body" style={styles.bannerText}>
+              Ranking
+            </AppText>
+          </Pressable>
+        </Card>
 
         {/* Predictions Overview Section */}
         <Card style={styles.predictionsOverviewCard}>
@@ -92,6 +109,12 @@ const styles = StyleSheet.create({
   },
   screenContent: {
     paddingBottom: 16,
+  },
+  bannerCard: {
+    marginBottom: 16,
+  },
+  bannerText: {
+    fontWeight: "600",
   },
   predictionsOverviewCard: {
     marginBottom: 16,
