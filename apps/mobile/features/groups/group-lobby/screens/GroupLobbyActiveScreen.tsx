@@ -92,17 +92,19 @@ export function GroupLobbyActiveScreen({
           </Pressable>
         </Card>
 
-        {/* Invite Section */}
-        <Card style={styles.bannerCard}>
-          <Pressable
-            onPress={handleViewInvite}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <AppText variant="body" style={styles.bannerText}>
-              Invite
-            </AppText>
-          </Pressable>
-        </Card>
+        {/* Invite Section - show only if inviteAccess is "all" or user is creator (owner) */}
+        {(group.inviteAccess !== "admin_only" || isCreator) && (
+          <Card style={styles.bannerCard}>
+            <Pressable
+              onPress={handleViewInvite}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <AppText variant="body" style={styles.bannerText}>
+                Invite
+              </AppText>
+            </Pressable>
+          </Card>
+        )}
 
         {/* Predictions Overview Section */}
         <Card style={styles.predictionsOverviewCard}>

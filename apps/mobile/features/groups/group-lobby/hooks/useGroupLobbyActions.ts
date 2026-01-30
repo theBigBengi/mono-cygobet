@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import type { ApiGroupPrivacy } from "@repo/types";
+import type { ApiGroupPrivacy, ApiInviteAccess } from "@repo/types";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { PredictionMode } from "../components/PredictionModeSelector";
 import type { KORoundMode } from "../components/KORoundModeSelector";
@@ -10,6 +10,7 @@ import type { KORoundMode } from "../components/KORoundModeSelector";
  * @param publishGroupMutation - React Query mutation for publishing a group
  * @param draftName - Current draft name
  * @param draftPrivacy - Current draft privacy
+ * @param draftInviteAccess - Current draft invite access
  * @param scoringValues - Current scoring values
  * @param predictionMode - Current prediction mode
  * @param koRoundMode - Current KO round mode
@@ -22,6 +23,7 @@ export function useGroupLobbyActions(
     {
       name?: string;
       privacy?: ApiGroupPrivacy;
+      inviteAccess?: ApiInviteAccess;
       onTheNosePoints?: number;
       correctDifferencePoints?: number;
       outcomePoints?: number;
@@ -31,6 +33,7 @@ export function useGroupLobbyActions(
   >,
   draftName: string,
   draftPrivacy: ApiGroupPrivacy,
+  draftInviteAccess: ApiInviteAccess,
   scoringValues: { onTheNose: number; goalDifference: number; outcome: number },
   predictionMode?: PredictionMode,
   koRoundMode?: KORoundMode
@@ -62,6 +65,7 @@ export function useGroupLobbyActions(
     const body: {
       name?: string;
       privacy?: ApiGroupPrivacy;
+      inviteAccess?: ApiInviteAccess;
       onTheNosePoints?: number;
       correctDifferencePoints?: number;
       outcomePoints?: number;
@@ -70,6 +74,7 @@ export function useGroupLobbyActions(
     } = {
       name: nextName,
       privacy: draftPrivacy,
+      inviteAccess: draftInviteAccess,
       onTheNosePoints: scoringValues.onTheNose,
       correctDifferencePoints: scoringValues.goalDifference,
       outcomePoints: scoringValues.outcome,
@@ -92,6 +97,7 @@ export function useGroupLobbyActions(
   }, [
     draftName,
     draftPrivacy,
+    draftInviteAccess,
     scoringValues,
     predictionMode,
     koRoundMode,

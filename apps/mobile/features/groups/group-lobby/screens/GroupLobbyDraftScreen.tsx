@@ -17,6 +17,7 @@ import {
   KORoundModeSelector,
   GroupLobbyFixturesSection,
   GroupLobbyPrivacySection,
+  GroupLobbyInviteAccessSection,
   GroupLobbyMetaSection,
   PublishGroupButton,
   DeleteGroupButton,
@@ -63,9 +64,15 @@ export function GroupLobbyDraftScreen({
   const isDark = colorScheme === "dark";
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Manage local state for draft name and privacy
-  const { draftName, draftPrivacy, setDraftName, setDraftPrivacy } =
-    useGroupLobbyState(group.name, group.privacy);
+  // Manage local state for draft name, privacy, and invite access
+  const {
+    draftName,
+    draftPrivacy,
+    draftInviteAccess,
+    setDraftName,
+    setDraftPrivacy,
+    setDraftInviteAccess,
+  } = useGroupLobbyState(group.name, group.privacy, group.inviteAccess);
 
   // Manage local state for prediction mode (default to "result")
   const [predictionMode, setPredictionMode] = useState<PredictionMode>("result");
@@ -94,6 +101,7 @@ export function GroupLobbyDraftScreen({
     publishGroupMutation,
     draftName,
     draftPrivacy,
+    draftInviteAccess,
     scoringValues,
     predictionMode,
     koRoundMode
@@ -226,6 +234,17 @@ export function GroupLobbyDraftScreen({
           isCreator={isCreator}
           status={group.status}
         />
+
+        {/* Invite Sharing Section (only when private - public groups don't need invite restriction) */}
+        {draftPrivacy === "private" && (
+          <GroupLobbyInviteAccessSection
+            inviteAccess={draftInviteAccess}
+            onChange={setDraftInviteAccess}
+            disabled={!isEditable}
+            isCreator={isCreator}
+            status={group.status}
+          />
+        )}
 
         {/* Meta Section */}
         <GroupLobbyMetaSection createdAt={group.createdAt} />

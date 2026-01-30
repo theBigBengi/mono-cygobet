@@ -19,6 +19,7 @@ export { KORoundModeSelector, type KORoundMode } from "./components/KORoundModeS
 export { GroupLobbyFixtureCard } from "./components/GroupLobbyFixtureCard";
 export { GroupLobbyFixturesSection } from "./components/GroupLobbyFixturesSection";
 export { GroupLobbyPrivacySection } from "./components/GroupLobbyPrivacySection";
+export { GroupLobbyInviteAccessSection } from "./components/GroupLobbyInviteAccessSection";
 export { GroupLobbyMetaSection } from "./components/GroupLobbyMetaSection";
 export { PublishGroupButton } from "./components/PublishGroupButton";
 export { DeleteGroupButton } from "./components/DeleteGroupButton";
