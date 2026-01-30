@@ -6,16 +6,34 @@ export class Semaphore {
     if (maxConcurrency < 1) throw new Error("maxConcurrency must be >= 1");
   }
 
-  async acquire(): Promise<void> {
+  async acquire(timeoutMs?: number): Promise<void> {
     if (this.running < this.maxConcurrency) {
       this.running++;
       return;
     }
-    return new Promise<void>((resolve) => {
-      this.queue.push(() => {
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      let timer: ReturnType<typeof setTimeout> | null = null;
+
+      const onPermit = () => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
         this.running++;
         resolve();
-      });
+      };
+
+      this.queue.push(onPermit);
+
+      if (timeoutMs != null && timeoutMs > 0) {
+        timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          const idx = this.queue.indexOf(onPermit);
+          if (idx !== -1) this.queue.splice(idx, 1);
+          reject(new Error(`Semaphore acquire timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }
     });
   }
 
@@ -26,8 +44,8 @@ export class Semaphore {
   }
 
   /** Run fn() while holding a permit. Releases on completion or error. */
-  async run<T>(fn: () => Promise<T>): Promise<T> {
-    await this.acquire();
+  async run<T>(fn: () => Promise<T>, timeoutMs?: number): Promise<T> {
+    await this.acquire(timeoutMs);
     try {
       return await fn();
     } finally {

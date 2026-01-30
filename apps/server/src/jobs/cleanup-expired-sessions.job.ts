@@ -1,18 +1,8 @@
 import type { FastifyInstance } from "fastify";
-import { JobTriggerBy, RunTrigger } from "@repo/db";
 import type { JobRunOpts } from "../types/jobs";
-import {
-  finishJobRunFailed,
-  finishJobRunSuccess,
-  finishJobRunSkipped,
-  getJobRowOrThrow,
-  startJobRun,
-} from "./jobs.db";
 import { CLEANUP_EXPIRED_SESSIONS_JOB } from "./jobs.definitions";
-import { getLogger } from "../logger";
+import { runJob } from "./run-job";
 import { prisma } from "@repo/db";
-
-const log = getLogger("CleanupExpiredSessionsJob");
 
 export const cleanupExpiredSessionsJob = CLEANUP_EXPIRED_SESSIONS_JOB;
 
@@ -20,55 +10,21 @@ export async function runCleanupExpiredSessionsJob(
   fastify: FastifyInstance,
   opts: JobRunOpts = {}
 ): Promise<{ deleted: number }> {
-  const jobRow = await getJobRowOrThrow(cleanupExpiredSessionsJob.key);
-
-  const jobRun = await startJobRun({
+  return runJob({
     jobKey: cleanupExpiredSessionsJob.key,
-    trigger: opts.trigger ?? (opts.triggeredBy === JobTriggerBy.cron_scheduler ? "auto" : "manual"),
-    triggeredBy: opts.triggeredBy ?? null,
-    triggeredById: opts.triggeredById ?? null,
-    meta: { ...(opts.meta ?? {}) },
+    loggerName: "CleanupExpiredSessionsJob",
+    opts,
+    skippedResult: { deleted: 0 },
+    run: async () => {
+      const res = await prisma.sessions.deleteMany({
+        where: { expires: { lt: new Date() } },
+      });
+      const deleted = res.count ?? 0;
+      return {
+        result: { deleted },
+        rowsAffected: deleted,
+        meta: { deleted },
+      };
+    },
   });
-  const startedAtMs = jobRun.startedAtMs;
-  log.info({ jobRunId: jobRun.id }, "job started");
-
-  const isCronTrigger = opts.triggeredBy === JobTriggerBy.cron_scheduler;
-  if (!jobRow.enabled && isCronTrigger) {
-    await finishJobRunSkipped({
-      id: jobRun.id,
-      startedAtMs,
-      rowsAffected: 0,
-      meta: { reason: "disabled" },
-    });
-    return { deleted: 0 };
-  }
-
-  try {
-    const now = new Date();
-    const res = await prisma.sessions.deleteMany({
-      where: { expires: { lt: now } },
-    });
-
-    const deleted = res.count ?? 0;
-
-    await finishJobRunSuccess({
-      id: jobRun.id,
-      startedAtMs,
-      rowsAffected: deleted,
-      meta: { deleted },
-    });
-
-    log.info({ deleted }, "cleanup expired sessions completed");
-    return { deleted };
-  } catch (err: unknown) {
-    await finishJobRunFailed({
-      id: jobRun.id,
-      startedAtMs,
-      err,
-      rowsAffected: 0,
-      meta: {},
-    });
-    throw err;
-  }
 }
-
