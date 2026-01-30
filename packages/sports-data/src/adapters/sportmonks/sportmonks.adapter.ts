@@ -21,8 +21,9 @@ import type {
   TeamDTO,
 } from "@repo/types/sport-data/common";
 import type { FixtureSportmonks } from "./sportmonks.types";
+import { validateConfig } from "./sportmonks.config";
+import type { SportMonksConfig } from "./sportmonks.config";
 import { SportsDataError } from "../../errors";
-import { noopLogger } from "../../logger";
 import type { SportsDataLogger } from "../../logger";
 import {
   SMHttp,
@@ -50,46 +51,31 @@ import type {
  * Provides unified access to SportMonks football and core APIs
  */
 export class SportMonksAdapter {
+  private readonly config: SportMonksConfig;
   private httpFootball: SMHttp;
   private httpCore: SMHttp;
   private httpBase: SMHttp;
   private logger: SportsDataLogger;
 
-  constructor(
-    opts: {
-      token?: string;
-      footballBaseUrl?: string;
-      coreBaseUrl?: string;
-      authMode?: "query" | "header";
-      logger?: SportsDataLogger;
-    } = {}
-  ) {
-    const token = opts.token ?? process.env.SPORTMONKS_API_TOKEN;
-    if (!token) throw new SportsDataError("UNKNOWN", "API token is required");
+  constructor(opts: Partial<SportMonksConfig> = {}) {
+    this.config = validateConfig(opts);
+    this.logger = this.config.logger;
 
-    const authMode =
-      opts.authMode ?? (process.env.SPORTMONKS_AUTH_MODE as "query" | "header");
-    if (!authMode) throw new SportsDataError("UNKNOWN", "Auth mode is required");
+    const { token, footballBaseUrl, coreBaseUrl, authMode } = this.config;
+    const smHttpOptions = {
+      logger: this.config.logger,
+      defaultRetries: this.config.defaultRetries,
+      defaultPerPage: this.config.defaultPerPage,
+      retryDelayMs: this.config.retryDelayMs,
+    };
 
-    const footballBaseUrl =
-      opts.footballBaseUrl ?? process.env.SPORTMONKS_FOOTBALL_BASE_URL;
-    if (!footballBaseUrl)
-      throw new SportsDataError("UNKNOWN", "Football base URL is required");
-    const coreBaseUrl =
-      opts.coreBaseUrl ?? process.env.SPORTMONKS_CORE_BASE_URL;
-    if (!coreBaseUrl) throw new SportsDataError("UNKNOWN", "Core base URL is required");
+    this.httpFootball = new SMHttp(token, footballBaseUrl, authMode, smHttpOptions);
+    this.httpCore = new SMHttp(token, coreBaseUrl, authMode, smHttpOptions);
 
-    this.logger = opts.logger ?? noopLogger;
-
-    // Initialize HTTP clients for both APIs
-    this.httpFootball = new SMHttp(token, footballBaseUrl, authMode, this.logger);
-    this.httpCore = new SMHttp(token, coreBaseUrl, authMode, this.logger);
-
-    // Base v3 URL (strip /football/ or /core/ from the base URL)
     const baseV3Url = footballBaseUrl
       .replace(/\/football\/?$/, "")
       .replace(/\/core\/?$/, "");
-    this.httpBase = new SMHttp(token, baseV3Url, authMode, this.logger);
+    this.httpBase = new SMHttp(token, baseV3Url, authMode, smHttpOptions);
   }
 
   /** Standard includes for fixture requests to get related data */
@@ -198,7 +184,7 @@ export class SportMonksAdapter {
       {
         include: [...this.fixtureInclude, ...(options.include ?? [])],
         filters: options.filters,
-        perPage: options.perPage ?? 50,
+        perPage: options.perPage ?? this.config.defaultPerPage,
         sortBy: options.sortBy ?? "starting_at",
         order: options.order ?? "asc",
       }
@@ -244,7 +230,7 @@ export class SportMonksAdapter {
           },
         ],
         filters: options.filters,
-        perPage: 50,
+        perPage: this.config.defaultPerPage,
         sortBy: "starting_at",
         order: "asc",
       }
@@ -276,7 +262,7 @@ export class SportMonksAdapter {
     this.logger.info("fetchLiveFixtures", {});
     const rows = await this.httpFootball.get<FixtureSportmonks>("livescores/inplay", {
       include: [...this.fixtureInclude, ...(options?.include ?? [])],
-      perPage: options?.perPage ?? 50,
+      perPage: options?.perPage ?? this.config.defaultPerPage,
     });
 
     const out: FixtureDTO[] = [];
@@ -445,7 +431,7 @@ export class SportMonksAdapter {
     const rows = await this.httpCore.get<SmCountryRaw>("countries", {
       select: ["id", "name", "image_path", "iso2", "iso3"],
       include: options?.include,
-      perPage: 50,
+      perPage: this.config.defaultPerPage,
       paginate: true,
     });
 
@@ -532,7 +518,7 @@ export class SportMonksAdapter {
         "sub_type",
       ],
       include: options?.include,
-      perPage: 50,
+      perPage: this.config.defaultPerPage,
       paginate: true,
     });
 
@@ -630,7 +616,7 @@ export class SportMonksAdapter {
           include: [{ name: "country", fields: ["id", "name"] }],
         },
       ],
-      perPage: 50,
+      perPage: this.config.defaultPerPage,
       paginate: true,
     });
 
@@ -724,7 +710,7 @@ export class SportMonksAdapter {
   async fetchBookmakers(): Promise<BookmakerDTO[]> {
     this.logger.info("fetchBookmakers", {});
     const rows = await this.httpBase.get<SmBookmakerRaw>("odds/bookmakers", {
-      perPage: 50,
+      perPage: this.config.defaultPerPage,
       paginate: true,
     });
 
@@ -747,7 +733,7 @@ export class SportMonksAdapter {
   async fetchMarkets(): Promise<MarketDTO[]> {
     this.logger.info("fetchMarkets", {});
     const rows = await this.httpBase.get<SmMarketRaw>("odds/markets", {
-      perPage: 50,
+      perPage: this.config.defaultPerPage,
       paginate: true,
     });
 
@@ -810,7 +796,7 @@ export class SportMonksAdapter {
         "founded",
         "type",
       ],
-      perPage: 50,
+      perPage: this.config.defaultPerPage,
       paginate: true,
     });
 

@@ -63,17 +63,52 @@ export type Pagination = {
  */
 export type SMResponse<T> = { data: T[] | T; pagination?: Pagination };
 
+/** Options for SMHttp constructor (avoids 7 positional parameters) */
+export type SMHttpOptions = {
+  logger?: SportsDataLogger;
+  defaultRetries?: number;
+  defaultPerPage?: number;
+  retryDelayMs?: number;
+};
+
+const DEFAULT_HTTP_OPTIONS: Required<SMHttpOptions> = {
+  logger: noopLogger,
+  defaultRetries: 3,
+  defaultPerPage: 50,
+  retryDelayMs: 300,
+};
+
 /**
  * HTTP client for making requests to SportMonks API
  * Handles authentication, pagination, retries, and query parameter building
  */
 export class SMHttp {
+  private readonly opts: Required<SMHttpOptions>;
+
   constructor(
     private token: string,
     private baseUrl: string,
     private authMode: "query" | "header",
-    private logger: SportsDataLogger = noopLogger
-  ) {}
+    options: SMHttpOptions = {}
+  ) {
+    this.opts = { ...DEFAULT_HTTP_OPTIONS, ...options };
+  }
+
+  private get logger(): SportsDataLogger {
+    return this.opts.logger;
+  }
+
+  private get defaultRetries(): number {
+    return this.opts.defaultRetries;
+  }
+
+  private get defaultPerPage(): number {
+    return this.opts.defaultPerPage;
+  }
+
+  private get retryDelayMs(): number {
+    return this.opts.retryDelayMs;
+  }
 
   /**
    * Ensures base URL ends with slash for proper URL construction
@@ -155,9 +190,9 @@ export class SMHttp {
       filters,
       sortBy,
       order,
-      perPage = 50,
+      perPage = this.defaultPerPage,
       page = 1,
-      retries = 3,
+      retries = this.defaultRetries,
       paginate = true,
     } = opts;
 
@@ -220,7 +255,7 @@ export class SMHttp {
                   res.status
                 );
               }
-              const delayMs = 300 * attempt;
+              const delayMs = this.retryDelayMs * attempt;
               this.logger.warn("SMHttp get retry", {
                 attempt,
                 status: res.status,
@@ -261,7 +296,7 @@ export class SMHttp {
               err
             );
           }
-          const delayMs = 300 * attempt;
+          const delayMs = this.retryDelayMs * attempt;
           this.logger.warn("SMHttp get retry", {
             attempt,
             status: undefined,

@@ -9,6 +9,7 @@ export {
 export { noopLogger, type SportsDataLogger } from "./logger";
 export {
   SMHttp,
+  type SMHttpOptions,
   type IncludeNode,
   mapSmShortToApp,
   pickScoreString,
