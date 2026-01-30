@@ -35,6 +35,7 @@ import type { SportsDataLogger } from "../../logger";
 import {
   SMHttp,
   IncludeNode,
+  type RequestOpts,
   buildOdds,
   buildFixtures,
 } from "./helpers";
@@ -80,9 +81,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
     this.httpFootball = new SMHttp(token, footballBaseUrl, authMode, smHttpOptions);
     this.httpCore = new SMHttp(token, coreBaseUrl, authMode, smHttpOptions);
 
-    const baseV3Url = footballBaseUrl
-      .replace(/\/football\/?$/, "")
-      .replace(/\/core\/?$/, "");
+    const baseV3Url = new URL(footballBaseUrl).origin + "/v3";
     this.httpBase = new SMHttp(token, baseV3Url, authMode, smHttpOptions);
   }
 
@@ -96,6 +95,41 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       core: this.httpCore.getStats(),
       base: this.httpBase.getStats(),
     };
+  }
+
+  /**
+   * Fetches a single record by ID, returning null for 404 or empty results.
+   * Eliminates boilerplate in fetchCountryById, fetchLeagueById, etc.
+   */
+  private async fetchOneById<TRaw, TResult>(
+    methodName: string,
+    http: SMHttp,
+    path: string,
+    opts: RequestOpts,
+    map: (raw: TRaw) => TResult | null,
+  ): Promise<TResult | null> {
+    this.logger.info(methodName, { path });
+    try {
+      const rows = await http.get<TRaw>(path, { ...opts, paginate: false });
+      if (!rows || rows.length === 0) {
+        this.logger.info(methodName, { count: 0 });
+        return null;
+      }
+      const result = map(rows[0]!);
+      this.logger.info(methodName, { count: result ? 1 : 0 });
+      return result;
+    } catch (error) {
+      const code =
+        error instanceof SportsDataError ? error.code : undefined;
+      this.logger.error(methodName, { code });
+      if (
+        error instanceof SportsDataError &&
+        error.statusCode === 404
+      ) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /** Standard includes for fixture requests to get related data */
@@ -418,40 +452,19 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * @returns CountryDTO or null if not found
    */
   async fetchCountryById(id: number): Promise<CountryDTO | null> {
-    this.logger.info("fetchCountryById", { id });
-    try {
-      const rows = await this.httpCore.get<SmCountryRaw>(`countries/${id}`, {
-        select: ["id", "name", "image_path", "iso2", "iso3"],
-        paginate: false,
-      });
-
-      if (!rows || rows.length === 0) {
-        this.logger.info("fetchCountryById", { count: 0 });
-        return null;
-      }
-
-      const c = rows[0]!;
-      const result = {
+    return this.fetchOneById<SmCountryRaw, CountryDTO>(
+      "fetchCountryById",
+      this.httpCore,
+      `countries/${id}`,
+      { select: ["id", "name", "image_path", "iso2", "iso3"] },
+      (c) => ({
         externalId: c.id,
         name: c.name,
         imagePath: c.image_path ?? null,
         iso2: c.iso2 ?? null,
         iso3: c.iso3 ?? null,
-      };
-      this.logger.info("fetchCountryById", { count: 1 });
-      return result;
-    } catch (error) {
-      const code =
-        error instanceof SportsDataError ? error.code : undefined;
-      this.logger.error("fetchCountryById", { code });
-      if (
-        error instanceof SportsDataError &&
-        error.statusCode === 404
-      ) {
-        return null;
-      }
-      throw error;
-    }
+      }),
+    );
   }
 
   /**
@@ -494,9 +507,11 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * @returns LeagueDTO or null if not found
    */
   async fetchLeagueById(id: number): Promise<LeagueDTO | null> {
-    this.logger.info("fetchLeagueById", { id });
-    try {
-      const rows = await this.httpFootball.get<SmLeagueRaw>(`leagues/${id}`, {
+    return this.fetchOneById<SmLeagueRaw, LeagueDTO>(
+      "fetchLeagueById",
+      this.httpFootball,
+      `leagues/${id}`,
+      {
         select: [
           "id",
           "name",
@@ -512,16 +527,8 @@ export class SportMonksAdapter implements ISportsDataAdapter {
             fields: ["id", "name", "image_path", "iso2", "iso3"],
           },
         ],
-        paginate: false,
-      });
-
-      if (!rows || rows.length === 0) {
-        this.logger.info("fetchLeagueById", { count: 0 });
-        return null;
-      }
-
-      const l = rows[0]!;
-      const result = {
+      },
+      (l) => ({
         externalId: l.id,
         name: l.name,
         imagePath: l.image_path ?? null,
@@ -529,21 +536,8 @@ export class SportMonksAdapter implements ISportsDataAdapter {
         countryExternalId: l.country_id ?? null,
         type: l.type ?? null,
         subType: l.sub_type ?? null,
-      };
-      this.logger.info("fetchLeagueById", { count: 1 });
-      return result;
-    } catch (error) {
-      const code =
-        error instanceof SportsDataError ? error.code : undefined;
-      this.logger.error("fetchLeagueById", { code });
-      if (
-        error instanceof SportsDataError &&
-        error.statusCode === 404
-      ) {
-        return null;
-      }
-      throw error;
-    }
+      }),
+    );
   }
 
   /**
@@ -595,9 +589,11 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * @returns SeasonDTO or null if not found
    */
   async fetchSeasonById(id: number): Promise<SeasonDTO | null> {
-    this.logger.info("fetchSeasonById", { id });
-    try {
-      const rows = await this.httpFootball.get<SmSeasonRaw>(`seasons/${id}`, {
+    return this.fetchOneById<SmSeasonRaw, SeasonDTO>(
+      "fetchSeasonById",
+      this.httpFootball,
+      `seasons/${id}`,
+      {
         select: [
           "id",
           "league_id",
@@ -614,44 +610,21 @@ export class SportMonksAdapter implements ISportsDataAdapter {
             include: [{ name: "country", fields: ["id", "name"] }],
           },
         ],
-        paginate: false,
-      });
-
-      if (!rows || rows.length === 0) {
-        this.logger.info("fetchSeasonById", { count: 0 });
-        return null;
-      }
-
-      const s = rows[0]!;
-      if (Boolean(s.finished)) {
-        this.logger.info("fetchSeasonById", { count: 0 });
-        return null;
-      }
-
-      const result = {
-        externalId: s.id,
-        leagueExternalId: s.league_id ?? 0,
-        name: s.name ?? "",
-        startDate: s.starting_at ?? "",
-        endDate: s.ending_at ?? "",
-        isCurrent: Boolean(s.is_current),
-        leagueName: s.league?.name ?? "",
-        countryName: s.league?.country?.name ?? "",
-      };
-      this.logger.info("fetchSeasonById", { count: 1 });
-      return result;
-    } catch (error) {
-      const code =
-        error instanceof SportsDataError ? error.code : undefined;
-      this.logger.error("fetchSeasonById", { code });
-      if (
-        error instanceof SportsDataError &&
-        error.statusCode === 404
-      ) {
-        return null;
-      }
-      throw error;
-    }
+      },
+      (s) => {
+        if (Boolean(s.finished)) return null;
+        return {
+          externalId: s.id,
+          leagueExternalId: s.league_id ?? 0,
+          name: s.name ?? "",
+          startDate: s.starting_at ?? "",
+          endDate: s.ending_at ?? "",
+          isCurrent: Boolean(s.is_current),
+          leagueName: s.league?.name ?? "",
+          countryName: s.league?.country?.name ?? "",
+        };
+      },
+    );
   }
 
   /**
@@ -785,9 +758,11 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * @returns TeamDTO or null if not found
    */
   async fetchTeamById(id: number): Promise<TeamDTO | null> {
-    this.logger.info("fetchTeamById", { id });
-    try {
-      const rows = await this.httpFootball.get<SmTeamRaw>(`teams/${id}`, {
+    return this.fetchOneById<SmTeamRaw, TeamDTO>(
+      "fetchTeamById",
+      this.httpFootball,
+      `teams/${id}`,
+      {
         select: [
           "id",
           "name",
@@ -797,48 +772,21 @@ export class SportMonksAdapter implements ISportsDataAdapter {
           "founded",
           "type",
         ],
-        paginate: false,
-      });
-
-      if (!rows || rows.length === 0) {
-        this.logger.info("fetchTeamById", { count: 0 });
-        return null;
-      }
-
-      const t = rows[0]!;
-      const name: string = t.name ?? "";
-      const img: string | null = t.image_path ?? null;
-
-      if (SportMonksAdapter.looksLikePlaceholder(name, img)) {
-        this.logger.info("fetchTeamById", { count: 0 });
-        return null;
-      }
-
-      const type: string | null =
-        typeof t.type === "string" ? t.type.toLowerCase() : null;
-
-      const result = {
-        externalId: t.id,
-        name,
-        shortCode: t.short_code ?? null,
-        imagePath: img,
-        countryExternalId: t.country_id ?? null,
-        founded: Number.isInteger(t.founded) ? t.founded : null,
-        type: type ?? null,
-      };
-      this.logger.info("fetchTeamById", { count: 1 });
-      return result;
-    } catch (error) {
-      const code =
-        error instanceof SportsDataError ? error.code : undefined;
-      this.logger.error("fetchTeamById", { code });
-      if (
-        error instanceof SportsDataError &&
-        error.statusCode === 404
-      ) {
-        return null;
-      }
-      throw error;
-    }
+      },
+      (t) => {
+        const name = t.name ?? "";
+        const img = t.image_path ?? null;
+        if (SportMonksAdapter.looksLikePlaceholder(name, img)) return null;
+        return {
+          externalId: t.id,
+          name,
+          shortCode: t.short_code ?? null,
+          imagePath: img,
+          countryExternalId: t.country_id ?? null,
+          founded: Number.isInteger(t.founded) ? t.founded : null,
+          type: typeof t.type === "string" ? t.type.toLowerCase() : null,
+        };
+      },
+    );
   }
 }

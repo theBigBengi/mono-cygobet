@@ -236,7 +236,7 @@ export class SMHttp {
       });
 
       let attempt = 0;
-      let res: Response | undefined;
+      let res!: Response;
 
       // Retry logic for rate limiting (429) and server errors (5xx)
       while (attempt <= retries) {
@@ -370,7 +370,7 @@ export class SMHttp {
         }
       }
 
-      const json = (await res!.json()) as SMResponse<T>;
+      const json = (await res.json()) as SMResponse<T>;
       const data = Array.isArray(json.data)
         ? json.data
         : [json.data].filter(Boolean);
