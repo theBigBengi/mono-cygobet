@@ -6,6 +6,7 @@ export {
   SportsDataError,
   type SportsDataErrorCode,
 } from "./errors";
+export { noopLogger, type SportsDataLogger } from "./logger";
 export {
   SMHttp,
   type IncludeNode,

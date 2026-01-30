@@ -1,6 +1,8 @@
 import { setTimeout as sleep } from "node:timers/promises";
 
 import { SportsDataError } from "../../errors";
+import type { SportsDataLogger } from "../../logger";
+import { noopLogger } from "../../logger";
 
 /** Environment-backed configuration defaults */
 
@@ -69,7 +71,8 @@ export class SMHttp {
   constructor(
     private token: string,
     private baseUrl: string,
-    private authMode: "query" | "header"
+    private authMode: "query" | "header",
+    private logger: SportsDataLogger = noopLogger
   ) {}
 
   /**
@@ -197,21 +200,39 @@ export class SMHttp {
               attempt++;
               if (attempt > retries) {
                 if (res.status === 429) {
+                  this.logger.error("SMHttp get failed", {
+                    code: "RATE_LIMIT",
+                    statusCode: 429,
+                  });
                   throw new SportsDataError(
                     "RATE_LIMIT",
                     "Rate limit exceeded",
                     429
                   );
                 }
+                this.logger.error("SMHttp get failed", {
+                  code: "SERVER_ERROR",
+                  statusCode: res.status,
+                });
                 throw new SportsDataError(
                   "SERVER_ERROR",
                   "Server error",
                   res.status
                 );
               }
-              await sleep(300 * attempt); // Exponential backoff
+              const delayMs = 300 * attempt;
+              this.logger.warn("SMHttp get retry", {
+                attempt,
+                status: res.status,
+                delayMs,
+              });
+              await sleep(delayMs); // Exponential backoff
               continue;
             }
+            this.logger.error("SMHttp get failed", {
+              code: "UNKNOWN",
+              statusCode: res.status,
+            });
             throw new SportsDataError(
               "UNKNOWN",
               "Request failed",
@@ -222,7 +243,17 @@ export class SMHttp {
         } catch (err) {
           attempt++;
           if (attempt > retries) {
-            if (err instanceof SportsDataError) throw err;
+            if (err instanceof SportsDataError) {
+              this.logger.error("SMHttp get failed", {
+                code: err.code,
+                statusCode: err.statusCode,
+              });
+              throw err;
+            }
+            this.logger.error("SMHttp get failed", {
+              code: "NETWORK_ERROR",
+              statusCode: undefined,
+            });
             throw new SportsDataError(
               "NETWORK_ERROR",
               "Network request failed",
@@ -230,7 +261,13 @@ export class SMHttp {
               err
             );
           }
-          await sleep(300 * attempt);
+          const delayMs = 300 * attempt;
+          this.logger.warn("SMHttp get retry", {
+            attempt,
+            status: undefined,
+            delayMs,
+          });
+          await sleep(delayMs);
         }
       }
 

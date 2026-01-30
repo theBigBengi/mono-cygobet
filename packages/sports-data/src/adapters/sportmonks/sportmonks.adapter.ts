@@ -22,6 +22,8 @@ import type {
 } from "@repo/types/sport-data/common";
 import type { FixtureSportmonks } from "./sportmonks.types";
 import { SportsDataError } from "../../errors";
+import { noopLogger } from "../../logger";
+import type { SportsDataLogger } from "../../logger";
 import {
   SMHttp,
   IncludeNode,
@@ -48,9 +50,10 @@ import type {
  * Provides unified access to SportMonks football and core APIs
  */
 export class SportMonksAdapter {
-  private httpFootball: SMHttp; // For football-specific endpoints
-  private httpCore: SMHttp; // For core endpoints (countries, etc.)
-  private httpBase: SMHttp; // For base v3 endpoints (odds/markets, etc.)
+  private httpFootball: SMHttp;
+  private httpCore: SMHttp;
+  private httpBase: SMHttp;
+  private logger: SportsDataLogger;
 
   constructor(
     opts: {
@@ -58,6 +61,7 @@ export class SportMonksAdapter {
       footballBaseUrl?: string;
       coreBaseUrl?: string;
       authMode?: "query" | "header";
+      logger?: SportsDataLogger;
     } = {}
   ) {
     const token = opts.token ?? process.env.SPORTMONKS_API_TOKEN;
@@ -75,16 +79,17 @@ export class SportMonksAdapter {
       opts.coreBaseUrl ?? process.env.SPORTMONKS_CORE_BASE_URL;
     if (!coreBaseUrl) throw new SportsDataError("UNKNOWN", "Core base URL is required");
 
+    this.logger = opts.logger ?? noopLogger;
+
     // Initialize HTTP clients for both APIs
-    this.httpFootball = new SMHttp(token, footballBaseUrl, authMode);
-    this.httpCore = new SMHttp(token, coreBaseUrl, authMode);
+    this.httpFootball = new SMHttp(token, footballBaseUrl, authMode, this.logger);
+    this.httpCore = new SMHttp(token, coreBaseUrl, authMode, this.logger);
 
     // Base v3 URL (strip /football/ or /core/ from the base URL)
-    // Derive from football base URL: https://api.sportmonks.com/v3/football/ -> https://api.sportmonks.com/v3/
     const baseV3Url = footballBaseUrl
       .replace(/\/football\/?$/, "")
       .replace(/\/core\/?$/, "");
-    this.httpBase = new SMHttp(token, baseV3Url, authMode);
+    this.httpBase = new SMHttp(token, baseV3Url, authMode, this.logger);
   }
 
   /** Standard includes for fixture requests to get related data */
@@ -125,6 +130,8 @@ export class SportMonksAdapter {
       include?: IncludeNode[];
     } = {}
   ): Promise<FixtureDTO[]> {
+    const startMs = performance.now();
+    this.logger.info("fetchFixturesBySeason", { seasonExternalId });
     const rows = await this.httpFootball.get<SmSeasonRaw>(
       `seasons/${seasonExternalId}`,
       {
@@ -158,6 +165,10 @@ export class SportMonksAdapter {
         }
       }
     }
+    this.logger.info("fetchFixturesBySeason", {
+      count: out.length,
+      durationMs: Math.round(performance.now() - startMs),
+    });
     return out;
   }
 
@@ -177,7 +188,8 @@ export class SportMonksAdapter {
       filters?: string | Record<string, string | number | boolean>;
     } = {}
   ): Promise<FixtureDTO[]> {
-    // URL encode the ISO strings for the endpoint
+    const startMs = performance.now();
+    this.logger.info("fetchFixturesBetween", { startIso, endIso });
     const encodedFrom = encodeURIComponent(startIso);
     const encodedTo = encodeURIComponent(endIso);
 
@@ -194,7 +206,6 @@ export class SportMonksAdapter {
 
     const out: FixtureDTO[] = [];
 
-    // Transform raw data to DTOs using buildFixtures helper (avoiding duplicate API call)
     for (const f of rows) {
       const fixture = buildFixtures(f);
       if (fixture) {
@@ -202,6 +213,10 @@ export class SportMonksAdapter {
       }
     }
 
+    this.logger.info("fetchFixturesBetween", {
+      count: out.length,
+      durationMs: Math.round(performance.now() - startMs),
+    });
     return out;
   }
 
@@ -214,7 +229,8 @@ export class SportMonksAdapter {
       filters?: string | Record<string, string | number | boolean>;
     } = {}
   ): Promise<OddsDTO[]> {
-    // URL encode the ISO strings for the endpoint
+    const startMs = performance.now();
+    this.logger.info("fetchOddsBetween", { startIso, endIso });
     const encodedFrom = encodeURIComponent(startIso);
     const encodedTo = encodeURIComponent(endIso);
 
@@ -239,6 +255,10 @@ export class SportMonksAdapter {
     for (const f of rows) {
       out = [...out, ...buildOdds(f)];
     }
+    this.logger.info("fetchOddsBetween", {
+      count: out.length,
+      durationMs: Math.round(performance.now() - startMs),
+    });
     return out;
   }
 
@@ -252,6 +272,8 @@ export class SportMonksAdapter {
     perPage?: number;
     filters?: string | Record<string, string | number | boolean>;
   }): Promise<FixtureDTO[]> {
+    const startMs = performance.now();
+    this.logger.info("fetchLiveFixtures", {});
     const rows = await this.httpFootball.get<FixtureSportmonks>("livescores/inplay", {
       include: [...this.fixtureInclude, ...(options?.include ?? [])],
       perPage: options?.perPage ?? 50,
@@ -266,6 +288,10 @@ export class SportMonksAdapter {
       }
     }
 
+    this.logger.info("fetchLiveFixtures", {
+      count: out.length,
+      durationMs: Math.round(performance.now() - startMs),
+    });
     return out;
   }
 
@@ -283,45 +309,56 @@ export class SportMonksAdapter {
    * ```typescript
    * const fixture = await adapter.fetchFixtureById(12345);
    * if (fixture) {
-   *   console.log(fixture.name, fixture.state);
+   *   // use fixture.name, fixture.state
    * }
    * ```
    */
   async fetchFixtureById(id: number): Promise<FixtureDTO | null> {
+    const startMs = performance.now();
+    this.logger.info("fetchFixtureById", { id });
     try {
-      // Use fetchFixturesByIds with a single ID and include all related data
       const fixtures = await this.fetchFixturesByIds([id], {
         include: [
           {
-            name: "participants", // Home and away team information
+            name: "participants",
           },
           {
-            name: "state", // Fixture state (NS, LIVE, FT, etc.)
+            name: "state",
             fields: ["id", "short_name"],
           },
           {
-            name: "league", // League information
-            include: [{ name: "country" }], // Include country for league
+            name: "league",
+            include: [{ name: "country" }],
           },
           {
-            name: "round", // Round name (e.g., "Round 1")
+            name: "round",
             fields: ["name"],
           },
           {
-            name: "stage", // Stage name (e.g., "Regular Season")
+            name: "stage",
             fields: ["name"],
           },
-          "scores", // Score information for finished fixtures
+          "scores",
         ],
       });
 
-      // Return the first fixture if found, otherwise null
-      // Use nullish coalescing to handle potential undefined value
-      return fixtures.length > 0 ? (fixtures[0] ?? null) : null;
+      const result = fixtures.length > 0 ? (fixtures[0] ?? null) : null;
+      this.logger.info("fetchFixtureById", {
+        count: result ? 1 : 0,
+        durationMs: Math.round(performance.now() - startMs),
+      });
+      return result;
     } catch (error) {
-      // Return null if fixture not found or any other error occurs
-      // This allows callers to handle missing fixtures gracefully
-      return null;
+      const code =
+        error instanceof SportsDataError ? error.code : undefined;
+      this.logger.error("fetchFixtureById", { code });
+      if (
+        error instanceof SportsDataError &&
+        error.statusCode === 404
+      ) {
+        return null;
+      }
+      throw error;
     }
   }
 
@@ -340,7 +377,14 @@ export class SportMonksAdapter {
       filters?: string | Record<string, string | number | boolean>;
     }
   ): Promise<FixtureDTO[]> {
-    if (!externalIds?.length) return [];
+    const startMs = performance.now();
+    this.logger.info("fetchFixturesByIds", {
+      externalIdsCount: externalIds?.length ?? 0,
+    });
+    if (!externalIds?.length) {
+      this.logger.info("fetchFixturesByIds", { count: 0 });
+      return [];
+    }
 
     const rows = await this.httpFootball.get<FixtureSportmonks>(
       `fixtures/multi/${externalIds.join(",")}`,
@@ -379,6 +423,10 @@ export class SportMonksAdapter {
       };
       out.push(fixture);
     }
+    this.logger.info("fetchFixturesByIds", {
+      count: out.length,
+      durationMs: Math.round(performance.now() - startMs),
+    });
     return out;
   }
 
@@ -393,6 +441,7 @@ export class SportMonksAdapter {
   async fetchCountries(options?: {
     include?: IncludeNode[];
   }): Promise<CountryDTO[]> {
+    this.logger.info("fetchCountries", {});
     const rows = await this.httpCore.get<SmCountryRaw>("countries", {
       select: ["id", "name", "image_path", "iso2", "iso3"],
       include: options?.include,
@@ -400,13 +449,15 @@ export class SportMonksAdapter {
       paginate: true,
     });
 
-    return rows.map((c: SmCountryRaw): CountryDTO => ({
+    const out = rows.map((c: SmCountryRaw): CountryDTO => ({
       externalId: c.id,
       name: c.name,
       imagePath: c.image_path ?? null,
       iso2: c.iso2 ?? null,
       iso3: c.iso3 ?? null,
     }));
+    this.logger.info("fetchCountries", { count: out.length });
+    return out;
   }
 
   /**
@@ -423,28 +474,40 @@ export class SportMonksAdapter {
       select?: string[];
     }
   ): Promise<CountryDTO | null> {
+    this.logger.info("fetchCountryById", { id });
     try {
       const rows = await this.httpCore.get<SmCountryRaw>(`countries/${id}`, {
         select: options?.select ?? ["id", "name", "image_path", "iso2", "iso3"],
         include: options?.include,
-        paginate: false, // Single item, no pagination needed
+        paginate: false,
       });
 
       if (!rows || rows.length === 0) {
+        this.logger.info("fetchCountryById", { count: 0 });
         return null;
       }
 
       const c = rows[0]!;
-      return {
+      const result = {
         externalId: c.id,
         name: c.name,
         imagePath: c.image_path ?? null,
         iso2: c.iso2 ?? null,
         iso3: c.iso3 ?? null,
       };
+      this.logger.info("fetchCountryById", { count: 1 });
+      return result;
     } catch (error) {
-      // Return null if country not found or other error
-      return null;
+      const code =
+        error instanceof SportsDataError ? error.code : undefined;
+      this.logger.error("fetchCountryById", { code });
+      if (
+        error instanceof SportsDataError &&
+        error.statusCode === 404
+      ) {
+        return null;
+      }
+      throw error;
     }
   }
 
@@ -457,6 +520,7 @@ export class SportMonksAdapter {
   async fetchLeagues(options?: {
     include?: IncludeNode[];
   }): Promise<LeagueDTO[]> {
+    this.logger.info("fetchLeagues", {});
     const rows = await this.httpFootball.get<SmLeagueRaw>("leagues", {
       select: [
         "id",
@@ -472,7 +536,7 @@ export class SportMonksAdapter {
       paginate: true,
     });
 
-    return rows.map((l: SmLeagueRaw): LeagueDTO => ({
+    const out = rows.map((l: SmLeagueRaw): LeagueDTO => ({
       externalId: l.id,
       name: l.name,
       imagePath: l.image_path ?? null,
@@ -481,6 +545,8 @@ export class SportMonksAdapter {
       type: l.type ?? null,
       subType: l.sub_type ?? null,
     }));
+    this.logger.info("fetchLeagues", { count: out.length });
+    return out;
   }
 
   /**
@@ -489,6 +555,7 @@ export class SportMonksAdapter {
    * @returns LeagueDTO or null if not found
    */
   async fetchLeagueById(id: number): Promise<LeagueDTO | null> {
+    this.logger.info("fetchLeagueById", { id });
     try {
       const rows = await this.httpFootball.get<SmLeagueRaw>(`leagues/${id}`, {
         select: [
@@ -506,15 +573,16 @@ export class SportMonksAdapter {
             fields: ["id", "name", "image_path", "iso2", "iso3"],
           },
         ],
-        paginate: false, // Single item, no pagination needed
+        paginate: false,
       });
 
       if (!rows || rows.length === 0) {
+        this.logger.info("fetchLeagueById", { count: 0 });
         return null;
       }
 
       const l = rows[0]!;
-      return {
+      const result = {
         externalId: l.id,
         name: l.name,
         imagePath: l.image_path ?? null,
@@ -523,9 +591,19 @@ export class SportMonksAdapter {
         type: l.type ?? null,
         subType: l.sub_type ?? null,
       };
+      this.logger.info("fetchLeagueById", { count: 1 });
+      return result;
     } catch (error) {
-      // Return null if league not found or other error
-      return null;
+      const code =
+        error instanceof SportsDataError ? error.code : undefined;
+      this.logger.error("fetchLeagueById", { code });
+      if (
+        error instanceof SportsDataError &&
+        error.statusCode === 404
+      ) {
+        return null;
+      }
+      throw error;
     }
   }
 
@@ -534,6 +612,7 @@ export class SportMonksAdapter {
    * Filters to only current and future seasons to avoid historical data
    */
   async fetchSeasons(): Promise<SeasonDTO[]> {
+    this.logger.info("fetchSeasons", {});
     const rows = await this.httpFootball.get<SmSeasonRaw>("seasons", {
       select: [
         "id",
@@ -555,8 +634,7 @@ export class SportMonksAdapter {
       paginate: true,
     });
 
-    // Filter to only current and future seasons
-    return rows
+    const out = rows
       .filter((s: SmSeasonRaw) => !Boolean(s.finished))
       .map((s: SmSeasonRaw): SeasonDTO => ({
         externalId: s.id,
@@ -568,6 +646,8 @@ export class SportMonksAdapter {
         leagueName: s.league?.name ?? "",
         countryName: s.league?.country?.name ?? "",
       }));
+    this.logger.info("fetchSeasons", { count: out.length });
+    return out;
   }
 
   /**
@@ -576,6 +656,7 @@ export class SportMonksAdapter {
    * @returns SeasonDTO or null if not found
    */
   async fetchSeasonById(id: number): Promise<SeasonDTO | null> {
+    this.logger.info("fetchSeasonById", { id });
     try {
       const rows = await this.httpFootball.get<SmSeasonRaw>(`seasons/${id}`, {
         select: [
@@ -598,15 +679,17 @@ export class SportMonksAdapter {
       });
 
       if (!rows || rows.length === 0) {
+        this.logger.info("fetchSeasonById", { count: 0 });
         return null;
       }
 
       const s = rows[0]!;
       if (Boolean(s.finished)) {
-        return null; // Skip finished seasons
+        this.logger.info("fetchSeasonById", { count: 0 });
+        return null;
       }
 
-      return {
+      const result = {
         externalId: s.id,
         leagueExternalId: s.league_id ?? 0,
         name: s.name ?? "",
@@ -616,8 +699,19 @@ export class SportMonksAdapter {
         leagueName: s.league?.name ?? "",
         countryName: s.league?.country?.name ?? "",
       };
+      this.logger.info("fetchSeasonById", { count: 1 });
+      return result;
     } catch (error) {
-      return null;
+      const code =
+        error instanceof SportsDataError ? error.code : undefined;
+      this.logger.error("fetchSeasonById", { code });
+      if (
+        error instanceof SportsDataError &&
+        error.statusCode === 404
+      ) {
+        return null;
+      }
+      throw error;
     }
   }
 
@@ -628,17 +722,20 @@ export class SportMonksAdapter {
    * Docs: https://docs.sportmonks.com/v3/endpoints-and-entities/endpoints/bookmakers/get-all-bookmakers
    */
   async fetchBookmakers(): Promise<BookmakerDTO[]> {
+    this.logger.info("fetchBookmakers", {});
     const rows = await this.httpBase.get<SmBookmakerRaw>("odds/bookmakers", {
       perPage: 50,
       paginate: true,
     });
 
-    return rows.map(
+    const out = rows.map(
       (b: SmBookmakerRaw): BookmakerDTO => ({
         externalId: b.id,
         name: b.name,
       })
     );
+    this.logger.info("fetchBookmakers", { count: out.length });
+    return out;
   }
 
   /**
@@ -648,13 +745,13 @@ export class SportMonksAdapter {
    * @returns MarketDTO[] with all available markets
    */
   async fetchMarkets(): Promise<MarketDTO[]> {
-    // Note: markets endpoint may not support select parameter
+    this.logger.info("fetchMarkets", {});
     const rows = await this.httpBase.get<SmMarketRaw>("odds/markets", {
       perPage: 50,
       paginate: true,
     });
 
-    return rows.map(
+    const out = rows.map(
       (m: SmMarketRaw): MarketDTO => ({
         externalId: m.id,
         name: m.name,
@@ -662,6 +759,8 @@ export class SportMonksAdapter {
         developerName: m.developer_name ?? null,
       })
     );
+    this.logger.info("fetchMarkets", { count: out.length });
+    return out;
   }
 
   /**
@@ -700,6 +799,7 @@ export class SportMonksAdapter {
   }
 
   async fetchTeams(): Promise<TeamDTO[]> {
+    this.logger.info("fetchTeams", {});
     const rows = await this.httpFootball.get<SmTeamRaw>("teams", {
       select: [
         "id",
@@ -720,7 +820,6 @@ export class SportMonksAdapter {
       const name: string = t.name ?? "";
       const img: string | null = t.image_path ?? null;
 
-      // Skip placeholder teams
       if (SportMonksAdapter.looksLikePlaceholder(name, img)) continue;
 
       const type: string | null =
@@ -737,6 +836,7 @@ export class SportMonksAdapter {
       });
     }
 
+    this.logger.info("fetchTeams", { count: teams.length });
     return teams;
   }
 
@@ -746,6 +846,7 @@ export class SportMonksAdapter {
    * @returns TeamDTO or null if not found
    */
   async fetchTeamById(id: number): Promise<TeamDTO | null> {
+    this.logger.info("fetchTeamById", { id });
     try {
       const rows = await this.httpFootball.get<SmTeamRaw>(`teams/${id}`, {
         select: [
@@ -757,10 +858,11 @@ export class SportMonksAdapter {
           "founded",
           "type",
         ],
-        paginate: false, // Single item, no pagination needed
+        paginate: false,
       });
 
       if (!rows || rows.length === 0) {
+        this.logger.info("fetchTeamById", { count: 0 });
         return null;
       }
 
@@ -768,15 +870,15 @@ export class SportMonksAdapter {
       const name: string = t.name ?? "";
       const img: string | null = t.image_path ?? null;
 
-      // Skip placeholder teams
       if (SportMonksAdapter.looksLikePlaceholder(name, img)) {
+        this.logger.info("fetchTeamById", { count: 0 });
         return null;
       }
 
       const type: string | null =
         typeof t.type === "string" ? t.type.toLowerCase() : null;
 
-      return {
+      const result = {
         externalId: t.id,
         name,
         shortCode: t.short_code ?? null,
@@ -785,9 +887,19 @@ export class SportMonksAdapter {
         founded: Number.isInteger(t.founded) ? t.founded : null,
         type: type ?? null,
       };
+      this.logger.info("fetchTeamById", { count: 1 });
+      return result;
     } catch (error) {
-      // Return null if team not found or other error
-      return null;
+      const code =
+        error instanceof SportsDataError ? error.code : undefined;
+      this.logger.error("fetchTeamById", { code });
+      if (
+        error instanceof SportsDataError &&
+        error.statusCode === 404
+      ) {
+        return null;
+      }
+      throw error;
     }
   }
 }
