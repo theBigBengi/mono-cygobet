@@ -2,11 +2,11 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 /** Environment-backed configuration defaults */
 
-import {
+import type {
+  FixtureSportmonks,
   ParticipantsSportmonks,
   ScoreSportmonks,
-} from "@repo/types/sport-data/sportmonks";
-import { FixtureSportmonks } from "@repo/types/sport-data/sportmonks";
+} from "./sportmonks.types";
 import {
   OddsDTO,
   FixtureDTO,
@@ -125,7 +125,10 @@ export class SMHttp {
    * Constructs the full URL with query parameters
    * Handles authentication based on authMode
    */
-  private buildUrl(path: string, q: Record<string, any>): string {
+  private buildUrl(
+    path: string,
+    q: Record<string, string | number | boolean | undefined>
+  ): string {
     const url = new URL(path, this.normalizeBase());
     if (this.authMode === "query")
       url.searchParams.set("api_token", this.token);
@@ -140,7 +143,7 @@ export class SMHttp {
    * Main GET method for SportMonks API
    * Handles pagination, retries, and response processing
    */
-  async get<T = any>(path: string, opts: RequestOpts = {}): Promise<T[]> {
+  async get<T>(path: string, opts: RequestOpts = {}): Promise<T[]> {
     const {
       include,
       select,
@@ -377,11 +380,11 @@ export function buildFixtures(f: FixtureSportmonks): FixtureDTO | null {
  * SportMonks provides both timestamp and ISO string formats
  */
 export function coerceEpochSeconds(
-  starting_at_timestamp: any,
-  starting_at: any
+  starting_at_timestamp: number | null | undefined,
+  starting_at: string | null | undefined
 ): number {
   if (Number.isFinite(starting_at_timestamp))
     return Number(starting_at_timestamp);
-  const ms = Date.parse(starting_at);
+  const ms = Date.parse(starting_at ?? "");
   return Number.isFinite(ms) ? Math.floor(ms / 1000) : 0;
 }
