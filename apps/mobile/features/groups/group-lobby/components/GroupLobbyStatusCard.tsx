@@ -34,7 +34,7 @@ export function GroupLobbyStatusCard({
     <Card style={styles.section}>
       <View style={styles.statusHeader}>
         <AppText variant="body" style={styles.statusTitle}>
-          This pool has not started yet
+          Finish setup the group 
         </AppText>
         <View
           style={[
@@ -55,9 +55,7 @@ export function GroupLobbyStatusCard({
         color="secondary"
         style={styles.statusSubtitle}
       >
-        {isCreator
-          ? "Finish setup to start the pool"
-          : "The admin needs to finish setup before predictions can begin"}
+       Set group rules and publish the group to start.
       </AppText>
     </Card>
   );

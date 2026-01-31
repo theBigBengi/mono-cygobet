@@ -5,7 +5,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { Screen } from "@/components/ui";
+import { Screen, AppText } from "@/components/ui";
 import type { ApiGroupItem } from "@repo/types";
 import {
   GroupLobbyNameHeader,
@@ -127,46 +127,46 @@ export function GroupLobbyDraftScreen({
           isCreator={isCreator}
         />
 
-          {/* Selected Games Section */}
-          <GroupLobbyFixturesSection
+        {/* Section: Games */}
+        <AppText variant="subtitle" style={styles.sectionTitle}>
+          Games
+        </AppText>
+        <GroupLobbyFixturesSection
           fixtures={fixtures}
           groupId={group.id}
           onViewAll={handleViewAllGames}
         />
 
-       
-        {/* Scoring System Section */}
+        {/* Section: Prediction rules */}
         {isCreator && (
-          <GroupLobbyScoringSection
-            initialOnTheNose={scoringValues.onTheNose}
-            initialGoalDifference={scoringValues.goalDifference}
-            initialOutcome={scoringValues.outcome}
-            onChange={(values) => setScoringValues(values)}
-            disabled={!isEditable}
-          />
+          <>
+            <AppText variant="subtitle" style={styles.sectionTitle}>
+              Prediction rules
+            </AppText>
+            <GroupLobbyScoringSection
+              initialOnTheNose={scoringValues.onTheNose}
+              initialGoalDifference={scoringValues.goalDifference}
+              initialOutcome={scoringValues.outcome}
+              onChange={(values) => setScoringValues(values)}
+              disabled={!isEditable}
+            />
+            <PredictionModeSelector
+              value={predictionMode}
+              onChange={setPredictionMode}
+              disabled={!isEditable}
+            />
+            <KORoundModeSelector
+              value={koRoundMode}
+              onChange={setKORoundMode}
+              disabled={!isEditable}
+            />
+          </>
         )}
 
-        {/* Prediction Mode Selector Section */}
-        {isCreator && (
-          <PredictionModeSelector
-            value={predictionMode}
-            onChange={setPredictionMode}
-            disabled={!isEditable}
-          />
-        )}
-
-        {/* KO Round Mode Selector Section */}
-        {isCreator && (
-          <KORoundModeSelector
-            value={koRoundMode}
-            onChange={setKORoundMode}
-            disabled={!isEditable}
-          />
-        )}
-
-      
-
-        {/* Privacy Toggle Section (Only for creators) */}
+        {/* Section: Privacy & invite */}
+        <AppText variant="subtitle" style={styles.sectionTitle}>
+          Privacy & invite
+        </AppText>
         <GroupLobbyPrivacySection
           privacy={draftPrivacy}
           onChange={setDraftPrivacy}
@@ -211,5 +211,10 @@ const styles = StyleSheet.create({
   },
   screenContent: {
     paddingBottom: 100, // Space for floating button
+  },
+  sectionTitle: {
+    fontWeight: "600",
+    marginTop: 24,
+    marginBottom: 8,
   },
 });
