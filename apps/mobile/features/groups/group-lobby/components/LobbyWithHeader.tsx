@@ -4,8 +4,8 @@
 
 import React, { useState } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import { useRouter } from "expo-router";
 import { AppText } from "@/components/ui";
+import { useGoBack } from "@/hooks/useGoBack";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { GroupGamesHeader } from "@/features/groups/predictions/components/GroupGamesHeader";
@@ -49,7 +49,7 @@ export function LobbyWithHeader({
   onDeleteGroup,
   isDeleting = false,
 }: LobbyWithHeaderProps) {
-  const router = useRouter();
+  const goBack = useGoBack("/(tabs)/groups");
   const { theme } = useTheme();
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const isActive = status === "active";
@@ -140,15 +140,7 @@ export function LobbyWithHeader({
       <View style={styles.headerOverlay} pointerEvents="box-none">
         <GroupGamesHeader
           backOnly
-          onBack={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              // If no screen to go back to (e.g., after creating group with replace),
-              // navigate to groups tab
-              router.replace("/(tabs)/groups" as any);
-            }
-          }}
+          onBack={goBack}
           leftContent={leftContent}
           rightContent={rightContent}
         />

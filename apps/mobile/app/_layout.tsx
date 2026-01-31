@@ -80,16 +80,20 @@ function AppContent() {
                 options={{ title: "Invite", headerShown: false }}
               />
               <Stack.Screen
+                name="groups/[id]/members"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="groups/[id]/member/[userId]"
                 options={{ title: "Member Profile", headerShown: false }}
               />
               <Stack.Screen
                 name="groups/join"
-                options={{ title: "Joining...", headerShown: true }}
+                options={{ title: "Join Group", headerShown: false }}
               />
               <Stack.Screen
                 name="groups/discover"
-                options={{ title: "Browse Public Groups", headerShown: true }}
+                options={{ title: "Discover", headerShown: false }}
               />
               <Stack.Screen
                 name="profile/head-to-head"

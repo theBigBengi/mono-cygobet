@@ -12,7 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Screen, AppText, Button } from "@/components/ui";
+import { Screen, ScreenWithHeader, AppText, Button } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useJoinGroupByCodeMutation } from "@/domains/groups";
@@ -47,8 +47,9 @@ export default function GroupJoinRoute() {
   // No code in URL: show form (in-app "Join with code" flow / dev testing)
   if (!code) {
     return (
-      <Screen>
-        <KeyboardAvoidingView
+      <ScreenWithHeader title="Join Group">
+        <Screen>
+          <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.form}
         >
@@ -81,33 +82,40 @@ export default function GroupJoinRoute() {
             />
           </View>
         </KeyboardAvoidingView>
-      </Screen>
+        </Screen>
+      </ScreenWithHeader>
     );
   }
 
   if (joinMutation.isPending) {
     return (
-      <Screen>
-        <QueryLoadingView message="Joining..." />
-      </Screen>
+      <ScreenWithHeader title="Join Group">
+        <Screen>
+          <QueryLoadingView message="Joining..." />
+        </Screen>
+      </ScreenWithHeader>
     );
   }
 
   if (joinMutation.isError) {
     return (
-      <Screen>
-        <QueryErrorView
-          message={joinMutation.error?.message ?? "Failed to join group"}
-          onRetry={() => joinMutation.mutate(code)}
-        />
-      </Screen>
+      <ScreenWithHeader title="Join Group">
+        <Screen>
+          <QueryErrorView
+            message={joinMutation.error?.message ?? "Failed to join group"}
+            onRetry={() => joinMutation.mutate(code)}
+          />
+        </Screen>
+      </ScreenWithHeader>
     );
   }
 
   return (
-    <Screen>
-      <QueryLoadingView message="Redirecting..." />
-    </Screen>
+    <ScreenWithHeader title="Join Group">
+      <Screen>
+        <QueryLoadingView message="Redirecting..." />
+      </Screen>
+    </ScreenWithHeader>
   );
 }
 

@@ -9,4 +9,4 @@ export { Divider } from "./Divider";
 export { Row } from "./Row";
 export { Stack } from "./Stack";
 export { TeamLogo } from "./TeamLogo";
-
+export { ScreenWithHeader } from "./ScreenWithHeader";

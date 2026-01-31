@@ -2,6 +2,7 @@ import React from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { AppText } from "@/components/ui";
 
 export type GroupGamesViewMode = "list" | "single";
 
@@ -16,6 +17,8 @@ interface GroupGamesHeaderFullProps {
 interface GroupGamesHeaderBackOnlyProps {
   backOnly: true;
   onBack: () => void;
+  /** Optional title shown next to back button when no leftContent */
+  title?: string;
   /** Optional content to show on the left (after back button, e.g. group name) */
   leftContent?: React.ReactNode;
   /** Optional content to show on the right (e.g. group status) */
@@ -37,12 +40,15 @@ export type GroupGamesHeaderProps =
  */
 export function GroupGamesHeader(props: GroupGamesHeaderProps) {
   const { onBack, backOnly } = props;
+  const title = backOnly && "title" in props ? props.title : undefined;
   const leftContent =
     backOnly && "leftContent" in props ? props.leftContent : undefined;
   const rightContent =
     backOnly && "rightContent" in props ? props.rightContent : undefined;
-  const { theme, } = useTheme();
- 
+  const { theme } = useTheme();
+
+  const showTitle = backOnly && title && !leftContent;
+
   return (
     <View
       style={[
@@ -54,7 +60,7 @@ export function GroupGamesHeader(props: GroupGamesHeaderProps) {
     >
       <View style={styles.leftRow}>
         <Pressable onPress={onBack}>
-          <View style={[styles.iconButton, styles.iconButtonClip, { borderWidth: 0 , backgroundColor: theme.colors.background}]}>
+          <View style={[styles.iconButton, styles.iconButtonClip, { borderWidth: 0, backgroundColor: theme.colors.background }]}>
             <View style={styles.iconButtonInner}>
               <Ionicons
                 name="chevron-back"
@@ -64,7 +70,16 @@ export function GroupGamesHeader(props: GroupGamesHeaderProps) {
             </View>
           </View>
         </Pressable>
-        {leftContent && leftContent}
+        {leftContent ? leftContent : showTitle ? (
+          <AppText
+            variant="subtitle"
+            style={[styles.titleText, { color: theme.colors.textPrimary }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {title}
+          </AppText>
+        ) : null}
       </View>
       {!backOnly ? (
         <View style={styles.rightRow}>
@@ -114,6 +129,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    flex: 1,
+  },
+  titleText: {
     flex: 1,
   },
   rightRow: {
