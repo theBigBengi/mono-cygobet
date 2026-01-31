@@ -15,6 +15,21 @@ export interface GroupsRepository {
   // Core operations
   findGroupsByUserId(userId: number): Promise<Array<Prisma.groupsGetPayload<{}>>>;
   findGroupById(id: number): Promise<Prisma.groupsGetPayload<{}> | null>;
+  findPublicGroupsPaginated(params: {
+    page: number;
+    perPage: number;
+    search?: string;
+    excludeUserId?: number;
+  }): Promise<{
+    groups: Array<{
+      id: number;
+      name: string;
+      createdAt: Date;
+      creatorId: number;
+      groupRules: { maxMembers: number } | null;
+    }>;
+    totalCount: number;
+  }>;
   createGroupMember(data: {
     groupId: number;
     userId: number;

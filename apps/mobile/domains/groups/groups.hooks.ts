@@ -10,6 +10,8 @@ import type {
   ApiPublishGroupResponse,
   ApiGroupResponse,
   ApiGroupsResponse,
+  ApiPublicGroupsQuery,
+  ApiPublicGroupsResponse,
   ApiGroupFixturesResponse,
   ApiGroupGamesFiltersResponse,
   ApiSaveGroupPredictionsBatchBody,
@@ -25,6 +27,7 @@ import { isReadyForProtected } from "@/lib/auth/guards";
 import {
   createGroup,
   fetchMyGroups,
+  fetchPublicGroups,
   fetchGroupById,
   updateGroup,
   publishGroup,
@@ -56,6 +59,22 @@ export function useMyGroupsQuery() {
   return useQuery<ApiGroupsResponse, ApiError>({
     queryKey: groupsKeys.list(),
     queryFn: () => fetchMyGroups(),
+    enabled,
+    meta: { scope: "user" },
+  });
+}
+
+/**
+ * Hook to fetch public groups (paginated, optional search).
+ * - Enabled only when authenticated and onboarding complete.
+ */
+export function usePublicGroupsQuery(params: ApiPublicGroupsQuery) {
+  const { status, user } = useAuth();
+  const enabled = isReadyForProtected(status, user);
+
+  return useQuery<ApiPublicGroupsResponse, ApiError>({
+    queryKey: groupsKeys.publicList(params),
+    queryFn: () => fetchPublicGroups(params),
     enabled,
     meta: { scope: "user" },
   });
@@ -462,6 +481,9 @@ export function useJoinPublicGroupMutation(groupId: number | null) {
           queryKey: groupsKeys.detail(groupId),
         });
       }
+      queryClient.invalidateQueries({
+        queryKey: [...groupsKeys.all, "public"],
+      });
     },
   });
 }

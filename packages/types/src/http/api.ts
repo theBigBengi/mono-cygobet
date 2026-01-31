@@ -415,6 +415,43 @@ export type ApiGroupsResponse = {
 };
 
 /**
+ * Query parameters for GET /api/groups/public.
+ */
+export type ApiPublicGroupsQuery = {
+  page?: number;
+  perPage?: number;
+  /** Search by group name (case-insensitive). */
+  search?: string;
+};
+
+/**
+ * Public group item in GET /api/groups/public response.
+ */
+export type ApiPublicGroupItem = {
+  id: number;
+  name: string;
+  memberCount: number;
+  maxMembers: number | null;
+  totalFixtures: number;
+  creatorUsername: string | null;
+  createdAt: string;
+};
+
+/**
+ * Response from GET /api/groups/public.
+ */
+export type ApiPublicGroupsResponse = {
+  status: "success";
+  data: ApiPublicGroupItem[];
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+};
+
+/**
  * Group member item in GET /api/groups/:id/members response.
  */
 export type ApiGroupMemberItem = {

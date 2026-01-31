@@ -7,6 +7,7 @@ import type { GroupsRepository } from "./interface";
 import {
   findGroupsByUserId,
   findGroupById,
+  findPublicGroupsPaginated,
   deleteGroup,
   findGroupRules,
   publishGroupInternal,
@@ -58,6 +59,7 @@ export const repository: GroupsRepository = {
   // Core operations
   findGroupsByUserId,
   findGroupById,
+  findPublicGroupsPaginated,
   createGroupWithMemberAndRules,
   updateGroupWithFixtures,
   publishGroupInternal,

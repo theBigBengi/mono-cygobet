@@ -3,6 +3,7 @@
 
 export {
   useMyGroupsQuery,
+  usePublicGroupsQuery,
   useGroupQuery,
   useGroupGamesFiltersQuery,
   useCreateGroupMutation,
@@ -24,6 +25,7 @@ export { groupsKeys } from "./groups.keys";
 export {
   createGroup,
   fetchMyGroups,
+  fetchPublicGroups,
   fetchGroupById,
   fetchGroupFixtures,
   fetchGroupGamesFilters,
@@ -39,4 +41,7 @@ export type {
   ApiGroupsResponse,
   ApiGroupPrivacy,
   ApiGroupFixturesResponse,
+  ApiPublicGroupsQuery,
+  ApiPublicGroupItem,
+  ApiPublicGroupsResponse,
 } from "@repo/types";

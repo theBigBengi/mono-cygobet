@@ -5,6 +5,7 @@ import { FastifyPluginAsync } from "fastify";
 import {
   createGroup,
   getMyGroups,
+  getPublicGroups,
   getGroupById,
   getGroupGamesFilters,
   updateGroup,
@@ -28,6 +29,8 @@ import type {
   ApiPublishGroupBody,
   ApiGroupResponse,
   ApiGroupsResponse,
+  ApiPublicGroupsQuery,
+  ApiPublicGroupsResponse,
   ApiGroupFixturesResponse,
   ApiGroupGamesFiltersResponse,
   ApiSaveGroupPredictionsBatchBody,
@@ -51,6 +54,8 @@ import {
   predictionsOverviewResponseSchema,
   groupMembersResponseSchema,
   joinGroupByCodeBodySchema,
+  publicGroupsQuerystringSchema,
+  publicGroupsResponseSchema,
 } from "../../schemas/api";
 
 /** Parse req.query into GroupFixturesFilter. Used only by GET :id and GET :id/fixtures. */
@@ -231,6 +236,48 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
       const { code } = req.body;
 
       const result = await joinGroupByCode(code, userId);
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * GET /api/groups/public
+   *
+   * - Requires auth + onboarding completion.
+   * - Returns paginated list of public active groups (excludes groups user is already in).
+   * - Query: page, perPage, search (by name).
+   */
+  fastify.get<{
+    Querystring: ApiPublicGroupsQuery;
+    Reply: ApiPublicGroupsResponse;
+  }>(
+    "/groups/public",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        querystring: publicGroupsQuerystringSchema,
+        response: {
+          200: publicGroupsResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const userId = req.userAuth.user.id;
+      const page = req.query.page != null ? Number(req.query.page) : undefined;
+      const perPage = req.query.perPage != null ? Number(req.query.perPage) : undefined;
+      const search = req.query.search;
+      const result = await getPublicGroups(
+        { page, perPage, search },
+        userId
+      );
 
       return reply.send(result);
     }

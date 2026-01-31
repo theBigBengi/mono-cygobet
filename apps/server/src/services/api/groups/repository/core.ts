@@ -43,6 +43,64 @@ export async function findGroupById(id: number) {
   });
 }
 
+/** Result shape for findPublicGroupsPaginated (groups with creatorId and rules). */
+export type PublicGroupWithRules = Prisma.groupsGetPayload<{
+  select: {
+    id: true;
+    name: true;
+    createdAt: true;
+    creatorId: true;
+    groupRules: { select: { maxMembers: true } };
+  };
+}>;
+
+/**
+ * Find public active groups with pagination and optional name search.
+ * Excludes groups the user is already a member of when excludeUserId is set.
+ */
+export async function findPublicGroupsPaginated(params: {
+  page: number;
+  perPage: number;
+  search?: string;
+  excludeUserId?: number;
+}): Promise<{ groups: PublicGroupWithRules[]; totalCount: number }> {
+  const { page, perPage, search, excludeUserId } = params;
+  const where: Prisma.groupsWhereInput = {
+    privacy: groupPrivacy.public,
+    status: GROUP_STATUS.ACTIVE,
+  };
+  if (search != null && search.trim() !== "") {
+    where.name = { contains: search.trim(), mode: "insensitive" };
+  }
+  if (excludeUserId != null) {
+    where.groupMembers = {
+      none: {
+        userId: excludeUserId,
+        status: MEMBER_STATUS.JOINED,
+      },
+    };
+  }
+
+  const [groups, totalCount] = await Promise.all([
+    prisma.groups.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * perPage,
+      take: perPage,
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        creatorId: true,
+        groupRules: { select: { maxMembers: true } },
+      },
+    }),
+    prisma.groups.count({ where }),
+  ]);
+
+  return { groups, totalCount };
+}
+
 /**
  * Create a new group.
  */

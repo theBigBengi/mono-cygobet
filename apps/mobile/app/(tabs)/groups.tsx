@@ -25,6 +25,10 @@ export default function GroupsScreen() {
     router.push("/groups/join");
   };
 
+  const handleBrowsePublic = () => {
+    router.push("/groups/discover");
+  };
+
   const handleGroupPress = (groupId: number) => {
     // Navigate to group details - Stack screen at root level
     router.push(`/groups/${groupId}` as any);
@@ -72,6 +76,12 @@ export default function GroupsScreen() {
               onPress={handleJoinWithCode}
               style={[styles.joinButton, { marginTop: theme.spacing.lg }]}
             />
+            <Button
+              label="Browse Public Groups"
+              variant="secondary"
+              onPress={handleBrowsePublic}
+              style={[styles.joinButton, { marginTop: theme.spacing.sm }]}
+            />
           </View>
         </Screen>
       </View>
@@ -88,6 +98,12 @@ export default function GroupsScreen() {
             variant="secondary"
             onPress={handleJoinWithCode}
             style={styles.joinButton}
+          />
+          <Button
+            label="Browse Public Groups"
+            variant="secondary"
+            onPress={handleBrowsePublic}
+            style={[styles.joinButton, { marginTop: theme.spacing.sm }]}
           />
         </View>
         {groups.map((group) => {

@@ -10,6 +10,8 @@ import type {
   ApiPublishGroupResponse,
   ApiGroupResponse,
   ApiGroupsResponse,
+  ApiPublicGroupsQuery,
+  ApiPublicGroupsResponse,
   ApiGroupFixturesResponse,
   ApiGroupGamesFiltersResponse,
   ApiSaveGroupPredictionsBatchBody,
@@ -45,6 +47,25 @@ export async function fetchMyGroups(): Promise<ApiGroupsResponse> {
   return apiFetchWithAuthRetry<ApiGroupsResponse>("/api/groups", {
     method: "GET",
   });
+}
+
+/**
+ * Fetch public groups (paginated, optional search by name).
+ * - Requires authentication.
+ * - Excludes groups the user is already a member of.
+ */
+export async function fetchPublicGroups(
+  params: ApiPublicGroupsQuery
+): Promise<ApiPublicGroupsResponse> {
+  const queryString = buildQuery({
+    page: params.page,
+    perPage: params.perPage,
+    search: params.search,
+  });
+  return apiFetchWithAuthRetry<ApiPublicGroupsResponse>(
+    `/api/groups/public${queryString}`,
+    { method: "GET" }
+  );
 }
 
 /**

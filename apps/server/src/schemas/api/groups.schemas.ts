@@ -63,6 +63,54 @@ export const groupFixturesFilterQuerystringSchema = {
   },
 };
 
+/** Query params for GET /api/groups/public. */
+export const publicGroupsQuerystringSchema = {
+  type: "object",
+  properties: {
+    page: { type: "number", minimum: 1 },
+    perPage: { type: "number", minimum: 1, maximum: 100 },
+    search: { type: "string" },
+  },
+};
+
+/** Public group item in GET /api/groups/public response. */
+export const publicGroupItemSchema = {
+  type: "object",
+  required: ["id", "name", "memberCount", "totalFixtures", "createdAt"],
+  properties: {
+    id: { type: "number" },
+    name: { type: "string" },
+    memberCount: { type: "number" },
+    maxMembers: { type: ["number", "null"] },
+    totalFixtures: { type: "number" },
+    creatorUsername: { type: ["string", "null"] },
+    createdAt: { type: "string" },
+  },
+};
+
+/** Response schema for GET /api/groups/public. */
+export const publicGroupsResponseSchema = {
+  type: "object",
+  required: ["status", "data", "pagination"],
+  properties: {
+    status: { type: "string", enum: ["success"] },
+    data: {
+      type: "array",
+      items: publicGroupItemSchema,
+    },
+    pagination: {
+      type: "object",
+      required: ["page", "perPage", "totalItems", "totalPages"],
+      properties: {
+        page: { type: "number" },
+        perPage: { type: "number" },
+        totalItems: { type: "number" },
+        totalPages: { type: "number" },
+      },
+    },
+  },
+};
+
 export const groupItemSchema = {
   type: "object",
   properties: {

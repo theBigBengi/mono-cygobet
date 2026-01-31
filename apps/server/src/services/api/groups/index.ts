@@ -4,6 +4,7 @@
 export {
   createGroup,
   getMyGroups,
+  getPublicGroups,
   getGroupById,
   getGroupGamesFilters,
   updateGroup,
