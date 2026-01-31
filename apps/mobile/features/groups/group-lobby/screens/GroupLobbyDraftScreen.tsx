@@ -2,7 +2,7 @@
 // Draft state screen for group lobby.
 // Shows editable name, status card, privacy settings, and publish button.
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, AppText } from "@/components/ui";
@@ -68,21 +68,48 @@ export function GroupLobbyDraftScreen({
     setDraftInviteAccess,
   } = useGroupLobbyState(group.name, group.privacy, group.inviteAccess);
 
-  // Manage local state for prediction mode (default to "result")
-  const [predictionMode, setPredictionMode] = useState<PredictionMode>("result");
+  // Manage local state for prediction mode, initialized from group
+  const [predictionMode, setPredictionMode] = useState<PredictionMode>(
+    () => (group.predictionMode === "MatchWinner" ? "3way" : "result")
+  );
 
-  // Manage local state for KO round mode (default to "90min")
-  const [koRoundMode, setKORoundMode] = useState<KORoundMode>("90min");
-
-  // Manage local state for scoring values
-  const [scoringValues, setScoringValues] = useState({
-    onTheNose: 3,
-    goalDifference: 2,
-    outcome: 1,
+  // Manage local state for KO round mode, initialized from group
+  const [koRoundMode, setKORoundMode] = useState<KORoundMode>(() => {
+    if (group.koRoundMode === "ExtraTime") return "extraTime";
+    if (group.koRoundMode === "Penalties") return "penalties";
+    return "90min";
   });
 
-  // Manage local state for max members
-  const [maxMembers, setMaxMembers] = useState(50);
+  // Manage local state for scoring values, initialized from group
+  const [scoringValues, setScoringValues] = useState(() => ({
+    onTheNose: group.onTheNosePoints ?? 3,
+    goalDifference: group.correctDifferencePoints ?? 2,
+    outcome: group.outcomePoints ?? 1,
+  }));
+
+  // Manage local state for max members, initialized from group
+  const [maxMembers, setMaxMembers] = useState(() => group.maxMembers ?? 50);
+
+  // Sync state when group changes (e.g. after refresh)
+  useEffect(() => {
+    setPredictionMode(group.predictionMode === "MatchWinner" ? "3way" : "result");
+    setKORoundMode(
+      group.koRoundMode === "ExtraTime" ? "extraTime" : group.koRoundMode === "Penalties" ? "penalties" : "90min"
+    );
+    setScoringValues({
+      onTheNose: group.onTheNosePoints ?? 3,
+      goalDifference: group.correctDifferencePoints ?? 2,
+      outcome: group.outcomePoints ?? 1,
+    });
+    setMaxMembers(group.maxMembers ?? 50);
+  }, [
+    group.predictionMode,
+    group.koRoundMode,
+    group.onTheNosePoints,
+    group.correctDifferencePoints,
+    group.outcomePoints,
+    group.maxMembers,
+  ]);
 
   // Local mutations - tied to this group
   const updateGroupMutation = useUpdateGroupMutation(group.id);
@@ -148,16 +175,17 @@ export function GroupLobbyDraftScreen({
             <AppText variant="subtitle" style={styles.sectionTitle}>
               Prediction rules
             </AppText>
+            <PredictionModeSelector
+              value={predictionMode}
+              onChange={setPredictionMode}
+              disabled={!isEditable}
+            />
             <GroupLobbyScoringSection
               initialOnTheNose={scoringValues.onTheNose}
               initialGoalDifference={scoringValues.goalDifference}
               initialOutcome={scoringValues.outcome}
+              predictionMode={predictionMode}
               onChange={(values) => setScoringValues(values)}
-              disabled={!isEditable}
-            />
-            <PredictionModeSelector
-              value={predictionMode}
-              onChange={setPredictionMode}
               disabled={!isEditable}
             />
             <KORoundModeSelector

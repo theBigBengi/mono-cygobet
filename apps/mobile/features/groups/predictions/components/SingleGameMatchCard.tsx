@@ -3,10 +3,20 @@ import { View, StyleSheet, Dimensions, TextInput } from "react-native";
 import { Card, AppText, TeamLogo } from "@/components/ui";
 import { getTeamDisplayName } from "@/utils/fixture";
 import { ScoresInput } from "./ScoresInput";
+import { OutcomePicker } from "./OutcomePicker";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type { FixtureItem } from "@/types/common";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+function getOutcomeFromPrediction(
+  prediction: GroupPrediction
+): "home" | "draw" | "away" | null {
+  if (prediction.home === null || prediction.away === null) return null;
+  if (prediction.home > prediction.away) return "home";
+  if (prediction.home < prediction.away) return "away";
+  return "draw";
+}
 
 type Props = {
   fixture: FixtureItem;
@@ -20,6 +30,8 @@ type Props = {
   onBlur?: () => void;
   onChange: (type: "home" | "away", nextText: string) => void;
   onAutoNext?: (type: "home" | "away") => void;
+  predictionMode?: "CorrectScore" | "MatchWinner";
+  onSelectOutcome?: (outcome: "home" | "draw" | "away") => void;
 };
 
 /**
@@ -38,6 +50,8 @@ export function SingleGameMatchCard({
   onBlur,
   onChange,
   onAutoNext,
+  predictionMode = "CorrectScore",
+  onSelectOutcome,
 }: Props) {
   const homeTeamName = getTeamDisplayName(fixture.homeTeam?.name, "Home");
   const awayTeamName = getTeamDisplayName(fixture.awayTeam?.name, "Away");
@@ -83,23 +97,33 @@ export function SingleGameMatchCard({
             </AppText>
           </View>
 
-          {/* Score Inputs Section */}
-          <ScoresInput
-            prediction={prediction}
-            homeRef={homeRef}
-            awayRef={awayRef}
-            homeFocused={homeFocused}
-            awayFocused={awayFocused}
-            isSaved={isSaved}
-            isEditable={isEditable}
-            isLive={isLive}
-            onFocus={onFocus}
-            onBlur={onBlur}
-            onChange={onChange}
-            onAutoNext={onAutoNext}
-            variant="large"
-            containerStyle={styles.scoreSection}
-          />
+          {/* Score Inputs or Outcome Picker Section */}
+          {predictionMode === "MatchWinner" && onSelectOutcome ? (
+            <View style={styles.scoreSection}>
+              <OutcomePicker
+                selectedOutcome={getOutcomeFromPrediction(prediction)}
+                isEditable={isEditable}
+                onSelect={onSelectOutcome}
+              />
+            </View>
+          ) : (
+            <ScoresInput
+              prediction={prediction}
+              homeRef={homeRef}
+              awayRef={awayRef}
+              homeFocused={homeFocused}
+              awayFocused={awayFocused}
+              isSaved={isSaved}
+              isEditable={isEditable}
+              isLive={isLive}
+              onFocus={onFocus}
+              onBlur={onBlur}
+              onChange={onChange}
+              onAutoNext={onAutoNext}
+              variant="large"
+              containerStyle={styles.scoreSection}
+            />
+          )}
 
           {/* Away Team - Logo above Name */}
           <View style={styles.teamSectionAway}>

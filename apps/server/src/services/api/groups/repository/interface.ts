@@ -53,7 +53,16 @@ export interface GroupsRepository {
     maxMembers?: number;
   }): Promise<Prisma.groupsGetPayload<{}>>;
   deleteGroup(id: number): Promise<Prisma.groupsGetPayload<{}>>;
-  findGroupRules(groupId: number): Promise<{ selectionMode: groupSelectionMode; inviteAccess?: groupInviteAccess; maxMembers?: number } | null>;
+  findGroupRules(groupId: number): Promise<{
+    selectionMode: groupSelectionMode;
+    inviteAccess?: groupInviteAccess;
+    maxMembers?: number;
+    predictionMode?: groupPredictionMode;
+    koRoundMode?: groupKoRoundMode;
+    onTheNosePoints?: number;
+    correctDifferencePoints?: number;
+    outcomePoints?: number;
+  } | null>;
   findGroupMembersWithUsers(groupId: number): Promise<{
     members: Array<{ userId: number }>;
     users: Array<{ id: number; username: string | null }>;

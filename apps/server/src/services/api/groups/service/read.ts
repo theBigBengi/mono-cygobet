@@ -115,6 +115,11 @@ export async function getGroupById(
   const rules = await repo.findGroupRules(id);
   data.inviteAccess = rules?.inviteAccess ?? "all";
   data.maxMembers = rules?.maxMembers ?? DEFAULT_MAX_MEMBERS;
+  data.predictionMode = rules?.predictionMode ?? "CorrectScore";
+  data.koRoundMode = rules?.koRoundMode ?? "FullTime";
+  data.onTheNosePoints = rules?.onTheNosePoints ?? 3;
+  data.correctDifferencePoints = rules?.correctDifferencePoints ?? 2;
+  data.outcomePoints = rules?.outcomePoints ?? 1;
 
   // Include fixtures if requested
   if (includeFixtures) {

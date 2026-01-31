@@ -28,6 +28,7 @@ import { useGroupGamesFiltersQuery } from "@/domains/groups";
 type Props = {
   groupId: number | null;
   fixtures: FixtureItem[]; // Fixtures passed from parent (already fetched with group)
+  predictionMode?: string;
 };
 
 /**
@@ -37,7 +38,7 @@ type Props = {
  * - state for predictions
  * - wiring of keyboard/nav/scroll behaviors
  */
-export function GroupGamesScreen({ groupId, fixtures: fixturesProp }: Props) {
+export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMode }: Props) {
   const router = useRouter();
   const { theme } = useTheme();
   const [viewMode, setViewMode] = React.useState<"list" | "single">("list");
@@ -84,13 +85,26 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp }: Props) {
     predictions,
     savedPredictions,
     updatePrediction,
+    setOutcomePrediction,
     fillRandomPredictions,
     saveAllChangedPredictions,
     isSaving,
   } = useGroupGamePredictions({
     fixtures,
     groupId,
+    predictionMode,
   });
+
+  const predictionModeTyped: "CorrectScore" | "MatchWinner" =
+    predictionMode === "MatchWinner" ? "MatchWinner" : "CorrectScore";
+
+  const handleSelectOutcome = React.useCallback(
+    (fixtureId: number, outcome: "home" | "draw" | "away") => {
+      setOutcomePrediction(fixtureId, outcome);
+      setTimeout(() => saveAllChangedPredictions(), 50);
+    },
+    [setOutcomePrediction, saveAllChangedPredictions]
+  );
 
   // Calculate predictions statistics
   const { latestUpdatedAt, savedPredictionsCount, totalPredictionsCount } =
@@ -224,6 +238,8 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp }: Props) {
             getNextFieldIndex={getNextFieldIndex}
             navigateToField={navigateToField}
             onSaveAllChanged={saveAllChangedPredictions}
+            predictionMode={predictionModeTyped}
+            onSelectOutcome={predictionMode === "MatchWinner" ? handleSelectOutcome : undefined}
           />
         </View>
       ) : (
@@ -308,6 +324,12 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp }: Props) {
                       onAutoNext: (type: "home" | "away") => {
                         handleAutoNext(fixture.id, type);
                       },
+                      predictionMode: predictionModeTyped,
+                      onSelectOutcome:
+                        predictionMode === "MatchWinner"
+                          ? (outcome: "home" | "draw" | "away") =>
+                              handleSelectOutcome(fixture.id, outcome)
+                          : undefined,
                     };
 
                     return (

@@ -41,6 +41,8 @@ type Props = {
   getNextFieldIndex: (fixtureId: number, type: "home" | "away") => number;
   navigateToField: (index: number) => void;
   onSaveAllChanged: () => void;
+  predictionMode?: "CorrectScore" | "MatchWinner";
+  onSelectOutcome?: (fixtureId: number, outcome: "home" | "draw" | "away") => void;
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -58,6 +60,8 @@ export function SingleGameView({
   getNextFieldIndex,
   navigateToField,
   onSaveAllChanged,
+  predictionMode = "CorrectScore",
+  onSelectOutcome,
 }: Props) {
   const { theme } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -148,6 +152,8 @@ export function SingleGameView({
               navigateToField(nextIndex);
             }
           }}
+          predictionMode={predictionMode}
+          onSelectOutcome={onSelectOutcome ? (outcome) => onSelectOutcome(fixture.id, outcome) : undefined}
         />
       </View>
     );

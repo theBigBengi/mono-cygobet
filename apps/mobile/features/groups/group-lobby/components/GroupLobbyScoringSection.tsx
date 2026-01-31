@@ -2,7 +2,7 @@
 // Component for configuring scoring system for predictions.
 // Allows editing point values for On the Nose, Goal/Point Difference, and Outcome.
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText, Divider } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -26,6 +26,10 @@ interface GroupLobbyScoringSectionProps {
    */
   initialOutcome?: number;
   /**
+   * Prediction mode: "result" shows all rows, "3way" shows only Outcome
+   */
+  predictionMode?: "result" | "3way";
+  /**
    * Callback when any scoring value changes
    */
   onChange?: (values: {
@@ -47,6 +51,7 @@ export function GroupLobbyScoringSection({
   initialOnTheNose = 3,
   initialGoalDifference = 2,
   initialOutcome = 1,
+  predictionMode = "result",
   onChange,
   disabled = false,
 }: GroupLobbyScoringSectionProps) {
@@ -54,6 +59,12 @@ export function GroupLobbyScoringSection({
   const [onTheNose, setOnTheNose] = useState(initialOnTheNose);
   const [goalDifference, setGoalDifference] = useState(initialGoalDifference);
   const [outcome, setOutcome] = useState(initialOutcome);
+
+  useEffect(() => {
+    setOnTheNose(initialOnTheNose);
+    setGoalDifference(initialGoalDifference);
+    setOutcome(initialOutcome);
+  }, [initialOnTheNose, initialGoalDifference, initialOutcome]);
 
   const handleValueChange = (
     type: "onTheNose" | "goalDifference" | "outcome",
@@ -147,7 +158,10 @@ export function GroupLobbyScoringSection({
     </View>
   );
 
-  const selectionLabel = `On the Nose: ${onTheNose}, Goal/Point Difference: ${goalDifference}, Outcome: ${outcome}`;
+  const is3way = predictionMode === "3way";
+  const selectionLabel = is3way
+    ? `Outcome: ${outcome}`
+    : `On the Nose: ${onTheNose}, Goal/Point Difference: ${goalDifference}, Outcome: ${outcome}`;
   const description =
     "Choose how many points members of your Prediction Group get for predicting correctly (see example below).";
 
@@ -158,20 +172,24 @@ export function GroupLobbyScoringSection({
       description={description}
     >
       <View style={styles.scoresContainer}>
-        <ScoreRow
-          label="On the Nose"
-          value={onTheNose}
-          onDecrement={() => handleValueChange("onTheNose", -1)}
-          onIncrement={() => handleValueChange("onTheNose", 1)}
-        />
-        <Divider style={styles.divider} />
-        <ScoreRow
-          label="Goal/Point Difference"
-          value={goalDifference}
-          onDecrement={() => handleValueChange("goalDifference", -1)}
-          onIncrement={() => handleValueChange("goalDifference", 1)}
-        />
-        <Divider style={styles.divider} />
+        {!is3way && (
+          <>
+            <ScoreRow
+              label="On the Nose"
+              value={onTheNose}
+              onDecrement={() => handleValueChange("onTheNose", -1)}
+              onIncrement={() => handleValueChange("onTheNose", 1)}
+            />
+            <Divider style={styles.divider} />
+            <ScoreRow
+              label="Goal/Point Difference"
+              value={goalDifference}
+              onDecrement={() => handleValueChange("goalDifference", -1)}
+              onIncrement={() => handleValueChange("goalDifference", 1)}
+            />
+            <Divider style={styles.divider} />
+          </>
+        )}
         <ScoreRow
           label="Outcome"
           value={outcome}

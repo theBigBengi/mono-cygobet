@@ -366,6 +366,13 @@ export type ApiGroupItem = {
    * Invite code for the group (if generated). Only present when relevant.
    */
   inviteCode?: string | null;
+  /** Prediction mode: "CorrectScore" (exact result) | "MatchWinner" (1/X/2) */
+  predictionMode?: string;
+  /** KO round mode: "FullTime" | "ExtraTime" | "Penalties" - TODO: koRoundMode not yet used in scoring */
+  koRoundMode?: string;
+  onTheNosePoints?: number;
+  correctDifferencePoints?: number;
+  outcomePoints?: number;
 };
 
 /**

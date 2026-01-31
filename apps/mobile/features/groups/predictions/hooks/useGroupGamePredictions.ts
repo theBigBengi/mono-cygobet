@@ -6,6 +6,7 @@ import type { FixtureItem } from "@/types/common";
 type UseGroupGamePredictionsArgs = {
   groupId: number | null;
   fixtures: FixtureItem[];
+  predictionMode?: string;
 };
 
 type PredictionsByFixtureId = Record<string, GroupPrediction>;
@@ -23,6 +24,7 @@ type PredictionsByFixtureId = Record<string, GroupPrediction>;
 export function useGroupGamePredictions({
   groupId,
   fixtures,
+  predictionMode,
 }: UseGroupGamePredictionsArgs) {
   const [predictions, setPredictions] = React.useState<PredictionsByFixtureId>(
     {}
@@ -70,6 +72,22 @@ export function useGroupGamePredictions({
     setSavedPredictions(nextSaved);
     setSavedPredictionSnapshots(nextSnapshots);
   }, [fixtures]);
+
+  const setOutcomePrediction = React.useCallback(
+    (fixtureId: number, outcome: "home" | "draw" | "away") => {
+      const mapping: Record<"home" | "draw" | "away", GroupPrediction> = {
+        home: { home: 1, away: 0 },
+        draw: { home: 0, away: 0 },
+        away: { home: 0, away: 1 },
+      };
+      const value = mapping[outcome];
+      setPredictions((prev) => ({
+        ...prev,
+        [String(fixtureId)]: value,
+      }));
+    },
+    []
+  );
 
   const updatePrediction = React.useCallback(
     (
@@ -141,15 +159,25 @@ export function useGroupGamePredictions({
 
   const fillRandomPredictions = React.useCallback(() => {
     const randomPredictions: PredictionsByFixtureId = {};
+    const outcomes: GroupPrediction[] = [
+      { home: 1, away: 0 },
+      { home: 0, away: 0 },
+      { home: 0, away: 1 },
+    ];
     fixtures.forEach((fixture) => {
       const fixtureIdStr = String(fixture.id);
-      randomPredictions[fixtureIdStr] = {
-        home: Math.floor(Math.random() * 10), // 0-9
-        away: Math.floor(Math.random() * 10), // 0-9
-      };
+      if (predictionMode === "MatchWinner") {
+        randomPredictions[fixtureIdStr] =
+          outcomes[Math.floor(Math.random() * 3)];
+      } else {
+        randomPredictions[fixtureIdStr] = {
+          home: Math.floor(Math.random() * 10),
+          away: Math.floor(Math.random() * 10),
+        };
+      }
     });
     setPredictions(randomPredictions);
-  }, [fixtures]);
+  }, [fixtures, predictionMode]);
 
   const clearAllPredictions = React.useCallback(() => {
     setPredictions({});
@@ -161,16 +189,16 @@ export function useGroupGamePredictions({
    * Returns all predictions that have been changed but not yet saved.
    * Only includes predictions where both home and away are filled.
    */
-  const getChangedPredictions = React.useCallback((): Array<{
+  const getChangedPredictions = React.useCallback((): {
     fixtureId: number;
     home: number;
     away: number;
-  }> => {
-    const changed: Array<{
+  }[] => {
+    const changed: {
       fixtureId: number;
       home: number;
       away: number;
-    }> = [];
+    }[] = [];
 
     Object.keys(predictions).forEach((fixtureIdStr) => {
       const fixtureId = parseInt(fixtureIdStr, 10);
@@ -248,6 +276,7 @@ export function useGroupGamePredictions({
     predictions,
     savedPredictions,
     updatePrediction,
+    setOutcomePrediction,
     fillRandomPredictions,
     clearAllPredictions,
     getChangedPredictions,

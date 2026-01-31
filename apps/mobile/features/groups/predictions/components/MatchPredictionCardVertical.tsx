@@ -8,6 +8,7 @@ import type { FixtureItem, PositionInGroup } from "@/types/common";
 import type { FocusedField } from "../types";
 import { useMatchCardState } from "../hooks/useMatchCardState";
 import { ScoreInput } from "./ScoreInput";
+import { OutcomePicker } from "./OutcomePicker";
 import { TeamRow } from "./TeamRow";
 import { ResultDisplay } from "./ResultDisplay";
 import { PointsTimeDisplay } from "./PointsTimeDisplay";
@@ -16,6 +17,15 @@ type InputRefs = {
   home: React.RefObject<TextInput | null>;
   away: React.RefObject<TextInput | null>;
 };
+
+function getOutcomeFromPrediction(
+  prediction: GroupPrediction
+): "home" | "draw" | "away" | null {
+  if (prediction.home === null || prediction.away === null) return null;
+  if (prediction.home > prediction.away) return "home";
+  if (prediction.home < prediction.away) return "away";
+  return "draw";
+}
 
 type Props = {
   fixture: FixtureItem;
@@ -29,6 +39,9 @@ type Props = {
   onBlur?: () => void;
   onChange: (type: "home" | "away", nextText: string) => void;
   onAutoNext?: (type: "home" | "away") => void;
+  /** When "MatchWinner", shows 1/X/2 OutcomePicker instead of score inputs */
+  predictionMode?: "CorrectScore" | "MatchWinner";
+  onSelectOutcome?: (outcome: "home" | "draw" | "away") => void;
 };
 
 /**
@@ -47,6 +60,8 @@ export function MatchPredictionCardVertical({
   onBlur,
   onChange,
   onAutoNext,
+  predictionMode = "CorrectScore",
+  onSelectOutcome,
 }: Props) {
   const { theme } = useTheme();
   const fixtureIdStr = String(fixture.id);
@@ -115,30 +130,40 @@ export function MatchPredictionCardVertical({
 
           {/* Prediction Inputs - displayed vertically on the right */}
           <View style={styles.predictionsContainer}>
-            <ScoreInput
-              type="home"
-              value={prediction.home}
-              isFocused={isHomeFocused}
-              isEditable={isEditable}
-              isFinished={isFinished}
-              inputRef={homeRef}
-              onChange={(text) => onChange("home", text)}
-              onFocus={() => onFocus("home")}
-              onBlur={onBlur}
-              onAutoNext={onAutoNext ? () => onAutoNext("home") : undefined}
-            />
-            <ScoreInput
-              type="away"
-              value={prediction.away}
-              isFocused={isAwayFocused}
-              isEditable={isEditable}
-              isFinished={isFinished}
-              inputRef={awayRef}
-              onChange={(text) => onChange("away", text)}
-              onFocus={() => onFocus("away")}
-              onBlur={onBlur}
-              onAutoNext={onAutoNext ? () => onAutoNext("away") : undefined}
-            />
+            {predictionMode === "MatchWinner" && onSelectOutcome ? (
+              <OutcomePicker
+                selectedOutcome={getOutcomeFromPrediction(prediction)}
+                isEditable={isEditable}
+                onSelect={onSelectOutcome}
+              />
+            ) : (
+              <>
+                <ScoreInput
+                  type="home"
+                  value={prediction.home}
+                  isFocused={isHomeFocused}
+                  isEditable={isEditable}
+                  isFinished={isFinished}
+                  inputRef={homeRef}
+                  onChange={(text) => onChange("home", text)}
+                  onFocus={() => onFocus("home")}
+                  onBlur={onBlur}
+                  onAutoNext={onAutoNext ? () => onAutoNext("home") : undefined}
+                />
+                <ScoreInput
+                  type="away"
+                  value={prediction.away}
+                  isFocused={isAwayFocused}
+                  isEditable={isEditable}
+                  isFinished={isFinished}
+                  inputRef={awayRef}
+                  onChange={(text) => onChange("away", text)}
+                  onFocus={() => onFocus("away")}
+                  onBlur={onBlur}
+                  onAutoNext={onAutoNext ? () => onAutoNext("away") : undefined}
+                />
+              </>
+            )}
           </View>
 
           {/* Time/Points - displayed once on the right */}

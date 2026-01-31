@@ -135,13 +135,27 @@ export async function updateGroup(
  */
 export async function findGroupRules(
   groupId: number
-): Promise<{ selectionMode: groupSelectionMode; inviteAccess?: groupInviteAccess; maxMembers?: number } | null> {
+): Promise<{
+  selectionMode: groupSelectionMode;
+  inviteAccess?: groupInviteAccess;
+  maxMembers?: number;
+  predictionMode?: groupPredictionMode;
+  koRoundMode?: groupKoRoundMode;
+  onTheNosePoints?: number;
+  correctDifferencePoints?: number;
+  outcomePoints?: number;
+} | null> {
   return await prisma.groupRules.findUnique({
     where: { groupId },
     select: {
       selectionMode: true,
       inviteAccess: true,
       maxMembers: true,
+      predictionMode: true,
+      koRoundMode: true,
+      onTheNosePoints: true,
+      correctDifferencePoints: true,
+      outcomePoints: true,
     },
   });
 }
@@ -164,7 +178,7 @@ export async function publishGroupInternal(data: {
   inviteAccess?: groupInviteAccess;
   maxMembers?: number;
 }): Promise<Prisma.groupsGetPayload<{}>> {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // 1. Update groups table
     const updateData: Prisma.groupsUpdateInput = {
       status: GROUP_STATUS.ACTIVE,
@@ -288,7 +302,7 @@ export async function createGroupWithMemberAndRules(data: {
   now: number;
   inviteAccess?: "all" | "admin_only";
 }): Promise<Prisma.groupsGetPayload<{}>> {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Create group
     const group = await tx.groups.create({
       data: {
@@ -356,7 +370,7 @@ export async function findGroupMembersWithUsers(groupId: number) {
     },
   });
 
-  const userIds = members.map((m) => m.userId);
+  const userIds = members.map((m: { userId: number }) => m.userId);
   const users = await prisma.users.findMany({
     where: {
       id: { in: userIds },

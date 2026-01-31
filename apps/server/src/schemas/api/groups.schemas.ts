@@ -73,6 +73,11 @@ export const groupItemSchema = {
     creatorId: { type: "number" },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
+    predictionMode: { type: "string" },
+    koRoundMode: { type: "string" },
+    onTheNosePoints: { type: "number" },
+    correctDifferencePoints: { type: "number" },
+    outcomePoints: { type: "number" },
   },
 };
 

@@ -74,6 +74,7 @@ export function useGroupLobbyActions(
       outcomePoints?: number;
       predictionMode?: string;
       koRoundMode?: string;
+      maxMembers?: number;
     } = {
       name: nextName,
       privacy: draftPrivacy,
@@ -81,6 +82,7 @@ export function useGroupLobbyActions(
       onTheNosePoints: scoringValues.onTheNose,
       correctDifferencePoints: scoringValues.goalDifference,
       outcomePoints: scoringValues.outcome,
+      maxMembers,
     };
 
     if (predictionMode) {

@@ -36,5 +36,11 @@ export default function GroupGamesRoute() {
   }
 
   // For active and other statuses, use the regular screen with predictions
-  return <GroupGamesScreen groupId={groupId} fixtures={fixtures} />;
+  return (
+    <GroupGamesScreen
+      groupId={groupId}
+      fixtures={fixtures}
+      predictionMode={group.predictionMode}
+    />
+  );
 }
