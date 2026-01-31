@@ -1,9 +1,11 @@
 import "fastify";
 import type { preHandlerHookHandler, FastifyRequest } from "fastify";
 import type { AdminAuthContext, UserAuthContext } from "./auth";
+import type { TypedIOServer } from "./socket";
 
 declare module "fastify" {
   interface FastifyInstance {
+    io: TypedIOServer;
     jobsScheduler?: {
       /**
        * Rebuild schedules for all runnable jobs from DB.

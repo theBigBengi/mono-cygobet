@@ -12,9 +12,10 @@ import type { ApiGroupItem } from "@repo/types";
 interface GroupActiveCardProps {
   group: ApiGroupItem;
   onPress: () => void;
+  unreadCount?: number;
 }
 
-export function GroupActiveCard({ group, onPress }: GroupActiveCardProps) {
+export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActiveCardProps) {
   const { theme } = useTheme();
   const liveGamesCount = group.liveGamesCount ?? 0;
   const todayGamesCount = group.todayGamesCount ?? 0;
@@ -64,6 +65,21 @@ export function GroupActiveCard({ group, onPress }: GroupActiveCardProps) {
           <AppText variant="body" style={styles.groupName}>
             {group.name}
           </AppText>
+          {unreadCount > 0 && (
+            <View
+              style={[
+                styles.unreadBadge,
+                { backgroundColor: theme.colors.primary },
+              ]}
+            >
+              <AppText
+                variant="caption"
+                style={[styles.unreadBadgeText, { color: theme.colors.primaryText }]}
+              >
+                {unreadCount > 99 ? "99+" : String(unreadCount)}
+              </AppText>
+            </View>
+          )}
           <View
             style={[
               styles.statusBadge,
@@ -216,6 +232,19 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: "600",
     marginRight: 12,
+  },
+  unreadBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+    marginRight: 8,
+  },
+  unreadBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
   },
   statusBadge: {
     paddingHorizontal: 10,

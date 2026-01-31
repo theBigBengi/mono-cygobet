@@ -17,7 +17,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { useMyGroupsQuery } from "@/domains/groups";
+import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { GroupDraftCard } from "@/features/groups/group-list/components/GroupDraftCard";
@@ -31,17 +31,19 @@ export default function GroupsScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { data, isLoading, error, refetch } = useMyGroupsQuery();
+  const { data: unreadData, refetch: refetchUnread } = useUnreadCountsQuery();
+  const unreadCounts = unreadData?.data ?? {};
   const [endedCollapsed, setEndedCollapsed] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await refetch();
+      await Promise.all([refetch(), refetchUnread()]);
     } finally {
       setRefreshing(false);
     }
-  }, [refetch]);
+  }, [refetch, refetchUnread]);
 
   const handleJoinWithCode = () => {
     router.push("/groups/join");
@@ -212,6 +214,7 @@ export default function GroupsScreen() {
       <GroupActiveCard
         group={item}
         onPress={() => handleGroupPress(item.id)}
+        unreadCount={unreadCounts[String(item.id)] ?? 0}
       />
     );
   };

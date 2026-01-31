@@ -14,7 +14,7 @@ import {
   useHasSelectionForMode,
   useSelectionLabelForMode,
 } from "@/features/group-creation/hooks/useSelectionState";
-import { useMyGroupsQuery } from "@/domains/groups";
+import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
 import { currentSelectionModeAtom } from "@/features/group-creation/selection/mode.atom";
 import { createGroupModalVisibleAtom } from "@/features/group-creation/screens/create-group-modal.atom";
 
@@ -26,6 +26,12 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   const hasSelection = useHasSelectionForMode(currentMode);
   const selectionCount = useSelectionLabelForMode(currentMode);
   const { data: groupsData } = useMyGroupsQuery();
+  const { data: unreadData } = useUnreadCountsQuery();
+
+  const totalUnreadCount = useMemo(() => {
+    const counts = unreadData?.data ?? {};
+    return Object.values(counts).reduce((sum, c) => sum + c, 0);
+  }, [unreadData]);
 
   const groupsNeedAttention = useMemo(() => {
     const groups = groupsData?.data ?? [];
@@ -161,6 +167,25 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                   {route.name === "groups" && groupsNeedAttention && (
                     <View style={styles.attentionDot} pointerEvents="none" />
                   )}
+                  {route.name === "groups" && totalUnreadCount > 0 && (
+                    <View
+                      style={[
+                        styles.unreadCountBadge,
+                        { backgroundColor: theme.colors.primary },
+                      ]}
+                      pointerEvents="none"
+                    >
+                      <AppText
+                        variant="caption"
+                        style={[
+                          styles.unreadCountText,
+                          { color: theme.colors.primaryText },
+                        ]}
+                      >
+                        {totalUnreadCount > 99 ? "99+" : String(totalUnreadCount)}
+                      </AppText>
+                    </View>
+                  )}
                 </View>
               </HapticTab>
             );
@@ -220,6 +245,21 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: "#EF4444",
+  },
+  unreadCountBadge: {
+    position: "absolute",
+    top: -6,
+    right: -14,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  unreadCountText: {
+    fontSize: 10,
+    fontWeight: "700",
   },
   badge: {
     width: 40,

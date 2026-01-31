@@ -28,4 +28,7 @@ export const groupsKeys = {
     [...groupsKeys.details(), id, "members"] as const,
   inviteCode: (id: number) =>
     [...groupsKeys.details(), id, "invite-code"] as const,
+  messages: (groupId: number) =>
+    [...groupsKeys.details(), groupId, "messages"] as const,
+  unreadCounts: () => [...groupsKeys.all, "unread-counts"] as const,
 } as const;

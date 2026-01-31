@@ -4,6 +4,9 @@
 import { prisma } from "@repo/db";
 import { getLogger } from "../../../../logger";
 import { calculateScore, type ScoringRules } from "../scoring";
+import { getGroupRanking } from "./ranking";
+import { emitSystemEvent } from "./chat-events";
+import type { TypedIOServer } from "../../../../types/socket";
 
 const log = getLogger("Settlement");
 
@@ -33,10 +36,12 @@ export type SettlementResult = {
  * 7. Transition completed groups to "ended" (all fixtures in FT/CAN/INT)
  *
  * @param fixtureIds - Array of fixture IDs to settle predictions for
+ * @param io - Optional Socket.IO server for broadcasting ranking_change events
  * @returns Object with settled, skipped, and groupsEnded counts
  */
 export async function settlePredictionsForFixtures(
-  fixtureIds: number[]
+  fixtureIds: number[],
+  io?: TypedIOServer
 ): Promise<SettlementResult> {
   // Early return if no fixture IDs provided
   if (!fixtureIds.length) {
@@ -221,6 +226,25 @@ export async function settlePredictionsForFixtures(
     return { settled: 0, skipped, groupsEnded: 0 };
   }
 
+  // Snapshot rankings before settlement for ranking_change events
+  const groupsWithCreator = await prisma.groups.findMany({
+    where: { id: { in: uniqueGroupIds } },
+    select: { id: true, creatorId: true },
+  });
+  const rankingsBefore = new Map<number, Map<number, number>>();
+  for (const g of groupsWithCreator) {
+    try {
+      const ranking = await getGroupRanking(g.id, g.creatorId);
+      const rankMap = new Map<number, number>();
+      for (const item of ranking.data) {
+        rankMap.set(item.userId, item.rank);
+      }
+      rankingsBefore.set(g.id, rankMap);
+    } catch {
+      // Skip if ranking fails
+    }
+  }
+
   // Step 6: Batch update in transaction
   const now = new Date();
 
@@ -241,6 +265,39 @@ export async function settlePredictionsForFixtures(
 
     // Step 7: Transition completed groups to "ended"
     const groupsEnded = await transitionCompletedGroups(uniqueGroupIds);
+
+    // Detect ranking changes and emit ranking_change chat events (top 3 only)
+    for (const g of groupsWithCreator) {
+      try {
+        const before = rankingsBefore.get(g.id);
+        if (!before) continue;
+
+        const after = await getGroupRanking(g.id, g.creatorId);
+
+        for (const item of after.data) {
+          const prevRank = before.get(item.userId);
+          if (
+            prevRank !== undefined &&
+            item.rank < prevRank &&
+            item.rank <= 3
+          ) {
+            await emitSystemEvent(
+              g.id,
+              "ranking_change",
+              {
+                userId: item.userId,
+                username: item.username || "Someone",
+                oldPosition: prevRank,
+                newPosition: item.rank,
+              },
+              io
+            );
+          }
+        }
+      } catch {
+        // Don't fail settlement if ranking events fail
+      }
+    }
 
     log.info({ settled: updates.length, skipped, groupsEnded }, "Settlement completed successfully");
     return { settled: updates.length, skipped, groupsEnded };

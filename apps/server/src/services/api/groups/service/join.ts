@@ -10,6 +10,8 @@ import { assertGroupExists, assertGroupCreator } from "../permissions";
 import { repository as repo } from "../repository";
 import { getLogger } from "../../../../logger";
 import type { ApiGroupResponse } from "@repo/types";
+import { emitMemberJoinedEvent } from "./chat-events";
+import type { TypedIOServer } from "../../../../types/socket";
 
 const log = getLogger("groups.join");
 
@@ -111,7 +113,8 @@ export async function getInviteCode(
  */
 export async function joinGroupByCode(
   code: string,
-  userId: number
+  userId: number,
+  io?: TypedIOServer
 ): Promise<ApiGroupResponse> {
   log.info({ userId, codeLength: code.length }, "joinGroupByCode - start");
 
@@ -126,6 +129,8 @@ export async function joinGroupByCode(
 
   await validateAndJoin(group.id, userId);
 
+  await emitMemberJoinedEvent(group.id, userId, io);
+
   const data = buildGroupItem(group);
   log.info({ groupId: group.id, userId }, "joinGroupByCode - success");
 
@@ -138,7 +143,8 @@ export async function joinGroupByCode(
  */
 export async function joinPublicGroup(
   groupId: number,
-  userId: number
+  userId: number,
+  io?: TypedIOServer
 ): Promise<ApiGroupResponse> {
   log.info({ groupId, userId }, "joinPublicGroup - start");
 
@@ -153,6 +159,8 @@ export async function joinPublicGroup(
   }
 
   await validateAndJoin(groupId, userId);
+
+  await emitMemberJoinedEvent(groupId, userId, io);
 
   const data = buildGroupItem(group);
   log.info({ groupId, userId }, "joinPublicGroup - success");

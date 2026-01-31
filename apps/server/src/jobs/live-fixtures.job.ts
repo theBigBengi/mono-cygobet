@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
+import { prisma } from "@repo/db";
 import { adapter } from "../utils/adapter";
 import { syncFixtures } from "../etl/sync/sync.fixtures";
+import { emitFixtureLiveEvents } from "../services/api/groups/service/chat-events";
 import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
 import { LIVE_FIXTURES_JOB } from "./jobs.definitions";
 import { runJob } from "./run-job";
@@ -63,10 +65,43 @@ export async function runLiveFixturesJob(
         };
       }
 
+      // Snapshot NS fixtures before sync to detect NS → LIVE transitions
+      const fetchedExternalIds = fixtures.map((f) => BigInt(f.externalId));
+      const preStates =
+        fetchedExternalIds.length > 0
+          ? await prisma.fixtures.findMany({
+              where: {
+                externalId: { in: fetchedExternalIds },
+                state: "NS",
+              },
+              select: { id: true, externalId: true },
+            })
+          : [];
+      const nsFixtureIds = new Set(preStates.map((f) => f.id));
+
       const result = await syncFixtures(fixtures, {
         dryRun: false,
         signal: opts.signal,
       });
+
+      // Emit fixture_live chat events for fixtures that transitioned NS → LIVE
+      if (nsFixtureIds.size > 0) {
+        const nowLive = await prisma.fixtures.findMany({
+          where: {
+            id: { in: Array.from(nsFixtureIds) },
+            state: "LIVE",
+          },
+          select: {
+            id: true,
+            homeTeam: { select: { name: true } },
+            awayTeam: { select: { name: true } },
+          },
+        });
+
+        if (nowLive.length > 0) {
+          await emitFixtureLiveEvents(nowLive, fastify.io);
+        }
+      }
       const ok = result.inserted + result.updated;
       return {
         result: {

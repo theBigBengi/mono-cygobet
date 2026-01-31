@@ -235,7 +235,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
       const userId = req.userAuth.user.id;
       const { code } = req.body;
 
-      const result = await joinGroupByCode(code, userId);
+      const result = await joinGroupByCode(code, userId, fastify.io);
 
       return reply.send(result);
     }
@@ -513,7 +513,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
         } as any);
       }
 
-      const result = await joinPublicGroup(id, userId);
+      const result = await joinPublicGroup(id, userId, fastify.io);
 
       return reply.send(result);
     }

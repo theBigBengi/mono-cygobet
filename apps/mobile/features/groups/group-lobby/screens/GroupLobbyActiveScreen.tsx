@@ -7,7 +7,8 @@ import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
-import { useGroupRankingQuery } from "@/domains/groups";
+import { useGroupRankingQuery, useUnreadCountsQuery } from "@/domains/groups";
+import { useTheme } from "@/lib/theme";
 import type { ApiGroupItem } from "@repo/types";
 import { useCountdown } from "@/features/groups/predictions/hooks";
 import {
@@ -46,7 +47,10 @@ export function GroupLobbyActiveScreen({
   isCreator,
 }: GroupLobbyActiveScreenProps) {
   const router = useRouter();
+  const { theme } = useTheme();
   const { data: rankingData } = useGroupRankingQuery(group.id);
+  const { data: unreadData } = useUnreadCountsQuery();
+  const chatUnreadCount = unreadData?.data?.[String(group.id)] ?? 0;
 
   const leader = rankingData?.data?.[0];
 
@@ -90,6 +94,10 @@ export function GroupLobbyActiveScreen({
   // Handler for navigating to invite
   const handleViewInvite = () => {
     router.push(`/groups/${group.id}/invite` as any);
+  };
+
+  const handleViewChat = () => {
+    router.push(`/groups/${group.id}/chat` as any);
   };
 
   return (
@@ -198,6 +206,38 @@ export function GroupLobbyActiveScreen({
           </Pressable>
         </Card>
 
+        {/* Chat Section */}
+        <Card style={styles.bannerCard}>
+          <Pressable
+            onPress={handleViewChat}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <View style={styles.chatRow}>
+              <AppText variant="body" style={styles.bannerText}>
+                Chat
+              </AppText>
+              {chatUnreadCount > 0 && (
+                <View
+                  style={[
+                    styles.chatUnreadBadge,
+                    { backgroundColor: theme.colors.primary },
+                  ]}
+                >
+                  <AppText
+                    variant="caption"
+                    style={[
+                      styles.chatUnreadText,
+                      { color: theme.colors.primaryText },
+                    ]}
+                  >
+                    {chatUnreadCount > 99 ? "99+" : String(chatUnreadCount)}
+                  </AppText>
+                </View>
+              )}
+            </View>
+          </Pressable>
+        </Card>
+
         {/* Invite Section - show only if inviteAccess is "all" or user is creator (owner) */}
         {(group.inviteAccess !== "admin_only" || isCreator) && (
           <Card style={styles.bannerCard}>
@@ -240,6 +280,23 @@ const styles = StyleSheet.create({
   },
   bannerText: {
     fontWeight: "600",
+  },
+  chatRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  chatUnreadBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  chatUnreadText: {
+    fontSize: 11,
+    fontWeight: "700",
   },
   leaderText: {
     marginTop: 4,

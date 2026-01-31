@@ -9,6 +9,7 @@ import { getJobRowOrThrow } from "./jobs.db";
 import { clampInt, getMeta, isFinishedFixturesJobMeta } from "./jobs.meta";
 import { runJob } from "./run-job";
 import { settlePredictionsForFixtures } from "../services/api/groups/service/settlement";
+import { emitFixtureFTEvents } from "../services/api/groups/service/chat-events";
 
 /**
  * finished-fixtures job
@@ -174,8 +175,24 @@ export async function runFinishedFixturesJob(
       });
 
       const settlement = await settlePredictionsForFixtures(
-        ftFixtures.map((f) => f.id)
+        ftFixtures.map((f) => f.id),
+        fastify.io
       );
+
+      // Emit fixture_ft chat events for affected groups
+      if (ftFixtures.length > 0) {
+        const ftFixturesWithTeams = await prisma.fixtures.findMany({
+          where: { id: { in: ftFixtures.map((f) => f.id) } },
+          select: {
+            id: true,
+            homeScore: true,
+            awayScore: true,
+            homeTeam: { select: { name: true } },
+            awayTeam: { select: { name: true } },
+          },
+        });
+        await emitFixtureFTEvents(ftFixturesWithTeams, fastify.io);
+      }
 
       return {
         result: {

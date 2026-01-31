@@ -7,6 +7,8 @@ import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
+import { useUnreadCountsQuery } from "@/domains/groups";
+import { useTheme } from "@/lib/theme";
 import type { ApiGroupItem } from "@repo/types";
 import {
   GroupLobbyFixturesSection,
@@ -32,6 +34,9 @@ export function GroupLobbyEndedScreen({
   onRefresh,
 }: GroupLobbyEndedScreenProps) {
   const router = useRouter();
+  const { theme } = useTheme();
+  const { data: unreadData } = useUnreadCountsQuery();
+  const chatUnreadCount = unreadData?.data?.[String(group.id)] ?? 0;
 
   const fixtures =
     Array.isArray((group as any).fixtures)
@@ -54,6 +59,10 @@ export function GroupLobbyEndedScreen({
 
   const handleViewMembers = () => {
     router.push(`/groups/${group.id}/members` as any);
+  };
+
+  const handleViewChat = () => {
+    router.push(`/groups/${group.id}/chat` as any);
   };
 
   return (
@@ -105,6 +114,38 @@ export function GroupLobbyEndedScreen({
           </Pressable>
         </Card>
 
+        {/* Chat Section (read-only for ended groups) */}
+        <Card style={styles.bannerCard}>
+          <Pressable
+            onPress={handleViewChat}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <View style={styles.chatRow}>
+              <AppText variant="body" style={styles.bannerText}>
+                Chat
+              </AppText>
+              {chatUnreadCount > 0 && (
+                <View
+                  style={[
+                    styles.chatUnreadBadge,
+                    { backgroundColor: theme.colors.primary },
+                  ]}
+                >
+                  <AppText
+                    variant="caption"
+                    style={[
+                      styles.chatUnreadText,
+                      { color: theme.colors.primaryText },
+                    ]}
+                  >
+                    {chatUnreadCount > 99 ? "99+" : String(chatUnreadCount)}
+                  </AppText>
+                </View>
+              )}
+            </View>
+          </Pressable>
+        </Card>
+
         {/* Predictions Overview Section */}
         <Card style={styles.predictionsOverviewCard}>
           <Pressable
@@ -133,6 +174,23 @@ const styles = StyleSheet.create({
   },
   bannerText: {
     fontWeight: "600",
+  },
+  chatRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  chatUnreadBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  chatUnreadText: {
+    fontSize: 11,
+    fontWeight: "700",
   },
   predictionsOverviewCard: {
     marginBottom: 16,

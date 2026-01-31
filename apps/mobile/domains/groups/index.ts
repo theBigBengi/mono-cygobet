@@ -21,6 +21,11 @@ export {
   useJoinPublicGroupMutation,
   useRegenerateInviteCodeMutation,
 } from "./groups.hooks";
+export {
+  useGroupMessagesQuery,
+  useUnreadCountsQuery,
+  useGroupChat,
+} from "./groups-chat.hooks";
 export { groupsKeys } from "./groups.keys";
 export {
   createGroup,
@@ -34,6 +39,10 @@ export {
   fetchInviteCode,
   regenerateInviteCode,
 } from "./groups.api";
+export {
+  fetchGroupMessages,
+  fetchUnreadCounts,
+} from "./groups-chat.api";
 export type {
   ApiCreateGroupBody,
   ApiGroupItem,
