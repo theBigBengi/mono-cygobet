@@ -14,6 +14,7 @@ export {
   useDeleteGroupMutation,
   usePredictionsOverviewQuery,
   useGroupRankingQuery,
+  useGroupMembersQuery,
   useInviteCodeQuery,
   useJoinGroupByCodeMutation,
   useJoinPublicGroupMutation,

@@ -394,6 +394,25 @@ export type ApiGroupsResponse = {
 };
 
 /**
+ * Group member item in GET /api/groups/:id/members response.
+ */
+export type ApiGroupMemberItem = {
+  userId: number;
+  username: string | null;
+  role: "owner" | "admin" | "member";
+  joinedAt: string; // ISO timestamp
+};
+
+/**
+ * Response from GET /api/groups/:id/members.
+ */
+export type ApiGroupMembersResponse = {
+  status: "success";
+  data: ApiGroupMemberItem[];
+  message: string;
+};
+
+/**
  * Response for fetching fixtures attached to a specific group.
  * Reuses the same fixture item shape as generic fixtures list responses.
  */

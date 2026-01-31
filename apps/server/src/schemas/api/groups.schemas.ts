@@ -104,6 +104,30 @@ export const groupsResponseSchema = {
   },
 };
 
+export const groupMemberItemSchema = {
+  type: "object",
+  required: ["userId", "username", "role", "joinedAt"],
+  properties: {
+    userId: { type: "number" },
+    username: { type: ["string", "null"] },
+    role: { type: "string", enum: ["owner", "admin", "member"] },
+    joinedAt: { type: "string" },
+  },
+};
+
+export const groupMembersResponseSchema = {
+  type: "object",
+  required: ["status", "data", "message"],
+  properties: {
+    status: { type: "string", enum: ["success"] },
+    data: {
+      type: "array",
+      items: groupMemberItemSchema,
+    },
+    message: { type: "string" },
+  },
+};
+
 export const groupFixturesResponseSchema = {
   type: "object",
   required: ["status", "data", "message"],

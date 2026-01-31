@@ -15,6 +15,7 @@ import {
   deleteGroup,
   getPredictionsOverview,
   getGroupRanking,
+  getGroupMembers,
   joinGroupByCode,
   joinPublicGroup,
   generateInviteCode,
@@ -48,6 +49,7 @@ import {
   publishGroupBodySchema,
   publishGroupResponseSchema,
   predictionsOverviewResponseSchema,
+  groupMembersResponseSchema,
   joinGroupByCodeBodySchema,
 } from "../../schemas/api";
 
@@ -944,6 +946,44 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const result = await getGroupRanking(id, userId);
+
+    return reply.send(result);
+  });
+
+  /**
+   * GET /api/groups/:id/members
+   *
+   * - Requires auth + onboarding completion.
+   * - Verifies that the user is a group member (creator or joined).
+   * - Returns list of joined members with userId, username, role, joinedAt.
+   */
+  fastify.get<{ Params: { id: number } }>("/groups/:id/members", {
+    preHandler: fastify.userAuth.requireOnboardingComplete,
+    schema: {
+      params: getGroupParamsSchema,
+      response: {
+        200: groupMembersResponseSchema,
+      },
+    },
+  }, async (req, reply) => {
+    if (!req.userAuth) {
+      return reply.status(401).send({
+        status: "error",
+        message: "Unauthorized",
+      } as any);
+    }
+
+    const id = Number(req.params.id);
+    const userId = req.userAuth.user.id;
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.status(400).send({
+        status: "error",
+        message: "Invalid 'id'. Must be a positive integer.",
+      } as any);
+    }
+
+    const result = await getGroupMembers(id, userId);
 
     return reply.send(result);
   });

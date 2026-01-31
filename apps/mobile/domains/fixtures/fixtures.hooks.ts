@@ -19,16 +19,15 @@ import { fixturesKeys } from "./fixtures.keys";
  * - Enabled only when authed + onboarding complete.
  */
 export function useUpcomingFixturesQuery(
-  params: ApiUpcomingFixturesQuery
+  params: ApiUpcomingFixturesQuery = {}
 ) {
   const { status, user } = useAuth();
-  const { page = 1, perPage = 20 } = params;
 
   const enabled = isReadyForProtected(status, user);
 
   return useQuery<ApiFixturesListResponse, ApiError>({
-    queryKey: fixturesKeys.upcoming({ page, perPage }),
-    queryFn: () => fetchUpcomingFixtures({ page, perPage }),
+    queryKey: fixturesKeys.upcoming(params),
+    queryFn: () => fetchUpcomingFixtures(params),
     enabled,
     meta: { scope: "user" },
   });

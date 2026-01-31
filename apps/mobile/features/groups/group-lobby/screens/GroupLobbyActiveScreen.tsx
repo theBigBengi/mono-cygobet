@@ -71,6 +71,11 @@ export function GroupLobbyActiveScreen({
     router.push(`/groups/${group.id}/ranking` as any);
   };
 
+  // Handler for navigating to members
+  const handleViewMembers = () => {
+    router.push(`/groups/${group.id}/members` as any);
+  };
+
   // Handler for navigating to invite
   const handleViewInvite = () => {
     router.push(`/groups/${group.id}/invite` as any);
@@ -107,6 +112,18 @@ export function GroupLobbyActiveScreen({
                 Leader: {leader.username ?? `Player #${leader.rank}`}
               </AppText>
             )}
+          </Pressable>
+        </Card>
+
+        {/* Members Section */}
+        <Card style={styles.bannerCard}>
+          <Pressable
+            onPress={handleViewMembers}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <AppText variant="body" style={styles.bannerText}>
+              Members
+            </AppText>
           </Pressable>
         </Card>
 

@@ -14,6 +14,7 @@ export {
   deleteGroup,
   getPredictionsOverview,
   getGroupRanking,
+  getGroupMembers,
   settlePredictionsForFixtures,
   joinGroupByCode,
   joinPublicGroup,

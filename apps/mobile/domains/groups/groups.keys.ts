@@ -20,6 +20,8 @@ export const groupsKeys = {
     [...groupsKeys.details(), id, "predictions-overview"] as const,
   ranking: (id: number) =>
     [...groupsKeys.details(), id, "ranking"] as const,
+  members: (id: number) =>
+    [...groupsKeys.details(), id, "members"] as const,
   inviteCode: (id: number) =>
     [...groupsKeys.details(), id, "invite-code"] as const,
 } as const;

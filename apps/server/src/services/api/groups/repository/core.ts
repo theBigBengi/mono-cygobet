@@ -354,7 +354,8 @@ export async function createGroupWithMemberAndRules(data: {
 }
 
 /**
- * Find group members with users for predictions overview.
+ * Find group members with users for predictions overview and members list.
+ * Returns joined members with userId, role, createdAt from groupMembers, plus username from users.
  */
 export async function findGroupMembersWithUsers(groupId: number) {
   const members = await prisma.groupMembers.findMany({
@@ -367,6 +368,8 @@ export async function findGroupMembersWithUsers(groupId: number) {
     },
     select: {
       userId: true,
+      role: true,
+      createdAt: true,
     },
   });
 

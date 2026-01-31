@@ -48,6 +48,10 @@ export function GroupLobbyEndedScreen({
     router.push(`/groups/${group.id}/ranking` as any);
   };
 
+  const handleViewMembers = () => {
+    router.push(`/groups/${group.id}/members` as any);
+  };
+
   return (
     <View style={styles.container}>
       <Screen
@@ -79,6 +83,18 @@ export function GroupLobbyEndedScreen({
           >
             <AppText variant="body" style={styles.bannerText}>
               Ranking
+            </AppText>
+          </Pressable>
+        </Card>
+
+        {/* Members Section */}
+        <Card style={styles.bannerCard}>
+          <Pressable
+            onPress={handleViewMembers}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <AppText variant="body" style={styles.bannerText}>
+              Members
             </AppText>
           </Pressable>
         </Card>

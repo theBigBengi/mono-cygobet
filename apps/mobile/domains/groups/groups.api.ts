@@ -16,6 +16,7 @@ import type {
   ApiSaveGroupPredictionsBatchResponse,
   ApiPredictionsOverviewResponse,
   ApiRankingResponse,
+  ApiGroupMembersResponse,
   ApiInviteCodeResponse,
 } from "@repo/types";
 import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
@@ -201,6 +202,21 @@ export async function fetchPredictionsOverview(
     {
       method: "GET",
     }
+  );
+}
+
+/**
+ * Fetch group members.
+ * - Requires authentication.
+ * - Verifies that the user is a group member.
+ * - Returns list of joined members with userId, username, role, joinedAt.
+ */
+export async function fetchGroupMembers(
+  groupId: number
+): Promise<ApiGroupMembersResponse> {
+  return apiFetchWithAuthRetry<ApiGroupMembersResponse>(
+    `/api/groups/${groupId}/members`,
+    { method: "GET" }
   );
 }
 

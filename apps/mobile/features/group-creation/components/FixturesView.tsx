@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import type { ApiUpcomingFixturesQuery } from "@repo/types";
 import { useUpcomingFixturesQuery } from "@/domains/fixtures/fixtures.hooks";
 import { GameSelectionCard } from "@/features/group-creation/selection/games";
 import {
@@ -49,15 +50,16 @@ function GameFixtureCardWithSelection({
 
 interface FixturesViewProps {
   tabs?: React.ReactNode;
+  queryParams?: ApiUpcomingFixturesQuery;
 }
 
-export function FixturesView({ tabs }: FixturesViewProps) {
+export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
   const { theme } = useTheme();
   const toggleGroupGame = useToggleGroupGame();
 
-  const { data, isLoading, error, refetch } = useUpcomingFixturesQuery({
-    page: 1,
-  });
+  const { data, isLoading, error, refetch } = useUpcomingFixturesQuery(
+    queryParams ?? { page: 1 }
+  );
 
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = useCallback(async () => {

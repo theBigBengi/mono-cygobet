@@ -64,7 +64,7 @@ export interface GroupsRepository {
     outcomePoints?: number;
   } | null>;
   findGroupMembersWithUsers(groupId: number): Promise<{
-    members: Array<{ userId: number }>;
+    members: Array<{ userId: number; role: string; createdAt: Date }>;
     users: Array<{ id: number; username: string | null }>;
   }>;
 

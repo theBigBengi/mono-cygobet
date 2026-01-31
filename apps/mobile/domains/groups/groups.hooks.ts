@@ -16,6 +16,7 @@ import type {
   ApiSaveGroupPredictionsBatchResponse,
   ApiPredictionsOverviewResponse,
   ApiRankingResponse,
+  ApiGroupMembersResponse,
   ApiInviteCodeResponse,
 } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
@@ -34,6 +35,7 @@ import {
   deleteGroup,
   fetchPredictionsOverview,
   fetchGroupRanking,
+  fetchGroupMembers,
   joinGroupByCode,
   joinPublicGroup,
   fetchInviteCode,
@@ -377,6 +379,26 @@ export function useGroupRankingQuery(groupId: number | null) {
   return useQuery<ApiRankingResponse, ApiError>({
     queryKey: groupsKeys.ranking(groupId ?? 0),
     queryFn: () => fetchGroupRanking(groupId as number),
+    enabled,
+    meta: { scope: "user" },
+  });
+}
+
+/**
+ * Hook to fetch group members.
+ * - Enabled only when authenticated and onboarding complete and groupId is valid.
+ */
+export function useGroupMembersQuery(groupId: number | null) {
+  const { status, user } = useAuth();
+
+  const enabled =
+    isReadyForProtected(status, user) &&
+    groupId != null &&
+    !Number.isNaN(groupId);
+
+  return useQuery<ApiGroupMembersResponse, ApiError>({
+    queryKey: groupsKeys.members(groupId ?? 0),
+    queryFn: () => fetchGroupMembers(groupId as number),
     enabled,
     meta: { scope: "user" },
   });
