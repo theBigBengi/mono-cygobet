@@ -4,9 +4,10 @@
 
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import { Card, AppText, Divider } from "@/components/ui";
+import { AppText, Divider } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 export type PredictionMode = "result" | "3way";
 
@@ -83,12 +84,14 @@ export function PredictionModeSelector({
     );
   };
 
-  return (
-    <Card style={styles.section}>
-      <AppText variant="body" style={styles.title}>
-        Select Make Prediction mode
-      </AppText>
+  const selectionLabel = value === "result" ? "Result" : "3-Way Prediction";
 
+  return (
+    <CollapsibleSection
+      title="Select Make Prediction mode"
+      selectionLabel={selectionLabel}
+      description="Choose how members make predictions."
+    >
       <View style={styles.optionsContainer}>
         <OptionRow
           mode="result"
@@ -102,18 +105,11 @@ export function PredictionModeSelector({
           description='In "3-Way Prediction" mode, predictions are 1-0-2 (1 = home win, 0 = draw, 2 = away win).'
         />
       </View>
-    </Card>
+    </CollapsibleSection>
   );
 }
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 16,
-  },
-  title: {
-    fontWeight: "600",
-    marginBottom: 16,
-  },
   optionsContainer: {
     gap: 0,
   },

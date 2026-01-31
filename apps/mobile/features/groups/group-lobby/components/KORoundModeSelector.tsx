@@ -4,9 +4,10 @@
 
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import { Card, AppText, Divider } from "@/components/ui";
+import { AppText, Divider } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 export type KORoundMode = "90min" | "extraTime" | "penalties";
 
@@ -50,15 +51,15 @@ export function KORoundModeSelector({
     onChange(mode);
   };
 
-  return (
-    <Card style={styles.section}>
-      <AppText variant="body" style={styles.title}>
-        Select KO round mode
-      </AppText>
-      <AppText variant="caption" color="secondary" style={styles.description}>
-        {DESCRIPTION}
-      </AppText>
+  const selectionLabel =
+    OPTIONS.find((o) => o.mode === value)?.title ?? value;
 
+  return (
+    <CollapsibleSection
+      title="Select KO round mode"
+      selectionLabel={selectionLabel}
+      description={DESCRIPTION}
+    >
       <View style={styles.optionsContainer}>
         {OPTIONS.map(({ mode, title }, index) => {
           const isSelected = value === mode;
@@ -91,22 +92,11 @@ export function KORoundModeSelector({
           );
         })}
       </View>
-    </Card>
+    </CollapsibleSection>
   );
 }
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 16,
-  },
-  title: {
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  description: {
-    marginBottom: 16,
-    lineHeight: 18,
-  },
   optionsContainer: {
     gap: 0,
   },

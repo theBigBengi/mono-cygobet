@@ -4,9 +4,10 @@
 
 import React, { useState } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import { Card, AppText, Divider } from "@/components/ui";
+import { AppText, Divider } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 interface GroupLobbyScoringSectionProps {
   /**
@@ -146,16 +147,16 @@ export function GroupLobbyScoringSection({
     </View>
   );
 
-  return (
-    <Card style={styles.section}>
-      <AppText variant="body" style={styles.title}>
-        Scoring System for Predictions
-      </AppText>
-      <AppText variant="caption" color="secondary" style={styles.description}>
-        Choose how many points members of your Prediction Group get for
-        predicting correctly (see example below).
-      </AppText>
+  const selectionLabel = `On the Nose: ${onTheNose}, Goal/Point Difference: ${goalDifference}, Outcome: ${outcome}`;
+  const description =
+    "Choose how many points members of your Prediction Group get for predicting correctly (see example below).";
 
+  return (
+    <CollapsibleSection
+      title="Scoring System for Predictions"
+      selectionLabel={selectionLabel}
+      description={description}
+    >
       <View style={styles.scoresContainer}>
         <ScoreRow
           label="On the Nose"
@@ -178,22 +179,11 @@ export function GroupLobbyScoringSection({
           onIncrement={() => handleValueChange("outcome", 1)}
         />
       </View>
-    </Card>
+    </CollapsibleSection>
   );
 }
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 16,
-  },
-  title: {
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  description: {
-    marginBottom: 16,
-    lineHeight: 18,
-  },
   scoresContainer: {
     gap: 0,
   },
