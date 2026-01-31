@@ -7,6 +7,7 @@ import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
+import { useGroupRankingQuery } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
 import {
   GroupLobbyFixturesSection,
@@ -41,6 +42,9 @@ export function GroupLobbyActiveScreen({
   isCreator,
 }: GroupLobbyActiveScreenProps) {
   const router = useRouter();
+  const { data: rankingData } = useGroupRankingQuery(group.id);
+
+  const leader = rankingData?.data?.[0];
 
   // Derive fixtures from group.fixtures
   const fixtures =
@@ -98,6 +102,11 @@ export function GroupLobbyActiveScreen({
             <AppText variant="body" style={styles.bannerText}>
               Ranking
             </AppText>
+            {leader && (
+              <AppText variant="caption" color="secondary" style={styles.leaderText}>
+                Leader: {leader.username ?? `Player #${leader.rank}`}
+              </AppText>
+            )}
           </Pressable>
         </Card>
 
@@ -143,6 +152,9 @@ const styles = StyleSheet.create({
   },
   bannerText: {
     fontWeight: "600",
+  },
+  leaderText: {
+    marginTop: 4,
   },
   predictionsOverviewCard: {
     marginBottom: 16,
