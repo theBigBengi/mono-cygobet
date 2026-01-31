@@ -147,10 +147,29 @@ export const saveGroupPredictionsBatchBodySchema = {
 
 export const saveGroupPredictionsBatchResponseSchema = {
   type: "object",
-  required: ["status", "message"],
+  required: ["status", "message", "saved", "rejected"],
   properties: {
     status: { type: "string", enum: ["success"] },
     message: { type: "string" },
+    saved: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["fixtureId"],
+        properties: { fixtureId: { type: "number" } },
+      },
+    },
+    rejected: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["fixtureId", "reason"],
+        properties: {
+          fixtureId: { type: "number" },
+          reason: { type: "string" },
+        },
+      },
+    },
   },
 };
 

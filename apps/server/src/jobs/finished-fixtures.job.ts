@@ -199,6 +199,7 @@ export async function runFinishedFixturesJob(
           settlement: {
             settled: settlement.settled,
             skipped: settlement.skipped,
+            groupsEnded: settlement.groupsEnded,
           },
         },
       };

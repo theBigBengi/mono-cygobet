@@ -8,16 +8,21 @@ import { calculateScore, type ScoringRules } from "../scoring";
 const log = getLogger("Settlement");
 
 export type SettlementResult = {
+  /** Number of predictions successfully settled */
   settled: number;
+  /** Number of predictions skipped (missing data, etc.) */
   skipped: number;
+  /** Number of groups transitioned from active to ended (all fixtures terminal) */
+  groupsEnded: number;
 };
 
 /**
  * Settle predictions for finished fixtures.
- * 
+ *
  * This function processes all unsettled predictions for the given fixture IDs,
  * calculates their points based on group scoring rules, and updates them in a transaction.
- * 
+ * After settling, it transitions groups to "ended" when all their fixtures are terminal.
+ *
  * Flow:
  * 1. Load FT fixtures
  * 2. Find group fixtures
@@ -25,9 +30,10 @@ export type SettlementResult = {
  * 4. Load unsettled predictions
  * 5. Calculate scores
  * 6. Batch update in transaction
- * 
+ * 7. Transition completed groups to "ended" (all fixtures in FT/CAN/INT)
+ *
  * @param fixtureIds - Array of fixture IDs to settle predictions for
- * @returns Object with settled and skipped counts
+ * @returns Object with settled, skipped, and groupsEnded counts
  */
 export async function settlePredictionsForFixtures(
   fixtureIds: number[]
@@ -35,7 +41,7 @@ export async function settlePredictionsForFixtures(
   // Early return if no fixture IDs provided
   if (!fixtureIds.length) {
     log.debug("No fixture IDs provided");
-    return { settled: 0, skipped: 0 };
+    return { settled: 0, skipped: 0, groupsEnded: 0 };
   }
 
   log.info({ fixtureIds, count: fixtureIds.length }, "Starting settlement");
@@ -56,7 +62,7 @@ export async function settlePredictionsForFixtures(
 
   if (!fixtures.length) {
     log.debug("No FT fixtures found");
-    return { settled: 0, skipped: 0 };
+    return { settled: 0, skipped: 0, groupsEnded: 0 };
   }
 
   // Build fixture map
@@ -80,7 +86,7 @@ export async function settlePredictionsForFixtures(
 
   if (!groupFixtures.length) {
     log.debug("No group fixtures found");
-    return { settled: 0, skipped: 0 };
+    return { settled: 0, skipped: 0, groupsEnded: 0 };
   }
 
   // Build groupFixture map (groupFixtureId -> fixtureId)
@@ -144,7 +150,7 @@ export async function settlePredictionsForFixtures(
 
   if (!predictions.length) {
     log.debug("No unsettled predictions found");
-    return { settled: 0, skipped: 0 };
+    return { settled: 0, skipped: 0, groupsEnded: 0 };
   }
 
   log.info({ predictionCount: predictions.length }, "Loaded unsettled predictions");
@@ -212,7 +218,7 @@ export async function settlePredictionsForFixtures(
 
   if (!updates.length) {
     log.info({ skipped }, "No predictions to settle");
-    return { settled: 0, skipped };
+    return { settled: 0, skipped, groupsEnded: 0 };
   }
 
   // Step 6: Batch update in transaction
@@ -233,10 +239,44 @@ export async function settlePredictionsForFixtures(
       )
     );
 
-    log.info({ settled: updates.length, skipped }, "Settlement completed successfully");
-    return { settled: updates.length, skipped };
+    // Step 7: Transition completed groups to "ended"
+    const groupsEnded = await transitionCompletedGroups(uniqueGroupIds);
+
+    log.info({ settled: updates.length, skipped, groupsEnded }, "Settlement completed successfully");
+    return { settled: updates.length, skipped, groupsEnded };
   } catch (error) {
     log.error({ error, updateCount: updates.length }, "Failed to settle predictions");
     throw error;
   }
+}
+
+/**
+ * Transition groups to "ended" when all their fixtures are in a terminal state
+ * (FT = finished, CAN = cancelled, INT = interrupted).
+ * Only affects groups that are currently "active".
+ *
+ * @param groupIds - Group IDs to check (typically those touched by settlement)
+ * @returns Number of groups transitioned to ended
+ */
+async function transitionCompletedGroups(groupIds: number[]): Promise<number> {
+  if (!groupIds.length) return 0;
+  let ended = 0;
+  for (const groupId of groupIds) {
+    // Count group fixtures whose matches are not yet terminal
+    const nonTerminalCount = await prisma.groupFixtures.count({
+      where: {
+        groupId,
+        fixtures: { state: { notIn: ["FT", "CAN", "INT"] } },
+      },
+    });
+    if (nonTerminalCount === 0) {
+      await prisma.groups.updateMany({
+        where: { id: groupId, status: "active" },
+        data: { status: "ended" },
+      });
+      ended++;
+      log.info({ groupId }, "Group transitioned to ended");
+    }
+  }
+  return ended;
 }

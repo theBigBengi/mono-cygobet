@@ -64,19 +64,28 @@ export async function saveGroupPrediction(
  * Save or update multiple group predictions in a batch.
  * - Verifies that the user is a group member.
  * - Verifies that all fixtures belong to the group.
- * - Updates all predictions in a single transaction.
+ * - Per-prediction validation: predictions for matches that have started are rejected
+ *   (not thrown) and reported in the response. Other predictions are saved.
+ * - Returns saved and rejected arrays for the client to handle partial success.
  */
 export async function saveGroupPredictionsBatch(
   groupId: number,
   userId: number,
   predictions: Array<{ fixtureId: number; home: number; away: number }>
-): Promise<{ status: "success"; message: string }> {
+): Promise<{
+  status: "success";
+  message: string;
+  saved: Array<{ fixtureId: number }>;
+  rejected: Array<{ fixtureId: number; reason: string }>;
+}> {
   log.debug({ groupId, userId, count: predictions.length }, "saveGroupPredictionsBatch - start");
   if (predictions.length === 0) {
     log.info({ groupId, userId }, "saveGroupPredictionsBatch - no predictions");
     return {
       status: "success",
       message: "No predictions to save",
+      saved: [],
+      rejected: [],
     };
   }
 
@@ -91,23 +100,23 @@ export async function saveGroupPredictionsBatch(
     repo
   );
 
-  // Check that none of the fixtures have started
+  // Build set of groupFixtureIds whose matches have started (per-prediction filtering)
   const startedFixtures = await repo.findStartedFixturesByGroupFixtureIds(
     groupFixtures.map((gf) => gf.id)
   );
-  if (startedFixtures.length > 0) {
-    throw new BadRequestError(
-      "Cannot save predictions for matches that have already started"
-    );
-  }
+  const startedGroupFixtureIds = new Set(startedFixtures.map((gf) => gf.id));
 
   // Create a map of fixtureId -> groupFixtureId for quick lookup
   const fixtureIdToGroupFixtureId = new Map(
     groupFixtures.map((gf) => [gf.fixtureId, gf.id])
   );
 
-  // Prepare predictions for batch upsert
-  const predictionsToUpsert = predictions.map((pred) => {
+  // Split predictions into to-upsert vs rejected
+  const predictionsToUpsert: Array<{ groupFixtureId: number; prediction: string }> = [];
+  const saved: Array<{ fixtureId: number }> = [];
+  const rejected: Array<{ fixtureId: number; reason: string }> = [];
+
+  for (const pred of predictions) {
     const groupFixtureId = fixtureIdToGroupFixtureId.get(pred.fixtureId);
     if (!groupFixtureId) {
       throw new NotFoundError(
@@ -115,19 +124,33 @@ export async function saveGroupPredictionsBatch(
       );
     }
 
+    // Reject predictions for matches that have already started (kickoff passed)
+    if (startedGroupFixtureIds.has(groupFixtureId)) {
+      rejected.push({ fixtureId: pred.fixtureId, reason: "match_started" });
+      continue;
+    }
+
     const predictionString = `${pred.home}:${pred.away}`;
+    predictionsToUpsert.push({ groupFixtureId, prediction: predictionString });
+    saved.push({ fixtureId: pred.fixtureId });
+  }
 
-    return {
-      groupFixtureId,
-      prediction: predictionString,
-    };
-  });
+  // Update only non-rejected predictions in a single transaction
+  if (predictionsToUpsert.length > 0) {
+    await repo.upsertGroupPredictionsBatch(groupId, userId, predictionsToUpsert);
+  }
 
-  // Update all predictions in a single transaction
-  await repo.upsertGroupPredictionsBatch(groupId, userId, predictionsToUpsert);
-  log.info({ groupId, userId, count: predictions.length }, "saveGroupPredictionsBatch - success");
+  log.info(
+    { groupId, userId, saved: saved.length, rejected: rejected.length },
+    "saveGroupPredictionsBatch - success"
+  );
   return {
     status: "success",
-    message: `${predictions.length} prediction(s) saved successfully`,
+    message:
+      rejected.length > 0
+        ? `${saved.length} prediction(s) saved, ${rejected.length} rejected (match already started)`
+        : `${saved.length} prediction(s) saved successfully`,
+    saved,
+    rejected,
   };
 }

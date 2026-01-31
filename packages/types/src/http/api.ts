@@ -420,6 +420,8 @@ export type ApiSaveGroupPredictionsBatchBody = {
 export type ApiSaveGroupPredictionsBatchResponse = {
   status: "success";
   message: string;
+  saved: Array<{ fixtureId: number }>;
+  rejected: Array<{ fixtureId: number; reason: string }>;
 };
 
 /**
