@@ -11,6 +11,7 @@ const JOB_KEY_TO_LOCK_KEY: Record<string, string> = {
   "finished-fixtures": "sync:fixtures",
   "update-prematch-odds": "sync:odds",
   "cleanup-expired-sessions": "cleanup-expired-sessions",
+  "sync-group-fixtures": "sync:group-fixtures",
 };
 
 /**

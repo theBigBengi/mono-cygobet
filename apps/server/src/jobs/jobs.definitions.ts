@@ -127,6 +127,22 @@ export const CLEANUP_EXPIRED_SESSIONS_JOB = {
 } as const satisfies JobDefinition;
 
 /**
+ * SYNC_GROUP_FIXTURES_JOB
+ * -----------------------
+ * Purpose: attach new fixtures to active groups with leagues/teams selection mode.
+ * Groups get a one-time snapshot at creation; this job adds fixtures that enter the DB later.
+ */
+export const SYNC_GROUP_FIXTURES_JOB = {
+  key: "sync-group-fixtures",
+  description:
+    "Attach new fixtures to active groups with leagues/teams selection mode",
+  enabled: true,
+  // Every hour at minute 30.
+  scheduleCron: "30 * * * *",
+  meta: {},
+} as const satisfies JobDefinition;
+
+/**
  * JOB_DEFINITIONS
  * --------------
  * List of all “known jobs” and their default DB config.
@@ -140,6 +156,7 @@ export const JOB_DEFINITIONS = [
   FINISHED_FIXTURES_JOB,
   UPDATE_PREMATCH_ODDS_JOB,
   CLEANUP_EXPIRED_SESSIONS_JOB,
+  SYNC_GROUP_FIXTURES_JOB,
 ] as const satisfies readonly JobDefinition[];
 
 export type JobKey = (typeof JOB_DEFINITIONS)[number]["key"];

@@ -18,6 +18,7 @@ import {
   LIVE_FIXTURES_JOB,
   FINISHED_FIXTURES_JOB,
   UPDATE_PREMATCH_ODDS_JOB,
+  SYNC_GROUP_FIXTURES_JOB,
 } from "./jobs.definitions";
 
 export type RunnableJobDefinition = {
@@ -70,6 +71,12 @@ const RUNNERS: Record<string, Runner> = {
     );
     return runCleanupExpiredSessionsJob(fastify, opts);
   },
+  [SYNC_GROUP_FIXTURES_JOB.key]: async (fastify, opts) => {
+    const { runSyncGroupFixturesJob } = await import(
+      "./sync-group-fixtures.job"
+    );
+    return runSyncGroupFixturesJob(fastify, opts);
+  },
 };
 
 /**
@@ -113,6 +120,12 @@ export const RUNNABLE_JOBS: RunnableJobDefinition[] = [
     description: "Delete expired admin sessions from DB",
     scheduleCron: "30 * * * *",
     run: RUNNERS["cleanup-expired-sessions"]!,
+  },
+  {
+    key: SYNC_GROUP_FIXTURES_JOB.key,
+    description: SYNC_GROUP_FIXTURES_JOB.description,
+    scheduleCron: SYNC_GROUP_FIXTURES_JOB.scheduleCron ?? null,
+    run: RUNNERS[SYNC_GROUP_FIXTURES_JOB.key]!,
   },
 ];
 
