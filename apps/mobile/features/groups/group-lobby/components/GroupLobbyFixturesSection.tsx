@@ -21,6 +21,16 @@ interface GroupLobbyFixturesSectionProps {
    * Callback to navigate to view all games
    */
   onViewAll: () => void;
+  /**
+   * When true, render the fixture cards (horizontal scroll).
+   * Default false to preserve current behavior for active lobby.
+   */
+  showFixtureCards?: boolean;
+  /**
+   * When true, display final scores (fixture.result) instead of predictions.
+   * Used for ended groups.
+   */
+  showFinalScores?: boolean;
 }
 
 /**
@@ -35,6 +45,8 @@ export function GroupLobbyFixturesSection({
   fixtures,
   groupId,
   onViewAll,
+  showFixtureCards = false,
+  showFinalScores = false,
 }: GroupLobbyFixturesSectionProps) {
   const { theme } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -77,11 +89,15 @@ export function GroupLobbyFixturesSection({
       <Card style={styles.headerCard}>
         <View style={styles.gamesHeaderRow}>
           <AppText variant="body" style={styles.gamesTitle}>
-            {gamesCount > 0
-              ? `Selected games (${gamesCount})`
-              : "Selected games"}
+            {showFinalScores
+              ? gamesCount > 0
+                ? `Games (${gamesCount})`
+                : "Games"
+              : gamesCount > 0
+                ? `Selected games (${gamesCount})`
+                : "Selected games"}
           </AppText>
-          {gamesCount   && (
+          {gamesCount > 0 && (
             <Pressable
               onPress={onViewAll}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -105,7 +121,7 @@ export function GroupLobbyFixturesSection({
       </Card>
 
       {/* Game Cards - outside the card, peeking from sides */}
-      {/* {gamesCount > 0 && (
+      {showFixtureCards && gamesCount > 0 && (
         <ScrollView
           ref={scrollViewRef}
           horizontal
@@ -124,11 +140,14 @@ export function GroupLobbyFixturesSection({
         >
           {safeFixtures.map((fixture) => (
             <View key={fixture.id} style={styles.gameItemWrapper}>
-              <GroupLobbyFixtureCard fixture={fixture} />
+              <GroupLobbyFixtureCard
+                fixture={fixture}
+                showFinalScore={showFinalScores}
+              />
             </View>
           ))}
         </ScrollView>
-      )} */}
+      )}
     </View>
   );
 }

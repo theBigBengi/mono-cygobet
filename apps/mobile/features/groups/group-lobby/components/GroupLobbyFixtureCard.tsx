@@ -10,6 +10,11 @@ interface GroupLobbyFixtureCardProps {
    * Fixture data to display
    */
   fixture: FixtureItem;
+  /**
+   * When true, display fixture.result (final score) instead of prediction.
+   * Used for ended groups.
+   */
+  showFinalScore?: boolean;
 }
 
 /**
@@ -19,8 +24,27 @@ interface GroupLobbyFixtureCardProps {
  */
 export function GroupLobbyFixtureCard({
   fixture,
+  showFinalScore = false,
 }: GroupLobbyFixtureCardProps) {
   const { theme } = useTheme();
+
+  // Parse score from prediction or result
+  const scoreDisplay = (() => {
+    if (showFinalScore && fixture.result) {
+      const parts = fixture.result.replace(":", "-").split("-");
+      if (parts.length === 2) {
+        return { home: parts[0].trim(), away: parts[1].trim() };
+      }
+    }
+    if (!showFinalScore && fixture.prediction) {
+      const home = fixture.prediction.home;
+      const away = fixture.prediction.away;
+      if (home !== null && home !== undefined && away !== null && away !== undefined) {
+        return { home: String(home), away: String(away) };
+      }
+    }
+    return null;
+  })();
   const homeTeamName = getTeamDisplayName(fixture.homeTeam?.name, "Home");
   const awayTeamName = getTeamDisplayName(fixture.awayTeam?.name, "Away");
   const kickoffTime = formatKickoffTime(fixture.kickoffAt);
@@ -70,20 +94,16 @@ export function GroupLobbyFixtureCard({
           </AppText>
         </View>
 
-        {/* Prediction Score Display */}
+        {/* Score Display (prediction or final result) */}
         <View style={styles.scoreContainer}>
           <AppText variant="body" style={styles.scoreText}>
-            {fixture.prediction?.home !== null && fixture.prediction?.home !== undefined
-              ? fixture.prediction.home
-              : "—"}
+            {scoreDisplay?.home ?? "—"}
           </AppText>
           <AppText variant="caption" color="secondary" style={styles.scoreSeparator}>
             {" : "}
           </AppText>
           <AppText variant="body" style={styles.scoreText}>
-            {fixture.prediction?.away !== null && fixture.prediction?.away !== undefined
-              ? fixture.prediction.away
-              : "—"}
+            {scoreDisplay?.away ?? "—"}
           </AppText>
         </View>
 

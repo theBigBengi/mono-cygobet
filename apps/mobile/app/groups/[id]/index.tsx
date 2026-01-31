@@ -1,9 +1,9 @@
 // app/groups/[id]/index.tsx
-// Group lobby screen (draft/active state).
+// Group lobby screen.
 // Routes to appropriate screen based on group status.
 // - Draft status → GroupLobbyDraftScreen
 // - Active status → GroupLobbyActiveScreen
-// - Ended status → Simple ended message
+// - Ended status → GroupLobbyEndedScreen
 
 import React, { useEffect, useRef } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -19,6 +19,7 @@ import { globalBlockingOverlayAtom } from "@/lib/state/globalOverlay.atom";
 import {
   GroupLobbyDraftScreen,
   GroupLobbyActiveScreen,
+  GroupLobbyEndedScreen,
   LobbyWithHeader,
 } from "@/features/groups/group-lobby";
 
@@ -124,12 +125,8 @@ export default function GroupLobbyScreen() {
   // Route to appropriate screen based on status
   if (group.status === "ended") {
     return (
-      <LobbyWithHeader status={group.status}>
-        <Screen>
-          <AppText variant="body" color="secondary">
-            This group has ended.
-          </AppText>
-        </Screen>
+      <LobbyWithHeader status={group.status} groupName={group.name}>
+        <GroupLobbyEndedScreen group={group} onRefresh={handleRefresh} />
       </LobbyWithHeader>
     );
   }
