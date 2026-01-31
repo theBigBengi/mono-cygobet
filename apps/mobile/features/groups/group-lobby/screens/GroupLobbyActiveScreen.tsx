@@ -9,10 +9,12 @@ import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
 import { useGroupRankingQuery } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
+import { useCountdown } from "@/features/groups/predictions/hooks";
 import {
   GroupLobbyFixturesSection,
   type FixtureItem,
 } from "../index";
+import { useGroupActivityStats } from "../hooks/useGroupActivityStats";
 
 interface GroupLobbyActiveScreenProps {
   /**
@@ -49,6 +51,12 @@ export function GroupLobbyActiveScreen({
   // Derive fixtures from group.fixtures
   const fixtures =
     Array.isArray((group as any).fixtures) ? ((group as any).fixtures as FixtureItem[]) : [];
+
+  // Client-side activity stats from fixtures (getGroupById doesn't return these counts)
+  const activityStats = useGroupActivityStats(fixtures);
+  const nextGameCountdownLabel = useCountdown(
+    activityStats.nextGame?.kickoffAt ?? null
+  );
 
   // Progress: use API stats when present, otherwise derive from fixtures (getGroupById doesn't return these)
   const totalFixtures = group.totalFixtures ?? fixtures.length;
@@ -88,6 +96,56 @@ export function GroupLobbyActiveScreen({
         onRefresh={onRefresh}
         scroll
       >
+        {/* Activity summary: LIVE, today, next game countdown */}
+        {(activityStats.liveGamesCount > 0 ||
+          activityStats.todayGamesCount > 0 ||
+          activityStats.nextGame) && (
+          <Card style={styles.activitySummaryCard}>
+            <View style={styles.activitySummaryContent}>
+              {activityStats.liveGamesCount > 0 && (
+                <Pressable
+                  onPress={handleViewGames}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={styles.activitySummaryRow}
+                >
+                  <AppText
+                    variant="caption"
+                    style={[styles.liveLabel, { color: "#EF4444" }]}
+                  >
+                    {activityStats.liveGamesCount}{" "}
+                    {activityStats.liveGamesCount === 1 ? "game" : "games"} LIVE
+                    now
+                  </AppText>
+                </Pressable>
+              )}
+              {activityStats.todayGamesCount > 0 && (
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.activitySummaryRow}
+                >
+                  {activityStats.todayGamesCount}{" "}
+                  {activityStats.todayGamesCount === 1 ? "game" : "games"} today
+                  {activityStats.todayUnpredictedCount > 0
+                    ? ` – ${activityStats.todayUnpredictedCount} need predictions`
+                    : " – all predictions set"}
+                </AppText>
+              )}
+              {activityStats.nextGame && (
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.activitySummaryRow}
+                >
+                  {nextGameCountdownLabel.startsWith("in ")
+                    ? `Next game starts ${nextGameCountdownLabel}`
+                    : `Next game: ${nextGameCountdownLabel}`}
+                </AppText>
+              )}
+            </View>
+          </Card>
+        )}
+
         {/* Predictions / Games Section - tap opens games page */}
         <GroupLobbyFixturesSection
           fixtures={fixtures}
@@ -177,6 +235,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   predictionsOverviewText: {
+    fontWeight: "600",
+  },
+  activitySummaryCard: {
+    marginBottom: 16,
+  },
+  activitySummaryContent: {
+    gap: 6,
+  },
+  activitySummaryRow: {
+    marginBottom: 2,
+  },
+  liveLabel: {
     fontWeight: "600",
   },
 });

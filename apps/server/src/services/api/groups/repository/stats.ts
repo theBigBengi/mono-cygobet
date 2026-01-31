@@ -1,11 +1,14 @@
 // groups/repository/stats.ts
 // Repository functions for group statistics.
 
-import { prisma } from "@repo/db";
+import { prisma, FixtureState } from "@repo/db";
 import type { Prisma } from "@repo/db";
+import { getTodayUtcBounds } from "../../../../utils/dates";
 import { MEMBER_STATUS } from "../constants";
 import { FIXTURE_SELECT_BASE } from "../../fixtures/selects";
 import { buildUpcomingFixturesWhere } from "../../fixtures/queries";
+
+const LIVE_STATES = [FixtureState.LIVE] as const;
 
 // טיפוס משותף ל-fixture עם base select
 type FixtureWithBaseSelect = Prisma.fixturesGetPayload<{
@@ -38,16 +41,25 @@ export async function findGroupsStatsBatch(
       hasUnpredictedGamesByGroupId: new Set<number>(),
       nextGameByGroupId: new Map<number, FixtureWithBaseSelect | null>(),
       firstGameByGroupId: new Map<number, FixtureWithBaseSelect | null>(),
+      unpredictedGamesCountByGroupId: new Map<number, number>(),
+      todayGamesCountByGroupId: new Map<number, number>(),
+      todayUnpredictedCountByGroupId: new Map<number, number>(),
+      liveGamesCountByGroupId: new Map<number, number>(),
     };
   }
+
+  const { startTs: todayStartTs, endTs: todayEndTs } = getTodayUtcBounds(now);
 
   const [
     memberCountsRaw,
     fixtureCountsRaw,
     predictionCountsRaw,
-    unpredictedGamesRaw,
     nextGamesRaw,
     firstGamesRaw,
+    unpredictedCountsRaw,
+    todayCountsRaw,
+    todayUnpredictedCountsRaw,
+    liveCountsRaw,
   ] = await Promise.all([
     // Query 1: memberCount per group
     prisma.groupMembers.groupBy({
@@ -73,22 +85,7 @@ export async function findGroupsStatsBatch(
       },
       _count: { groupId: true },
     }),
-    // Query 4: unpredicted games per group
-    prisma.groupFixtures.findMany({
-      where: {
-        groupId: { in: groupIds },
-        fixtures: buildUpcomingFixturesWhere({ now }),
-        NOT: {
-          groupPredictions: {
-            some: {
-              userId,
-            },
-          },
-        },
-      },
-      select: { groupId: true },
-    }),
-    // Query 5: next games per group
+    // Query 4: next games per group
     prisma.groupFixtures.findMany({
       where: {
         groupId: { in: groupIds },
@@ -106,7 +103,7 @@ export async function findGroupsStatsBatch(
         },
       },
     }),
-    // Query 6: first games for draft groups
+    // Query 5: first games for draft groups
     prisma.groupFixtures.findMany({
       where: { groupId: { in: groupIds } },
       orderBy: {
@@ -120,6 +117,57 @@ export async function findGroupsStatsBatch(
           select: FIXTURE_SELECT_BASE,
         },
       },
+    }),
+    // Query 6: unpredictedGamesCount per group (NS games without user prediction); hasUnpredictedGames derived from count > 0
+    prisma.groupFixtures.groupBy({
+      by: ["groupId"],
+      where: {
+        groupId: { in: groupIds },
+        fixtures: buildUpcomingFixturesWhere({ now }),
+        NOT: {
+          groupPredictions: {
+            some: { userId },
+          },
+        },
+      },
+      _count: { groupId: true },
+    }),
+    // Query 7: todayGamesCount per group
+    prisma.groupFixtures.groupBy({
+      by: ["groupId"],
+      where: {
+        groupId: { in: groupIds },
+        fixtures: {
+          startTs: { gte: todayStartTs, lt: todayEndTs },
+        },
+      },
+      _count: { groupId: true },
+    }),
+    // Query 8: todayUnpredictedCount per group (today's NS games without prediction)
+    prisma.groupFixtures.groupBy({
+      by: ["groupId"],
+      where: {
+        groupId: { in: groupIds },
+        fixtures: {
+          state: FixtureState.NS,
+          startTs: { gte: todayStartTs, lt: todayEndTs },
+        },
+        NOT: {
+          groupPredictions: {
+            some: { userId },
+          },
+        },
+      },
+      _count: { groupId: true },
+    }),
+    // Query 9: liveGamesCount per group
+    prisma.groupFixtures.groupBy({
+      by: ["groupId"],
+      where: {
+        groupId: { in: groupIds },
+        fixtures: { state: { in: [...LIVE_STATES] } },
+      },
+      _count: { groupId: true },
     }),
   ]);
 
@@ -140,7 +188,7 @@ export async function findGroupsStatsBatch(
   );
 
   const hasUnpredictedGamesByGroupId = new Set<number>();
-  unpredictedGamesRaw.forEach((item) =>
+  unpredictedCountsRaw.forEach((item) =>
     hasUnpredictedGamesByGroupId.add(item.groupId)
   );
 
@@ -170,6 +218,26 @@ export async function findGroupsStatsBatch(
     firstGameByGroupId.set(groupId, rawFixture);
   });
 
+  const unpredictedGamesCountByGroupId = new Map<number, number>();
+  unpredictedCountsRaw.forEach((item) =>
+    unpredictedGamesCountByGroupId.set(item.groupId, item._count.groupId)
+  );
+
+  const todayGamesCountByGroupId = new Map<number, number>();
+  todayCountsRaw.forEach((item) =>
+    todayGamesCountByGroupId.set(item.groupId, item._count.groupId)
+  );
+
+  const todayUnpredictedCountByGroupId = new Map<number, number>();
+  todayUnpredictedCountsRaw.forEach((item) =>
+    todayUnpredictedCountByGroupId.set(item.groupId, item._count.groupId)
+  );
+
+  const liveGamesCountByGroupId = new Map<number, number>();
+  liveCountsRaw.forEach((item) =>
+    liveGamesCountByGroupId.set(item.groupId, item._count.groupId)
+  );
+
   return {
     memberCountByGroupId,
     fixtureCountByGroupId,
@@ -177,5 +245,9 @@ export async function findGroupsStatsBatch(
     hasUnpredictedGamesByGroupId,
     nextGameByGroupId,
     firstGameByGroupId,
+    unpredictedGamesCountByGroupId,
+    todayGamesCountByGroupId,
+    todayUnpredictedCountByGroupId,
+    liveGamesCountByGroupId,
   };
 }

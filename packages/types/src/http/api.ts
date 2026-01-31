@@ -358,6 +358,22 @@ export type ApiGroupItem = {
    * Only included for active/ended groups.
    */
   hasUnpredictedGames?: boolean;
+  /**
+   * Total NS games the user has not predicted. Only for active/ended groups.
+   */
+  unpredictedGamesCount?: number;
+  /**
+   * Games with kickoff today (any state). Only for active/ended groups.
+   */
+  todayGamesCount?: number;
+  /**
+   * Today's NS games the user has not predicted. Only for active/ended groups.
+   */
+  todayUnpredictedCount?: number;
+  /**
+   * Games currently in LIVE state. Only for active/ended groups.
+   */
+  liveGamesCount?: number;
   /** Who can access the invite link. */
   inviteAccess?: ApiInviteAccess;
   /** Maximum number of members allowed in the group. */

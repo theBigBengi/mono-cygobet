@@ -70,6 +70,14 @@ export async function getMyGroups(
         stats.predictionCountByGroupId.get(group.id) ?? 0;
       const hasUnpredictedGames =
         stats.hasUnpredictedGamesByGroupId.has(group.id);
+      const unpredictedGamesCount =
+        stats.unpredictedGamesCountByGroupId.get(group.id) ?? 0;
+      const todayGamesCount =
+        stats.todayGamesCountByGroupId.get(group.id) ?? 0;
+      const todayUnpredictedCount =
+        stats.todayUnpredictedCountByGroupId.get(group.id) ?? 0;
+      const liveGamesCount =
+        stats.liveGamesCountByGroupId.get(group.id) ?? 0;
       const rawNextGame = stats.nextGameByGroupId.get(group.id) ?? null;
       // Service layer decides: no prediction, no result for next game
       const nextGame = formatFixtureFromDb(rawNextGame, null, null);
@@ -81,6 +89,10 @@ export async function getMyGroups(
           totalFixtures,
           predictionsCount,
           hasUnpredictedGames,
+          unpredictedGamesCount,
+          todayGamesCount,
+          todayUnpredictedCount,
+          liveGamesCount,
         },
         nextGame
       );

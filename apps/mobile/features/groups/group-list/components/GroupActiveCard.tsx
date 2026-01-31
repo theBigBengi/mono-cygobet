@@ -6,6 +6,7 @@ import { View, StyleSheet, Pressable } from "react-native";
 import { AppText, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { formatKickoffDate, formatKickoffTime } from "@/utils/fixture";
+import { useCountdown } from "@/features/groups/predictions/hooks";
 import type { ApiGroupItem } from "@repo/types";
 
 interface GroupActiveCardProps {
@@ -15,6 +16,11 @@ interface GroupActiveCardProps {
 
 export function GroupActiveCard({ group, onPress }: GroupActiveCardProps) {
   const { theme } = useTheme();
+  const liveGamesCount = group.liveGamesCount ?? 0;
+  const todayGamesCount = group.todayGamesCount ?? 0;
+  const todayUnpredictedCount = group.todayUnpredictedCount ?? 0;
+  const unpredictedGamesCount = group.unpredictedGamesCount ?? 0;
+  const countdownLabel = useCountdown(group.nextGame?.kickoffAt ?? null);
 
   const getStatusBadgeColor = () => {
     switch (group.status) {
@@ -37,6 +43,18 @@ export function GroupActiveCard({ group, onPress }: GroupActiveCardProps) {
         return theme.colors.textSecondary;
     }
   };
+
+  const showInfo =
+    group.memberCount !== undefined ||
+    group.nextGame ||
+    group.predictionsCount !== undefined ||
+    liveGamesCount > 0 ||
+    todayGamesCount > 0;
+
+  const isNextGameWithin24h =
+    group.nextGame &&
+    countdownLabel.startsWith("in ") &&
+    countdownLabel !== "—";
 
   return (
     <Pressable onPress={onPress}>
@@ -63,7 +81,7 @@ export function GroupActiveCard({ group, onPress }: GroupActiveCardProps) {
           </View>
         </View>
 
-        {(group.memberCount !== undefined || group.nextGame || group.predictionsCount !== undefined) && (
+        {showInfo && (
           <View
             style={[
               styles.groupInfo,
@@ -72,45 +90,95 @@ export function GroupActiveCard({ group, onPress }: GroupActiveCardProps) {
               },
             ]}
           >
-            {group.memberCount !== undefined && (
-              <AppText variant="caption" color="secondary" style={styles.infoItem}>
-                {group.memberCount} {group.memberCount === 1 ? "participant" : "participants"}
+            {liveGamesCount > 0 && (
+              <AppText
+                variant="caption"
+                style={[
+                  styles.infoItem,
+                  styles.liveBadge,
+                  { color: "#EF4444" },
+                ]}
+              >
+                {liveGamesCount} {liveGamesCount === 1 ? "game" : "games"} LIVE
               </AppText>
             )}
 
-            {group.predictionsCount !== undefined && group.totalFixtures !== undefined && (
-              <View>
-                <AppText variant="caption" color="secondary" style={styles.infoItem}>
-                  {group.predictionsCount}/{group.totalFixtures} predictions
-                  {!group.hasUnpredictedGames && " ✓"}
-                </AppText>
-                {group.totalFixtures > 0 && (
-                  <View style={[styles.progressTrack, { backgroundColor: theme.colors.border }]}>
+            {todayGamesCount > 0 && (
+              <AppText variant="caption" color="secondary" style={styles.infoItem}>
+                {todayGamesCount} {todayGamesCount === 1 ? "game" : "games"} today
+                {todayUnpredictedCount > 0
+                  ? ` – ${todayUnpredictedCount} need predictions`
+                  : " – all predictions set"}
+              </AppText>
+            )}
+
+            {group.memberCount !== undefined && (
+              <AppText variant="caption" color="secondary" style={styles.infoItem}>
+                {group.memberCount}{" "}
+                {group.memberCount === 1 ? "participant" : "participants"}
+              </AppText>
+            )}
+
+            {group.predictionsCount !== undefined &&
+              group.totalFixtures !== undefined && (
+                <View>
+                  <AppText
+                    variant="caption"
+                    color="secondary"
+                    style={styles.infoItem}
+                  >
+                    {group.predictionsCount}/{group.totalFixtures} predictions
+                    {unpredictedGamesCount > 0 &&
+                      ` – ${unpredictedGamesCount} games need predictions`}
+                    {unpredictedGamesCount === 0 && " ✓"}
+                  </AppText>
+                  {group.totalFixtures > 0 && (
                     <View
                       style={[
-                        styles.progressFill,
-                        {
-                          backgroundColor: theme.colors.primary,
-                          width: `${(group.predictionsCount / group.totalFixtures) * 100}%`,
-                        },
+                        styles.progressTrack,
+                        { backgroundColor: theme.colors.border },
                       ]}
-                    />
-                  </View>
-                )}
-              </View>
-            )}
+                    >
+                      <View
+                        style={[
+                          styles.progressFill,
+                          {
+                            backgroundColor: theme.colors.primary,
+                            width: `${(group.predictionsCount / group.totalFixtures) * 100}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                  )}
+                </View>
+              )}
 
             {group.nextGame ? (
               <View style={styles.nextGameRow}>
-                <AppText variant="caption" color="secondary" style={styles.infoItem}>
-                  Next: {group.nextGame.homeTeam?.name || "TBD"} vs {group.nextGame.awayTeam?.name || "TBD"}
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.infoItem}
+                >
+                  Next: {group.nextGame.homeTeam?.name || "TBD"} vs{" "}
+                  {group.nextGame.awayTeam?.name || "TBD"}
                 </AppText>
-                <AppText variant="caption" color="secondary" style={styles.nextGameTime}>
-                  {formatKickoffDate(group.nextGame.kickoffAt)} {formatKickoffTime(group.nextGame.kickoffAt)}
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.nextGameTime}
+                >
+                  {isNextGameWithin24h
+                    ? countdownLabel
+                    : `${formatKickoffDate(group.nextGame.kickoffAt)} ${formatKickoffTime(group.nextGame.kickoffAt)}`}
                 </AppText>
               </View>
             ) : (
-              <AppText variant="caption" color="secondary" style={styles.infoItem}>
+              <AppText
+                variant="caption"
+                color="secondary"
+                style={styles.infoItem}
+              >
                 No upcoming games
               </AppText>
             )}
@@ -173,5 +241,8 @@ const styles = StyleSheet.create({
   progressFill: {
     height: 3,
     borderRadius: 2,
+  },
+  liveBadge: {
+    fontWeight: "600",
   },
 });

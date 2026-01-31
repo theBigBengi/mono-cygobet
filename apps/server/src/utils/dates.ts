@@ -51,3 +51,24 @@ export function toUnixSeconds(d: Date): number {
 export function nowUnixSeconds(): number {
   return Math.floor(Date.now() / 1000);
 }
+
+/**
+ * Get start and end of today in UTC (Unix seconds).
+ * Useful for "today's games" filters.
+ */
+export function getTodayUtcBounds(nowSeconds: number): {
+  startTs: number;
+  endTs: number;
+} {
+  const d = new Date(nowSeconds * 1000);
+  const y = d.getUTCFullYear();
+  const m = d.getUTCMonth();
+  const day = d.getUTCDate();
+  const startTs = Math.floor(
+    Date.UTC(y, m, day, 0, 0, 0, 0) / 1000
+  );
+  const endTs = Math.floor(
+    Date.UTC(y, m, day, 23, 59, 59, 999) / 1000
+  ) + 1; // exclusive end: start of next day
+  return { startTs, endTs };
+}
