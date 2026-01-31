@@ -40,6 +40,14 @@ interface GroupLobbyFixturesSectionProps {
    * "View all games" is hidden when this is set.
    */
   onBannerPress?: () => void;
+  /**
+   * Number of predictions made (for progress display when bannerTitle is set).
+   */
+  predictionsCount?: number;
+  /**
+   * Total number of games/fixtures (for progress display when bannerTitle is set).
+   */
+  totalFixtures?: number;
 }
 
 /**
@@ -58,6 +66,8 @@ export function GroupLobbyFixturesSection({
   showFinalScores = false,
   bannerTitle,
   onBannerPress,
+  predictionsCount,
+  totalFixtures,
 }: GroupLobbyFixturesSectionProps) {
   const { theme } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -77,6 +87,15 @@ export function GroupLobbyFixturesSection({
         : "Selected games");
 
   const showViewAll = gamesCount > 0 && !onBannerPress && onViewAll;
+
+  const showProgress =
+    bannerTitle &&
+    totalFixtures !== undefined &&
+    predictionsCount !== undefined &&
+    totalFixtures > 0;
+  const progressPercent = showProgress
+    ? (predictionsCount! / totalFixtures!) * 100
+    : 0;
 
   // Calculate snap offsets - each card should snap to center
   const snapOffsets = safeFixtures.map((_, index) => {
@@ -127,6 +146,25 @@ export function GroupLobbyFixturesSection({
           </Pressable>
         )}
       </View>
+
+      {showProgress && (
+        <View style={styles.progressBlock}>
+          <AppText variant="caption" color="secondary" style={styles.progressText}>
+            {predictionsCount}/{totalFixtures} predictions
+          </AppText>
+          <View style={[styles.progressTrack, { backgroundColor: theme.colors.border }]}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  backgroundColor: theme.colors.primary,
+                  width: `${progressPercent}%`,
+                },
+              ]}
+            />
+          </View>
+        </View>
+      )}
 
       {gamesCount === 0 && (
         <AppText variant="caption" color="secondary">
@@ -227,5 +265,20 @@ const styles = StyleSheet.create({
   gameItemWrapper: {
     width: GAME_CARD_WIDTH,
     marginRight: CARD_SPACING,
+  },
+  progressBlock: {
+    marginTop: 4,
+  },
+  progressText: {
+    marginBottom: 4,
+  },
+  progressTrack: {
+    height: 3,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: 3,
+    borderRadius: 2,
   },
 });

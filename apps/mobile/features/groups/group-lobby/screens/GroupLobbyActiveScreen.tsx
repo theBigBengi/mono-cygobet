@@ -46,6 +46,17 @@ export function GroupLobbyActiveScreen({
   const fixtures =
     Array.isArray((group as any).fixtures) ? ((group as any).fixtures as FixtureItem[]) : [];
 
+  // Progress: use API stats when present, otherwise derive from fixtures (getGroupById doesn't return these)
+  const totalFixtures = group.totalFixtures ?? fixtures.length;
+  const predictionsCount =
+    group.predictionsCount ??
+    fixtures.filter((f) => f.prediction != null && f.prediction !== undefined).length;
+
+  // Handler for navigating to games (Predictions banner opens games page)
+  const handleViewGames = () => {
+    router.push(`/groups/${group.id}/games` as any);
+  };
+
   // Handler for navigating to predictions overview
   const handleViewPredictionsOverview = () => {
     router.push(`/groups/${group.id}/predictions-overview` as any);
@@ -68,12 +79,14 @@ export function GroupLobbyActiveScreen({
         onRefresh={onRefresh}
         scroll
       >
-        {/* Predictions / Games Section - tap navigates to predictions overview */}
+        {/* Predictions / Games Section - tap opens games page */}
         <GroupLobbyFixturesSection
           fixtures={fixtures}
           groupId={group.id}
           bannerTitle="Predictions"
-          onBannerPress={handleViewPredictionsOverview}
+          onBannerPress={handleViewGames}
+          predictionsCount={predictionsCount}
+          totalFixtures={totalFixtures}
         />
 
         {/* Ranking Section */}
