@@ -46,11 +46,6 @@ export function GroupLobbyActiveScreen({
   const fixtures =
     Array.isArray((group as any).fixtures) ? ((group as any).fixtures as FixtureItem[]) : [];
 
-  // Handler for navigating to view all games
-  const handleViewAllGames = () => {
-    router.push(`/groups/${group.id}/games` as any);
-  };
-
   // Handler for navigating to predictions overview
   const handleViewPredictionsOverview = () => {
     router.push(`/groups/${group.id}/predictions-overview` as any);
@@ -73,11 +68,12 @@ export function GroupLobbyActiveScreen({
         onRefresh={onRefresh}
         scroll
       >
-        {/* Selected Games Section */}
+        {/* Predictions / Games Section - tap navigates to predictions overview */}
         <GroupLobbyFixturesSection
-          onViewAll={handleViewAllGames}
           fixtures={fixtures}
           groupId={group.id}
+          bannerTitle="Predictions"
+          onBannerPress={handleViewPredictionsOverview}
         />
 
         {/* Ranking Section */}

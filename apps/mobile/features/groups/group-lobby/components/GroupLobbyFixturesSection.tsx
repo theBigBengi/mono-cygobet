@@ -18,9 +18,9 @@ interface GroupLobbyFixturesSectionProps {
    */
   groupId: number | null;
   /**
-   * Callback to navigate to view all games
+   * Callback to navigate to view all games. Ignored when onBannerPress is set.
    */
-  onViewAll: () => void;
+  onViewAll?: () => void;
   /**
    * When true, render the fixture cards (horizontal scroll).
    * Default false to preserve current behavior for active lobby.
@@ -31,6 +31,15 @@ interface GroupLobbyFixturesSectionProps {
    * Used for ended groups.
    */
   showFinalScores?: boolean;
+  /**
+   * Custom banner title (e.g. "Predictions"). When set, used instead of default "Selected games" / "Games".
+   */
+  bannerTitle?: string;
+  /**
+   * When set, the whole banner card is pressable and navigates with this callback.
+   * "View all games" is hidden when this is set.
+   */
+  onBannerPress?: () => void;
 }
 
 /**
@@ -47,6 +56,8 @@ export function GroupLobbyFixturesSection({
   onViewAll,
   showFixtureCards = false,
   showFinalScores = false,
+  bannerTitle,
+  onBannerPress,
 }: GroupLobbyFixturesSectionProps) {
   const { theme } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -55,12 +66,24 @@ export function GroupLobbyFixturesSection({
   const gamesCount = safeFixtures.length;
   const screenWidth = Dimensions.get("window").width;
 
+  const titleText =
+    bannerTitle ??
+    (showFinalScores
+      ? gamesCount > 0
+        ? `Games (${gamesCount})`
+        : "Games"
+      : gamesCount > 0
+        ? `Selected games (${gamesCount})`
+        : "Selected games");
+
+  const showViewAll = gamesCount > 0 && !onBannerPress && onViewAll;
+
   // Calculate snap offsets - each card should snap to center
   const snapOffsets = safeFixtures.map((_, index) => {
     const cardWidth = GAME_CARD_WIDTH;
     const spacing = CARD_SPACING;
     const padding = theme.spacing.md;
-    
+
     // Position to center the card: card position - (screen width / 2) + (card width / 2)
     return (
       index * (cardWidth + spacing) +
@@ -83,40 +106,49 @@ export function GroupLobbyFixturesSection({
     }
   }, [gamesCount, snapOffsets]);
 
+  const headerContent = (
+    <>
+      <View style={styles.gamesHeaderRow}>
+        <AppText variant="body" style={styles.gamesTitle}>
+          {titleText}
+        </AppText>
+        {showViewAll && (
+          <Pressable
+            onPress={onViewAll}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.viewAllText}
+            >
+              View all games
+            </AppText>
+          </Pressable>
+        )}
+      </View>
+
+      {gamesCount === 0 && (
+        <AppText variant="caption" color="secondary">
+          No games selected for this group yet.
+        </AppText>
+      )}
+    </>
+  );
+
   return (
     <View style={styles.container}>
       {/* Header Card - contains only the title and actions */}
       <Card style={styles.headerCard}>
-        <View style={styles.gamesHeaderRow}>
-          <AppText variant="body" style={styles.gamesTitle}>
-            {showFinalScores
-              ? gamesCount > 0
-                ? `Games (${gamesCount})`
-                : "Games"
-              : gamesCount > 0
-                ? `Selected games (${gamesCount})`
-                : "Selected games"}
-          </AppText>
-          {gamesCount > 0 && (
-            <Pressable
-              onPress={onViewAll}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <AppText
-                variant="caption"
-                color="secondary"
-                style={styles.viewAllText}
-              >
-                View all games
-              </AppText>
-            </Pressable>
-          )}
-        </View>
-
-        {gamesCount === 0 && (
-          <AppText variant="caption" color="secondary">
-            No games selected for this group yet.
-          </AppText>
+        {onBannerPress ? (
+          <Pressable
+            onPress={onBannerPress}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            {headerContent}
+          </Pressable>
+        ) : (
+          headerContent
         )}
       </Card>
 
