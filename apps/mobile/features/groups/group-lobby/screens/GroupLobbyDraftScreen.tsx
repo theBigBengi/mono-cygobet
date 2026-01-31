@@ -11,6 +11,7 @@ import {
   GroupLobbyNameHeader,
   GroupLobbyStatusCard,
   GroupLobbyScoringSection,
+  GroupLobbyMaxMembersSection,
   PredictionModeSelector,
   KORoundModeSelector,
   GroupLobbyFixturesSection,
@@ -80,6 +81,9 @@ export function GroupLobbyDraftScreen({
     outcome: 1,
   });
 
+  // Manage local state for max members
+  const [maxMembers, setMaxMembers] = useState(50);
+
   // Local mutations - tied to this group
   const updateGroupMutation = useUpdateGroupMutation(group.id);
   const publishGroupMutation = usePublishGroupMutation(group.id);
@@ -96,7 +100,8 @@ export function GroupLobbyDraftScreen({
     draftInviteAccess,
     scoringValues,
     predictionMode,
-    koRoundMode
+    koRoundMode,
+    maxMembers
   );
 
   // Determine if name/privacy inputs should be editable
@@ -158,6 +163,11 @@ export function GroupLobbyDraftScreen({
             <KORoundModeSelector
               value={koRoundMode}
               onChange={setKORoundMode}
+              disabled={!isEditable}
+            />
+            <GroupLobbyMaxMembersSection
+              initialMaxMembers={maxMembers}
+              onChange={setMaxMembers}
               disabled={!isEditable}
             />
           </>

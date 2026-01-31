@@ -417,6 +417,8 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
         outcomePoints: body.outcomePoints,
         predictionMode: body.predictionMode,
         koRoundMode: body.koRoundMode,
+        inviteAccess: body.inviteAccess,
+        maxMembers: body.maxMembers,
         creatorId,
       });
 

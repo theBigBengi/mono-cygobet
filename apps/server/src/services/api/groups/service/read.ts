@@ -11,7 +11,7 @@ import type {
 import { nowUnixSeconds } from "../../../../utils/dates";
 import type { GroupFixturesFilter } from "../../../../types/groups";
 import { applyGroupFixturesFilter } from "../fixtures-filter";
-import { GROUP_STATUS } from "../constants";
+import { DEFAULT_MAX_MEMBERS, GROUP_STATUS } from "../constants";
 import {
   buildDraftGroupItem,
   buildActiveGroupItem,
@@ -114,6 +114,7 @@ export async function getGroupById(
 
   const rules = await repo.findGroupRules(id);
   data.inviteAccess = rules?.inviteAccess ?? "all";
+  data.maxMembers = rules?.maxMembers ?? DEFAULT_MAX_MEMBERS;
 
   // Include fixtures if requested
   if (includeFixtures) {

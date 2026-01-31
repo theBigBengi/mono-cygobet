@@ -4,7 +4,7 @@
 import { prisma } from "@repo/db";
 import type { Prisma } from "@repo/db";
 import { groupPrivacy, groupPredictionMode, groupKoRoundMode, groupSelectionMode, groupMembersStatus, groupInviteAccess } from "@repo/db";
-import { MEMBER_STATUS, GROUP_STATUS, SELECTION_MODE } from "../constants";
+import { DEFAULT_MAX_MEMBERS, MEMBER_STATUS, GROUP_STATUS, SELECTION_MODE } from "../constants";
 import {
   resolveInitialFixturesInternal,
   attachFixturesToGroupInternal,
@@ -135,12 +135,13 @@ export async function updateGroup(
  */
 export async function findGroupRules(
   groupId: number
-): Promise<{ selectionMode: groupSelectionMode; inviteAccess?: groupInviteAccess } | null> {
+): Promise<{ selectionMode: groupSelectionMode; inviteAccess?: groupInviteAccess; maxMembers?: number } | null> {
   return await prisma.groupRules.findUnique({
     where: { groupId },
     select: {
       selectionMode: true,
       inviteAccess: true,
+      maxMembers: true,
     },
   });
 }
@@ -161,6 +162,7 @@ export async function publishGroupInternal(data: {
   predictionMode?: groupPredictionMode;
   koRoundMode?: groupKoRoundMode;
   inviteAccess?: groupInviteAccess;
+  maxMembers?: number;
 }): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.$transaction(async (tx) => {
     // 1. Update groups table
@@ -214,6 +216,10 @@ export async function publishGroupInternal(data: {
         rulesUpdateData.inviteAccess = data.inviteAccess;
       }
 
+      if (data.maxMembers !== undefined) {
+        rulesUpdateData.maxMembers = data.maxMembers;
+      }
+
       // Only update if there are fields to update
       if (Object.keys(rulesUpdateData).length > 0) {
         await tx.groupRules.update({
@@ -250,6 +256,7 @@ export async function publishGroupInternal(data: {
             groupKoRoundMode.FullTime,
           inviteAccess:
             data.inviteAccess ?? groupInviteAccess.all,
+          maxMembers: data.maxMembers ?? DEFAULT_MAX_MEMBERS,
         },
       });
     }

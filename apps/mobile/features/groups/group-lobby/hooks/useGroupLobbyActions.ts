@@ -14,6 +14,7 @@ import type { KORoundMode } from "../components/KORoundModeSelector";
  * @param scoringValues - Current scoring values
  * @param predictionMode - Current prediction mode
  * @param koRoundMode - Current KO round mode
+ * @param maxMembers - Maximum number of members in the group
  * @returns Action handlers
  */
 export function useGroupLobbyActions(
@@ -29,6 +30,7 @@ export function useGroupLobbyActions(
       outcomePoints?: number;
       predictionMode?: string;
       koRoundMode?: string;
+      maxMembers?: number;
     }
   >,
   draftName: string,
@@ -36,7 +38,8 @@ export function useGroupLobbyActions(
   draftInviteAccess: ApiInviteAccess,
   scoringValues: { onTheNose: number; goalDifference: number; outcome: number },
   predictionMode?: PredictionMode,
-  koRoundMode?: KORoundMode
+  koRoundMode?: KORoundMode,
+  maxMembers?: number
 ): {
   handlePublish: () => Promise<void>;
 } {
@@ -101,6 +104,7 @@ export function useGroupLobbyActions(
     scoringValues,
     predictionMode,
     koRoundMode,
+    maxMembers,
     publishGroupMutation,
   ]);
 

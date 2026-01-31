@@ -289,6 +289,8 @@ export type ApiPublishGroupBody = {
   predictionMode?: string;
   koRoundMode?: string;
   inviteAccess?: ApiInviteAccess;
+  /** Maximum number of members in the group. Default 50. */
+  maxMembers?: number;
 };
 
 /**
@@ -358,6 +360,8 @@ export type ApiGroupItem = {
   hasUnpredictedGames?: boolean;
   /** Who can access the invite link. */
   inviteAccess?: ApiInviteAccess;
+  /** Maximum number of members allowed in the group. */
+  maxMembers?: number;
   /**
    * Invite code for the group (if generated). Only present when relevant.
    */

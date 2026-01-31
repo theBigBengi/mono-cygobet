@@ -19,6 +19,7 @@ export const GROUP_PRIVACY = {
 } as const;
 
 export const DEFAULT_MAX_MEMBERS = 50;
+export const MAX_MEMBERS_LIMIT = 120;
 
 export const SELECTION_MODE = {
   GAMES: "games",

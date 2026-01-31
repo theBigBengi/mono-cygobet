@@ -4,7 +4,7 @@
 import { randomBytes } from "crypto";
 import { prisma } from "@repo/db";
 import { BadRequestError, NotFoundError, ConflictError, ForbiddenError } from "../../../../utils/errors/app-error";
-import { GROUP_STATUS, MEMBER_STATUS, GROUP_PRIVACY } from "../constants";
+import { DEFAULT_MAX_MEMBERS, GROUP_STATUS, MEMBER_STATUS, GROUP_PRIVACY } from "../constants";
 import { buildGroupItem } from "../builders";
 import { assertGroupExists, assertGroupCreator } from "../permissions";
 import { repository as repo } from "../repository";
@@ -176,7 +176,7 @@ async function validateAndJoin(groupId: number, userId: number): Promise<void> {
     where: { groupId },
     select: { maxMembers: true },
   });
-  const maxMembers = rules?.maxMembers ?? 50;
+  const maxMembers = rules?.maxMembers ?? DEFAULT_MAX_MEMBERS;
 
   const memberCount = await repo.countGroupMembers(groupId);
   if (memberCount >= maxMembers) {

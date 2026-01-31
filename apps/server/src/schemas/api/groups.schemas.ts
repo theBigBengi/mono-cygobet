@@ -1,6 +1,7 @@
 // src/schemas/api/groups.schemas.ts
 // Schemas for groups API endpoints.
 
+import { MAX_MEMBERS_LIMIT } from "../../services/api/groups/constants";
 import { upcomingMobileFixturesResponseSchema } from "../fixtures.schemas";
 
 export const createGroupBodySchema = {
@@ -176,6 +177,15 @@ export const publishGroupBodySchema = {
     },
     koRoundMode: {
       type: "string",
+    },
+    inviteAccess: {
+      type: "string",
+      enum: ["all", "admin_only"],
+    },
+    maxMembers: {
+      type: "number",
+      minimum: 2,
+      maximum: MAX_MEMBERS_LIMIT,
     },
   },
 };

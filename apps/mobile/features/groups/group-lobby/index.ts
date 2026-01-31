@@ -14,6 +14,7 @@ export { GroupLobbyActiveScreen } from "./screens/GroupLobbyActiveScreen";
 export { GroupLobbyNameHeader } from "./components/GroupLobbyNameHeader";
 export { GroupLobbyStatusCard } from "./components/GroupLobbyStatusCard";
 export { GroupLobbyScoringSection } from "./components/GroupLobbyScoringSection";
+export { GroupLobbyMaxMembersSection } from "./components/GroupLobbyMaxMembersSection";
 export { PredictionModeSelector, type PredictionMode } from "./components/PredictionModeSelector";
 export { KORoundModeSelector, type KORoundMode } from "./components/KORoundModeSelector";
 export { GroupLobbyFixtureCard } from "./components/GroupLobbyFixtureCard";

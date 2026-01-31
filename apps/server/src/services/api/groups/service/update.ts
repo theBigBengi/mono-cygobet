@@ -90,6 +90,7 @@ export async function publishGroup(
     predictionMode,
     koRoundMode,
     inviteAccess,
+    maxMembers,
   } = args;
 
   // 1. Business validations
@@ -119,6 +120,7 @@ export async function publishGroup(
     }),
     ...(koRoundMode !== undefined && { koRoundMode: koRoundMode as groupKoRoundMode }),
     ...(inviteAccess !== undefined && { inviteAccess: inviteAccess as groupInviteAccess }),
+    ...(maxMembers !== undefined && { maxMembers }),
   };
 
   // 3. Call repository to perform all updates in a single transaction
