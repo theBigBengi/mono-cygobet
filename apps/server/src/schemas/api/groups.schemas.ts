@@ -82,6 +82,8 @@ export const groupItemSchema = {
     onTheNosePoints: { type: "number" },
     correctDifferencePoints: { type: "number" },
     outcomePoints: { type: "number" },
+    /** Last game of the group (latest fixture). Optional; included for active/ended and draft. */
+    lastGame: { oneOf: [{ type: "object" }, { type: "null" }] },
   },
 };
 

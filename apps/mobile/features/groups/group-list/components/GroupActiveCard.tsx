@@ -47,6 +47,7 @@ export function GroupActiveCard({ group, onPress }: GroupActiveCardProps) {
   const showInfo =
     group.memberCount !== undefined ||
     group.nextGame ||
+    group.lastGame ||
     group.predictionsCount !== undefined ||
     liveGamesCount > 0 ||
     todayGamesCount > 0;
@@ -180,6 +181,18 @@ export function GroupActiveCard({ group, onPress }: GroupActiveCardProps) {
                 style={styles.infoItem}
               >
                 No upcoming games
+              </AppText>
+            )}
+
+            {group.lastGame && (
+              <AppText
+                variant="caption"
+                color="secondary"
+                style={styles.infoItem}
+              >
+                {group.status === "ended"
+                  ? `Ended ${formatKickoffDate(group.lastGame.kickoffAt)}`
+                  : `Ends ${formatKickoffDate(group.lastGame.kickoffAt)}`}
               </AppText>
             )}
           </View>

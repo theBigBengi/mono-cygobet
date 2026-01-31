@@ -52,12 +52,13 @@ export function buildGroupItem(group: {
 }
 
 /**
- * Build a draft group item with first game.
+ * Build a draft group item with first game and last game.
  * Used by getMyGroups for draft groups.
  *
  * @param group - Group data from Prisma
  * @param firstGame - First game fixture or null
- * @returns Formatted group item with firstGame
+ * @param lastGame - Last game fixture or null
+ * @returns Formatted group item with firstGame and lastGame
  */
 export function buildDraftGroupItem(
   group: {
@@ -69,22 +70,28 @@ export function buildDraftGroupItem(
     createdAt: Date;
     updatedAt: Date;
   },
-  firstGame: ApiFixturesListResponse["data"][0] | null
-): ApiGroupItem & { firstGame: ApiFixturesListResponse["data"][0] | null } {
+  firstGame: ApiFixturesListResponse["data"][0] | null,
+  lastGame: ApiFixturesListResponse["data"][0] | null
+): ApiGroupItem & {
+  firstGame: ApiFixturesListResponse["data"][0] | null;
+  lastGame: ApiFixturesListResponse["data"][0] | null;
+} {
   return {
     ...buildGroupItem(group),
     firstGame,
+    lastGame,
   };
 }
 
 /**
- * Build an active/ended group item with stats and next game.
+ * Build an active/ended group item with stats, next game, and last game.
  * Used by getMyGroups for active/ended groups.
  *
  * @param group - Group data from Prisma
  * @param stats - Group statistics
  * @param nextGame - Next game fixture or null
- * @returns Formatted group item with stats and nextGame
+ * @param lastGame - Last game fixture or null
+ * @returns Formatted group item with stats, nextGame, and lastGame
  */
 export function buildActiveGroupItem(
   group: {
@@ -106,10 +113,12 @@ export function buildActiveGroupItem(
     todayUnpredictedCount: number;
     liveGamesCount: number;
   },
-  nextGame: ApiFixturesListResponse["data"][0] | null
+  nextGame: ApiFixturesListResponse["data"][0] | null,
+  lastGame: ApiFixturesListResponse["data"][0] | null
 ): ApiGroupItem & {
   memberCount: number;
   nextGame: ApiFixturesListResponse["data"][0] | null;
+  lastGame: ApiFixturesListResponse["data"][0] | null;
   predictionsCount: number;
   totalFixtures: number;
   hasUnpredictedGames: boolean;
@@ -122,6 +131,7 @@ export function buildActiveGroupItem(
     ...buildGroupItem(group),
     ...stats,
     nextGame,
+    lastGame,
   };
 }
 

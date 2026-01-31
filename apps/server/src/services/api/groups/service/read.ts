@@ -60,9 +60,11 @@ export async function getMyGroups(
 
     if (isDraft) {
       const rawFirstGame = stats.firstGameByGroupId.get(group.id) ?? null;
-      // Service layer decides: no prediction, no result for first game in draft
+      const rawLastGame = stats.lastGameByGroupId.get(group.id) ?? null;
+      // Service layer decides: no prediction, no result for first/last game in draft
       const firstGame = formatFixtureFromDb(rawFirstGame, null, null);
-      return buildDraftGroupItem(group, firstGame);
+      const lastGame = formatFixtureFromDb(rawLastGame, null, null);
+      return buildDraftGroupItem(group, firstGame, lastGame);
     } else {
       const memberCount = stats.memberCountByGroupId.get(group.id) ?? 0;
       const totalFixtures = stats.fixtureCountByGroupId.get(group.id) ?? 0;
@@ -79,8 +81,10 @@ export async function getMyGroups(
       const liveGamesCount =
         stats.liveGamesCountByGroupId.get(group.id) ?? 0;
       const rawNextGame = stats.nextGameByGroupId.get(group.id) ?? null;
-      // Service layer decides: no prediction, no result for next game
+      const rawLastGame = stats.lastGameByGroupId.get(group.id) ?? null;
+      // Service layer decides: no prediction, no result for next/last game
       const nextGame = formatFixtureFromDb(rawNextGame, null, null);
+      const lastGame = formatFixtureFromDb(rawLastGame, null, null);
 
       return buildActiveGroupItem(
         group,
@@ -94,7 +98,8 @@ export async function getMyGroups(
           todayUnpredictedCount,
           liveGamesCount,
         },
-        nextGame
+        nextGame,
+        lastGame
       );
     }
   });

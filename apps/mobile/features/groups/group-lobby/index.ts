@@ -31,6 +31,10 @@ export { GroupSettingsModal } from "./components/GroupSettingsModal";
 // Hooks
 export { useGroupLobbyState } from "./hooks/useGroupLobbyState";
 export { useGroupLobbyActions } from "./hooks/useGroupLobbyActions";
+export {
+  useGroupDuration,
+  type GroupDurationResult,
+} from "./hooks/useGroupDuration";
 
 // Types
 export type { FixtureItem, GroupLobbyState, GroupLobbyActions } from "./types";

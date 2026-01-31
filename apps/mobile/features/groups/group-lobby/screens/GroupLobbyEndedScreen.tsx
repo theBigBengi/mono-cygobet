@@ -10,8 +10,10 @@ import { Screen, Card, AppText } from "@/components/ui";
 import type { ApiGroupItem } from "@repo/types";
 import {
   GroupLobbyFixturesSection,
+  useGroupDuration,
   type FixtureItem,
 } from "../index";
+import { formatDate } from "@/utils/date";
 
 interface GroupLobbyEndedScreenProps {
   group: ApiGroupItem;
@@ -35,6 +37,8 @@ export function GroupLobbyEndedScreen({
     Array.isArray((group as any).fixtures)
       ? ((group as any).fixtures as FixtureItem[])
       : [];
+
+  const duration = useGroupDuration(fixtures);
 
   const handleViewAllGames = () => {
     router.push(`/groups/${group.id}/games` as any);
@@ -62,7 +66,9 @@ export function GroupLobbyEndedScreen({
         {/* Group Ended Banner */}
         <Card style={styles.bannerCard}>
           <AppText variant="body" style={styles.bannerText}>
-            Group Ended
+            {duration
+              ? `Group ended · Lasted ${duration.durationDays} ${duration.durationDays === 1 ? "day" : "days"} (${formatDate(duration.startDate)} – ${formatDate(duration.endDate)})`
+              : "Group Ended"}
           </AppText>
         </Card>
 

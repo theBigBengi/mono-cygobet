@@ -174,6 +174,7 @@ export interface GroupsRepository {
     hasUnpredictedGamesByGroupId: Set<number>;
     nextGameByGroupId: Map<number, any | null>;
     firstGameByGroupId: Map<number, any | null>;
+    lastGameByGroupId: Map<number, any | null>;
     unpredictedGamesCountByGroupId: Map<number, number>;
     todayGamesCountByGroupId: Map<number, number>;
     todayUnpredictedCountByGroupId: Map<number, number>;

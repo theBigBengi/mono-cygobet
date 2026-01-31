@@ -21,10 +21,12 @@ import {
   PublishGroupButton,
   useGroupLobbyState,
   useGroupLobbyActions,
+  useGroupDuration,
   type FixtureItem,
   type PredictionMode,
   type KORoundMode,
 } from "../index";
+import { formatDate } from "@/utils/date";
 import {
   usePublishGroupMutation,
   useUpdateGroupMutation,
@@ -119,6 +121,8 @@ export function GroupLobbyDraftScreen({
   const fixtures =
     Array.isArray((group as any).fixtures) ? ((group as any).fixtures as FixtureItem[]) : [];
 
+  const duration = useGroupDuration(fixtures);
+
   // Handle publish action
   const { handlePublish } = useGroupLobbyActions(
     publishGroupMutation,
@@ -168,6 +172,27 @@ export function GroupLobbyDraftScreen({
           groupId={group.id}
           onViewAll={handleViewAllGames}
         />
+
+        {/* Section: Group Duration */}
+        <AppText variant="subtitle" style={styles.sectionTitle}>
+          Group Duration
+        </AppText>
+        {duration ? (
+          <>
+            <AppText variant="body" color="secondary" style={styles.durationLine}>
+              {formatDate(duration.startDate)} – {formatDate(duration.endDate)}
+            </AppText>
+            <AppText variant="caption" color="secondary" style={styles.durationLine}>
+              {duration.durationDays === 0
+                ? `${fixtures.length} ${fixtures.length === 1 ? "game" : "games"}`
+                : `${duration.durationDays} ${duration.durationDays === 1 ? "day" : "days"} · ${fixtures.length} ${fixtures.length === 1 ? "game" : "games"}`}
+            </AppText>
+          </>
+        ) : (
+          <AppText variant="caption" color="secondary" style={styles.durationLine}>
+            Add games to see duration
+          </AppText>
+        )}
 
         {/* Section: Prediction rules */}
         {isCreator && (
@@ -254,5 +279,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 24,
     marginBottom: 8,
+  },
+  durationLine: {
+    marginBottom: 4,
   },
 });

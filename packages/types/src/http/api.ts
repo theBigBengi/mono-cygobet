@@ -344,6 +344,11 @@ export type ApiGroupItem = {
    */
   firstGame?: ApiFixturesListResponse["data"][0] | null;
   /**
+   * The last game of the group (latest fixture).
+   * Included for active/ended groups (and optionally draft).
+   */
+  lastGame?: ApiFixturesListResponse["data"][0] | null;
+  /**
    * Prediction statistics for the current user.
    * Only included for active/ended groups.
    */

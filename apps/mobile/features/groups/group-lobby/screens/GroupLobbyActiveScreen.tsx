@@ -12,9 +12,11 @@ import type { ApiGroupItem } from "@repo/types";
 import { useCountdown } from "@/features/groups/predictions/hooks";
 import {
   GroupLobbyFixturesSection,
+  useGroupDuration,
   type FixtureItem,
 } from "../index";
 import { useGroupActivityStats } from "../hooks/useGroupActivityStats";
+import { formatDate } from "@/utils/date";
 
 interface GroupLobbyActiveScreenProps {
   /**
@@ -54,6 +56,7 @@ export function GroupLobbyActiveScreen({
 
   // Client-side activity stats from fixtures (getGroupById doesn't return these counts)
   const activityStats = useGroupActivityStats(fixtures);
+  const duration = useGroupDuration(fixtures);
   const nextGameCountdownLabel = useCountdown(
     activityStats.nextGame?.kickoffAt ?? null
   );
@@ -96,10 +99,11 @@ export function GroupLobbyActiveScreen({
         onRefresh={onRefresh}
         scroll
       >
-        {/* Activity summary: LIVE, today, next game countdown */}
+        {/* Activity summary: LIVE, today, next game countdown, last game */}
         {(activityStats.liveGamesCount > 0 ||
           activityStats.todayGamesCount > 0 ||
-          activityStats.nextGame) && (
+          activityStats.nextGame ||
+          duration?.lastGame) && (
           <Card style={styles.activitySummaryCard}>
             <View style={styles.activitySummaryContent}>
               {activityStats.liveGamesCount > 0 && (
@@ -131,7 +135,7 @@ export function GroupLobbyActiveScreen({
                     : " – all predictions set"}
                 </AppText>
               )}
-              {activityStats.nextGame && (
+              {activityStats.nextGame && activityStats.liveGamesCount === 0 && (
                 <AppText
                   variant="caption"
                   color="secondary"
@@ -140,6 +144,15 @@ export function GroupLobbyActiveScreen({
                   {nextGameCountdownLabel.startsWith("in ")
                     ? `Next game starts ${nextGameCountdownLabel}`
                     : `Next game: ${nextGameCountdownLabel}`}
+                </AppText>
+              )}
+              {duration?.lastGame && (
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.activitySummaryRow}
+                >
+                  Ends approximately {formatDate(duration.endDate)}
                 </AppText>
               )}
             </View>
