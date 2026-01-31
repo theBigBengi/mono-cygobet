@@ -132,7 +132,7 @@ export function CreatePoolModal({
             {/* Pool Name Input */}
             <View style={styles.inputContainer}>
               <AppText variant="body" style={styles.label}>
-                Pool Name
+                {t("pool.poolName")}
               </AppText>
               <TextInput
                 style={[
@@ -155,7 +155,7 @@ export function CreatePoolModal({
             {/* Privacy Selector */}
             <View style={styles.inputContainer}>
               <AppText variant="body" style={styles.label}>
-                Privacy
+                {t("pool.privacy")}
               </AppText>
               <View style={styles.privacyContainer}>
                 <Pressable
@@ -225,8 +225,8 @@ export function CreatePoolModal({
                 style={styles.helperText}
               >
                 {privacy === "private"
-                  ? "Only invited users can join"
-                  : "Anyone can join"}
+                  ? t("lobby.onlyInvitedCanJoin")
+                  : t("lobby.anyoneCanJoin")}
               </AppText>
             </View>
 

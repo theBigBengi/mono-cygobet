@@ -207,7 +207,7 @@ export function SelectGamesModal({
                   {step === 1 ? (
                     <Pressable onPress={handleCancel}>
                       <AppText variant="body" color="primary">
-                        Cancel
+                        {t("pool.cancel")}
                       </AppText>
                     </Pressable>
                   ) : (

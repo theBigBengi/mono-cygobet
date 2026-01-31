@@ -50,8 +50,8 @@ export function GroupLobbyInviteAccessSection({
 
   const helperText =
     inviteAccess === "all"
-      ? "All members can share invite link"
-      : "Only admins can share invite link";
+      ? t("lobby.allMembersCanShare")
+      : t("lobby.onlyAdminsCanShare");
 
   // ON = "all" (open), OFF = "admin_only" (restricted) — same mental model as Privacy toggle
   const switchOn = inviteAccess === "all";

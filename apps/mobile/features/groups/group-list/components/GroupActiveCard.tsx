@@ -2,6 +2,7 @@
 // Card component for displaying active/ended groups in the groups list.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -16,6 +17,7 @@ interface GroupActiveCardProps {
 }
 
 export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActiveCardProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const liveGamesCount = group.liveGamesCount ?? 0;
   const todayGamesCount = group.todayGamesCount ?? 0;
@@ -196,7 +198,7 @@ export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActive
                 color="secondary"
                 style={styles.infoItem}
               >
-                No upcoming games
+                {t("lobby.noUpcomingGames")}
               </AppText>
             )}
 
@@ -207,8 +209,12 @@ export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActive
                 style={styles.infoItem}
               >
                 {group.status === "ended"
-                  ? `Ended ${formatKickoffDate(group.lastGame.kickoffAt)}`
-                  : `Ends ${formatKickoffDate(group.lastGame.kickoffAt)}`}
+                  ? t("lobby.endedOn", {
+                      date: formatKickoffDate(group.lastGame.kickoffAt),
+                    })
+                  : t("lobby.endsOn", {
+                      date: formatKickoffDate(group.lastGame.kickoffAt),
+                    })}
               </AppText>
             )}
           </View>

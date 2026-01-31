@@ -61,7 +61,10 @@ export function PredictionsOverviewScreen({
     return (
       <Screen>
         <AppText variant="body" color="secondary">
-          No predictions data available. Participants: {overviewData.participants.length}, Fixtures: {overviewData.fixtures.length}
+          {t("predictionsOverview.noDataAvailable", {
+            participants: overviewData.participants.length,
+            fixtures: overviewData.fixtures.length,
+          })}
         </AppText>
       </Screen>
     );

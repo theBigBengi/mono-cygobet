@@ -2,6 +2,7 @@
 // Card wrapping list of GroupStatRow.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { Card, AppText, Divider } from "@/components/ui";
 import { GroupStatRow } from "./GroupStatRow";
@@ -13,16 +14,17 @@ interface GroupStatsCardProps {
 }
 
 export function GroupStatsCard({ groups }: GroupStatsCardProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   if (groups.length === 0) {
     return (
       <Card>
         <AppText variant="subtitle" style={styles.title}>
-          Groups
+          {t("predictions.groups")}
         </AppText>
         <AppText variant="body" color="secondary">
-          No groups yet
+          {t("groups.noGroupsYet")}
         </AppText>
       </Card>
     );
@@ -31,8 +33,8 @@ export function GroupStatsCard({ groups }: GroupStatsCardProps) {
   return (
     <Card>
       <AppText variant="subtitle" style={styles.title}>
-        Groups
-      </AppText>
+          {t("predictions.groups")}
+        </AppText>
       {groups.map((group, i) => (
         <View key={group.groupId}>
           {i > 0 && <Divider style={{ marginVertical: theme.spacing.sm }} />}

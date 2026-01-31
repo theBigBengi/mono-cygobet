@@ -167,7 +167,7 @@ export default function SignUpScreen() {
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Sign Up</Text>
+            <Text style={styles.buttonText}>{t("auth.signUp")}</Text>
           )}
         </Pressable>
 

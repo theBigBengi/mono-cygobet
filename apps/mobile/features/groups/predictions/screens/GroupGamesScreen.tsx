@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView, Keyboard } from "react-native";
 import { useRouter } from "expo-router";
 import { AppText, Screen } from "@/components/ui";
@@ -181,7 +182,7 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
       <Screen>
         <View style={styles.emptyContainer}>
           <AppText variant="body" color="secondary">
-            No games selected for this group yet.
+            {t("predictions.noGamesSelected")}
           </AppText>
         </View>
       </Screen>

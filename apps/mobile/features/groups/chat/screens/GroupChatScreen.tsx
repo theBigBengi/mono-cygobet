@@ -133,7 +133,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
     return (
       <View style={styles.loadingMore}>
         <AppText variant="caption" color="secondary">
-          Loading older messages...
+          {t("chat.loadingOlderMessages")}
         </AppText>
       </View>
     );
@@ -150,7 +150,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   }
 
   if (isLoading) {
-    return <QueryLoadingView message="Loading messages..." />;
+    return <QueryLoadingView message={t("groups.loadingMessages")} />;
   }
 
   if (isError) {

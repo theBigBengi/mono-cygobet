@@ -82,12 +82,12 @@ export default function GroupLobbyScreen() {
 
   const handleDeleteGroup = React.useCallback(() => {
     Alert.alert(
-      "Delete Group Draft",
-      "Are you sure you want to delete the group? This action cannot be undone.",
+      t("groups.deleteGroupDraft"),
+      t("groups.deleteGroupConfirm"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("groups.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("groups.delete"),
           style: "destructive",
           onPress: () => {
             deleteGroupMutation.mutate(undefined, {
@@ -189,7 +189,7 @@ export default function GroupLobbyScreen() {
     <LobbyWithHeader status={group.status}>
       <Screen>
         <AppText variant="body" color="secondary">
-          Unknown group status.
+          {t("groups.unknownStatus")}
         </AppText>
       </Screen>
     </LobbyWithHeader>

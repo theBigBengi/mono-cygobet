@@ -2,6 +2,7 @@
 // View for displaying selected fixtures in create group modal.
 
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -48,6 +49,7 @@ function groupGroupedGamesByLeagueAndDate(
 }
 
 export function CreateGroupModalFixturesView() {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { games } = useSelectedGroupGames();
   const toggleGame = useToggleGroupGame();
@@ -61,7 +63,7 @@ export function CreateGroupModalFixturesView() {
     return (
       <View style={styles.empty}>
         <AppText variant="body" color="secondary">
-          No games selected
+          {t("fixtures.noGamesSelected")}
         </AppText>
       </View>
     );

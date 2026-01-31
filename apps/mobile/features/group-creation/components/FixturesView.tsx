@@ -1,8 +1,7 @@
 // features/group-creation/components/FixturesView.tsx
 // Upcoming fixtures list with league/date grouping, selection, and modal.
-// English strings only.
-
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   View,
   StyleSheet,
@@ -54,6 +53,7 @@ interface FixturesViewProps {
 }
 
 export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const toggleGroupGame = useToggleGroupGame();
 
@@ -101,13 +101,13 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
 
         {error && (
           <AppText variant="body" color="danger" style={styles.message}>
-            Error loading games: {error.message}
+            {t("fixtures.errorLoadingGames", { message: error.message })}
           </AppText>
         )}
 
         {!isLoading && !error && leagueDateGroups.length === 0 && (
           <AppText variant="body" color="secondary" style={styles.message}>
-            No upcoming games found
+            {t("fixtures.noUpcomingGames")}
           </AppText>
         )}
 

@@ -228,7 +228,7 @@ export function CreateGroupModal() {
               ]}
             >
               <AppText variant="caption" color="danger" style={styles.errorTxt}>
-                {createGroupMutation.error?.message ?? "Failed to create group"}
+                {createGroupMutation.error?.message ?? t("groupCreation.failedCreate")}
               </AppText>
             </View>
           )}

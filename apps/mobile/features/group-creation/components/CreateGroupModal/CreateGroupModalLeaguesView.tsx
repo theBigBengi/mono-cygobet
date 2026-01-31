@@ -2,6 +2,7 @@
 // View for displaying selected leagues in create group modal.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -12,6 +13,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 
 export function CreateGroupModalLeaguesView() {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const leagues = useSelectedLeagues();
   const toggleLeague = useToggleLeague();
@@ -20,7 +22,7 @@ export function CreateGroupModalLeaguesView() {
     return (
       <View style={styles.empty}>
         <AppText variant="body" color="secondary">
-          No league selected
+          {t("fixtures.noLeagueSelected")}
         </AppText>
       </View>
     );

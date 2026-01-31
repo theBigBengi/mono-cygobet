@@ -65,7 +65,8 @@
     "deleteGroupDraftFailed": "Delete group draft failed. Please try again.",
     "deleting": "Deleting...",
     "loadingGroup": "Loading group...",
-    "failedLoadGroup": "Failed to load group"
+    "failedLoadGroup": "Failed to load group",
+    "unknownStatus": "Unknown group status."
   },
   "lobby": {
     "draft": "Draft",
@@ -79,6 +80,9 @@
     "selectedGames": "Selected games",
     "games": "Games",
     "viewAllGames": "View all games",
+    "noUpcomingGames": "No upcoming games",
+    "endedOn": "Ended {{date}}",
+    "endsOn": "Ends {{date}}",
     "onTheNose": "On the Nose",
     "goalPointDifference": "Goal/Point Difference",
     "outcome": "Outcome",
@@ -169,15 +173,21 @@
     "recordWTL": "Record (W-T-L)",
     "invalidMemberData": "Invalid member or missing data.",
     "missingRankingData": "Missing ranking data. Go back and open this profile from the ranking.",
-    "predictionBreakdown": "Prediction Breakdown"
+    "predictionBreakdown": "Prediction Breakdown",
+    "noSharedGroupsWithOthers": "No shared groups with other players",
+    "compareWith": "Compare with"
   },
   "discover": {
     "searchPlaceholder": "Search by group name",
+    "membersWithMax": "{{count}} / {{max}} members",
+    "membersCount": "{{count}} members",
+    "gamesCount": "{{count}} games",
     "noResults": "No public groups found",
     "search": "Search",
     "loadMore": "Load more",
     "join": "Join",
-    "failedLoadPublicGroups": "Failed to load public groups"
+    "failedLoadPublicGroups": "Failed to load public groups",
+    "createdBy": "by @{{username}}"
   },
   "chat": {
     "typePlaceholder": "Type a message...",
@@ -245,7 +255,8 @@
   },
   "predictionsOverview": {
     "loadingPredictions": "Loading predictions overview...",
-    "failedLoadPredictions": "Failed to load predictions overview"
+    "failedLoadPredictions": "Failed to load predictions overview",
+    "noDataAvailable": "No predictions data available. Participants: {{participants}}, Fixtures: {{fixtures}}"
   },
   "pool": {
     "createPool": "Create Pool",
@@ -281,5 +292,13 @@
     "starting": "Starting...",
     "tbd": "TBD",
     "noRound": "No round"
+  },
+  "fixtures": {
+    "loadingGames": "Loading games…",
+    "errorLoadingGames": "Error loading games: {{message}}",
+    "noUpcomingGames": "No upcoming games found",
+    "noGamesSelected": "No games selected",
+    "noTeamsSelected": "No teams selected",
+    "noLeagueSelected": "No league selected"
   }
 }

@@ -182,8 +182,11 @@ function PublicGroupRow({ group, onJoinSuccess }: PublicGroupRowProps) {
 
   const memberLabel =
     group.maxMembers != null
-      ? `${group.memberCount} / ${group.maxMembers} members`
-      : `${group.memberCount} members`;
+      ? t("discover.membersWithMax", {
+          count: group.memberCount,
+          max: group.maxMembers,
+        })
+      : t("discover.membersCount", { count: group.memberCount });
 
   return (
     <Card style={[styles.card, { marginBottom: theme.spacing.sm }]}>
@@ -193,11 +196,11 @@ function PublicGroupRow({ group, onJoinSuccess }: PublicGroupRowProps) {
             {group.name}
           </AppText>
           <AppText variant="caption" color="secondary">
-            {memberLabel} · {group.totalFixtures} games
+            {memberLabel} · {t("discover.gamesCount", { count: group.totalFixtures })}
           </AppText>
           {group.creatorUsername != null && (
             <AppText variant="caption" color="secondary">
-              by @{group.creatorUsername}
+              {t("discover.createdBy", { username: group.creatorUsername })}
             </AppText>
           )}
         </View>

@@ -2,6 +2,7 @@
 // List of users from shared groups to pick opponent.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, Pressable, StyleSheet } from "react-native";
 import { AppText, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -18,13 +19,14 @@ export function OpponentSelector({
   selectedOpponentId,
   onSelectOpponent,
 }: OpponentSelectorProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   if (opponents.length === 0) {
     return (
       <Card>
         <AppText variant="body" color="secondary">
-          No shared groups with other players
+          {t("profile.noSharedGroupsWithOthers")}
         </AppText>
       </Card>
     );
@@ -33,7 +35,7 @@ export function OpponentSelector({
   return (
     <Card>
       <AppText variant="subtitle" style={styles.title}>
-        Compare with
+        {t("profile.compareWith")}
       </AppText>
       <View style={styles.list}>
         {opponents.map((opp) => (

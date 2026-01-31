@@ -170,7 +170,7 @@ export function GroupLobbyFixturesSection({
 
       {gamesCount === 0 && (
         <AppText variant="caption" color="secondary">
-          No games selected for this group yet.
+          {t("predictions.noGamesSelected")}
         </AppText>
       )}
     </>

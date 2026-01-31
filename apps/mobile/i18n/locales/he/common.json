@@ -60,6 +60,7 @@
     "failedJoinGroup": "הצטרפות לקבוצה נכשלה",
     "loadingGroup": "טוען קבוצה...",
     "failedLoadGroup": "טעינת קבוצה נכשלה",
+    "unknownStatus": "סטטוס קבוצה לא ידוע.",
     "deleting": "מוחק...",
     "deleteGroupDraft": "מחק טיוטת קבוצה",
     "deleteGroupConfirm": "האם אתה בטוח שברצונך למחוק את הקבוצה? פעולה זו אינה ניתנת לביטול.",
@@ -85,6 +86,9 @@
     "selectedGames": "משחקים נבחרים",
     "games": "משחקים",
     "viewAllGames": "הצג את כל המשחקים",
+    "noUpcomingGames": "אין משחקים קרובים",
+    "endedOn": "הסתיים {{date}}",
+    "endsOn": "מסתיים {{date}}",
     "maxMembersLabel": "מקסימום {{count}} חברים",
     "maxMembers": "מקסימום חברים",
     "groupSize": "גודל קבוצה",
@@ -169,15 +173,21 @@
     "recordWTL": "שיא (נ-ת-ה)",
     "invalidMemberData": "חבר לא תקין או נתונים חסרים.",
     "missingRankingData": "נתוני דירוג חסרים. חזור ופתח את הפרופיל מהדירוג.",
-    "predictionBreakdown": "פירוט תחזיות"
+    "predictionBreakdown": "פירוט תחזיות",
+    "noSharedGroupsWithOthers": "אין קבוצות משותפות עם שחקנים אחרים",
+    "compareWith": "השווה עם"
   },
   "discover": {
     "searchPlaceholder": "חפש לפי שם קבוצה",
+    "membersWithMax": "{{count}} / {{max}} חברים",
+    "membersCount": "{{count}} חברים",
+    "gamesCount": "{{count}} משחקים",
     "noResults": "לא נמצאו קבוצות ציבוריות",
     "search": "חפש",
     "loadMore": "טען עוד",
     "join": "הצטרף",
-    "failedLoadPublicGroups": "טעינת קבוצות ציבוריות נכשלה"
+    "failedLoadPublicGroups": "טעינת קבוצות ציבוריות נכשלה",
+    "createdBy": "על ידי @{{username}}"
   },
   "chat": {
     "typePlaceholder": "הקלד הודעה...",
@@ -190,7 +200,8 @@
   },
   "predictionsOverview": {
     "loadingPredictions": "טוען סקירת תחזיות...",
-    "failedLoadPredictions": "טעינת סקירת תחזיות נכשלה"
+    "failedLoadPredictions": "טעינת סקירת תחזיות נכשלה",
+    "noDataAvailable": "אין נתוני תחזיות זמינים. משתתפים: {{participants}}, משחקים: {{fixtures}}"
   },
   "ranking": {
     "loadingRanking": "טוען דירוג...",
@@ -233,6 +244,12 @@
   },
   "errors": {
     "error": "שגיאה",
+    "network": "שגיאת חיבור לרשת. בדוק את חיבור האינטרנט ונסה שוב.",
+    "auth": "שגיאת אימות. התחבר שוב.",
+    "server": "שגיאת שרת. נסה שוב מאוחר יותר.",
+    "somethingWentWrong": "משהו השתבש. נסה שוב.",
+    "unexpected": "אירעה שגיאה בלתי צפויה. נסה שוב.",
+    "somethingWentWrongTitle": "משהו השתבש",
     "tryAgain": "נסה שוב",
     "goToHome": "עבור לדף הבית",
     "pageNotFound": "הדף לא נמצא",
@@ -272,5 +289,13 @@
     "unknownLeague": "ליגה לא ידועה",
     "tbd": "להתפרסם",
     "noRound": "ללא סיבוב"
+  },
+  "fixtures": {
+    "loadingGames": "טוען משחקים…",
+    "errorLoadingGames": "שגיאה בטעינת משחקים: {{message}}",
+    "noUpcomingGames": "לא נמצאו משחקים קרובים",
+    "noGamesSelected": "לא נבחרו משחקים",
+    "noTeamsSelected": "לא נבחרו קבוצות",
+    "noLeagueSelected": "לא נבחרה ליגה"
   }
 }

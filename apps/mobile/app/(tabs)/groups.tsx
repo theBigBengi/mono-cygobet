@@ -90,7 +90,7 @@ export default function GroupsScreen() {
         <Screen>
           <View style={styles.emptyContainer}>
             <AppText variant="title" style={styles.emptyTitle}>
-              No groups yet
+              {t("groups.noGroupsYet")}
             </AppText>
             <AppText
               variant="body"

@@ -39,7 +39,7 @@ export function GroupInviteScreen({ groupId }: GroupInviteScreenProps) {
     const message = `${inviteCode}\n${DEEP_LINK_BASE}?code=${encodeURIComponent(inviteCode)}`;
     Share.share({
       message,
-      title: "Group invite",
+      title: t("invite.groupInvite"),
     }).catch(() => {});
   };
 

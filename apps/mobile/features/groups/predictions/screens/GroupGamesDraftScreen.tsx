@@ -100,7 +100,7 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp }: Props
     if (remainingFixtureIds.length === 0) {
       Alert.alert(
         "Cannot Update",
-        "You must keep at least one game in the group."
+        t("predictions.mustKeepOneGame")
       );
       return;
     }
@@ -132,7 +132,7 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp }: Props
       <Screen>
         <View style={styles.emptyContainer}>
           <AppText variant="body" color="secondary">
-            No games selected for this group yet.
+            {t("predictions.noGamesSelected")}
           </AppText>
         </View>
       </Screen>
