@@ -1,8 +1,11 @@
 // app/groups/[id]/member/[userId].tsx
 // Route wrapper for group member profile screen.
+// Uses custom header with explicit back button so back works on iOS.
 
-import React, { useEffect } from "react";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { GroupGamesHeader } from "@/features/groups/predictions/components/GroupGamesHeader";
 import { GroupMemberProfileScreen } from "@/features/groups/ranking";
 
 function parseNum(value: string | string[] | undefined): number | null {
@@ -27,7 +30,7 @@ export default function GroupMemberProfileRoute() {
     correctScoreCount?: string;
     predictionCount?: string;
   }>();
-  const navigation = useNavigation();
+  const router = useRouter();
 
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
@@ -42,20 +45,25 @@ export default function GroupMemberProfileRoute() {
   const correctScoreCount = parseNum(params.correctScoreCount);
   const predictionCount = parseNum(params.predictionCount);
 
-  useEffect(() => {
-    const title = username.trim() || "Member Profile";
-    navigation.setOptions({ title });
-  }, [navigation, username]);
-
   return (
-    <GroupMemberProfileScreen
-      groupId={groupId}
-      userId={userId}
-      username={username}
-      rank={rank}
-      totalPoints={totalPoints}
-      correctScoreCount={correctScoreCount}
-      predictionCount={predictionCount}
-    />
+    <View style={styles.container}>
+      <GroupGamesHeader backOnly onBack={() => router.back()} />
+      <View style={styles.content}>
+        <GroupMemberProfileScreen
+          groupId={groupId}
+          userId={userId}
+          username={username}
+          rank={rank}
+          totalPoints={totalPoints}
+          correctScoreCount={correctScoreCount}
+          predictionCount={predictionCount}
+        />
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  content: { flex: 1 },
+});

@@ -69,15 +69,19 @@ function AppContent() {
               />
               <Stack.Screen
                 name="groups/[id]/ranking"
-                options={{ title: "Ranking", headerShown: true }}
+                options={{ title: "Ranking", headerShown: false }}
+              />
+              <Stack.Screen
+                name="groups/[id]/predictions-overview"
+                options={{ title: "Predictions Overview", headerShown: false }}
               />
               <Stack.Screen
                 name="groups/[id]/invite"
-                options={{ title: "Invite", headerShown: true }}
+                options={{ title: "Invite", headerShown: false }}
               />
               <Stack.Screen
                 name="groups/[id]/member/[userId]"
-                options={{ title: "Member Profile", headerShown: true }}
+                options={{ title: "Member Profile", headerShown: false }}
               />
               <Stack.Screen
                 name="groups/join"
