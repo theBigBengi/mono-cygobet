@@ -1,5 +1,6 @@
 // lib/errors/errorHandler.ts
 // Centralized error handling utility
+import i18n from "i18next";
 import { ApiError } from "../http/apiError";
 import { ErrorCategory, ErrorSeverity, ErrorInfo, ErrorHandlerConfig } from "./error.types";
 
@@ -192,22 +193,26 @@ export function handleError(
  */
 export function getUserFriendlyMessage(error: unknown): string {
   const errorInfo = createErrorInfo(error);
+  const t = (key: string, fallback: string) =>
+    i18n.isInitialized
+      ? (i18n.t(key, { ns: "common", defaultValue: fallback }) as string)
+      : fallback;
 
   switch (errorInfo.category) {
     case ErrorCategory.NETWORK:
-      return "Network connection error. Please check your internet connection and try again.";
+      return t("errors.network", "Network connection error. Please check your internet connection and try again.");
     case ErrorCategory.AUTH:
-      return "Authentication error. Please log in again.";
+      return t("errors.auth", "Authentication error. Please log in again.");
     case ErrorCategory.API:
       if (error instanceof ApiError && error.status >= 500) {
-        return "Server error. Please try again later.";
+        return t("errors.server", "Server error. Please try again later.");
       }
       return errorInfo.message;
     case ErrorCategory.VALIDATION:
       return errorInfo.message;
     case ErrorCategory.COMPONENT:
-      return "Something went wrong. Please try again.";
+      return t("errors.somethingWentWrong", "Something went wrong. Please try again.");
     default:
-      return "An unexpected error occurred. Please try again.";
+      return t("errors.unexpected", "An unexpected error occurred. Please try again.");
   }
 }

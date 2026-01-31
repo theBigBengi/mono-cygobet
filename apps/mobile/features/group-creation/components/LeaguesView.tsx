@@ -3,6 +3,7 @@
 // Supports popular leagues preset and search functionality with debouncing.
 
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, TextInput, Pressable } from "react-native";
 import { AppText, Screen, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -18,6 +19,7 @@ interface LeaguesViewProps {
 }
 
 export function LeaguesView({ tabs }: LeaguesViewProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState<string>("");
   const debouncedSearch = useDebounce(searchQuery, 400);
@@ -41,13 +43,13 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
 
   const renderContent = () => {
     if (isLoading) {
-      return <QueryLoadingView message="Loading leagues…" />;
+      return <QueryLoadingView message={t("groupCreation.loadingLeagues")} />;
     }
 
     if (error) {
       return (
         <QueryErrorView
-          message="Failed to load leagues"
+          message={t("groupCreation.failedLoadLeagues")}
           onRetry={() => refetch()}
         />
       );
@@ -57,12 +59,12 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
       return (
         <View style={styles.emptyContainer}>
           <AppText variant="title" style={styles.emptyTitle}>
-            {isSearchMode ? "No leagues found" : "No popular leagues"}
+            {isSearchMode ? t("groupCreation.noLeaguesFound") : t("groupCreation.noPopularLeagues")}
           </AppText>
           <AppText variant="body" color="secondary" style={styles.emptySubtitle}>
             {isSearchMode
-              ? "Try a different search term."
-              : "There are no popular leagues to display."}
+              ? t("groupCreation.tryDifferentSearch")
+              : t("groupCreation.noPopularLeaguesDisplay")}
           </AppText>
         </View>
       );
@@ -92,7 +94,7 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
             />
             <TextInput
               style={[styles.searchInput, { color: theme.colors.textPrimary }]}
-              placeholder="Search leagues..."
+              placeholder={t("groupCreation.searchLeaguesPlaceholder")}
               placeholderTextColor={theme.colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -138,7 +140,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   searchIcon: {
-    marginRight: 8,
+    marginEnd: 8,
   },
   searchInput: {
     flex: 1,
@@ -146,7 +148,7 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   clearButton: {
-    marginLeft: 8,
+    marginStart: 8,
     padding: 4,
   },
   emptyContainer: {

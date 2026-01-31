@@ -1,7 +1,8 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Dimensions, TextInput } from "react-native";
 import { Card, AppText, TeamLogo } from "@/components/ui";
-import { getTeamDisplayName } from "@/utils/fixture";
+import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { ScoresInput } from "./ScoresInput";
 import { OutcomePicker } from "./OutcomePicker";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
@@ -53,8 +54,10 @@ export function SingleGameMatchCard({
   predictionMode = "CorrectScore",
   onSelectOutcome,
 }: Props) {
-  const homeTeamName = getTeamDisplayName(fixture.homeTeam?.name, "Home");
-  const awayTeamName = getTeamDisplayName(fixture.awayTeam?.name, "Away");
+  const { t } = useTranslation("common");
+  const { translateTeam } = useEntityTranslation();
+  const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
+  const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
   const isEditable = fixture.state === "NS";
   const isLive = fixture.state === "LIVE";
   const isFinished = fixture.state === "FT";
@@ -68,13 +71,12 @@ export function SingleGameMatchCard({
       return fixture.result.replace(":", "-");
     }
     if (isCancelled) {
-      // Map state to reason text
       const stateMap: Record<string, string> = {
-        CAN: "Cancelled",
-        HT: "Half Time",
-        INT: "Interrupted",
+        CAN: t("predictions.cancelled"),
+        HT: t("predictions.halfTime"),
+        INT: t("predictions.interrupted"),
       };
-      return stateMap[fixture.state] || `Status: ${fixture.state}`;
+      return stateMap[fixture.state] || `${t("common.unknown")}: ${fixture.state}`;
     }
     return null;
   };
@@ -207,11 +209,13 @@ const styles = StyleSheet.create({
   },
   scoreSection: {
     justifyContent: "center",
+    direction: "ltr",
     paddingHorizontal: 4,
     flexShrink: 0,
   },
   resultContainer: {
     alignItems: "center",
+    direction: "ltr",
     marginTop: 8,
     paddingTop: 8,
   },

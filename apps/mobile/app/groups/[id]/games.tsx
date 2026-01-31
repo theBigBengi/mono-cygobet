@@ -3,6 +3,7 @@
 // Routes to appropriate screen based on group status.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useLocalSearchParams } from "expo-router";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
@@ -11,6 +12,7 @@ import { GroupGamesScreen } from "@/features/groups/predictions/screens/GroupGam
 import { GroupGamesDraftScreen } from "@/features/groups/predictions/screens/GroupGamesDraftScreen";
 
 export default function GroupGamesRoute() {
+  const { t } = useTranslation("common");
   const params = useLocalSearchParams<{ id: string }>();
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
@@ -24,7 +26,7 @@ export default function GroupGamesRoute() {
 
   // Error state
   if (error || !data) {
-    return <QueryErrorView message="Failed to load group" />;
+    return <QueryErrorView message={t("groups.failedLoadGroup")} />;
   }
 
   const group = data.data;

@@ -1,8 +1,10 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { formatKickoffTime, getTeamDisplayName } from "@/utils/fixture";
+import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
+import { formatKickoffTime } from "@/utils/fixture";
 import type { FixtureItem } from "@/types/common";
 
 interface GroupLobbyFixtureCardProps {
@@ -26,6 +28,8 @@ export function GroupLobbyFixtureCard({
   fixture,
   showFinalScore = false,
 }: GroupLobbyFixtureCardProps) {
+  const { t } = useTranslation("common");
+  const { translateTeam, translateLeague } = useEntityTranslation();
   const { theme } = useTheme();
 
   // Parse score from prediction or result
@@ -45,8 +49,14 @@ export function GroupLobbyFixtureCard({
     }
     return null;
   })();
-  const homeTeamName = getTeamDisplayName(fixture.homeTeam?.name, "Home");
-  const awayTeamName = getTeamDisplayName(fixture.awayTeam?.name, "Away");
+  const homeTeamName = translateTeam(
+    fixture.homeTeam?.name,
+    t("common.home")
+  );
+  const awayTeamName = translateTeam(
+    fixture.awayTeam?.name,
+    t("common.away")
+  );
   const kickoffTime = formatKickoffTime(fixture.kickoffAt);
 
   // Format date label (DD.MM.YY)
@@ -75,7 +85,7 @@ export function GroupLobbyFixtureCard({
     >
       <View style={styles.gameHeaderRow}>
         <AppText variant="caption" color="secondary">
-          {fixture.league?.name || "Unknown league"}
+          {translateLeague(fixture.league?.name, t("common.unknownLeague"))}
         </AppText>
         <AppText variant="caption" color="secondary">
           {dateLabel} {kickoffTime}
@@ -152,6 +162,7 @@ const styles = StyleSheet.create({
   },
   scoreContainer: {
     flexDirection: "row",
+    direction: "ltr",
     alignItems: "center",
     justifyContent: "center",
     minWidth: 60,

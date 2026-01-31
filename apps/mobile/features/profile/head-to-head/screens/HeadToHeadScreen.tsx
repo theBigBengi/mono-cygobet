@@ -2,6 +2,7 @@
 // Full screen: selector + summary + shared groups list.
 
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Screen } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
@@ -22,6 +23,7 @@ export function HeadToHeadScreen({
   userId,
   initialOpponentId = null,
 }: HeadToHeadScreenProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [opponentId, setOpponentId] = useState<number | null>(
     initialOpponentId ?? null
@@ -52,7 +54,7 @@ export function HeadToHeadScreen({
   if (opponentsQuery.isLoading) {
     return (
       <Screen>
-        <QueryLoadingView message="Loading..." />
+        <QueryLoadingView message={t("common.loading")} />
       </Screen>
     );
   }
@@ -74,7 +76,7 @@ export function HeadToHeadScreen({
         <View style={[styles.content, { padding: theme.spacing.md }]}>
           <Card>
             <AppText variant="body" color="secondary">
-              Join a group with other players to compare stats.
+              {t("profile.joinGroupToCompare")}
             </AppText>
           </Card>
         </View>
@@ -98,15 +100,15 @@ export function HeadToHeadScreen({
             )}
             {h2hQuery.isError && (
               <QueryErrorView
-                message="Failed to load comparison"
+                message={t("profile.failedLoadComparison")}
                 onRetry={() => void h2hQuery.refetch()}
               />
             )}
             {h2hQuery.isSuccess && data && (
               <>
                 <H2HSummaryCard
-                  userLabel={data.user.username ?? "You"}
-                  opponentLabel={data.opponent.username ?? "Opponent"}
+                  userLabel={data.user.username ?? t("profile.you")}
+                  opponentLabel={data.opponent.username ?? t("profile.opponent")}
                   userWins={data.summary.userWins}
                   opponentWins={data.summary.opponentWins}
                   ties={data.summary.ties}
@@ -130,14 +132,14 @@ export function HeadToHeadScreen({
                       )}
                       <SharedGroupRow
                         group={group}
-                        userLabel={data.user.username ?? "You"}
-                        opponentLabel={data.opponent.username ?? "Opponent"}
+                        userLabel={data.user.username ?? t("profile.you")}
+                        opponentLabel={data.opponent.username ?? t("profile.opponent")}
                       />
                     </View>
                   ))}
                   {data.sharedGroups.length === 0 && (
                     <AppText variant="body" color="secondary">
-                      No shared groups
+                      {t("profile.noSharedGroups")}
                     </AppText>
                   )}
                 </Card>

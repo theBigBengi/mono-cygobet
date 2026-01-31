@@ -2,6 +2,7 @@
 // TextInput + Send button. Typing indicator with 2 second debounce. @mentions picker. Read-only for ended groups.
 
 import React, { useCallback, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   View,
   TextInput,
@@ -35,6 +36,7 @@ export function ChatInput({
   memberOptions,
   fixtureOptions,
 }: ChatInputProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [text, setText] = useState("");
   const [mentions, setMentions] = useState<MentionData[]>([]);
@@ -168,7 +170,7 @@ export function ChatInput({
             borderColor: theme.colors.border,
           },
         ]}
-        placeholder="Type a message..."
+        placeholder={t("chat.typePlaceholder")}
         placeholderTextColor={theme.colors.textSecondary}
         value={text}
         onChangeText={handleChangeText}

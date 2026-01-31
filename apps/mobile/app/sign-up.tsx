@@ -12,11 +12,13 @@ import {
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 import * as authApi from "@/lib/auth/auth.api";
 
 export default function SignUpScreen() {
+  const { t } = useTranslation("common");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +32,7 @@ export default function SignUpScreen() {
     const trimmedPassword = password.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
-      Alert.alert("Error", "Please enter email and password to register");
+      Alert.alert(t("errors.error"), t("auth.errorEmailPassword"));
       return;
     }
 
@@ -86,7 +88,7 @@ export default function SignUpScreen() {
           },
         ]}
       >
-        Create Account
+        {t("auth.createAccount")}
       </Text>
       <Text
         style={[
@@ -96,7 +98,7 @@ export default function SignUpScreen() {
           },
         ]}
       >
-        Sign up to get started
+        {t("auth.signUpToGetStarted")}
       </Text>
 
       <View style={styles.form}>
@@ -109,7 +111,7 @@ export default function SignUpScreen() {
               backgroundColor: theme.colors.surface,
             },
           ]}
-          placeholder="Email"
+          placeholder={t("auth.email")}
           placeholderTextColor={theme.colors.textSecondary}
           value={email}
           onChangeText={setEmail}
@@ -128,7 +130,7 @@ export default function SignUpScreen() {
               backgroundColor: theme.colors.surface,
             },
           ]}
-          placeholder="Password"
+          placeholder={t("auth.password")}
           placeholderTextColor={theme.colors.textSecondary}
           value={password}
           onChangeText={setPassword}
@@ -178,7 +180,7 @@ export default function SignUpScreen() {
               },
             ]}
           >
-            Already have an account?
+            {t("auth.alreadyHaveAccount")}
           </Text>
           <Pressable onPress={goToSignIn} disabled={isLoading}>
             <Text
@@ -189,7 +191,7 @@ export default function SignUpScreen() {
                 },
               ]}
             >
-              Sign In
+              {t("auth.signIn")}
             </Text>
           </Pressable>
         </View>
@@ -251,7 +253,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 14,
-    marginRight: 4,
+    marginEnd: 4,
   },
   toggleLink: {
     fontSize: 14,

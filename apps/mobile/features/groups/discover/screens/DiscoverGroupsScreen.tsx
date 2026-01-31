@@ -2,6 +2,7 @@
 // Browse and join public groups with search and pagination.
 
 import React, { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   View,
   StyleSheet,
@@ -25,6 +26,7 @@ import type { ApiPublicGroupItem } from "@repo/types";
 const PER_PAGE = 20;
 
 export function DiscoverGroupsScreen() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
   const [inputValue, setInputValue] = useState("");
@@ -93,7 +95,7 @@ export function DiscoverGroupsScreen() {
             value={inputValue}
             onChangeText={setInputValue}
             onSubmitEditing={handleSubmitSearch}
-            placeholder="Search by group name"
+            placeholder={t("discover.searchPlaceholder")}
             placeholderTextColor={theme.colors.textSecondary}
             returnKeyType="search"
             style={[
@@ -114,7 +116,7 @@ export function DiscoverGroupsScreen() {
         </View>
 
         {isLoading && page === 1 ? (
-          <QueryLoadingView message="Loading groups..." />
+          <QueryLoadingView message={t("groups.loadingGroups")} />
         ) : (
           <FlatList
             data={accumulated}
@@ -141,7 +143,7 @@ export function DiscoverGroupsScreen() {
                 <View style={[styles.footer, { padding: theme.spacing.md }]}>
                   {isLoading ? (
                     <AppText variant="caption" color="secondary">
-                      Loading...
+                      {t("common.loading")}
                     </AppText>
                   ) : (
                     <Button
@@ -166,6 +168,7 @@ interface PublicGroupRowProps {
 }
 
 function PublicGroupRow({ group, onJoinSuccess }: PublicGroupRowProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const joinMutation = useJoinPublicGroupMutation(group.id);
 
@@ -199,7 +202,7 @@ function PublicGroupRow({ group, onJoinSuccess }: PublicGroupRowProps) {
           )}
         </View>
         <Button
-          label={joinMutation.isPending ? "Joining..." : "Join"}
+          label={joinMutation.isPending ? t("groups.joining") : t("discover.join")}
           onPress={handleJoin}
           disabled={joinMutation.isPending}
           style={styles.joinButton}
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
   },
   cardMain: {
     flex: 1,
-    marginRight: 12,
+    marginEnd: 12,
   },
   groupName: {
     fontWeight: "600",

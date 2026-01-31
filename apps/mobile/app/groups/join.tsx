@@ -4,6 +4,7 @@
 // - Without code: shows form to enter code (for in-app / dev testing).
 
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   View,
   TextInput,
@@ -19,6 +20,7 @@ import { useJoinGroupByCodeMutation } from "@/domains/groups";
 import { useTheme } from "@/lib/theme";
 
 export default function GroupJoinRoute() {
+  const { t } = useTranslation("common");
   const params = useLocalSearchParams<{ code: string }>();
   const codeFromUrl = typeof params.code === "string" ? params.code.trim() : "";
   const [enteredCode, setEnteredCode] = useState("");
@@ -47,7 +49,7 @@ export default function GroupJoinRoute() {
   // No code in URL: show form (in-app "Join with code" flow / dev testing)
   if (!code) {
     return (
-      <ScreenWithHeader title="Join Group">
+      <ScreenWithHeader title={t("groups.joinGroup")}>
         <Screen>
           <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -60,7 +62,7 @@ export default function GroupJoinRoute() {
             <TextInput
               value={enteredCode}
               onChangeText={setEnteredCode}
-              placeholder="Invite code"
+              placeholder={t("groups.inviteCode")}
               placeholderTextColor={theme.colors.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
@@ -76,7 +78,7 @@ export default function GroupJoinRoute() {
               ]}
             />
             <Button
-              label="Join group"
+              label={t("groups.joinGroup")}
               onPress={handleSubmitCode}
               disabled={!enteredCode.trim()}
             />
@@ -89,9 +91,9 @@ export default function GroupJoinRoute() {
 
   if (joinMutation.isPending) {
     return (
-      <ScreenWithHeader title="Join Group">
+      <ScreenWithHeader title={t("groups.joinGroup")}>
         <Screen>
-          <QueryLoadingView message="Joining..." />
+          <QueryLoadingView message={t("groups.joining")} />
         </Screen>
       </ScreenWithHeader>
     );
@@ -99,10 +101,10 @@ export default function GroupJoinRoute() {
 
   if (joinMutation.isError) {
     return (
-      <ScreenWithHeader title="Join Group">
+      <ScreenWithHeader title={t("groups.joinGroup")}>
         <Screen>
           <QueryErrorView
-            message={joinMutation.error?.message ?? "Failed to join group"}
+            message={joinMutation.error?.message ?? t("groups.failedJoinGroup")}
             onRetry={() => joinMutation.mutate(code)}
           />
         </Screen>
@@ -111,9 +113,9 @@ export default function GroupJoinRoute() {
   }
 
   return (
-    <ScreenWithHeader title="Join Group">
+    <ScreenWithHeader title={t("groups.joinGroup")}>
       <Screen>
-        <QueryLoadingView message="Redirecting..." />
+        <QueryLoadingView message={t("groups.redirecting")} />
       </Screen>
     </ScreenWithHeader>
   );

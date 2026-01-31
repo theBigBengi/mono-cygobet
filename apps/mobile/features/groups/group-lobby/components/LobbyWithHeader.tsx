@@ -3,6 +3,7 @@
 // Provides consistent header layout with status badge and optional group name.
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText } from "@/components/ui";
 import { useGoBack } from "@/hooks/useGoBack";
@@ -14,11 +15,6 @@ import type { ApiGroupStatus, ApiGroupItem } from "@repo/types";
 
 const HEADER_HEIGHT = 64;
 
-const STATUS_LABELS: Record<ApiGroupStatus, string> = {
-  draft: "Draft",
-  active: "Active",
-  ended: "Ended",
-};
 
 interface LobbyWithHeaderProps {
   children: React.ReactNode;
@@ -49,8 +45,15 @@ export function LobbyWithHeader({
   onDeleteGroup,
   isDeleting = false,
 }: LobbyWithHeaderProps) {
+  const { t } = useTranslation("common");
   const goBack = useGoBack("/(tabs)/groups");
   const { theme } = useTheme();
+
+  const STATUS_LABELS: Record<ApiGroupStatus, string> = {
+    draft: t("lobby.draft"),
+    active: t("lobby.active"),
+    ended: t("lobby.ended"),
+  };
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const isActive = status === "active";
   const isDraft = status === "draft";

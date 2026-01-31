@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { AppText, Screen, Button } from "@/components/ui";
@@ -29,6 +30,7 @@ type Props = {
  * X marks as deselected (dimmed); plus restores.
  */
 export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp }: Props) {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -91,7 +93,7 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp }: Props
 
   const handleUpdateSelections = useCallback(() => {
     if (!groupId) {
-      Alert.alert("Error", "Group ID is required");
+      Alert.alert(t("errors.error"), t("predictions.errorGroupIdRequired"));
       return;
     }
 
@@ -112,8 +114,8 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp }: Props
         },
         onError: (error) => {
           Alert.alert(
-            "Update Failed",
-            error?.message || "Failed to update group games. Please try again."
+            t("predictions.updateFailed"),
+            error?.message || t("predictions.updateFailedMessage")
           );
         },
       }
@@ -248,8 +250,8 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp }: Props
           <Button
             label={
               updateGroupMutation.isPending
-                ? "Updating..."
-                : "Update Selections"
+                ? t("predictions.updating")
+                : t("predictions.updateSelections")
             }
             onPress={handleUpdateSelections}
             style={styles.floatingButton}

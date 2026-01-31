@@ -2,6 +2,7 @@
 // Screen component for group ranking.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   FlatList,
   Platform,
@@ -90,6 +91,7 @@ function RankingRow({
  * Current user row is highlighted. Pull-to-refresh supported.
  */
 export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { user } = useAuth();
   const {
@@ -103,7 +105,7 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
   if (isLoading) {
     return (
       <Screen>
-        <QueryLoadingView message="Loading ranking..." />
+        <QueryLoadingView message={t("ranking.loadingRanking")} />
       </Screen>
     );
   }
@@ -112,7 +114,7 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
     return (
       <Screen>
         <QueryErrorView
-          message="Failed to load ranking"
+          message={t("ranking.failedLoadRanking")}
           onRetry={() => refetch()}
         />
       </Screen>

@@ -3,6 +3,7 @@
 
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { HeadToHeadScreen } from "@/features/profile/head-to-head/screens/HeadToHeadScreen";
 import { ScreenWithHeader } from "@/components/ui";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -21,8 +22,9 @@ export default function HeadToHeadRoute() {
   const opponentId = parseNum(params.opponentId);
   const userId = user?.id ?? 0;
 
+  const { t } = useTranslation("common");
   return (
-    <ScreenWithHeader title="Head to Head" fallbackRoute="/(tabs)/profile">
+    <ScreenWithHeader title={t("profile.headToHead")} fallbackRoute="/(tabs)/profile">
       <HeadToHeadScreen
         userId={userId}
         initialOpponentId={opponentId}

@@ -3,6 +3,7 @@
 
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ScreenWithHeader } from "@/components/ui";
 import { GroupChatScreen } from "@/features/groups/chat";
 
@@ -11,8 +12,9 @@ export default function GroupChatRoute() {
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
 
+  const { t } = useTranslation("common");
   return (
-    <ScreenWithHeader title="Chat">
+    <ScreenWithHeader title={t("groups.chat")}>
       <GroupChatScreen groupId={groupId} />
     </ScreenWithHeader>
   );

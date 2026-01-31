@@ -3,6 +3,7 @@
 // Choose when the prediction applies: after 90 minutes, extra time, or penalty shootout.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText, Divider } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -26,14 +27,6 @@ interface KORoundModeSelectorProps {
   disabled?: boolean;
 }
 
-const DESCRIPTION =
-  "Choose whether the prediction is made for the result of a game after 90 minutes, after the extra time or after the penalty shootout.";
-
-const OPTIONS: { mode: KORoundMode; title: string }[] = [
-  { mode: "90min", title: "After 90 minutes" },
-  { mode: "extraTime", title: "After extra time" },
-  { mode: "penalties", title: "After penalty shootout" },
-];
 
 /**
  * Component for selecting KO round mode.
@@ -44,24 +37,31 @@ export function KORoundModeSelector({
   onChange,
   disabled = false,
 }: KORoundModeSelectorProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
+
+  const OPTIONS: { mode: KORoundMode; titleKey: string }[] = [
+    { mode: "90min", titleKey: "lobby.after90Minutes" },
+    { mode: "extraTime", titleKey: "lobby.afterExtraTime" },
+    { mode: "penalties", titleKey: "lobby.afterPenaltyShootout" },
+  ];
 
   const handleSelect = (mode: KORoundMode) => {
     if (disabled) return;
     onChange(mode);
   };
 
-  const selectionLabel =
-    OPTIONS.find((o) => o.mode === value)?.title ?? value;
+  const found = OPTIONS.find((o) => o.mode === value);
+  const selectionLabel = found ? String(t(found.titleKey as any)) : value;
 
   return (
     <CollapsibleSection
-      title="Select KO round mode"
+      title={t("lobby.selectKoRoundMode")}
       selectionLabel={selectionLabel}
-      description={DESCRIPTION}
+      description={t("lobby.koRoundDescription")}
     >
       <View style={styles.optionsContainer}>
-        {OPTIONS.map(({ mode, title }, index) => {
+        {OPTIONS.map(({ mode, titleKey }, index) => {
           const isSelected = value === mode;
           return (
             <React.Fragment key={mode}>
@@ -78,7 +78,7 @@ export function KORoundModeSelector({
                 ]}
               >
                 <AppText variant="body" style={styles.optionTitle}>
-                  {title}
+                  {String(t(titleKey as any))}
                 </AppText>
                 <Ionicons
                   name={isSelected ? "checkmark-circle" : "radio-button-off"}

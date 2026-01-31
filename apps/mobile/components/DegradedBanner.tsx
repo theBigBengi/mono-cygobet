@@ -1,8 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/useAuth";
 
 export function DegradedBanner() {
+  const { t } = useTranslation("common");
   const auth = useAuth();
 
   const handleRetry = async () => {
@@ -21,9 +23,9 @@ export function DegradedBanner() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Limited connectivity — read-only mode</Text>
+      <Text style={styles.text}>{t("common.limitedConnectivity")}</Text>
       <Pressable style={styles.button} onPress={handleRetry}>
-        <Text style={styles.buttonText}>Retry</Text>
+        <Text style={styles.buttonText}>{t("common.retry")}</Text>
       </Pressable>
     </View>
   );

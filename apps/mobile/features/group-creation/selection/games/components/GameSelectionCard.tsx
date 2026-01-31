@@ -5,9 +5,10 @@
 
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { getTeamDisplayName } from "@/utils/fixture";
+import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { formatKickoffTime } from "@/utils/fixture";
 import { TeamRow } from "@/features/groups/predictions/components/TeamRow";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
@@ -25,10 +26,12 @@ export function GameSelectionCard({
   onPress,
   positionInGroup = "single",
 }: GameSelectionCardProps) {
+  const { t } = useTranslation("common");
+  const { translateTeam } = useEntityTranslation();
   const { theme } = useTheme();
 
-  const homeTeamName = getTeamDisplayName(fixture.homeTeam?.name, "Home");
-  const awayTeamName = getTeamDisplayName(fixture.awayTeam?.name, "Away");
+  const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
+  const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
   const kickoffTime = formatKickoffTime(fixture.kickoffAt);
 
   // Calculate card radius style based on position in group

@@ -2,6 +2,7 @@
 // 2x2 grid: Total Points, Accuracy%, Exact Scores, Groups.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -39,16 +40,17 @@ export function OverallStatsCard({
   exactScores,
   groupsPlayed,
 }: OverallStatsCardProps) {
+  const { t } = useTranslation("common");
   return (
     <Card>
       <AppText variant="subtitle" style={styles.title}>
-        Overall
+        {t("profile.overall")}
       </AppText>
       <View style={styles.grid}>
-        <StatBox label="Total Points" value={totalPoints} />
-        <StatBox label="Accuracy" value={`${accuracy}%`} />
-        <StatBox label="Exact Scores" value={exactScores} />
-        <StatBox label="Groups" value={groupsPlayed} />
+        <StatBox label={t("predictions.totalPoints")} value={totalPoints} />
+        <StatBox label={t("profile.accuracy")} value={`${accuracy}%`} />
+        <StatBox label={t("predictions.exactScores")} value={exactScores} />
+        <StatBox label={t("predictions.groups")} value={groupsPlayed} />
       </View>
     </Card>
   );

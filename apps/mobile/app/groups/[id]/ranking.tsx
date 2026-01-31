@@ -3,6 +3,7 @@
 
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ScreenWithHeader } from "@/components/ui";
 import { GroupRankingScreen } from "@/features/groups/ranking";
 
@@ -11,8 +12,9 @@ export default function GroupRankingRoute() {
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
 
+  const { t } = useTranslation("common");
   return (
-    <ScreenWithHeader title="Ranking">
+    <ScreenWithHeader title={t("groups.ranking")}>
       <GroupRankingScreen groupId={groupId} />
     </ScreenWithHeader>
   );

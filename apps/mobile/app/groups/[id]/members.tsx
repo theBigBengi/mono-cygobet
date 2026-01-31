@@ -3,6 +3,7 @@
 
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ScreenWithHeader } from "@/components/ui";
 import { GroupMembersScreen } from "@/features/groups/members";
 
@@ -11,8 +12,9 @@ export default function GroupMembersRoute() {
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
 
+  const { t } = useTranslation("common");
   return (
-    <ScreenWithHeader title="Members">
+    <ScreenWithHeader title={t("groups.membersTitle")}>
       <GroupMembersScreen groupId={groupId} />
     </ScreenWithHeader>
   );

@@ -12,10 +12,12 @@ import {
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 
 export default function SignInScreen() {
+  const { t } = useTranslation("common");
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +28,7 @@ export default function SignInScreen() {
 
   const handleLogin = async () => {
     if (!emailOrUsername.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter both email/username and password");
+      Alert.alert(t("errors.error"), t("auth.errorBothFields"));
       return;
     }
 
@@ -62,7 +64,7 @@ export default function SignInScreen() {
           },
         ]}
       >
-        Login
+        {t("auth.login")}
       </Text>
       <Text
         style={[
@@ -72,7 +74,7 @@ export default function SignInScreen() {
           },
         ]}
       >
-        Enter your credentials
+        {t("auth.enterCredentials")}
       </Text>
 
       <View style={styles.form}>
@@ -103,7 +105,7 @@ export default function SignInScreen() {
               backgroundColor: theme.colors.surface,
             },
           ]}
-          placeholder="Password"
+          placeholder={t("auth.password")}
           placeholderTextColor={theme.colors.textSecondary}
           value={password}
           onChangeText={setPassword}
@@ -140,7 +142,7 @@ export default function SignInScreen() {
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Login</Text>
+            <Text style={styles.buttonText}>{t("auth.login")}</Text>
           )}
         </Pressable>
 
@@ -153,7 +155,7 @@ export default function SignInScreen() {
               },
             ]}
           >
-            Don&apos;t have an account?
+            {t("auth.dontHaveAccount")}
           </Text>
           <Pressable
             onPress={() => router.replace("/sign-up")}
@@ -167,7 +169,7 @@ export default function SignInScreen() {
                 },
               ]}
             >
-              Sign Up
+              {t("auth.signUp")}
             </Text>
           </Pressable>
         </View>
@@ -229,7 +231,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 14,
-    marginRight: 4,
+    marginEnd: 4,
   },
   toggleLink: {
     fontSize: 14,

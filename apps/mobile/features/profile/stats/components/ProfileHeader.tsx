@@ -2,6 +2,7 @@
 // Avatar circle, username, level badge, daily streak.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { Card, AppText, Row } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -28,6 +29,7 @@ export function ProfileHeader({
   level = 1,
   dailyStreak = 0,
 }: ProfileHeaderProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const initials = getInitials(username);
 
@@ -57,7 +59,7 @@ export function ProfileHeader({
         </View>
         <View style={styles.info}>
           <AppText variant="title" numberOfLines={1}>
-            {username || "Unknown"}
+            {username || t("common.unknown")}
           </AppText>
           <View style={styles.badges}>
             <AppText variant="caption" color="secondary">
@@ -94,6 +96,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   streak: {
-    marginLeft: 8,
+    marginStart: 8,
   },
 });

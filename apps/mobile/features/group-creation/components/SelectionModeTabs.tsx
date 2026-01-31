@@ -4,6 +4,7 @@
 // English only. Uses theme colors, spacing, radius.
 
 import React, { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { View, Pressable, StyleSheet, Animated, LayoutChangeEvent } from "react-native";
 import { BlurView } from "expo-blur";
 import { useTheme } from "@/lib/theme";
@@ -11,11 +12,6 @@ import { AppText } from "@/components/ui";
 
 export type SelectionMode = "fixtures" | "leagues" | "teams";
 
-const MODES: { value: SelectionMode; label: string }[] = [
-  { value: "fixtures", label: "Games" },
-  { value: "leagues", label: "Leagues" },
-  { value: "teams", label: "Teams" },
-];
 
 interface SelectionModeTabsProps {
   value: SelectionMode;
@@ -23,8 +19,14 @@ interface SelectionModeTabsProps {
 }
 
 export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
+  const { t } = useTranslation("common");
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === "dark";
+  const MODES: { value: SelectionMode; labelKey: string }[] = [
+    { value: "fixtures", labelKey: "groupCreation.games" },
+    { value: "leagues", labelKey: "groupCreation.leagues" },
+    { value: "teams", labelKey: "groupCreation.teams" },
+  ];
   const indicatorPosition = useRef(new Animated.Value(0)).current;
   const indicatorWidth = useRef(new Animated.Value(0)).current;
   const tabLayouts = useRef<{ [key: string]: { x: number; width: number } }>({});
@@ -126,7 +128,7 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
                     },
                   ]}
                 >
-                  {m.label}
+                  {t(m.labelKey as any)}
                 </AppText>
               </Pressable>
             );

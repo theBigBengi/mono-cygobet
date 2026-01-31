@@ -4,6 +4,7 @@
 // Read-only; no invite section or prediction editing.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
@@ -33,6 +34,7 @@ export function GroupLobbyEndedScreen({
   group,
   onRefresh,
 }: GroupLobbyEndedScreenProps) {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
   const { data: unreadData } = useUnreadCountsQuery();
@@ -76,8 +78,12 @@ export function GroupLobbyEndedScreen({
         <Card style={styles.bannerCard}>
           <AppText variant="body" style={styles.bannerText}>
             {duration
-              ? `Group ended · Lasted ${duration.durationDays} ${duration.durationDays === 1 ? "day" : "days"} (${formatDate(duration.startDate)} – ${formatDate(duration.endDate)})`
-              : "Group Ended"}
+              ? t("lobby.groupEndedDuration", {
+                  count: duration.durationDays as number,
+                  start: formatDate(duration.startDate),
+                  end: formatDate(duration.endDate),
+                })
+              : t("lobby.groupEnded")}
           </AppText>
         </Card>
 

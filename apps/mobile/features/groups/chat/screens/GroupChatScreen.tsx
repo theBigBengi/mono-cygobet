@@ -2,6 +2,7 @@
 // Chat screen with inverted FlatList, KeyboardAvoidingView, auto markAsRead.
 
 import React, { useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   View,
   FlatList,
@@ -47,6 +48,7 @@ function ChatItem({
 }
 
 export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { user } = useAuth();
   const currentUserId = user?.id ?? 0;
@@ -119,7 +121,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
       <View style={styles.emptyContainer}>
         <View style={styles.emptyTextWrapper}>
           <AppText variant="body" color="secondary" style={styles.emptyText}>
-            No messages yet. Start the conversation!
+            {t("chat.noMessagesYet")}
           </AppText>
         </View>
       </View>
@@ -141,7 +143,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
     return (
       <View style={styles.centered}>
         <AppText variant="body" color="secondary">
-          Invalid group
+          {t("chat.invalidGroup")}
         </AppText>
       </View>
     );
@@ -154,7 +156,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   if (isError) {
     return (
       <QueryErrorView
-        message="Failed to load messages"
+        message={t("groups.failedLoadMessages")}
         onRetry={() => refetch()}
       />
     );

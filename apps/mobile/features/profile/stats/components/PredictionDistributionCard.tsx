@@ -2,6 +2,7 @@
 // Horizontal stacked bar (4 colors) + legend.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -26,13 +27,14 @@ export function PredictionDistributionCard({
   outcome,
   miss,
 }: PredictionDistributionCardProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const total = exact + difference + outcome + miss;
 
   return (
     <Card>
       <AppText variant="subtitle" style={styles.title}>
-        Prediction Breakdown
+        {t("profile.predictionBreakdown")}
       </AppText>
       <View style={[styles.barContainer, { height: 12, borderRadius: 6 }]}>
         {total > 0 ? (
@@ -75,10 +77,10 @@ export function PredictionDistributionCard({
         )}
       </View>
       <View style={[styles.legend, { marginTop: theme.spacing.md }]}>
-        <LegendItem color={COLORS.exact} label="Exact" value={exact} />
-        <LegendItem color={COLORS.difference} label="Diff" value={difference} />
-        <LegendItem color={COLORS.outcome} label="Outcome" value={outcome} />
-        <LegendItem color={COLORS.miss} label="Miss" value={miss} />
+        <LegendItem color={COLORS.exact} label={t("predictions.exact")} value={exact} />
+        <LegendItem color={COLORS.difference} label={t("predictions.diff")} value={difference} />
+        <LegendItem color={COLORS.outcome} label={t("predictions.outcome")} value={outcome} />
+        <LegendItem color={COLORS.miss} label={t("predictions.miss")} value={miss} />
       </View>
     </Card>
   );

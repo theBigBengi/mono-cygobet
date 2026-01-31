@@ -3,6 +3,7 @@
 // Allows editing the max members value with increment/decrement controls.
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -38,6 +39,7 @@ export function GroupLobbyMaxMembersSection({
   onChange,
   disabled = false,
 }: GroupLobbyMaxMembersSectionProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [maxMembers, setMaxMembers] = useState(initialMaxMembers);
 
@@ -56,13 +58,12 @@ export function GroupLobbyMaxMembersSection({
     onChange?.(value);
   };
 
-  const selectionLabel = `Maximum ${maxMembers} members`;
-  const description =
-    "Set the maximum number of members that can join your Prediction Group.";
+  const selectionLabel = t("lobby.maxMembersLabel", { count: maxMembers });
+  const description = t("lobby.groupSizeDescription");
 
   return (
     <CollapsibleSection
-      title="Group Size"
+      title={t("lobby.groupSize")}
       selectionLabel={selectionLabel}
       description={description}
     >
@@ -70,7 +71,7 @@ export function GroupLobbyMaxMembersSection({
         {/* Main counter control */}
         <View style={styles.counterRow}>
           <AppText variant="body" style={styles.label}>
-            Max Members
+            {t("lobby.maxMembers")}
           </AppText>
           <View style={styles.counterControls}>
             <Pressable

@@ -3,11 +3,13 @@
 // Protected by Stack.Protected in root _layout.tsx
 
 import { Tabs } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { FloatingTabBar } from "@/components/FloatingTabBar";
 
 export default function TabsLayout() {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   return (
@@ -26,8 +28,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="groups"
         options={{
-          title: "Groups",
-          tabBarLabel: "Groups",
+          title: t("tabs.groups"),
+          tabBarLabel: t("tabs.groups"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people" size={size} color={color} />
           ),
@@ -36,8 +38,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: "Games",
-          tabBarLabel: "Games",
+          title: t("tabs.games"),
+          tabBarLabel: t("tabs.games"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="add" size={size} color={color} />
           ),
@@ -46,8 +48,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
-          tabBarLabel: "Profile",
+          title: t("tabs.profile"),
+          tabBarLabel: t("tabs.profile"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),

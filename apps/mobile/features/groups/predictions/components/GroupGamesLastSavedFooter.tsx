@@ -1,8 +1,18 @@
 import React from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { formatDate } from "@/utils/date";
+import { formatTime24Locale } from "@/lib/i18n/i18n.date";
+import i18n from "i18next";
+import type { Locale } from "@/lib/i18n/i18n.types";
+import { isLocale } from "@/lib/i18n/i18n.types";
+
+function getCurrentLocale(): Locale {
+  const lang = i18n.language?.split("-")[0]?.toLowerCase() ?? "en";
+  return isLocale(lang) ? lang : "en";
+}
 
 type Props = {
   latestUpdatedAt: Date | null;
@@ -20,7 +30,9 @@ export function GroupGamesLastSavedFooter({
   savedCount,
   totalCount,
 }: Props) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const locale = getCurrentLocale();
 
   if (!latestUpdatedAt && !isSaving && savedCount === 0) {
     return null;
@@ -29,11 +41,7 @@ export function GroupGamesLastSavedFooter({
   const savedTimeText = latestUpdatedAt
     ? formatDate(latestUpdatedAt.toISOString()) +
       " " +
-      latestUpdatedAt.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
+      formatTime24Locale(latestUpdatedAt, locale)
     : "";
 
   return (
@@ -42,13 +50,13 @@ export function GroupGamesLastSavedFooter({
         <View style={styles.loadingRow}>
           <ActivityIndicator size="small" color={theme.colors.primary} />
           <AppText variant="caption" color="secondary" style={styles.text}>
-            Saving...
+            {t("predictions.saving")}
           </AppText>
         </View>
       ) : (
         <View style={styles.row}>
           <AppText variant="caption" color="secondary" style={styles.text}>
-            {savedCount} of {totalCount} predictions saved
+            {t("predictions.saved", { count: savedCount, total: totalCount })}
           </AppText>
           {savedTimeText ? (
             <AppText variant="caption" color="secondary" style={styles.text}>

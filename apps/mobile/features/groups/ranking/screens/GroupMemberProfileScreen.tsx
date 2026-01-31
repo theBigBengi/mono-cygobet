@@ -2,6 +2,7 @@
 // Screen component for group member profile (group-scoped stats from nav params).
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText, Row, Stack, Divider, Button } from "@/components/ui";
@@ -33,6 +34,7 @@ export function GroupMemberProfileScreen({
   correctScoreCount,
   predictionCount,
 }: GroupMemberProfileScreenProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { user } = useAuth();
   const router = useRouter();
@@ -51,7 +53,7 @@ export function GroupMemberProfileScreen({
       <Screen>
         <View style={[styles.centered, { padding: theme.spacing.lg }]}>
           <AppText variant="body" color="secondary">
-            Invalid member or missing data.
+            {t("profile.invalidMemberData")}
           </AppText>
         </View>
       </Screen>
@@ -71,7 +73,7 @@ export function GroupMemberProfileScreen({
   }
 
   const displayName = username.trim() || "—";
-  const titleLine = `${displayName}${isOwnProfile ? " (You)" : ""}`;
+  const titleLine = `${displayName}${isOwnProfile ? ` (${t("profile.you")})` : ""}`;
 
   return (
     <Screen>
@@ -109,7 +111,7 @@ export function GroupMemberProfileScreen({
               <>
                 <Divider />
                 <Button
-                  label="Compare"
+                  label={t("predictions.compare")}
                   variant="primary"
                   onPress={() =>
                     router.push(

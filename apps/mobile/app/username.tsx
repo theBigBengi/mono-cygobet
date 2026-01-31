@@ -12,11 +12,13 @@ import {
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 import * as authApi from "@/lib/auth/auth.api";
 
 export default function UsernameScreen() {
+  const { t } = useTranslation("common");
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { loadUser } = useAuth();
@@ -27,7 +29,7 @@ export default function UsernameScreen() {
     const trimmedUsername = username.trim();
 
     if (!trimmedUsername || trimmedUsername.length < 3) {
-      Alert.alert("Error", "Username must be at least 3 characters long");
+      Alert.alert(t("errors.error"), t("auth.errorUsernameMin"));
       return;
     }
 
@@ -43,10 +45,7 @@ export default function UsernameScreen() {
     // Special: _-
     const usernameRegex = /^[\u0590-\u05FFa-zA-Z0-9_-]+$/;
     if (!usernameRegex.test(trimmedUsername)) {
-      Alert.alert(
-        "Error",
-        "Username can only contain Hebrew/English letters, numbers, underscores, and hyphens"
-      );
+      Alert.alert(t("errors.error"), t("auth.errorUsernameFormat"));
       return;
     }
 
@@ -61,11 +60,11 @@ export default function UsernameScreen() {
     } catch (err) {
       console.error("Onboarding completion failed:", err);
       if (err instanceof Error) {
-        Alert.alert("Error", err.message);
+        Alert.alert(t("errors.error"), err.message);
       } else {
         Alert.alert(
-          "Error",
-          "Failed to complete onboarding. Please try again."
+          t("errors.error"),
+          t("auth.errorOnboardingFailed")
         );
       }
     } finally {
@@ -90,7 +89,7 @@ export default function UsernameScreen() {
           },
         ]}
       >
-        Complete Your Profile
+        {t("auth.completeProfile")}
       </Text>
       <Text
         style={[
@@ -100,7 +99,7 @@ export default function UsernameScreen() {
           },
         ]}
       >
-        Choose a username to get started
+        {t("auth.chooseUsername")}
       </Text>
 
       <View style={styles.form}>
@@ -113,7 +112,7 @@ export default function UsernameScreen() {
               backgroundColor: theme.colors.surface,
             },
           ]}
-          placeholder="Username"
+          placeholder={t("auth.username")}
           placeholderTextColor={theme.colors.textSecondary}
           value={username}
           onChangeText={setUsername}
@@ -130,8 +129,7 @@ export default function UsernameScreen() {
             },
           ]}
         >
-          3-50 characters. Hebrew/English letters, numbers, underscores, and
-          hyphens only.
+          {t("auth.usernameHint")}
         </Text>
 
         <Pressable
@@ -148,7 +146,7 @@ export default function UsernameScreen() {
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Complete</Text>
+            <Text style={styles.buttonText}>{t("auth.complete")}</Text>
           )}
         </Pressable>
       </View>

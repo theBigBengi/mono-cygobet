@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   groupName: {
     flex: 1,
     fontWeight: "600",
-    marginRight: 12,
+    marginEnd: 12,
   },
   unreadBadge: {
     minWidth: 20,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
-    marginRight: 8,
+    marginEnd: 8,
   },
   unreadBadgeText: {
     fontSize: 11,
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   },
   nextGameTime: {
     fontSize: 11,
-    marginLeft: 8,
+    marginStart: 8,
   },
   progressTrack: {
     height: 3,

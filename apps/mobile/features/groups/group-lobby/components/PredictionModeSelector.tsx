@@ -3,6 +3,7 @@
 // Allows choosing between different prediction types for the group.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText, Divider } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -35,6 +36,7 @@ export function PredictionModeSelector({
   onChange,
   disabled = false,
 }: PredictionModeSelectorProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   const handleSelect = (mode: PredictionMode) => {
@@ -84,25 +86,25 @@ export function PredictionModeSelector({
     );
   };
 
-  const selectionLabel = value === "result" ? "Result" : "3-Way Prediction";
+  const selectionLabel = value === "result" ? t("lobby.result") : t("lobby.threeWayPrediction");
 
   return (
     <CollapsibleSection
-      title="Select Make Prediction mode"
+      title={t("lobby.selectPredictionMode")}
       selectionLabel={selectionLabel}
-      description="Choose how members make predictions."
+      description={t("lobby.predictionModeDescription")}
     >
       <View style={styles.optionsContainer}>
         <OptionRow
           mode="result"
-          title="Result"
-          description='"Result" mode is for predicting the match result. Points are awarded for exact predictions (prediction: 3-1, result 3-1), goal difference (prediction: 3-1, result: 2-0) and outcome (prediction: 3-1, result 2-1).'
+          title={t("lobby.result")}
+          description={t("lobby.resultDescription")}
         />
         <Divider style={styles.divider} />
         <OptionRow
           mode="3way"
-          title="3-Way Prediction"
-          description='In "3-Way Prediction" mode, predictions are 1-0-2 (1 = home win, 0 = draw, 2 = away win).'
+          title={t("lobby.threeWayPrediction")}
+          description={t("lobby.threeWayDescription")}
         />
       </View>
     </CollapsibleSection>

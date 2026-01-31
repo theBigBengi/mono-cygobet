@@ -2,6 +2,7 @@
 // W/L/T record + overall comparison.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { Card, AppText, Divider } from "@/components/ui";
 import { ComparisonBar } from "./ComparisonBar";
@@ -34,23 +35,24 @@ export function H2HSummaryCard({
   userAccuracy,
   opponentAccuracy,
 }: H2HSummaryCardProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const record = `${userWins}-${ties}-${opponentWins}`;
 
   return (
     <Card>
       <AppText variant="subtitle" style={styles.title}>
-        Head to Head
+        {t("profile.headToHead")}
       </AppText>
       <View style={[styles.record, { marginBottom: theme.spacing.md }]}>
         <AppText variant="body" color="secondary">
-          Record (W-T-L)
+          {t("profile.recordWTL")}
         </AppText>
         <AppText variant="title">{record}</AppText>
       </View>
       <Divider />
       <ComparisonBar
-        label="Points"
+        label={t("profile.points")}
         userValue={userTotalPoints}
         opponentValue={opponentTotalPoints}
         userLabel={userLabel}
@@ -58,13 +60,13 @@ export function H2HSummaryCard({
       />
       <Divider />
       <ComparisonBar
-        label="Exact"
+        label={t("predictions.exact")}
         userValue={userExactScores}
         opponentValue={opponentExactScores}
       />
       <Divider />
       <ComparisonBar
-        label="Accuracy"
+        label={t("profile.accuracy")}
         userValue={`${userAccuracy}%`}
         opponentValue={`${opponentAccuracy}%`}
       />

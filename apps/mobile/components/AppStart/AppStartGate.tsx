@@ -3,6 +3,7 @@
 // Shows loading or error state during app initialization.
 
 import React, { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
   appStartStatusAtom,
@@ -21,6 +22,7 @@ interface AppStartGateProps {
 }
 
 export function AppStartGate({ children }: AppStartGateProps) {
+  const { t } = useTranslation("common");
   const status = useAtomValue(appStartStatusAtom);
   const error = useAtomValue(appStartErrorAtom);
   const setStatus = useSetAtom(appStartStatusAtom);
@@ -75,7 +77,7 @@ export function AppStartGate({ children }: AppStartGateProps) {
   };
 
   if (status === "booting") {
-    return <QueryLoadingView message="Starting..." />;
+    return <QueryLoadingView message={t("common.starting")} />;
   }
 
   if (status === "error" && error) {
@@ -83,7 +85,7 @@ export function AppStartGate({ children }: AppStartGateProps) {
       <QueryErrorView
         message={error.message}
         onRetry={handleRetry}
-        extraActions={<Button label="Retry" onPress={handleRetry} />}
+        extraActions={<Button label={t("common.retry")} onPress={handleRetry} />}
       />
     );
   }

@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { Screen, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
@@ -27,6 +28,7 @@ import type { ApiGroupItem } from "@repo/types";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function GroupsScreen() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -74,7 +76,7 @@ export default function GroupsScreen() {
     return (
       <View style={styles.root}>
         <QueryErrorView
-          message="Failed to load groups"
+          message={t("groups.failedLoadGroups")}
           onRetry={() => refetch()}
         />
       </View>
@@ -95,16 +97,16 @@ export default function GroupsScreen() {
               color="secondary"
               style={styles.emptySubtitle}
             >
-              You don&apos;t have any groups yet
+              {t("groups.noGroupsSubtitle")}
             </AppText>
             <Button
-              label="Join with code"
+              label={t("groups.joinWithCode")}
               variant="secondary"
               onPress={handleJoinWithCode}
               style={[styles.joinButton, { marginTop: theme.spacing.lg }]}
             />
             <Button
-              label="Browse Public Groups"
+              label={t("groups.browsePublicGroups")}
               variant="secondary"
               onPress={handleBrowsePublic}
               style={[styles.joinButton, { marginTop: theme.spacing.sm }]}
@@ -136,7 +138,7 @@ export default function GroupsScreen() {
         style={styles.actionButton}
       />
       <Button
-        label="Browse public"
+        label={t("groups.browsePublic")}
         variant="secondary"
         onPress={handleBrowsePublic}
         style={styles.actionButton}
@@ -298,6 +300,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   chevron: {
-    marginLeft: 4,
+    marginStart: 4,
   },
 });

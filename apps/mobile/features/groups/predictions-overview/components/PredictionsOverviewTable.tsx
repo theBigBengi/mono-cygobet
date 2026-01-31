@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView, FlatList } from "react-native";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -16,6 +17,7 @@ const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 110;
 
 export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { user } = useAuth();
   const leftFlatListRef = useRef<FlatList>(null);
@@ -234,7 +236,7 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
           {participant.number}
         </AppText>
         <AppText variant="caption" numberOfLines={1} style={styles.participantName}>
-          {participant.username || "Unknown"}
+          {participant.username || t("common.unknown")}
         </AppText>
       </View>
     );

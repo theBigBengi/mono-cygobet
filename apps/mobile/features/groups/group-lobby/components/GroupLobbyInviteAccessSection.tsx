@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Switch } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -39,6 +40,7 @@ export function GroupLobbyInviteAccessSection({
   isCreator,
   status,
 }: GroupLobbyInviteAccessSectionProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   // Only show invite access section for creators in draft mode
@@ -59,7 +61,7 @@ export function GroupLobbyInviteAccessSection({
       <View style={styles.row}>
         <View style={styles.labelContainer}>
           <AppText variant="body" style={styles.label}>
-            Invite Sharing
+            {t("lobby.inviteSharing")}
           </AppText>
           <AppText variant="caption" color="secondary" style={styles.helperText}>
             {helperText}
@@ -93,7 +95,7 @@ const styles = StyleSheet.create({
   },
   labelContainer: {
     flex: 1,
-    marginRight: 16,
+    marginEnd: 16,
   },
   label: {
     fontWeight: "600",

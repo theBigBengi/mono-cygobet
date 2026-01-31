@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, TextInput } from "react-native";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -32,6 +33,7 @@ export function GroupLobbyNameHeader({
   editable,
   isCreator,
 }: GroupLobbyNameHeaderProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   // Show TextInput only if creator and editable (draft mode)
@@ -52,7 +54,7 @@ export function GroupLobbyNameHeader({
           ]}
           value={name}
           onChangeText={onChange}
-          placeholder="Group name"
+          placeholder={t("lobby.groupNamePlaceholder")}
           placeholderTextColor={theme.colors.textSecondary}
           editable={editable}
         />

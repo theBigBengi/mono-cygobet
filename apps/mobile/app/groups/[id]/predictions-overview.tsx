@@ -3,6 +3,7 @@
 
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ScreenWithHeader } from "@/components/ui";
 import { PredictionsOverviewScreen } from "@/features/groups/predictions-overview";
 
@@ -11,8 +12,9 @@ export default function PredictionsOverviewRoute() {
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
 
+  const { t } = useTranslation("common");
   return (
-    <ScreenWithHeader title="Predictions">
+    <ScreenWithHeader title={t("groups.predictions")}>
       <PredictionsOverviewScreen groupId={groupId} />
     </ScreenWithHeader>
   );

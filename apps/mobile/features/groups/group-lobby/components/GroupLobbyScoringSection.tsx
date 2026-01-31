@@ -3,6 +3,7 @@
 // Allows editing point values for On the Nose, Goal/Point Difference, and Outcome.
 
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText, Divider } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -159,15 +160,15 @@ export function GroupLobbyScoringSection({
   );
 
   const is3way = predictionMode === "3way";
+  const { t } = useTranslation("common");
   const selectionLabel = is3way
-    ? `Outcome: ${outcome}`
-    : `On the Nose: ${onTheNose}, Goal/Point Difference: ${goalDifference}, Outcome: ${outcome}`;
-  const description =
-    "Choose how many points members of your Prediction Group get for predicting correctly (see example below).";
+    ? `${t("lobby.outcome")}: ${outcome}`
+    : `${t("lobby.onTheNose")}: ${onTheNose}, ${t("lobby.goalPointDifference")}: ${goalDifference}, ${t("lobby.outcome")}: ${outcome}`;
+  const description = t("lobby.scoringDescription");
 
   return (
     <CollapsibleSection
-      title="Scoring System for Predictions"
+      title={t("lobby.scoringTitle")}
       selectionLabel={selectionLabel}
       description={description}
     >
@@ -175,7 +176,7 @@ export function GroupLobbyScoringSection({
         {!is3way && (
           <>
             <ScoreRow
-              label="On the Nose"
+              label={t("lobby.onTheNose")}
               value={onTheNose}
               onDecrement={() => handleValueChange("onTheNose", -1)}
               onIncrement={() => handleValueChange("onTheNose", 1)}
@@ -191,7 +192,7 @@ export function GroupLobbyScoringSection({
           </>
         )}
         <ScoreRow
-          label="Outcome"
+          label={t("lobby.outcome")}
           value={outcome}
           onDecrement={() => handleValueChange("outcome", -1)}
           onIncrement={() => handleValueChange("outcome", 1)}

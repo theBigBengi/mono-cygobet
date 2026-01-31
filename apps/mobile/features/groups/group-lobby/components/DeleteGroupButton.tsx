@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { Button } from "@/components/ui";
  
@@ -32,7 +33,7 @@ export function DeleteGroupButton({
   isPending,
   disabled,
 }: DeleteGroupButtonProps) {
- 
+  const { t } = useTranslation("common");
   return (
     <View
       style={[
@@ -42,7 +43,7 @@ export function DeleteGroupButton({
       pointerEvents="box-none"
     >
       <Button
-        label={isPending ? "Deleting..." : "Delete Group Draft"}
+        label={isPending ? t("groups.deleting") : t("groups.deleteGroupDraft")}
         onPress={onPress}
         disabled={disabled}
         variant="danger"

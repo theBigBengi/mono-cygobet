@@ -2,6 +2,7 @@
 // Modal component for group settings.
 
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Modal,
   View,
@@ -37,6 +38,7 @@ export function GroupSettingsModal({
   group,
   isCreator = false,
 }: GroupSettingsModalProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [inviteAccess, setInviteAccess] = useState<ApiInviteAccess>("all");
@@ -108,12 +110,12 @@ export function GroupSettingsModal({
             <View style={styles.inviteRow}>
               <View style={styles.inviteLabelContainer}>
                 <AppText variant="body" style={styles.inviteLabel}>
-                  Invite Sharing
+                  {t("lobby.inviteSharing")}
                 </AppText>
                 <AppText variant="caption" color="secondary" style={styles.inviteHelper}>
                   {switchOn
-                    ? "All members can share invite link"
-                    : "Only admins can share invite link"}
+                    ? t("lobby.allMembersCanShare")
+                    : t("lobby.onlyAdminsCanShare")}
                 </AppText>
               </View>
               <Switch
@@ -169,7 +171,7 @@ const styles = StyleSheet.create({
   },
   inviteLabelContainer: {
     flex: 1,
-    marginRight: 16,
+    marginEnd: 16,
   },
   inviteLabel: {
     fontWeight: "600",

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Switch } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -39,6 +40,7 @@ export function GroupLobbyPrivacySection({
   isCreator,
   status,
 }: GroupLobbyPrivacySectionProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   // Only show privacy section for creators in draft mode
@@ -51,7 +53,7 @@ export function GroupLobbyPrivacySection({
       <View style={styles.privacyRow}>
         <View style={styles.privacyLabelContainer}>
           <AppText variant="body" style={styles.privacyLabel}>
-            Privacy
+            {t("lobby.privacy")}
           </AppText>
           <AppText
             variant="caption"
@@ -59,8 +61,8 @@ export function GroupLobbyPrivacySection({
             style={styles.privacyHelperText}
           >
             {privacy === "private"
-              ? "Only invited users can join"
-              : "Anyone can join"}
+              ? t("lobby.onlyInvitedCanJoin")
+              : t("lobby.anyoneCanJoin")}
           </AppText>
         </View>
         <Switch
@@ -93,7 +95,7 @@ const styles = StyleSheet.create({
   },
   privacyLabelContainer: {
     flex: 1,
-    marginRight: 16,
+    marginEnd: 16,
   },
   privacyLabel: {
     fontWeight: "600",

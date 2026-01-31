@@ -1,6 +1,7 @@
 // components/QueryState/QueryErrorView.tsx
 // Error state component using UI layer.
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Screen, AppText, Button } from "@/components/ui";
 import { sharedStyles } from "@/components/ui/styles";
 
@@ -15,6 +16,7 @@ export function QueryErrorView({
   onRetry,
   extraActions,
 }: QueryErrorViewProps) {
+  const { t } = useTranslation("common");
   return (
     <Screen>
       <AppText variant="body" color="danger" style={sharedStyles.emptyTextMargin}>
@@ -22,7 +24,11 @@ export function QueryErrorView({
       </AppText>
 
       {onRetry ? (
-        <Button label="Retry" onPress={onRetry} style={sharedStyles.buttonContainer} />
+        <Button
+          label={t("common.retry")}
+          onPress={onRetry}
+          style={sharedStyles.buttonContainer}
+        />
       ) : null}
 
       {extraActions}

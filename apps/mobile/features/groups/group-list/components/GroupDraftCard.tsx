@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   groupName: {
     flex: 1,
     fontWeight: "600",
-    marginRight: 12,
+    marginEnd: 12,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   groupDate: {
-    marginLeft: 8,
+    marginStart: 8,
   },
   groupInfo: {
     marginTop: 8,

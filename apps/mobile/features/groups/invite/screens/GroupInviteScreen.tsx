@@ -2,6 +2,7 @@
 // Screen for viewing and sharing group invite code.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Share } from "react-native";
 import { Screen, Card, AppText, Button } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
@@ -25,6 +26,7 @@ interface GroupInviteScreenProps {
  * with code + deep link. Regenerate Code triggers regeneration and refetches.
  */
 export function GroupInviteScreen({ groupId }: GroupInviteScreenProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { data, isLoading, error, refetch } = useInviteCodeQuery(groupId);
   const regenerateMutation = useRegenerateInviteCodeMutation(groupId);
@@ -48,7 +50,7 @@ export function GroupInviteScreen({ groupId }: GroupInviteScreenProps) {
   if (isLoading) {
     return (
       <Screen>
-        <QueryLoadingView message="Loading invite code..." />
+        <QueryLoadingView message={t("invite.loadingInviteCode")} />
       </Screen>
     );
   }
@@ -73,7 +75,7 @@ export function GroupInviteScreen({ groupId }: GroupInviteScreenProps) {
             color="secondary"
             style={[styles.label, { marginBottom: theme.spacing.sm }]}
           >
-            Invite code
+            {t("groups.inviteCode")}
           </AppText>
           <AppText
             variant="title"
@@ -95,7 +97,7 @@ export function GroupInviteScreen({ groupId }: GroupInviteScreenProps) {
           style={[styles.button, { marginTop: theme.spacing.md }]}
         />
         <Button
-          label="Regenerate Code"
+          label={t("invite.regenerateCode")}
           variant="secondary"
           disabled={isRegenerating}
           onPress={handleRegenerate}

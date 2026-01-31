@@ -2,6 +2,7 @@
 // Route wrapper for group member profile screen.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useLocalSearchParams } from "expo-router";
 import { ScreenWithHeader } from "@/components/ui";
 import { GroupMemberProfileScreen } from "@/features/groups/ranking";
@@ -19,6 +20,7 @@ function parseStr(value: string | string[] | undefined): string {
 }
 
 export default function GroupMemberProfileRoute() {
+  const { t } = useTranslation("common");
   const params = useLocalSearchParams<{
     id: string;
     userId: string;
@@ -42,7 +44,7 @@ export default function GroupMemberProfileRoute() {
   const correctScoreCount = parseNum(params.correctScoreCount);
   const predictionCount = parseNum(params.predictionCount);
 
-  const title = username || "Member";
+  const title = username || t("groups.member");
 
   return (
     <ScreenWithHeader title={title}>

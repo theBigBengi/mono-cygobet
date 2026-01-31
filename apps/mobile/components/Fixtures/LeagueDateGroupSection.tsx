@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 12,
     fontWeight: "400",
-    marginLeft: 12,
+    marginStart: 12,
     opacity: 0.6,
   },
 });

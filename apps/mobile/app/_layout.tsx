@@ -14,6 +14,7 @@ import { useEffect } from "react";
 import { useRouter } from "expo-router";
 
 import { Provider as JotaiProvider } from "jotai";
+import { I18nBootstrap } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { SocketProvider } from "@/lib/socket";
@@ -26,11 +27,14 @@ import { DegradedBanner } from "@/components/DegradedBanner";
 import { initializeGlobalErrorHandlers } from "@/lib/errors/globalErrorHandlers";
 import { handleError, getUserFriendlyMessage } from "@/lib/errors";
 import { View, Text, StyleSheet, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
+import i18n from "i18next";
 
 // Log store identity for verification
 console.log("[RootLayout] Jotai store instance:", jotaiStore);
 
 function AppContent() {
+  const { t } = useTranslation("common");
   const { colorScheme, theme } = useTheme();
   const { status, user } = useAuth();
 
@@ -66,7 +70,7 @@ function AppContent() {
               />
               <Stack.Screen
                 name="groups/[id]/games"
-                options={{ title: "Group Games", headerShown: false }}
+                options={{ title: t("groups.groupGames"), headerShown: false }}
               />
               <Stack.Screen
                 name="groups/[id]/ranking"
@@ -74,11 +78,11 @@ function AppContent() {
               />
               <Stack.Screen
                 name="groups/[id]/predictions-overview"
-                options={{ title: "Predictions Overview", headerShown: false }}
+                options={{ title: t("groups.predictionsOverview"), headerShown: false }}
               />
               <Stack.Screen
                 name="groups/[id]/invite"
-                options={{ title: "Invite", headerShown: false }}
+                options={{ title: t("groups.invite"), headerShown: false }}
               />
               <Stack.Screen
                 name="groups/[id]/members"
@@ -90,15 +94,15 @@ function AppContent() {
               />
               <Stack.Screen
                 name="groups/[id]/member/[userId]"
-                options={{ title: "Member Profile", headerShown: false }}
+                options={{ title: t("groups.memberProfile"), headerShown: false }}
               />
               <Stack.Screen
                 name="groups/join"
-                options={{ title: "Join Group", headerShown: false }}
+                options={{ title: t("groups.joinGroup"), headerShown: false }}
               />
               <Stack.Screen
                 name="groups/discover"
-                options={{ title: "Discover", headerShown: false }}
+                options={{ title: t("groups.discover"), headerShown: false }}
               />
               <Stack.Screen
                 name="profile/head-to-head"
@@ -138,13 +142,15 @@ export default function RootLayout() {
   return (
     <JotaiProvider store={jotaiStore}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <AuthProvider>
-            <SocketProvider>
-              <AppContent />
-            </SocketProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <I18nBootstrap>
+          <ThemeProvider>
+            <AuthProvider>
+              <SocketProvider>
+                <AppContent />
+              </SocketProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </I18nBootstrap>
       </QueryClientProvider>
     </JotaiProvider>
   );
@@ -159,6 +165,8 @@ export default function RootLayout() {
  */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const router = useRouter();
+  const t = (key: string): string =>
+    i18n.isInitialized ? String((i18n as any).t(key, { ns: "common" })) : key;
 
   // Handle the error
   useEffect(() => {
@@ -187,14 +195,18 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <View style={errorBoundaryStyles.container}>
       <View style={errorBoundaryStyles.content}>
-        <Text style={errorBoundaryStyles.title}>Something went wrong</Text>
+        <Text style={errorBoundaryStyles.title}>
+          {t("errors.somethingWentWrongTitle") || "Something went wrong"}
+        </Text>
         <Text style={errorBoundaryStyles.message}>{userMessage}</Text>
         
         <Pressable
           style={errorBoundaryStyles.button}
           onPress={handleRetry}
         >
-          <Text style={errorBoundaryStyles.buttonText}>Try Again</Text>
+          <Text style={errorBoundaryStyles.buttonText}>
+            {t("errors.tryAgain") || "Try Again"}
+          </Text>
         </Pressable>
         
         <Pressable
@@ -202,7 +214,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
           onPress={handleGoHome}
         >
           <Text style={[errorBoundaryStyles.buttonText, errorBoundaryStyles.buttonTextSecondary]}>
-            Go to Home
+            {t("errors.goToHome") || "Go to Home"}
           </Text>
         </Pressable>
       </View>

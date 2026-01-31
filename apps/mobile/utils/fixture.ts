@@ -1,23 +1,31 @@
 // utils/fixture.ts
 // Utility functions for fixture formatting and manipulation.
 
+import i18n from "i18next";
 import type { FixtureItem } from "@/types/common";
+import {
+  formatDateShortLocale,
+  formatTime24Locale,
+  formatDateHeaderLocale,
+  formatKickoffLocale,
+} from "@/lib/i18n/i18n.date";
+import type { Locale } from "@/lib/i18n/i18n.types";
+import { isLocale } from "@/lib/i18n/i18n.types";
+
+function getCurrentLocale(): Locale {
+  const lang = i18n.language?.split("-")[0]?.toLowerCase() ?? "en";
+  return isLocale(lang) ? lang : "en";
+}
 
 /**
  * Format kickoff date label (e.g., "16 Apr").
  * Returns "—" if missing/null/undefined.
  */
 export function formatKickoffDate(iso: string | null | undefined): string {
-  if (!iso) {
-    return "—";
-  }
-
+  if (!iso) return "—";
   try {
     const date = new Date(iso);
-    return date.toLocaleDateString("en-US", {
-      day: "numeric",
-      month: "short",
-    });
+    return formatDateShortLocale(date, getCurrentLocale());
   } catch {
     return "—";
   }
@@ -28,17 +36,10 @@ export function formatKickoffDate(iso: string | null | undefined): string {
  * Returns "—" if missing/null/undefined.
  */
 export function formatKickoffTime(iso: string | null | undefined): string {
-  if (!iso) {
-    return "—";
-  }
-
+  if (!iso) return "—";
   try {
     const date = new Date(iso);
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+    return formatTime24Locale(date, getCurrentLocale());
   } catch {
     return "—";
   }
@@ -49,20 +50,10 @@ export function formatKickoffTime(iso: string | null | undefined): string {
  * Returns "TBD" if missing/null/undefined.
  */
 export function formatKickoff(iso: string | null | undefined): string {
-  if (!iso) {
-    return "TBD";
-  }
-
+  if (!iso) return "TBD";
   try {
     const date = new Date(iso);
-    return date.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    return formatKickoffLocale(date, getCurrentLocale());
   } catch {
     return "TBD";
   }
@@ -110,11 +101,7 @@ export function getLeagueLabel(leagueName?: string | null): string {
 export function formatDateHeader(dateKey: string, time?: string): string {
   try {
     const date = new Date(dateKey + "T00:00:00");
-    const day = date.getDate();
-    const month = date.toLocaleDateString("en-US", { month: "short" });
-    const year = date.getFullYear();
-    const dateStr = `${day} ${month} ${year}`;
-    return time ? `${dateStr} - ${time}` : dateStr;
+    return formatDateHeaderLocale(date, getCurrentLocale(), time);
   } catch {
     return dateKey;
   }
@@ -126,17 +113,10 @@ export function formatDateHeader(dateKey: string, time?: string): string {
  * Alias for formatKickoffTime for clarity.
  */
 export function formatKickoffTime24(iso: string | null | undefined): string {
-  if (!iso) {
-    return "";
-  }
-
+  if (!iso) return "";
   try {
     const date = new Date(iso);
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+    return formatTime24Locale(date, getCurrentLocale());
   } catch {
     return "";
   }

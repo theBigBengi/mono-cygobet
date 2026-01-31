@@ -2,6 +2,7 @@
 // Screen component for group members list.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   FlatList,
   Platform,
@@ -96,6 +97,7 @@ function MemberRow({
  * Current user row is highlighted. Pull-to-refresh supported.
  */
 export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { user } = useAuth();
   const {
@@ -109,7 +111,7 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
   if (isLoading) {
     return (
       <Screen>
-        <QueryLoadingView message="Loading members..." />
+        <QueryLoadingView message={t("members.loadingMembers")} />
       </Screen>
     );
   }
@@ -118,7 +120,7 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
     return (
       <Screen>
         <QueryErrorView
-          message="Failed to load members"
+          message={t("members.failedLoadMembers")}
           onRetry={() => refetch()}
         />
       </Screen>

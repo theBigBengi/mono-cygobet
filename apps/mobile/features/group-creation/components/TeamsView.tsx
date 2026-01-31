@@ -3,6 +3,7 @@
 // Supports popular teams preset and search functionality with debouncing.
 
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, TextInput, Pressable } from "react-native";
 import { AppText, Screen, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -18,6 +19,7 @@ interface TeamsViewProps {
 }
 
 export function TeamsView({ tabs }: TeamsViewProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState<string>("");
   const debouncedSearch = useDebounce(searchQuery, 400);
@@ -41,13 +43,13 @@ export function TeamsView({ tabs }: TeamsViewProps) {
 
   const renderContent = () => {
     if (isLoading) {
-      return <QueryLoadingView message="Loading teams…" />;
+      return <QueryLoadingView message={t("groupCreation.loadingTeams")} />;
     }
 
     if (error) {
       return (
         <QueryErrorView
-          message="Failed to load teams"
+          message={t("groupCreation.failedLoadTeams")}
           onRetry={() => refetch()}
         />
       );
@@ -57,12 +59,12 @@ export function TeamsView({ tabs }: TeamsViewProps) {
       return (
         <View style={styles.emptyContainer}>
           <AppText variant="title" style={styles.emptyTitle}>
-            {isSearchMode ? "No teams found" : "No popular teams"}
+            {isSearchMode ? t("groupCreation.noTeamsFound") : t("groupCreation.noPopularTeams")}
           </AppText>
           <AppText variant="body" color="secondary" style={styles.emptySubtitle}>
             {isSearchMode
-              ? "Try a different search term."
-              : "There are no popular teams to display."}
+              ? t("groupCreation.tryDifferentSearch")
+              : t("groupCreation.noPopularTeamsDisplay")}
           </AppText>
         </View>
       );
@@ -92,7 +94,7 @@ export function TeamsView({ tabs }: TeamsViewProps) {
             />
             <TextInput
               style={[styles.searchInput, { color: theme.colors.textPrimary }]}
-              placeholder="Search teams..."
+              placeholder={t("groupCreation.searchTeamsPlaceholder")}
               placeholderTextColor={theme.colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -139,7 +141,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   searchIcon: {
-    marginRight: 8,
+    marginEnd: 8,
   },
   searchInput: {
     flex: 1,
@@ -148,7 +150,7 @@ const styles = StyleSheet.create({
     
   },
   clearButton: {
-    marginLeft: 8,
+    marginStart: 8,
     padding: 4,
   },
   emptyContainer: {

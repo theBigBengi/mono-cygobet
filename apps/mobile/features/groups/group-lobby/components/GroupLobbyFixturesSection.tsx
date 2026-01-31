@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView, Pressable, Dimensions } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -69,6 +70,7 @@ export function GroupLobbyFixturesSection({
   predictionsCount,
   totalFixtures,
 }: GroupLobbyFixturesSectionProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
   // Ensure fixtures is always an array - handle both undefined and non-array cases
@@ -80,11 +82,11 @@ export function GroupLobbyFixturesSection({
     bannerTitle ??
     (showFinalScores
       ? gamesCount > 0
-        ? `Games (${gamesCount})`
-        : "Games"
+        ? `${t("lobby.games")} (${gamesCount})`
+        : t("lobby.games")
       : gamesCount > 0
-        ? `Selected games (${gamesCount})`
-        : "Selected games");
+        ? `${t("lobby.selectedGames")} (${gamesCount})`
+        : t("lobby.selectedGames"));
 
   const showViewAll = gamesCount > 0 && !onBannerPress && onViewAll;
 
@@ -239,7 +241,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   viewAllText: {
-    marginLeft: 8,
+    marginStart: 8,
   },
   gamesLoadingRow: {
     flexDirection: "row",
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   gamesLoadingText: {
-    marginLeft: 8,
+    marginStart: 8,
   },
   gamesErrorRow: {
     flexDirection: "row",
@@ -264,7 +266,7 @@ const styles = StyleSheet.create({
   },
   gameItemWrapper: {
     width: GAME_CARD_WIDTH,
-    marginRight: CARD_SPACING,
+    marginEnd: CARD_SPACING,
   },
   progressBlock: {
     marginTop: 4,

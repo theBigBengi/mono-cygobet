@@ -3,8 +3,12 @@
 
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
+import i18n from "i18next";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
+import { formatTime24Locale } from "@/lib/i18n/i18n.date";
+import type { Locale } from "@/lib/i18n/i18n.types";
+import { isLocale } from "@/lib/i18n/i18n.types";
 import type { ChatMessage, MentionData } from "@/lib/socket";
 
 interface ChatMessageBubbleProps {
@@ -12,12 +16,14 @@ interface ChatMessageBubbleProps {
   isCurrentUser: boolean;
 }
 
+function getCurrentLocale(): Locale {
+  const lang = i18n.language?.split("-")[0]?.toLowerCase() ?? "en";
+  return isLocale(lang) ? lang : "en";
+}
+
 function formatMessageTime(isoString: string): string {
   const date = new Date(isoString);
-  return date.toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatTime24Locale(date, getCurrentLocale());
 }
 
 function parseMentions(

@@ -70,10 +70,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   name: {
-    marginLeft: 12,
+    marginStart: 12,
     flex: 1,
   },
   check: {
-    marginLeft: 8,
+    marginStart: 8,
   },
 });

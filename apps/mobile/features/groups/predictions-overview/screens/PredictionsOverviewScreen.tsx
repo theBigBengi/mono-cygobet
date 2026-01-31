@@ -2,6 +2,7 @@
 // Screen component for predictions overview.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { Screen, AppText } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
@@ -22,6 +23,7 @@ interface PredictionsOverviewScreenProps {
 export function PredictionsOverviewScreen({
   groupId,
 }: PredictionsOverviewScreenProps) {
+  const { t } = useTranslation("common");
   const { data, isLoading, error } = usePredictionsOverviewQuery(groupId);
 
   // Loading state
@@ -37,7 +39,7 @@ export function PredictionsOverviewScreen({
   if (error || !data) {
     return (
       <Screen>
-        <QueryErrorView message="Failed to load predictions overview" />
+        <QueryErrorView message={t("predictionsOverview.failedLoadPredictions")} />
       </Screen>
     );
   }

@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
   },
   timeResultColumn: {
     flexDirection: "column",
+    direction: "ltr",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,

@@ -6,6 +6,7 @@
 // - Ended status → GroupLobbyEndedScreen
 
 import React, { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSetAtom } from "jotai";
 import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
@@ -31,6 +32,7 @@ import {
  */
 
 export default function GroupLobbyScreen() {
+  const { t } = useTranslation("common");
   const params = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
@@ -98,8 +100,8 @@ export default function GroupLobbyScreen() {
               },
               onError: (error: any) => {
                 Alert.alert(
-                  "שגיאה",
-                  error?.message || "Delete group draft failed. Please try again."
+                  t("errors.error"),
+                  error?.message || t("groups.deleteGroupDraftFailed")
                 );
               },
             });
@@ -116,7 +118,7 @@ export default function GroupLobbyScreen() {
 
   // Error state - show loading while navigating back
   if (error || !data) {
-    return <QueryLoadingView message="Redirecting..." />;
+    return <QueryLoadingView message={t("groups.redirecting")} />;
   }
 
   const group = data.data;

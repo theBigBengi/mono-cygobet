@@ -2,6 +2,7 @@
 // Modal to create group from selection. Supports games, leagues, teams.
 
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Modal,
   View,
@@ -40,6 +41,7 @@ import { createGroupModalVisibleAtom } from "./create-group-modal.atom";
 import { currentSelectionModeAtom } from "../selection/mode.atom";
 
 export function CreateGroupModal() {
+  const { t } = useTranslation("common");
   const { theme, colorScheme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -200,7 +202,7 @@ export function CreateGroupModal() {
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
             <AppText variant="body" color="secondary" style={styles.loadingTxt}>
-              Creating group…
+              {t("groupCreation.creating")}
             </AppText>
           </View>
         )}
@@ -231,7 +233,7 @@ export function CreateGroupModal() {
             </View>
           )}
           <Button
-            label={isCreating ? "Creating…" : "Create Group"}
+            label={isCreating ? t("groupCreation.creating") : t("groupCreation.createGroup")}
             onPress={handleCreate}
             disabled={isCreating || !canCreate}
             style={styles.createBtn}

@@ -2,6 +2,7 @@
 // Dropdown picker for @mentions — members and fixtures.
 
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { View, FlatList, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
@@ -25,6 +26,7 @@ export function MentionPicker({
   fixtures,
   onSelect,
 }: MentionPickerProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   const filtered = useMemo(() => {
@@ -71,7 +73,7 @@ export function MentionPicker({
               color="secondary"
               style={styles.optionType}
             >
-              {item.type === "user" ? "Member" : "Game"}
+              {item.type === "user" ? t("chat.member") : t("chat.game")}
             </AppText>
             <AppText variant="body" style={styles.optionDisplay}>
               {item.display}

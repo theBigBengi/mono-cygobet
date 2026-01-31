@@ -2,9 +2,11 @@
 // Main stats screen: ScrollView with all cards.
 
 import React from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { Screen, Button } from "@/components/ui";
+import { useTranslation } from "react-i18next";
+import { Screen, Button, AppText } from "@/components/ui";
+import { useI18n } from "@/lib/i18n";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useUserStatsQuery, useProfileQuery } from "../../profile.queries";
@@ -22,6 +24,8 @@ interface ProfileStatsScreenProps {
 }
 
 export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
+  const { t } = useTranslation("common");
+  const { locale, setLocale } = useI18n();
   const { theme } = useTheme();
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -33,7 +37,7 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
   if (statsQuery.isLoading) {
     return (
       <Screen>
-        <QueryLoadingView message="Loading stats..." />
+        <QueryLoadingView message={t("profile.loadingStats")} />
       </Screen>
     );
   }
@@ -42,7 +46,7 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
     return (
       <Screen>
         <QueryErrorView
-          message="Failed to load stats"
+          message={t("profile.failedLoadStats")}
           onRetry={() => void statsQuery.refetch()}
         />
       </Screen>
@@ -53,7 +57,7 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
   if (!data) {
     return (
       <Screen>
-        <QueryErrorView message="No stats data" />
+        <QueryErrorView message={t("profile.noStatsData")} />
       </Screen>
     );
   }
@@ -88,9 +92,56 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
         <BadgesCard badges={data.badges} />
         <GroupStatsCard groups={data.groups} />
         {isOwnProfile && (
+          <View style={[styles.languageSection, { marginTop: theme.spacing.lg }]}>
+            <AppText variant="caption" color="secondary" style={styles.languageLabel}>
+              {t("profile.language")}
+            </AppText>
+            <View style={styles.languageRow}>
+              <Pressable
+                style={[
+                  styles.languageOption,
+                  {
+                    backgroundColor: locale === "en" ? theme.colors.primary : theme.colors.surface,
+                    borderColor: theme.colors.border,
+                  },
+                ]}
+                onPress={() => void setLocale("en")}
+              >
+                <AppText
+                  variant="body"
+                  style={{
+                    color: locale === "en" ? theme.colors.primaryText : theme.colors.textPrimary,
+                  }}
+                >
+                  {t("profile.english")}
+                </AppText>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.languageOption,
+                  {
+                    backgroundColor: locale === "he" ? theme.colors.primary : theme.colors.surface,
+                    borderColor: theme.colors.border,
+                  },
+                ]}
+                onPress={() => void setLocale("he")}
+              >
+                <AppText
+                  variant="body"
+                  style={{
+                    color: locale === "he" ? theme.colors.primaryText : theme.colors.textPrimary,
+                  }}
+                >
+                  {t("profile.hebrew")}
+                </AppText>
+              </Pressable>
+            </View>
+          </View>
+        )}
+        {isOwnProfile && (
           <View style={[styles.compareButton, { marginTop: theme.spacing.md }]}>
             <Button
-              label="Compare with others"
+              label={t("profile.compareWithOthers")}
               variant="primary"
               onPress={() =>
                 router.push("/profile/head-to-head" as any)
@@ -102,7 +153,7 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
         {isOwnProfile && (
           <View style={[styles.logout, { marginTop: theme.spacing.xl }]}>
             <Button
-              label="Logout"
+              label={t("profile.logout")}
               variant="danger"
               onPress={() => void logout()}
               style={styles.logoutButton}
@@ -120,6 +171,24 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 32,
+  },
+  languageSection: {
+    width: "100%",
+  },
+  languageLabel: {
+    marginBottom: 8,
+  },
+  languageRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  languageOption: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
   },
   compareButton: {
     width: "100%",
