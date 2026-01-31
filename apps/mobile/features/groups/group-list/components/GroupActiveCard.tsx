@@ -77,26 +77,29 @@ export function GroupActiveCard({ group, onPress }: GroupActiveCardProps) {
                 {group.memberCount} {group.memberCount === 1 ? "participant" : "participants"}
               </AppText>
             )}
-          
-         
-             {!group.hasUnpredictedGames  &&  (
-              <AppText variant="caption" color="primary" style={styles.infoItem}>
-                All predictions are made
-              </AppText>
-             )}
 
-{group.hasUnpredictedGames  &&  group.predictionsCount !== undefined && group.totalFixtures !== undefined && (
-              <AppText variant="caption" color="primary" style={styles.infoItem}>
-              Missing {group.totalFixtures - group.predictionsCount} predictions
-            </AppText>
+            {group.predictionsCount !== undefined && group.totalFixtures !== undefined && (
+              <View>
+                <AppText variant="caption" color="secondary" style={styles.infoItem}>
+                  {group.predictionsCount}/{group.totalFixtures} predictions
+                  {!group.hasUnpredictedGames && " ✓"}
+                </AppText>
+                {group.totalFixtures > 0 && (
+                  <View style={[styles.progressTrack, { backgroundColor: theme.colors.border }]}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        {
+                          backgroundColor: theme.colors.primary,
+                          width: `${(group.predictionsCount / group.totalFixtures) * 100}%`,
+                        },
+                      ]}
+                    />
+                  </View>
+                )}
+              </View>
             )}
 
-{/* {group.predictionsCount !== undefined && group.totalFixtures !== undefined && (
-              <AppText variant="caption" color="secondary" style={styles.infoItem}>
-                {group.predictionsCount}/{group.totalFixtures} predictions
-              </AppText>
-            )} */}
-       
             {group.nextGame ? (
               <View style={styles.nextGameRow}>
                 <AppText variant="caption" color="secondary" style={styles.infoItem}>
@@ -160,5 +163,15 @@ const styles = StyleSheet.create({
   nextGameTime: {
     fontSize: 11,
     marginLeft: 8,
+  },
+  progressTrack: {
+    height: 3,
+    borderRadius: 2,
+    marginTop: 4,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: 3,
+    borderRadius: 2,
   },
 });

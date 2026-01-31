@@ -37,7 +37,7 @@ function RankingRow({
   const onPress = () => {
     if (groupId == null) return;
     router.push(
-      `/groups/${groupId}/member/${item.userId}?username=${encodeURIComponent(item.username ?? "")}&rank=${item.rank}&totalPoints=${item.totalPoints}&correctScoreCount=${item.correctScoreCount}&predictionCount=${item.predictionCount}` as any
+      `/groups/${groupId}/member/${item.userId}?username=${encodeURIComponent(item.username || `Player #${item.rank}`)}&rank=${item.rank}&totalPoints=${item.totalPoints}&correctScoreCount=${item.correctScoreCount}&predictionCount=${item.predictionCount}` as any
     );
   };
 
@@ -68,7 +68,7 @@ function RankingRow({
             numberOfLines={1}
             style={styles.username}
           >
-            {item.username ?? "—"}
+            {item.username || `Player #${item.rank}`}
           </AppText>
           <AppText variant="body" style={styles.points}>
             {item.totalPoints}

@@ -1,4 +1,5 @@
 import React from "react";
+import { Alert } from "react-native";
 import { useSaveGroupPredictionsBatchMutation } from "@/domains/groups";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type { FixtureItem } from "@/types/common";
@@ -158,26 +159,45 @@ export function useGroupGamePredictions({
   );
 
   const fillRandomPredictions = React.useCallback(() => {
-    const randomPredictions: PredictionsByFixtureId = {};
-    const outcomes: GroupPrediction[] = [
-      { home: 1, away: 0 },
-      { home: 0, away: 0 },
-      { home: 0, away: 1 },
-    ];
-    fixtures.forEach((fixture) => {
-      const fixtureIdStr = String(fixture.id);
-      if (predictionMode === "MatchWinner") {
-        randomPredictions[fixtureIdStr] =
-          outcomes[Math.floor(Math.random() * 3)];
-      } else {
-        randomPredictions[fixtureIdStr] = {
-          home: Math.floor(Math.random() * 10),
-          away: Math.floor(Math.random() * 10),
-        };
-      }
-    });
-    setPredictions(randomPredictions);
-  }, [fixtures, predictionMode]);
+    const existingCount = Object.values(predictions).filter(
+      (p) => p.home !== null && p.away !== null
+    ).length;
+
+    const doFill = () => {
+      const randomPredictions: PredictionsByFixtureId = {};
+      const outcomes: GroupPrediction[] = [
+        { home: 1, away: 0 },
+        { home: 0, away: 0 },
+        { home: 0, away: 1 },
+      ];
+      fixtures.forEach((fixture) => {
+        const fixtureIdStr = String(fixture.id);
+        if (predictionMode === "MatchWinner") {
+          randomPredictions[fixtureIdStr] =
+            outcomes[Math.floor(Math.random() * 3)];
+        } else {
+          randomPredictions[fixtureIdStr] = {
+            home: Math.floor(Math.random() * 10),
+            away: Math.floor(Math.random() * 10),
+          };
+        }
+      });
+      setPredictions(randomPredictions);
+    };
+
+    if (existingCount > 0) {
+      Alert.alert(
+        "Fill Random",
+        `This will overwrite ${existingCount} existing prediction(s). Continue?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Fill", onPress: doFill },
+        ]
+      );
+    } else {
+      doFill();
+    }
+  }, [fixtures, predictionMode, predictions]);
 
   const clearAllPredictions = React.useCallback(() => {
     setPredictions({});
@@ -250,23 +270,32 @@ export function useGroupGamePredictions({
         predictions: changed,
       },
       {
-        onSuccess: () => {
-          // Mark all changed predictions as saved
-          changed.forEach(({ fixtureId, home, away }) => {
-            setSavedPredictions((prev) => new Set(prev).add(fixtureId));
-            const fixtureIdStr = String(fixtureId);
-            setSavedPredictionSnapshots((prev) => ({
-              ...prev,
-              [fixtureIdStr]: {
-                home,
-                away,
-              },
-            }));
-          });
+        onSuccess: (data) => {
+          // Mark only successfully saved predictions (rejected ones stay as unsaved)
+          const savedFixtureIds = new Set((data.saved ?? []).map((s) => s.fixtureId));
+          changed
+            .filter((c) => savedFixtureIds.has(c.fixtureId))
+            .forEach(({ fixtureId, home, away }) => {
+              setSavedPredictions((prev) => new Set(prev).add(fixtureId));
+              const fixtureIdStr = String(fixtureId);
+              setSavedPredictionSnapshots((prev) => ({
+                ...prev,
+                [fixtureIdStr]: { home, away },
+              }));
+            });
+          if (data.rejected?.length) {
+            Alert.alert(
+              "Some predictions skipped",
+              `${data.rejected.length} prediction(s) were skipped because the match has already started.`
+            );
+          }
         },
         onError: (error: unknown) => {
-          // Don't mark as saved on error
           console.error("Failed to save predictions:", error);
+          Alert.alert(
+            "Save Failed",
+            "Could not save your predictions. Please try again."
+          );
         },
       }
     );
