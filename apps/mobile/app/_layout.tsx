@@ -69,7 +69,7 @@ function AppContent() {
               />
               <Stack.Screen
                 name="groups/[id]/ranking"
-                options={{ title: "Ranking", headerShown: false }}
+                options={{   headerShown: false }}
               />
               <Stack.Screen
                 name="groups/[id]/predictions-overview"
@@ -93,7 +93,7 @@ function AppContent() {
               />
               <Stack.Screen
                 name="profile/head-to-head"
-                options={{ title: "Compare", headerShown: false }}
+                options={{   headerShown: false }}
               />
               <Stack.Screen
                 name="modal"

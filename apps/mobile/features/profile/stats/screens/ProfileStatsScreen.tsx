@@ -64,15 +64,8 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
     : 0;
 
   return (
-    <Screen>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.content,
-          { padding: theme.spacing.md },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
+    <Screen scroll>
+ 
         <ProfileHeader
           username={data.user.username}
           image={data.user.image}
@@ -116,7 +109,7 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
             />
           </View>
         )}
-      </ScrollView>
+     
     </Screen>
   );
 }

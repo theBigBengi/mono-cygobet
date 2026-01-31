@@ -83,12 +83,8 @@ export function HeadToHeadScreen({
   }
 
   return (
-    <Screen>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { padding: theme.spacing.md }]}
-        showsVerticalScrollIndicator={false}
-      >
+    <Screen scroll>
+   
         <OpponentSelector
           opponents={opponents}
           selectedOpponentId={opponentId}
@@ -149,7 +145,7 @@ export function HeadToHeadScreen({
             )}
           </>
         )}
-      </ScrollView>
+ 
     </Screen>
   );
 }
@@ -160,6 +156,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 32,
+    backgroundColor: "red",
+    width: "100%",
   },
   groupsTitle: {
     marginBottom: 12,

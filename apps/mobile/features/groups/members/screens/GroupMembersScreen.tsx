@@ -8,6 +8,7 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
+  View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText, Row } from "@/components/ui";
@@ -127,7 +128,7 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
   const items = data.data;
 
   return (
-    <Screen>
+    <View  >
       <FlatList
         data={items}
         keyExtractor={(item) => String(item.userId)}
@@ -152,7 +153,7 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
           />
         }
       />
-    </Screen>
+    </View>
   );
 }
 
