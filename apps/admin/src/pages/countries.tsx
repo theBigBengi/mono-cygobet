@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useCountriesFromDb, useCountriesFromProvider } from "@/hooks/use-countries";
@@ -15,9 +15,16 @@ import type {
 
 export default function CountriesPage() {
   const queryClient = useQueryClient();
+  const [dbPage, setDbPage] = useState(1);
+  const [dbPageSize, setDbPageSize] = useState(25);
 
   const { data: dbData, isLoading: dbLoading, isFetching: dbFetching, error: dbError } =
     useCountriesFromDb({ perPage: 1000, include: "leagues" });
+  const { data: dbDataPage, isLoading: dbTabLoading } = useCountriesFromDb({
+    page: dbPage,
+    perPage: dbPageSize,
+    include: "leagues",
+  });
   const {
     data: providerData,
     isLoading: providerLoading,
@@ -82,6 +89,23 @@ export default function CountriesPage() {
       unifiedData={unifiedData}
       diffStats={diffStats}
       syncById={syncById}
+      dbDataPaginated={dbDataPage}
+      dbPagination={
+        dbDataPage?.pagination
+          ? {
+              page: dbDataPage.pagination.page,
+              perPage: dbDataPage.pagination.perPage,
+              totalItems: dbDataPage.pagination.totalItems,
+              totalPages: dbDataPage.pagination.totalPages,
+            }
+          : undefined
+      }
+      onDbPageChange={setDbPage}
+      onDbPageSizeChange={(size) => {
+        setDbPageSize(size);
+        setDbPage(1);
+      }}
+      dbTabLoading={dbTabLoading}
       renderTable={(props) => (
         <CountriesTable
           mode={props.mode}
@@ -93,6 +117,9 @@ export default function CountriesPage() {
           isLoading={props.isLoading}
           error={props.error}
           onSyncCountry={props.onSync}
+          dbPagination={props.dbPagination}
+          onDbPageChange={props.onDbPageChange}
+          onDbPageSizeChange={props.onDbPageSizeChange}
         />
       )}
     />

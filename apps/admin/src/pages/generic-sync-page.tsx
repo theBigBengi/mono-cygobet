@@ -46,6 +46,18 @@ export interface GenericSyncPageProps<
   // Sync
   syncById: (externalId: string) => Promise<void>;
 
+  // DB tab server pagination
+  dbDataPaginated?: TDbData;
+  dbPagination?: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  onDbPageChange?: (page: number) => void;
+  onDbPageSizeChange?: (size: number) => void;
+  dbTabLoading?: boolean;
+
   // Table component
   renderTable: (props: {
     mode: ViewMode;
@@ -57,6 +69,14 @@ export interface GenericSyncPageProps<
     isLoading: boolean;
     error: Error | null;
     onSync?: (externalId: string) => Promise<void>;
+    dbPagination?: {
+      page: number;
+      perPage: number;
+      totalItems: number;
+      totalPages: number;
+    };
+    onDbPageChange?: (page: number) => void;
+    onDbPageSizeChange?: (size: number) => void;
   }) => React.ReactNode;
 
   /** Optional extra summary items */
@@ -83,6 +103,11 @@ export function GenericSyncPage<
   unifiedData,
   diffStats,
   syncById,
+  dbDataPaginated,
+  dbPagination,
+  onDbPageChange,
+  onDbPageSizeChange,
+  dbTabLoading,
   renderTable,
 }: GenericSyncPageProps<TUnified, TDbData, TProviderData>) {
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
@@ -199,11 +224,20 @@ export function GenericSyncPage<
             unifiedData,
             diffFilter,
             onDiffFilterChange: setDiffFilter,
-            dbData,
+            dbData:
+              viewMode === "db" && dbDataPaginated != null
+                ? dbDataPaginated
+                : dbData,
             providerData,
-            isLoading: viewMode === "db" ? dbLoading : isLoading,
+            isLoading:
+              viewMode === "db"
+                ? (dbTabLoading ?? dbLoading)
+                : isLoading,
             error: viewMode === "db" ? dbError : null,
             onSync: viewMode === "provider" ? syncById : undefined,
+            dbPagination,
+            onDbPageChange,
+            onDbPageSizeChange,
           })
         )}
       </div>

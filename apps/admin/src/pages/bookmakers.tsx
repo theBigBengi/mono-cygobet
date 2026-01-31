@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -18,9 +18,15 @@ import type {
 
 export default function BookmakersPage() {
   const queryClient = useQueryClient();
+  const [dbPage, setDbPage] = useState(1);
+  const [dbPageSize, setDbPageSize] = useState(25);
 
   const { data: dbData, isLoading: dbLoading, isFetching: dbFetching, error: dbError } =
     useBookmakersFromDb({ perPage: 1000 });
+  const { data: dbDataPage, isLoading: dbTabLoading } = useBookmakersFromDb({
+    page: dbPage,
+    perPage: dbPageSize,
+  });
   const {
     data: providerData,
     isLoading: providerLoading,
@@ -85,6 +91,23 @@ export default function BookmakersPage() {
       unifiedData={unifiedData}
       diffStats={diffStats}
       syncById={syncById}
+      dbDataPaginated={dbDataPage}
+      dbPagination={
+        dbDataPage?.pagination
+          ? {
+              page: dbDataPage.pagination.page,
+              perPage: dbDataPage.pagination.perPage,
+              totalItems: dbDataPage.pagination.totalItems,
+              totalPages: dbDataPage.pagination.totalPages,
+            }
+          : undefined
+      }
+      onDbPageChange={setDbPage}
+      onDbPageSizeChange={(size) => {
+        setDbPageSize(size);
+        setDbPage(1);
+      }}
+      dbTabLoading={dbTabLoading}
       renderTable={(props) => (
         <BookmakersTable
           mode={props.mode}
@@ -96,6 +119,9 @@ export default function BookmakersPage() {
           isLoading={props.isLoading}
           error={props.error}
           onSyncBookmaker={props.onSync}
+          dbPagination={props.dbPagination}
+          onDbPageChange={props.onDbPageChange}
+          onDbPageSizeChange={props.onDbPageSizeChange}
         />
       )}
     />

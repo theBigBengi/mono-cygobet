@@ -61,6 +61,15 @@ interface SeasonsTableProps {
   error?: Error | null;
   // Sync handler
   onSyncSeason?: (externalId: string) => Promise<void>;
+  // DB tab server pagination
+  dbPagination?: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  onDbPageChange?: (page: number) => void;
+  onDbPageSizeChange?: (size: number) => void;
 }
 
 export function SeasonsTable({
@@ -72,6 +81,9 @@ export function SeasonsTable({
   isLoading = false,
   error = null,
   onSyncSeason,
+  dbPagination,
+  onDbPageChange,
+  onDbPageSizeChange,
 }: SeasonsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -346,13 +358,18 @@ export function SeasonsTable({
     }
   }, [mode, isLoading, dbData, unifiedData]);
 
+  const isDbServerPagination =
+    mode === "db" && dbPagination != null && onDbPageChange != null;
+
   const table = useReactTable({
     data: tableData as (UnifiedSeason | SeasonDBRow)[],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     columns: columns as any, // Columns are dynamically typed based on mode
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    ...(isDbServerPagination
+      ? {}
+      : { getPaginationRowModel: getPaginationRowModel() }),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
@@ -384,11 +401,34 @@ export function SeasonsTable({
       sorting,
       globalFilter,
       columnVisibility,
-      pagination,
+      pagination:
+        isDbServerPagination && dbPagination
+          ? {
+              pageIndex: dbPagination.page - 1,
+              pageSize: dbPagination.perPage,
+            }
+          : pagination,
     },
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-    manualPagination: false,
+    onPaginationChange: (updater) => {
+      if (isDbServerPagination && onDbPageChange) {
+        const next =
+          typeof updater === "function"
+            ? updater({
+                pageIndex: (dbPagination?.page ?? 1) - 1,
+                pageSize: dbPagination?.perPage ?? 25,
+              })
+            : updater;
+        onDbPageChange(next.pageIndex + 1);
+        if (next.pageSize !== dbPagination?.perPage) {
+          onDbPageSizeChange?.(next.pageSize);
+        }
+      } else {
+        setPagination(updater);
+      }
+    },
+    manualPagination: isDbServerPagination,
+    pageCount: isDbServerPagination ? dbPagination?.totalPages : undefined,
   });
 
   const handleRowClick = (season: UnifiedSeason | SeasonDBRow) => {
@@ -491,9 +531,28 @@ export function SeasonsTable({
       {/* Pagination */}
       <TablePagination
         table={table}
-        pagination={pagination}
-        onPaginationChange={setPagination}
+        pagination={
+          isDbServerPagination && dbPagination
+            ? {
+                pageIndex: dbPagination.page - 1,
+                pageSize: dbPagination.perPage,
+              }
+            : pagination
+        }
+        onPaginationChange={(next) => {
+          if (isDbServerPagination && onDbPageChange) {
+            onDbPageChange(next.pageIndex + 1);
+            if (next.pageSize !== dbPagination?.perPage) {
+              onDbPageSizeChange?.(next.pageSize);
+            }
+          } else {
+            setPagination(next);
+          }
+        }}
         dataLength={tableData.length}
+        serverTotalItems={
+          isDbServerPagination ? dbPagination?.totalItems : undefined
+        }
       />
 
       {/* Sync Dialog */}

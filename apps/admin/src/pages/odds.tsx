@@ -45,6 +45,8 @@ export default function OddsPage() {
   const [appliedBookmakerIds, setAppliedBookmakerIds] = useState<string[]>([]);
   const [appliedMarketIds, setAppliedMarketIds] = useState<string[]>([]);
   const [appliedWinningOnly, setAppliedWinningOnly] = useState(false);
+  const [dbPage, setDbPage] = useState(1);
+  const [dbPageSize, setDbPageSize] = useState(25);
 
   // Temp filters (UI-only until submit)
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>(
@@ -131,6 +133,16 @@ export default function OddsPage() {
     error: dbError,
   } = useOddsFromDb({
     perPage: 1000,
+    bookmakerIds: appliedBookmakerIds.length ? appliedBookmakerIds : undefined,
+    marketIds: appliedMarketIds.length ? appliedMarketIds : undefined,
+    winning: appliedWinningOnly ? true : undefined,
+    fromTs,
+    toTs,
+  });
+
+  const { data: dbDataPage, isLoading: dbTabLoading } = useOddsFromDb({
+    page: dbPage,
+    perPage: dbPageSize,
     bookmakerIds: appliedBookmakerIds.length ? appliedBookmakerIds : undefined,
     marketIds: appliedMarketIds.length ? appliedMarketIds : undefined,
     winning: appliedWinningOnly ? true : undefined,
@@ -339,10 +351,29 @@ export default function OddsPage() {
             unifiedData={unifiedData}
             diffFilter={diffFilter}
             onDiffFilterChange={setDiffFilter}
-            dbData={dbData}
+            dbData={
+              viewMode === "db" && dbDataPage != null ? dbDataPage : dbData
+            }
             providerData={providerData}
-            isLoading={viewMode === "db" ? dbLoading : isLoading}
+            isLoading={
+              viewMode === "db" ? (dbTabLoading ?? dbLoading) : isLoading
+            }
             error={viewMode === "db" ? (dbError as Error | null) : null}
+            dbPagination={
+              viewMode === "db" && dbDataPage?.pagination
+                ? {
+                    page: dbDataPage.pagination.page,
+                    perPage: dbDataPage.pagination.perPage,
+                    totalItems: dbDataPage.pagination.totalItems,
+                    totalPages: dbDataPage.pagination.totalPages,
+                  }
+                : undefined
+            }
+            onDbPageChange={setDbPage}
+            onDbPageSizeChange={(size) => {
+              setDbPageSize(size);
+              setDbPage(1);
+            }}
           />
         )}
       </div>

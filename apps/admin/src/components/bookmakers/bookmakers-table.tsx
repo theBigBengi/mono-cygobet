@@ -62,6 +62,15 @@ interface BookmakersTableProps {
   error?: Error | null;
   // Sync handler
   onSyncBookmaker?: (externalId: string) => Promise<void>;
+  // DB tab server pagination
+  dbPagination?: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  onDbPageChange?: (page: number) => void;
+  onDbPageSizeChange?: (size: number) => void;
 }
 
 export function BookmakersTable({
@@ -73,6 +82,9 @@ export function BookmakersTable({
   isLoading = false,
   error = null,
   onSyncBookmaker,
+  dbPagination,
+  onDbPageChange,
+  onDbPageSizeChange,
 }: BookmakersTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -233,12 +245,17 @@ export function BookmakersTable({
     }
   }, [mode, filteredDiffData, dbData]);
 
+  const isDbServerPagination =
+    mode === "db" && dbPagination != null && onDbPageChange != null;
+
   const table = useReactTable<UnifiedBookmaker | BookmakerDBRow>({
     data: tableData as (UnifiedBookmaker | BookmakerDBRow)[],
     columns: columns as ColumnDef<UnifiedBookmaker | BookmakerDBRow>[],
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    ...(isDbServerPagination
+      ? {}
+      : { getPaginationRowModel: getPaginationRowModel() }),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
@@ -268,10 +285,34 @@ export function BookmakersTable({
       sorting,
       globalFilter,
       columnVisibility,
-      pagination,
+      pagination:
+        isDbServerPagination && dbPagination
+          ? {
+              pageIndex: dbPagination.page - 1,
+              pageSize: dbPagination.perPage,
+            }
+          : pagination,
     },
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
+    onPaginationChange: (updater) => {
+      if (isDbServerPagination && onDbPageChange) {
+        const next =
+          typeof updater === "function"
+            ? updater({
+                pageIndex: (dbPagination?.page ?? 1) - 1,
+                pageSize: dbPagination?.perPage ?? 25,
+              })
+            : updater;
+        onDbPageChange(next.pageIndex + 1);
+        if (next.pageSize !== dbPagination?.perPage) {
+          onDbPageSizeChange?.(next.pageSize);
+        }
+      } else {
+        setPagination(updater);
+      }
+    },
+    manualPagination: isDbServerPagination,
+    pageCount: isDbServerPagination ? dbPagination?.totalPages : undefined,
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -380,9 +421,28 @@ export function BookmakersTable({
       {/* Pagination */}
       <TablePagination
         table={table}
-        pagination={pagination}
-        onPaginationChange={setPagination}
+        pagination={
+          isDbServerPagination && dbPagination
+            ? {
+                pageIndex: dbPagination.page - 1,
+                pageSize: dbPagination.perPage,
+              }
+            : pagination
+        }
+        onPaginationChange={(next) => {
+          if (isDbServerPagination && onDbPageChange) {
+            onDbPageChange(next.pageIndex + 1);
+            if (next.pageSize !== dbPagination?.perPage) {
+              onDbPageSizeChange?.(next.pageSize);
+            }
+          } else {
+            setPagination(next);
+          }
+        }}
         dataLength={tableData.length}
+        serverTotalItems={
+          isDbServerPagination ? dbPagination?.totalItems : undefined
+        }
       />
 
       {/* Sync Dialog */}

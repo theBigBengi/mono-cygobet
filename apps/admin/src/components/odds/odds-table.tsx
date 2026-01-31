@@ -69,6 +69,15 @@ interface OddsTableProps {
   providerData?: AdminProviderOddsResponse;
   isLoading?: boolean;
   error?: Error | null;
+  // DB tab server pagination
+  dbPagination?: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  onDbPageChange?: (page: number) => void;
+  onDbPageSizeChange?: (size: number) => void;
 }
 
 export function OddsTable({
@@ -79,6 +88,9 @@ export function OddsTable({
   dbData,
   isLoading = false,
   error = null,
+  dbPagination,
+  onDbPageChange,
+  onDbPageSizeChange,
 }: OddsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -412,18 +424,52 @@ export function OddsTable({
     return dbData?.data || [];
   }, [mode, groupedProviderData, dbData]);
 
+  const isDbServerPagination =
+    mode === "db" && dbPagination != null && onDbPageChange != null;
+
   const table = useReactTable<GroupedOdds | OddsDBRow>({
     data: tableData as (GroupedOdds | OddsDBRow)[],
     columns: columns as ColumnDef<GroupedOdds | OddsDBRow>[],
-    state: { sorting, globalFilter, columnVisibility, pagination },
+    state: {
+      sorting,
+      globalFilter,
+      columnVisibility,
+      pagination:
+        isDbServerPagination && dbPagination
+          ? {
+              pageIndex: dbPagination.page - 1,
+              pageSize: dbPagination.perPage,
+            }
+          : pagination,
+    },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
+    onPaginationChange: (updater) => {
+      if (isDbServerPagination && onDbPageChange) {
+        const next =
+          typeof updater === "function"
+            ? updater({
+                pageIndex: (dbPagination?.page ?? 1) - 1,
+                pageSize: dbPagination?.perPage ?? 25,
+              })
+            : updater;
+        onDbPageChange(next.pageIndex + 1);
+        if (next.pageSize !== dbPagination?.perPage) {
+          onDbPageSizeChange?.(next.pageSize);
+        }
+      } else {
+        setPagination(updater);
+      }
+    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    ...(isDbServerPagination
+      ? {}
+      : { getPaginationRowModel: getPaginationRowModel() }),
     getSortedRowModel: getSortedRowModel(),
+    manualPagination: isDbServerPagination,
+    pageCount: isDbServerPagination ? dbPagination?.totalPages : undefined,
   });
 
   // Match other tables: show skeleton only on initial load (no data yet)
@@ -553,9 +599,28 @@ export function OddsTable({
       </div>
       <TablePagination
         table={table}
-        pagination={pagination}
-        onPaginationChange={setPagination}
+        pagination={
+          isDbServerPagination && dbPagination
+            ? {
+                pageIndex: dbPagination.page - 1,
+                pageSize: dbPagination.perPage,
+              }
+            : pagination
+        }
+        onPaginationChange={(next) => {
+          if (isDbServerPagination && onDbPageChange) {
+            onDbPageChange(next.pageIndex + 1);
+            if (next.pageSize !== dbPagination?.perPage) {
+              onDbPageSizeChange?.(next.pageSize);
+            }
+          } else {
+            setPagination(next);
+          }
+        }}
         dataLength={tableData.length}
+        serverTotalItems={
+          isDbServerPagination ? dbPagination?.totalItems : undefined
+        }
       />
 
       {/* Detail Dialog */}

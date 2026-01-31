@@ -63,6 +63,15 @@ interface CountriesTableProps {
   error?: Error | null;
   // Sync handler
   onSyncCountry?: (externalId: string) => Promise<void>;
+  // DB tab server pagination
+  dbPagination?: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  onDbPageChange?: (page: number) => void;
+  onDbPageSizeChange?: (size: number) => void;
 }
 
 export function CountriesTable({
@@ -74,6 +83,9 @@ export function CountriesTable({
   isLoading = false,
   error = null,
   onSyncCountry,
+  dbPagination,
+  onDbPageChange,
+  onDbPageSizeChange,
 }: CountriesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -428,12 +440,17 @@ export function CountriesTable({
     }
   }, [mode, isLoading, dbData, unifiedData]);
 
+  const isDbServerPagination =
+    mode === "db" && dbPagination != null && onDbPageChange != null;
+
   const table = useReactTable<UnifiedCountry | CountryDBRow>({
     data: tableData as (UnifiedCountry | CountryDBRow)[],
     columns: columns as ColumnDef<UnifiedCountry | CountryDBRow>[],
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    ...(isDbServerPagination
+      ? {}
+      : { getPaginationRowModel: getPaginationRowModel() }),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
@@ -467,10 +484,34 @@ export function CountriesTable({
       sorting,
       globalFilter,
       columnVisibility,
-      pagination,
+      pagination:
+        isDbServerPagination && dbPagination
+          ? {
+              pageIndex: dbPagination.page - 1,
+              pageSize: dbPagination.perPage,
+            }
+          : pagination,
     },
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
+    onPaginationChange: (updater) => {
+      if (isDbServerPagination && onDbPageChange) {
+        const next =
+          typeof updater === "function"
+            ? updater({
+                pageIndex: (dbPagination?.page ?? 1) - 1,
+                pageSize: dbPagination?.perPage ?? 25,
+              })
+            : updater;
+        onDbPageChange(next.pageIndex + 1);
+        if (next.pageSize !== dbPagination?.perPage) {
+          onDbPageSizeChange?.(next.pageSize);
+        }
+      } else {
+        setPagination(updater);
+      }
+    },
+    manualPagination: isDbServerPagination,
+    pageCount: isDbServerPagination ? dbPagination?.totalPages : undefined,
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -566,9 +607,28 @@ export function CountriesTable({
       {/* Pagination */}
       <TablePagination
         table={table}
-        pagination={pagination}
-        onPaginationChange={setPagination}
+        pagination={
+          isDbServerPagination && dbPagination
+            ? {
+                pageIndex: dbPagination.page - 1,
+                pageSize: dbPagination.perPage,
+              }
+            : pagination
+        }
+        onPaginationChange={(next) => {
+          if (isDbServerPagination && onDbPageChange) {
+            onDbPageChange(next.pageIndex + 1);
+            if (next.pageSize !== dbPagination?.perPage) {
+              onDbPageSizeChange?.(next.pageSize);
+            }
+          } else {
+            setPagination(next);
+          }
+        }}
         dataLength={tableData.length}
+        serverTotalItems={
+          isDbServerPagination ? dbPagination?.totalItems : undefined
+        }
       />
 
       {/* Sync Dialog */}

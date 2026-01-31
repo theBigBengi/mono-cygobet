@@ -20,6 +20,8 @@ interface TablePaginationProps<TData> {
     pageSize: number;
   }) => void;
   dataLength: number;
+  /** When set (e.g. server-side pagination), used for "of Z" total and range end */
+  serverTotalItems?: number;
 }
 
 export function TablePagination<TData>({
@@ -27,9 +29,17 @@ export function TablePagination<TData>({
   pagination,
   onPaginationChange,
   dataLength,
+  serverTotalItems,
 }: TablePaginationProps<TData>) {
-  // Show pagination if there's data in the source
-  if (dataLength === 0) {
+  const totalItems =
+    serverTotalItems ?? table.getFilteredRowModel().rows.length;
+  const rangeEnd = Math.min(
+    (pagination.pageIndex + 1) * pagination.pageSize,
+    totalItems
+  );
+
+  // Show pagination if there's data in the source or server reports a total
+  if (dataLength === 0 && totalItems === 0) {
     return null;
   }
 
@@ -37,14 +47,10 @@ export function TablePagination<TData>({
     <div className="flex-shrink-0 flex items-center justify-between gap-2 sm:gap-2 pt-3 sm:pt-4 border-t mt-2 sm:mt-4 text-xs sm:text-sm">
       <div className="flex items-center gap-2 sm:gap-2 min-w-0 flex-1">
         <span className="text-muted-foreground whitespace-nowrap text-xs sm:text-sm">
-          {pagination.pageIndex * pagination.pageSize + 1}-
-          {Math.min(
-            (pagination.pageIndex + 1) * pagination.pageSize,
-            table.getFilteredRowModel().rows.length
-          )}{" "}
+          {pagination.pageIndex * pagination.pageSize + 1}-{rangeEnd}{" "}
           <span className="hidden sm:inline">of </span>
           <span className="sm:hidden">/</span>
-          {table.getFilteredRowModel().rows.length}
+          {totalItems}
         </span>
         <Select
           value={pagination.pageSize.toString()}

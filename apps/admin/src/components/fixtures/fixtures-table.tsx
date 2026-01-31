@@ -57,6 +57,15 @@ interface FixturesTableProps {
   onSyncFixture?: (externalId: string) => Promise<void>;
   // Update handler
   onUpdate?: () => void;
+  // DB tab server pagination
+  dbPagination?: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  onDbPageChange?: (page: number) => void;
+  onDbPageSizeChange?: (size: number) => void;
 }
 
 export function FixturesTable({
@@ -69,6 +78,9 @@ export function FixturesTable({
   error = null,
   onSyncFixture,
   onUpdate,
+  dbPagination,
+  onDbPageChange,
+  onDbPageSizeChange,
 }: FixturesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -543,13 +555,22 @@ export function FixturesTable({
     return [];
   }, [mode, filteredDiffData, dbData]);
 
+  const isDbServerPagination =
+    mode === "db" && dbPagination != null && onDbPageChange != null;
+
   const table = useReactTable<UnifiedFixture | FixtureDBRow>({
     data: tableData,
     columns: columns as ColumnDef<UnifiedFixture | FixtureDBRow>[],
     state: {
       sorting,
       globalFilter,
-      pagination,
+      pagination:
+        isDbServerPagination && dbPagination
+          ? {
+              pageIndex: dbPagination.page - 1,
+              pageSize: dbPagination.perPage,
+            }
+          : pagination,
       columnVisibility,
     },
     onSortingChange: setSorting,
@@ -558,8 +579,28 @@ export function FixturesTable({
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onPaginationChange: setPagination,
+    ...(isDbServerPagination
+      ? {}
+      : { getPaginationRowModel: getPaginationRowModel() }),
+    onPaginationChange: (updater) => {
+      if (isDbServerPagination && onDbPageChange) {
+        const next =
+          typeof updater === "function"
+            ? updater({
+                pageIndex: (dbPagination?.page ?? 1) - 1,
+                pageSize: dbPagination?.perPage ?? 25,
+              })
+            : updater;
+        onDbPageChange(next.pageIndex + 1);
+        if (next.pageSize !== dbPagination?.perPage) {
+          onDbPageSizeChange?.(next.pageSize);
+        }
+      } else {
+        setPagination(updater);
+      }
+    },
+    manualPagination: isDbServerPagination,
+    pageCount: isDbServerPagination ? dbPagination?.totalPages : undefined,
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -707,9 +748,28 @@ export function FixturesTable({
       {/* Pagination */}
       <TablePagination
         table={table}
-        pagination={pagination}
-        onPaginationChange={setPagination}
+        pagination={
+          isDbServerPagination && dbPagination
+            ? {
+                pageIndex: dbPagination.page - 1,
+                pageSize: dbPagination.perPage,
+              }
+            : pagination
+        }
+        onPaginationChange={(next) => {
+          if (isDbServerPagination && onDbPageChange) {
+            onDbPageChange(next.pageIndex + 1);
+            if (next.pageSize !== dbPagination?.perPage) {
+              onDbPageSizeChange?.(next.pageSize);
+            }
+          } else {
+            setPagination(next);
+          }
+        }}
         dataLength={tableData.length}
+        serverTotalItems={
+          isDbServerPagination ? dbPagination?.totalItems : undefined
+        }
       />
 
       {/* Detail Dialog */}

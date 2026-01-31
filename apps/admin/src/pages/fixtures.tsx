@@ -54,6 +54,8 @@ export default function FixturesPage() {
   >(defaultDateRange);
   const [appliedLeagueIds, setAppliedLeagueIds] = useState<string[]>([]); // External IDs
   const [appliedCountryIds, setAppliedCountryIds] = useState<string[]>([]); // External IDs
+  const [dbPage, setDbPage] = useState(1);
+  const [dbPageSize, setDbPageSize] = useState(25);
 
   // Temporary filter states (for UI, not applied until submit)
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>(
@@ -181,6 +183,15 @@ export default function FixturesPage() {
     error: dbError,
   } = useFixturesFromDb({
     perPage: 1000,
+    leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
+    countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
+    fromTs,
+    toTs,
+  });
+
+  const { data: dbDataPage, isLoading: dbTabLoading } = useFixturesFromDb({
+    page: dbPage,
+    perPage: dbPageSize,
     leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
     countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
     fromTs,
@@ -405,9 +416,13 @@ export default function FixturesPage() {
             unifiedData={unifiedData}
             diffFilter={diffFilter}
             onDiffFilterChange={setDiffFilter}
-            dbData={dbData}
+            dbData={
+              viewMode === "db" && dbDataPage != null ? dbDataPage : dbData
+            }
             providerData={providerData}
-            isLoading={viewMode === "db" ? dbLoading : isLoading}
+            isLoading={
+              viewMode === "db" ? (dbTabLoading ?? dbLoading) : isLoading
+            }
             error={viewMode === "db" ? dbError : null}
             onSyncFixture={
               viewMode === "provider" ? handleSyncFixture : undefined
@@ -415,6 +430,21 @@ export default function FixturesPage() {
             onUpdate={() => {
               queryClient.invalidateQueries({ queryKey: ["fixtures", "db"] });
               queryClient.invalidateQueries({ queryKey: ["fixtures", "provider"] });
+            }}
+            dbPagination={
+              viewMode === "db" && dbDataPage?.pagination
+                ? {
+                    page: dbDataPage.pagination.page,
+                    perPage: dbDataPage.pagination.perPage,
+                    totalItems: dbDataPage.pagination.totalItems,
+                    totalPages: dbDataPage.pagination.totalPages,
+                  }
+                : undefined
+            }
+            onDbPageChange={setDbPage}
+            onDbPageSizeChange={(size) => {
+              setDbPageSize(size);
+              setDbPage(1);
             }}
           />
         )}
