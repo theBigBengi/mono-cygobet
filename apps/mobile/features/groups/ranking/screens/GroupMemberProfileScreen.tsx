@@ -3,7 +3,8 @@
 
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Screen, Card, AppText, Row, Stack, Divider } from "@/components/ui";
+import { useRouter } from "expo-router";
+import { Screen, Card, AppText, Row, Stack, Divider, Button } from "@/components/ui";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 
@@ -34,6 +35,7 @@ export function GroupMemberProfileScreen({
 }: GroupMemberProfileScreenProps) {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const router = useRouter();
   const isOwnProfile =
     userId != null && user?.id != null && userId === user.id;
 
@@ -103,6 +105,20 @@ export function GroupMemberProfileScreen({
               label="Predictions"
               value={String(predictionCount)}
             />
+            {!isOwnProfile && userId != null && (
+              <>
+                <Divider />
+                <Button
+                  label="Compare"
+                  variant="primary"
+                  onPress={() =>
+                    router.push(
+                      `/profile/head-to-head?opponentId=${userId}` as any
+                    )
+                  }
+                />
+              </>
+            )}
           </Stack>
         </Card>
       </View>

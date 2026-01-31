@@ -609,3 +609,123 @@ export type ApiRankingResponse = {
   data: ApiRankingItem[];
   message: string;
 };
+
+// --- User Stats ---
+
+/** Badge IDs for user profile stats. */
+export type ApiBadgeId =
+  | "sharpshooter"
+  | "underdog_caller"
+  | "streak_master"
+  | "group_champion"
+  | "consistency_king"
+  | "early_bird";
+
+/** Badge with earned status and progress (0-100). */
+export type ApiBadge = {
+  id: ApiBadgeId;
+  name: string;
+  description: string;
+  earned: boolean;
+  progress: number;
+};
+
+/** Prediction distribution: exact / difference / outcome / miss. */
+export type ApiPredictionDistribution = {
+  exact: number;
+  difference: number;
+  outcome: number;
+  miss: number;
+};
+
+/** Form item (last 10 settled predictions). */
+export type ApiFormItem = {
+  fixtureId: number;
+  points: number;
+  result: "exact" | "difference" | "outcome" | "miss";
+};
+
+/** Per-group stat for user profile. */
+export type ApiUserGroupStat = {
+  groupId: number;
+  groupName: string;
+  groupStatus: string;
+  rank: number;
+  totalPoints: number;
+  predictionCount: number;
+  correctScoreCount: number;
+  accuracy: number;
+  recentPoints: number[];
+};
+
+/** Main user stats response data. */
+export type ApiUserStatsData = {
+  user: { id: number; username: string | null; image: string | null };
+  overall: {
+    totalPoints: number;
+    totalPredictions: number;
+    settledPredictions: number;
+    exactScores: number;
+    accuracy: number;
+    groupsPlayed: number;
+  };
+  distribution: ApiPredictionDistribution;
+  form: ApiFormItem[];
+  badges: ApiBadge[];
+  groups: ApiUserGroupStat[];
+};
+
+/** Response from GET /api/users/:id/stats. */
+export type ApiUserStatsResponse = {
+  status: "success";
+  data: ApiUserStatsData;
+  message: string;
+};
+
+/** Shared group in head-to-head comparison. */
+export type ApiHeadToHeadSharedGroup = {
+  groupId: number;
+  groupName: string;
+  userRank: number;
+  userPoints: number;
+  opponentRank: number;
+  opponentPoints: number;
+};
+
+/** Head-to-head comparison data. */
+export type ApiHeadToHeadData = {
+  user: { id: number; username: string | null };
+  opponent: { id: number; username: string | null };
+  sharedGroups: ApiHeadToHeadSharedGroup[];
+  summary: {
+    userTotalPoints: number;
+    opponentTotalPoints: number;
+    userExactScores: number;
+    opponentExactScores: number;
+    userAccuracy: number;
+    opponentAccuracy: number;
+    userWins: number;
+    opponentWins: number;
+    ties: number;
+  };
+};
+
+/** Response from GET /api/users/:id/head-to-head/:opponentId. */
+export type ApiHeadToHeadResponse = {
+  status: "success";
+  data: ApiHeadToHeadData;
+  message: string;
+};
+
+/** Opponent item for H2H opponent list. */
+export type ApiH2HOpponentItem = {
+  id: number;
+  username: string | null;
+};
+
+/** Response from GET /api/users/:id/h2h-opponents. */
+export type ApiH2HOpponentsResponse = {
+  status: "success";
+  data: { opponents: ApiH2HOpponentItem[] };
+  message: string;
+};

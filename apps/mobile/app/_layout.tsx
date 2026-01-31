@@ -92,6 +92,10 @@ function AppContent() {
                 options={{ title: "Browse Public Groups", headerShown: true }}
               />
               <Stack.Screen
+                name="profile/head-to-head"
+                options={{ title: "Compare", headerShown: false }}
+              />
+              <Stack.Screen
                 name="modal"
                 options={{ presentation: "modal", headerShown: true }}
               />

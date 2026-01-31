@@ -4,3 +4,4 @@
 export * from "./leagues.schemas";
 export * from "./teams.schemas";
 export * from "./groups.schemas";
+export * from "./user-stats.schemas";
