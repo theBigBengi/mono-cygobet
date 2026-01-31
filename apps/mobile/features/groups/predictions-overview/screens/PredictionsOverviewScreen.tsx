@@ -30,7 +30,7 @@ export function PredictionsOverviewScreen({
   if (isLoading) {
     return (
       <Screen>
-        <QueryLoadingView message="Loading predictions overview..." />
+        <QueryLoadingView message={t("predictionsOverview.loadingPredictions")} />
       </Screen>
     );
   }

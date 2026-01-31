@@ -247,6 +247,28 @@
     "loadingPredictions": "Loading predictions overview...",
     "failedLoadPredictions": "Failed to load predictions overview"
   },
+  "pool": {
+    "createPool": "Create Pool",
+    "poolName": "Pool Name",
+    "poolNamePlaceholder": "Pool name",
+    "privacy": "Privacy",
+    "private": "Private",
+    "public": "Public",
+    "creating": "Creating...",
+    "create": "Create",
+    "failedCreate": "Failed to create pool",
+    "selectGames": "Select Games",
+    "howToSelect": "How do you want to select games?",
+    "byUpcomingGames": "By upcoming games",
+    "byUpcomingGamesSubtitle": "Select specific games from upcoming fixtures",
+    "byLeagues": "By leagues",
+    "byLeaguesSubtitle": "Select games from specific leagues",
+    "byTeams": "By teams",
+    "byTeamsSubtitle": "Select games involving specific teams",
+    "saveSelection": "Save selection",
+    "cancel": "Cancel",
+    "back": "Back"
+  },
   "common": {
     "limitedConnectivity": "Limited connectivity — read-only mode",
     "loading": "Loading...",

@@ -77,7 +77,7 @@ export function DiscoverGroupsScreen() {
     return (
       <Screen>
         <QueryErrorView
-          message="Failed to load public groups"
+          message={t("discover.failedLoadPublicGroups")}
           onRetry={() => refetch()}
         />
       </Screen>
@@ -108,7 +108,7 @@ export function DiscoverGroupsScreen() {
             ]}
           />
           <Button
-            label="Search"
+            label={t("discover.search")}
             variant="secondary"
             onPress={handleSubmitSearch}
             style={styles.searchButton}
@@ -134,7 +134,7 @@ export function DiscoverGroupsScreen() {
             ListEmptyComponent={
               <View style={styles.empty}>
                 <AppText variant="body" color="secondary">
-                  No public groups found
+                  {t("discover.noResults")}
                 </AppText>
               </View>
             }
@@ -147,7 +147,7 @@ export function DiscoverGroupsScreen() {
                     </AppText>
                   ) : (
                     <Button
-                      label="Load more"
+                      label={t("discover.loadMore")}
                       variant="secondary"
                       onPress={loadMore}
                     />

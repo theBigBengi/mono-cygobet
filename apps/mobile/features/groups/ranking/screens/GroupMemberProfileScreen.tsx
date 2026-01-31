@@ -65,7 +65,7 @@ export function GroupMemberProfileScreen({
       <Screen>
         <View style={[styles.centered, { padding: theme.spacing.lg }]}>
           <AppText variant="body" color="secondary">
-            Missing ranking data. Go back and open this profile from the ranking.
+            {t("profile.missingRankingData")}
           </AppText>
         </View>
       </Screen>
@@ -97,14 +97,14 @@ export function GroupMemberProfileScreen({
               </AppText>
             </View>
             <Divider />
-            <StatRow label="Rank" value={String(rank)} />
-            <StatRow label="Total points" value={String(totalPoints)} />
+            <StatRow label={t("profile.rank")} value={String(rank)} />
+            <StatRow label={t("profile.totalPoints")} value={String(totalPoints)} />
             <StatRow
-              label="Exact scores"
+              label={t("predictions.exactScoresLabel")}
               value={String(correctScoreCount)}
             />
             <StatRow
-              label="Predictions"
+              label={t("predictions.predictionsLabel")}
               value={String(predictionCount)}
             />
             {!isOwnProfile && userId != null && (

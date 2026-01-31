@@ -34,7 +34,7 @@ export default function UsernameScreen() {
     }
 
     if (trimmedUsername.length > 50) {
-      Alert.alert("Error", "Username must be at most 50 characters long");
+      Alert.alert(t("errors.error"), t("auth.errorUsernameMax"));
       return;
     }
 

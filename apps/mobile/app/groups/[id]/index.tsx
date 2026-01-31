@@ -113,7 +113,7 @@ export default function GroupLobbyScreen() {
 
   // Loading state
   if (isLoading) {
-    return <QueryLoadingView message="Loading pool..." />;
+    return <QueryLoadingView message={t("groups.loadingPool")} />;
   }
 
   // Error state - show loading while navigating back

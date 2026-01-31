@@ -38,7 +38,7 @@ export default function SignUpScreen() {
 
     // Basic email validation
     if (!trimmedEmail.includes("@")) {
-      Alert.alert("Error", "Please enter a valid email address");
+      Alert.alert(t("errors.error"), t("auth.errorValidEmail"));
       return;
     }
 

@@ -66,7 +66,7 @@ export default function GroupsScreen() {
   if (isLoading) {
     return (
       <View style={styles.root}>
-        <QueryLoadingView message="Loading groups..." />
+        <QueryLoadingView message={t("groups.loadingGroups")} />
       </View>
     );
   }
@@ -132,7 +132,7 @@ export default function GroupsScreen() {
   const renderHeader = () => (
     <View style={[styles.actionRow, { paddingBottom: theme.spacing.md }]}>
       <Button
-        label="Join with code"
+        label={t("groups.joinWithCode")}
         variant="secondary"
         onPress={handleJoinWithCode}
         style={styles.actionButton}

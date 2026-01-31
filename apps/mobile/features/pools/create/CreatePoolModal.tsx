@@ -4,6 +4,7 @@
 // - Navigates to lobby after successful creation.
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Modal,
   View,
@@ -30,6 +31,7 @@ export function CreatePoolModal({
   visible,
   onRequestClose,
 }: CreatePoolModalProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -120,7 +122,7 @@ export function CreatePoolModal({
               />
             </Pressable>
             <AppText variant="subtitle" style={styles.modalHeaderTitle}>
-              Create Pool
+              {t("pool.createPool")}
             </AppText>
             <View style={styles.headerButtonPlaceholder} />
           </View>
@@ -141,7 +143,7 @@ export function CreatePoolModal({
                     color: theme.colors.textPrimary,
                   },
                 ]}
-                placeholder="Pool name"
+                placeholder={t("pool.poolNamePlaceholder")}
                 placeholderTextColor={theme.colors.textSecondary}
                 value={name}
                 onChangeText={setName}
@@ -183,7 +185,7 @@ export function CreatePoolModal({
                       },
                     ]}
                   >
-                    Private
+                    {t("pool.private")}
                   </AppText>
                 </Pressable>
                 <Pressable
@@ -213,7 +215,7 @@ export function CreatePoolModal({
                       },
                     ]}
                   >
-                    Public
+                    {t("pool.public")}
                   </AppText>
                 </Pressable>
               </View>
@@ -242,7 +244,7 @@ export function CreatePoolModal({
               >
                 <AppText variant="caption" color="danger">
                   {createGroupMutation.error?.message ||
-                    "Failed to create pool"}
+                    t("pool.failedCreate")}
                 </AppText>
               </View>
             )}
@@ -258,7 +260,7 @@ export function CreatePoolModal({
             ]}
           >
             <Button
-              label={createGroupMutation.isPending ? "Creating..." : "Create"}
+              label={createGroupMutation.isPending ? t("pool.creating") : t("pool.create")}
               onPress={handleCreate}
               disabled={isCreateDisabled}
               style={styles.createButton}

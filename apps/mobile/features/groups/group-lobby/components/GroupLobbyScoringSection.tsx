@@ -183,7 +183,7 @@ export function GroupLobbyScoringSection({
             />
             <Divider style={styles.divider} />
             <ScoreRow
-              label="Goal/Point Difference"
+              label={t("lobby.goalPointDifference")}
               value={goalDifference}
               onDecrement={() => handleValueChange("goalDifference", -1)}
               onIncrement={() => handleValueChange("goalDifference", 1)}

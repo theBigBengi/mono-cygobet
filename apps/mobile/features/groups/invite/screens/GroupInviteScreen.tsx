@@ -59,7 +59,7 @@ export function GroupInviteScreen({ groupId }: GroupInviteScreenProps) {
     return (
       <Screen>
         <QueryErrorView
-          message="Failed to load invite code"
+          message={t("invite.failedLoadInviteCode")}
           onRetry={() => refetch()}
         />
       </Screen>
@@ -92,7 +92,7 @@ export function GroupInviteScreen({ groupId }: GroupInviteScreenProps) {
         </Card>
 
         <Button
-          label="Share Invite"
+          label={t("invite.shareInvite")}
           onPress={handleShare}
           style={[styles.button, { marginTop: theme.spacing.md }]}
         />

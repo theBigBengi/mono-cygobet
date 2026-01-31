@@ -5,6 +5,7 @@
 // - No navigation, pure modal with internal state.
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   View,
   StyleSheet,
@@ -110,6 +111,7 @@ export function SelectGamesModal({
   onRequestClose,
   poolId,
 }: SelectGamesModalProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -211,13 +213,13 @@ export function SelectGamesModal({
                   ) : (
                     <Pressable onPress={handleBack}>
                       <AppText variant="body" color="primary">
-                        Back
+                        {t("pool.back")}
                       </AppText>
                     </Pressable>
                   )}
                 </View>
                 <View style={styles.headerCenter}>
-                  <AppText variant="subtitle">Select Games</AppText>
+                  <AppText variant="subtitle">{t("pool.selectGames")}</AppText>
                 </View>
                 <View style={styles.headerRight} />
               </View>
@@ -227,7 +229,7 @@ export function SelectGamesModal({
                 {step === 1 ? (
                   <View style={styles.modeContainer}>
                     <AppText variant="title" style={styles.title}>
-                      How do you want to select games?
+                      {t("pool.howToSelect")}
                     </AppText>
 
                     <View style={styles.optionsContainer}>
@@ -235,14 +237,14 @@ export function SelectGamesModal({
                         <Card style={styles.optionCard}>
                           <View style={styles.optionContent}>
                             <AppText variant="body" style={styles.optionTitle}>
-                              By upcoming games
+                              {t("pool.byUpcomingGames")}
                             </AppText>
                             <AppText
                               variant="caption"
                               color="secondary"
                               style={styles.optionSubtitle}
                             >
-                              Select specific games from upcoming fixtures
+                              {t("pool.byUpcomingGamesSubtitle")}
                             </AppText>
                           </View>
                         </Card>
@@ -252,14 +254,14 @@ export function SelectGamesModal({
                         <Card style={styles.optionCard}>
                           <View style={styles.optionContent}>
                             <AppText variant="body" style={styles.optionTitle}>
-                              By leagues
+                              {t("pool.byLeagues")}
                             </AppText>
                             <AppText
                               variant="caption"
                               color="secondary"
                               style={styles.optionSubtitle}
                             >
-                              Select games from specific leagues
+                              {t("pool.byLeaguesSubtitle")}
                             </AppText>
                           </View>
                         </Card>
@@ -269,14 +271,14 @@ export function SelectGamesModal({
                         <Card style={styles.optionCard}>
                           <View style={styles.optionContent}>
                             <AppText variant="body" style={styles.optionTitle}>
-                              By teams
+                              {t("pool.byTeams")}
                             </AppText>
                             <AppText
                               variant="caption"
                               color="secondary"
                               style={styles.optionSubtitle}
                             >
-                              Select games involving specific teams
+                              {t("pool.byTeamsSubtitle")}
                             </AppText>
                           </View>
                         </Card>
@@ -369,7 +371,7 @@ export function SelectGamesModal({
                   ]}
                 >
                   <Button
-                    label="Save selection"
+                    label={t("pool.saveSelection")}
                     onPress={handleSave}
                     style={styles.saveButton}
                   />

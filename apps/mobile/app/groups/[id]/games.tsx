@@ -21,7 +21,7 @@ export default function GroupGamesRoute() {
 
   // Loading state
   if (isLoading) {
-    return <QueryLoadingView message="Loading group..." />;
+    return <QueryLoadingView message={t("groups.loadingGroup")} />;
   }
 
   // Error state

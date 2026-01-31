@@ -63,7 +63,7 @@ export function HeadToHeadScreen({
     return (
       <Screen>
         <QueryErrorView
-          message="Failed to load opponents"
+          message={t("profile.failedLoadOpponents")}
           onRetry={() => void opponentsQuery.refetch()}
         />
       </Screen>
@@ -96,7 +96,7 @@ export function HeadToHeadScreen({
         {opponentId != null && (
           <>
             {h2hQuery.isLoading && (
-              <QueryLoadingView message="Loading comparison..." />
+              <QueryLoadingView message={t("profile.loadingComparison")} />
             )}
             {h2hQuery.isError && (
               <QueryErrorView
@@ -121,7 +121,7 @@ export function HeadToHeadScreen({
                 />
                 <Card>
                   <AppText variant="subtitle" style={styles.groupsTitle}>
-                    By Group
+                    {t("profile.byGroup")}
                   </AppText>
                   {data.sharedGroups.map((group, i) => (
                     <View key={group.groupId}>

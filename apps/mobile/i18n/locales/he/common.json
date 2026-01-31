@@ -20,7 +20,15 @@
     "alreadyHaveAccount": "כבר יש לך חשבון?",
     "dontHaveAccount": "אין לך חשבון?",
     "signIn": "התחבר",
-    "register": "הרשם"
+    "register": "הרשם",
+    "errorBothFields": "הזן אימייל/שם משתמש וסיסמה",
+    "errorEmailPassword": "הזן אימייל וסיסמה להרשמה",
+    "errorValidEmail": "הזן כתובת אימייל תקינה",
+    "errorUsernameMin": "שם המשתמש חייב להכיל לפחות 3 תווים",
+    "errorUsernameMax": "שם המשתמש חייב להכיל לכל היותר 50 תווים",
+    "errorUsernameFormat": "שם המשתמש יכול להכיל רק אותיות עברית/אנגלית, מספרים, קווים תחתונים ומקפים",
+    "errorOnboardingFailed": "השלמת ההתחלה נכשלה. נסה שוב.",
+    "usernameHint": "3-50 תווים. אותיות עברית/אנגלית, מספרים, קווים תחתונים ומקפים בלבד."
   },
   "groups": {
     "noGroupsYet": "עדיין אין קבוצות",
@@ -52,7 +60,12 @@
     "failedJoinGroup": "הצטרפות לקבוצה נכשלה",
     "loadingGroup": "טוען קבוצה...",
     "failedLoadGroup": "טעינת קבוצה נכשלה",
-    "deleting": "מוחק..."
+    "deleting": "מוחק...",
+    "deleteGroupDraft": "מחק טיוטת קבוצה",
+    "deleteGroupConfirm": "האם אתה בטוח שברצונך למחוק את הקבוצה? פעולה זו אינה ניתנת לביטול.",
+    "cancel": "ביטול",
+    "delete": "מחק",
+    "deleteGroupDraftFailed": "מחיקת טיוטת הקבוצה נכשלה. נסה שוב."
   },
   "lobby": {
     "onlyInvitedCanJoin": "רק משתמשים שהוזמנו יכולים להצטרף",
@@ -61,7 +74,7 @@
     "active": "פעיל",
     "ended": "הסתיים",
     "groupEnded": "הקבוצה הסתיימה",
-    "groupEndedDuration": "הקבוצה הסתיימה · נמשכה יום {{count}} ({{start}} – {{end}})",
+    "groupEndedDuration_one": "הקבוצה הסתיימה · נמשכה יום אחד ({{start}} – {{end}})",
     "groupEndedDuration_other": "הקבוצה הסתיימה · נמשכה {{count}} ימים ({{start}} – {{end}})",
     "privacy": "פרטיות",
     "inviteSharing": "שיתוף הזמנות",
@@ -100,6 +113,24 @@
     "updating": "מעדכן...",
     "updateSelections": "עדכן בחירות",
     "noGamesSelected": "אין משחקים נבחרים לקבוצה זו עדיין.",
+    "loadingComparison": "טוען השוואה...",
+    "failedLoadComparison": "טעינת השוואה נכשלה",
+    "errorGroupIdRequired": "נדרש מזהה קבוצה",
+    "cannotUpdate": "לא ניתן לעדכן",
+    "mustKeepOneGame": "חובה להשאיר לפחות משחק אחד בקבוצה.",
+    "updateFailed": "העדכון נכשל",
+    "updateFailedMessage": "עדכון משחקי הקבוצה נכשל. נסה שוב.",
+    "exact": "בדיוק",
+    "diff": "הפרש",
+    "outcome": "תוצאה",
+    "miss": "החטאה",
+    "totalPoints": "נקודות סה\"כ",
+    "accuracy": "דיוק",
+    "exactScores": "תוצאות מדויקות",
+    "groups": "קבוצות",
+    "exactScoresLabel": "תוצאות מדויקות",
+    "predictionsLabel": "תחזיות",
+    "compare": "השווה",
     "cancelled": "בוטל",
     "halfTime": "מחצית",
     "interrupted": "הופסק"
@@ -207,6 +238,28 @@
     "pageNotFound": "הדף לא נמצא",
     "pageNotFoundDescription": "הדף שאתה מחפש אינו קיים."
   },
+  "pool": {
+    "createPool": "צור פול",
+    "poolName": "שם הפול",
+    "poolNamePlaceholder": "שם פול",
+    "privacy": "פרטיות",
+    "private": "פרטי",
+    "public": "ציבורי",
+    "creating": "יוצר...",
+    "create": "צור",
+    "failedCreate": "יצירת פול נכשלה",
+    "selectGames": "בחר משחקים",
+    "howToSelect": "איך תרצה לבחור משחקים?",
+    "byUpcomingGames": "לפי משחקים קרובים",
+    "byUpcomingGamesSubtitle": "בחר משחקים ספציפיים ממשחקים קרובים",
+    "byLeagues": "לפי ליגות",
+    "byLeaguesSubtitle": "בחר משחקים מליגות ספציפיות",
+    "byTeams": "לפי קבוצות",
+    "byTeamsSubtitle": "בחר משחקים הכוללים קבוצות ספציפיות",
+    "saveSelection": "שמור בחירה",
+    "cancel": "ביטול",
+    "back": "חזור"
+  },
   "common": {
     "limitedConnectivity": "חיבור מוגבל — מצב קריאה בלבד",
     "loading": "טוען...",
@@ -215,6 +268,9 @@
     "cancel": "ביטול",
     "home": "בית",
     "away": "חוץ",
-    "unknown": "לא ידוע"
+    "unknown": "לא ידוע",
+    "unknownLeague": "ליגה לא ידועה",
+    "tbd": "להתפרסם",
+    "noRound": "ללא סיבוב"
   }
 }

@@ -87,7 +87,7 @@ export default function SignInScreen() {
               backgroundColor: theme.colors.surface,
             },
           ]}
-          placeholder="Email or Username"
+          placeholder={t("auth.emailOrUsername")}
           placeholderTextColor={theme.colors.textSecondary}
           value={emailOrUsername}
           onChangeText={setEmailOrUsername}
