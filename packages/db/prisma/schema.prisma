@@ -39,22 +39,24 @@ model sessions {
 }
 
 model users {
-  image            String?
-  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  id               Int                @id @default(autoincrement())
-  name             String?            @db.VarChar(255)
-  email            String             @unique @db.VarChar(255)
-  password         String?
-  username         String?            @unique @db.VarChar(50)
+  image             String?
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                Int                 @id @default(autoincrement())
+  name              String?             @db.VarChar(255)
+  email             String              @unique @db.VarChar(255)
+  password          String?
+  username          String?             @unique @db.VarChar(50)
   // predictions     predictions[]
-  groupPredictions groupPredictions[]
-  accounts         accounts[]
-  sessions         sessions[]
-  role             userRole           @default(user)
-  refreshSessions  refreshSessions[]
-  emailVerifiedAt  DateTime?          @map("email_verified_at") @db.Timestamptz(6)
-  lastLoginAt      DateTime?          @map("last_login_at") @db.Timestamptz(6)
-  userProfiles     userProfiles[]
+  groupPredictions  groupPredictions[]
+  groupMessages     groupMessages[]
+  groupMessageReads groupMessageReads[]
+  accounts          accounts[]
+  sessions          sessions[]
+  role              userRole            @default(user)
+  refreshSessions   refreshSessions[]
+  emailVerifiedAt   DateTime?           @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt       DateTime?           @map("last_login_at") @db.Timestamptz(6)
+  userProfiles      userProfiles[]
   // publicPredictions publicPredictions[]
 
   // groups groups[]
@@ -273,7 +275,9 @@ model groups {
 
   // group_invites           groupInvites[]
   // group_member_invites    groupMemberInvites[]
-  groupMembers groupMembers[] @relation("groupMembersRelation")
+  groupMembers      groupMembers[]      @relation("groupMembersRelation")
+  groupMessages     groupMessages[]
+  groupMessageReads groupMessageReads[]
 
   // relations
   groupRules groupRules? @relation("groupRulesRelation")
@@ -305,6 +309,13 @@ enum groupInviteAccess {
   admin_only
 
   @@map("group_invite_access")
+}
+
+enum groupMessageType {
+  user_message
+  system_event
+
+  @@map("group_message_type")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -442,6 +453,36 @@ model groupPredictions {
   @@index([userId, groupFixtureId], map: "group_predictions_user_gf_idx")
   @@index([userId], map: "group_predictions_user_idx")
   @@map("group_predictions")
+}
+
+model groupMessages {
+  id        Int              @id @default(autoincrement())
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  groupId   Int              @map("group_id")
+  senderId  Int?             @map("sender_id") // null for system events
+  type      groupMessageType @default(user_message)
+  body      String // text or event description
+  meta      Json? // { mentions: [...] } or { eventType, ...data }
+
+  groups groups @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sender users? @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([groupId, id(sort: Desc)])
+  @@map("group_messages")
+}
+
+model groupMessageReads {
+  id                Int      @id @default(autoincrement())
+  groupId           Int      @map("group_id")
+  userId            Int      @map("user_id")
+  lastReadMessageId Int      @map("last_read_message_id")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  groups groups @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user   users  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_message_reads")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
