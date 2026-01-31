@@ -1,12 +1,20 @@
 // app/(tabs)/groups.tsx
 // Groups tab - main screen
-// - Shows list of user's groups.
+// - Shows list of user's groups in sections: attention, active, drafts, ended.
 // - Empty state when no groups exist.
 // - Navigates to group details on press.
 
-import React from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useState, useCallback } from "react";
+import {
+  View,
+  StyleSheet,
+  SectionList,
+  Pressable,
+  RefreshControl,
+  Platform,
+} from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useMyGroupsQuery } from "@/domains/groups";
@@ -14,12 +22,26 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { GroupDraftCard } from "@/features/groups/group-list/components/GroupDraftCard";
 import { GroupActiveCard } from "@/features/groups/group-list/components/GroupActiveCard";
+import { useGroupSections, type GroupSection } from "@/features/groups/group-list/hooks";
 import type { ApiGroupItem } from "@repo/types";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function GroupsScreen() {
   const router = useRouter();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { data, isLoading, error, refetch } = useMyGroupsQuery();
+  const [endedCollapsed, setEndedCollapsed] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
 
   const handleJoinWithCode = () => {
     router.push("/groups/join");
@@ -30,9 +52,11 @@ export default function GroupsScreen() {
   };
 
   const handleGroupPress = (groupId: number) => {
-    // Navigate to group details - Stack screen at root level
     router.push(`/groups/${groupId}` as any);
   };
+
+  const groups = data?.data || [];
+  const { sections } = useGroupSections(groups);
 
   // Loading state
   if (isLoading) {
@@ -47,12 +71,13 @@ export default function GroupsScreen() {
   if (error) {
     return (
       <View style={styles.root}>
-        <QueryErrorView message="Failed to load groups" />
+        <QueryErrorView
+          message="Failed to load groups"
+          onRetry={() => refetch()}
+        />
       </View>
     );
   }
-
-  const groups = data?.data || [];
 
   // Empty state
   if (groups.length === 0) {
@@ -88,42 +113,138 @@ export default function GroupsScreen() {
     );
   }
 
-  // List state
+  const displaySections: (GroupSection & { originalCount?: number })[] =
+    sections.map((s) => {
+      if (s.key === "ended" && endedCollapsed) {
+        return { ...s, data: [], originalCount: s.data.length };
+      }
+      return s;
+    });
+
+  const tabBarHeight = 60 + insets.bottom;
+  const tabBarMarginBottom = theme.spacing.sm;
+  const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
+
+  const renderHeader = () => (
+    <View style={[styles.actionRow, { paddingBottom: theme.spacing.md }]}>
+      <Button
+        label="Join with code"
+        variant="secondary"
+        onPress={handleJoinWithCode}
+        style={styles.actionButton}
+      />
+      <Button
+        label="Browse public"
+        variant="secondary"
+        onPress={handleBrowsePublic}
+        style={styles.actionButton}
+      />
+    </View>
+  );
+
+  const renderSectionHeader = ({
+    section,
+  }: {
+    section: GroupSection & { originalCount?: number };
+  }) => {
+    const count =
+      section.key === "ended" && section.originalCount !== undefined
+        ? section.originalCount
+        : section.data.length;
+    const titleText = `${section.title.toUpperCase()} (${count})`;
+    const isAttention = section.key === "attention";
+    const isEnded = section.key === "ended";
+
+    const headerContent = (
+      <View
+        style={[
+          styles.sectionHeader,
+          {
+            backgroundColor: theme.colors.background,
+            borderBottomColor: theme.colors.border,
+          },
+        ]}
+      >
+        <AppText
+          variant="caption"
+          style={[
+            styles.sectionHeaderText,
+            isAttention && { color: theme.colors.primary, fontWeight: "600" },
+          ]}
+        >
+          {titleText}
+        </AppText>
+        {isEnded && (
+          <Ionicons
+            name={endedCollapsed ? "chevron-forward" : "chevron-down"}
+            size={16}
+            color={theme.colors.textSecondary}
+            style={styles.chevron}
+          />
+        )}
+      </View>
+    );
+
+    if (isEnded) {
+      return (
+        <Pressable
+          onPress={() => setEndedCollapsed((c) => !c)}
+          style={styles.sectionHeaderPressable}
+        >
+          {headerContent}
+        </Pressable>
+      );
+    }
+
+    return headerContent;
+  };
+
+  const renderItem = ({ item }: { item: ApiGroupItem }) => {
+    if (item.status === "draft") {
+      return (
+        <GroupDraftCard
+          group={item}
+          onPress={() => handleGroupPress(item.id)}
+        />
+      );
+    }
+    return (
+      <GroupActiveCard
+        group={item}
+        onPress={() => handleGroupPress(item.id)}
+      />
+    );
+  };
+
   return (
     <View style={styles.root}>
-      <Screen scroll onRefresh={async () => { await refetch(); }}>
-        <View style={[styles.joinRow, { marginBottom: theme.spacing.md }]}>
-          <Button
-            label="Join with code"
-            variant="secondary"
-            onPress={handleJoinWithCode}
-            style={styles.joinButton}
-          />
-          <Button
-            label="Browse Public Groups"
-            variant="secondary"
-            onPress={handleBrowsePublic}
-            style={[styles.joinButton, { marginTop: theme.spacing.sm }]}
-          />
-        </View>
-        {groups.map((group) => {
-          if (group.status === "draft") {
-            return (
-              <GroupDraftCard
-                key={group.id}
-                group={group}
-                onPress={() => handleGroupPress(group.id)}
-              />
-            );
-          }
-          return (
-            <GroupActiveCard
-              key={group.id}
-              group={group}
-              onPress={() => handleGroupPress(group.id)}
+      <Screen
+        scroll={false}
+        contentContainerStyle={{ alignItems: "stretch", flex: 1, padding: 0 }}
+      >
+        <SectionList<ApiGroupItem, GroupSection & { originalCount?: number }>
+          style={styles.sectionList}
+          sections={displaySections}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderItem}
+          renderSectionHeader={renderSectionHeader}
+          ListHeaderComponent={renderHeader}
+          stickySectionHeadersEnabled={false}
+          contentContainerStyle={{
+            paddingBottom: totalTabBarSpace + theme.spacing.md,
+            paddingHorizontal: theme.spacing.md,
+          }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.colors.primary}
+              colors={
+                Platform.OS === "android" ? [theme.colors.primary] : undefined
+              }
             />
-          );
-        })}
+          }
+        />
       </Screen>
     </View>
   );
@@ -131,6 +252,9 @@ export default function GroupsScreen() {
 
 const styles = StyleSheet.create({
   root: {
+    flex: 1,
+  },
+  sectionList: {
     flex: 1,
   },
   emptyContainer: {
@@ -146,10 +270,31 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     textAlign: "center",
   },
-  joinRow: {
-    width: "100%",
-  },
   joinButton: {
     width: "100%",
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    borderBottomWidth: 1,
+  },
+  sectionHeaderPressable: {
+    width: "100%",
+  },
+  sectionHeaderText: {
+    flex: 1,
+    fontWeight: "600",
+  },
+  chevron: {
+    marginLeft: 4,
   },
 });

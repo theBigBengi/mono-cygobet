@@ -1,7 +1,7 @@
 // components/FloatingTabBar.tsx
 // Custom floating tab bar with blur effect and rounded corners
 
-import React from "react";
+import React, { useMemo } from "react";
 import { View, StyleSheet } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
@@ -14,6 +14,7 @@ import {
   useHasSelectionForMode,
   useSelectionLabelForMode,
 } from "@/features/group-creation/hooks/useSelectionState";
+import { useMyGroupsQuery } from "@/domains/groups";
 import { currentSelectionModeAtom } from "@/features/group-creation/selection/mode.atom";
 import { createGroupModalVisibleAtom } from "@/features/group-creation/screens/create-group-modal.atom";
 
@@ -24,7 +25,16 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   const setModalVisible = useSetAtom(createGroupModalVisibleAtom);
   const hasSelection = useHasSelectionForMode(currentMode);
   const selectionCount = useSelectionLabelForMode(currentMode);
-  
+  const { data: groupsData } = useMyGroupsQuery();
+
+  const groupsNeedAttention = useMemo(() => {
+    const groups = groupsData?.data ?? [];
+    return groups.some(
+      (g) =>
+        (g.liveGamesCount ?? 0) > 0 || (g.todayUnpredictedCount ?? 0) > 0
+    );
+  }, [groupsData]);
+
   // Extract count number from label (e.g., "3 Games" -> 3)
   const countNumber = selectionCount
     ? parseInt(selectionCount.split(" ")[0], 10) || 0
@@ -148,6 +158,9 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                       />
                     )
                   )}
+                  {route.name === "groups" && groupsNeedAttention && (
+                    <View style={styles.attentionDot} pointerEvents="none" />
+                  )}
                 </View>
               </HapticTab>
             );
@@ -195,8 +208,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   tabContent: {
+    position: "relative",
     alignItems: "center",
     justifyContent: "center",
+  },
+  attentionDot: {
+    position: "absolute",
+    top: -2,
+    right: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#EF4444",
   },
   badge: {
     width: 40,
