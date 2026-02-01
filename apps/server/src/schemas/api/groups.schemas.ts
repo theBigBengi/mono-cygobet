@@ -361,11 +361,12 @@ export const groupGamesFiltersResponseSchema = {
 /** Participant item in predictions overview response. */
 export const predictionsOverviewParticipantSchema = {
   type: "object",
-  required: ["id", "username", "number"],
+  required: ["id", "username", "number", "totalPoints"],
   properties: {
     id: { type: "number" },
     username: { type: ["string", "null"] },
     number: { type: "number" },
+    totalPoints: { type: "number" },
   },
 };
 
@@ -409,7 +410,7 @@ export const predictionsOverviewResponseSchema = {
     status: { type: "string", enum: ["success"] },
     data: {
       type: "object",
-      required: ["participants", "fixtures", "predictions"],
+      required: ["participants", "fixtures", "predictions", "predictionPoints"],
       properties: {
         participants: {
           type: "array",
@@ -420,6 +421,12 @@ export const predictionsOverviewResponseSchema = {
           items: predictionsOverviewFixtureSchema,
         },
         predictions: {
+          type: "object",
+          additionalProperties: {
+            type: ["string", "null"],
+          },
+        },
+        predictionPoints: {
           type: "object",
           additionalProperties: {
             type: ["string", "null"],

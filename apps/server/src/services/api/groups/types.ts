@@ -50,6 +50,7 @@ export type PredictionsOverviewParticipant = {
   id: number;
   username: string | null;
   number: number;
+  totalPoints: number;
 };
 
 /**
@@ -81,6 +82,7 @@ export type PredictionsOverviewData = {
   participants: Array<PredictionsOverviewParticipant>;
   fixtures: Array<PredictionsOverviewFixture>;
   predictions: Record<string, string | null>;
+  predictionPoints: Record<string, string | null>;
 };
 
 /**

@@ -189,6 +189,8 @@ export function buildPredictionsMap(
     userId: number;
     groupFixtureId: number;
     prediction: string;
+    points: string;
+    settledAt: Date | null;
     groupFixtures: {
       fixtureId: number;
     };
@@ -200,7 +202,11 @@ export function buildPredictionsMap(
     startTs: number;
     state: string;
   }>
-): { predictionsMap: Record<string, string | null>; fixtureStartedMap: Map<number, boolean> } {
+): {
+  predictionsMap: Record<string, string | null>;
+  predictionPointsMap: Record<string, string | null>;
+  fixtureStartedMap: Map<number, boolean>;
+} {
   // Create a map of fixtureId -> hasStarted for quick lookup
   const fixtureStartedMap = new Map(
     fixtures.map((f) => [f.id, hasMatchStarted(f)])
@@ -208,6 +214,7 @@ export function buildPredictionsMap(
 
   // Build predictions map: `${userId}_${fixtureId}` -> "home:away"
   const predictionsMap: Record<string, string | null> = {};
+  const predictionPointsMap: Record<string, string | null> = {};
   for (const pred of predictions) {
     const fixtureId = pred.groupFixtures.fixtureId;
     const key = `${pred.userId}_${fixtureId}`;
@@ -218,8 +225,9 @@ export function buildPredictionsMap(
     // 2. OR the match has started (show all users' predictions)
     if (pred.userId === userId || hasStarted) {
       predictionsMap[key] = pred.prediction;
+      predictionPointsMap[key] = pred.settledAt ? pred.points : null;
     }
   }
 
-  return { predictionsMap, fixtureStartedMap };
+  return { predictionsMap, predictionPointsMap, fixtureStartedMap };
 }

@@ -547,6 +547,7 @@ export type ApiPredictionsOverviewParticipant = {
   id: number; // user id
   username: string | null;
   number: number; // position/order in group (1, 2, 3...)
+  totalPoints: number;
 };
 
 /**
@@ -579,6 +580,7 @@ export type ApiPredictionsOverviewData = {
   participants: ApiPredictionsOverviewParticipant[];
   fixtures: ApiPredictionsOverviewFixture[];
   predictions: Record<string, string | null>; // `${userId}_${fixtureId}` -> "home:away" | null
+  predictionPoints: Record<string, string | null>; // `${userId}_${fixtureId}` -> points string or null
 };
 
 /**

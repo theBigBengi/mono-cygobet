@@ -68,13 +68,23 @@ export async function upsertGroupPredictionsBatch(
   );
 }
 
+/** Shape returned by findPredictionsForOverview for overview map building. */
+export type PredictionForOverview = {
+  userId: number;
+  groupFixtureId: number;
+  prediction: string;
+  points: string;
+  settledAt: Date | null;
+  groupFixtures: { fixtureId: number };
+};
+
 /**
  * Find predictions for overview (raw query only).
  * Note: This is used by buildPredictionsMap in helpers.ts.
  */
 export async function findPredictionsForOverview(
   groupId: number
-) {
+): Promise<PredictionForOverview[]> {
   return await prisma.groupPredictions.findMany({
     where: {
       groupId,
@@ -86,6 +96,8 @@ export async function findPredictionsForOverview(
       userId: true,
       groupFixtureId: true,
       prediction: true,
+      points: true,
+      settledAt: true,
       groupFixtures: {
         select: {
           fixtureId: true,

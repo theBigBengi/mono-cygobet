@@ -4,6 +4,7 @@
 import type {
   PredictionsOverviewResponse,
 } from "../types";
+import type { PredictionForOverview } from "../repository/predictions";
 import {
   buildParticipants,
   buildOverviewFixtures,
@@ -38,12 +39,9 @@ export async function getPredictionsOverview(
   const participants = buildParticipants(membersWithUsers);
   const fixtures = buildOverviewFixtures(groupFixtures);
 
-  // Build predictions map
-  const { predictionsMap, fixtureStartedMap } = buildPredictionsMap(
-    predictions,
-    userId,
-    fixtures
-  );
+  // Build predictions map and prediction points map
+  const { predictionsMap, predictionPointsMap, fixtureStartedMap } =
+    buildPredictionsMap(predictions as PredictionForOverview[], userId, fixtures);
 
   // Initialize all possible combinations with null (for missing predictions)
   // Only for current user OR for matches that have started
@@ -59,16 +57,47 @@ export async function getPredictionsOverview(
         if (!(key in predictionsMap)) {
           predictionsMap[key] = null;
         }
+        if (!(key in predictionPointsMap)) {
+          predictionPointsMap[key] = null;
+        }
       }
     }
   }
 
+  // Compute total points per participant
+  const participantsWithTotals = participants.map((p) => {
+    let total = 0;
+    for (const fixture of fixtures) {
+      const key = `${p.id}_${fixture.id}`;
+      const pts = predictionPointsMap[key];
+      if (pts !== null && pts !== undefined) {
+        total += parseInt(pts, 10) || 0;
+      }
+    }
+    return { ...p, totalPoints: total };
+  });
+
+  // Sort by total points (high to low), then by username (tie-break)
+  const sorted = [...participantsWithTotals].sort((a, b) => {
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    const nameA = (a.username ?? "").toLowerCase();
+    const nameB = (b.username ?? "").toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+
+  // Re-assign number (rank) 1, 2, 3...
+  const participantsRanked = sorted.map((p, index) => ({
+    ...p,
+    number: index + 1,
+  }));
+
   return {
     status: "success",
     data: {
-      participants,
+      participants: participantsRanked,
       fixtures,
       predictions: predictionsMap,
+      predictionPoints: predictionPointsMap,
     },
     message: "Predictions overview fetched successfully",
   };

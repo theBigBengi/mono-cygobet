@@ -13,6 +13,7 @@ interface PredictionsOverviewTableProps {
 }
 
 const LEFT_COLUMN_WIDTH = 120;
+const TOTAL_COLUMN_WIDTH = 50;
 const GAME_COLUMN_WIDTH = 50;
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 110;
@@ -25,11 +26,24 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
   const rightFlatListRef = useRef<FlatList>(null);
   const horizontalScrollRef = useRef<ScrollView>(null);
 
-  const { participants, fixtures, predictions } = data;
+  const { participants, fixtures, predictions, predictionPoints } = data;
   const currentUserId = user?.id ?? null;
 
   const getPrediction = (userId: number, fixtureId: number): string | null => {
     return predictions[`${userId}_${fixtureId}`] ?? null;
+  };
+
+  const getPoints = (userId: number, fixtureId: number): string | null => {
+    return predictionPoints[`${userId}_${fixtureId}`] ?? null;
+  };
+
+  const getPointsColor = (points: string | null): string => {
+    if (!points) return theme.colors.textSecondary;
+    const n = parseInt(points, 10);
+    if (n >= 3) return "#34C759";
+    if (n >= 2) return "#FF9500";
+    if (n >= 1) return theme.colors.primary;
+    return theme.colors.textSecondary;
   };
 
   const formatPrediction = (
@@ -96,7 +110,7 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
     return !isNotStarted(state);
   };
 
-  const totalWidth = fixtures.length * GAME_COLUMN_WIDTH;
+  const totalWidth = TOTAL_COLUMN_WIDTH + fixtures.length * GAME_COLUMN_WIDTH;
 
   // Render header row - inside horizontal scroll
   const renderHeader = () => {
@@ -113,6 +127,22 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
           },
         ]}
       >
+        {/* Total Points header — first scrollable column */}
+        <View
+          style={[
+            styles.gameHeader,
+            {
+              width: TOTAL_COLUMN_WIDTH,
+              borderRightWidth: 1,
+              borderRightColor: theme.colors.border,
+            },
+          ]}
+        >
+          <AppText variant="caption" style={{ fontWeight: "600" }}>
+            Pts
+          </AppText>
+        </View>
+        {/* Fixture columns */}
         {fixtures.map((fixture) => (
           <View
             key={fixture.id}
@@ -209,6 +239,7 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
 
   // Render left column row
   const renderLeftRow = ({ item: participant }: { item: typeof participants[0] }) => {
+    const isCurrentUser = participant.id === currentUserId;
     return (
       <View
         style={[
@@ -217,14 +248,23 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
             height: ROW_HEIGHT,
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.border,
-            backgroundColor: theme.colors.surface,
+            backgroundColor: isCurrentUser
+              ? theme.colors.primary + "14"
+              : theme.colors.surface,
           },
         ]}
       >
         <AppText variant="body" style={styles.participantNumber}>
           {participant.number}
         </AppText>
-        <AppText variant="caption" numberOfLines={1} style={styles.participantName}>
+        <AppText
+          variant="caption"
+          numberOfLines={1}
+          style={[
+            styles.participantName,
+            isCurrentUser && { fontWeight: "700", color: theme.colors.primary },
+          ]}
+        >
           {participant.username || t("common.unknown")}
         </AppText>
       </View>
@@ -233,6 +273,7 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
 
   // Render participant row - ONLY match cells (left column is outside)
   const renderRow = ({ item: participant }: { item: typeof participants[0] }) => {
+    const isCurrentUser = participant.id === currentUserId;
     return (
       <View
         style={[
@@ -242,12 +283,36 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
             height: ROW_HEIGHT,
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.border,
-            backgroundColor: theme.colors.background,
+            backgroundColor: isCurrentUser
+              ? theme.colors.primary + "14"
+              : theme.colors.background,
           },
         ]}
       >
+        {/* Total Points cell — first scrollable column */}
+        <View
+          style={[
+            styles.predictionCell,
+            {
+              width: TOTAL_COLUMN_WIDTH,
+              borderRightWidth: 1,
+              borderRightColor: theme.colors.border,
+            },
+          ]}
+        >
+          <AppText variant="caption" style={{ fontWeight: "700" }}>
+            {participant.totalPoints}
+          </AppText>
+        </View>
+        {/* Prediction cells */}
         {fixtures.map((fixture) => {
           const prediction = getPrediction(participant.id, fixture.id);
+          const pts = getPoints(participant.id, fixture.id);
+          const predText = formatPrediction(
+            prediction,
+            participant.id,
+            fixture.id
+          );
           return (
             <View
               key={fixture.id}
@@ -260,9 +325,26 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
                 },
               ]}
             >
-              <AppText variant="body" color="secondary">
-                {formatPrediction(prediction, participant.id, fixture.id)}
-              </AppText>
+              <View style={{ alignItems: "center" }}>
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={{ fontSize: 11 }}
+                >
+                  {predText}
+                </AppText>
+                {pts !== null && (
+                  <AppText
+                    style={{
+                      fontSize: 9,
+                      fontWeight: "700",
+                      color: getPointsColor(pts),
+                    }}
+                  >
+                    {pts}
+                  </AppText>
+                )}
+              </View>
             </View>
           );
         })}

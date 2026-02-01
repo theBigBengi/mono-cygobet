@@ -172,6 +172,8 @@ export interface GroupsRepository {
     userId: number;
     groupFixtureId: number;
     prediction: string;
+    points: string;
+    settledAt: Date | null;
     groupFixtures: {
       fixtureId: number;
     };
