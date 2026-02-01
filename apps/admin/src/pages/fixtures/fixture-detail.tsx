@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fixturesService } from "@/services/fixtures.service";
 import { StatusBadge } from "@/components/table/status-badge";
+import type { AdminFixtureSettlementGroup } from "@repo/types";
 import {
   ScoreOverrideDialog,
   type FixtureForOverride,
@@ -233,7 +234,7 @@ export default function FixtureDetailPage() {
               </p>
             ) : (
               <ul className="text-sm space-y-1">
-                {settlementGroups.map((g) => (
+                {settlementGroups.map((g: AdminFixtureSettlementGroup) => (
                   <li key={g.groupId}>
                     <span className="font-medium">{g.groupName}</span>
                     <span className="text-muted-foreground">

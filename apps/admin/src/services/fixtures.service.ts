@@ -2,6 +2,8 @@ import { apiGet, apiPost, apiPatch } from "@/lib/adminApi";
 import type {
   AdminFixturesListResponse,
   AdminFixtureResponse,
+  AdminFixtureResettleResponse,
+  AdminFixtureSettlementSummaryResponse,
   AdminProviderFixturesResponse,
   AdminBatchesListResponse,
   AdminBatchItemsResponse,
