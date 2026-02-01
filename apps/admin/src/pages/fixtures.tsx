@@ -71,7 +71,7 @@ export default function FixturesPage() {
   );
   const [appliedLeagueIds, setAppliedLeagueIds] = useState<string[]>([]); // External IDs
   const [appliedCountryIds, setAppliedCountryIds] = useState<string[]>([]); // External IDs
-  const [appliedSeasonId, setAppliedSeasonId] = useState<string>(""); // External ID, "" = All
+  const [appliedSeasonId] = useState<string>(""); // External ID, "" = All
   const [dbPage, setDbPage] = useState(1);
   const [dbPageSize, setDbPageSize] = useState(25);
 
@@ -315,7 +315,11 @@ export default function FixturesPage() {
     },
   });
 
-  const syncAllMutation = useMutation({
+  const syncAllMutation = useMutation<
+    AdminSyncFixturesResponse,
+    Error,
+    void
+  >({
     mutationFn: () => fixturesService.sync(dryRunSync),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["fixtures", "db"] });
@@ -476,7 +480,7 @@ export default function FixturesPage() {
                   !toDate
                 }
               >
-                {syncFilteredMutation.isPending ? "Syncing..." : "Sync Filtered"}
+                {syncFilteredMutation.isPending ? "Syncing..." : "Re-sync Filtered"}
               </Button>
               <Button
                 variant="outline"

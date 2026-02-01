@@ -612,37 +612,37 @@ export function FixturesTable({
   });
 
   const handleRowClick = (fixture: UnifiedFixture | FixtureDBRow) => {
-    const dbId =
-      mode === "provider"
-        ? (fixture as UnifiedFixture).dbData?.id
-        : (fixture as FixtureDBRow).id;
+    if (mode === "provider") {
+      // In provider mode, always open dialog (never navigate) so Provider/DB tabs and mismatch badges are visible
+      setSelectedFixture(fixture as UnifiedFixture);
+      setIsDialogOpen(true);
+      return;
+    }
+    // DB mode: navigate to detail page when fixture has id
+    const dbId = (fixture as FixtureDBRow).id;
     if (dbId != null && Number.isFinite(dbId)) {
       navigate(`/fixtures/${dbId}`);
       return;
     }
-    if (mode === "provider") {
-      setSelectedFixture(fixture as UnifiedFixture);
-    } else {
-      // For DB mode, convert to UnifiedFixture format (API has stage/round as separate fields)
-      const dbFixture = fixture as FixtureDBRow;
-      setSelectedFixture({
-        externalId: dbFixture.externalId,
-        name: dbFixture.name,
-        startIso: dbFixture.startIso,
-        startTs: dbFixture.startTs,
-        state: dbFixture.state,
-        result: dbFixture.result,
-        stage: dbFixture.stage ?? null,
-        round: dbFixture.round ?? null,
-        source: "db",
-        status: "ok",
-        dbData: dbFixture,
-        league: dbFixture.league,
-        season: dbFixture.season,
-        homeTeam: dbFixture.homeTeam,
-        awayTeam: dbFixture.awayTeam,
-      });
-    }
+    // DB mode, no id: open dialog with converted UnifiedFixture
+    const dbFixture = fixture as FixtureDBRow;
+    setSelectedFixture({
+      externalId: dbFixture.externalId,
+      name: dbFixture.name,
+      startIso: dbFixture.startIso,
+      startTs: dbFixture.startTs,
+      state: dbFixture.state,
+      result: dbFixture.result,
+      stage: dbFixture.stage ?? null,
+      round: dbFixture.round ?? null,
+      source: "db",
+      status: "ok",
+      dbData: dbFixture,
+      league: dbFixture.league,
+      season: dbFixture.season,
+      homeTeam: dbFixture.homeTeam,
+      awayTeam: dbFixture.awayTeam,
+    });
     setIsDialogOpen(true);
   };
 

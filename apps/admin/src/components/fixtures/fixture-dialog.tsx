@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Pencil, PencilOff } from "lucide-react";
+import { ExternalLink, Pencil, PencilOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,6 +42,7 @@ export function FixtureDialog({
   syncingIds = new Set(),
   onUpdate,
 }: FixtureDialogProps) {
+  const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedState, setEditedState] = useState<string>("");
   const [editedName, setEditedName] = useState<string>("");
@@ -826,6 +828,18 @@ export function FixtureDialog({
             </>
           ) : (
             <>
+              {fixture?.dbData?.id != null && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    handleOpenChange(false);
+                    navigate(`/fixtures/${fixture.dbData!.id}`);
+                  }}
+                >
+                  View Detail
+                  <ExternalLink className="ml-1.5 h-4 w-4" />
+                </Button>
+              )}
               {mode === "provider" &&
                 fixture &&
                 fixture.status === "missing-in-db" &&

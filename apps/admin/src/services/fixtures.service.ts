@@ -95,8 +95,11 @@ export const fixturesService = {
     return apiGet<AdminProviderFixturesResponse>(url);
   },
 
-  async sync(dryRun = false) {
-    return apiPost("/admin/sync-center/sync/fixtures", { dryRun });
+  async sync(dryRun = false): Promise<AdminSyncFixturesResponse> {
+    return apiPost<AdminSyncFixturesResponse>(
+      "/admin/sync-center/sync/fixtures",
+      { dryRun }
+    );
   },
 
   async syncFiltered(params: {
