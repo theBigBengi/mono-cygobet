@@ -610,6 +610,30 @@ export type ApiRankingResponse = {
   message: string;
 };
 
+/**
+ * Activity feed item (cross-group system events).
+ */
+export type ApiActivityFeedItem = {
+  id: number;
+  createdAt: string;
+  groupId: number;
+  groupName: string;
+  eventType: string;
+  body: string;
+  meta: Record<string, unknown> | null;
+};
+
+/**
+ * Response from GET /api/activity.
+ */
+export type ApiActivityFeedResponse = {
+  status: "success";
+  data: {
+    items: ApiActivityFeedItem[];
+    hasMore: boolean;
+  };
+};
+
 // --- User Stats ---
 
 /** Badge IDs for user profile stats. */

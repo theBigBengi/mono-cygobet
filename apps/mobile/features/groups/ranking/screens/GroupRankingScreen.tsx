@@ -12,12 +12,14 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { Screen, Card, AppText, Row } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { useGroupRankingQuery } from "@/domains/groups";
+import { useGroupQuery, useGroupRankingQuery } from "@/domains/groups";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
+import { shareText, buildRankingShareText } from "@/utils/sharing";
 import type { ApiRankingItem } from "@repo/types";
 
 interface GroupRankingScreenProps {
@@ -94,6 +96,7 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { user } = useAuth();
+  const { data: groupData } = useGroupQuery(groupId);
   const {
     data,
     isLoading,
@@ -101,6 +104,21 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
     refetch,
     isRefetching,
   } = useGroupRankingQuery(groupId);
+
+  const groupName = groupData?.data?.name;
+  const myRow = data?.data?.find((item) => item.userId === user?.id);
+  const canShare = groupId != null && groupName && myRow != null;
+  const handleShare = () => {
+    if (!canShare || !myRow) return;
+    shareText(
+      buildRankingShareText({
+        username: myRow.username ?? "Me",
+        rank: myRow.rank,
+        totalPoints: myRow.totalPoints,
+        groupName: groupName!,
+      })
+    );
+  };
 
   if (isLoading) {
     return (
@@ -124,7 +142,19 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
   const items = data.data;
 
   return (
-    <View>
+    <View style={styles.container}>
+      {canShare && (
+        <Pressable onPress={handleShare} style={styles.shareButton}>
+          <Ionicons
+            name="share-outline"
+            size={22}
+            color={theme.colors.primary}
+          />
+          <AppText variant="body" style={{ color: theme.colors.primary, marginLeft: 6 }}>
+            {t("share.shareRanking")}
+          </AppText>
+        </Pressable>
+      )}
       <FlatList
         data={items}
         keyExtractor={(item) => String(item.userId)}
@@ -153,6 +183,16 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  shareButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   listContent: {
     flexGrow: 1,
   },

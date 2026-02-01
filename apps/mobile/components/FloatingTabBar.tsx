@@ -111,6 +111,8 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                 ? "add"
                 : route.name === "groups"
                 ? "people"
+                : route.name === "activity"
+                ? "flash"
                 : route.name === "profile"
                 ? "person"
                 : null;

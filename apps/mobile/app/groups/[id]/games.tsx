@@ -43,6 +43,7 @@ export default function GroupGamesRoute() {
       groupId={groupId}
       fixtures={fixtures}
       predictionMode={group.predictionMode}
+      groupName={group.name}
     />
   );
 }

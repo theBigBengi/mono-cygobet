@@ -25,11 +25,13 @@ import { HEADER_HEIGHT, FOOTER_PADDING } from "../utils/constants";
 import { calculateContentPaddingTopDefault, getPositionInGroup } from "../utils/utils";
  
 import { useGroupGamesFiltersQuery } from "@/domains/groups";
+import { shareText, buildPredictionShareText } from "@/utils/sharing";
 
 type Props = {
   groupId: number | null;
   fixtures: FixtureItem[]; // Fixtures passed from parent (already fetched with group)
   predictionMode?: string;
+  groupName?: string;
 };
 
 /**
@@ -39,7 +41,8 @@ type Props = {
  * - state for predictions
  * - wiring of keyboard/nav/scroll behaviors
  */
-export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMode }: Props) {
+export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMode, groupName }: Props) {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
   const [viewMode, setViewMode] = React.useState<"list" | "single">("list");
@@ -305,6 +308,35 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
                       group.fixtures.length
                     );
 
+                    const canShare =
+                      groupName &&
+                      fixture.state === "FT" &&
+                      fixture.prediction != null &&
+                      fixture.prediction.settled &&
+                      fixture.prediction.points != null;
+                    const onShare = canShare
+                      ? () => {
+                          const pred = fixture.prediction!;
+                          const predictionStr =
+                            predictionModeTyped === "MatchWinner"
+                              ? pred.home === pred.away
+                                ? "X"
+                                : pred.home > pred.away
+                                  ? "1"
+                                  : "2"
+                              : `${pred.home}-${pred.away}`;
+                          shareText(
+                            buildPredictionShareText({
+                              fixtureName: fixture.name ?? `${fixture.homeTeam?.name ?? "Home"} vs ${fixture.awayTeam?.name ?? "Away"}`,
+                              prediction: predictionStr,
+                              actual: fixture.result ?? "-",
+                              points: fixture.prediction!.points ?? 0,
+                              groupName: groupName!,
+                            })
+                          );
+                        }
+                      : undefined;
+
                     const commonProps = {
                       positionInGroup,
                       fixture,
@@ -331,6 +363,8 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
                           ? (outcome: "home" | "draw" | "away") =>
                               handleSelectOutcome(fixture.id, outcome)
                           : undefined,
+                      onShare,
+                      showShare: Boolean(canShare),
                     };
 
                     return (

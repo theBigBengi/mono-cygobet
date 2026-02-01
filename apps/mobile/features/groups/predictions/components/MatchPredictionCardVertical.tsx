@@ -1,6 +1,7 @@
 import React from "react";
-import { View, StyleSheet, TextInput } from "react-native";
+import { View, StyleSheet, TextInput, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 import { Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
@@ -43,6 +44,9 @@ type Props = {
   /** When "MatchWinner", shows 1/X/2 OutcomePicker instead of score inputs */
   predictionMode?: "CorrectScore" | "MatchWinner";
   onSelectOutcome?: (outcome: "home" | "draw" | "away") => void;
+  /** When finished and user has a settled prediction, show share icon and call on press */
+  onShare?: () => void;
+  showShare?: boolean;
 };
 
 /**
@@ -63,6 +67,8 @@ export function MatchPredictionCardVertical({
   onAutoNext,
   predictionMode = "CorrectScore",
   onSelectOutcome,
+  onShare,
+  showShare = false,
 }: Props) {
   const { t } = useTranslation("common");
   const { translateTeam } = useEntityTranslation();
@@ -205,5 +211,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     gap: 6,
     flexShrink: 0,
+  },
+  pointsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  shareButton: {
+    padding: 4,
   },
 });

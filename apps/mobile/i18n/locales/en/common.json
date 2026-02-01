@@ -2,7 +2,27 @@
   "tabs": {
     "groups": "Groups",
     "games": "Games",
+    "activity": "Activity",
     "profile": "Profile"
+  },
+  "activity": {
+    "empty": "No activity yet",
+    "emptySubtitle": "Events from your groups will appear here",
+    "loading": "Loading activity...",
+    "failedLoad": "Failed to load activity",
+    "fixtureLive": "{{homeTeam}} vs {{awayTeam}} kicked off",
+    "fixtureFt": "{{homeTeam}} {{homeScore}} - {{awayScore}} {{awayTeam}}",
+    "memberJoined": "{{username}} joined",
+    "rankingChange": "{{username}} moved to #{{position}}",
+    "fixtureLiveTitle": "Match Kicked Off",
+    "fixtureFtTitle": "Final Score",
+    "memberJoinedTitle": "New Member",
+    "rankingChangeTitle": "Ranking Update"
+  },
+  "share": {
+    "shareRanking": "Share my rank",
+    "ranking": "I'm ranked #{{rank}} with {{points}} points in \"{{groupName}}\"!",
+    "prediction": "{{fixture}}\nMy prediction: {{prediction}}\nResult: {{actual}}\nPoints: {{points}}"
   },
   "auth": {
     "login": "Login",

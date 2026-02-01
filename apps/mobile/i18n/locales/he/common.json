@@ -2,7 +2,27 @@
   "tabs": {
     "groups": "קבוצות",
     "games": "משחקים",
+    "activity": "פעילות",
     "profile": "פרופיל"
+  },
+  "activity": {
+    "empty": "עדיין אין פעילות",
+    "emptySubtitle": "אירועים מהקבוצות שלך יופיעו כאן",
+    "loading": "טוען פעילות...",
+    "failedLoad": "טעינת הפעילות נכשלה",
+    "fixtureLive": "{{homeTeam}} נגד {{awayTeam}} התחיל",
+    "fixtureFt": "{{homeTeam}} {{homeScore}} - {{awayScore}} {{awayTeam}}",
+    "memberJoined": "{{username}} הצטרף",
+    "rankingChange": "{{username}} עלה למקום #{{position}}",
+    "fixtureLiveTitle": "המשחק התחיל",
+    "fixtureFtTitle": "תוצאה סופית",
+    "memberJoinedTitle": "חבר חדש",
+    "rankingChangeTitle": "עדכון דירוג"
+  },
+  "share": {
+    "shareRanking": "שתף את הדירוג שלי",
+    "ranking": "אני במקום #{{rank}} עם {{points}} נקודות ב\"{{groupName}}\"!",
+    "prediction": "{{fixture}}\nהתחזית שלי: {{prediction}}\nתוצאה: {{actual}}\nנקודות: {{points}}"
   },
   "auth": {
     "login": "התחבר",
