@@ -195,6 +195,9 @@ importers:
       '@repo/types':
         specifier: workspace:^
         version: link:../../packages/types
+      '@repo/utils':
+        specifier: workspace:^
+        version: link:../../packages/utils
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.90.16(react@19.1.0)
@@ -346,6 +349,9 @@ importers:
       '@repo/types':
         specifier: workspace:^
         version: link:../../packages/types
+      '@repo/utils':
+        specifier: workspace:^
+        version: link:../../packages/utils
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -490,6 +496,8 @@ importers:
   packages/types: {}
 
   packages/typescript-config: {}
+
+  packages/utils: {}
 
   services/worker:
     dependencies:

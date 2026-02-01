@@ -1,7 +1,9 @@
 // groups/service/settlement.ts
 // Settlement service for calculating points on finished fixtures.
 
+import { FINISHED_STATES, CANCELLED_STATES } from "@repo/utils";
 import { prisma } from "@repo/db";
+import type { FixtureState } from "@repo/db";
 import { getLogger } from "../../../../logger";
 import { parseScores } from "../../../../etl/transform/fixtures.transform";
 import { calculateScore, type ScoringRules } from "../scoring";
@@ -353,7 +355,11 @@ async function transitionCompletedGroups(groupIds: number[]): Promise<number> {
     const nonTerminalCount = await prisma.groupFixtures.count({
       where: {
         groupId,
-        fixtures: { state: { notIn: ["FT", "CAN", "INT"] } },
+        fixtures: {
+          state: {
+            notIn: [...FINISHED_STATES, ...CANCELLED_STATES] as FixtureState[],
+          },
+        },
       },
     });
     if (nonTerminalCount === 0) {

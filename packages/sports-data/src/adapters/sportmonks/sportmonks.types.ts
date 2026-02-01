@@ -80,7 +80,15 @@ export interface FixtureStateSportmonks {
   name: string;
   state: string;
   developer_name: string;
-  short_name: "NS" | "LIVE" | "CAN" | "FT" | "HT" | "INT";
+  short_name: string;
+}
+
+export interface PeriodSportmonks {
+  id: number;
+  minutes: number;
+  ticking?: boolean;
+  ended?: boolean | null;
+  sort_order: number;
 }
 
 export interface FixtureStageSportmonks {
@@ -289,6 +297,7 @@ export interface FixtureSportmonks {
   odds: OddSportmonks[];
   participants: ParticipantsSportmonks[];
   state: FixtureStateSportmonks;
+  periods?: PeriodSportmonks[];
   scores: ScoreDetailSportmonks[];
   statistics?: FixtureSportmonksStatistics[];
   events?: FixtureEvent[];

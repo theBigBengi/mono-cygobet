@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView, FlatList } from "react-native";
+import { isNotStarted } from "@repo/utils";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { TeamLogo } from "@/components/ui/TeamLogo";
@@ -84,18 +85,6 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
     return "draw";
   };
 
-  // States where the match hasn't actually started playing (aligned with server)
-  const NON_STARTED_STATES = new Set([
-    "NS",
-    "TBD",
-    "PST",
-    "POSTP",
-    "CANC",
-    "CANCELLED",
-    "ABD",
-    "SUSP",
-  ]);
-
   const hasMatchStarted = (
     state: string,
     result: string | null,
@@ -104,7 +93,7 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
     if (result) return true;
     const now = Math.floor(Date.now() / 1000);
     if (startTs > now) return false;
-    return !NON_STARTED_STATES.has(state);
+    return !isNotStarted(state);
   };
 
   const totalWidth = fixtures.length * GAME_COLUMN_WIDTH;

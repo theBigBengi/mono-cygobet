@@ -11,6 +11,7 @@ export const FIXTURE_SELECT_BASE = {
   startIso: true,
   startTs: true,
   state: true,
+  liveMinute: true,
   stage: true,
   round: true,
   league: {

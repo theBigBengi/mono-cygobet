@@ -17,7 +17,9 @@
     "fixtureLiveTitle": "Match Kicked Off",
     "fixtureFtTitle": "Final Score",
     "memberJoinedTitle": "New Member",
-    "rankingChangeTitle": "Ranking Update"
+    "rankingChangeTitle": "Ranking Update",
+    "predictionReminderTitle": "Predict Now",
+    "predictionReminder": "{{homeTeam}} vs {{awayTeam}} starts soon — predict now!"
   },
   "share": {
     "shareRanking": "Share my rank",

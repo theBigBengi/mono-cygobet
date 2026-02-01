@@ -165,6 +165,7 @@ export function formatFixtureFromDb(
     kickoffAt: fixture.startIso,
     startTs: fixture.startTs,
     state: String(fixture.state),
+    liveMinute: fixture.liveMinute ?? null,
     stage: fixture.stage ?? null,
     round: fixture.round ?? null,
     league: fixture.league

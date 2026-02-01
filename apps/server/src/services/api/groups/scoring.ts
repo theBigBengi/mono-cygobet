@@ -6,6 +6,8 @@
 // For matches that don't go to ET, period scores are null and we fall back to
 // the final score (homeScore/awayScore) in all modes.
 
+import { isFinished } from "@repo/utils";
+
 export type ScoringRules = {
   predictionMode: "CorrectScore" | "MatchWinner";
   onTheNosePoints: number;
@@ -190,7 +192,7 @@ export function calculateScore(
   result: FixtureResult,
   rules: ScoringRules
 ): ScoringResult {
-  if (result.state !== "FT") return ZERO_RESULT;
+  if (!isFinished(result.state)) return ZERO_RESULT;
 
   const score = getScoreForMode(result, rules.koRoundMode);
   if (!score) return ZERO_RESULT;

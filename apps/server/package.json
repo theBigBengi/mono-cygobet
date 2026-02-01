@@ -27,6 +27,7 @@
     "@repo/db": "workspace:^",
     "@repo/sports-data": "workspace:^",
     "@repo/types": "workspace:^",
+    "@repo/utils": "workspace:^",
     "bcrypt": "^6.0.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",

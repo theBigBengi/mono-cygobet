@@ -64,6 +64,7 @@ export type ApiUpcomingFixturesResponse = {
     kickoffAt: string;
     startTs: number;
     state: string;
+    liveMinute?: number | null;
     stage: string | null;
     round: string | null;
     league?: {
@@ -567,6 +568,7 @@ export type ApiPredictionsOverviewFixture = {
   result: string | null; // final score (e.g., "2:1")
   startTs: number;
   state: string;
+  liveMinute?: number | null;
 };
 
 /**
@@ -611,16 +613,17 @@ export type ApiRankingResponse = {
 };
 
 /**
- * Activity feed item (cross-group system events).
+ * Activity feed item (cross-group system events + user-specific reminders).
  */
 export type ApiActivityFeedItem = {
   id: number;
   createdAt: string;
-  groupId: number;
+  groupId: number | null;
   groupName: string;
   eventType: string;
   body: string;
   meta: Record<string, unknown> | null;
+  source: "group" | "user";
 };
 
 /**

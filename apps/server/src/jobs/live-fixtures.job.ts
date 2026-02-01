@@ -1,5 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@repo/db";
+import type { FixtureState } from "@repo/db";
+import { NOT_STARTED_STATES, LIVE_STATES } from "@repo/utils";
 import { adapter } from "../utils/adapter";
 import { syncFixtures } from "../etl/sync/sync.fixtures";
 import { emitFixtureLiveEvents } from "../services/api/groups/service/chat-events";
@@ -72,7 +74,7 @@ export async function runLiveFixturesJob(
           ? await prisma.fixtures.findMany({
               where: {
                 externalId: { in: fetchedExternalIds },
-                state: "NS",
+                state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
               },
               select: { id: true, externalId: true },
             })
@@ -89,7 +91,7 @@ export async function runLiveFixturesJob(
         const nowLive = await prisma.fixtures.findMany({
           where: {
             id: { in: Array.from(nsFixtureIds) },
-            state: "LIVE",
+            state: { in: [...LIVE_STATES] as FixtureState[] },
           },
           select: {
             id: true,
@@ -99,7 +101,10 @@ export async function runLiveFixturesJob(
         });
 
         if (nowLive.length > 0) {
-          await emitFixtureLiveEvents(nowLive, fastify.io);
+          await emitFixtureLiveEvents(
+            nowLive as { id: number; homeTeam: { name: string } | null; awayTeam: { name: string } | null }[],
+            fastify.io
+          );
         }
       }
       const ok = result.inserted + result.updated;

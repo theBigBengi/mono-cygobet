@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView, Keyboard } from "react-native";
 import { useRouter } from "expo-router";
+import { isFinished } from "@repo/utils";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { ScoreInputNavigationBar, RoundFilterTabs,
@@ -310,7 +311,7 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
 
                     const canShare =
                       groupName &&
-                      fixture.state === "FT" &&
+                      isFinished(fixture.state) &&
                       fixture.prediction != null &&
                       fixture.prediction.settled &&
                       fixture.prediction.points != null;

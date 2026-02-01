@@ -30,9 +30,9 @@ export function PointsTimeDisplay({
             {time || "-"}
           </AppText>
         ) : isLive ? (
-          // Game is live - show time placeholder
+          // Game is live - show minute/status (e.g. 67', HT, PEN) or "LIVE"
           <AppText variant="caption" color="secondary" style={styles.timeText}>
-            LIVE
+            {time || "LIVE"}
           </AppText>
         ) : isFinished ? (
           // Game finished - show points (including 0)

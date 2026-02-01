@@ -58,6 +58,7 @@ model users {
   lastLoginAt       DateTime?           @map("last_login_at") @db.Timestamptz(6)
   userProfiles      userProfiles[]
   // publicPredictions publicPredictions[]
+  userActivityEvents userActivityEvents[]
 
   // groups groups[]
 
@@ -146,6 +147,7 @@ model fixtures {
   startIso    String       @map("start_iso")
   startTs     Int          @map("start_ts")
   state       FixtureState @default(NS)
+  liveMinute  Int?         @map("live_minute")
   result      String?
   homeScore   Int?         @map("home_score")
   awayScore   Int?         @map("away_score")
@@ -285,6 +287,7 @@ model groups {
   groupMembers      groupMembers[]      @relation("groupMembersRelation")
   groupMessages     groupMessages[]
   groupMessageReads groupMessageReads[]
+  userActivityEvents userActivityEvents[]
 
   // relations
   groupRules groupRules? @relation("groupRulesRelation")
@@ -492,6 +495,24 @@ model groupMessageReads {
   @@map("group_message_reads")
 }
 
+model userActivityEvents {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  userId    Int      @map("user_id")
+  groupId   Int?     @map("group_id")
+  eventType String   @map("event_type") // "prediction_reminder", future: "group_ended", etc.
+  body      String   // Human-readable text
+  meta      Json     @default("{}") // { fixtureId, homeTeam, awayTeam, kickoffAt, groupName }
+  read      Boolean  @default(false) // For future "mark as read"
+
+  users  users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groups groups? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)], map: "user_activity_events_user_created_idx")
+  @@index([userId, eventType, meta], map: "user_activity_events_dedup_idx")
+  @@map("user_activity_events")
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 // model predictions {
 //   id                         Int       @id @default(autoincrement())
@@ -573,11 +594,35 @@ model teams {
 }
 
 enum FixtureState {
+  // Not started
   NS
-  LIVE
+  TBA
+  DELAYED
+  AU
+  PENDING
+  // In play
+  INPLAY_1ST_HALF
+  INPLAY_2ND_HALF
+  INPLAY_ET
+  INPLAY_PENALTIES
+  // Breaks (still "live" — game in progress)
+  HT
+  BREAK
+  EXTRA_TIME_BREAK
+  PEN_BREAK
+  // Finished
   FT
-  CAN
-  INT
+  AET
+  FT_PEN
+  // Cancelled / Interrupted
+  CANCELLED
+  POSTPONED
+  SUSPENDED
+  ABANDONED
+  INTERRUPTED
+  WO
+  AWARDED
+  DELETED
 
   @@map("fixture_state")
 }

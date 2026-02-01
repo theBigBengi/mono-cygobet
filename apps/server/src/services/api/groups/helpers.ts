@@ -8,6 +8,7 @@ import type {
   PredictionRow,
   ParsedPrediction,
 } from "./types";
+import { isNotStarted } from "@repo/utils";
 import { nowUnixSeconds } from "../../../utils/dates";
 
 // Types
@@ -116,6 +117,7 @@ export function buildOverviewFixtures(
       name: string;
       startTs: number;
       state: string;
+      liveMinute?: number | null;
       result: string | null;
       homeTeam: {
         id: number;
@@ -150,21 +152,10 @@ export function buildOverviewFixtures(
       result: fixtures.result,
       startTs: fixtures.startTs,
       state: String(fixtures.state),
+      liveMinute: fixtures.liveMinute ?? null,
     };
   });
 }
-
-/** States where the match hasn't actually started playing */
-const NON_STARTED_STATES = new Set([
-  "NS",
-  "TBD",
-  "PST",
-  "POSTP",
-  "CANC",
-  "CANCELLED",
-  "ABD",
-  "SUSP",
-]);
 
 /**
  * Check if a match has started based on result, start time, and state.
@@ -182,7 +173,7 @@ export function hasMatchStarted(fixture: {
   // Check if start time is in the past
   const now = nowUnixSeconds();
   if (fixture.startTs > now) return false;
-  return !NON_STARTED_STATES.has(fixture.state);
+  return !isNotStarted(fixture.state);
 }
 
 /**

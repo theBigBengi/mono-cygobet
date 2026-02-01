@@ -1,4 +1,10 @@
 import { useMemo } from "react";
+import {
+  isEditable as isEditableState,
+  isLive as isLiveState,
+  isFinished as isFinishedState,
+  isCancelled as isCancelledState,
+} from "@repo/utils";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
 import type { FocusedField } from "../types";
 import {
@@ -40,10 +46,10 @@ export function useMatchCardState({
   currentFocusedField,
 }: UseMatchCardStateParams): UseMatchCardStateReturn {
   return useMemo(() => {
-    const isEditable = fixture.state === "NS";
-    const isLive = fixture.state === "LIVE";
-    const isFinished = fixture.state === "FT";
-    const isCancelled = fixture.state !== "NS" && fixture.state !== "FT" && fixture.state !== "LIVE";
+    const isEditable = isEditableState(fixture.state);
+    const isLive = isLiveState(fixture.state);
+    const isFinished = isFinishedState(fixture.state);
+    const isCancelled = isCancelledState(fixture.state);
 
     const gameResultOrTime = getGameResultOrTime(fixture);
     const points = getFixturePoints(fixture);

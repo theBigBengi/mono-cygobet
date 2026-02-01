@@ -1,6 +1,12 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Dimensions, TextInput } from "react-native";
+import {
+  isEditable as isEditableState,
+  isLive as isLiveState,
+  isFinished as isFinishedState,
+  isCancelled as isCancelledState,
+} from "@repo/utils";
 import { Card, AppText, TeamLogo } from "@/components/ui";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { ScoresInput } from "./ScoresInput";
@@ -58,10 +64,10 @@ export function SingleGameMatchCard({
   const { translateTeam } = useEntityTranslation();
   const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
-  const isEditable = fixture.state === "NS";
-  const isLive = fixture.state === "LIVE";
-  const isFinished = fixture.state === "FT";
-  const isCancelled = fixture.state === "CAN" || (fixture.state !== "NS" && fixture.state !== "FT" && fixture.state !== "LIVE");
+  const isEditable = isEditableState(fixture.state);
+  const isLive = isLiveState(fixture.state);
+  const isFinished = isFinishedState(fixture.state);
+  const isCancelled = isCancelledState(fixture.state);
 
   // Get result or reason text
   const getResultOrReasonText = (): string | null => {

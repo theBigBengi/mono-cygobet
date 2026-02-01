@@ -71,6 +71,7 @@ export type PredictionsOverviewFixture = {
   result: string | null;
   startTs: number;
   state: string;
+  liveMinute?: number | null;
 };
 
 /**

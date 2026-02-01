@@ -20,6 +20,8 @@ function getEventTitleKey(eventType: string): string {
       return "activity.memberJoinedTitle";
     case "ranking_change":
       return "activity.rankingChangeTitle";
+    case "prediction_reminder":
+      return "activity.predictionReminderTitle";
     default:
       return "activity.empty";
   }
@@ -33,7 +35,12 @@ export function ActivityCard({ item }: ActivityCardProps) {
   const titleKey = getEventTitleKey(item.eventType);
 
   const onPress = () => {
-    router.push(`/groups/${item.groupId}` as any);
+    if (item.groupId == null) return;
+    if (item.eventType === "prediction_reminder") {
+      router.push(`/groups/${item.groupId}/games` as any);
+    } else {
+      router.push(`/groups/${item.groupId}` as any);
+    }
   };
 
   const homeTeam = (meta.homeTeam as string) ?? "";
@@ -57,14 +64,31 @@ export function ActivityCard({ item }: ActivityCardProps) {
     subtitle = t("activity.memberJoined", { username });
   } else if (item.eventType === "ranking_change" && username) {
     subtitle = t("activity.rankingChange", { username, position: newPosition });
+  } else if (item.eventType === "prediction_reminder" && (homeTeam || awayTeam)) {
+    subtitle = t("activity.predictionReminder", {
+      homeTeam: homeTeam || "?",
+      awayTeam: awayTeam || "?",
+    });
   }
+
+  const isReminder = item.eventType === "prediction_reminder" || item.source === "user";
 
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}
     >
-      <Card style={[styles.card, { borderColor: theme.colors.border }]}>
+      <Card
+        style={[
+          styles.card,
+          {
+            borderColor: isReminder
+              ? theme.colors.primary
+              : theme.colors.border,
+            borderLeftWidth: isReminder ? 4 : 1,
+          },
+        ]}
+      >
         <View style={styles.content}>
           <AppText variant="subtitle" style={styles.title}>
             {t(titleKey as never)}

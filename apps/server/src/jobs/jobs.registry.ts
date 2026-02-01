@@ -19,6 +19,7 @@ import {
   FINISHED_FIXTURES_JOB,
   UPDATE_PREMATCH_ODDS_JOB,
   SYNC_GROUP_FIXTURES_JOB,
+  PREDICTION_REMINDERS_JOB,
 } from "./jobs.definitions";
 
 export type RunnableJobDefinition = {
@@ -77,6 +78,12 @@ const RUNNERS: Record<string, Runner> = {
     );
     return runSyncGroupFixturesJob(fastify, opts);
   },
+  [PREDICTION_REMINDERS_JOB.key]: async (fastify, opts) => {
+    const { runPredictionRemindersJob } = await import(
+      "./prediction-reminders.job"
+    );
+    return runPredictionRemindersJob(fastify, opts);
+  },
 };
 
 /**
@@ -126,6 +133,12 @@ export const RUNNABLE_JOBS: RunnableJobDefinition[] = [
     description: SYNC_GROUP_FIXTURES_JOB.description,
     scheduleCron: SYNC_GROUP_FIXTURES_JOB.scheduleCron ?? null,
     run: RUNNERS[SYNC_GROUP_FIXTURES_JOB.key]!,
+  },
+  {
+    key: PREDICTION_REMINDERS_JOB.key,
+    description: PREDICTION_REMINDERS_JOB.description,
+    scheduleCron: PREDICTION_REMINDERS_JOB.scheduleCron ?? null,
+    run: RUNNERS[PREDICTION_REMINDERS_JOB.key]!,
   },
 ];
 

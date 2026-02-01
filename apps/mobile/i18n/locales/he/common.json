@@ -17,7 +17,9 @@
     "fixtureLiveTitle": "המשחק התחיל",
     "fixtureFtTitle": "תוצאה סופית",
     "memberJoinedTitle": "חבר חדש",
-    "rankingChangeTitle": "עדכון דירוג"
+    "rankingChangeTitle": "עדכון דירוג",
+    "predictionReminderTitle": "בחר תחזית",
+    "predictionReminder": "{{homeTeam}} נגד {{awayTeam}} מתחיל בקרוב — בחר תחזית!"
   },
   "share": {
     "shareRanking": "שתף את הדירוג שלי",

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { isLive } from "@repo/utils";
 import { groupFixturesByLeagueAndDateOnly } from "@/utils/fixture";
 import type { LeagueDateGroup } from "@/utils/fixture";
 import type { FixtureItem } from "@/types/common";
@@ -18,7 +19,7 @@ export function useGroupedFixtures(
     const other: FixtureItem[] = [];
 
     filteredFixtures.forEach((fixture) => {
-      if (fixture.state === "LIVE") {
+      if (isLive(fixture.state)) {
         live.push(fixture);
       } else {
         other.push(fixture);

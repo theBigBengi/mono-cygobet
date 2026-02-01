@@ -143,6 +143,23 @@ export const SYNC_GROUP_FIXTURES_JOB = {
 } as const satisfies JobDefinition;
 
 /**
+ * PREDICTION_REMINDERS_JOB
+ * ------------------------
+ * Purpose: generate user-specific reminder events for upcoming fixtures the user hasn't predicted.
+ */
+export const PREDICTION_REMINDERS_JOB = {
+  key: "prediction-reminders",
+  description:
+    "Generate prediction reminder events for upcoming unpredicted fixtures",
+  enabled: true,
+  // Every 30 minutes.
+  scheduleCron: "*/30 * * * *",
+  meta: {
+    reminderWindowHours: 2, // Remind when fixture starts within 2 hours
+  },
+} as const satisfies JobDefinition;
+
+/**
  * JOB_DEFINITIONS
  * --------------
  * List of all “known jobs” and their default DB config.
@@ -157,6 +174,7 @@ export const JOB_DEFINITIONS = [
   UPDATE_PREMATCH_ODDS_JOB,
   CLEANUP_EXPIRED_SESSIONS_JOB,
   SYNC_GROUP_FIXTURES_JOB,
+  PREDICTION_REMINDERS_JOB,
 ] as const satisfies readonly JobDefinition[];
 
 export type JobKey = (typeof JOB_DEFINITIONS)[number]["key"];

@@ -74,14 +74,31 @@ export type SeasonDTO = {
   countryName: string;
 };
 
-// Reuse your existing enum if you already have it; shown here for clarity.
 export const FixtureState = {
   NS: "NS",
-  LIVE: "LIVE",
-  CAN: "CAN",
-  FT: "FT",
+  TBA: "TBA",
+  DELAYED: "DELAYED",
+  AU: "AU",
+  PENDING: "PENDING",
+  INPLAY_1ST_HALF: "INPLAY_1ST_HALF",
+  INPLAY_2ND_HALF: "INPLAY_2ND_HALF",
+  INPLAY_ET: "INPLAY_ET",
+  INPLAY_PENALTIES: "INPLAY_PENALTIES",
   HT: "HT",
-  INT: "INT",
+  BREAK: "BREAK",
+  EXTRA_TIME_BREAK: "EXTRA_TIME_BREAK",
+  PEN_BREAK: "PEN_BREAK",
+  FT: "FT",
+  AET: "AET",
+  FT_PEN: "FT_PEN",
+  CANCELLED: "CANCELLED",
+  POSTPONED: "POSTPONED",
+  SUSPENDED: "SUSPENDED",
+  ABANDONED: "ABANDONED",
+  INTERRUPTED: "INTERRUPTED",
+  WO: "WO",
+  AWARDED: "AWARDED",
+  DELETED: "DELETED",
 } as const;
 
 export type FixtureState = (typeof FixtureState)[keyof typeof FixtureState];
@@ -125,6 +142,9 @@ export type FixtureDTO = {
 
   /** Normalized to our enum -> fixtures.state */
   state: FixtureState;
+
+  /** Live minute when in play (nullable) -> fixtures.live_minute */
+  liveMinute: number | null;
 
   /** Provider raw result string (nullable) -> fixtures.result */
   result: string | null;

@@ -1,3 +1,9 @@
+import {
+  isEditable as isEditableState,
+  isLive as isLiveState,
+  isFinished as isFinishedState,
+  isCancelled as isCancelledState,
+} from "@repo/utils";
 import { formatKickoffTime } from "@/utils/fixture";
 import type { FixtureItem } from "@/types/common";
 import type { PositionInGroup } from "@/types/common";
@@ -10,13 +16,40 @@ export type GameResultOrTime = {
 } | null;
 
 /**
+ * Format live display string from state and optional live minute (e.g. "67'", "HT", "PEN").
+ */
+export function formatLiveDisplay(
+  state: string,
+  liveMinute: number | null | undefined
+): string {
+  switch (state) {
+    case "HT":
+      return "HT";
+    case "BREAK":
+      return "BRK";
+    case "EXTRA_TIME_BREAK":
+      return "ET BRK";
+    case "PEN_BREAK":
+      return "PEN BRK";
+    case "INPLAY_PENALTIES":
+      return "PEN";
+    case "INPLAY_1ST_HALF":
+    case "INPLAY_2ND_HALF":
+    case "INPLAY_ET":
+      return liveMinute != null ? `${liveMinute}'` : "LIVE";
+    default:
+      return liveMinute != null ? `${liveMinute}'` : "LIVE";
+  }
+}
+
+/**
  * Get game result scores or kickoff time based on fixture state
  */
 export function getGameResultOrTime(fixture: FixtureItem): GameResultOrTime {
-  const isLive = fixture.state === "LIVE";
-  const isFinished = fixture.state === "FT";
-  const isEditable = fixture.state === "NS";
-  const isCancelled = fixture.state !== "NS" && fixture.state !== "FT" && fixture.state !== "LIVE";
+  const isLive = isLiveState(fixture.state);
+  const isFinished = isFinishedState(fixture.state);
+  const isEditable = isEditableState(fixture.state);
+  const isCancelled = isCancelledState(fixture.state);
 
   if ((isLive || isFinished) && fixture.result) {
     const resultParts = fixture.result.replace(":", "-").split("-");
@@ -38,6 +71,12 @@ export function getGameResultOrTime(fixture: FixtureItem): GameResultOrTime {
   if (isEditable) {
     const kickoffTime = formatKickoffTime(fixture.kickoffAt || null);
     return { home: null, away: null, time: kickoffTime };
+  }
+
+  // Live game without result yet: show minute or status (e.g. 67', HT, PEN)
+  if (isLive) {
+    const timeStr = formatLiveDisplay(fixture.state, fixture.liveMinute ?? null);
+    return { home: null, away: null, time: timeStr };
   }
 
   return null;

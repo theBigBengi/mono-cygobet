@@ -34,6 +34,7 @@ type ExistingRow = {
   startIso: string;
   startTs: number;
   state: DbFixtureState;
+  liveMinute: number | null;
   result: string | null;
   homeScore: number | null;
   awayScore: number | null;
@@ -58,6 +59,7 @@ function isSameFixture(
     startIso: string;
     startTs: number;
     state: DbFixtureState;
+    liveMinute: number | null;
     result: string | null;
     homeScore: number | null;
     awayScore: number | null;
@@ -80,6 +82,7 @@ function isSameFixture(
     existing.startIso === payload.startIso &&
     existing.startTs === payload.startTs &&
     existing.state === payload.state &&
+    existing.liveMinute === payload.liveMinute &&
     existing.result === payload.result &&
     existing.homeScore === payload.homeScore &&
     existing.awayScore === payload.awayScore &&
@@ -258,6 +261,7 @@ export async function syncFixtures(
           startIso: payload.startIso,
           startTs: payload.startTs,
           state: payload.state,
+          liveMinute: payload.liveMinute,
           result: payload.result,
           homeScore: payload.homeScore,
           awayScore: payload.awayScore,

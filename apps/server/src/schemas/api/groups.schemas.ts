@@ -397,6 +397,7 @@ export const predictionsOverviewFixtureSchema = {
     result: { type: ["string", "null"] },
     startTs: { type: "number" },
     state: { type: "string" },
+    liveMinute: { type: ["number", "null"] },
   },
 };
 

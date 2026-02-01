@@ -1,14 +1,14 @@
 // groups/repository/stats.ts
 // Repository functions for group statistics.
 
-import { prisma, FixtureState } from "@repo/db";
+import { prisma } from "@repo/db";
+import type { FixtureState } from "@repo/db";
 import type { Prisma } from "@repo/db";
+import { LIVE_STATES, NOT_STARTED_STATES } from "@repo/utils";
 import { getTodayUtcBounds } from "../../../../utils/dates";
 import { MEMBER_STATUS } from "../constants";
 import { FIXTURE_SELECT_BASE } from "../../fixtures/selects";
 import { buildUpcomingFixturesWhere } from "../../fixtures/queries";
-
-const LIVE_STATES = [FixtureState.LIVE] as const;
 
 // טיפוס משותף ל-fixture עם base select
 type FixtureWithBaseSelect = Prisma.fixturesGetPayload<{
@@ -166,7 +166,7 @@ export async function findGroupsStatsBatch(
       where: {
         groupId: { in: groupIds },
         fixtures: {
-          state: FixtureState.NS,
+          state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
           startTs: { gte: todayStartTs, lt: todayEndTs },
         },
         NOT: {
@@ -182,7 +182,7 @@ export async function findGroupsStatsBatch(
       by: ["groupId"],
       where: {
         groupId: { in: groupIds },
-        fixtures: { state: { in: [...LIVE_STATES] } },
+        fixtures: { state: { in: [...LIVE_STATES] as FixtureState[] } },
       },
       _count: { groupId: true },
     }),
@@ -253,18 +253,19 @@ export async function findGroupsStatsBatch(
     unpredictedGamesCountByGroupId.set(item.groupId, item._count.groupId)
   );
 
+  type GroupByCountItem = { groupId: number; _count: { groupId: number } };
   const todayGamesCountByGroupId = new Map<number, number>();
-  todayCountsRaw.forEach((item) =>
+  (todayCountsRaw as GroupByCountItem[]).forEach((item) =>
     todayGamesCountByGroupId.set(item.groupId, item._count.groupId)
   );
 
   const todayUnpredictedCountByGroupId = new Map<number, number>();
-  todayUnpredictedCountsRaw.forEach((item) =>
+  (todayUnpredictedCountsRaw as GroupByCountItem[]).forEach((item) =>
     todayUnpredictedCountByGroupId.set(item.groupId, item._count.groupId)
   );
 
   const liveGamesCountByGroupId = new Map<number, number>();
-  liveCountsRaw.forEach((item) =>
+  (liveCountsRaw as GroupByCountItem[]).forEach((item) =>
     liveGamesCountByGroupId.set(item.groupId, item._count.groupId)
   );
 

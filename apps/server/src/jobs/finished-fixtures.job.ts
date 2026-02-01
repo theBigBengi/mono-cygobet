@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
+import { LIVE_STATES, FINISHED_STATES } from "@repo/utils";
 import { adapter } from "../utils/adapter";
-import { FixtureState as DbFixtureState, prisma } from "@repo/db";
+import { prisma } from "@repo/db";
+import type { FixtureState } from "@repo/db";
 import { syncFixtures } from "../etl/sync/sync.fixtures";
 import { chunk } from "../etl/utils";
 import { JobRunOpts } from "../types/jobs";
@@ -59,7 +61,7 @@ export async function runFinishedFixturesJob(
 
       const candidates = await prisma.fixtures.findMany({
         where: {
-          state: DbFixtureState.LIVE,
+          state: { in: [...LIVE_STATES] as FixtureState[] },
           startTs: { lte: cutoffTs },
         },
         select: { externalId: true },
@@ -169,7 +171,7 @@ export async function runFinishedFixturesJob(
       const ftFixtures = await prisma.fixtures.findMany({
         where: {
           externalId: { in: fetched.map((f) => BigInt(f.externalId)) },
-          state: DbFixtureState.FT,
+          state: { in: [...FINISHED_STATES] as FixtureState[] },
         },
         select: { id: true },
       });

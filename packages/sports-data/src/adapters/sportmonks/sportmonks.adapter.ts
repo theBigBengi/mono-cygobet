@@ -305,6 +305,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
     this.logger.info("fetchLiveFixtures", {});
     const include = [
       ...this.fixtureInclude,
+      { name: "periods" },
       ...this.buildFixtureInclude(options),
     ];
     const rows = await this.httpFootball.get<FixtureSportmonks>("livescores/inplay", {

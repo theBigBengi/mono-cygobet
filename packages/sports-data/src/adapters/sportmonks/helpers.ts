@@ -11,6 +11,7 @@ import { noopLogger } from "../../logger";
 import type {
   FixtureSportmonks,
   ParticipantsSportmonks,
+  PeriodSportmonks,
   ScoreSportmonks,
 } from "./sportmonks.types";
 import {
@@ -388,51 +389,50 @@ export class SMHttp {
 
 /* ----------------------- Fixture Data Mapping Helpers ----------------------- */
 
-/**
- * Maps SportMonks fixture state to our internal FixtureState enum
- * SportMonks uses various state names, so we normalize them to our 5-state system:
- * - NS (Not Started)
- * - INPLAY_1ST_HALF (First Half)
- * - HT (Half Time)
- * - INPLAY_2ND_HALF (Second Half)
- * - FT (Finished)
- */
-export function mapSmShortToApp(
-  stateType?: string | null
-): "NS" | "LIVE" | "CAN" | "FT" {
-  const s = (stateType ?? "").toLowerCase();
+const SM_DEVELOPER_NAME_MAP: Record<string, string> = {
+  NS: "NS",
+  INPLAY_1ST_HALF: "INPLAY_1ST_HALF",
+  INPLAY_2ND_HALF: "INPLAY_2ND_HALF",
+  HT: "HT",
+  BREAK: "BREAK",
+  INPLAY_ET: "INPLAY_ET",
+  EXTRA_TIME_BREAK: "EXTRA_TIME_BREAK",
+  INPLAY_PENALTIES: "INPLAY_PENALTIES",
+  PEN_BREAK: "PEN_BREAK",
+  FT: "FT",
+  AET: "AET",
+  FT_PEN: "FT_PEN",
+  POSTPONED: "POSTPONED",
+  SUSPENDED: "SUSPENDED",
+  CANCELLED: "CANCELLED",
+  TBA: "TBA",
+  WO: "WO",
+  ABANDONED: "ABANDONED",
+  DELAYED: "DELAYED",
+  AWARDED: "AWARDED",
+  INTERRUPTED: "INTERRUPTED",
+  AU: "AU",
+  DELETED: "DELETED",
+  PENDING: "PENDING",
+};
 
-  // Not started states
-  if (["not_started", "scheduled", "ns", "pre_match"].includes(s)) return "NS";
+export function mapSmStateToApp(
+  developerName: string | undefined
+): (typeof FixtureState)[keyof typeof FixtureState] {
+  if (!developerName) return "NS";
+  return (SM_DEVELOPER_NAME_MAP[developerName] ?? "NS") as (typeof FixtureState)[keyof typeof FixtureState];
+}
 
-  // Half time states
-  if (["half_time", "halftime", "ht"].includes(s)) return "LIVE";
-
-  // Finished states
-  if (["finished", "ft", "fulltime", "full_time"].includes(s)) return "FT";
-
-  // First half states (SportMonks has various naming conventions)
-  if (
-    s.includes("1st") ||
-    s.includes("first") ||
-    s.includes("h1") ||
-    s === "inplay_1st_half"
-  )
-    return "LIVE";
-
-  // Second half states
-  if (
-    s.includes("2nd") ||
-    s.includes("second") ||
-    s.includes("h2") ||
-    s === "inplay_2nd_half"
-  )
-    return "LIVE";
-
-  // Default fallback for unknown states — log so we notice new states from provider
-  // eslint-disable-next-line no-console
-  console.warn(`[mapSmShortToApp] Unknown fixture state: "${stateType}" — mapped to CAN`);
-  return "CAN";
+export function extractLiveMinute(
+  periods: PeriodSportmonks[] | undefined
+): number | null {
+  if (!periods?.length) return null;
+  const ticking = periods.find((p) => p.ticking);
+  if (ticking) return ticking.minutes;
+  const last = periods
+    .filter((p) => p.ended != null)
+    .sort((a, b) => b.sort_order - a.sort_order)[0];
+  return last?.minutes ?? null;
 }
 
 // Score type_id constants (confirm via /v3/core/types)
@@ -563,7 +563,8 @@ export function buildFixtures(f: FixtureSportmonks): FixtureDTO | null {
     awayTeamExternalId: awayId,
     startIso: f.starting_at ?? null,
     startTs: coerceEpochSeconds(f.starting_at_timestamp, f.starting_at),
-    state: mapSmShortToApp(f?.state?.short_name) as FixtureState,
+    state: mapSmStateToApp(f?.state?.developer_name),
+    liveMinute: extractLiveMinute(f.periods),
     result: pickScoreString(f?.scores),
     homeScore: scores.home,
     awayScore: scores.away,

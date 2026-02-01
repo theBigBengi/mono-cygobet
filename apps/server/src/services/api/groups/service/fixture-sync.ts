@@ -1,7 +1,9 @@
 // groups/service/fixture-sync.ts
 // Sync new fixtures to active groups with leagues/teams selection mode.
 
-import { prisma, FixtureState } from "@repo/db";
+import { NOT_STARTED_STATES } from "@repo/utils";
+import { prisma } from "@repo/db";
+import type { FixtureState } from "@repo/db";
 import type { Prisma } from "@repo/db";
 import { findFixturesTx } from "../../fixtures/repository";
 import {
@@ -57,7 +59,9 @@ export async function syncNewFixturesToActiveGroups(opts?: {
       if (isLeagues && leagueIds.length === 0) continue;
       if (!isLeagues && teamIds.length === 0) continue;
 
-      const baseWhere = { state: FixtureState.NS };
+      const baseWhere = {
+        state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
+      };
       const where = isLeagues
         ? buildFixturesByLeaguesWhere(baseWhere, leagueIds)
         : buildFixturesByTeamsWhere(baseWhere, teamIds);

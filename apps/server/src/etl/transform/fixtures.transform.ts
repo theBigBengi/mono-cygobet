@@ -3,16 +3,16 @@
  * Used by both seed (bulk) and sync (incremental).
  */
 import type { FixtureDTO } from "@repo/types/sport-data/common";
-import { FixtureState } from "@repo/db";
+import {
+  NOT_STARTED_STATES,
+  IN_PLAY_STATES,
+  BREAK_STATES,
+  FINISHED_STATES,
+  CANCELLED_STATES,
+} from "@repo/utils";
+import { FixtureState as DbFixtureState } from "@repo/db";
 
-// DB enum values (schema: NS, LIVE, FT, CAN, INT). HT from provider maps to LIVE.
-const DB_STATES = new Set<string>([
-  FixtureState.NS,
-  FixtureState.LIVE,
-  FixtureState.FT,
-  FixtureState.CAN,
-  FixtureState.INT,
-]);
+const DB_STATES = new Set<string>(Object.values(DbFixtureState));
 
 export type FixtureTransformResult = {
   externalId: number;
@@ -23,7 +23,7 @@ export type FixtureTransformResult = {
   awayTeamExternalId: number;
   startIso: string;
   startTs: number;
-  state: (typeof FixtureState)[keyof typeof FixtureState];
+  state: (typeof DbFixtureState)[keyof typeof DbFixtureState];
   result: string | null;
   homeScore: number | null;
   awayScore: number | null;
@@ -35,6 +35,7 @@ export type FixtureTransformResult = {
   penAway: number | null;
   stage: string | null;
   round: string | null;
+  liveMinute: number | null;
 };
 
 /**
@@ -68,15 +69,14 @@ export function parseScores(result: string | null | undefined): {
 }
 
 /**
- * Coerce DTO state to DB FixtureState. Maps HT -> LIVE (HT not in schema).
+ * Coerce DTO state to DB FixtureState. States now map 1:1; validate and default to NS.
  */
 export function coerceDbFixtureState(
   state: FixtureDTO["state"] | string
-): (typeof FixtureState)[keyof typeof FixtureState] {
-  const s = String(state).toUpperCase();
-  if (s === "HT") return FixtureState.LIVE;
-  if (DB_STATES.has(s)) return s as (typeof FixtureState)[keyof typeof FixtureState];
-  return FixtureState.NS;
+): (typeof DbFixtureState)[keyof typeof DbFixtureState] {
+  const s = String(state);
+  if (DB_STATES.has(s)) return s as (typeof DbFixtureState)[keyof typeof DbFixtureState];
+  return DbFixtureState.NS;
 }
 
 /**
@@ -121,39 +121,36 @@ export function transformFixtureDto(dto: FixtureDTO): FixtureTransformResult {
     penAway: dto.penAway ?? null,
     stage: dto.stage ?? null,
     round: dto.round ?? null,
+    liveMinute: dto.liveMinute ?? null,
   };
 }
 
 /**
- * Allowed state transitions (DB: NS, LIVE, FT, CAN, INT).
- * Decision: FT, CAN, INT are terminal (no transition to another state).
- * NS -> NS, LIVE, CAN, INT. LIVE -> LIVE, FT, CAN, INT.
- * INT is treated as terminal (e.g. interrupted) like FT/CAN; same rule in seed and sync.
+ * Allowed state transitions using helper groups:
+ * NOT_STARTED -> IN_PLAY, BREAK, CANCELLED
+ * IN_PLAY -> IN_PLAY, BREAK, FINISHED, CANCELLED
+ * BREAK -> IN_PLAY, BREAK, FINISHED, CANCELLED
+ * FINISHED / CANCELLED -> terminal (no transition)
  */
 export function isValidFixtureStateTransition(
-  currentState: (typeof FixtureState)[keyof typeof FixtureState],
-  nextState: (typeof FixtureState)[keyof typeof FixtureState]
+  currentState: (typeof DbFixtureState)[keyof typeof DbFixtureState],
+  nextState: (typeof DbFixtureState)[keyof typeof DbFixtureState]
 ): boolean {
   if (currentState === nextState) return true;
-
-  switch (currentState) {
-    case FixtureState.NS:
-      return (
-        nextState === FixtureState.LIVE ||
-        nextState === FixtureState.CAN ||
-        nextState === FixtureState.INT
-      );
-    case FixtureState.LIVE:
-      return (
-        nextState === FixtureState.FT ||
-        nextState === FixtureState.CAN ||
-        nextState === FixtureState.INT
-      );
-    case FixtureState.FT:
-    case FixtureState.CAN:
-    case FixtureState.INT:
-      return false;
-    default:
-      return false;
-  }
+  if (FINISHED_STATES.has(currentState) || CANCELLED_STATES.has(currentState))
+    return false;
+  if (NOT_STARTED_STATES.has(currentState))
+    return (
+      IN_PLAY_STATES.has(nextState) ||
+      BREAK_STATES.has(nextState) ||
+      CANCELLED_STATES.has(nextState)
+    );
+  if (IN_PLAY_STATES.has(currentState) || BREAK_STATES.has(currentState))
+    return (
+      IN_PLAY_STATES.has(nextState) ||
+      BREAK_STATES.has(nextState) ||
+      FINISHED_STATES.has(nextState) ||
+      CANCELLED_STATES.has(nextState)
+    );
+  return false;
 }

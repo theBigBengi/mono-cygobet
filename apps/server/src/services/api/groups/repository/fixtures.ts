@@ -275,6 +275,7 @@ export async function findGroupFixturesForOverview(groupId: number) {
           name: true,
           startTs: true,
           state: true,
+          liveMinute: true,
           result: true,
           homeTeam: {
             select: {

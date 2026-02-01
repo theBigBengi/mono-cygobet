@@ -3,9 +3,8 @@
 // Uses UTC for "today" to match server (getTodayUtcBounds).
 
 import { useMemo } from "react";
+import { isLive, isNotStarted } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
-
-const LIVE_STATES = ["LIVE"] as const;
 
 function getTodayUtcBoundsMs(): { startMs: number; endMs: number } {
   const d = new Date();
@@ -31,19 +30,17 @@ export function useGroupActivityStats(fixtures: FixtureItem[]) {
   return useMemo(() => {
     const now = Date.now();
 
-    const liveGames = fixtures.filter((f) =>
-      LIVE_STATES.includes(f.state as (typeof LIVE_STATES)[number])
-    );
+    const liveGames = fixtures.filter((f) => isLive(f.state));
     const todayGames = fixtures.filter((f) => isTodayUtc(f.kickoffAt));
     const unpredicted = fixtures.filter(
-      (f) => f.state === "NS" && !f.prediction
+      (f) => isNotStarted(f.state) && !f.prediction
     );
     const todayUnpredicted = todayGames.filter(
-      (f) => f.state === "NS" && !f.prediction
+      (f) => isNotStarted(f.state) && !f.prediction
     );
     const nextGame = fixtures.find(
       (f) =>
-        f.state === "NS" && new Date(f.kickoffAt).getTime() > now
+        isNotStarted(f.state) && new Date(f.kickoffAt).getTime() > now
     ) ?? null;
 
     return {
