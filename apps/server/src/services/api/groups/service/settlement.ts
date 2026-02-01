@@ -3,6 +3,7 @@
 
 import { prisma } from "@repo/db";
 import { getLogger } from "../../../../logger";
+import { parseScores } from "../../../../etl/transform/fixtures.transform";
 import { calculateScore, type ScoringRules } from "../scoring";
 import { getGroupRanking } from "./ranking";
 import { emitSystemEvent } from "./chat-events";
@@ -61,6 +62,7 @@ export async function settlePredictionsForFixtures(
       id: true,
       homeScore: true,
       awayScore: true,
+      result: true,
       state: true,
     },
   });
@@ -187,11 +189,22 @@ export async function settlePredictionsForFixtures(
       continue;
     }
 
-    // Check for null scores
-    if (fixture.homeScore == null || fixture.awayScore == null) {
-      log.warn({ predictionId: pred.id, fixtureId }, "Fixture has null scores");
-      skipped++;
-      continue;
+    // Resolve scores: use DB values, or parse from result string when null (safety net)
+    let homeScore = fixture.homeScore;
+    let awayScore = fixture.awayScore;
+    if (homeScore == null || awayScore == null) {
+      if (fixture.result?.trim()) {
+        const parsed = parseScores(fixture.result);
+        if (parsed.homeScore != null && parsed.awayScore != null) {
+          homeScore = parsed.homeScore;
+          awayScore = parsed.awayScore;
+        }
+      }
+      if (homeScore == null || awayScore == null) {
+        log.warn({ predictionId: pred.id, fixtureId }, "Fixture has null scores");
+        skipped++;
+        continue;
+      }
     }
 
     // Get rules from rules map
@@ -206,8 +219,8 @@ export async function settlePredictionsForFixtures(
     const result = calculateScore(
       { prediction: pred.prediction },
       {
-        homeScore: fixture.homeScore,
-        awayScore: fixture.awayScore,
+        homeScore,
+        awayScore,
         state: fixture.state,
       },
       rules

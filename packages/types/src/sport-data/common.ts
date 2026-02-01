@@ -117,6 +117,12 @@ export type FixtureDTO = {
   /** Provider raw result string (nullable) -> fixtures.result */
   result: string | null;
 
+  /** Home team score (nullable) -> fixtures.home_score */
+  homeScore: number | null;
+
+  /** Away team score (nullable) -> fixtures.away_score */
+  awayScore: number | null;
+
   /** Stage name -> fixtures.stage */
   stage: string | null;
 

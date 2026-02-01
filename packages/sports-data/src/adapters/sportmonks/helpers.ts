@@ -435,6 +435,27 @@ export function mapSmShortToApp(
 }
 
 /**
+ * Extract numeric home/away scores from Sportmonks scores array
+ */
+export function pickScores(
+  scores: ScoreSportmonks[] | undefined
+): { homeScore: number | null; awayScore: number | null } {
+  if (!Array.isArray(scores) || scores.length === 0)
+    return { homeScore: null, awayScore: null };
+
+  const current = scores.filter((s) => s.type_id === 1525);
+  const home = current.find(
+    (s) => s.score.participant.toLowerCase() === "home"
+  )?.score.goals;
+  const away = current.find(
+    (s) => s.score.participant.toLowerCase() === "away"
+  )?.score.goals;
+
+  if (home == null || away == null) return { homeScore: null, awayScore: null };
+  return { homeScore: home, awayScore: away };
+}
+
+/**
  * Extracts the best available score from SportMonks scores array
  * SportMonks provides multiple score types (current, fulltime, etc.)
  * Priority: Fulltime > Current > First available
@@ -442,17 +463,7 @@ export function mapSmShortToApp(
 export function pickScoreString(
   scores: ScoreSportmonks[] | undefined
 ): string | null {
-  if (!Array.isArray(scores) || scores.length === 0) return null;
-  const fulltimeScores = scores.filter((s) => s.type_id === 1525);
-
-  // Extract home and away scores from fulltimeScores
-  const homeScore = fulltimeScores.find(
-    (s) => s.score.participant.toLowerCase() === "home"
-  )?.score.goals;
-  const awayScore = fulltimeScores.find(
-    (s) => s.score.participant.toLowerCase() === "away"
-  )?.score.goals;
-
+  const { homeScore, awayScore } = pickScores(scores);
   if (homeScore == null || awayScore == null) return null;
   return `${homeScore}:${awayScore}`;
 }
@@ -523,6 +534,8 @@ export function buildFixtures(f: FixtureSportmonks): FixtureDTO | null {
   const { homeId, awayId } = extractTeams(f.participants);
   if (!homeId || !awayId) return null;
 
+  const { homeScore, awayScore } = pickScores(f?.scores);
+
   return {
     externalId: Number(f.id),
     name: String(f.name ?? ""),
@@ -534,6 +547,8 @@ export function buildFixtures(f: FixtureSportmonks): FixtureDTO | null {
     startTs: coerceEpochSeconds(f.starting_at_timestamp, f.starting_at),
     state: mapSmShortToApp(f?.state?.short_name) as FixtureState,
     result: pickScoreString(f?.scores),
+    homeScore,
+    awayScore,
     stage: f?.stage?.name ?? null,
     round: f?.round?.name ?? null,
     hasOdds: f.has_odds,

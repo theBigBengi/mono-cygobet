@@ -88,7 +88,9 @@ function startIsoFromStartTs(startTs: number): string {
  */
 export function transformFixtureDto(dto: FixtureDTO): FixtureTransformResult {
   const result = normalizeResult(dto.result);
-  const { homeScore, awayScore } = parseScores(result ?? dto.result);
+  const parsed = parseScores(result ?? dto.result);
+  const homeScore = dto.homeScore ?? parsed.homeScore;
+  const awayScore = dto.awayScore ?? parsed.awayScore;
   const state = coerceDbFixtureState(dto.state);
   const startIso = startIsoFromStartTs(dto.startTs);
 
