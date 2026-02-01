@@ -113,6 +113,10 @@ function AppContent() {
                 options={{   headerShown: false }}
               />
               <Stack.Screen
+                name="tooltip-demo"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="modal"
                 options={{ presentation: "modal", headerShown: true }}
               />

@@ -10,3 +10,4 @@ export { Row } from "./Row";
 export { Stack } from "./Stack";
 export { TeamLogo } from "./TeamLogo";
 export { ScreenWithHeader } from "./ScreenWithHeader";
+export { Tooltip } from "./Tooltip";

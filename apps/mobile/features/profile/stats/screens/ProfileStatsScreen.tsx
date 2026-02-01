@@ -151,6 +151,16 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
           </View>
         )}
         {isOwnProfile && (
+          <View style={[styles.compareButton, { marginTop: theme.spacing.sm }]}>
+            <Button
+              label="Tooltip Demo"
+              variant="secondary"
+              onPress={() => router.push("/tooltip-demo" as any)}
+              style={styles.compareButtonInner}
+            />
+          </View>
+        )}
+        {isOwnProfile && (
           <View style={[styles.logout, { marginTop: theme.spacing.xl }]}>
             <Button
               label={t("profile.logout")}
