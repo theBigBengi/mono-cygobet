@@ -26,6 +26,25 @@
     "ranking": "I'm ranked #{{rank}} with {{points}} points in \"{{groupName}}\"!",
     "prediction": "{{fixture}}\nMy prediction: {{prediction}}\nResult: {{actual}}\nPoints: {{points}}"
   },
+  "matchDetail": {
+    "kickoff": "Kickoff",
+    "league": "League",
+    "round": "Round {{round}}",
+    "stage": "{{stage}}",
+    "liveMinute": "{{minute}}'",
+    "periodScores": "Period Scores",
+    "min90": "90'",
+    "extraTime": "ET",
+    "penalties": "PEN",
+    "myPredictions": "My Predictions",
+    "noPredictions": "You haven't predicted this match",
+    "settled": "Settled",
+    "pending": "Pending",
+    "points": "{{points}} pts",
+    "outcomeHome": "Home Win",
+    "outcomeDraw": "Draw",
+    "outcomeAway": "Away Win"
+  },
   "auth": {
     "login": "Login",
     "signUp": "Sign Up",

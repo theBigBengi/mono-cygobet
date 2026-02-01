@@ -11,4 +11,5 @@ export const fixturesKeys = {
   all: ["fixtures"] as const,
   upcoming: (params: ApiUpcomingFixturesQuery) =>
     [...fixturesKeys.all, "upcoming", params] as const,
+  detail: (id: number) => [...fixturesKeys.all, "detail", id] as const,
 } as const;

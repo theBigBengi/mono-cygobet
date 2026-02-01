@@ -637,6 +637,54 @@ export type ApiActivityFeedResponse = {
   };
 };
 
+/**
+ * Prediction item in GET /api/fixtures/:id response (user's prediction in one group).
+ */
+export type ApiFixtureDetailPrediction = {
+  groupId: number;
+  groupName: string;
+  prediction: string;
+  settled: boolean;
+  points: number | null;
+  predictionMode: string;
+};
+
+/**
+ * Data payload for GET /api/fixtures/:id response.
+ */
+export type ApiFixtureDetailData = {
+  id: number;
+  name: string;
+  kickoffAt: string;
+  startTs: number;
+  state: string;
+  stage: string | null;
+  round: string | null;
+  liveMinute: number | null;
+  result: string | null;
+  homeScore: number | null;
+  awayScore: number | null;
+  homeScore90: number | null;
+  awayScore90: number | null;
+  homeScoreET: number | null;
+  awayScoreET: number | null;
+  penHome: number | null;
+  penAway: number | null;
+  homeTeam: { id: number; name: string; imagePath: string | null };
+  awayTeam: { id: number; name: string; imagePath: string | null };
+  league: { id: number; name: string; imagePath: string | null } | null;
+  country: { id: number; name: string; imagePath: string | null } | null;
+  predictions: ApiFixtureDetailPrediction[];
+};
+
+/**
+ * Response from GET /api/fixtures/:id.
+ */
+export type ApiFixtureDetailResponse = {
+  status: "success";
+  data: ApiFixtureDetailData;
+};
+
 // --- User Stats ---
 
 /** Badge IDs for user profile stats. */

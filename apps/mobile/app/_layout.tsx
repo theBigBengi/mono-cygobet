@@ -65,6 +65,10 @@ function AppContent() {
             <Stack.Protected guard={isFullyAuthenticated}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen
+                name="fixtures/[id]"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="groups/[id]/index"
                 options={{ headerShown: false }}
               />

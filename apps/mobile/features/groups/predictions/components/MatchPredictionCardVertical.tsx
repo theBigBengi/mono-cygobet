@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, TextInput, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -71,9 +72,14 @@ export function MatchPredictionCardVertical({
   showShare = false,
 }: Props) {
   const { t } = useTranslation("common");
+  const router = useRouter();
   const { translateTeam } = useEntityTranslation();
   const { theme } = useTheme();
   const fixtureIdStr = String(fixture.id);
+
+  const onPressCard = () => {
+    router.push(`/fixtures/${fixture.id}` as any);
+  };
 
   // Get refs for input fields
   const homeRef = inputRefs.current[fixtureIdStr]?.home;
@@ -102,9 +108,10 @@ export function MatchPredictionCardVertical({
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
 
   return (
-    <View ref={cardRef}>
-      <Card
-        style={[
+    <Pressable onPress={onPressCard} style={({ pressed }) => [{ opacity: pressed ? 0.95 : 1 }]}>
+      <View ref={cardRef}>
+        <Card
+          style={[
           styles.matchCard,
           cardRadiusStyle,
           cardBorderStyle,
@@ -186,6 +193,7 @@ export function MatchPredictionCardVertical({
         </View>
       </Card>
     </View>
+  </Pressable>
   );
 }
 

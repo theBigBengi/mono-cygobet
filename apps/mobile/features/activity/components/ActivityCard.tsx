@@ -35,6 +35,13 @@ export function ActivityCard({ item }: ActivityCardProps) {
   const titleKey = getEventTitleKey(item.eventType);
 
   const onPress = () => {
+    if (item.eventType === "fixture_live" || item.eventType === "fixture_ft") {
+      const fixtureId = meta.fixtureId as number | undefined;
+      if (fixtureId != null) {
+        router.push(`/fixtures/${fixtureId}` as any);
+        return;
+      }
+    }
     if (item.groupId == null) return;
     if (item.eventType === "prediction_reminder") {
       router.push(`/groups/${item.groupId}/games` as any);

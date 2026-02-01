@@ -26,6 +26,25 @@
     "ranking": "אני במקום #{{rank}} עם {{points}} נקודות ב\"{{groupName}}\"!",
     "prediction": "{{fixture}}\nהתחזית שלי: {{prediction}}\nתוצאה: {{actual}}\nנקודות: {{points}}"
   },
+  "matchDetail": {
+    "kickoff": "תחילת משחק",
+    "league": "ליגה",
+    "round": "מחזור {{round}}",
+    "stage": "{{stage}}",
+    "liveMinute": "{{minute}}'",
+    "periodScores": "תוצאות לפי מחציות",
+    "min90": "90'",
+    "extraTime": "הארכה",
+    "penalties": "פנדלים",
+    "myPredictions": "התחזיות שלי",
+    "noPredictions": "לא ניבאת במשחק הזה",
+    "settled": "הוחלט",
+    "pending": "ממתין",
+    "points": "{{points}} נקודות",
+    "outcomeHome": "ניצחון בית",
+    "outcomeDraw": "תיקו",
+    "outcomeAway": "ניצחון חוץ"
+  },
   "auth": {
     "login": "התחבר",
     "signUp": "הרשם",

@@ -4,7 +4,7 @@
 // MatchPredictionCard, GameSelectionCard, SelectedGameCard.
 
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Card, AppText, TeamLogo } from "@/components/ui";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
@@ -15,6 +15,8 @@ interface GameCardBaseProps {
   fixture: FixtureItem;
   positionInGroup?: PositionInGroup;
   children?: React.ReactNode;
+  /** When provided, the card is pressable and navigates to fixture detail (or custom action). */
+  onPress?: () => void;
 }
 
 export function GameCardBase({
@@ -52,7 +54,7 @@ export function GameCardBase({
       ? { borderTopWidth: 0 }
       : {};
 
-  return (
+  const card = (
     <Card
       style={[styles.matchCard, cardRadiusStyle, cardBorderStyle, {
         backgroundColor: theme.colors.cardBackground,
@@ -92,6 +94,15 @@ export function GameCardBase({
       </View>
     </Card>
   );
+
+  if (onPress) {
+    return (
+      <Pressable onPress={onPress} style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
+        {card}
+      </Pressable>
+    );
+  }
+  return card;
 }
 
 const styles = StyleSheet.create({
