@@ -82,10 +82,14 @@ export default function ActivityTabScreen() {
         onEndReachedThreshold={0.3}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <AppText variant="subtitle" style={styles.emptyTitle}>
+            <AppText variant="title" style={styles.emptyTitle}>
               {t("activity.empty")}
             </AppText>
-            <AppText variant="body" color="secondary">
+            <AppText
+              variant="body"
+              color="secondary"
+              style={styles.emptySubtitle}
+            >
               {t("activity.emptySubtitle")}
             </AppText>
           </View>
@@ -113,6 +117,10 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
   },
   emptyTitle: {
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  emptySubtitle: {
+    textAlign: "center",
   },
 });

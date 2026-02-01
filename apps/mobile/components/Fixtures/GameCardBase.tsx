@@ -23,6 +23,7 @@ export function GameCardBase({
   fixture,
   positionInGroup = "single",
   children,
+  onPress,
 }: GameCardBaseProps) {
   const { t } = useTranslation("common");
   const { translateTeam } = useEntityTranslation();

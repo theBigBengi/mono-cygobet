@@ -47,6 +47,10 @@ export default function GroupsScreen() {
     }
   }, [refetch, refetchUnread]);
 
+  const handleCreateGroup = () => {
+    router.push("/(tabs)/home" as any);
+  };
+
   const handleJoinWithCode = () => {
     router.push("/groups/join");
   };
@@ -100,17 +104,40 @@ export default function GroupsScreen() {
               {t("groups.noGroupsSubtitle")}
             </AppText>
             <Button
-              label={t("groups.joinWithCode")}
-              variant="secondary"
-              onPress={handleJoinWithCode}
-              style={[styles.joinButton, { marginTop: theme.spacing.lg }]}
+              label={t("groupCreation.createGroup")}
+              variant="primary"
+              onPress={handleCreateGroup}
+              style={[styles.createGroupButton, { marginTop: theme.spacing.lg }]}
             />
-            <Button
-              label={t("groups.browsePublicGroups")}
-              variant="secondary"
-              onPress={handleBrowsePublic}
-              style={[styles.joinButton, { marginTop: theme.spacing.sm }]}
-            />
+            <View style={[styles.secondaryActions, { marginTop: theme.spacing.xl }]}>
+              <Pressable
+                onPress={handleJoinWithCode}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={({ pressed }) => [
+                  styles.secondaryAction,
+                  pressed && styles.secondaryActionPressed,
+                ]}
+              >
+                <AppText variant="body" color="secondary" style={styles.secondaryActionText}>
+                  {t("groups.joinWithCode")}
+                </AppText>
+              </Pressable>
+              <AppText variant="body" color="secondary" style={styles.secondaryActionSeparator}>
+                ·
+              </AppText>
+              <Pressable
+                onPress={handleBrowsePublic}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={({ pressed }) => [
+                  styles.secondaryAction,
+                  pressed && styles.secondaryActionPressed,
+                ]}
+              >
+                <AppText variant="body" color="secondary" style={styles.secondaryActionText}>
+                  {t("groups.browsePublicGroups")}
+                </AppText>
+              </Pressable>
+            </View>
           </View>
         </Screen>
       </View>
@@ -275,8 +302,27 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     textAlign: "center",
   },
-  joinButton: {
+  createGroupButton: {
     width: "100%",
+  },
+  secondaryActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  secondaryAction: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  secondaryActionPressed: {
+    opacity: 0.7,
+  },
+  secondaryActionText: {
+    textDecorationLine: "underline",
+  },
+  secondaryActionSeparator: {
+    opacity: 0.6,
   },
   actionRow: {
     flexDirection: "row",
