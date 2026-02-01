@@ -16,7 +16,8 @@ export type GameResultOrTime = {
 } | null;
 
 /**
- * Format live display string from state and optional live minute (e.g. "67'", "HT", "PEN").
+ * Format live display string from fixture state and optional live minute.
+ * HT / BRK / PEN etc. come from fixture.state only — do not infer or guess.
  */
 export function formatLiveDisplay(
   state: string,
@@ -57,7 +58,10 @@ export function getGameResultOrTime(fixture: FixtureItem): GameResultOrTime {
       return {
         home: resultParts[0].trim(),
         away: resultParts[1].trim(),
-        time: null,
+        // For live games, include the match time; for finished games, time is null
+        time: isLive
+          ? formatLiveDisplay(fixture.state, fixture.liveMinute ?? null)
+          : null,
       };
     }
   }

@@ -11,8 +11,12 @@ type PointsTimeDisplayProps = {
   points: number | null;
 };
 
+/** When live, time is shown in red and slightly bolder (e.g. 67', HT, PEN). */
+const liveTimeStyle = { fontWeight: "600" as const };
+
 /**
- * Displays points (finished) or time (upcoming) or status
+ * Displays points (finished) or time (upcoming) or status.
+ * Live time (from fixture state, e.g. 67', HT, PEN) is red and bolder.
  */
 export function PointsTimeDisplay({
   isEditable,
@@ -30,8 +34,12 @@ export function PointsTimeDisplay({
             {time || "-"}
           </AppText>
         ) : isLive ? (
-          // Game is live - show minute/status (e.g. 67', HT, PEN) or "LIVE"
-          <AppText variant="caption" color="secondary" style={styles.timeText}>
+          // Game is live - show minute/status from fixture (e.g. 67', HT, PEN) or "LIVE"; red + bolder
+          <AppText
+            variant="caption"
+            color="danger"
+            style={[styles.timeText, liveTimeStyle]}
+          >
             {time || "LIVE"}
           </AppText>
         ) : isFinished ? (
