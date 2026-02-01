@@ -135,29 +135,36 @@ model countries {
 }
 
 model fixtures {
-  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
-  id         Int          @id @default(autoincrement())
-  leagueId   Int?         @map("league_id")
-  seasonId   Int?         @map("season_id")
-  homeTeamId Int          @map("home_team_id")
-  awayTeamId Int          @map("away_team_id")
-  name       String
-  startIso   String       @map("start_iso")
-  startTs    Int          @map("start_ts")
-  state      FixtureState @default(NS)
-  result     String?
-  homeScore  Int?         @map("home_score")
-  awayScore  Int?         @map("away_score")
-  stage      String?
-  round      String?
-  externalId BigInt       @unique @map("external_id")
-  hasOdds    Boolean      @default(false) @map("has_odds")
-  awayTeam   teams        @relation("fixtures_away_team_idToteams", fields: [awayTeamId], references: [id], onUpdate: NoAction)
-  homeTeam   teams        @relation("fixtures_home_team_idToteams", fields: [homeTeamId], references: [id], onUpdate: NoAction)
-  league     leagues?     @relation(fields: [leagueId], references: [id], onUpdate: NoAction)
-  season     seasons?     @relation(fields: [seasonId], references: [id], onUpdate: NoAction)
-  odds       odds[]
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id          Int          @id @default(autoincrement())
+  leagueId    Int?         @map("league_id")
+  seasonId    Int?         @map("season_id")
+  homeTeamId  Int          @map("home_team_id")
+  awayTeamId  Int          @map("away_team_id")
+  name        String
+  startIso    String       @map("start_iso")
+  startTs     Int          @map("start_ts")
+  state       FixtureState @default(NS)
+  result      String?
+  homeScore   Int?         @map("home_score")
+  awayScore   Int?         @map("away_score")
+  // period-specific scores (nullable - only populated for matches with ET/PEN)
+  homeScore90 Int?         @map("home_score_90")
+  awayScore90 Int?         @map("away_score_90")
+  homeScoreET Int?         @map("home_score_et")
+  awayScoreET Int?         @map("away_score_et")
+  penHome     Int?         @map("pen_home")
+  penAway     Int?         @map("pen_away")
+  stage       String?
+  round       String?
+  externalId  BigInt       @unique @map("external_id")
+  hasOdds     Boolean      @default(false) @map("has_odds")
+  awayTeam    teams        @relation("fixtures_away_team_idToteams", fields: [awayTeamId], references: [id], onUpdate: NoAction)
+  homeTeam    teams        @relation("fixtures_home_team_idToteams", fields: [homeTeamId], references: [id], onUpdate: NoAction)
+  league      leagues?     @relation(fields: [leagueId], references: [id], onUpdate: NoAction)
+  season      seasons?     @relation(fields: [seasonId], references: [id], onUpdate: NoAction)
+  odds        odds[]
   // predictions    predictions[]
   // publicPredictions publicPredictions[]
 

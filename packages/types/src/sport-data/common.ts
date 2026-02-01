@@ -86,6 +86,18 @@ export const FixtureState = {
 
 export type FixtureState = (typeof FixtureState)[keyof typeof FixtureState];
 
+/** Period-specific score breakdown (e.g. from SportMonks scores array) */
+export type FixtureScoreBreakdown = {
+  home: number | null;
+  away: number | null;
+  home90: number | null;
+  away90: number | null;
+  homeET: number | null;
+  awayET: number | null;
+  penHome: number | null;
+  penAway: number | null;
+};
+
 export type FixtureDTO = {
   /** Provider fixture id to map into fixture_mappings */
   externalId: number;
@@ -122,6 +134,24 @@ export type FixtureDTO = {
 
   /** Away team score (nullable) -> fixtures.away_score */
   awayScore: number | null;
+
+  /** Score at end of 90min -> fixtures.home_score_90 */
+  homeScore90?: number | null;
+
+  /** Score at end of 90min -> fixtures.away_score_90 */
+  awayScore90?: number | null;
+
+  /** Score at end of extra time -> fixtures.home_score_et */
+  homeScoreET?: number | null;
+
+  /** Score at end of extra time -> fixtures.away_score_et */
+  awayScoreET?: number | null;
+
+  /** Penalty shootout goals (home) -> fixtures.pen_home */
+  penHome?: number | null;
+
+  /** Penalty shootout goals (away) -> fixtures.pen_away */
+  penAway?: number | null;
 
   /** Stage name -> fixtures.stage */
   stage: string | null;

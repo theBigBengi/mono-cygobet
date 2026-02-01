@@ -163,7 +163,7 @@ export type ScoreSportmonks = {
   type_id: number;
   participant_id: number;
   score: ScoreParticipantSportmonks;
-  description: "1ST_HALF" | "2ND_HALF" | "2ND_HALF_ONLY" | "CURRENT";
+  description: "1ST_HALF" | "2ND_HALF" | "2ND_HALF_ONLY" | "CURRENT" | "EXTRA_TIME" | "EXTRA_TIME_ONLY" | "PENALTIES";
 };
 
 type ScoreDetailSportmonks = {
@@ -172,7 +172,7 @@ type ScoreDetailSportmonks = {
   type_id: number;
   participant_id: number;
   score: ScoreParticipantSportmonks;
-  description: "1ST_HALF" | "2ND_HALF" | "2ND_HALF_ONLY" | "CURRENT";
+  description: "1ST_HALF" | "2ND_HALF" | "2ND_HALF_ONLY" | "CURRENT" | "EXTRA_TIME" | "EXTRA_TIME_ONLY" | "PENALTIES";
 };
 
 export interface ParticipantMeta {

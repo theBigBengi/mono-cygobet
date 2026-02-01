@@ -17,6 +17,7 @@ import {
   OddsDTO,
   FixtureDTO,
   FixtureState,
+  FixtureScoreBreakdown,
 } from "@repo/types/sport-data/common";
 
 // SportMonks has separate APIs for different data types
@@ -434,25 +435,42 @@ export function mapSmShortToApp(
   return "CAN";
 }
 
+// Score type_id constants (confirm via /v3/core/types)
+const SCORE_TYPE_CURRENT = 1525;
+const SCORE_TYPE_2ND_HALF = 2; // Score at end of 90min (2nd half cumulative)
+const SCORE_TYPE_EXTRA_TIME = 3; // Score at end of extra time — confirm via API
+const SCORE_TYPE_PENALTIES = 4; // Penalty shootout — confirm via API
+
+function extractScore(
+  scores: ScoreSportmonks[] | undefined,
+  typeId: number,
+  side: "home" | "away"
+): number | null {
+  if (!Array.isArray(scores) || scores.length === 0) return null;
+  const entry = scores.find(
+    (s) =>
+      s.type_id === typeId &&
+      s.score.participant.toLowerCase() === side
+  );
+  return entry?.score.goals ?? null;
+}
+
 /**
- * Extract numeric home/away scores from Sportmonks scores array
+ * Extract all period-specific scores from Sportmonks scores array
  */
 export function pickScores(
   scores: ScoreSportmonks[] | undefined
-): { homeScore: number | null; awayScore: number | null } {
-  if (!Array.isArray(scores) || scores.length === 0)
-    return { homeScore: null, awayScore: null };
-
-  const current = scores.filter((s) => s.type_id === 1525);
-  const home = current.find(
-    (s) => s.score.participant.toLowerCase() === "home"
-  )?.score.goals;
-  const away = current.find(
-    (s) => s.score.participant.toLowerCase() === "away"
-  )?.score.goals;
-
-  if (home == null || away == null) return { homeScore: null, awayScore: null };
-  return { homeScore: home, awayScore: away };
+): FixtureScoreBreakdown {
+  return {
+    home: extractScore(scores, SCORE_TYPE_CURRENT, "home"),
+    away: extractScore(scores, SCORE_TYPE_CURRENT, "away"),
+    home90: extractScore(scores, SCORE_TYPE_2ND_HALF, "home"),
+    away90: extractScore(scores, SCORE_TYPE_2ND_HALF, "away"),
+    homeET: extractScore(scores, SCORE_TYPE_EXTRA_TIME, "home"),
+    awayET: extractScore(scores, SCORE_TYPE_EXTRA_TIME, "away"),
+    penHome: extractScore(scores, SCORE_TYPE_PENALTIES, "home"),
+    penAway: extractScore(scores, SCORE_TYPE_PENALTIES, "away"),
+  };
 }
 
 /**
@@ -463,9 +481,9 @@ export function pickScores(
 export function pickScoreString(
   scores: ScoreSportmonks[] | undefined
 ): string | null {
-  const { homeScore, awayScore } = pickScores(scores);
-  if (homeScore == null || awayScore == null) return null;
-  return `${homeScore}:${awayScore}`;
+  const { home, away } = pickScores(scores);
+  if (home == null || away == null) return null;
+  return `${home}:${away}`;
 }
 
 /**
@@ -534,7 +552,7 @@ export function buildFixtures(f: FixtureSportmonks): FixtureDTO | null {
   const { homeId, awayId } = extractTeams(f.participants);
   if (!homeId || !awayId) return null;
 
-  const { homeScore, awayScore } = pickScores(f?.scores);
+  const scores = pickScores(f?.scores);
 
   return {
     externalId: Number(f.id),
@@ -547,8 +565,14 @@ export function buildFixtures(f: FixtureSportmonks): FixtureDTO | null {
     startTs: coerceEpochSeconds(f.starting_at_timestamp, f.starting_at),
     state: mapSmShortToApp(f?.state?.short_name) as FixtureState,
     result: pickScoreString(f?.scores),
-    homeScore,
-    awayScore,
+    homeScore: scores.home,
+    awayScore: scores.away,
+    homeScore90: scores.home90,
+    awayScore90: scores.away90,
+    homeScoreET: scores.homeET,
+    awayScoreET: scores.awayET,
+    penHome: scores.penHome,
+    penAway: scores.penAway,
     stage: f?.stage?.name ?? null,
     round: f?.round?.name ?? null,
     hasOdds: f.has_odds,

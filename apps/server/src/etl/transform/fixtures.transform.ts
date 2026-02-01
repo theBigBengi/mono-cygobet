@@ -27,6 +27,12 @@ export type FixtureTransformResult = {
   result: string | null;
   homeScore: number | null;
   awayScore: number | null;
+  homeScore90: number | null;
+  awayScore90: number | null;
+  homeScoreET: number | null;
+  awayScoreET: number | null;
+  penHome: number | null;
+  penAway: number | null;
   stage: string | null;
   round: string | null;
 };
@@ -107,6 +113,12 @@ export function transformFixtureDto(dto: FixtureDTO): FixtureTransformResult {
     result,
     homeScore: homeScore ?? null,
     awayScore: awayScore ?? null,
+    homeScore90: dto.homeScore90 ?? null,
+    awayScore90: dto.awayScore90 ?? null,
+    homeScoreET: dto.homeScoreET ?? null,
+    awayScoreET: dto.awayScoreET ?? null,
+    penHome: dto.penHome ?? null,
+    penAway: dto.penAway ?? null,
     stage: dto.stage ?? null,
     round: dto.round ?? null,
   };

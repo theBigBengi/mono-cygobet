@@ -37,6 +37,12 @@ type ExistingRow = {
   result: string | null;
   homeScore: number | null;
   awayScore: number | null;
+  homeScore90: number | null;
+  awayScore90: number | null;
+  homeScoreET: number | null;
+  awayScoreET: number | null;
+  penHome: number | null;
+  penAway: number | null;
   stage: string | null;
   round: string | null;
 };
@@ -55,6 +61,12 @@ function isSameFixture(
     result: string | null;
     homeScore: number | null;
     awayScore: number | null;
+    homeScore90: number | null;
+    awayScore90: number | null;
+    homeScoreET: number | null;
+    awayScoreET: number | null;
+    penHome: number | null;
+    penAway: number | null;
     stage: string | null;
     round: string | null;
   }
@@ -71,6 +83,12 @@ function isSameFixture(
     existing.result === payload.result &&
     existing.homeScore === payload.homeScore &&
     existing.awayScore === payload.awayScore &&
+    existing.homeScore90 === payload.homeScore90 &&
+    existing.awayScore90 === payload.awayScore90 &&
+    existing.homeScoreET === payload.homeScoreET &&
+    existing.awayScoreET === payload.awayScoreET &&
+    existing.penHome === payload.penHome &&
+    existing.penAway === payload.penAway &&
     existing.stage === payload.stage &&
     existing.round === payload.round
   );
@@ -178,6 +196,12 @@ export async function syncFixtures(
         result: true,
         homeScore: true,
         awayScore: true,
+        homeScore90: true,
+        awayScore90: true,
+        homeScoreET: true,
+        awayScoreET: true,
+        penHome: true,
+        penAway: true,
         stage: true,
         round: true,
       },
@@ -237,6 +261,12 @@ export async function syncFixtures(
           result: payload.result,
           homeScore: payload.homeScore,
           awayScore: payload.awayScore,
+          homeScore90: payload.homeScore90,
+          awayScore90: payload.awayScore90,
+          homeScoreET: payload.homeScoreET,
+          awayScoreET: payload.awayScoreET,
+          penHome: payload.penHome,
+          penAway: payload.penAway,
           stage: payload.stage,
           round: payload.round,
         };

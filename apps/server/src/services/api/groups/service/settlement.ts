@@ -52,7 +52,7 @@ export async function settlePredictionsForFixtures(
 
   log.info({ fixtureIds, count: fixtureIds.length }, "Starting settlement");
 
-  // Step 1: Load FT fixtures
+  // Step 1: Load FT fixtures (including period scores for KO scoring)
   const fixtures = await prisma.fixtures.findMany({
     where: {
       id: { in: fixtureIds },
@@ -62,6 +62,12 @@ export async function settlePredictionsForFixtures(
       id: true,
       homeScore: true,
       awayScore: true,
+      homeScore90: true,
+      awayScore90: true,
+      homeScoreET: true,
+      awayScoreET: true,
+      penHome: true,
+      penAway: true,
       result: true,
       state: true,
     },
@@ -121,10 +127,11 @@ export async function settlePredictionsForFixtures(
       onTheNosePoints: true,
       correctDifferencePoints: true,
       outcomePoints: true,
+      koRoundMode: true,
     },
   });
 
-  // Build rules map
+  // Build rules map (include koRoundMode for KO scoring: FullTime / ExtraTime / Penalties)
   const rulesMap = new Map(
     groupRules.map((r) => [
       r.groupId,
@@ -133,6 +140,7 @@ export async function settlePredictionsForFixtures(
         onTheNosePoints: r.onTheNosePoints,
         correctDifferencePoints: r.correctDifferencePoints,
         outcomePoints: r.outcomePoints,
+        koRoundMode: r.koRoundMode as "FullTime" | "ExtraTime" | "Penalties",
       } as ScoringRules,
     ])
   );
@@ -189,7 +197,7 @@ export async function settlePredictionsForFixtures(
       continue;
     }
 
-    // Resolve scores: use DB values, or parse from result string when null (safety net)
+    // Resolve final scores: use DB values, or parse from result string when null (safety net)
     let homeScore = fixture.homeScore;
     let awayScore = fixture.awayScore;
     if (homeScore == null || awayScore == null) {
@@ -215,14 +223,23 @@ export async function settlePredictionsForFixtures(
       continue;
     }
 
-    // Calculate score
+    // Build full fixture result for scoring (period scores used by koRoundMode; null for non-ET matches)
+    const fixtureResult = {
+      homeScore,
+      awayScore,
+      state: fixture.state,
+      homeScore90: fixture.homeScore90 ?? null,
+      awayScore90: fixture.awayScore90 ?? null,
+      homeScoreET: fixture.homeScoreET ?? null,
+      awayScoreET: fixture.awayScoreET ?? null,
+      penHome: fixture.penHome ?? null,
+      penAway: fixture.penAway ?? null,
+    };
+
+    // Calculate score (scoring engine uses koRoundMode and period scores internally)
     const result = calculateScore(
       { prediction: pred.prediction },
-      {
-        homeScore,
-        awayScore,
-        state: fixture.state,
-      },
+      fixtureResult,
       rules
     );
 
