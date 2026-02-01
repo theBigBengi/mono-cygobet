@@ -682,7 +682,7 @@ export default function SandboxPage() {
                     <TabsTrigger value="all">All</TabsTrigger>
                     {groups.map((g: SandboxGroup) => (
                       <TabsTrigger key={g.id} value={String(g.id)}>
-                        {g.name}
+                        {g.name.replace(/^\[SANDBOX\]\s*/, "")}
                       </TabsTrigger>
                     ))}
                   </TabsList>

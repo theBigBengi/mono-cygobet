@@ -47,6 +47,101 @@ const RANDOM_SCORES = [
   "3:0",
 ];
 
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+async function createSandboxGroupWithFixtures(
+  tx: Tx,
+  params: {
+    fixtureIds: number[];
+    memberUserIds: number[];
+    predictionMode: "CorrectScore" | "MatchWinner";
+    autoGeneratePredictions?: boolean;
+    groupName?: string;
+    selectionMode: "games" | "leagues" | "teams";
+    leagueIds: number[];
+    teamIds: number[];
+  }
+) {
+  const {
+    fixtureIds,
+    memberUserIds,
+    predictionMode,
+    autoGeneratePredictions,
+    groupName,
+    selectionMode,
+    leagueIds,
+    teamIds,
+  } = params;
+
+  const group = await tx.groups.create({
+    data: {
+      name: `[SANDBOX] ${groupName || "Test Group"}`,
+      creatorId: memberUserIds[0]!,
+      status: "active",
+      privacy: "private",
+    },
+  });
+
+  await tx.groupRules.create({
+    data: {
+      groupId: group.id,
+      selectionMode,
+      predictionMode,
+      koRoundMode: "FullTime",
+      onTheNosePoints: 3,
+      correctDifferencePoints: 2,
+      outcomePoints: 1,
+      groupTeamsIds: selectionMode === "teams" ? teamIds : [],
+      groupLeaguesIds: selectionMode === "leagues" ? leagueIds : [],
+    },
+  });
+
+  const groupFixtureRecords: { id: number; groupId: number }[] = [];
+  for (const fid of fixtureIds) {
+    const gf = await tx.groupFixtures.create({
+      data: { groupId: group.id, fixtureId: fid },
+    });
+    groupFixtureRecords.push({ id: gf.id, groupId: group.id });
+  }
+
+  await tx.groupMembers.createMany({
+    data: memberUserIds.map((userId, idx) => ({
+      groupId: group.id,
+      userId,
+      role: idx === 0 ? "owner" : "member",
+      status: "joined",
+    })),
+  });
+
+  let predictionsGenerated = 0;
+  if (autoGeneratePredictions) {
+    const predData = groupFixtureRecords.flatMap((gf) =>
+      memberUserIds.map((userId) => ({
+        groupId: gf.groupId,
+        groupFixtureId: gf.id,
+        userId,
+        prediction:
+          RANDOM_SCORES[
+            Math.floor(Math.random() * RANDOM_SCORES.length)
+          ] as string,
+      }))
+    );
+    await tx.groupPredictions.createMany({
+      data: predData,
+      skipDuplicates: true,
+    });
+    predictionsGenerated = predData.length;
+  }
+
+  return {
+    groupId: group.id,
+    groupName: group.name,
+    fixtureIds,
+    memberCount: memberUserIds.length,
+    predictionsGenerated,
+  };
+}
+
 // ───── 1. setup ─────
 
 export async function sandboxSetup(args: {
@@ -147,10 +242,19 @@ export async function sandboxSetup(args: {
     }
 
     let nextExtId = await nextSandboxExternalId();
+    const offsetSec =
+      args.startInMinutes != null ? args.startInMinutes * 60 : null;
 
     return prisma.$transaction(async (tx) => {
       const fixtureIds: number[] = [];
-      for (const src of realFixtures) {
+      for (let i = 0; i < realFixtures.length; i++) {
+        const src = realFixtures[i]!;
+        const startTs =
+          offsetSec != null ? nowTs + offsetSec + i : src.startTs;
+        const startIso =
+          offsetSec != null
+            ? new Date(startTs * 1000).toISOString()
+            : src.startIso;
         const fixture = await tx.fixtures.create({
           data: {
             externalId: nextExtId,
@@ -158,8 +262,8 @@ export async function sandboxSetup(args: {
             awayTeamId: src.awayTeamId,
             leagueId: src.leagueId,
             name: src.name,
-            startTs: src.startTs,
-            startIso: src.startIso,
+            startTs,
+            startIso,
             round: src.round,
             state: "NS",
           },
@@ -168,78 +272,26 @@ export async function sandboxSetup(args: {
         nextExtId = nextExtId - BigInt(1);
       }
 
-      const group = await tx.groups.create({
-        data: {
-          name: `[SANDBOX] ${groupName || "Test Group"}`,
-          creatorId: memberUserIds[0]!,
-          status: "active",
-          privacy: "private",
-        },
+      const result = await createSandboxGroupWithFixtures(tx, {
+        fixtureIds,
+        memberUserIds,
+        predictionMode,
+        autoGeneratePredictions,
+        groupName,
+        selectionMode,
+        leagueIds,
+        teamIds,
       });
-
-      await tx.groupRules.create({
-        data: {
-          groupId: group.id,
-          selectionMode,
-          predictionMode,
-          koRoundMode: "FullTime",
-          onTheNosePoints: 3,
-          correctDifferencePoints: 2,
-          outcomePoints: 1,
-          groupTeamsIds: selectionMode === "teams" ? teamIds : [],
-          groupLeaguesIds: selectionMode === "leagues" ? leagueIds : [],
-        },
-      });
-
-      const groupFixtureRecords: { id: number; groupId: number }[] = [];
-      for (const fid of fixtureIds) {
-        const gf = await tx.groupFixtures.create({
-          data: { groupId: group.id, fixtureId: fid },
-        });
-        groupFixtureRecords.push({ id: gf.id, groupId: group.id });
-      }
-
-      await tx.groupMembers.createMany({
-        data: memberUserIds.map((userId, idx) => ({
-          groupId: group.id,
-          userId,
-          role: idx === 0 ? "owner" : "member",
-          status: "joined",
-        })),
-      });
-
-      let predictionsGenerated = 0;
-      if (autoGeneratePredictions) {
-        const predData = groupFixtureRecords.flatMap((gf) =>
-          memberUserIds.map((userId) => ({
-            groupId: gf.groupId,
-            groupFixtureId: gf.id,
-            userId,
-            prediction:
-              RANDOM_SCORES[
-                Math.floor(Math.random() * RANDOM_SCORES.length)
-              ] as string,
-          }))
-        );
-        await tx.groupPredictions.createMany({
-          data: predData,
-          skipDuplicates: true,
-        });
-        predictionsGenerated = predData.length;
-      }
-
       log.info(
-        { groupId: group.id, fixtureIds, predictionsGenerated, selectionMode },
+        {
+          groupId: result.groupId,
+          fixtureIds: result.fixtureIds,
+          predictionsGenerated: result.predictionsGenerated,
+          selectionMode,
+        },
         "Sandbox setup complete"
       );
-
-      return {
-        groupId: group.id,
-        groupName: group.name,
-        fixtureIds,
-        memberCount: memberUserIds.length,
-        predictionsGenerated,
-      };
+      return result;
     });
   }
 
@@ -292,78 +344,25 @@ export async function sandboxSetup(args: {
       nextExtId = nextExtId - BigInt(1);
     }
 
-    const group = await tx.groups.create({
-      data: {
-        name: `[SANDBOX] ${groupName || "Test Group"}`,
-        creatorId: memberUserIds[0]!,
-        status: "active",
-        privacy: "private",
-      },
+    const result = await createSandboxGroupWithFixtures(tx, {
+      fixtureIds,
+      memberUserIds,
+      predictionMode,
+      autoGeneratePredictions,
+      groupName,
+      selectionMode: "games",
+      leagueIds: [],
+      teamIds: [],
     });
-
-    await tx.groupRules.create({
-      data: {
-        groupId: group.id,
-        selectionMode: "games",
-        predictionMode,
-        koRoundMode: "FullTime",
-        onTheNosePoints: 3,
-        correctDifferencePoints: 2,
-        outcomePoints: 1,
-        groupTeamsIds: [],
-        groupLeaguesIds: [],
-      },
-    });
-
-    const groupFixtureRecords: { id: number; groupId: number }[] = [];
-    for (const fixtureId of fixtureIds) {
-      const gf = await tx.groupFixtures.create({
-        data: { groupId: group.id, fixtureId },
-      });
-      groupFixtureRecords.push({ id: gf.id, groupId: group.id });
-    }
-
-    await tx.groupMembers.createMany({
-      data: memberUserIds.map((userId, idx) => ({
-        groupId: group.id,
-        userId,
-        role: idx === 0 ? "owner" : "member",
-        status: "joined",
-      })),
-    });
-
-    let predictionsGenerated = 0;
-    if (autoGeneratePredictions) {
-      const predData = groupFixtureRecords.flatMap((gf) =>
-        memberUserIds.map((userId) => ({
-          groupId: gf.groupId,
-          groupFixtureId: gf.id,
-          userId,
-          prediction:
-            RANDOM_SCORES[
-              Math.floor(Math.random() * RANDOM_SCORES.length)
-            ] as string,
-        }))
-      );
-      await tx.groupPredictions.createMany({
-        data: predData,
-        skipDuplicates: true,
-      });
-      predictionsGenerated = predData.length;
-    }
-
     log.info(
-      { groupId: group.id, fixtureIds, predictionsGenerated },
+      {
+        groupId: result.groupId,
+        fixtureIds: result.fixtureIds,
+        predictionsGenerated: result.predictionsGenerated,
+      },
       "Sandbox setup complete"
     );
-
-    return {
-      groupId: group.id,
-      groupName: group.name,
-      fixtureIds,
-      memberCount: memberUserIds.length,
-      predictionsGenerated,
-    };
+    return result;
   });
 }
 
@@ -422,31 +421,9 @@ export async function sandboxAddFixture(args: {
       },
     });
 
-    const gf = await tx.groupFixtures.create({
+    await tx.groupFixtures.create({
       data: { groupId, fixtureId: fixture.id },
     });
-
-    const members = await tx.groupMembers.findMany({
-      where: { groupId, status: "joined" },
-      select: { userId: true },
-    });
-    const rules = await tx.groupRules.findUnique({
-      where: { groupId },
-      select: { predictionMode: true },
-    });
-    const defaultPrediction =
-      rules?.predictionMode === "MatchWinner" ? "1" : "0-0";
-    if (members.length > 0) {
-      await tx.groupPredictions.createMany({
-        data: members.map((m) => ({
-          groupId,
-          groupFixtureId: gf.id,
-          userId: m.userId,
-          prediction: defaultPrediction,
-        })),
-        skipDuplicates: true,
-      });
-    }
 
     log.info({ groupId, fixtureId: fixture.id }, "Sandbox add fixture complete");
 
