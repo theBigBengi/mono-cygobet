@@ -1,11 +1,19 @@
 import type { FastifyInstance } from "fastify";
 import { RunStatus, prisma } from "@repo/db";
 import type { FixtureState } from "@repo/db";
-import { NOT_STARTED_STATES, LIVE_STATES } from "@repo/utils";
+import {
+  NOT_STARTED_STATES,
+  LIVE_STATES,
+  FINISHED_STATES,
+} from "@repo/utils";
 import { adapter } from "../utils/adapter";
 import { syncFixtures } from "../etl/sync/sync.fixtures";
 import { finishSeedBatch } from "../etl/seeds/seed.utils";
-import { emitFixtureLiveEvents } from "../services/api/groups/service/chat-events";
+import {
+  emitFixtureLiveEvents,
+  emitFixtureFTEvents,
+} from "../services/api/groups/service/chat-events";
+import { settlePredictionsForFixtures } from "../services/api/groups/service/settlement";
 import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
 import { LIVE_FIXTURES_JOB } from "./jobs.definitions";
 import { createBatchForJob } from "./jobs.db";
@@ -45,8 +53,14 @@ export async function runLiveFixturesJob(
       skipped: true,
     }),
     run: async ({ jobRunId }) => {
+      // SportMonks state IDs for LIVE states only:
+      // 2=INPLAY_1ST_HALF, 3=HT, 4=BREAK, 6=INPLAY_ET,
+      // 9=INPLAY_PENALTIES, 21=EXTRA_TIME_BREAK, 22=INPLAY_2ND_HALF, 25=PEN_BREAK
+      const LIVE_STATE_IDS = "2,3,4,6,9,21,22,25";
+
       const fixtures = await adapter.fetchLiveFixtures({
         includeScores: true,
+        filters: { fixtureStates: LIVE_STATE_IDS },
       });
 
       if (opts.dryRun) {
@@ -74,19 +88,29 @@ export async function runLiveFixturesJob(
         const batch = await createBatchForJob(liveFixturesJob.key, jobRunId);
         batchId = batch.id;
 
-        // Snapshot NS fixtures before sync to detect NS → LIVE transitions
         const fetchedExternalIds = fixtures.map((f) => BigInt(f.externalId));
-        const preStates =
+        // Snapshot NS and LIVE fixtures before sync (parallel — independent queries)
+        const [preStates, preLive] =
           fetchedExternalIds.length > 0
-            ? await prisma.fixtures.findMany({
-                where: {
-                  externalId: { in: fetchedExternalIds },
-                  state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
-                },
-                select: { id: true, externalId: true },
-              })
-            : [];
+            ? await Promise.all([
+                prisma.fixtures.findMany({
+                  where: {
+                    externalId: { in: fetchedExternalIds },
+                    state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
+                  },
+                  select: { id: true, externalId: true },
+                }),
+                prisma.fixtures.findMany({
+                  where: {
+                    externalId: { in: fetchedExternalIds },
+                    state: { in: [...LIVE_STATES] as FixtureState[] },
+                  },
+                  select: { id: true, externalId: true },
+                }),
+              ])
+            : [[], [] as { id: number; externalId: bigint }[]];
         const nsFixtureIds = new Set(preStates.map((f) => f.id));
+        const liveFixtureIds = new Set(preLive.map((f) => f.id));
 
         const result = await syncFixtures(fixtures, {
           dryRun: false,
@@ -130,6 +154,33 @@ export async function runLiveFixturesJob(
           }
         }
 
+        let finishedTransitionCount = 0;
+        // Detect LIVE → FINISHED transitions and trigger settlement
+        if (liveFixtureIds.size > 0) {
+          const nowFinished = await prisma.fixtures.findMany({
+            where: {
+              id: { in: Array.from(liveFixtureIds) },
+              state: { in: [...FINISHED_STATES] as FixtureState[] },
+            },
+            select: {
+              id: true,
+              homeScore: true,
+              awayScore: true,
+              homeTeam: { select: { name: true } },
+              awayTeam: { select: { name: true } },
+            },
+          });
+
+          if (nowFinished.length > 0) {
+            await settlePredictionsForFixtures(
+              nowFinished.map((f) => f.id),
+              fastify.io
+            );
+            await emitFixtureFTEvents(nowFinished, fastify.io);
+            finishedTransitionCount = nowFinished.length;
+          }
+        }
+
         return {
           result: {
             jobRunId,
@@ -150,6 +201,7 @@ export async function runLiveFixturesJob(
             inserted: result.inserted,
             updated: result.updated,
             skipped: result.skipped,
+            finishedTransitions: finishedTransitionCount,
             ...(opts.meta ?? {}),
           },
         };
