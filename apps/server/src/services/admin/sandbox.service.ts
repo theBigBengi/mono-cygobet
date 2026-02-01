@@ -195,6 +195,7 @@ export async function sandboxSetup(args: {
               leagueId: { in: leagueIds },
               state: "NS",
               startTs: { gt: nowTs },
+              externalId: { gte: 0 },
             },
             select: {
               id: true,
@@ -212,6 +213,7 @@ export async function sandboxSetup(args: {
             where: {
               state: "NS",
               startTs: { gt: nowTs },
+              externalId: { gte: 0 },
               OR: [
                 { homeTeamId: { in: teamIds } },
                 { awayTeamId: { in: teamIds } },

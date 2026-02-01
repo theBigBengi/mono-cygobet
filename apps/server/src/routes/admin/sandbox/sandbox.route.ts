@@ -76,12 +76,10 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply) => {
-      const body = req.body as {
-        fixtureId: number;
-        homeScore: number;
-        awayScore: number;
-      };
-      const result = await sandbox.sandboxSimulateFullTime(body, fastify.io);
+      const result = await sandbox.sandboxSimulateFullTime(
+        req.body as Parameters<typeof sandbox.sandboxSimulateFullTime>[0],
+        fastify.io
+      );
       return reply.send({
         status: "success",
         data: result,

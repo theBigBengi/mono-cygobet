@@ -29,7 +29,7 @@ export const sandboxSetupBodySchema = {
 
 export const sandboxAddFixtureBodySchema = {
   type: "object",
-  required: ["groupId"],
+  required: ["groupId", "homeTeamId", "awayTeamId"],
   additionalProperties: false,
   properties: {
     groupId: { type: "integer" },
