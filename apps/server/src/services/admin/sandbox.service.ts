@@ -50,20 +50,40 @@ const RANDOM_SCORES = [
 // ───── 1. setup ─────
 
 export async function sandboxSetup(args: {
-  fixtureCount: number;
+  selectionMode?: "games" | "leagues" | "teams";
+  fixtureCount?: number;
+  leagueIds?: number[];
+  teamIds?: number[];
   memberUserIds: number[];
   predictionMode: "CorrectScore" | "MatchWinner";
   autoGeneratePredictions?: boolean;
   groupName?: string;
   startInMinutes?: number;
 }) {
+  const selectionMode = args.selectionMode ?? "games";
   const {
     fixtureCount,
+    leagueIds = [],
+    teamIds = [],
     memberUserIds,
     predictionMode,
     autoGeneratePredictions,
     groupName,
   } = args;
+
+  if (selectionMode === "games") {
+    if (fixtureCount == null || fixtureCount < 1) {
+      throw new Error("games mode requires fixtureCount (minimum 1)");
+    }
+  } else if (selectionMode === "leagues") {
+    if (!leagueIds.length) {
+      throw new Error("leagues mode requires at least one leagueId");
+    }
+  } else if (selectionMode === "teams") {
+    if (!teamIds.length) {
+      throw new Error("teams mode requires at least one teamId");
+    }
+  }
 
   const users = await prisma.users.findMany({
     where: { id: { in: memberUserIds } },
@@ -74,9 +94,160 @@ export async function sandboxSetup(args: {
     throw new Error(`Users not found: ${missing.join(", ")}`);
   }
 
+  if (selectionMode === "leagues" || selectionMode === "teams") {
+    const nowTs = Math.floor(Date.now() / 1000);
+    const realFixtures =
+      selectionMode === "leagues"
+        ? await prisma.fixtures.findMany({
+            where: {
+              leagueId: { in: leagueIds },
+              state: "NS",
+              startTs: { gt: nowTs },
+            },
+            select: {
+              id: true,
+              homeTeamId: true,
+              awayTeamId: true,
+              leagueId: true,
+              round: true,
+              name: true,
+              startTs: true,
+              startIso: true,
+            },
+            orderBy: { startTs: "asc" },
+          })
+        : await prisma.fixtures.findMany({
+            where: {
+              state: "NS",
+              startTs: { gt: nowTs },
+              OR: [
+                { homeTeamId: { in: teamIds } },
+                { awayTeamId: { in: teamIds } },
+              ],
+            },
+            select: {
+              id: true,
+              homeTeamId: true,
+              awayTeamId: true,
+              leagueId: true,
+              round: true,
+              name: true,
+              startTs: true,
+              startIso: true,
+            },
+            orderBy: { startTs: "asc" },
+          });
+
+    if (realFixtures.length === 0) {
+      throw new Error(
+        selectionMode === "leagues"
+          ? "No upcoming NS fixtures found for the given league(s)"
+          : "No upcoming NS fixtures found involving the given team(s)"
+      );
+    }
+
+    let nextExtId = await nextSandboxExternalId();
+
+    return prisma.$transaction(async (tx) => {
+      const fixtureIds: number[] = [];
+      for (const src of realFixtures) {
+        const fixture = await tx.fixtures.create({
+          data: {
+            externalId: nextExtId,
+            homeTeamId: src.homeTeamId,
+            awayTeamId: src.awayTeamId,
+            leagueId: src.leagueId,
+            name: src.name,
+            startTs: src.startTs,
+            startIso: src.startIso,
+            round: src.round,
+            state: "NS",
+          },
+        });
+        fixtureIds.push(fixture.id);
+        nextExtId = nextExtId - BigInt(1);
+      }
+
+      const group = await tx.groups.create({
+        data: {
+          name: `[SANDBOX] ${groupName || "Test Group"}`,
+          creatorId: memberUserIds[0]!,
+          status: "active",
+          privacy: "private",
+        },
+      });
+
+      await tx.groupRules.create({
+        data: {
+          groupId: group.id,
+          selectionMode,
+          predictionMode,
+          koRoundMode: "FullTime",
+          onTheNosePoints: 3,
+          correctDifferencePoints: 2,
+          outcomePoints: 1,
+          groupTeamsIds: selectionMode === "teams" ? teamIds : [],
+          groupLeaguesIds: selectionMode === "leagues" ? leagueIds : [],
+        },
+      });
+
+      const groupFixtureRecords: { id: number; groupId: number }[] = [];
+      for (const fid of fixtureIds) {
+        const gf = await tx.groupFixtures.create({
+          data: { groupId: group.id, fixtureId: fid },
+        });
+        groupFixtureRecords.push({ id: gf.id, groupId: group.id });
+      }
+
+      await tx.groupMembers.createMany({
+        data: memberUserIds.map((userId, idx) => ({
+          groupId: group.id,
+          userId,
+          role: idx === 0 ? "owner" : "member",
+          status: "joined",
+        })),
+      });
+
+      let predictionsGenerated = 0;
+      if (autoGeneratePredictions) {
+        const predData = groupFixtureRecords.flatMap((gf) =>
+          memberUserIds.map((userId) => ({
+            groupId: gf.groupId,
+            groupFixtureId: gf.id,
+            userId,
+            prediction:
+              RANDOM_SCORES[
+                Math.floor(Math.random() * RANDOM_SCORES.length)
+              ] as string,
+          }))
+        );
+        await tx.groupPredictions.createMany({
+          data: predData,
+          skipDuplicates: true,
+        });
+        predictionsGenerated = predData.length;
+      }
+
+      log.info(
+        { groupId: group.id, fixtureIds, predictionsGenerated, selectionMode },
+        "Sandbox setup complete"
+      );
+
+      return {
+        groupId: group.id,
+        groupName: group.name,
+        fixtureIds,
+        memberCount: memberUserIds.length,
+        predictionsGenerated,
+      };
+    });
+  }
+
+  // games mode
+  const count = fixtureCount!;
   const teams = await prisma.teams.findMany({
     select: { id: true, name: true },
-    take: fixtureCount * 2,
+    take: count * 2,
     orderBy: { id: "asc" },
   });
   for (let i = teams.length - 1; i > 0; i--) {
@@ -88,9 +259,9 @@ export async function sandboxSetup(args: {
       teams[j] = a;
     }
   }
-  if (teams.length < fixtureCount * 2) {
+  if (teams.length < count * 2) {
     throw new Error(
-      `Need ${fixtureCount * 2} teams, only ${teams.length} available`
+      `Need ${count * 2} teams, only ${teams.length} available`
     );
   }
 
@@ -100,7 +271,7 @@ export async function sandboxSetup(args: {
   return prisma.$transaction(async (tx) => {
     const fixtureIds: number[] = [];
     const offsetSec = (args.startInMinutes ?? 60) * 60;
-    for (let i = 0; i < fixtureCount; i++) {
+    for (let i = 0; i < count; i++) {
       const home = teams[i * 2]!;
       const away = teams[i * 2 + 1]!;
       const startTs = nowTs + offsetSec + i;
@@ -192,6 +363,98 @@ export async function sandboxSetup(args: {
       fixtureIds,
       memberCount: memberUserIds.length,
       predictionsGenerated,
+    };
+  });
+}
+
+// ───── 1b. add fixture to group ─────
+
+export async function sandboxAddFixture(args: {
+  groupId: number;
+  homeTeamId?: number;
+  awayTeamId?: number;
+  leagueId?: number;
+  round?: string;
+  startInMinutes?: number;
+}) {
+  const { groupId, homeTeamId, awayTeamId, leagueId, round, startInMinutes } =
+    args;
+
+  const group = await prisma.groups.findUnique({
+    where: { id: groupId },
+    select: { id: true, name: true },
+  });
+  if (!group || !group.name.startsWith("[SANDBOX]")) {
+    throw new Error("Group not found or is not a sandbox group");
+  }
+
+  if (homeTeamId == null || awayTeamId == null) {
+    throw new Error("homeTeamId and awayTeamId are required to add a fixture");
+  }
+
+  const [homeTeam, awayTeam] = await Promise.all([
+    prisma.teams.findUnique({ where: { id: homeTeamId }, select: { name: true } }),
+    prisma.teams.findUnique({ where: { id: awayTeamId }, select: { name: true } }),
+  ]);
+  if (!homeTeam || !awayTeam) {
+    throw new Error("One or both teams not found");
+  }
+
+  const offsetSec = (startInMinutes ?? 60) * 60;
+  const startTs = Math.floor(Date.now() / 1000) + offsetSec;
+  const startIso = new Date(startTs * 1000).toISOString();
+  const name = `${homeTeam.name} vs ${awayTeam.name}`;
+
+  const nextExtId = await nextSandboxExternalId();
+
+  return prisma.$transaction(async (tx) => {
+    const fixture = await tx.fixtures.create({
+      data: {
+        externalId: nextExtId,
+        homeTeamId,
+        awayTeamId,
+        leagueId: leagueId ?? null,
+        round: round ?? null,
+        name,
+        startTs,
+        startIso,
+        state: "NS",
+      },
+    });
+
+    const gf = await tx.groupFixtures.create({
+      data: { groupId, fixtureId: fixture.id },
+    });
+
+    const members = await tx.groupMembers.findMany({
+      where: { groupId, status: "joined" },
+      select: { userId: true },
+    });
+    const rules = await tx.groupRules.findUnique({
+      where: { groupId },
+      select: { predictionMode: true },
+    });
+    const defaultPrediction =
+      rules?.predictionMode === "MatchWinner" ? "1" : "0-0";
+    if (members.length > 0) {
+      await tx.groupPredictions.createMany({
+        data: members.map((m) => ({
+          groupId,
+          groupFixtureId: gf.id,
+          userId: m.userId,
+          prediction: defaultPrediction,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    log.info({ groupId, fixtureId: fixture.id }, "Sandbox add fixture complete");
+
+    return {
+      fixtureId: fixture.id,
+      name: fixture.name,
+      startTs: fixture.startTs,
+      startIso: fixture.startIso,
     };
   });
 }
@@ -446,10 +709,21 @@ export async function sandboxCleanup() {
   });
   const groupIds = [...new Set(groupFixtures.map((gf) => gf.groupId))];
 
+  const sandboxGroupsByName = await prisma.groups.findMany({
+    where: { name: { startsWith: "[SANDBOX]" } },
+    select: { id: true },
+  });
+  const allGroupIds = [
+    ...new Set([
+      ...groupIds,
+      ...sandboxGroupsByName.map((g) => g.id),
+    ]),
+  ];
+
   let deletedGroups = 0;
-  if (groupIds.length > 0) {
+  if (allGroupIds.length > 0) {
     const res = await prisma.groups.deleteMany({
-      where: { id: { in: groupIds } },
+      where: { id: { in: allGroupIds } },
     });
     deletedGroups = res.count;
   }
@@ -492,14 +766,27 @@ export async function sandboxList() {
   const fixtureIds = fixtures.map((f) => f.id);
   const groupFixtures = await prisma.groupFixtures.findMany({
     where: { fixtureId: { in: fixtureIds } },
-    select: { groupId: true },
+    select: { groupId: true, fixtureId: true },
   });
-  const groupIds = [...new Set(groupFixtures.map((gf) => gf.groupId))];
+  const groupIdsFromFixtures = [
+    ...new Set(groupFixtures.map((gf) => gf.groupId)),
+  ];
+
+  const sandboxGroupsByName = await prisma.groups.findMany({
+    where: { name: { startsWith: "[SANDBOX]" } },
+    select: { id: true },
+  });
+  const allGroupIds = [
+    ...new Set([
+      ...groupIdsFromFixtures,
+      ...sandboxGroupsByName.map((g) => g.id),
+    ]),
+  ];
 
   const groups =
-    groupIds.length > 0
+    allGroupIds.length > 0
       ? await prisma.groups.findMany({
-          where: { id: { in: groupIds } },
+          where: { id: { in: allGroupIds } },
           select: {
             id: true,
             name: true,
@@ -508,6 +795,18 @@ export async function sandboxList() {
           },
         })
       : [];
+
+  const groupFixturesByGroup = new Map<number, number[]>();
+  for (const gf of groupFixtures) {
+    const list = groupFixturesByGroup.get(gf.groupId) ?? [];
+    list.push(gf.fixtureId);
+    groupFixturesByGroup.set(gf.groupId, list);
+  }
+  for (const g of groups) {
+    if (!groupFixturesByGroup.has(g.id)) {
+      groupFixturesByGroup.set(g.id, []);
+    }
+  }
 
   return {
     fixtures: fixtures.map((f) => ({
@@ -528,6 +827,7 @@ export async function sandboxList() {
       status: g.status,
       memberCount: g._count.groupMembers,
       fixtureCount: g._count.groupFixtures,
+      fixtureIds: groupFixturesByGroup.get(g.id) ?? [],
     })),
   };
 }

@@ -41,7 +41,9 @@ import { useSandboxList } from "@/hooks/use-sandbox";
 import {
   sandboxService,
   type SandboxFixture,
+  type SandboxGroup,
 } from "@/services/sandbox.service";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function tsToDatetimeLocal(ts: number): string {
   const d = new Date(ts * 1000);
@@ -90,11 +92,32 @@ export default function SandboxPage() {
 
   // Setup form
   const [setupForm, setSetupForm] = React.useState({
+    selectionMode: "games" as "games" | "leagues" | "teams",
     fixtureCount: 3,
+    leagueIds: "",
+    teamIds: "",
     memberUserIds: "",
     predictionMode: "CorrectScore" as "CorrectScore" | "MatchWinner",
     autoGeneratePredictions: true,
     groupName: "",
+    startInMinutes: 60,
+  });
+
+  // Group filter tab: null = All, number = group id
+  const [selectedGroupTab, setSelectedGroupTab] = React.useState<
+    number | "all"
+  >("all");
+
+  // Add fixture dialog
+  const [addFixtureDialog, setAddFixtureDialog] = React.useState<{
+    open: boolean;
+    groupId: number | null;
+  }>({ open: false, groupId: null });
+  const [addFixtureForm, setAddFixtureForm] = React.useState({
+    homeTeamId: "",
+    awayTeamId: "",
+    leagueId: "",
+    round: "",
     startInMinutes: 60,
   });
 
@@ -130,7 +153,10 @@ export default function SandboxPage() {
 
   const setupMutation = useMutation({
     mutationFn: (args: {
-      fixtureCount: number;
+      selectionMode?: "games" | "leagues" | "teams";
+      fixtureCount?: number;
+      leagueIds?: number[];
+      teamIds?: number[];
       memberUserIds: number[];
       predictionMode: "CorrectScore" | "MatchWinner";
       autoGeneratePredictions?: boolean;
@@ -141,7 +167,10 @@ export default function SandboxPage() {
       toast.success(`Sandbox setup complete — group #${data.data.groupId}`);
       queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
       setSetupForm({
+        selectionMode: "games",
         fixtureCount: 3,
+        leagueIds: "",
+        teamIds: "",
         memberUserIds: "",
         predictionMode: "CorrectScore",
         autoGeneratePredictions: true,
@@ -151,6 +180,32 @@ export default function SandboxPage() {
     },
     onError: (error: Error) => {
       toast.error("Setup failed", { description: error.message });
+    },
+  });
+
+  const addFixtureMutation = useMutation({
+    mutationFn: (args: {
+      groupId: number;
+      homeTeamId?: number;
+      awayTeamId?: number;
+      leagueId?: number;
+      round?: string;
+      startInMinutes?: number;
+    }) => sandboxService.addFixture(args),
+    onSuccess: () => {
+      toast.success("Fixture added to group");
+      queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
+      setAddFixtureDialog({ open: false, groupId: null });
+      setAddFixtureForm({
+        homeTeamId: "",
+        awayTeamId: "",
+        leagueId: "",
+        round: "",
+        startInMinutes: 60,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error("Add fixture failed", { description: error.message });
     },
   });
 
@@ -248,17 +303,72 @@ export default function SandboxPage() {
 
   const handleSetup = (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = setupForm.memberUserIds
+    const memberUserIds = setupForm.memberUserIds
       .split(",")
       .map((s) => Number(s.trim()))
       .filter((n) => !Number.isNaN(n));
-    if (parsed.length === 0) {
+    if (memberUserIds.length === 0) {
       toast.error("Enter at least one user ID");
       return;
     }
+    if (setupForm.selectionMode === "games") {
+      if (
+        setupForm.fixtureCount == null ||
+        setupForm.fixtureCount < 1 ||
+        setupForm.fixtureCount > 10
+      ) {
+        toast.error("Games mode requires fixture count (1–10)");
+        return;
+      }
+    }
+    if (setupForm.selectionMode === "leagues") {
+      const leagueIds = setupForm.leagueIds
+        .split(",")
+        .map((s) => Number(s.trim()))
+        .filter((n) => !Number.isNaN(n));
+      if (leagueIds.length === 0) {
+        toast.error("Leagues mode requires at least one league ID");
+        return;
+      }
+      setupMutation.mutate({
+        selectionMode: "leagues",
+        leagueIds,
+        memberUserIds,
+        predictionMode: setupForm.predictionMode,
+        autoGeneratePredictions: setupForm.autoGeneratePredictions,
+        groupName: setupForm.groupName || undefined,
+        startInMinutes: setupForm.startInMinutes,
+      });
+      return;
+    }
+    if (setupForm.selectionMode === "teams") {
+      const teamIds = setupForm.teamIds
+        .split(",")
+        .map((s) => Number(s.trim()))
+        .filter((n) => !Number.isNaN(n));
+      if (teamIds.length === 0) {
+        toast.error("Teams mode requires at least one team ID");
+        return;
+      }
+      setupMutation.mutate({
+        selectionMode: "teams",
+        teamIds,
+        memberUserIds,
+        predictionMode: setupForm.predictionMode,
+        autoGeneratePredictions: setupForm.autoGeneratePredictions,
+        groupName: setupForm.groupName || undefined,
+        startInMinutes: setupForm.startInMinutes,
+      });
+      return;
+    }
     setupMutation.mutate({
-      ...setupForm,
-      memberUserIds: parsed,
+      selectionMode: "games",
+      fixtureCount: setupForm.fixtureCount,
+      memberUserIds,
+      predictionMode: setupForm.predictionMode,
+      autoGeneratePredictions: setupForm.autoGeneratePredictions,
+      groupName: setupForm.groupName || undefined,
+      startInMinutes: setupForm.startInMinutes,
     });
   };
 
@@ -299,7 +409,7 @@ export default function SandboxPage() {
           <Button
             variant="destructive"
             onClick={() => setCleanupDialogOpen(true)}
-            disabled={fixtures.length === 0}
+            disabled={fixtures.length === 0 && groups.length === 0}
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Cleanup All
@@ -318,21 +428,78 @@ export default function SandboxPage() {
             <form onSubmit={handleSetup}>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="fixtureCount">Fixtures</Label>
-                  <Input
-                    id="fixtureCount"
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={setupForm.fixtureCount}
-                    onChange={(e) =>
+                  <Label htmlFor="selectionMode">Selection Mode</Label>
+                  <Select
+                    value={setupForm.selectionMode}
+                    onValueChange={(v: "games" | "leagues" | "teams") =>
                       setSetupForm((prev) => ({
                         ...prev,
-                        fixtureCount: Number(e.target.value) || 1,
+                        selectionMode: v,
                       }))
                     }
-                  />
+                  >
+                    <SelectTrigger id="selectionMode">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="games">Games (fictive)</SelectItem>
+                      <SelectItem value="leagues">Leagues</SelectItem>
+                      <SelectItem value="teams">Teams</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+                {setupForm.selectionMode === "games" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="fixtureCount">Fixtures</Label>
+                    <Input
+                      id="fixtureCount"
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={setupForm.fixtureCount}
+                      onChange={(e) =>
+                        setSetupForm((prev) => ({
+                          ...prev,
+                          fixtureCount: Number(e.target.value) || 1,
+                        }))
+                      }
+                    />
+                  </div>
+                )}
+                {setupForm.selectionMode === "leagues" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="leagueIds">League IDs</Label>
+                    <Input
+                      id="leagueIds"
+                      type="text"
+                      placeholder="1, 2, 3"
+                      value={setupForm.leagueIds}
+                      onChange={(e) =>
+                        setSetupForm((prev) => ({
+                          ...prev,
+                          leagueIds: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                )}
+                {setupForm.selectionMode === "teams" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="teamIds">Team IDs</Label>
+                    <Input
+                      id="teamIds"
+                      type="text"
+                      placeholder="1, 2, 3"
+                      value={setupForm.teamIds}
+                      onChange={(e) =>
+                        setSetupForm((prev) => ({
+                          ...prev,
+                          teamIds: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="memberUserIds">User IDs</Label>
                   <Input
@@ -445,7 +612,7 @@ export default function SandboxPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {groups.map((group) => (
+                {groups.map((group: SandboxGroup) => (
                   <div
                     key={group.id}
                     className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2"
@@ -455,6 +622,23 @@ export default function SandboxPage() {
                     <span className="text-sm text-muted-foreground">
                       {group.memberCount} members, {group.fixtureCount} fixtures
                     </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setAddFixtureDialog({ open: true, groupId: group.id });
+                        setAddFixtureForm({
+                          homeTeamId: "",
+                          awayTeamId: "",
+                          leagueId: "",
+                          round: "",
+                          startInMinutes: 60,
+                        });
+                      }}
+                    >
+                      <Plus className="mr-1 h-3 w-3" />
+                      Add Fixture
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -465,7 +649,39 @@ export default function SandboxPage() {
         {/* Fixtures Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Fixtures ({fixtures.length})</CardTitle>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle>
+                Fixtures (
+                {selectedGroupTab === "all"
+                  ? fixtures.length
+                  : groups.find((g) => g.id === selectedGroupTab)?.fixtureIds
+                      .length ?? 0}
+                )
+              </CardTitle>
+              {groups.length > 0 && (
+                <Tabs
+                  value={
+                    selectedGroupTab === "all"
+                      ? "all"
+                      : String(selectedGroupTab)
+                  }
+                  onValueChange={(v) =>
+                    setSelectedGroupTab(
+                      v === "all" ? "all" : Number(v)
+                    )
+                  }
+                >
+                  <TabsList>
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    {groups.map((g: SandboxGroup) => (
+                      <TabsTrigger key={g.id} value={String(g.id)}>
+                        {g.name}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -479,6 +695,16 @@ export default function SandboxPage() {
                 No sandbox data. Use Setup to create.
               </p>
             ) : (
+              (() => {
+                const filteredFixtures =
+                  selectedGroupTab === "all"
+                    ? fixtures
+                    : fixtures.filter((f) =>
+                        groups
+                          .find((g) => g.id === selectedGroupTab)
+                          ?.fixtureIds.includes(f.id)
+                      );
+                return (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -492,7 +718,7 @@ export default function SandboxPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {fixtures.map((fixture) => {
+                  {filteredFixtures.map((fixture) => {
                     const action = getFixtureAction(fixture.state);
                     const matchName =
                       fixture.homeTeam && fixture.awayTeam
@@ -597,7 +823,8 @@ export default function SandboxPage() {
                   })}
                 </TableBody>
               </Table>
-            )}
+              );
+            })()}
           </CardContent>
         </Card>
       </div>
@@ -915,6 +1142,131 @@ export default function SandboxPage() {
               disabled={cleanupMutation.isPending}
             >
               {cleanupMutation.isPending ? "Deleting..." : "Delete All"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Fixture Dialog */}
+      <Dialog
+        open={addFixtureDialog.open}
+        onOpenChange={(open) => {
+          if (!open) setAddFixtureDialog({ open: false, groupId: null });
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add Fixture to Group</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="addHomeTeamId">Home Team ID</Label>
+                <Input
+                  id="addHomeTeamId"
+                  type="number"
+                  placeholder="1"
+                  value={addFixtureForm.homeTeamId}
+                  onChange={(e) =>
+                    setAddFixtureForm((prev) => ({
+                      ...prev,
+                      homeTeamId: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addAwayTeamId">Away Team ID</Label>
+                <Input
+                  id="addAwayTeamId"
+                  type="number"
+                  placeholder="2"
+                  value={addFixtureForm.awayTeamId}
+                  onChange={(e) =>
+                    setAddFixtureForm((prev) => ({
+                      ...prev,
+                      awayTeamId: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="addLeagueId">League ID (optional)</Label>
+              <Input
+                id="addLeagueId"
+                type="number"
+                placeholder=""
+                value={addFixtureForm.leagueId}
+                onChange={(e) =>
+                  setAddFixtureForm((prev) => ({
+                    ...prev,
+                    leagueId: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="addRound">Round (optional)</Label>
+              <Input
+                id="addRound"
+                type="text"
+                placeholder=""
+                value={addFixtureForm.round}
+                onChange={(e) =>
+                  setAddFixtureForm((prev) => ({
+                    ...prev,
+                    round: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="addStartInMinutes">Start in (minutes)</Label>
+              <Input
+                id="addStartInMinutes"
+                type="number"
+                min={1}
+                value={addFixtureForm.startInMinutes}
+                onChange={(e) =>
+                  setAddFixtureForm((prev) => ({
+                    ...prev,
+                    startInMinutes: Number(e.target.value) || 60,
+                  }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAddFixtureDialog({ open: false, groupId: null })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (addFixtureDialog.groupId == null) return;
+                const home = Number(addFixtureForm.homeTeamId);
+                const away = Number(addFixtureForm.awayTeamId);
+                if (Number.isNaN(home) || Number.isNaN(away)) {
+                  toast.error("Home and away team IDs are required");
+                  return;
+                }
+                addFixtureMutation.mutate({
+                  groupId: addFixtureDialog.groupId,
+                  homeTeamId: home,
+                  awayTeamId: away,
+                  leagueId: addFixtureForm.leagueId
+                    ? Number(addFixtureForm.leagueId)
+                    : undefined,
+                  round: addFixtureForm.round || undefined,
+                  startInMinutes: addFixtureForm.startInMinutes,
+                });
+              }}
+              disabled={addFixtureMutation.isPending}
+            >
+              {addFixtureMutation.isPending ? "Adding..." : "Add Fixture"}
             </Button>
           </DialogFooter>
         </DialogContent>

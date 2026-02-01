@@ -3,10 +3,17 @@
 
 export const sandboxSetupBodySchema = {
   type: "object",
-  required: ["fixtureCount", "memberUserIds", "predictionMode"],
+  required: ["memberUserIds", "predictionMode"],
   additionalProperties: false,
   properties: {
+    selectionMode: {
+      type: "string",
+      enum: ["games", "leagues", "teams"],
+      default: "games",
+    },
     fixtureCount: { type: "integer", minimum: 1, maximum: 10 },
+    leagueIds: { type: "array", items: { type: "integer" } },
+    teamIds: { type: "array", items: { type: "integer" } },
     memberUserIds: {
       type: "array",
       items: { type: "integer" },
@@ -17,6 +24,20 @@ export const sandboxSetupBodySchema = {
     autoGeneratePredictions: { type: "boolean", default: false },
     groupName: { type: "string" },
     startInMinutes: { type: "integer", minimum: 1, maximum: 10080 },
+  },
+} as const;
+
+export const sandboxAddFixtureBodySchema = {
+  type: "object",
+  required: ["groupId"],
+  additionalProperties: false,
+  properties: {
+    groupId: { type: "integer" },
+    homeTeamId: { type: "integer" },
+    awayTeamId: { type: "integer" },
+    leagueId: { type: "integer" },
+    round: { type: "string" },
+    startInMinutes: { type: "integer", minimum: 1 },
   },
 } as const;
 

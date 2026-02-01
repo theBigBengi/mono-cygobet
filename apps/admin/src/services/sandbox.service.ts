@@ -21,6 +21,7 @@ export type SandboxGroup = {
   status: string;
   memberCount: number;
   fixtureCount: number;
+  fixtureIds: number[];
 };
 
 export type SandboxListResponse = {
@@ -71,6 +72,17 @@ export type SandboxCleanupResponse = {
   message: string;
 };
 
+export type SandboxAddFixtureResponse = {
+  status: string;
+  data: {
+    fixtureId: number;
+    name: string;
+    startTs: number;
+    startIso: string;
+  };
+  message: string;
+};
+
 // ───── Service ─────
 
 export const sandboxService = {
@@ -78,7 +90,10 @@ export const sandboxService = {
     apiGet<SandboxListResponse>("/admin/sandbox/list"),
 
   setup: (args: {
-    fixtureCount: number;
+    selectionMode?: "games" | "leagues" | "teams";
+    fixtureCount?: number;
+    leagueIds?: number[];
+    teamIds?: number[];
     memberUserIds: number[];
     predictionMode: "CorrectScore" | "MatchWinner";
     autoGeneratePredictions?: boolean;
@@ -86,6 +101,16 @@ export const sandboxService = {
     startInMinutes?: number;
   }): Promise<SandboxSetupResponse> =>
     apiPost<SandboxSetupResponse>("/admin/sandbox/setup", args),
+
+  addFixture: (args: {
+    groupId: number;
+    homeTeamId?: number;
+    awayTeamId?: number;
+    leagueId?: number;
+    round?: string;
+    startInMinutes?: number;
+  }): Promise<SandboxAddFixtureResponse> =>
+    apiPost<SandboxAddFixtureResponse>("/admin/sandbox/add-fixture", args),
 
   simulateKickoff: (fixtureId: number): Promise<SandboxSimulateResponse> =>
     apiPost<SandboxSimulateResponse>("/admin/sandbox/simulate/kickoff", {

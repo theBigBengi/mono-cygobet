@@ -25,6 +25,27 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  // POST /admin/sandbox/add-fixture
+  fastify.post(
+    "/add-fixture",
+    {
+      schema: {
+        body: schemas.sandboxAddFixtureBodySchema,
+        response: { 200: schemas.sandboxResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const result = await sandbox.sandboxAddFixture(
+        req.body as Parameters<typeof sandbox.sandboxAddFixture>[0]
+      );
+      return reply.send({
+        status: "success",
+        data: result,
+        message: "Fixture added to group",
+      });
+    }
+  );
+
   // POST /admin/sandbox/simulate/kickoff
   fastify.post(
     "/simulate/kickoff",
