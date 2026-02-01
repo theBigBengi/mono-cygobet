@@ -21,6 +21,7 @@ export function buildUpcomingFixturesWhere(params: {
 
   const where: Prisma.fixturesWhereInput = {
     state,
+    externalId: { gte: 0 },
   };
 
   // Handle time range: prefer range (fromTs/toTs) over single point (now)
