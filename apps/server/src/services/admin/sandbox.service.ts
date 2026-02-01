@@ -96,13 +96,10 @@ async function createSandboxGroupWithFixtures(
     },
   });
 
-  const groupFixtureRecords: { id: number; groupId: number }[] = [];
-  for (const fid of fixtureIds) {
-    const gf = await tx.groupFixtures.create({
-      data: { groupId: group.id, fixtureId: fid },
-    });
-    groupFixtureRecords.push({ id: gf.id, groupId: group.id });
-  }
+  const groupFixtureRecords = await tx.groupFixtures.createManyAndReturn({
+    data: fixtureIds.map((fixtureId) => ({ groupId: group.id, fixtureId })),
+    select: { id: true, groupId: true },
+  });
 
   await tx.groupMembers.createMany({
     data: memberUserIds.map((userId, idx) => ({
@@ -246,31 +243,30 @@ export async function sandboxSetup(args: {
       args.startInMinutes != null ? args.startInMinutes * 60 : null;
 
     return prisma.$transaction(async (tx) => {
-      const fixtureIds: number[] = [];
-      for (let i = 0; i < realFixtures.length; i++) {
-        const src = realFixtures[i]!;
+      const fixtureData = realFixtures.map((src, i) => {
         const startTs =
           offsetSec != null ? nowTs + offsetSec + i : src.startTs;
         const startIso =
           offsetSec != null
             ? new Date(startTs * 1000).toISOString()
             : src.startIso;
-        const fixture = await tx.fixtures.create({
-          data: {
-            externalId: nextExtId,
-            homeTeamId: src.homeTeamId,
-            awayTeamId: src.awayTeamId,
-            leagueId: src.leagueId,
-            name: src.name,
-            startTs,
-            startIso,
-            round: src.round,
-            state: "NS",
-          },
-        });
-        fixtureIds.push(fixture.id);
-        nextExtId = nextExtId - BigInt(1);
-      }
+        return {
+          externalId: nextExtId - BigInt(i),
+          homeTeamId: src.homeTeamId,
+          awayTeamId: src.awayTeamId,
+          leagueId: src.leagueId,
+          name: src.name,
+          startTs,
+          startIso,
+          round: src.round,
+          state: "NS" as const,
+        };
+      });
+      const created = await tx.fixtures.createManyAndReturn({
+        data: fixtureData,
+        select: { id: true },
+      });
+      const fixtureIds = created.map((f) => f.id);
 
       const result = await createSandboxGroupWithFixtures(tx, {
         fixtureIds,
@@ -320,29 +316,29 @@ export async function sandboxSetup(args: {
   let nextExtId = await nextSandboxExternalId();
   const nowTs = Math.floor(Date.now() / 1000);
 
-  return prisma.$transaction(async (tx) => {
-    const fixtureIds: number[] = [];
-    const offsetSec = (args.startInMinutes ?? 60) * 60;
-    for (let i = 0; i < count; i++) {
-      const home = teams[i * 2]!;
-      const away = teams[i * 2 + 1]!;
-      const startTs = nowTs + offsetSec + i;
-      const startIso = new Date(startTs * 1000).toISOString();
+  const offsetSec = (args.startInMinutes ?? 60) * 60;
+  const fixtureData = Array.from({ length: count }, (_, i) => {
+    const home = teams[i * 2]!;
+    const away = teams[i * 2 + 1]!;
+    const startTs = nowTs + offsetSec + i;
+    const startIso = new Date(startTs * 1000).toISOString();
+    return {
+      externalId: nextExtId - BigInt(i),
+      homeTeamId: home.id,
+      awayTeamId: away.id,
+      name: `${home.name} vs ${away.name}`,
+      startTs,
+      startIso,
+      state: "NS" as const,
+    };
+  });
 
-      const fixture = await tx.fixtures.create({
-        data: {
-          externalId: nextExtId,
-          homeTeamId: home.id,
-          awayTeamId: away.id,
-          name: `${home.name} vs ${away.name}`,
-          startTs,
-          startIso,
-          state: "NS",
-        },
-      });
-      fixtureIds.push(fixture.id);
-      nextExtId = nextExtId - BigInt(1);
-    }
+  return prisma.$transaction(async (tx) => {
+    const created = await tx.fixtures.createManyAndReturn({
+      data: fixtureData,
+      select: { id: true },
+    });
+    const fixtureIds = created.map((f) => f.id);
 
     const result = await createSandboxGroupWithFixtures(tx, {
       fixtureIds,
