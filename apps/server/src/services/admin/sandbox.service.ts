@@ -351,6 +351,26 @@ export async function sandboxUpdateLive(args: {
   return updated;
 }
 
+// ───── 3c. update start time ─────
+
+export async function sandboxUpdateStartTime(args: {
+  fixtureId: number;
+  startTime: string; // ISO 8601 string
+}) {
+  const fixture = await assertSandboxFixture(args.fixtureId);
+  if (fixture.state !== "NS") {
+    throw new Error("Can only change start time for NS fixtures");
+  }
+  const date = new Date(args.startTime);
+  const startTs = Math.floor(date.getTime() / 1000);
+  const startIso = date.toISOString();
+  await prisma.fixtures.update({
+    where: { id: args.fixtureId },
+    data: { startTs, startIso },
+  });
+  return { fixtureId: args.fixtureId, startTs, startIso };
+}
+
 // ───── 4. reset fixture ─────
 
 export async function sandboxResetFixture(fixtureId: number) {
@@ -498,6 +518,7 @@ export async function sandboxList() {
       homeScore: f.homeScore,
       awayScore: f.awayScore,
       liveMinute: f.liveMinute,
+      startTs: f.startTs,
       homeTeam: f.homeTeam?.name ?? null,
       awayTeam: f.awayTeam?.name ?? null,
     })),

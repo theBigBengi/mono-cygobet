@@ -43,6 +43,12 @@ import {
   type SandboxFixture,
 } from "@/services/sandbox.service";
 
+function tsToDatetimeLocal(ts: number): string {
+  const d = new Date(ts * 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const LIVE_STATES = [
   "INPLAY_1ST_HALF",
   "INPLAY_2ND_HALF",
@@ -211,6 +217,18 @@ export default function SandboxPage() {
     },
     onError: (error: Error) => {
       toast.error("Reset failed", { description: error.message });
+    },
+  });
+
+  const updateStartTimeMutation = useMutation({
+    mutationFn: (args: { fixtureId: number; startTime: string }) =>
+      sandboxService.updateStartTime(args),
+    onSuccess: () => {
+      toast.success("Start time updated");
+      queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
+    },
+    onError: (error: Error) => {
+      toast.error("Update failed", { description: error.message });
     },
   });
 
@@ -469,6 +487,7 @@ export default function SandboxPage() {
                     <TableHead>State</TableHead>
                     <TableHead>Min</TableHead>
                     <TableHead>Score</TableHead>
+                    <TableHead>Start</TableHead>
                     <TableHead>Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -502,6 +521,30 @@ export default function SandboxPage() {
                         </TableCell>
                         <TableCell>{minDisplay}</TableCell>
                         <TableCell>{score}</TableCell>
+                        <TableCell>
+                          {fixture.state === "NS" ? (
+                            <Input
+                              type="datetime-local"
+                              className="w-[180px]"
+                              value={tsToDatetimeLocal(fixture.startTs)}
+                              onChange={(e) => {
+                                if (!e.target.value) return;
+                                updateStartTimeMutation.mutate({
+                                  fixtureId: fixture.id,
+                                  startTime: new Date(
+                                    e.target.value
+                                  ).toISOString(),
+                                });
+                              }}
+                            />
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(
+                                fixture.startTs * 1000
+                              ).toLocaleString()}
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           {action === "kickoff" && (
                             <Button

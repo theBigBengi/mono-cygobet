@@ -10,6 +10,7 @@ export type SandboxFixture = {
   homeScore: number | null;
   awayScore: number | null;
   liveMinute: number | null;
+  startTs: number;
   homeTeam: string | null;
   awayTeam: string | null;
 };
@@ -122,6 +123,15 @@ export const sandboxService = {
     apiPost<SandboxResetResponse>("/admin/sandbox/reset-fixture", {
       fixtureId,
     }),
+
+  updateStartTime: (args: {
+    fixtureId: number;
+    startTime: string;
+  }): Promise<SandboxSimulateResponse> =>
+    apiPost<SandboxSimulateResponse>(
+      "/admin/sandbox/update-start-time",
+      args
+    ),
 
   cleanup: (): Promise<SandboxCleanupResponse> =>
     apiDelete<SandboxCleanupResponse>("/admin/sandbox/cleanup"),

@@ -79,6 +79,16 @@ export const sandboxResetFixtureBodySchema = {
   },
 } as const;
 
+export const sandboxUpdateStartTimeBodySchema = {
+  type: "object",
+  required: ["fixtureId", "startTime"],
+  additionalProperties: false,
+  properties: {
+    fixtureId: { type: "integer" },
+    startTime: { type: "string", format: "date-time" },
+  },
+} as const;
+
 export const sandboxResponseSchema = {
   type: "object",
   properties: {

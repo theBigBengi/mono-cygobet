@@ -110,6 +110,26 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  // POST /admin/sandbox/update-start-time
+  fastify.post(
+    "/update-start-time",
+    {
+      schema: {
+        body: schemas.sandboxUpdateStartTimeBodySchema,
+        response: { 200: schemas.sandboxResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const body = req.body as { fixtureId: number; startTime: string };
+      const result = await sandbox.sandboxUpdateStartTime(body);
+      return reply.send({
+        status: "success",
+        data: result,
+        message: "Start time updated",
+      });
+    }
+  );
+
   // DELETE /admin/sandbox/cleanup
   fastify.delete(
     "/cleanup",
