@@ -7,11 +7,13 @@ import React, {
   useMemo,
 } from "react";
 import type { ReactNode } from "react";
+import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
+import * as Updates from "expo-updates";
 import type { Locale } from "./i18n.types";
 import { isRTL } from "./i18n.rtl";
 import { changeLanguage } from "./i18n.config";
-import { setPersistedLocale } from "./i18n.storage";
+import { setPersistedLocale, setRTLRestartPending } from "./i18n.storage";
 import { applyRTL } from "./i18n.rtl";
 
 export interface I18nContextValue {
@@ -27,7 +29,7 @@ interface I18nProviderProps {
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const locale = (i18n.language?.split("-")[0] ?? "en") as Locale;
 
   const setLocale = useMemo(
@@ -41,9 +43,19 @@ export function I18nProvider({ children }: I18nProviderProps) {
 
       if (rtlChanged) {
         applyRTL(nextLocale);
+        if (__DEV__) {
+          Alert.alert(
+            t("common.restartRequired"),
+            t("common.restartRequiredMessage"),
+          );
+          return;
+        }
+        await setRTLRestartPending();
+        await Updates.reloadAsync();
+        return; // won't reach here, app restarts
       }
     },
-    [locale]
+    [locale, t]
   );
 
   const value: I18nContextValue = useMemo(

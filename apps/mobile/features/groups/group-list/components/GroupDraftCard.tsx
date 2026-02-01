@@ -2,6 +2,7 @@
 // Card component for displaying draft groups in the groups list.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -15,6 +16,7 @@ interface GroupDraftCardProps {
 }
 
 export function GroupDraftCard({ group, onPress }: GroupDraftCardProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   const getStatusBadgeColor = () => {
@@ -45,7 +47,7 @@ export function GroupDraftCard({ group, onPress }: GroupDraftCardProps) {
               variant="caption"
               style={[styles.statusBadgeText, { color: getStatusTextColor() }]}
             >
-              {group.status.toUpperCase()}
+              {t(`lobby.${group.status}`)}
             </AppText>
           </View>
         </View>
@@ -66,7 +68,10 @@ export function GroupDraftCard({ group, onPress }: GroupDraftCardProps) {
             ]}
           >
             <AppText variant="caption" color="secondary" style={styles.infoItem}>
-              Group Start: {formatKickoffDate(group.firstGame.kickoffAt)} {formatKickoffTime(group.firstGame.kickoffAt)}
+              {t("lobby.groupStart", {
+              date: formatKickoffDate(group.firstGame.kickoffAt),
+              time: formatKickoffTime(group.firstGame.kickoffAt),
+            })}
             </AppText>
           </View>
         )}

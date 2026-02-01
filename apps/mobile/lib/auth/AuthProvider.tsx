@@ -4,6 +4,7 @@
 // - Wires auth behavior into the HTTP client (refresh, logout, getAccessToken).
 // - Does NOT own domain data (profiles, feeds, etc.) – those live in React Query.
 import React, { createContext, useCallback, useEffect, useState } from "react";
+import i18n from "i18next";
 import type { ReactNode } from "react";
 import {
   setRefreshCallback,
@@ -347,7 +348,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to load user data. Please check your connection and retry."
+          : i18n.t("errors.somethingWentWrong")
       );
     }
   }, []);
@@ -505,12 +506,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
               } catch {
                 // Still failing after refresh, logout
                 await logout();
-                throw new Error("Authentication failed. Please log in again.");
+                throw new Error(i18n.t("errors.auth"));
               }
             } else {
               // Refresh failed (auth failure), logout
               await logout();
-              throw new Error("Authentication failed. Please log in again.");
+              throw new Error(i18n.t("errors.auth"));
             }
           }
 
@@ -520,7 +521,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch (err) {
         // Login request itself failed
         const errorMessage =
-          err instanceof Error ? err.message : "Login failed";
+          err instanceof Error ? err.message : i18n.t("auth.loginFailed");
         setError(errorMessage);
         throw err;
       }

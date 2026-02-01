@@ -28,7 +28,8 @@
     "errorUsernameMax": "Username must be at most 50 characters long",
     "errorUsernameFormat": "Username can only contain Hebrew/English letters, numbers, underscores, and hyphens",
     "errorOnboardingFailed": "Failed to complete onboarding. Please try again.",
-    "usernameHint": "3-50 characters. Hebrew/English letters, numbers, underscores, and hyphens only."
+    "usernameHint": "3-50 characters. Hebrew/English letters, numbers, underscores, and hyphens only.",
+    "loginFailed": "Login failed"
   },
   "groups": {
     "noGroupsYet": "No groups yet",
@@ -66,7 +67,11 @@
     "deleting": "Deleting...",
     "loadingGroup": "Loading group...",
     "failedLoadGroup": "Failed to load group",
-    "unknownStatus": "Unknown group status."
+    "unknownStatus": "Unknown group status.",
+    "needsAttention": "Needs attention",
+    "active": "Active",
+    "drafts": "Drafts",
+    "ended": "Ended"
   },
   "lobby": {
     "draft": "Draft",
@@ -109,7 +114,24 @@
     "privacy": "Privacy",
     "inviteSharing": "Invite Sharing",
     "groupNamePlaceholder": "Group name",
-    "threeWayDescription": "In \"3-Way Prediction\" mode, predictions are 1-0-2 (1 = home win, 0 = draw, 2 = away win)."
+    "threeWayDescription": "In \"3-Way Prediction\" mode, predictions are 1-0-2 (1 = home win, 0 = draw, 2 = away win).",
+    "game_one": "game",
+    "game_other": "games",
+    "gamesLive": "LIVE",
+    "gamesLiveNow": "LIVE now",
+    "gamesToday": "today",
+    "needPredictions": "{{count}} need predictions",
+    "allPredictionsSet": "all predictions set",
+    "participant_one": "participant",
+    "participant_other": "participants",
+    "predictionsCount": "{{done}}/{{total}} predictions",
+    "gamesNeedPredictions": "{{count}} games need predictions",
+    "nextGame": "Next: {{home}} vs {{away}}",
+    "groupStart": "Group Start: {{date}} {{time}}",
+    "leader": "Leader: {{name}}",
+    "endsApproximately": "Ends approximately {{date}}",
+    "nextGameStarts": "Next game starts {{countdown}}",
+    "nextGameLabel": "Next game: {{countdown}}"
   },
   "predictions": {
     "saving": "Saving...",
@@ -283,6 +305,8 @@
   "common": {
     "limitedConnectivity": "Limited connectivity — read-only mode",
     "loading": "Loading...",
+    "restartRequired": "Restart Required",
+    "restartRequiredMessage": "Please close and reopen the app to apply the layout change.",
     "retry": "Retry",
     "cancel": "Cancel",
     "home": "Home",

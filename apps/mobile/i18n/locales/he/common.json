@@ -28,7 +28,8 @@
     "errorUsernameMax": "שם המשתמש חייב להכיל לכל היותר 50 תווים",
     "errorUsernameFormat": "שם המשתמש יכול להכיל רק אותיות עברית/אנגלית, מספרים, קווים תחתונים ומקפים",
     "errorOnboardingFailed": "השלמת ההתחלה נכשלה. נסה שוב.",
-    "usernameHint": "3-50 תווים. אותיות עברית/אנגלית, מספרים, קווים תחתונים ומקפים בלבד."
+    "usernameHint": "3-50 תווים. אותיות עברית/אנגלית, מספרים, קווים תחתונים ומקפים בלבד.",
+    "loginFailed": "ההתחברות נכשלה"
   },
   "groups": {
     "noGroupsYet": "עדיין אין קבוצות",
@@ -66,7 +67,11 @@
     "deleteGroupConfirm": "האם אתה בטוח שברצונך למחוק את הקבוצה? פעולה זו אינה ניתנת לביטול.",
     "cancel": "ביטול",
     "delete": "מחק",
-    "deleteGroupDraftFailed": "מחיקת טיוטת הקבוצה נכשלה. נסה שוב."
+    "deleteGroupDraftFailed": "מחיקת טיוטת הקבוצה נכשלה. נסה שוב.",
+    "needsAttention": "דורש תשומת לב",
+    "active": "פעיל",
+    "drafts": "טיוטות",
+    "ended": "הסתיים"
   },
   "lobby": {
     "onlyInvitedCanJoin": "רק משתמשים שהוזמנו יכולים להצטרף",
@@ -109,7 +114,24 @@
     "result": "תוצאה",
     "resultDescription": "מצב \"תוצאה\" מיועד לחיזוי תוצאת המשחק. נקודות מוענקות על תחזיות מדויקות, הפרש שערים ותוצאה.",
     "threeWayPrediction": "תחזית 3 כיוונים",
-    "threeWayDescription": "במצב \"תחזית 3 כיוונים\" התחזיות הן 1-0-2 (1 = ניצחון בית, 0 = תיקו, 2 = ניצחון חוץ)."
+    "threeWayDescription": "במצב \"תחזית 3 כיוונים\" התחזיות הן 1-0-2 (1 = ניצחון בית, 0 = תיקו, 2 = ניצחון חוץ).",
+    "game_one": "משחק",
+    "game_other": "משחקים",
+    "gamesLive": "LIVE",
+    "gamesLiveNow": "LIVE עכשיו",
+    "gamesToday": "היום",
+    "needPredictions": "{{count}} דורשים תחזיות",
+    "allPredictionsSet": "כל התחזיות הוזנו",
+    "participant_one": "משתתף",
+    "participant_other": "משתתפים",
+    "predictionsCount": "{{done}}/{{total}} תחזיות",
+    "gamesNeedPredictions": "{{count}} משחקים דורשים תחזיות",
+    "nextGame": "הבא: {{home}} מול {{away}}",
+    "groupStart": "תחילת קבוצה: {{date}} {{time}}",
+    "leader": "מוביל: {{name}}",
+    "endsApproximately": "מסתיים בערך {{date}}",
+    "nextGameStarts": "המשחק הבא מתחיל {{countdown}}",
+    "nextGameLabel": "המשחק הבא: {{countdown}}"
   },
   "predictions": {
     "saving": "שומר...",
@@ -280,6 +302,8 @@
   "common": {
     "limitedConnectivity": "חיבור מוגבל — מצב קריאה בלבד",
     "loading": "טוען...",
+    "restartRequired": "נדרש אתחול",
+    "restartRequiredMessage": "אנא סגור ופתח מחדש את האפליקציה כדי להחיל את שינוי הכיוון.",
     "starting": "מתחיל...",
     "retry": "נסה שוב",
     "cancel": "ביטול",

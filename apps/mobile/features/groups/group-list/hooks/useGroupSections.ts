@@ -2,6 +2,7 @@
 // Hook to sort groups into sections for SectionList: attention, active, drafts, ended.
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { ApiGroupItem } from "@repo/types";
 
 export type GroupSection = {
@@ -15,6 +16,7 @@ export function useGroupSections(groups: ApiGroupItem[]): {
   sections: GroupSection[];
   attentionCount: number;
 } {
+  const { t } = useTranslation("common");
   return useMemo(() => {
     const attention: ApiGroupItem[] = [];
     const active: ApiGroupItem[] = [];
@@ -52,28 +54,28 @@ export function useGroupSections(groups: ApiGroupItem[]): {
     if (attention.length > 0) {
       sections.push({
         key: "attention",
-        title: "Needs attention",
+        title: t("groups.needsAttention"),
         data: attention,
       });
     }
     if (active.length > 0) {
       sections.push({
         key: "active",
-        title: "Active",
+        title: t("groups.active"),
         data: active,
       });
     }
     if (drafts.length > 0) {
       sections.push({
         key: "drafts",
-        title: "Drafts",
+        title: t("groups.drafts"),
         data: drafts,
       });
     }
     if (ended.length > 0) {
       sections.push({
         key: "ended",
-        title: "Ended",
+        title: t("groups.ended"),
         data: ended,
         collapsible: true,
       });
@@ -83,5 +85,5 @@ export function useGroupSections(groups: ApiGroupItem[]): {
       sections,
       attentionCount: attention.length,
     };
-  }, [groups]);
+  }, [groups, t]);
 }

@@ -8,6 +8,7 @@ import { AppText, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { formatKickoffDate, formatKickoffTime } from "@/utils/fixture";
 import { useCountdown } from "@/features/groups/predictions/hooks";
+import { useEntityTranslation } from "@/lib/i18n";
 import type { ApiGroupItem } from "@repo/types";
 
 interface GroupActiveCardProps {
@@ -18,6 +19,7 @@ interface GroupActiveCardProps {
 
 export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActiveCardProps) {
   const { t } = useTranslation("common");
+  const { translateTeam } = useEntityTranslation();
   const { theme } = useTheme();
   const liveGamesCount = group.liveGamesCount ?? 0;
   const todayGamesCount = group.todayGamesCount ?? 0;
@@ -95,7 +97,7 @@ export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActive
               variant="caption"
               style={[styles.statusBadgeText, { color: getStatusTextColor() }]}
             >
-              {group.status.toUpperCase()}
+              {t(`lobby.${group.status}`)}
             </AppText>
           </View>
         </View>
@@ -118,23 +120,23 @@ export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActive
                   { color: "#EF4444" },
                 ]}
               >
-                {liveGamesCount} {liveGamesCount === 1 ? "game" : "games"} LIVE
+                {liveGamesCount} {t("lobby.game", { count: liveGamesCount })} {t("lobby.gamesLive")}
               </AppText>
             )}
 
             {todayGamesCount > 0 && (
               <AppText variant="caption" color="secondary" style={styles.infoItem}>
-                {todayGamesCount} {todayGamesCount === 1 ? "game" : "games"} today
+                {todayGamesCount} {t("lobby.game", { count: todayGamesCount })} {t("lobby.gamesToday")}
                 {todayUnpredictedCount > 0
-                  ? ` – ${todayUnpredictedCount} need predictions`
-                  : " – all predictions set"}
+                  ? ` – ${t("lobby.needPredictions", { count: todayUnpredictedCount })}`
+                  : ` – ${t("lobby.allPredictionsSet")}`}
               </AppText>
             )}
 
             {group.memberCount !== undefined && (
               <AppText variant="caption" color="secondary" style={styles.infoItem}>
                 {group.memberCount}{" "}
-                {group.memberCount === 1 ? "participant" : "participants"}
+                {t("lobby.participant", { count: group.memberCount })}
               </AppText>
             )}
 
@@ -146,9 +148,12 @@ export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActive
                     color="secondary"
                     style={styles.infoItem}
                   >
-                    {group.predictionsCount}/{group.totalFixtures} predictions
+                    {t("lobby.predictionsCount", {
+                      done: group.predictionsCount,
+                      total: group.totalFixtures,
+                    })}
                     {unpredictedGamesCount > 0 &&
-                      ` – ${unpredictedGamesCount} games need predictions`}
+                      ` – ${t("lobby.gamesNeedPredictions", { count: unpredictedGamesCount })}`}
                     {unpredictedGamesCount === 0 && " ✓"}
                   </AppText>
                   {group.totalFixtures > 0 && (
@@ -179,8 +184,16 @@ export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActive
                   color="secondary"
                   style={styles.infoItem}
                 >
-                  Next: {group.nextGame.homeTeam?.name || "TBD"} vs{" "}
-                  {group.nextGame.awayTeam?.name || "TBD"}
+                  {t("lobby.nextGame", {
+                    home: translateTeam(
+                      group.nextGame.homeTeam?.name,
+                      t("common.tbd")
+                    ),
+                    away: translateTeam(
+                      group.nextGame.awayTeam?.name,
+                      t("common.tbd")
+                    ),
+                  })}
                 </AppText>
                 <AppText
                   variant="caption"

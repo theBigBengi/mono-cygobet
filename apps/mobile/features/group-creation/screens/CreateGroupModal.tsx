@@ -140,10 +140,10 @@ export function CreateGroupModal() {
 
   const title =
     mode === "fixtures"
-      ? "Selected Games"
+      ? t("groupCreation.selectedGames")
       : mode === "leagues"
-        ? "Selected League"
-        : "Selected Teams";
+        ? t("groupCreation.selectedLeague")
+        : t("groupCreation.selectedTeams");
 
   return (
     <Modal

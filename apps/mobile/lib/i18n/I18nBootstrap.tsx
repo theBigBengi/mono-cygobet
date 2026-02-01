@@ -9,7 +9,7 @@ import type { Locale } from "./i18n.types";
 import { isLocale } from "./i18n.types";
 import { applyRTL } from "./i18n.rtl";
 import { initI18n } from "./i18n.config";
-import { getPersistedLocale } from "./i18n.storage";
+import { getPersistedLocale, consumeRTLRestartPending } from "./i18n.storage";
 import { I18nProvider } from "./I18nProvider";
 
 function getDeviceLocale(): Locale {
@@ -37,7 +37,13 @@ export function I18nBootstrap({ children }: I18nBootstrapProps) {
       if (cancelled) return;
 
       initI18n(locale);
-      applyRTL(locale);
+
+      // If we just restarted for RTL, skip applyRTL (already done before reload)
+      const wasRTLRestart = await consumeRTLRestartPending();
+      if (!wasRTLRestart) {
+        applyRTL(locale);
+      }
+
       setReady(true);
     }
 

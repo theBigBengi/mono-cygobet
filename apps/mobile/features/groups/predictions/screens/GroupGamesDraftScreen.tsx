@@ -99,7 +99,7 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp }: Props
 
     if (remainingFixtureIds.length === 0) {
       Alert.alert(
-        "Cannot Update",
+        t("predictions.cannotUpdate"),
         t("predictions.mustKeepOneGame")
       );
       return;

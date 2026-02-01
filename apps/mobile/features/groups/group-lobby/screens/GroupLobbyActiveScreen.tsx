@@ -4,6 +4,7 @@
 // Group name is displayed in the header instead.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
@@ -46,6 +47,7 @@ export function GroupLobbyActiveScreen({
   onRefresh,
   isCreator,
 }: GroupLobbyActiveScreenProps) {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
   const { data: rankingData } = useGroupRankingQuery(group.id);
@@ -125,8 +127,8 @@ export function GroupLobbyActiveScreen({
                     style={[styles.liveLabel, { color: "#EF4444" }]}
                   >
                     {activityStats.liveGamesCount}{" "}
-                    {activityStats.liveGamesCount === 1 ? "game" : "games"} LIVE
-                    now
+                    {t("lobby.game", { count: activityStats.liveGamesCount })}{" "}
+                    {t("lobby.gamesLiveNow")}
                   </AppText>
                 </Pressable>
               )}
@@ -137,10 +139,11 @@ export function GroupLobbyActiveScreen({
                   style={styles.activitySummaryRow}
                 >
                   {activityStats.todayGamesCount}{" "}
-                  {activityStats.todayGamesCount === 1 ? "game" : "games"} today
+                  {t("lobby.game", { count: activityStats.todayGamesCount })}{" "}
+                  {t("lobby.gamesToday")}
                   {activityStats.todayUnpredictedCount > 0
-                    ? ` – ${activityStats.todayUnpredictedCount} need predictions`
-                    : " – all predictions set"}
+                    ? ` – ${t("lobby.needPredictions", { count: activityStats.todayUnpredictedCount })}`
+                    : ` – ${t("lobby.allPredictionsSet")}`}
                 </AppText>
               )}
               {activityStats.nextGame && activityStats.liveGamesCount === 0 && (
@@ -160,7 +163,7 @@ export function GroupLobbyActiveScreen({
                   color="secondary"
                   style={styles.activitySummaryRow}
                 >
-                  Ends approximately {formatDate(duration.endDate)}
+                  {t("lobby.endsApproximately", { date: formatDate(duration.endDate) })}
                 </AppText>
               )}
             </View>
@@ -171,7 +174,7 @@ export function GroupLobbyActiveScreen({
         <GroupLobbyFixturesSection
           fixtures={fixtures}
           groupId={group.id}
-          bannerTitle="Predictions"
+          bannerTitle={t("groups.predictions")}
           onBannerPress={handleViewGames}
           predictionsCount={predictionsCount}
           totalFixtures={totalFixtures}
@@ -184,11 +187,13 @@ export function GroupLobbyActiveScreen({
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <AppText variant="body" style={styles.bannerText}>
-              Ranking
+              {t("groups.ranking")}
             </AppText>
             {leader && (
               <AppText variant="caption" color="secondary" style={styles.leaderText}>
-                Leader: {leader.username ?? `Player #${leader.rank}`}
+                {t("lobby.leader", {
+                  name: leader.username ?? `Player #${leader.rank}`,
+                })}
               </AppText>
             )}
           </Pressable>
@@ -214,7 +219,7 @@ export function GroupLobbyActiveScreen({
           >
             <View style={styles.chatRow}>
               <AppText variant="body" style={styles.bannerText}>
-                Chat
+                {t("groups.chat")}
               </AppText>
               {chatUnreadCount > 0 && (
                 <View
@@ -259,7 +264,7 @@ export function GroupLobbyActiveScreen({
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <AppText variant="body" style={styles.predictionsOverviewText}>
-              Predictions Overview
+              {t("groups.predictionsOverview")}
             </AppText>
           </Pressable>
         </Card>
