@@ -95,6 +95,11 @@ export const sandboxService = {
     fixtureId: number;
     homeScore: number;
     awayScore: number;
+    state?: "FT" | "AET" | "FT_PEN";
+    homeScoreET?: number;
+    awayScoreET?: number;
+    penHome?: number;
+    penAway?: number;
   }): Promise<SandboxSimulateResponse> =>
     apiPost<SandboxSimulateResponse>(
       "/admin/sandbox/simulate/full-time",

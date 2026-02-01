@@ -239,7 +239,16 @@ export async function sandboxSimulateKickoff(
 // ───── 3. simulate full-time ─────
 
 export async function sandboxSimulateFullTime(
-  args: { fixtureId: number; homeScore: number; awayScore: number },
+  args: {
+    fixtureId: number;
+    homeScore: number;
+    awayScore: number;
+    state?: "FT" | "AET" | "FT_PEN";
+    homeScoreET?: number;
+    awayScoreET?: number;
+    penHome?: number;
+    penAway?: number;
+  },
   io?: TypedIOServer
 ) {
   const fixture = await assertSandboxFixture(args.fixtureId);
@@ -250,16 +259,30 @@ export async function sandboxSimulateFullTime(
     );
   }
 
+  const finishedState = args.state ?? "FT";
+
   await prisma.fixtures.update({
     where: { id: args.fixtureId },
     data: {
-      state: "FT",
+      state: finishedState,
       homeScore: args.homeScore,
       awayScore: args.awayScore,
       result: `${args.homeScore}-${args.awayScore}`,
       homeScore90: args.homeScore,
       awayScore90: args.awayScore,
       liveMinute: 90,
+      ...(finishedState === "AET" || finishedState === "FT_PEN"
+        ? {
+            homeScoreET: args.homeScoreET ?? args.homeScore,
+            awayScoreET: args.awayScoreET ?? args.awayScore,
+          }
+        : {}),
+      ...(finishedState === "FT_PEN"
+        ? {
+            penHome: args.penHome ?? 0,
+            penAway: args.penAway ?? 0,
+          }
+        : {}),
     },
   });
 
@@ -280,7 +303,7 @@ export async function sandboxSimulateFullTime(
 
   return {
     fixtureId: args.fixtureId,
-    state: "FT",
+    state: finishedState,
     homeScore: args.homeScore,
     awayScore: args.awayScore,
     settlement,

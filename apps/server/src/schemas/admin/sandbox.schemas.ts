@@ -37,6 +37,11 @@ export const sandboxSimulateFullTimeBodySchema = {
     fixtureId: { type: "integer" },
     homeScore: { type: "integer", minimum: 0 },
     awayScore: { type: "integer", minimum: 0 },
+    state: { type: "string", enum: ["FT", "AET", "FT_PEN"], default: "FT" },
+    homeScoreET: { type: "integer", minimum: 0 },
+    awayScoreET: { type: "integer", minimum: 0 },
+    penHome: { type: "integer", minimum: 0 },
+    penAway: { type: "integer", minimum: 0 },
   },
 } as const;
 

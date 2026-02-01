@@ -97,7 +97,15 @@ export default function SandboxPage() {
     open: boolean;
     fixtureId: number | null;
   }>({ open: false, fixtureId: null });
-  const [ftScores, setFtScores] = React.useState({ home: 0, away: 0 });
+  const [ftScores, setFtScores] = React.useState({
+    home: 0,
+    away: 0,
+    state: "FT" as "FT" | "AET" | "FT_PEN",
+    homeScoreET: 0,
+    awayScoreET: 0,
+    penHome: 0,
+    penAway: 0,
+  });
 
   // Edit Live dialog
   const [editLiveDialog, setEditLiveDialog] = React.useState<{
@@ -157,6 +165,11 @@ export default function SandboxPage() {
       fixtureId: number;
       homeScore: number;
       awayScore: number;
+      state?: "FT" | "AET" | "FT_PEN";
+      homeScoreET?: number;
+      awayScoreET?: number;
+      penHome?: number;
+      penAway?: number;
     }) => sandboxService.simulateFullTime(args),
     onSuccess: (data) => {
       const s = data.data.settlement;
@@ -243,7 +256,15 @@ export default function SandboxPage() {
 
   const openFtDialog = (fixtureId: number) => {
     setFtDialog({ open: true, fixtureId });
-    setFtScores({ home: 0, away: 0 });
+    setFtScores({
+      home: 0,
+      away: 0,
+      state: "FT",
+      homeScoreET: 0,
+      awayScoreET: 0,
+      penHome: 0,
+      penAway: 0,
+    });
   };
 
   return (
@@ -582,6 +603,90 @@ export default function SandboxPage() {
               />
             </div>
           </div>
+          <div className="space-y-2">
+            <Label>Finished State</Label>
+            <Select
+              value={ftScores.state}
+              onValueChange={(v: "FT" | "AET" | "FT_PEN") =>
+                setFtScores((prev) => ({ ...prev, state: v }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="FT">FT (Full Time)</SelectItem>
+                <SelectItem value="AET">AET (After Extra Time)</SelectItem>
+                <SelectItem value="FT_PEN">FT_PEN (Penalties)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {(ftScores.state === "AET" || ftScores.state === "FT_PEN") && (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 space-y-2">
+                <Label>ET Home</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={ftScores.homeScoreET}
+                  onChange={(e) =>
+                    setFtScores((prev) => ({
+                      ...prev,
+                      homeScoreET: Math.max(0, Number(e.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+              <span className="pt-6">—</span>
+              <div className="flex-1 space-y-2">
+                <Label>ET Away</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={ftScores.awayScoreET}
+                  onChange={(e) =>
+                    setFtScores((prev) => ({
+                      ...prev,
+                      awayScoreET: Math.max(0, Number(e.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          )}
+          {ftScores.state === "FT_PEN" && (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 space-y-2">
+                <Label>Pen Home</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={ftScores.penHome}
+                  onChange={(e) =>
+                    setFtScores((prev) => ({
+                      ...prev,
+                      penHome: Math.max(0, Number(e.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+              <span className="pt-6">—</span>
+              <div className="flex-1 space-y-2">
+                <Label>Pen Away</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={ftScores.penAway}
+                  onChange={(e) =>
+                    setFtScores((prev) => ({
+                      ...prev,
+                      penAway: Math.max(0, Number(e.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          )}
           <DialogFooter>
             <Button
               variant="outline"
@@ -596,11 +701,26 @@ export default function SandboxPage() {
                   fixtureId: ftDialog.fixtureId,
                   homeScore: ftScores.home,
                   awayScore: ftScores.away,
+                  state: ftScores.state,
+                  ...(ftScores.state === "AET" || ftScores.state === "FT_PEN"
+                    ? {
+                        homeScoreET: ftScores.homeScoreET,
+                        awayScoreET: ftScores.awayScoreET,
+                      }
+                    : {}),
+                  ...(ftScores.state === "FT_PEN"
+                    ? {
+                        penHome: ftScores.penHome,
+                        penAway: ftScores.penAway,
+                      }
+                    : {}),
                 });
               }}
               disabled={fullTimeMutation.isPending}
             >
-              {fullTimeMutation.isPending ? "Settling..." : "Confirm FT"}
+              {fullTimeMutation.isPending
+                ? "Settling..."
+                : `Confirm ${ftScores.state}`}
             </Button>
           </DialogFooter>
         </DialogContent>
