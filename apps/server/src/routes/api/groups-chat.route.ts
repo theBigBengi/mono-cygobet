@@ -84,6 +84,17 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
 
     return { data: message };
   });
+
+  // POST /api/groups/:id/messages/read
+  fastify.post<{
+    Params: { id: string };
+    Body: { lastReadMessageId: number };
+  }>("/groups/:id/messages/read", async (req) => {
+    const groupId = parseInt(req.params.id, 10);
+    const userId = req.userAuth!.user.id;
+    await chatService.markAsRead(groupId, userId, req.body.lastReadMessageId);
+    return { status: "ok" };
+  });
 };
 
 export default chatRoutes;

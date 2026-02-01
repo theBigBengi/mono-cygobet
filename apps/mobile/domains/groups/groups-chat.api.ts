@@ -37,3 +37,17 @@ export async function fetchUnreadCounts(): Promise<UnreadCountsResponse> {
     "/api/groups/unread-counts"
   );
 }
+
+/**
+ * Mark messages as read up to lastReadMessageId for a group.
+ * - Requires authentication and onboarding complete.
+ */
+export async function markMessagesAsRead(
+  groupId: number,
+  lastReadMessageId: number
+): Promise<void> {
+  await apiFetchWithAuthRetry(`/api/groups/${groupId}/messages/read`, {
+    method: "POST",
+    body: { lastReadMessageId },
+  });
+}

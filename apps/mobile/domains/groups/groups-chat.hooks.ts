@@ -8,7 +8,11 @@ import { useAuth } from "@/lib/auth/useAuth";
 import { isReadyForProtected } from "@/lib/auth/guards";
 import type { ChatMessage, MentionData } from "@/lib/socket";
 import { useGroupSocket } from "@/lib/socket";
-import { fetchGroupMessages, fetchUnreadCounts } from "./groups-chat.api";
+import {
+  fetchGroupMessages,
+  fetchUnreadCounts,
+  markMessagesAsRead,
+} from "./groups-chat.api";
 import { groupsKeys } from "./groups.keys";
 import type { ApiError } from "@/lib/http/apiError";
 
@@ -243,20 +247,26 @@ export function useGroupChat(groupId: number | null) {
   );
 
   const markAsRead = useCallback(
-    (lastReadMessageId: number) => {
-      if (!socket || !groupId) return;
+    async (lastReadMessageId: number) => {
+      if (!groupId) return;
 
-      socket.emit("messages:read", { groupId, lastReadMessageId });
-
-      // Optimistic unread count clear
+      // Optimistic unread count clear (immediate UI feedback)
       queryClient.setQueryData(groupsKeys.unreadCounts(), (old: { data: Record<string, number> } | undefined) => {
         if (!old) return old;
         const next = { ...old.data };
         delete next[String(groupId)];
         return { data: next };
       });
+
+      // Reliable HTTP call (persists to DB)
+      try {
+        await markMessagesAsRead(groupId, lastReadMessageId);
+      } catch {
+        // Revert optimistic update on failure
+        queryClient.invalidateQueries({ queryKey: groupsKeys.unreadCounts() });
+      }
     },
-    [socket, groupId, queryClient]
+    [groupId, queryClient]
   );
 
   const triggerTypingStart = useCallback(() => {

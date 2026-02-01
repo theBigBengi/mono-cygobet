@@ -117,8 +117,11 @@ export default fp(async function socketIOPlugin(fastify) {
           "../services/api/groups/service/chat"
         );
         await markAsRead(data.groupId, userId, data.lastReadMessageId);
-      } catch {
-        // Silently ignore read errors
+      } catch (err) {
+        log.warn(
+          { userId, groupId: data.groupId, err },
+          "messages:read failed"
+        );
       }
     });
 
