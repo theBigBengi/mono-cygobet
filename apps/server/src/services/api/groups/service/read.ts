@@ -136,6 +136,7 @@ export async function getGroupById(
   data.inviteAccess = rules?.inviteAccess ?? "all";
   data.maxMembers = rules?.maxMembers ?? DEFAULT_MAX_MEMBERS;
   data.predictionMode = rules?.predictionMode ?? "CorrectScore";
+  data.selectionMode = rules?.selectionMode ?? "games";
   data.koRoundMode = rules?.koRoundMode ?? "FullTime";
   data.onTheNosePoints = rules?.onTheNosePoints ?? 3;
   data.correctDifferencePoints = rules?.correctDifferencePoints ?? 2;

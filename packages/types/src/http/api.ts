@@ -390,6 +390,8 @@ export type ApiGroupItem = {
   inviteCode?: string | null;
   /** Prediction mode: "CorrectScore" (exact result) | "MatchWinner" (1/X/2) */
   predictionMode?: string;
+  /** Selection mode: "games" | "teams" | "leagues" - determines filter chip types */
+  selectionMode?: "games" | "teams" | "leagues";
   /** KO round mode: "FullTime" | "ExtraTime" | "Penalties" - TODO: koRoundMode not yet used in scoring */
   koRoundMode?: string;
   onTheNosePoints?: number;

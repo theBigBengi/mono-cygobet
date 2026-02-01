@@ -34,7 +34,13 @@ export default function GroupGamesRoute() {
 
   // Route to appropriate screen based on status
   if (group.status === "draft") {
-    return <GroupGamesDraftScreen groupId={groupId} fixtures={fixtures} />;
+    return (
+      <GroupGamesDraftScreen
+        groupId={groupId}
+        fixtures={fixtures}
+        selectionMode={group.selectionMode}
+      />
+    );
   }
 
   // For active and other statuses, use the regular screen with predictions
@@ -44,6 +50,7 @@ export default function GroupGamesRoute() {
       fixtures={fixtures}
       predictionMode={group.predictionMode}
       groupName={group.name}
+      selectionMode={group.selectionMode}
     />
   );
 }

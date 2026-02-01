@@ -5,23 +5,20 @@ import { useRouter } from "expo-router";
 import { AppText, Screen, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useUpdateGroupMutation, useGroupGamesFiltersQuery } from "@/domains/groups";
-import { groupFixturesByLeagueAndDate } from "@/utils/fixture";
+import { useUpdateGroupMutation } from "@/domains/groups";
 import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
 import { MatchDraftCard } from "../components/MatchDraftCard";
 import type { FixtureItem } from "@/types/common";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
-import {
-  RoundFilterTabs,
-  TeamsModeFilterTabs,
-  GamesModeFilterTabs,
-} from "../components";
-import { useGroupGamesFilters } from "../hooks/useGroupGamesFilters";
-import { useFilteredFixtures } from "../hooks/useFilteredFixtures";
+import { SmartFilterChips } from "../components";
+import { useSmartFilters } from "../hooks/useSmartFilters";
+import { useGroupedFixtures } from "../hooks/useGroupedFixtures";
+import { calculateContentPaddingTopDefault } from "../utils/utils";
 
 type Props = {
   groupId: number | null;
   fixtures: FixtureItem[]; // Fixtures passed from parent (already fetched with group)
+  selectionMode?: "games" | "teams" | "leagues";
 };
 
 /**
@@ -29,26 +26,18 @@ type Props = {
  * Shows fixtures with remove (X) / restore (blue plus) in the middle.
  * X marks as deselected (dimmed); plus restores.
  */
-export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp }: Props) {
+export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp, selectionMode }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [deselectedIds, setDeselectedIds] = useState<Set<number>>(new Set());
-  const [selectedRound, setSelectedRound] = useState<string | null>(null);
-  const [selectedLeagueId, setSelectedLeagueId] = useState<number | null>(null);
-  
+
   const hasDeselectedGames = deselectedIds.size > 0;
 
-  // Fetch games filters to check mode
+  // Fetch games filters for fallback mode
   const { data: filtersData } = useGroupGamesFiltersQuery(groupId);
-  const isLeaguesMode = filtersData?.data.mode === "leagues";
-  const isTeamsMode = filtersData?.data.mode === "teams";
-  const isGamesMode = filtersData?.data.mode === "games";
-  const availableRounds = filtersData?.data.filters && "rounds" in filtersData.data.filters
-    ? filtersData.data.filters.rounds
-    : [];
-  const availableLeagues = filtersData?.data.leagues || [];
+  const mode = selectionMode ?? filtersData?.data.mode ?? "games";
 
   const toggleDeselected = useCallback((fixtureId: number, deselect: boolean) => {
     setDeselectedIds((prev) => {
@@ -65,22 +54,17 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp }: Props
     [fixturesProp]
   );
 
-  // Calculate filter availability
-  const { hasTodayFixtures, hasThisWeekFixtures } = useGroupGamesFilters({
-    fixtures,
-    isTeamsMode,
-    isGamesMode,
-  });
-
-  // Filter fixtures based on selected filters
-  const filteredFixtures = useFilteredFixtures({
-    fixtures,
-    isLeaguesMode,
-    isTeamsMode,
-    isGamesMode,
-    selectedRound,
-    selectedLeagueId,
-  });
+  const {
+    actionChips,
+    selectedAction,
+    selectAction,
+    structuralFilter,
+    selectTeam,
+    selectRound,
+    navigateRound,
+    filteredFixtures,
+    hasAnyChips,
+  } = useSmartFilters({ fixtures, mode });
 
   const updateGroupMutation = useUpdateGroupMutation(groupId);
 
@@ -156,43 +140,28 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp }: Props
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {hasAnyChips && (
+        <SmartFilterChips
+          actionChips={actionChips}
+          selectedAction={selectedAction}
+          onSelectAction={selectAction}
+          structuralFilter={structuralFilter}
+          onSelectTeam={selectTeam}
+          onSelectRound={selectRound}
+          onNavigateRound={navigateRound}
+        />
+      )}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.contentContainer,
           {
-            paddingTop: HEADER_HEIGHT + ((isLeaguesMode && availableRounds.length > 0) || ((isTeamsMode || isGamesMode) && (availableLeagues.length > 0 || hasTodayFixtures || hasThisWeekFixtures)) ? 56 : 0),
+            paddingTop: calculateContentPaddingTopDefault(hasAnyChips),
             paddingBottom: hasDeselectedGames ? 100 : 16,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Filter tabs based on mode */}
-        {isLeaguesMode && (
-          <RoundFilterTabs
-            availableRounds={availableRounds}
-            selectedRound={selectedRound}
-            onSelectRound={setSelectedRound}
-          />
-        )}
-        {isTeamsMode && (
-          <TeamsModeFilterTabs
-            availableLeagues={availableLeagues}
-            hasTodayFixtures={hasTodayFixtures}
-            hasThisWeekFixtures={hasThisWeekFixtures}
-            selectedLeagueId={selectedLeagueId}
-            onSelectLeagueId={setSelectedLeagueId}
-          />
-        )}
-        {isGamesMode && (
-          <GamesModeFilterTabs
-            hasTodayFixtures={hasTodayFixtures}
-            hasThisWeekFixtures={hasThisWeekFixtures}
-            selectedLeagueId={selectedLeagueId}
-            onSelectLeagueId={setSelectedLeagueId}
-          />
-        )}
-
         {leagueDateGroups.map((group) => (
           <LeagueDateGroupSection
             key={group.key}

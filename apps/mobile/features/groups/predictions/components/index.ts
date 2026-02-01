@@ -7,7 +7,5 @@ export { MatchDraftCard } from "./MatchDraftCard";
 export { MatchPredictionCardVertical } from "./MatchPredictionCardVertical";
 export { SingleGameMatchCard } from "./SingleGameMatchCard";
 export { SingleGameView } from "./SingleGameView";
-export { RoundFilterTabs } from "./RoundFilterTabs";
-export { TeamsModeFilterTabs } from "./TeamsModeFilterTabs";
-export { GamesModeFilterTabs } from "./GamesModeFilterTabs";
+export { SmartFilterChips } from "./SmartFilterChips";
 export { ScoreInputNavigationBar } from "./ScoreInputNavigationBar";

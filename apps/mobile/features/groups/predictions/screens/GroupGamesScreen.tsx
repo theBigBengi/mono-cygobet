@@ -5,17 +5,14 @@ import { useRouter } from "expo-router";
 import { isFinished } from "@repo/utils";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { ScoreInputNavigationBar, RoundFilterTabs,
-  TeamsModeFilterTabs,
-  GamesModeFilterTabs, } from "../components";
+import { ScoreInputNavigationBar, SmartFilterChips } from "../components";
 import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
 import { MatchPredictionCardVertical } from "../components/MatchPredictionCardVertical";
 import { useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { usePredictionNavigation } from "../hooks/usePredictionNavigation";
 import { useGroupGamePredictions } from "../hooks/useGroupGamePredictions";
 import { useCardFocusSaving } from "../hooks/useCardFocusSaving";
-import { useGroupGamesFilters } from "../hooks/useGroupGamesFilters";
-import { useFilteredFixtures } from "../hooks/useFilteredFixtures";
+import { useSmartFilters } from "../hooks/useSmartFilters";
 import { useGroupedFixtures } from "../hooks/useGroupedFixtures";
 import { usePredictionsStats } from "../hooks/usePredictionsStats";
 import type { FixtureItem } from "@/types/common";
@@ -24,8 +21,6 @@ import { SingleGameView } from "../components/SingleGameView";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { HEADER_HEIGHT, FOOTER_PADDING } from "../utils/constants";
 import { calculateContentPaddingTopDefault, getPositionInGroup } from "../utils/utils";
- 
-import { useGroupGamesFiltersQuery } from "@/domains/groups";
 import { shareText, buildPredictionShareText } from "@/utils/sharing";
 
 type Props = {
@@ -33,6 +28,7 @@ type Props = {
   fixtures: FixtureItem[]; // Fixtures passed from parent (already fetched with group)
   predictionMode?: string;
   groupName?: string;
+  selectionMode?: "games" | "teams" | "leagues";
 };
 
 /**
@@ -42,48 +38,43 @@ type Props = {
  * - state for predictions
  * - wiring of keyboard/nav/scroll behaviors
  */
-export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMode, groupName }: Props) {
+export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMode, groupName, selectionMode }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
   const [viewMode, setViewMode] = React.useState<"list" | "single">("list");
-  const [selectedRound, setSelectedRound] = React.useState<string | null>(null);
-  const [selectedLeagueId, setSelectedLeagueId] = React.useState<number | null>(null);
 
-  // Fetch games filters to check if mode is "leagues", "teams", or "games"
-  const { data: filtersData } = useGroupGamesFiltersQuery(groupId);
-  const isLeaguesMode = filtersData?.data.mode === "leagues";
-  const isTeamsMode = filtersData?.data.mode === "teams";
-  const isGamesMode = filtersData?.data.mode === "games";
-  const availableRounds = filtersData?.data.filters && "rounds" in filtersData.data.filters
-    ? filtersData.data.filters.rounds
-    : [];
-  const availableLeagues = filtersData?.data.leagues || [];
+  const mode = selectionMode ?? "games";
 
   // Use fixtures from props (already fetched with group query)
   const fixtures = useMemo(() => {
     return Array.isArray(fixturesProp) ? fixturesProp : [];
   }, [fixturesProp]);
 
-  // Calculate filter availability
-  const { hasTodayFixtures, hasThisWeekFixtures } = useGroupGamesFilters({
-    fixtures,
-    isTeamsMode,
-    isGamesMode,
-  });
+  const navigateToLeaderboard = React.useCallback(() => {
+    if (groupId != null) {
+      router.push(`/groups/${groupId}/ranking`);
+    }
+  }, [groupId, router]);
 
-  // Filter fixtures based on selected filters
-  const filteredFixtures = useFilteredFixtures({
+  const {
+    actionChips,
+    selectedAction,
+    selectAction,
+    structuralFilter,
+    selectTeam,
+    selectRound,
+    navigateRound,
+    filteredFixtures,
+    hasAnyChips,
+    emptyState,
+  } = useSmartFilters({
     fixtures,
-    isLeaguesMode,
-    isTeamsMode,
-    isGamesMode,
-    selectedRound,
-    selectedLeagueId,
+    mode,
+    onNavigateToLeaderboard: navigateToLeaderboard,
   });
 
   // Group fixtures by league/date with LIVE fixtures separated
-  // Groups by league/date only (time is shown in card)
   const leagueDateGroups = useGroupedFixtures(filteredFixtures);
 
   const {
@@ -174,13 +165,6 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
     });
   }, [fixtures, inputRefs, matchCardRefs]);
 
-  // Calculate if filters should be shown
-  const hasFilters = useMemo(() => {
-    if (isLeaguesMode && availableRounds.length > 0) return true;
-    if ((isTeamsMode || isGamesMode) && (availableLeagues.length > 0 || hasTodayFixtures || hasThisWeekFixtures)) return true;
-    return false;
-  }, [isLeaguesMode, isTeamsMode, isGamesMode, availableRounds.length, availableLeagues.length, hasTodayFixtures, hasThisWeekFixtures]);
-
   if (fixtures.length === 0) {
     return (
       <Screen>
@@ -249,45 +233,47 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
         </View>
       ) : (
         <>
+          {hasAnyChips && (
+            <SmartFilterChips
+              actionChips={actionChips}
+              selectedAction={selectedAction}
+              onSelectAction={selectAction}
+              structuralFilter={structuralFilter}
+              onSelectTeam={selectTeam}
+              onSelectRound={selectRound}
+              onNavigateRound={navigateRound}
+            />
+          )}
           <ScrollView
             ref={scrollViewRef}
             style={styles.scrollView}
             contentContainerStyle={[
               styles.contentContainer,
               {
-                paddingTop: calculateContentPaddingTopDefault(hasFilters),
+                paddingTop: calculateContentPaddingTopDefault(hasAnyChips),
                 paddingBottom: FOOTER_PADDING + keyboardHeight,
               },
             ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Filter tabs based on mode */}
-            {isLeaguesMode && (
-              <RoundFilterTabs
-                availableRounds={availableRounds}
-                selectedRound={selectedRound}
-                onSelectRound={setSelectedRound}
-              />
-            )}
-            {isTeamsMode && (
-              <TeamsModeFilterTabs
-                availableLeagues={availableLeagues}
-                hasTodayFixtures={hasTodayFixtures}
-                hasThisWeekFixtures={hasThisWeekFixtures}
-                selectedLeagueId={selectedLeagueId}
-                onSelectLeagueId={setSelectedLeagueId}
-              />
-            )}
-            {isGamesMode && (
-              <GamesModeFilterTabs
-                hasTodayFixtures={hasTodayFixtures}
-                hasThisWeekFixtures={hasThisWeekFixtures}
-                selectedLeagueId={selectedLeagueId}
-                onSelectLeagueId={setSelectedLeagueId}
-              />
-            )}
-
+            {emptyState && filteredFixtures.length === 0 ? (
+              <View style={styles.emptyStateContainer}>
+                <AppText variant="body" color="secondary" style={styles.emptyStateMessage}>
+                  {emptyState.message}
+                </AppText>
+                {emptyState.suggestion && (
+                  <AppText
+                    variant="body"
+                    style={[styles.emptyStateSuggestion, { color: theme.colors.primary }]}
+                    onPress={emptyState.suggestion.action}
+                  >
+                    {emptyState.suggestion.label}
+                  </AppText>
+                )}
+              </View>
+            ) : (
+              <>
             {leagueDateGroups.map((group) => (
               <LeagueDateGroupSection
                 key={group.key}
@@ -382,6 +368,8 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
               savedCount={savedPredictionsCount}
               totalCount={totalPredictionsCount}
             />
+            </>
+            )}
           </ScrollView>
 
           <ScoreInputNavigationBar
@@ -419,5 +407,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
+  },
+  emptyStateContainer: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  emptyStateMessage: {
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  emptyStateSuggestion: {
+    fontWeight: "600",
   },
 });
