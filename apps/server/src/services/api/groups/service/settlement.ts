@@ -326,6 +326,29 @@ export async function settlePredictionsForFixtures(
             );
           }
         }
+
+        // Detect leader change
+        const beforeLeader = [...(before?.entries() ?? [])]
+          .filter(([, rank]) => rank === 1)
+          .map(([userId]) => userId);
+
+        const afterRanking = after.data.filter((item) => item.rank === 1);
+
+        // Emit only if: single new leader AND different from before
+        if (
+          afterRanking.length === 1 &&
+          !beforeLeader.includes(afterRanking[0].userId)
+        ) {
+          await emitSystemEvent(
+            g.id,
+            "leader_change",
+            {
+              userId: afterRanking[0].userId,
+              username: afterRanking[0].username || "Someone",
+            },
+            io
+          );
+        }
       } catch {
         // Don't fail settlement if ranking events fail
       }

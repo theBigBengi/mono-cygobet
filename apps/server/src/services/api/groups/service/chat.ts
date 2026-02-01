@@ -149,6 +149,8 @@ function buildEventBody(
       return `${data.homeTeam} ${data.homeScore ?? "?"}-${data.awayScore ?? "?"} ${data.awayTeam} — Full Time`;
     case "ranking_change":
       return `${data.username || "Someone"} moved to #${data.newPosition}`;
+    case "leader_change":
+      return `${data.username || "Someone"} is now leading!`;
     default:
       return `Event: ${eventType}`;
   }
