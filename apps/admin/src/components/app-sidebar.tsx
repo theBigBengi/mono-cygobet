@@ -67,6 +67,10 @@ const data = {
           title: "Jobs",
           url: "/jobs",
         },
+        {
+          title: "Sandbox",
+          url: "/sandbox",
+        },
       ],
     },
     {

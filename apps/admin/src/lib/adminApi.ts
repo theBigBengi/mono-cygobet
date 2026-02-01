@@ -110,3 +110,7 @@ export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
     body: typeof body === "undefined" ? undefined : JSON.stringify(body),
   });
 }
+
+export async function apiDelete<T>(path: string): Promise<T> {
+  return adminFetch<T>(path, { method: "DELETE" });
+}
