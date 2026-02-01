@@ -9,6 +9,7 @@ export type SandboxFixture = {
   state: string;
   homeScore: number | null;
   awayScore: number | null;
+  liveMinute: number | null;
   homeTeam: string | null;
   awayTeam: string | null;
 };
@@ -81,6 +82,7 @@ export const sandboxService = {
     predictionMode: "CorrectScore" | "MatchWinner";
     autoGeneratePredictions?: boolean;
     groupName?: string;
+    startInMinutes?: number;
   }): Promise<SandboxSetupResponse> =>
     apiPost<SandboxSetupResponse>("/admin/sandbox/setup", args),
 
@@ -96,6 +98,18 @@ export const sandboxService = {
   }): Promise<SandboxSimulateResponse> =>
     apiPost<SandboxSimulateResponse>(
       "/admin/sandbox/simulate/full-time",
+      args
+    ),
+
+  updateLive: (args: {
+    fixtureId: number;
+    homeScore?: number;
+    awayScore?: number;
+    liveMinute?: number;
+    state?: string;
+  }): Promise<SandboxSimulateResponse> =>
+    apiPost<SandboxSimulateResponse>(
+      "/admin/sandbox/simulate/update-live",
       args
     ),
 

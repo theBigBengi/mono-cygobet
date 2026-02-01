@@ -36,9 +36,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Play, Flag, RotateCcw, Trash2, Plus } from "lucide-react";
+import { Play, Flag, RotateCcw, Trash2, Plus, Pencil } from "lucide-react";
 import { useSandboxList } from "@/hooks/use-sandbox";
-import { sandboxService } from "@/services/sandbox.service";
+import {
+  sandboxService,
+  type SandboxFixture,
+} from "@/services/sandbox.service";
 
 const LIVE_STATES = [
   "INPLAY_1ST_HALF",
@@ -86,6 +89,7 @@ export default function SandboxPage() {
     predictionMode: "CorrectScore" as "CorrectScore" | "MatchWinner",
     autoGeneratePredictions: true,
     groupName: "",
+    startInMinutes: 60,
   });
 
   // Full-time dialog
@@ -94,6 +98,18 @@ export default function SandboxPage() {
     fixtureId: number | null;
   }>({ open: false, fixtureId: null });
   const [ftScores, setFtScores] = React.useState({ home: 0, away: 0 });
+
+  // Edit Live dialog
+  const [editLiveDialog, setEditLiveDialog] = React.useState<{
+    open: boolean;
+    fixtureId: number | null;
+  }>({ open: false, fixtureId: null });
+  const [editLiveForm, setEditLiveForm] = React.useState({
+    homeScore: 0,
+    awayScore: 0,
+    liveMinute: 1,
+    state: "INPLAY_1ST_HALF",
+  });
 
   // Cleanup confirmation dialog
   const [cleanupDialogOpen, setCleanupDialogOpen] = React.useState(false);
@@ -105,6 +121,7 @@ export default function SandboxPage() {
       predictionMode: "CorrectScore" | "MatchWinner";
       autoGeneratePredictions?: boolean;
       groupName?: string;
+      startInMinutes?: number;
     }) => sandboxService.setup(args),
     onSuccess: (data) => {
       toast.success(`Sandbox setup complete — group #${data.data.groupId}`);
@@ -115,6 +132,7 @@ export default function SandboxPage() {
         predictionMode: "CorrectScore",
         autoGeneratePredictions: true,
         groupName: "",
+        startInMinutes: 60,
       });
     },
     onError: (error: Error) => {
@@ -151,6 +169,24 @@ export default function SandboxPage() {
     },
     onError: (error: Error) => {
       toast.error("Full-time failed", { description: error.message });
+    },
+  });
+
+  const updateLiveMutation = useMutation({
+    mutationFn: (args: {
+      fixtureId: number;
+      homeScore?: number;
+      awayScore?: number;
+      liveMinute?: number;
+      state?: string;
+    }) => sandboxService.updateLive(args),
+    onSuccess: () => {
+      toast.success("Live fixture updated");
+      queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
+      setEditLiveDialog({ open: false, fixtureId: null });
+    },
+    onError: (error: Error) => {
+      toast.error("Update failed", { description: error.message });
     },
   });
 
@@ -193,6 +229,21 @@ export default function SandboxPage() {
       ...setupForm,
       memberUserIds: parsed,
     });
+  };
+
+  const openEditLiveDialog = (fixture: SandboxFixture) => {
+    setEditLiveForm({
+      homeScore: fixture.homeScore ?? 0,
+      awayScore: fixture.awayScore ?? 0,
+      liveMinute: fixture.liveMinute ?? 1,
+      state: fixture.state,
+    });
+    setEditLiveDialog({ open: true, fixtureId: fixture.id });
+  };
+
+  const openFtDialog = (fixtureId: number) => {
+    setFtDialog({ open: true, fixtureId });
+    setFtScores({ home: 0, away: 0 });
   };
 
   return (
@@ -314,6 +365,25 @@ export default function SandboxPage() {
                     placeholder="Test Group"
                   />
                 </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="startInMinutes" className="whitespace-nowrap">
+                    Start in (minutes)
+                  </Label>
+                  <Input
+                    id="startInMinutes"
+                    type="number"
+                    min={1}
+                    placeholder="60"
+                    className="max-w-[100px]"
+                    value={setupForm.startInMinutes}
+                    onChange={(e) =>
+                      setSetupForm((prev) => ({
+                        ...prev,
+                        startInMinutes: Number(e.target.value) || 60,
+                      }))
+                    }
+                  />
+                </div>
               </div>
               <div className="mt-4">
                 <Button
@@ -376,6 +446,7 @@ export default function SandboxPage() {
                     <TableHead>ID</TableHead>
                     <TableHead>Match</TableHead>
                     <TableHead>State</TableHead>
+                    <TableHead>Min</TableHead>
                     <TableHead>Score</TableHead>
                     <TableHead>Action</TableHead>
                   </TableRow>
@@ -391,6 +462,12 @@ export default function SandboxPage() {
                       fixture.homeScore !== null && fixture.awayScore !== null
                         ? `${fixture.homeScore} - ${fixture.awayScore}`
                         : "—";
+                    const isLive = LIVE_STATES.includes(
+                      fixture.state as (typeof LIVE_STATES)[number]
+                    );
+                    const minDisplay = isLive
+                      ? fixture.liveMinute ?? "—"
+                      : "—";
                     return (
                       <TableRow key={fixture.id}>
                         <TableCell>{fixture.id}</TableCell>
@@ -402,6 +479,7 @@ export default function SandboxPage() {
                             {fixture.state}
                           </Badge>
                         </TableCell>
+                        <TableCell>{minDisplay}</TableCell>
                         <TableCell>{score}</TableCell>
                         <TableCell>
                           {action === "kickoff" && (
@@ -418,20 +496,25 @@ export default function SandboxPage() {
                             </Button>
                           )}
                           {action === "full-time" && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => {
-                                setFtDialog({
-                                  open: true,
-                                  fixtureId: fixture.id,
-                                });
-                                setFtScores({ home: 0, away: 0 });
-                              }}
-                            >
-                              <Flag className="mr-1 h-3 w-3" />
-                              Full Time
-                            </Button>
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openEditLiveDialog(fixture)}
+                                className="mr-1"
+                              >
+                                <Pencil className="mr-1 h-3 w-3" />
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => openFtDialog(fixture.id)}
+                              >
+                                <Flag className="mr-1 h-3 w-3" />
+                                Full Time
+                              </Button>
+                            </>
                           )}
                           {action === "reset" && (
                             <Button
@@ -518,6 +601,129 @@ export default function SandboxPage() {
               disabled={fullTimeMutation.isPending}
             >
               {fullTimeMutation.isPending ? "Settling..." : "Confirm FT"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Live Dialog */}
+      <Dialog
+        open={editLiveDialog.open}
+        onOpenChange={(open) => {
+          if (!open) setEditLiveDialog({ open: false, fixtureId: null });
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Live Fixture</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editHomeScore">Home Score</Label>
+                <Input
+                  id="editHomeScore"
+                  type="number"
+                  min={0}
+                  value={editLiveForm.homeScore}
+                  onChange={(e) =>
+                    setEditLiveForm((prev) => ({
+                      ...prev,
+                      homeScore: Math.max(0, Number(e.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editAwayScore">Away Score</Label>
+                <Input
+                  id="editAwayScore"
+                  type="number"
+                  min={0}
+                  value={editLiveForm.awayScore}
+                  onChange={(e) =>
+                    setEditLiveForm((prev) => ({
+                      ...prev,
+                      awayScore: Math.max(0, Number(e.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editLiveMinute">Minute</Label>
+              <Input
+                id="editLiveMinute"
+                type="number"
+                min={0}
+                max={120}
+                value={editLiveForm.liveMinute}
+                onChange={(e) =>
+                  setEditLiveForm((prev) => ({
+                    ...prev,
+                    liveMinute: Math.min(
+                      120,
+                      Math.max(0, Number(e.target.value) || 0)
+                    ),
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editState">State</Label>
+              <Select
+                value={editLiveForm.state}
+                onValueChange={(v) =>
+                  setEditLiveForm((prev) => ({ ...prev, state: v }))
+                }
+              >
+                <SelectTrigger id="editState">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INPLAY_1ST_HALF">
+                    INPLAY_1ST_HALF
+                  </SelectItem>
+                  <SelectItem value="HT">HT</SelectItem>
+                  <SelectItem value="INPLAY_2ND_HALF">
+                    INPLAY_2ND_HALF
+                  </SelectItem>
+                  <SelectItem value="INPLAY_ET">INPLAY_ET</SelectItem>
+                  <SelectItem value="INPLAY_PENALTIES">
+                    INPLAY_PENALTIES
+                  </SelectItem>
+                  <SelectItem value="BREAK">BREAK</SelectItem>
+                  <SelectItem value="EXTRA_TIME_BREAK">
+                    EXTRA_TIME_BREAK
+                  </SelectItem>
+                  <SelectItem value="PEN_BREAK">PEN_BREAK</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setEditLiveDialog({ open: false, fixtureId: null })
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (editLiveDialog.fixtureId == null) return;
+                updateLiveMutation.mutate({
+                  fixtureId: editLiveDialog.fixtureId,
+                  homeScore: editLiveForm.homeScore,
+                  awayScore: editLiveForm.awayScore,
+                  liveMinute: editLiveForm.liveMinute,
+                  state: editLiveForm.state,
+                });
+              }}
+              disabled={updateLiveMutation.isPending}
+            >
+              {updateLiveMutation.isPending ? "Updating..." : "Update"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -69,6 +69,27 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  // POST /admin/sandbox/simulate/update-live
+  fastify.post(
+    "/simulate/update-live",
+    {
+      schema: {
+        body: schemas.sandboxUpdateLiveBodySchema,
+        response: { 200: schemas.sandboxResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const result = await sandbox.sandboxUpdateLive(
+        req.body as Parameters<typeof sandbox.sandboxUpdateLive>[0]
+      );
+      return reply.send({
+        status: "success",
+        data: result,
+        message: "Live fixture updated",
+      });
+    }
+  );
+
   // POST /admin/sandbox/reset-fixture
   fastify.post(
     "/reset-fixture",

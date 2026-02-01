@@ -1,7 +1,7 @@
 // src/services/admin/sandbox.service.ts
 // Sandbox: fictive fixtures (negative externalId), test group, simulate kickoff/FT/reset/cleanup.
 
-import { prisma } from "@repo/db";
+import { prisma, type FixtureState } from "@repo/db";
 import { LIVE_STATES } from "@repo/utils";
 import { settlePredictionsForFixtures } from "../api/groups/service/settlement";
 import { emitFixtureLiveEvents, emitFixtureFTEvents } from "../api/groups/service/chat-events";
@@ -55,6 +55,7 @@ export async function sandboxSetup(args: {
   predictionMode: "CorrectScore" | "MatchWinner";
   autoGeneratePredictions?: boolean;
   groupName?: string;
+  startInMinutes?: number;
 }) {
   const {
     fixtureCount,
@@ -98,10 +99,11 @@ export async function sandboxSetup(args: {
 
   return prisma.$transaction(async (tx) => {
     const fixtureIds: number[] = [];
+    const offsetSec = (args.startInMinutes ?? 60) * 60;
     for (let i = 0; i < fixtureCount; i++) {
       const home = teams[i * 2]!;
       const away = teams[i * 2 + 1]!;
-      const startTs = nowTs + 3600 + i;
+      const startTs = nowTs + offsetSec + i;
       const startIso = new Date(startTs * 1000).toISOString();
 
       const fixture = await tx.fixtures.create({
@@ -207,7 +209,13 @@ export async function sandboxSimulateKickoff(
 
   await prisma.fixtures.update({
     where: { id: fixtureId },
-    data: { state: "INPLAY_1ST_HALF", liveMinute: 1 },
+    data: {
+      state: "INPLAY_1ST_HALF",
+      liveMinute: 1,
+      homeScore: 0,
+      awayScore: 0,
+      result: "0-0",
+    },
   });
 
   await emitFixtureLiveEvents(
@@ -277,6 +285,47 @@ export async function sandboxSimulateFullTime(
     awayScore: args.awayScore,
     settlement,
   };
+}
+
+// ───── 3b. update live (score, minute, state) ─────
+
+export async function sandboxUpdateLive(args: {
+  fixtureId: number;
+  homeScore?: number;
+  awayScore?: number;
+  liveMinute?: number;
+  state?: string;
+}) {
+  const fixture = await assertSandboxFixture(args.fixtureId);
+  const liveStates = [...LIVE_STATES] as string[];
+  if (!liveStates.includes(fixture.state)) {
+    throw new Error("Fixture must be LIVE. Run kickoff first.");
+  }
+  const data: {
+    homeScore?: number;
+    awayScore?: number;
+    result?: string;
+    liveMinute?: number;
+    state?: FixtureState;
+  } = {};
+  if (args.homeScore !== undefined) data.homeScore = args.homeScore;
+  if (args.awayScore !== undefined) data.awayScore = args.awayScore;
+  if (args.homeScore !== undefined && args.awayScore !== undefined) {
+    data.result = `${args.homeScore}-${args.awayScore}`;
+  }
+  if (args.liveMinute !== undefined) data.liveMinute = args.liveMinute;
+  if (args.state !== undefined) {
+    if (!liveStates.includes(args.state)) {
+      throw new Error("state must be one of LIVE_STATES (not FT/NS).");
+    }
+    data.state = args.state as FixtureState;
+  }
+  if (Object.keys(data).length === 0) return fixture;
+  const updated = await prisma.fixtures.update({
+    where: { id: args.fixtureId },
+    data,
+  });
+  return updated;
 }
 
 // ───── 4. reset fixture ─────
@@ -389,6 +438,7 @@ export async function sandboxList() {
       state: true,
       homeScore: true,
       awayScore: true,
+      liveMinute: true,
       startTs: true,
       homeTeam: { select: { name: true } },
       awayTeam: { select: { name: true } },
@@ -424,6 +474,7 @@ export async function sandboxList() {
       state: f.state,
       homeScore: f.homeScore,
       awayScore: f.awayScore,
+      liveMinute: f.liveMinute,
       homeTeam: f.homeTeam?.name ?? null,
       awayTeam: f.awayTeam?.name ?? null,
     })),
