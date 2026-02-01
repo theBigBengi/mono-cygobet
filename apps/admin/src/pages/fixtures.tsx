@@ -207,26 +207,37 @@ export default function FixturesPage() {
     isLoading: dbLoading,
     isFetching: dbFetching,
     error: dbError,
-  } = useFixturesFromDb({
-    perPage: 1000,
-    leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
-    countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
-    seasonId: seasonIdNum,
-    state: appliedState,
-    fromTs,
-    toTs,
-  });
+  } = useFixturesFromDb(
+    {
+      perPage: 1000,
+      leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
+      countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
+      seasonId: seasonIdNum,
+      state: appliedState,
+      fromTs,
+      toTs,
+    },
+    { enabled: viewMode === "provider" }
+  );
 
-  const { data: dbDataPage, isLoading: dbTabLoading } = useFixturesFromDb({
-    page: dbPage,
-    perPage: dbPageSize,
-    leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
-    countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
-    seasonId: seasonIdNum,
-    state: appliedState,
-    fromTs,
-    toTs,
-  });
+  const {
+    data: dbDataPage,
+    isLoading: dbTabLoading,
+    isFetching: dbTabFetching,
+    error: dbTabError,
+  } = useFixturesFromDb(
+    {
+      page: dbPage,
+      perPage: dbPageSize,
+      leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
+      countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
+      seasonId: seasonIdNum,
+      state: appliedState,
+      fromTs,
+      toTs,
+    },
+    { enabled: viewMode === "db" }
+  );
 
   const {
     data: providerData,
@@ -238,14 +249,18 @@ export default function FixturesPage() {
     toDate,
     seasonIdNum,
     appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
-    appliedCountryIds.length > 0 ? appliedCountryIds : undefined
+    appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
+    { enabled: viewMode === "provider" }
   );
 
   // Fetch batches (only seed-fixtures batches)
-  const { data: batchesData, isLoading: batchesLoading } = useBatches(
-    "seed-fixtures",
-    20
-  );
+  const {
+    data: batchesData,
+    isLoading: batchesLoading,
+    isFetching: batchesFetching,
+  } = useBatches("seed-fixtures", 20, {
+    enabled: viewMode === "history",
+  });
 
   // Unify and process data
   const unifiedData = useMemo(
@@ -343,10 +358,28 @@ export default function FixturesPage() {
     [unifiedData]
   );
 
-  const isLoading = dbLoading || providerLoading;
-  const isFetching = dbFetching || providerFetching;
-  const hasError = dbError || providerError;
-  const isPartialData = (dbData && !providerData) || (!dbData && providerData);
+  const isLoading =
+    viewMode === "provider"
+      ? dbLoading || providerLoading
+      : viewMode === "db"
+        ? dbTabLoading
+        : batchesLoading;
+  const isFetching =
+    viewMode === "provider"
+      ? dbFetching || providerFetching
+      : viewMode === "db"
+        ? dbTabFetching
+        : batchesFetching;
+  const hasError =
+    viewMode === "provider"
+      ? (dbError || providerError) ?? null
+      : viewMode === "db"
+        ? dbTabError ?? null
+        : null;
+  const isPartialData =
+    viewMode === "provider" &&
+    ((dbData && !providerData && !providerLoading) ||
+      (!dbData && providerData && !dbLoading));
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
@@ -542,7 +575,11 @@ export default function FixturesPage() {
         )}
         {hasError && !isPartialData && (
           <div className="text-xs text-destructive">
-            {dbError ? "DB failed to load" : "Provider failed to load"}
+            {viewMode === "db"
+              ? "DB failed to load"
+              : dbError
+                ? "DB failed to load"
+                : "Provider failed to load"}
           </div>
         )}
 
@@ -606,7 +643,7 @@ export default function FixturesPage() {
             isLoading={
               viewMode === "db" ? (dbTabLoading ?? dbLoading) : isLoading
             }
-            error={viewMode === "db" ? dbError : null}
+            error={viewMode === "db" ? dbTabError : null}
             onSyncFixture={
               viewMode === "provider" ? handleSyncFixture : undefined
             }

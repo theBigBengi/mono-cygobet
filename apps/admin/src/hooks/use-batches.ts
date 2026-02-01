@@ -5,7 +5,11 @@ import type {
   AdminBatchItemsResponse,
 } from "@repo/types";
 
-export function useBatches(name?: string, limit = 20) {
+export function useBatches(
+  name?: string,
+  limit = 20,
+  options?: { enabled?: boolean }
+) {
   return useQuery<AdminBatchesListResponse>({
     queryKey: ["batches", name, limit],
     queryFn: () =>
@@ -13,6 +17,7 @@ export function useBatches(name?: string, limit = 20) {
         ? batchesService.getBatchesByName(name, limit)
         : batchesService.getAllBatches(limit),
     staleTime: 30000, // 30 seconds
+    enabled: options?.enabled ?? true,
   });
 }
 
