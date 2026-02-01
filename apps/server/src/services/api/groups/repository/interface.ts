@@ -70,6 +70,7 @@ export interface GroupsRepository {
   deleteGroup(id: number): Promise<Prisma.groupsGetPayload<{}>>;
   findGroupRules(groupId: number): Promise<{
     selectionMode: groupSelectionMode;
+    groupTeamsIds: number[];
     inviteAccess?: groupInviteAccess;
     maxMembers?: number;
     predictionMode?: groupPredictionMode;

@@ -50,6 +50,8 @@ type SelectionMode = "games" | "teams" | "leagues";
 interface UseSmartFiltersProps {
   fixtures: FixtureItem[];
   mode: SelectionMode;
+  /** Team IDs the group follows (teams mode). Used to filter team avatar chips. Fallback: show all teams from fixtures if empty/missing. */
+  groupTeamsIds?: number[];
   /** Called when user taps "Check the leaderboard" in empty state (all games completed). */
   onNavigateToLeaderboard?: () => void;
 }
@@ -136,7 +138,7 @@ function getRoundStatus(fixturesInRound: FixtureItem[]): RoundStatus {
   return "upcoming";
 }
 
-export function useSmartFilters({ fixtures, mode, onNavigateToLeaderboard }: UseSmartFiltersProps) {
+export function useSmartFilters({ fixtures, mode, groupTeamsIds, onNavigateToLeaderboard }: UseSmartFiltersProps) {
   const [selectedAction, setSelectedAction] = useState<string>("all");
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [selectedRound, setSelectedRound] = useState<string | null>(null);
@@ -438,6 +440,7 @@ export function useSmartFilters({ fixtures, mode, onNavigateToLeaderboard }: Use
   }, [
     fixtures,
     mode,
+    groupTeamsIds,
     selectedAction,
     selectedTeamId,
     selectedRound,

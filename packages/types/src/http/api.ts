@@ -392,6 +392,8 @@ export type ApiGroupItem = {
   predictionMode?: string;
   /** Selection mode: "games" | "teams" | "leagues" - determines filter chip types */
   selectionMode?: "games" | "teams" | "leagues";
+  /** Team IDs the group follows (teams mode). Used to filter team avatar chips. */
+  groupTeamsIds?: number[];
   /** KO round mode: "FullTime" | "ExtraTime" | "Penalties" - TODO: koRoundMode not yet used in scoring */
   koRoundMode?: string;
   onTheNosePoints?: number;

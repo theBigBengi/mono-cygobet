@@ -29,6 +29,7 @@ type Props = {
   predictionMode?: string;
   groupName?: string;
   selectionMode?: "games" | "teams" | "leagues";
+  groupTeamsIds?: number[];
 };
 
 /**
@@ -38,7 +39,7 @@ type Props = {
  * - state for predictions
  * - wiring of keyboard/nav/scroll behaviors
  */
-export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMode, groupName, selectionMode }: Props) {
+export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMode, groupName, selectionMode, groupTeamsIds }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
@@ -71,6 +72,7 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
   } = useSmartFilters({
     fixtures,
     mode,
+    groupTeamsIds,
     onNavigateToLeaderboard: navigateToLeaderboard,
   });
 

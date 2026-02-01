@@ -51,6 +51,7 @@ export default function GroupGamesRoute() {
       predictionMode={group.predictionMode}
       groupName={group.name}
       selectionMode={group.selectionMode}
+      groupTeamsIds={group.groupTeamsIds}
     />
   );
 }

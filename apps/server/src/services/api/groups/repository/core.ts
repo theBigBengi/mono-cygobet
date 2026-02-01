@@ -195,6 +195,7 @@ export async function findGroupRules(
   groupId: number
 ): Promise<{
   selectionMode: groupSelectionMode;
+  groupTeamsIds: number[];
   inviteAccess?: groupInviteAccess;
   maxMembers?: number;
   predictionMode?: groupPredictionMode;
@@ -207,6 +208,7 @@ export async function findGroupRules(
     where: { groupId },
     select: {
       selectionMode: true,
+      groupTeamsIds: true,
       inviteAccess: true,
       maxMembers: true,
       predictionMode: true,
