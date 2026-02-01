@@ -333,18 +333,20 @@ export async function settlePredictionsForFixtures(
           .map(([userId]) => userId);
 
         const afterRanking = after.data.filter((item) => item.rank === 1);
+        const newLeader = afterRanking[0];
 
         // Emit only if: single new leader AND different from before
         if (
           afterRanking.length === 1 &&
-          !beforeLeader.includes(afterRanking[0].userId)
+          newLeader &&
+          !beforeLeader.includes(newLeader.userId)
         ) {
           await emitSystemEvent(
             g.id,
             "leader_change",
             {
-              userId: afterRanking[0].userId,
-              username: afterRanking[0].username || "Someone",
+              userId: newLeader.userId,
+              username: newLeader.username || "Someone",
             },
             io
           );

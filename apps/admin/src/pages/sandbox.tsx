@@ -90,6 +90,18 @@ export default function SandboxPage() {
   const fixtures = listData?.data?.fixtures ?? [];
   const groups = listData?.data?.groups ?? [];
 
+  // Group filter tab: "all" or group id (must be before filteredFixtures useMemo)
+  const [selectedGroupTab, setSelectedGroupTab] = React.useState<
+    number | "all"
+  >("all");
+
+  const filteredFixtures = React.useMemo(() => {
+    if (selectedGroupTab === "all") return fixtures;
+    const group = groups.find((g) => g.id === selectedGroupTab);
+    if (!group) return fixtures;
+    return fixtures.filter((f) => group.fixtureIds.includes(f.id));
+  }, [fixtures, groups, selectedGroupTab]);
+
   // Setup form
   const [setupForm, setSetupForm] = React.useState({
     selectionMode: "games" as "games" | "leagues" | "teams",
@@ -102,11 +114,6 @@ export default function SandboxPage() {
     groupName: "",
     startInMinutes: 60,
   });
-
-  // Group filter tab: null = All, number = group id
-  const [selectedGroupTab, setSelectedGroupTab] = React.useState<
-    number | "all"
-  >("all");
 
   // Add fixture dialog
   const [addFixtureDialog, setAddFixtureDialog] = React.useState<{
@@ -695,16 +702,6 @@ export default function SandboxPage() {
                 No sandbox data. Use Setup to create.
               </p>
             ) : (
-              (() => {
-                const filteredFixtures =
-                  selectedGroupTab === "all"
-                    ? fixtures
-                    : fixtures.filter((f) =>
-                        groups
-                          .find((g) => g.id === selectedGroupTab)
-                          ?.fixtureIds.includes(f.id)
-                      );
-                return (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -823,8 +820,7 @@ export default function SandboxPage() {
                   })}
                 </TableBody>
               </Table>
-              );
-            })()}
+            )}
           </CardContent>
         </Card>
       </div>
