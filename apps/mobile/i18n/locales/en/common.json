@@ -172,7 +172,8 @@
     "leader": "Leader: {{name}}",
     "endsApproximately": "Ends approximately {{date}}",
     "nextGameStarts": "Next game starts {{countdown}}",
-    "nextGameLabel": "Next game: {{countdown}}"
+    "nextGameLabel": "Next game: {{countdown}}",
+    "dateProgress": "Day {{current}} of {{total}}"
   },
   "predictions": {
     "saving": "Saving...",

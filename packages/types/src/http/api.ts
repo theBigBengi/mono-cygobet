@@ -341,7 +341,7 @@ export type ApiGroupItem = {
   nextGame?: ApiFixturesListResponse["data"][0] | null;
   /**
    * The first game of the group (earliest fixture).
-   * Only included for draft groups.
+   * Included for draft groups and active/ended groups.
    */
   firstGame?: ApiFixturesListResponse["data"][0] | null;
   /**

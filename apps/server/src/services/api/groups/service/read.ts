@@ -81,9 +81,11 @@ export async function getMyGroups(
       const liveGamesCount =
         stats.liveGamesCountByGroupId.get(group.id) ?? 0;
       const rawNextGame = stats.nextGameByGroupId.get(group.id) ?? null;
+      const rawFirstGame = stats.firstGameByGroupId.get(group.id) ?? null;
       const rawLastGame = stats.lastGameByGroupId.get(group.id) ?? null;
-      // Service layer decides: no prediction, no result for next/last game
+      // Service layer decides: no prediction, no result for next/first/last game
       const nextGame = formatFixtureFromDb(rawNextGame, null, null);
+      const firstGame = formatFixtureFromDb(rawFirstGame, null, null);
       const lastGame = formatFixtureFromDb(rawLastGame, null, null);
 
       return buildActiveGroupItem(
@@ -99,6 +101,7 @@ export async function getMyGroups(
           liveGamesCount,
         },
         nextGame,
+        firstGame,
         lastGame
       );
     }

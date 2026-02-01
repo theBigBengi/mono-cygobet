@@ -84,14 +84,15 @@ export function buildDraftGroupItem(
 }
 
 /**
- * Build an active/ended group item with stats, next game, and last game.
+ * Build an active/ended group item with stats, next game, first game, and last game.
  * Used by getMyGroups for active/ended groups.
  *
  * @param group - Group data from Prisma
  * @param stats - Group statistics
  * @param nextGame - Next game fixture or null
+ * @param firstGame - First game fixture or null
  * @param lastGame - Last game fixture or null
- * @returns Formatted group item with stats, nextGame, and lastGame
+ * @returns Formatted group item with stats, nextGame, firstGame, and lastGame
  */
 export function buildActiveGroupItem(
   group: {
@@ -114,10 +115,12 @@ export function buildActiveGroupItem(
     liveGamesCount: number;
   },
   nextGame: ApiFixturesListResponse["data"][0] | null,
+  firstGame: ApiFixturesListResponse["data"][0] | null,
   lastGame: ApiFixturesListResponse["data"][0] | null
 ): ApiGroupItem & {
   memberCount: number;
   nextGame: ApiFixturesListResponse["data"][0] | null;
+  firstGame: ApiFixturesListResponse["data"][0] | null;
   lastGame: ApiFixturesListResponse["data"][0] | null;
   predictionsCount: number;
   totalFixtures: number;
@@ -131,6 +134,7 @@ export function buildActiveGroupItem(
     ...buildGroupItem(group),
     ...stats,
     nextGame,
+    firstGame,
     lastGame,
   };
 }

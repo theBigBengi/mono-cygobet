@@ -10,6 +10,7 @@ import { formatKickoffDate, formatKickoffTime } from "@/utils/fixture";
 import { useCountdown } from "@/features/groups/predictions/hooks";
 import { useEntityTranslation } from "@/lib/i18n";
 import type { ApiGroupItem } from "@repo/types";
+import { GroupDateProgressBar } from "./GroupDateProgressBar";
 
 interface GroupActiveCardProps {
   group: ApiGroupItem;
@@ -156,24 +157,15 @@ export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActive
                       ` – ${t("lobby.gamesNeedPredictions", { count: unpredictedGamesCount })}`}
                     {unpredictedGamesCount === 0 && " ✓"}
                   </AppText>
-                  {group.totalFixtures > 0 && (
-                    <View
-                      style={[
-                        styles.progressTrack,
-                        { backgroundColor: theme.colors.border },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.progressFill,
-                          {
-                            backgroundColor: theme.colors.primary,
-                            width: `${(group.predictionsCount / group.totalFixtures) * 100}%`,
-                          },
-                        ]}
+                  {group.firstGame &&
+                    group.lastGame &&
+                    group.firstGame.kickoffAt &&
+                    group.lastGame.kickoffAt && (
+                      <GroupDateProgressBar
+                        startDate={group.firstGame.kickoffAt}
+                        endDate={group.lastGame.kickoffAt}
                       />
-                    </View>
-                  )}
+                    )}
                 </View>
               )}
 
@@ -292,16 +284,6 @@ const styles = StyleSheet.create({
   nextGameTime: {
     fontSize: 11,
     marginStart: 8,
-  },
-  progressTrack: {
-    height: 3,
-    borderRadius: 2,
-    marginTop: 4,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: 3,
-    borderRadius: 2,
   },
   liveBadge: {
     fontWeight: "600",

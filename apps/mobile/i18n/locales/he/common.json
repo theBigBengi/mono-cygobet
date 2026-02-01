@@ -172,7 +172,8 @@
     "leader": "מוביל: {{name}}",
     "endsApproximately": "מסתיים בערך {{date}}",
     "nextGameStarts": "המשחק הבא מתחיל {{countdown}}",
-    "nextGameLabel": "המשחק הבא: {{countdown}}"
+    "nextGameLabel": "המשחק הבא: {{countdown}}",
+    "dateProgress": "יום {{current}} מתוך {{total}}"
   },
   "predictions": {
     "saving": "שומר...",
