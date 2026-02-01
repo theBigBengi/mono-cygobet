@@ -1,11 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { addDays, format } from "date-fns";
+import { RunStatus } from "@repo/db";
 import { adapter } from "../utils/adapter";
 import type { FixtureDTO } from "@repo/types/sport-data/common";
 import { syncFixtures } from "../etl/sync/sync.fixtures";
+import { finishSeedBatch } from "../etl/seeds/seed.utils";
 import { JobRunOpts, type StandardJobRunStats } from "../types/jobs";
 import { UPCOMING_FIXTURES_JOB } from "./jobs.definitions";
-import { getJobRowOrThrow } from "./jobs.db";
+import { createBatchForJob, getJobRowOrThrow } from "./jobs.db";
 import { clampInt, getMeta, isUpcomingFixturesJobMeta } from "./jobs.meta";
 import { runJob } from "./run-job";
 
@@ -138,38 +140,67 @@ export async function runUpcomingFixturesJob(
         };
       }
 
-      const result = await syncFixtures(scheduled, {
-        dryRun: false,
-        signal: opts.signal,
-      });
-      const ok = result.inserted + result.updated;
-      return {
-        result: {
-          jobRunId,
-          batchId: null,
-          fetched: fetched.length,
-          scheduled: scheduled.length,
-          total: result.total,
-          ok,
-          fail: result.failed,
-          window: { from, to },
-          skipped: false,
-        },
-        rowsAffected: result.total,
-        meta: {
-          window: { from, to },
-          daysAhead,
+      let batchId: number | null = null;
+      try {
+        const batch = await createBatchForJob(upcomingFixturesJob.key, jobRunId);
+        batchId = batch.id;
+
+        const result = await syncFixtures(scheduled, {
           dryRun: false,
-          countFetched: fetched.length,
-          countScheduled: scheduled.length,
-          ok,
-          fail: result.failed,
-          total: result.total,
-          inserted: result.inserted,
-          updated: result.updated,
-          skipped: result.skipped,
-        },
-      };
+          signal: opts.signal,
+          batchId,
+        });
+        const ok = result.inserted + result.updated;
+
+        await finishSeedBatch(batchId, RunStatus.success, {
+          itemsTotal: result.total,
+          itemsSuccess: ok + result.skipped,
+          itemsFailed: result.failed,
+          meta: {
+            window: { from, to },
+            inserted: result.inserted,
+            updated: result.updated,
+            skipped: result.skipped,
+            failed: result.failed,
+          },
+        });
+
+        return {
+          result: {
+            jobRunId,
+            batchId,
+            fetched: fetched.length,
+            scheduled: scheduled.length,
+            total: result.total,
+            ok,
+            fail: result.failed,
+            window: { from, to },
+            skipped: false,
+          },
+          rowsAffected: result.total,
+          meta: {
+            batchId,
+            window: { from, to },
+            daysAhead,
+            dryRun: false,
+            countFetched: fetched.length,
+            countScheduled: scheduled.length,
+            ok,
+            fail: result.failed,
+            total: result.total,
+            inserted: result.inserted,
+            updated: result.updated,
+            skipped: result.skipped,
+          },
+        };
+      } catch (err) {
+        if (batchId != null) {
+          await finishSeedBatch(batchId, RunStatus.failed, {
+            errorMessage: err instanceof Error ? err.message : String(err),
+          });
+        }
+        throw err;
+      }
     },
   });
 }

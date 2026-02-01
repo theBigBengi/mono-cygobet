@@ -1,11 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { addDays, format } from "date-fns";
+import { RunStatus } from "@repo/db";
 import { adapter } from "../utils/adapter";
 import type { OddsDTO } from "@repo/types/sport-data/common";
 import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
 import { syncOdds } from "../etl/sync/sync.odds";
+import { finishSeedBatch } from "../etl/seeds/seed.utils";
 import { UPDATE_PREMATCH_ODDS_JOB } from "./jobs.definitions";
-import { getJobRowOrThrow } from "./jobs.db";
+import { createBatchForJob, getJobRowOrThrow } from "./jobs.db";
 import { getMeta } from "./jobs.meta";
 import { UpdatePrematchOddsJobMeta } from "@repo/types";
 import { runJob } from "./run-job";
@@ -128,33 +130,65 @@ export async function runUpdatePrematchOddsJob(
         };
       }
 
-      const result = await syncOdds(odds, { signal: opts.signal });
-      return {
-        result: {
-          jobRunId,
-          fetched: odds.length,
-          total: result.total,
-          inserted: result.inserted,
-          updated: result.updated,
-          skippedCount: result.skipped,
-          failed: result.failed,
-          window: { from, to },
-          skipped: false,
-        },
-        rowsAffected: result.total,
-        meta: {
-          window: { from, to },
-          daysAhead,
-          filters,
-          dryRun: false,
-          fetched: odds.length,
-          inserted: result.inserted,
-          updated: result.updated,
-          skipped: result.skipped,
-          failed: result.failed,
-          total: result.total,
-        },
-      };
+      let batchId: number | null = null;
+      try {
+        const batch = await createBatchForJob(updatePrematchOddsJob.key, jobRunId);
+        batchId = batch.id;
+
+        const result = await syncOdds(odds, {
+          signal: opts.signal,
+          batchId,
+        });
+        const ok = result.inserted + result.updated;
+
+        await finishSeedBatch(batchId, RunStatus.success, {
+          itemsTotal: result.total,
+          itemsSuccess: ok + result.skipped,
+          itemsFailed: result.failed,
+          meta: {
+            window: { from, to },
+            inserted: result.inserted,
+            updated: result.updated,
+            skipped: result.skipped,
+            failed: result.failed,
+          },
+        });
+
+        return {
+          result: {
+            jobRunId,
+            fetched: odds.length,
+            total: result.total,
+            inserted: result.inserted,
+            updated: result.updated,
+            skippedCount: result.skipped,
+            failed: result.failed,
+            window: { from, to },
+            skipped: false,
+          },
+          rowsAffected: result.total,
+          meta: {
+            batchId,
+            window: { from, to },
+            daysAhead,
+            filters,
+            dryRun: false,
+            fetched: odds.length,
+            inserted: result.inserted,
+            updated: result.updated,
+            skipped: result.skipped,
+            failed: result.failed,
+            total: result.total,
+          },
+        };
+      } catch (err) {
+        if (batchId != null) {
+          await finishSeedBatch(batchId, RunStatus.failed, {
+            errorMessage: err instanceof Error ? err.message : String(err),
+          });
+        }
+        throw err;
+      }
     },
   });
 }

@@ -82,6 +82,15 @@ function mapFixtureToResponse(f: any) {
     externalId: f.externalId.toString(),
     createdAt: f.createdAt.toISOString(),
     updatedAt: f.updatedAt.toISOString(),
+    scoreOverriddenAt: f.scoreOverriddenAt?.toISOString?.() ?? null,
+    scoreOverriddenById: f.scoreOverriddenById ?? null,
+    scoreOverriddenBy: f.scoreOverriddenBy
+      ? {
+          id: f.scoreOverriddenBy.id,
+          name: f.scoreOverriddenBy.name,
+          email: f.scoreOverriddenBy.email,
+        }
+      : null,
   };
 }
 
@@ -233,7 +242,9 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
 
       // Parse include string to Prisma include object
       const includeKeys = parseIncludeString(include);
-      const includeObj: Prisma.fixturesInclude = {};
+      const includeObj: Prisma.fixturesInclude = {
+        scoreOverriddenBy: { select: { id: true, name: true, email: true } },
+      };
 
       const teamSelect = {
         id: true,
@@ -261,10 +272,7 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
       });
 
       try {
-        const fixture = await service.getById(
-          fixtureId,
-          Object.keys(includeObj).length > 0 ? includeObj : undefined
-        );
+        const fixture = await service.getById(fixtureId, includeObj);
 
         return reply.send({
           status: "success",
@@ -339,6 +347,7 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply): Promise<AdminFixtureResponse> => {
       const { id } = req.params;
       const body = req.body;
+      const overriddenById = req.adminAuth?.user?.id ?? null;
 
       let fixtureId: number;
       try {
@@ -375,6 +384,7 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
           homeScore: body.homeScore,
           awayScore: body.awayScore,
           result: result,
+          overriddenById,
         });
 
         return reply.send({

@@ -222,6 +222,28 @@ export async function finishJobRunFailed(args: {
 }
 
 /**
+ * Create a seed batch for a job run so per-entity results can be written to seed_items.
+ * Jobs call this after startJobRun, then pass the returned id to sync layers (syncFixtures/syncOdds),
+ * and finally call finishSeedBatch from seed.utils to close the batch.
+ *
+ * @returns batch id to pass to sync and finishSeedBatch
+ */
+export async function createBatchForJob(
+  jobKey: string,
+  jobRunId: number
+): Promise<{ id: number }> {
+  const batch = await prisma.seedBatches.create({
+    data: {
+      name: jobKey,
+      status: RunStatus.running,
+      meta: { jobRunId } as Prisma.InputJsonObject,
+    },
+    select: { id: true },
+  });
+  return { id: batch.id };
+}
+
+/**
  * Mark orphaned job runs (stuck in "running" for too long) as failed.
  * Called periodically to prevent stale records from blocking admin UI signals.
  */

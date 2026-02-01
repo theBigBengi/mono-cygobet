@@ -44,7 +44,15 @@ export class FixturesService {
     }
 
     if (args.state !== undefined) {
-      where.state = args.state as any;
+      const states = args.state
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (states.length === 1) {
+        where.state = states[0] as any;
+      } else if (states.length > 1) {
+        where.state = { in: states as any[] };
+      }
     }
 
     // Date range filtering by startTs
@@ -128,6 +136,8 @@ export class FixturesService {
       homeScore?: number | null;
       awayScore?: number | null;
       result?: string | null;
+      /** When set, marks this update as a manual override (score/state) and records who did it. */
+      overriddenById?: number | null;
     }
   ) {
     const updateData: Prisma.fixturesUpdateInput = {};
@@ -152,9 +162,27 @@ export class FixturesService {
       updateData.result = data.result;
     }
 
+    const isScoreOrStateOverride =
+      data.homeScore !== undefined ||
+      data.awayScore !== undefined ||
+      data.state !== undefined ||
+      data.result !== undefined;
+    if (isScoreOrStateOverride) {
+      updateData.scoreOverriddenAt = new Date();
+      updateData.scoreOverriddenBy =
+        data.overriddenById != null
+          ? { connect: { id: data.overriddenById } }
+          : { disconnect: true };
+    }
+
     const fixture = await prisma.fixtures.update({
       where: { id },
       data: updateData,
+      include: {
+        scoreOverriddenBy: {
+          select: { id: true, name: true, email: true },
+        },
+      },
     });
 
     return fixture;

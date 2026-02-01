@@ -59,6 +59,7 @@ model users {
   userProfiles      userProfiles[]
   // publicPredictions publicPredictions[]
   userActivityEvents userActivityEvents[]
+  fixturesScoreOverridden fixtures[] @relation("FixtureScoreOverriddenBy")
 
   // groups groups[]
 
@@ -162,10 +163,13 @@ model fixtures {
   round       String?
   externalId  BigInt       @unique @map("external_id")
   hasOdds     Boolean      @default(false) @map("has_odds")
+  scoreOverriddenAt   DateTime? @map("score_overridden_at") @db.Timestamptz(6)
+  scoreOverriddenById Int?     @map("score_overridden_by_id")
   awayTeam    teams        @relation("fixtures_away_team_idToteams", fields: [awayTeamId], references: [id], onUpdate: NoAction)
   homeTeam    teams        @relation("fixtures_home_team_idToteams", fields: [homeTeamId], references: [id], onUpdate: NoAction)
   league      leagues?     @relation(fields: [leagueId], references: [id], onUpdate: NoAction)
   season      seasons?     @relation(fields: [seasonId], references: [id], onUpdate: NoAction)
+  scoreOverriddenBy users?  @relation("FixtureScoreOverriddenBy", fields: [scoreOverriddenById], references: [id], onDelete: SetNull)
   odds        odds[]
   // predictions    predictions[]
   // publicPredictions publicPredictions[]

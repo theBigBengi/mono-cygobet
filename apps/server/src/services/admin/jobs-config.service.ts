@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import cron from "node-cron";
 import { Prisma, prisma } from "@repo/db";
 import type {
+  AdminJobDetailResponse,
   AdminJobsListResponse,
   AdminUpdateJobResponse,
 } from "@repo/types";
@@ -78,7 +79,7 @@ const selectJobWithLastRun = Prisma.validator<Prisma.jobsSelect>()({
   createdAt: true,
   updatedAt: true,
   runs: {
-    take: 1,
+    take: 10,
     orderBy: { startedAt: "desc" },
     select: {
       id: true,
@@ -93,6 +94,36 @@ const selectJobWithLastRun = Prisma.validator<Prisma.jobsSelect>()({
     },
   },
 });
+
+const selectJobWithLast10Runs = Prisma.validator<Prisma.jobsSelect>()({
+  key: true,
+  description: true,
+  scheduleCron: true,
+  enabled: true,
+  meta: true,
+  createdAt: true,
+  updatedAt: true,
+  runs: {
+    take: 10,
+    orderBy: { startedAt: "desc" },
+    select: {
+      id: true,
+      status: true,
+      trigger: true,
+      triggeredBy: true,
+      startedAt: true,
+      finishedAt: true,
+      durationMs: true,
+      rowsAffected: true,
+      errorMessage: true,
+      meta: true,
+    },
+  },
+});
+
+type JobWithLast10Runs = Prisma.jobsGetPayload<{
+  select: typeof selectJobWithLast10Runs;
+}>;
 
 type JobWithLastRun = Prisma.jobsGetPayload<{
   select: typeof selectJobWithLastRun;
@@ -111,6 +142,40 @@ export class AdminJobsConfigService {
   constructor(private fastify: FastifyInstance) {}
 
   /**
+   * Get a single job by key with last 10 runs (for job detail page).
+   * Throws NotFoundError if job does not exist.
+   */
+  async getJob(jobKey: string): Promise<AdminJobDetailResponse["data"]> {
+    const job: JobWithLast10Runs | null = await prisma.jobs.findUnique({
+      where: { key: jobKey },
+      select: selectJobWithLast10Runs,
+    });
+    if (!job) throw new NotFoundError(`Job '${jobKey}' not found`);
+    return {
+      key: job.key,
+      description: job.description ?? null,
+      scheduleCron: job.scheduleCron ?? null,
+      enabled: job.enabled,
+      meta: normalizeMeta(job.meta),
+      runnable: isJobRunnable(job.key),
+      createdAt: job.createdAt.toISOString(),
+      updatedAt: job.updatedAt.toISOString(),
+      lastRuns: (job.runs ?? []).map((r) => ({
+        id: r.id,
+        status: String(r.status),
+        trigger: String(r.trigger),
+        triggeredBy: r.triggeredBy ? String(r.triggeredBy) : null,
+        startedAt: r.startedAt.toISOString(),
+        finishedAt: r.finishedAt?.toISOString() ?? null,
+        durationMs: r.durationMs ?? null,
+        rowsAffected: r.rowsAffected ?? null,
+        errorMessage: r.errorMessage ?? null,
+        meta: (r.meta ?? {}) as Record<string, unknown>,
+      })),
+    };
+  }
+
+  /**
    * List jobs from DB including:
    * - last run (latest)
    * - derived runnable flag (from job registry)
@@ -122,7 +187,8 @@ export class AdminJobsConfigService {
     });
 
     return jobs.map((j) => {
-      const lastRun = j.runs?.[0];
+      const runs = j.runs ?? [];
+      const lastRun = runs[0];
       return {
         key: j.key,
         description: j.description ?? null,
@@ -147,6 +213,13 @@ export class AdminJobsConfigService {
               errorMessage: lastRun.errorMessage ?? null,
             }
           : null,
+        lastRuns: runs.slice(0, 10).map((r) => ({
+          id: r.id,
+          status: String(r.status),
+          startedAt: r.startedAt.toISOString(),
+          durationMs: r.durationMs ?? null,
+          rowsAffected: r.rowsAffected ?? null,
+        })),
       } satisfies JobRow;
     });
   }

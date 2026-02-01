@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   flexRender,
   getCoreRowModel,
@@ -97,6 +98,7 @@ export function FixturesTable({
     pageIndex: 0,
     pageSize: 25,
   });
+  const navigate = useNavigate();
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   const [selectedFixture, setSelectedFixture] = useState<UnifiedFixture | null>(
     null
@@ -610,6 +612,14 @@ export function FixturesTable({
   });
 
   const handleRowClick = (fixture: UnifiedFixture | FixtureDBRow) => {
+    const dbId =
+      mode === "provider"
+        ? (fixture as UnifiedFixture).dbData?.id
+        : (fixture as FixtureDBRow).id;
+    if (dbId != null && Number.isFinite(dbId)) {
+      navigate(`/fixtures/${dbId}`);
+      return;
+    }
     if (mode === "provider") {
       setSelectedFixture(fixture as UnifiedFixture);
     } else {

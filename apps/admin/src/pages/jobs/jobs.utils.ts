@@ -19,6 +19,23 @@ export function formatDateTime(iso: string | null) {
   return d.toLocaleString();
 }
 
+/** Relative time e.g. "3 min ago", "1 h ago" */
+export function formatRelativeTime(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffSec < 60) return "just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  if (diffHour < 24) return `${diffHour} h ago`;
+  if (diffDay < 7) return `${diffDay} d ago`;
+  return d.toLocaleDateString();
+}
+
 export function formatDurationMs(ms: number | null) {
   if (ms == null) return "—";
   if (ms < 1000) return `${ms}ms`;
@@ -214,4 +231,26 @@ export function isNoOp(
   rowsAffected: number | null
 ): boolean {
   return !!meta["reason"] || rowsAffected === 0;
+}
+
+/** Summary string from run meta: "15 processed: 12 updated, 2 inserted, 1 skipped" */
+export function formatRunSummary(meta: Record<string, unknown>): string {
+  const total =
+    typeof meta["total"] === "number"
+      ? meta["total"]
+      : typeof meta["ok"] === "number"
+        ? meta["ok"]
+        : null;
+  const inserted =
+    typeof meta["inserted"] === "number" ? meta["inserted"] : 0;
+  const updated = typeof meta["updated"] === "number" ? meta["updated"] : 0;
+  const skipped = typeof meta["skipped"] === "number" ? meta["skipped"] : 0;
+  const failed = typeof meta["fail"] === "number" ? meta["fail"] : 0;
+  if (total == null) return "—";
+  const parts: string[] = [];
+  if (updated) parts.push(`${updated} updated`);
+  if (inserted) parts.push(`${inserted} inserted`);
+  if (skipped) parts.push(`${skipped} skipped`);
+  if (failed) parts.push(`${failed} failed`);
+  return `${total} processed${parts.length ? `: ${parts.join(", ")}` : ""}`;
 }

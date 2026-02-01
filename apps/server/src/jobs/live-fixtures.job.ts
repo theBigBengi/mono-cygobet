@@ -1,12 +1,14 @@
 import type { FastifyInstance } from "fastify";
-import { prisma } from "@repo/db";
+import { RunStatus, prisma } from "@repo/db";
 import type { FixtureState } from "@repo/db";
 import { NOT_STARTED_STATES, LIVE_STATES } from "@repo/utils";
 import { adapter } from "../utils/adapter";
 import { syncFixtures } from "../etl/sync/sync.fixtures";
+import { finishSeedBatch } from "../etl/seeds/seed.utils";
 import { emitFixtureLiveEvents } from "../services/api/groups/service/chat-events";
 import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
 import { LIVE_FIXTURES_JOB } from "./jobs.definitions";
+import { createBatchForJob } from "./jobs.db";
 import { runJob } from "./run-job";
 
 /**
@@ -67,69 +69,98 @@ export async function runLiveFixturesJob(
         };
       }
 
-      // Snapshot NS fixtures before sync to detect NS → LIVE transitions
-      const fetchedExternalIds = fixtures.map((f) => BigInt(f.externalId));
-      const preStates =
-        fetchedExternalIds.length > 0
-          ? await prisma.fixtures.findMany({
-              where: {
-                externalId: { in: fetchedExternalIds },
-                state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
-              },
-              select: { id: true, externalId: true },
-            })
-          : [];
-      const nsFixtureIds = new Set(preStates.map((f) => f.id));
+      let batchId: number | null = null;
+      try {
+        const batch = await createBatchForJob(liveFixturesJob.key, jobRunId);
+        batchId = batch.id;
 
-      const result = await syncFixtures(fixtures, {
-        dryRun: false,
-        signal: opts.signal,
-      });
+        // Snapshot NS fixtures before sync to detect NS → LIVE transitions
+        const fetchedExternalIds = fixtures.map((f) => BigInt(f.externalId));
+        const preStates =
+          fetchedExternalIds.length > 0
+            ? await prisma.fixtures.findMany({
+                where: {
+                  externalId: { in: fetchedExternalIds },
+                  state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
+                },
+                select: { id: true, externalId: true },
+              })
+            : [];
+        const nsFixtureIds = new Set(preStates.map((f) => f.id));
 
-      // Emit fixture_live chat events for fixtures that transitioned NS → LIVE
-      if (nsFixtureIds.size > 0) {
-        const nowLive = await prisma.fixtures.findMany({
-          where: {
-            id: { in: Array.from(nsFixtureIds) },
-            state: { in: [...LIVE_STATES] as FixtureState[] },
-          },
-          select: {
-            id: true,
-            homeTeam: { select: { name: true } },
-            awayTeam: { select: { name: true } },
+        const result = await syncFixtures(fixtures, {
+          dryRun: false,
+          signal: opts.signal,
+          batchId,
+        });
+
+        const ok = result.inserted + result.updated;
+        await finishSeedBatch(batchId, RunStatus.success, {
+          itemsTotal: result.total,
+          itemsSuccess: ok + result.skipped,
+          itemsFailed: result.failed,
+          meta: {
+            fetched: fixtures.length,
+            inserted: result.inserted,
+            updated: result.updated,
+            skipped: result.skipped,
+            failed: result.failed,
           },
         });
 
-        if (nowLive.length > 0) {
-          await emitFixtureLiveEvents(
-            nowLive as { id: number; homeTeam: { name: string } | null; awayTeam: { name: string } | null }[],
-            fastify.io
-          );
+        // Emit fixture_live chat events for fixtures that transitioned NS → LIVE
+        if (nsFixtureIds.size > 0) {
+          const nowLive = await prisma.fixtures.findMany({
+            where: {
+              id: { in: Array.from(nsFixtureIds) },
+              state: { in: [...LIVE_STATES] as FixtureState[] },
+            },
+            select: {
+              id: true,
+              homeTeam: { select: { name: true } },
+              awayTeam: { select: { name: true } },
+            },
+          });
+
+          if (nowLive.length > 0) {
+            await emitFixtureLiveEvents(
+              nowLive as { id: number; homeTeam: { name: string } | null; awayTeam: { name: string } | null }[],
+              fastify.io
+            );
+          }
         }
+
+        return {
+          result: {
+            jobRunId,
+            fetched: fixtures.length,
+            batchId,
+            total: result.total,
+            ok,
+            fail: result.failed,
+            skipped: false,
+          },
+          rowsAffected: result.total,
+          meta: {
+            batchId,
+            fetched: fixtures.length,
+            ok,
+            fail: result.failed,
+            total: result.total,
+            inserted: result.inserted,
+            updated: result.updated,
+            skipped: result.skipped,
+            ...(opts.meta ?? {}),
+          },
+        };
+      } catch (err) {
+        if (batchId != null) {
+          await finishSeedBatch(batchId, RunStatus.failed, {
+            errorMessage: err instanceof Error ? err.message : String(err),
+          });
+        }
+        throw err;
       }
-      const ok = result.inserted + result.updated;
-      return {
-        result: {
-          jobRunId,
-          fetched: fixtures.length,
-          batchId: null,
-          total: result.total,
-          ok,
-          fail: result.failed,
-          skipped: false,
-        },
-        rowsAffected: result.total,
-        meta: {
-          fetched: fixtures.length,
-          ok,
-          fail: result.failed,
-          total: result.total,
-          inserted: result.inserted,
-          updated: result.updated,
-          skipped: result.skipped,
-          ...(opts.meta ?? {}),
-        },
-      };
     },
   });
 }

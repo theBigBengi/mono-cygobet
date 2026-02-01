@@ -1,13 +1,15 @@
 /**
- * Sync layer for fixtures: incremental updates only. No seedBatches/seedItems.
- * Caller is responsible for fetch; sync receives DTOs and writes (or skips) based on comparison.
+ * Sync layer for fixtures: incremental updates only.
+ * When opts.batchId is provided, writes per-fixture results to seed_items.
  */
 import type { FixtureDTO } from "@repo/types/sport-data/common";
-import { FixtureState, prisma } from "@repo/db";
+import type { Prisma } from "@repo/db";
+import { FixtureState, RunStatus, prisma } from "@repo/db";
 import {
   transformFixtureDto,
   isValidFixtureStateTransition,
 } from "../transform/fixtures.transform";
+import { trackSeedItem } from "../seeds/seed.utils";
 import { chunk, safeBigInt } from "../utils";
 import { getLogger } from "../../logger";
 
@@ -97,15 +99,92 @@ function isSameFixture(
   );
 }
 
+type ResolvedPayload = {
+  name: string;
+  leagueId: number | null;
+  seasonId: number | null;
+  homeTeamId: number;
+  awayTeamId: number;
+  startIso: string;
+  startTs: number;
+  state: DbFixtureState;
+  liveMinute: number | null;
+  result: string | null;
+  homeScore: number | null;
+  awayScore: number | null;
+  homeScore90: number | null;
+  awayScore90: number | null;
+  homeScoreET: number | null;
+  awayScoreET: number | null;
+  penHome: number | null;
+  penAway: number | null;
+  stage: string | null;
+  round: string | null;
+};
+
+function toChangeVal(v: string | number | null | undefined): string {
+  if (v === null || v === undefined) return "null";
+  return String(v);
+}
+
+/** Build diff object for updated fixtures: only fields that changed, format "old→new". */
+function buildFixtureChanges(
+  existing: ExistingRow,
+  resolved: ResolvedPayload
+): Record<string, string> {
+  const changes: Record<string, string> = {};
+  const fields: (keyof ResolvedPayload)[] = [
+    "name",
+    "state",
+    "liveMinute",
+    "result",
+    "homeScore",
+    "awayScore",
+    "homeScore90",
+    "awayScore90",
+    "homeScoreET",
+    "awayScoreET",
+    "penHome",
+    "penAway",
+    "stage",
+    "round",
+  ];
+  for (const k of fields) {
+    const oldVal = (existing as Record<string, unknown>)[k];
+    const newVal = resolved[k];
+    if (toChangeVal(oldVal as string | number | null) !== toChangeVal(newVal as string | number | null)) {
+      changes[k] = `${toChangeVal(oldVal as string | number | null)}→${toChangeVal(newVal as string | number | null)}`;
+    }
+  }
+  return changes;
+}
+
+type FixtureOutcome =
+  | { outcome: "inserted"; fixture: FixtureDTO; resolvedPayload: ResolvedPayload }
+  | {
+      outcome: "updated";
+      fixture: FixtureDTO;
+      existing: ExistingRow;
+      resolvedPayload: ResolvedPayload;
+    }
+  | {
+      outcome: "skipped";
+      reason: "no-change" | "invalid-state-transition";
+      fixture: FixtureDTO;
+      existing?: ExistingRow;
+      resolvedPayload: ResolvedPayload;
+    };
+
 /**
  * Sync fixtures: transform, resolve FKs, compare with DB, then insert/update/skip.
- * No fetch; no seedBatches/seedItems.
+ * When opts.batchId is set (and not dryRun), writes per-fixture seed_items.
  */
 export async function syncFixtures(
   fixtures: FixtureDTO[],
-  opts?: { dryRun?: boolean; signal?: AbortSignal }
+  opts?: { dryRun?: boolean; signal?: AbortSignal; batchId?: number }
 ): Promise<SyncFixturesResult> {
   const dryRun = !!opts?.dryRun;
+  const batchId = opts?.batchId;
   let inserted = 0;
   let updated = 0;
   let skipped = 0;
@@ -118,13 +197,30 @@ export async function syncFixtures(
   // De-dupe by externalId
   const seen = new Set<string>();
   const uniqueFixtures: FixtureDTO[] = [];
+  const duplicates: FixtureDTO[] = [];
   for (const f of fixtures) {
     const key = String(f.externalId);
-    if (seen.has(key)) skipped += 1;
-    else {
+    if (seen.has(key)) {
+      skipped += 1;
+      if (batchId && !dryRun) duplicates.push(f);
+    } else {
       seen.add(key);
       uniqueFixtures.push(f);
     }
+  }
+
+  if (batchId && !dryRun && duplicates.length > 0) {
+    await Promise.all(
+      duplicates.map((f) =>
+        trackSeedItem(
+          batchId,
+          `fixture:${f.externalId}`,
+          RunStatus.skipped,
+          undefined,
+          { name: f.name ?? "", action: "skipped", reason: "duplicate" }
+        )
+      )
+    );
   }
 
   // Batch resolve leagues, seasons, teams
@@ -196,6 +292,7 @@ export async function syncFixtures(
         startIso: true,
         startTs: true,
         state: true,
+        liveMinute: true,
         result: true,
         homeScore: true,
         awayScore: true,
@@ -214,7 +311,7 @@ export async function syncFixtures(
     );
 
     const results = await Promise.allSettled(
-      group.map(async (fixture) => {
+      group.map(async (fixture): Promise<FixtureOutcome> => {
         const extIdKey = String(safeBigInt(fixture.externalId));
         const existing = existingByExtId.get(extIdKey);
 
@@ -252,7 +349,7 @@ export async function syncFixtures(
           );
         }
 
-        const resolvedPayload = {
+        const resolvedPayload: ResolvedPayload = {
           name: payload.name,
           leagueId,
           seasonId,
@@ -281,7 +378,13 @@ export async function syncFixtures(
             { externalId: fixture.externalId, current: existing.state, next: payload.state },
             "Invalid fixture state transition; skipping update"
           );
-          return "skipped" as const;
+          return {
+            outcome: "skipped",
+            reason: "invalid-state-transition",
+            fixture,
+            existing,
+            resolvedPayload,
+          };
         }
 
         if (!existing) {
@@ -298,11 +401,17 @@ export async function syncFixtures(
               },
             });
           }
-          return "inserted" as const;
+          return { outcome: "inserted", fixture, resolvedPayload };
         }
 
         if (isSameFixture(existing, resolvedPayload)) {
-          return "skipped" as const;
+          return {
+            outcome: "skipped",
+            reason: "no-change",
+            fixture,
+            existing,
+            resolvedPayload,
+          };
         }
 
         if (!dryRun) {
@@ -318,15 +427,17 @@ export async function syncFixtures(
             },
           });
         }
-        return "updated" as const;
+        return { outcome: "updated", fixture, existing, resolvedPayload };
       })
     );
 
     for (let i = 0; i < results.length; i++) {
       const r = results[i]!;
       const fixture = group[i]!;
+      const itemKey = `fixture:${fixture.externalId}`;
       if (r.status === "fulfilled") {
-        switch (r.value) {
+        const v = r.value;
+        switch (v.outcome) {
           case "inserted":
             inserted += 1;
             break;
@@ -337,12 +448,32 @@ export async function syncFixtures(
             skipped += 1;
             break;
         }
+        if (batchId && !dryRun) {
+          const meta: Prisma.InputJsonObject = {
+            name: fixture.name ?? "",
+            action: v.outcome === "skipped" ? "skipped" : v.outcome,
+            ...(v.outcome === "skipped" && v.reason ? { reason: v.reason } : {}),
+            ...(v.outcome === "updated" && v.existing && v.resolvedPayload
+              ? { changes: buildFixtureChanges(v.existing, v.resolvedPayload) }
+              : {}),
+          };
+          const status =
+            v.outcome === "skipped" ? RunStatus.skipped : RunStatus.success;
+          await trackSeedItem(batchId, itemKey, status, undefined, meta);
+        }
       } else {
         log.warn(
           { externalId: fixture.externalId, error: r.reason },
           "Fixture sync failed (Promise rejected)"
         );
         failed += 1;
+        if (batchId && !dryRun) {
+          const err = r.reason as { message?: string } | undefined;
+          const errorMessage = (err?.message ?? String(r.reason)).slice(0, 500);
+          await trackSeedItem(batchId, itemKey, RunStatus.failed, errorMessage, {
+            name: fixture.name ?? "",
+          });
+        }
       }
     }
   }

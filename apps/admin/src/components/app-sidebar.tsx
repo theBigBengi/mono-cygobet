@@ -24,75 +24,28 @@ import {
 const data = {
   navMain: [
     {
-      title: "Data",
+      title: "Dashboard",
+      items: [{ title: "Home", url: "/" }],
+    },
+    {
+      title: "Operations",
       items: [
-        {
-          title: "Sync Center",
-          url: "/sync-center",
-        },
-        {
-          title: "Seasons",
-          url: "/seasons",
-        },
-        {
-          title: "Countries",
-          url: "/countries",
-        },
-        {
-          title: "Leagues",
-          url: "/leagues",
-        },
-        {
-          title: "Teams",
-          url: "/teams",
-        },
-        {
-          title: "Bookmakers",
-          url: "/bookmakers",
-        },
-        {
-          title: "Odds",
-          url: "/odds",
-        },
-        {
-          title: "Fixtures",
-          url: "/fixtures",
-        },
+        { title: "Fixtures", url: "/fixtures" },
+        { title: "Jobs", url: "/jobs" },
       ],
     },
     {
-      title: "Automation",
+      title: "Tools",
       items: [
-        {
-          title: "Jobs",
-          url: "/jobs",
-        },
-        {
-          title: "Sandbox",
-          url: "/sandbox",
-        },
+        { title: "Sync Center", url: "/sync-center" },
+        { title: "Sandbox", url: "/sandbox" },
       ],
     },
     {
       title: "Admin",
       items: [
-        {
-          title: "Users",
-          url: "/users",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      items: [
-        {
-          title: "User",
-          url: "/settings/user",
-        },
-        {
-          title: "System",
-          url: "/settings/system",
-        },
+        { title: "Users", url: "/users" },
+        { title: "Settings", url: "/settings" },
       ],
     },
   ],

@@ -1,19 +1,15 @@
 import type { RouteObject } from "react-router-dom";
 import { AdminGuard } from "@/auth/AdminGuard";
-import CountriesPage from "@/pages/countries";
-import LeaguesPage from "@/pages/leagues";
-import TeamsPage from "@/pages/teams";
-import SeasonsPage from "@/pages/seasons";
-import BookmakersPage from "@/pages/bookmakers";
+import DashboardPage from "@/pages/dashboard";
 import FixturesPage from "@/pages/fixtures";
-import OddsPage from "@/pages/odds";
+import FixtureDetailPage from "@/pages/fixtures/fixture-detail";
 import SyncCenterPage from "@/pages/sync-center";
-import JobsPage from "@/pages/jobs";
+import JobsListPage from "@/pages/jobs/jobs-list";
+import JobDetailPage from "@/pages/jobs/job-detail";
+import RunDetailPage from "@/pages/jobs/run-detail";
 import SandboxPage from "@/pages/sandbox";
 import UsersPage from "@/pages/users";
-import SettingsPage from "@/pages/settings";
 import UserSettingsPage from "@/pages/settings/user";
-import SystemSettingsPage from "@/pages/settings/system";
 import LoginPage from "@/pages/login";
 import { AdminLayout } from "@/components/layout";
 
@@ -32,21 +28,16 @@ export const routes: RouteObject[] = [
       </AdminGuard>
     ),
     children: [
-      { path: "/", element: <SyncCenterPage /> },
+      { path: "/", element: <DashboardPage /> },
       { path: "/sync-center", element: <SyncCenterPage /> },
-      { path: "/countries", element: <CountriesPage /> },
-      { path: "/leagues", element: <LeaguesPage /> },
-      { path: "/teams", element: <TeamsPage /> },
-      { path: "/seasons", element: <SeasonsPage /> },
-      { path: "/bookmakers", element: <BookmakersPage /> },
-      { path: "/odds", element: <OddsPage /> },
       { path: "/fixtures", element: <FixturesPage /> },
-      { path: "/jobs", element: <JobsPage /> },
+      { path: "/fixtures/:id", element: <FixtureDetailPage /> },
+      { path: "/jobs", element: <JobsListPage /> },
+      { path: "/jobs/:jobKey", element: <JobDetailPage /> },
+      { path: "/jobs/:jobKey/runs/:runId", element: <RunDetailPage /> },
       { path: "/sandbox", element: <SandboxPage /> },
       { path: "/users", element: <UsersPage /> },
-      { path: "/settings", element: <SettingsPage /> },
-      { path: "/settings/user", element: <UserSettingsPage /> },
-      { path: "/settings/system", element: <SystemSettingsPage /> },
+      { path: "/settings", element: <UserSettingsPage /> },
       {
         path: "*",
         element: (

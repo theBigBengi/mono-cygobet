@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Filter } from "lucide-react";
@@ -31,10 +32,13 @@ type DateRange = {
 };
 
 export default function FixturesPage() {
+  const [searchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<ViewMode | "history">("provider");
   const [diffFilter, setDiffFilter] = useState<DiffFilter>("all");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  const stateFromUrl = searchParams.get("state");
 
   // Initialize date range: 3 days back and 4 days ahead
   const defaultDateRange = useMemo<DateRange>(() => {
@@ -52,10 +56,17 @@ export default function FixturesPage() {
   const [appliedDateRange, setAppliedDateRange] = useState<
     DateRange | undefined
   >(defaultDateRange);
+  const [appliedState, setAppliedState] = useState<string | undefined>(
+    () => stateFromUrl || undefined
+  );
   const [appliedLeagueIds, setAppliedLeagueIds] = useState<string[]>([]); // External IDs
   const [appliedCountryIds, setAppliedCountryIds] = useState<string[]>([]); // External IDs
   const [dbPage, setDbPage] = useState(1);
   const [dbPageSize, setDbPageSize] = useState(25);
+
+  useEffect(() => {
+    setAppliedState(stateFromUrl || undefined);
+  }, [stateFromUrl]);
 
   // Temporary filter states (for UI, not applied until submit)
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>(
@@ -185,6 +196,7 @@ export default function FixturesPage() {
     perPage: 1000,
     leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
     countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
+    state: appliedState,
     fromTs,
     toTs,
   });
@@ -194,6 +206,7 @@ export default function FixturesPage() {
     perPage: dbPageSize,
     leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
     countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
+    state: appliedState,
     fromTs,
     toTs,
   });

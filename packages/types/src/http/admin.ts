@@ -227,6 +227,14 @@ export interface AdminJobsListResponse {
       rowsAffected: number | null;
       errorMessage: string | null;
     };
+    /** Last 10 runs for mini bar on list cards (optional). */
+    lastRuns?: Array<{
+      id: number;
+      status: string;
+      startedAt: string;
+      durationMs: number | null;
+      rowsAffected: number | null;
+    }>;
   }>;
   message: string;
 }
@@ -234,6 +242,41 @@ export interface AdminJobsListResponse {
 export interface AdminUpdateJobResponse {
   status: string;
   data: AdminJobsListResponse["data"][0] | null;
+  message: string;
+}
+
+/** Single job with last 10 runs (for job detail page). */
+export interface AdminJobDetailResponse {
+  status: string;
+  data: {
+    key: string;
+    description: string | null;
+    scheduleCron: string | null;
+    enabled: boolean;
+    meta: Record<string, unknown>;
+    runnable: boolean;
+    createdAt: string;
+    updatedAt: string;
+    lastRuns: Array<{
+      id: number;
+      status: string;
+      trigger: string;
+      triggeredBy: string | null;
+      startedAt: string;
+      finishedAt: string | null;
+      durationMs: number | null;
+      rowsAffected: number | null;
+      errorMessage: string | null;
+      meta: Record<string, unknown>;
+    }>;
+  } | null;
+  message: string;
+}
+
+/** Single job run (for run detail page). */
+export interface AdminJobRunResponse {
+  status: string;
+  data: AdminJobRunsListResponse["data"][0] | null;
   message: string;
 }
 
@@ -744,6 +787,11 @@ export interface AdminFixtureResponse {
     externalId: string;
     createdAt: string;
     updatedAt: string;
+    /** Set when score/state was manually overridden (vs provider). Present after server supports override audit. */
+    scoreOverriddenAt?: string | null;
+    /** Admin user who last overrode score/state. */
+    scoreOverriddenById?: number | null;
+    scoreOverriddenBy?: { id: number; name: string | null; email: string } | null;
   };
   message: string;
 }
@@ -795,6 +843,24 @@ export interface AdminSyncFixturesResponse {
   message: string;
 }
 
+/** Response shape for POST /admin/fixtures/:id/resettle */
+export interface AdminFixtureResettleResponse {
+  groupsAffected: number;
+  predictionsRecalculated: number;
+}
+
+/** One group in settlement summary for a fixture */
+export interface AdminFixtureSettlementGroup {
+  groupId: number;
+  groupName: string;
+  predictionsSettled: number;
+}
+
+/** Response shape for GET /admin/fixtures/:id/settlement */
+export interface AdminFixtureSettlementSummaryResponse {
+  groups: AdminFixtureSettlementGroup[];
+}
+
 export interface AdminSyncTeamsResponse {
   status: string;
   data: {
@@ -804,4 +870,28 @@ export interface AdminSyncTeamsResponse {
     total: number;
   };
   message: string;
+}
+
+export interface AdminDashboardRecentFailedJob {
+  id: number;
+  jobKey: string;
+  errorMessage: string | null;
+  startedAt: string;
+}
+
+export interface AdminDashboardFixtureNeedingAttention {
+  id: number;
+  name: string;
+  state: string;
+  updatedAt: string;
+  issue: string;
+}
+
+export interface AdminDashboardResponse {
+  liveCount: number;
+  pendingSettlement: number;
+  failedJobs24h: number;
+  stuckFixtures: number;
+  recentFailedJobs: AdminDashboardRecentFailedJob[];
+  fixturesNeedingAttention: AdminDashboardFixtureNeedingAttention[];
 }

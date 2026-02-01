@@ -1,13 +1,15 @@
 /**
- * Sync layer for odds: incremental updates only. No seedBatches/seedItems.
- * Caller is responsible for fetch; sync receives DTOs and writes (or skips) based on comparison.
+ * Sync layer for odds: incremental updates only.
+ * When opts.batchId is provided, writes one seed_item per fixture (odds group).
  */
 import type { OddsDTO } from "@repo/types/sport-data/common";
-import { prisma } from "@repo/db";
+import type { Prisma } from "@repo/db";
+import { RunStatus, prisma } from "@repo/db";
 import {
   transformOddsDto,
   type OddsTransformResult,
 } from "../transform/odds.transform";
+import { trackSeedItem } from "../seeds/seed.utils";
 import { chunk, safeBigInt } from "../utils";
 import { getLogger } from "../../logger";
 
@@ -110,19 +112,29 @@ function buildOddsUpsertArgs(
   return { create, update };
 }
 
+type PerFixtureStats = {
+  inserted: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+};
+
 /**
  * Sync odds: transform, resolve FKs, compare with DB, then insert/update/skip.
- * No fetch; no seedBatches/seedItems. Does not create missing bookmakers.
+ * When opts.batchId is set (and not dryRun), writes one seed_item per fixture with meta (name, oddsCount, action, reason).
  */
 export async function syncOdds(
   odds: OddsDTO[],
-  opts?: { dryRun?: boolean; signal?: AbortSignal }
+  opts?: { dryRun?: boolean; signal?: AbortSignal; batchId?: number }
 ): Promise<SyncOddsResult> {
   const dryRun = !!opts?.dryRun;
+  const batchId = opts?.batchId;
   let inserted = 0;
   let updated = 0;
   let skipped = 0;
   let failed = 0;
+
+  const fixtureStats = new Map<string, PerFixtureStats>();
 
   if (!odds?.length) {
     return { inserted: 0, updated: 0, skipped: 0, failed: 0, total: 0 };
@@ -282,16 +294,24 @@ export async function syncOdds(
     for (let i = 0; i < results.length; i++) {
       const r = results[i]!;
       const odd = group[i]!;
+      const extKey = String(odd.fixtureExternalId);
+      if (!fixtureStats.has(extKey)) {
+        fixtureStats.set(extKey, { inserted: 0, updated: 0, skipped: 0, failed: 0 });
+      }
+      const stats = fixtureStats.get(extKey)!;
       if (r.status === "fulfilled") {
         switch (r.value) {
           case "inserted":
             inserted += 1;
+            stats.inserted += 1;
             break;
           case "updated":
             updated += 1;
+            stats.updated += 1;
             break;
           case "skipped":
             skipped += 1;
+            stats.skipped += 1;
             break;
         }
       } else {
@@ -300,6 +320,7 @@ export async function syncOdds(
           "Odd sync failed (Promise rejected)"
         );
         failed += 1;
+        stats.failed += 1;
       }
     }
   }
@@ -310,6 +331,54 @@ export async function syncOdds(
       where: { id: { in: Array.from(fixturesToFlag) } },
       data: { hasOdds: true },
     });
+  }
+
+  if (batchId && !dryRun && fixtureStats.size > 0) {
+    const fixtureExternalIds = Array.from(fixtureStats.keys()).map((id) =>
+      safeBigInt(id)
+    );
+    const fixtures = await prisma.fixtures.findMany({
+      where: { externalId: { in: fixtureExternalIds } },
+      select: { id: true, externalId: true, name: true },
+    });
+    for (const fixture of fixtures) {
+      const extKey = String(fixture.externalId);
+      const stats = fixtureStats.get(extKey);
+      if (!stats) continue;
+      const oddsCount =
+        stats.inserted + stats.updated + stats.skipped + stats.failed;
+      const action =
+        stats.updated > 0
+          ? "updated"
+          : stats.inserted > 0
+            ? "inserted"
+            : "skipped";
+      const reason =
+        stats.failed > 0
+          ? "partial-failure"
+          : stats.skipped === oddsCount
+            ? "no-change"
+            : undefined;
+      const status =
+        stats.failed > 0 ? RunStatus.failed : RunStatus.success;
+      const meta: Prisma.InputJsonObject = {
+        name: fixture.name,
+        oddsCount,
+        inserted: stats.inserted,
+        updated: stats.updated,
+        skipped: stats.skipped,
+        failed: stats.failed,
+        action,
+        ...(reason ? { reason } : {}),
+      };
+      await trackSeedItem(
+        batchId,
+        `fixture:${fixture.externalId}`,
+        status,
+        undefined,
+        meta
+      );
+    }
   }
 
   return {

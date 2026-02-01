@@ -1,12 +1,19 @@
 import { apiGet, apiPost, apiPatch } from "@/lib/adminApi";
 import type {
   AdminFixturesListResponse,
+  AdminFixtureResponse,
   AdminProviderFixturesResponse,
   AdminBatchesListResponse,
   AdminBatchItemsResponse,
 } from "@repo/types";
 
 export const fixturesService = {
+  async getById(id: number | string) {
+    return apiGet<AdminFixtureResponse>(
+      `/admin/sync-center/db/fixtures/${id}`
+    );
+  },
+
   async getFromDb(params?: {
     page?: number;
     perPage?: number;
@@ -119,5 +126,19 @@ export const fixturesService = {
     }
   ) {
     return apiPatch(`/admin/sync-center/db/fixtures/${id}`, data);
+  },
+
+  async resettle(id: number | string): Promise<AdminFixtureResettleResponse> {
+    return apiPost<AdminFixtureResettleResponse>(
+      `/admin/fixtures/${id}/resettle`
+    );
+  },
+
+  async getSettlementSummary(
+    id: number | string
+  ): Promise<AdminFixtureSettlementSummaryResponse> {
+    return apiGet<AdminFixtureSettlementSummaryResponse>(
+      `/admin/fixtures/${id}/settlement`
+    );
   },
 };

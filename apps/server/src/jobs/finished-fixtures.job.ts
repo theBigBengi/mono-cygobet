@@ -1,13 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import { LIVE_STATES, FINISHED_STATES } from "@repo/utils";
 import { adapter } from "../utils/adapter";
-import { prisma } from "@repo/db";
+import { RunStatus, prisma } from "@repo/db";
 import type { FixtureState } from "@repo/db";
 import { syncFixtures } from "../etl/sync/sync.fixtures";
+import { finishSeedBatch } from "../etl/seeds/seed.utils";
 import { chunk } from "../etl/utils";
 import { JobRunOpts } from "../types/jobs";
 import { FINISHED_FIXTURES_JOB } from "./jobs.definitions";
-import { getJobRowOrThrow } from "./jobs.db";
+import { createBatchForJob, getJobRowOrThrow } from "./jobs.db";
 import { clampInt, getMeta, isFinishedFixturesJobMeta } from "./jobs.meta";
 import { runJob } from "./run-job";
 import { settlePredictionsForFixtures } from "../services/api/groups/service/settlement";
@@ -160,68 +161,98 @@ export async function runFinishedFixturesJob(
         };
       }
 
-      const result = await syncFixtures(fetched, {
-        dryRun: false,
-        signal: opts.signal,
-      });
-      const updated = result.updated;
-      const failed = result.failed;
+      let batchId: number | null = null;
+      try {
+        const batch = await createBatchForJob(finishedFixturesJob.key, jobRunId);
+        batchId = batch.id;
 
-      // Settle predictions for FT fixtures
-      const ftFixtures = await prisma.fixtures.findMany({
-        where: {
-          externalId: { in: fetched.map((f) => BigInt(f.externalId)) },
-          state: { in: [...FINISHED_STATES] as FixtureState[] },
-        },
-        select: { id: true },
-      });
+        const result = await syncFixtures(fetched, {
+          dryRun: false,
+          signal: opts.signal,
+          batchId,
+        });
+        const updated = result.updated;
+        const failed = result.failed;
+        const ok = result.inserted + result.updated;
 
-      const settlement = await settlePredictionsForFixtures(
-        ftFixtures.map((f) => f.id),
-        fastify.io
-      );
-
-      // Emit fixture_ft chat events for affected groups
-      if (ftFixtures.length > 0) {
-        const ftFixturesWithTeams = await prisma.fixtures.findMany({
-          where: { id: { in: ftFixtures.map((f) => f.id) } },
-          select: {
-            id: true,
-            homeScore: true,
-            awayScore: true,
-            homeTeam: { select: { name: true } },
-            awayTeam: { select: { name: true } },
+        await finishSeedBatch(batchId, RunStatus.success, {
+          itemsTotal: result.total,
+          itemsSuccess: ok + result.skipped,
+          itemsFailed: result.failed,
+          meta: {
+            candidates: candidates.length,
+            fetched: fetched.length,
+            inserted: result.inserted,
+            updated: result.updated,
+            skipped: result.skipped,
+            failed: result.failed,
           },
         });
-        await emitFixtureFTEvents(ftFixturesWithTeams, fastify.io);
-      }
 
-      return {
-        result: {
-          jobRunId,
-          candidates: candidates.length,
-          fetched: fetched.length,
-          updated,
-          failed,
-          skipped: false,
-        },
-        rowsAffected: result.total,
-        meta: {
-          maxLiveAgeHours,
-          dryRun: false,
-          candidates: candidates.length,
-          fetched: fetched.length,
-          updated,
-          failed,
-          inserted: result.inserted,
-          skipped: result.skipped,
-          settlement: {
-            settled: settlement.settled,
-            skipped: settlement.skipped,
-            groupsEnded: settlement.groupsEnded,
+        // Settle predictions for FT fixtures
+        const ftFixtures = await prisma.fixtures.findMany({
+          where: {
+            externalId: { in: fetched.map((f) => BigInt(f.externalId)) },
+            state: { in: [...FINISHED_STATES] as FixtureState[] },
           },
-        },
-      };
+          select: { id: true },
+        });
+
+        const settlement = await settlePredictionsForFixtures(
+          ftFixtures.map((f) => f.id),
+          fastify.io
+        );
+
+        // Emit fixture_ft chat events for affected groups
+        if (ftFixtures.length > 0) {
+          const ftFixturesWithTeams = await prisma.fixtures.findMany({
+            where: { id: { in: ftFixtures.map((f) => f.id) } },
+            select: {
+              id: true,
+              homeScore: true,
+              awayScore: true,
+              homeTeam: { select: { name: true } },
+              awayTeam: { select: { name: true } },
+            },
+          });
+          await emitFixtureFTEvents(ftFixturesWithTeams, fastify.io);
+        }
+
+        return {
+          result: {
+            jobRunId,
+            candidates: candidates.length,
+            fetched: fetched.length,
+            updated,
+            failed,
+            skipped: false,
+          },
+          rowsAffected: result.total,
+          meta: {
+            batchId,
+            maxLiveAgeHours,
+            dryRun: false,
+            candidates: candidates.length,
+            fetched: fetched.length,
+            updated,
+            failed,
+            inserted: result.inserted,
+            skipped: result.skipped,
+            settlement: {
+              settled: settlement.settled,
+              skipped: settlement.skipped,
+              groupsEnded: settlement.groupsEnded,
+            },
+          },
+        };
+      } catch (err) {
+        if (batchId != null) {
+          await finishSeedBatch(batchId, RunStatus.failed, {
+            errorMessage: err instanceof Error ? err.message : String(err),
+          });
+        }
+        throw err;
+      }
     },
   });
 }
