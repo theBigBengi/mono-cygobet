@@ -7,6 +7,7 @@ import type {
   AdminProviderFixturesResponse,
   AdminBatchesListResponse,
   AdminBatchItemsResponse,
+  AdminSyncFixturesResponse,
 } from "@repo/types";
 
 export const fixturesService = {
@@ -96,6 +97,25 @@ export const fixturesService = {
 
   async sync(dryRun = false) {
     return apiPost("/admin/sync-center/sync/fixtures", { dryRun });
+  },
+
+  async syncFiltered(params: {
+    from?: string;
+    to?: string;
+    seasonId?: number;
+    fetchAllFixtureStates?: boolean;
+    dryRun?: boolean;
+  }): Promise<AdminSyncFixturesResponse> {
+    return apiPost<AdminSyncFixturesResponse>(
+      "/admin/sync-center/sync/fixtures",
+      {
+        dryRun: params.dryRun ?? false,
+        fetchAllFixtureStates: params.fetchAllFixtureStates ?? true,
+        ...(params.from && { from: params.from }),
+        ...(params.to && { to: params.to }),
+        ...(params.seasonId != null && { seasonId: params.seasonId }),
+      }
+    );
   },
 
   async syncById(id: number | string, dryRun = false) {

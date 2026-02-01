@@ -1,6 +1,22 @@
 import type { FixtureDTO } from "../sport-data/common";
 
 // Admin API response types
+
+export interface AdminSyncCenterOverviewResponse {
+  status: string;
+  data: {
+    entities: Array<{
+      name: string;
+      dbCount: number;
+      lastSyncedAt: string | null;
+      lastSyncStatus: string | null;
+      breakdown?: Record<string, number>;
+      currentCount?: number;
+    }>;
+  };
+  message: string;
+}
+
 export interface AdminHealthResponse {
   status: string;
   timestamp: string;

@@ -1,10 +1,11 @@
-import { apiPost } from "@/lib/adminApi";
+import { apiGet, apiPost } from "@/lib/adminApi";
 import { countriesService } from "./countries.service";
 import { leaguesService } from "./leagues.service";
 import { seasonsService } from "./seasons.service";
 import { teamsService } from "./teams.service";
 import { bookmakersService } from "./bookmakers.service";
 import type {
+  AdminSyncCenterOverviewResponse,
   AdminSyncFixturesResponse,
   AdminSyncCountriesResponse,
   AdminSyncLeaguesResponse,
@@ -32,6 +33,12 @@ export interface SyncAllResult {
 }
 
 export const syncService = {
+  async getOverview(): Promise<AdminSyncCenterOverviewResponse> {
+    return apiGet<AdminSyncCenterOverviewResponse>(
+      "/admin/sync-center/overview"
+    );
+  },
+
   async syncAll(
     params: SyncAllParams,
     onStepComplete?: (result: SyncAllResult) => void

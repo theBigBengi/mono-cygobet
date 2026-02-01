@@ -11,6 +11,7 @@ import {
   useFixturesFromProvider,
 } from "@/hooks/use-fixtures";
 import { useBatches } from "@/hooks/use-batches";
+import { useSeasonsForFilter } from "@/hooks/use-seasons-for-filter";
 import { useLeaguesFromProvider } from "@/hooks/use-leagues";
 import { useCountriesFromProvider } from "@/hooks/use-countries";
 import { BatchesTable } from "@/components/table";
@@ -22,6 +23,15 @@ import {
   MultiSelectCombobox,
   type MultiSelectOption,
 } from "@/components/filters/multi-select-combobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ViewMode, DiffFilter } from "@/types";
 import type { AdminSyncFixturesResponse } from "@repo/types";
@@ -61,6 +71,7 @@ export default function FixturesPage() {
   );
   const [appliedLeagueIds, setAppliedLeagueIds] = useState<string[]>([]); // External IDs
   const [appliedCountryIds, setAppliedCountryIds] = useState<string[]>([]); // External IDs
+  const [appliedSeasonId, setAppliedSeasonId] = useState<string>(""); // External ID, "" = All
   const [dbPage, setDbPage] = useState(1);
   const [dbPageSize, setDbPageSize] = useState(25);
 
@@ -74,10 +85,12 @@ export default function FixturesPage() {
   );
   const [tempLeagueIds, setTempLeagueIds] = useState<string[]>([]); // External IDs
   const [tempCountryIds, setTempCountryIds] = useState<string[]>([]); // External IDs
+  const [tempSeasonId, setTempSeasonId] = useState<string>(""); // External ID, "" = All
 
-  // Fetch leagues and countries for combobox options - use provider data
+  // Fetch leagues, countries, and seasons for filter options
   const { data: leaguesProviderData } = useLeaguesFromProvider();
   const { data: countriesProviderData } = useCountriesFromProvider();
+  const { data: seasonsData } = useSeasonsForFilter();
 
   // Convert applied date range to ISO strings for provider API
   // Use local timezone to avoid day shift when converting to UTC
@@ -187,6 +200,8 @@ export default function FixturesPage() {
     return options.sort((a, b) => a.label.localeCompare(b.label));
   }, [countriesProviderData]);
 
+  const seasonIdNum = appliedSeasonId ? Number(appliedSeasonId) : undefined;
+
   const {
     data: dbData,
     isLoading: dbLoading,
@@ -196,6 +211,7 @@ export default function FixturesPage() {
     perPage: 1000,
     leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
     countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
+    seasonId: seasonIdNum,
     state: appliedState,
     fromTs,
     toTs,
@@ -206,6 +222,7 @@ export default function FixturesPage() {
     perPage: dbPageSize,
     leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
     countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
+    seasonId: seasonIdNum,
     state: appliedState,
     fromTs,
     toTs,
@@ -219,7 +236,7 @@ export default function FixturesPage() {
   } = useFixturesFromProvider(
     fromDate,
     toDate,
-    undefined,
+    seasonIdNum,
     appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
     appliedCountryIds.length > 0 ? appliedCountryIds : undefined
   );
@@ -270,6 +287,51 @@ export default function FixturesPage() {
     },
     [syncFixtureMutation, unifiedData]
   );
+
+  const [dryRunSync, setDryRunSync] = useState(false);
+
+  const syncFilteredMutation = useMutation({
+    mutationFn: () =>
+      fixturesService.syncFiltered({
+        from: fromDate,
+        to: toDate,
+        seasonId: seasonIdNum,
+        fetchAllFixtureStates: true,
+        dryRun: dryRunSync,
+      }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["fixtures", "db"] });
+      queryClient.invalidateQueries({ queryKey: ["fixtures", "provider"] });
+      const d = res?.data;
+      const msg = d
+        ? `OK: ${d.ok}, Fail: ${d.fail}, Total: ${d.total}`
+        : "Done";
+      toast.success(dryRunSync ? "Dry run completed" : "Sync Filtered completed", {
+        description: msg,
+      });
+    },
+    onError: (err: Error) => {
+      toast.error("Sync Filtered failed", { description: err.message });
+    },
+  });
+
+  const syncAllMutation = useMutation({
+    mutationFn: () => fixturesService.sync(dryRunSync),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["fixtures", "db"] });
+      queryClient.invalidateQueries({ queryKey: ["fixtures", "provider"] });
+      const d = res?.data;
+      const msg = d
+        ? `OK: ${d.ok}, Fail: ${d.fail}, Total: ${d.total}`
+        : "Done";
+      toast.success(dryRunSync ? "Dry run completed" : "Sync All completed", {
+        description: msg,
+      });
+    },
+    onError: (err: Error) => {
+      toast.error("Sync All failed", { description: err.message });
+    },
+  });
 
   // Calculate diff stats
   const diffStats = useMemo(
@@ -326,6 +388,27 @@ export default function FixturesPage() {
               emptyMessage="No countries found."
             />
           </div>
+          <div className="flex-1 min-w-0">
+            <Select
+              value={tempSeasonId || "all"}
+              onValueChange={(v) => setTempSeasonId(v === "all" ? "" : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Season" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {seasonsData?.data?.map((s) => (
+                  <SelectItem
+                    key={s.id}
+                    value={String(s.externalId)}
+                  >
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </PageFilters>
 
         {/* Mode Switch with Mobile Filter Button */}
@@ -361,6 +444,89 @@ export default function FixturesPage() {
             </Button>
           </div>
         </div>
+
+        {/* Sync action bar (Provider view only) */}
+        {viewMode === "provider" && (
+          <div className="rounded-lg border bg-muted/30 p-3 mt-2 space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium">Sync Fixtures</span>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="dry-run-sync"
+                  checked={dryRunSync}
+                  onCheckedChange={(checked) =>
+                    setDryRunSync(checked === true)
+                  }
+                />
+                <Label
+                  htmlFor="dry-run-sync"
+                  className="text-sm cursor-pointer"
+                >
+                  Dry Run
+                </Label>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => syncFilteredMutation.mutate()}
+                disabled={
+                  syncFilteredMutation.isPending ||
+                  syncAllMutation.isPending ||
+                  !fromDate ||
+                  !toDate
+                }
+              >
+                {syncFilteredMutation.isPending ? "Syncing..." : "Sync Filtered"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => syncAllMutation.mutate()}
+                disabled={
+                  syncFilteredMutation.isPending || syncAllMutation.isPending
+                }
+              >
+                {syncAllMutation.isPending ? "Syncing..." : "Sync All"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Will sync{" "}
+              {providerData?.data != null
+                ? providerData.data.length
+                : 0}{" "}
+              fixtures matching filters
+            </p>
+          </div>
+        )}
+
+        {/* Diff-based re-sync suggestion: missing/mismatch in current filter range */}
+        {viewMode === "provider" &&
+          (diffStats.missing > 0 || diffStats.mismatch > 0) && (
+            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-2 mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-sm">
+                {diffStats.missing > 0 &&
+                  `${diffStats.missing} fixture${diffStats.missing === 1 ? "" : "s"} in provider but not in DB.`}
+                {diffStats.missing > 0 && diffStats.mismatch > 0 && " "}
+                {diffStats.mismatch > 0 &&
+                  `${diffStats.mismatch} mismatch.`}
+                {" "}
+                Re-sync filtered range to update.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => syncFilteredMutation.mutate()}
+                disabled={
+                  syncFilteredMutation.isPending ||
+                  syncAllMutation.isPending ||
+                  !fromDate ||
+                  !toDate
+                }
+              >
+                Re-sync Filtered
+              </Button>
+            </div>
+          )}
 
         {/* Messages */}
         {isPartialData && (
