@@ -145,7 +145,12 @@ export async function getGroupRanking(
 
     // For each item: earliest fixture in window for which this user has no prediction
     const nudgedByMeSet = new Set<string>();
-    const nudgesByMe = await repo.findNudgesByNudgerInGroup(groupId, userId);
+    const fixtureIdsInWindow = fixturesInWindow.map((gf) => gf.fixtureId);
+    const nudgesByMe = await repo.findNudgesByNudgerInGroup(
+      groupId,
+      userId,
+      fixtureIdsInWindow
+    );
     for (const { targetUserId, fixtureId } of nudgesByMe) {
       nudgedByMeSet.add(`${targetUserId}_${fixtureId}`);
     }

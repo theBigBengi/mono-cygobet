@@ -34,16 +34,18 @@ function RankingRow({
   isCurrentUser,
   groupId,
   nudgeEnabled,
+  onNudgePress,
+  isNudgePending,
 }: {
   item: ApiRankingItem;
   isCurrentUser: boolean;
   groupId: number | null;
   nudgeEnabled: boolean;
+  onNudgePress: (targetUserId: number, fixtureId: number) => void;
+  isNudgePending: boolean;
 }) {
   const { theme } = useTheme();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const nudgeMutation = useNudgeMutation(groupId);
 
   const onPress = () => {
     if (groupId == null) return;
@@ -59,30 +61,10 @@ function RankingRow({
     item.nudgeFixtureId != null;
   const canNudge = showNudgeButton && !item.nudgedByMe;
 
-  const onNudgePress = () => {
-    if (!groupId || !canNudge || item.nudgeFixtureId == null) return;
+  const handleNudgePress = () => {
+    if (!canNudge || item.nudgeFixtureId == null) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    nudgeMutation.mutate(
-      { targetUserId: item.userId, fixtureId: item.nudgeFixtureId },
-      {
-        onSuccess: () => {
-          queryClient.setQueryData(
-            groupsKeys.ranking(groupId),
-            (old: { data: ApiRankingItem[] } | undefined) => {
-              if (!old) return old;
-              return {
-                ...old,
-                data: old.data.map((row) =>
-                  row.userId === item.userId
-                    ? { ...row, nudgedByMe: true }
-                    : row
-                ),
-              };
-            }
-          );
-        },
-      }
-    );
+    onNudgePress(item.userId, item.nudgeFixtureId);
   };
 
   return (
@@ -116,8 +98,8 @@ function RankingRow({
           </AppText>
           {showNudgeButton && (
             <Pressable
-              onPress={onNudgePress}
-              disabled={!canNudge || nudgeMutation.isPending}
+              onPress={handleNudgePress}
+              disabled={!canNudge || isNudgePending}
               hitSlop={8}
               style={styles.nudgeButton}
             >
@@ -150,6 +132,7 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data: groupData } = useGroupQuery(groupId);
   const {
     data,
@@ -158,6 +141,7 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
     refetch,
     isRefetching,
   } = useGroupRankingQuery(groupId);
+  const nudgeMutation = useNudgeMutation(groupId);
 
   const groupName = groupData?.data?.name;
   const myRow = data?.data?.find((item) => item.userId === user?.id);
@@ -171,6 +155,31 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
         totalPoints: myRow.totalPoints,
         groupName: groupName!,
       })
+    );
+  };
+
+  const handleNudgePress = (targetUserId: number, fixtureId: number) => {
+    if (!groupId) return;
+    nudgeMutation.mutate(
+      { targetUserId, fixtureId },
+      {
+        onSuccess: () => {
+          queryClient.setQueryData(
+            groupsKeys.ranking(groupId),
+            (old: { data: ApiRankingItem[] } | undefined) => {
+              if (!old) return old;
+              return {
+                ...old,
+                data: old.data.map((row) =>
+                  row.userId === targetUserId
+                    ? { ...row, nudgedByMe: true }
+                    : row
+                ),
+              };
+            }
+          );
+        },
+      }
     );
   };
 
@@ -218,6 +227,8 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
             isCurrentUser={user?.id != null && item.userId === user.id}
             groupId={groupId}
             nudgeEnabled={groupData?.data?.nudgeEnabled === true}
+            onNudgePress={handleNudgePress}
+            isNudgePending={nudgeMutation.isPending}
           />
         )}
         contentContainerStyle={[

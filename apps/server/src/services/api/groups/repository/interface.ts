@@ -91,7 +91,8 @@ export interface GroupsRepository {
   }): Promise<unknown>;
   findNudgesByNudgerInGroup(
     groupId: number,
-    nudgerUserId: number
+    nudgerUserId: number,
+    fixtureIds?: number[]
   ): Promise<Array<{ targetUserId: number; fixtureId: number }>>;
   findGroupRulesNudgeBatch(
     groupIds: number[]

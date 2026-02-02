@@ -543,13 +543,22 @@ export async function createNudgeEvent(data: {
 /**
  * Find all nudges sent by a user in a group (for ranking: nudgedByMe).
  * Returns { targetUserId, fixtureId } for each nudge.
+ * When fixtureIds is provided, only returns nudges for those fixtures (ranking performance).
  */
 export async function findNudgesByNudgerInGroup(
   groupId: number,
-  nudgerUserId: number
+  nudgerUserId: number,
+  fixtureIds?: number[]
 ): Promise<Array<{ targetUserId: number; fixtureId: number }>> {
+  const where: { groupId: number; nudgerUserId: number; fixtureId?: { in: number[] } } = {
+    groupId,
+    nudgerUserId,
+  };
+  if (fixtureIds != null && fixtureIds.length > 0) {
+    where.fixtureId = { in: fixtureIds };
+  }
   const rows = await prisma.nudgeEvents.findMany({
-    where: { groupId, nudgerUserId },
+    where,
     select: { targetUserId: true, fixtureId: true },
   });
   return rows.map((r) => ({ targetUserId: r.targetUserId, fixtureId: r.fixtureId }));
