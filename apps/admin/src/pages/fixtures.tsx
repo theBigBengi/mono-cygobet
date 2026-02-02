@@ -16,11 +16,7 @@ import { useLeaguesFromProvider } from "@/hooks/use-leagues";
 import { useCountriesFromProvider } from "@/hooks/use-countries";
 import { BatchesTable } from "@/components/table";
 import { fixturesService } from "@/services/fixtures.service";
-import {
-  unifyFixtures,
-  calculateDiffStats,
-  normalizeResult,
-} from "@/utils/fixtures";
+import { unifyFixtures, calculateDiffStats } from "@/utils/fixtures";
 import { FixturesTable } from "@/components/fixtures/fixtures-table";
 import { DateRangePicker } from "@/components/filters/date-range-picker";
 import {
@@ -286,24 +282,6 @@ export default function FixturesPage() {
       appliedState,
     ]
   );
-
-  const mismatchBreakdown = useMemo(() => {
-    if (!bothLoaded) return null;
-    let stateCount = 0;
-    let resultCount = 0;
-    let nameCount = 0;
-    for (const f of unifiedData) {
-      if (f.status !== "mismatch" || !f.dbData || !f.providerData) continue;
-      if (f.dbData.state !== f.providerData.state) stateCount++;
-      if (
-        normalizeResult(f.dbData.result) !==
-        normalizeResult(f.providerData.result)
-      )
-        resultCount++;
-      if (f.dbData.name?.trim() !== f.providerData.name?.trim()) nameCount++;
-    }
-    return { stateCount, resultCount, nameCount };
-  }, [unifiedData, bothLoaded]);
 
   // Sync mutation (bulk) - removed from UI for now
   // const syncMutation = useMutation({...});
@@ -580,35 +558,10 @@ export default function FixturesPage() {
             <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-2 mt-2 flex flex-wrap items-center gap-2">
               <span className="text-sm">
                 {diffStats.missing > 0 &&
-                  `${diffStats.missing} fixture${diffStats.missing === 1 ? "" : "s"} in provider but not in DB.`}
-                {diffStats.missing > 0 && diffStats.mismatch > 0 && " "}
-                {diffStats.mismatch > 0 && (
-                  <>
-                    {diffStats.mismatch} mismatch
-                    {mismatchBreakdown &&
-                      (mismatchBreakdown.stateCount > 0 ||
-                        mismatchBreakdown.resultCount > 0 ||
-                        mismatchBreakdown.nameCount > 0) && (
-                        <span className="text-amber-700">
-                          {" "}
-                          (
-                          {[
-                            mismatchBreakdown.stateCount > 0 &&
-                              `${mismatchBreakdown.stateCount} state`,
-                            mismatchBreakdown.resultCount > 0 &&
-                              `${mismatchBreakdown.resultCount} result`,
-                            mismatchBreakdown.nameCount > 0 &&
-                              `${mismatchBreakdown.nameCount} name`,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                          )
-                        </span>
-                    )}
-                    .
-                  </>
-                )}{" "}
-                Re-sync filtered range to update.
+                  `${diffStats.missing} missing`}
+                {diffStats.missing > 0 && diffStats.mismatch > 0 && ", "}
+                {diffStats.mismatch > 0 && `${diffStats.mismatch} mismatch`}
+                {" — Re-sync filtered range to update."}
               </span>
               <Button
                 variant="outline"

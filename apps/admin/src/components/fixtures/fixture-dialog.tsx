@@ -371,6 +371,67 @@ export function FixtureDialog({
 
         {fixture && (
           <div className="space-y-2 sm:space-y-4 flex-1 min-h-0 flex flex-col overflow-hidden">
+            {/* Side-by-side comparison for mismatch fixtures */}
+            {fixture.status === "mismatch" &&
+              fixture.dbData &&
+              fixture.providerData &&
+              (hasMismatch("state") ||
+                hasMismatch("result") ||
+                hasMismatch("name")) && (
+              <div className="rounded-md border bg-muted/30 p-3 flex-shrink-0">
+                <div className="text-xs font-medium text-muted-foreground mb-2">
+                  Differences
+                </div>
+                <div className="grid grid-cols-[80px_1fr_1fr] gap-2 items-center text-sm">
+                  <span />
+                  <span className="text-[10px] text-muted-foreground">DB</span>
+                  <span className="text-[10px] text-muted-foreground">Provider</span>
+                  {hasMismatch("state") && (
+                    <>
+                      <span className="text-muted-foreground">State</span>
+                      <span className="bg-background px-2 py-1 rounded font-mono text-xs">
+                        {fixture.dbData.state || "—"}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="text-muted-foreground">→</span>
+                        <span className="bg-background px-2 py-1 rounded font-mono text-xs">
+                          {fixture.providerData.state || "—"}
+                        </span>
+                      </span>
+                    </>
+                  )}
+                  {hasMismatch("result") && (
+                    <>
+                      <span className="text-muted-foreground">Result</span>
+                      <span className="bg-background px-2 py-1 rounded font-mono text-xs">
+                        {fixture.dbData.result || "—"}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="text-muted-foreground">→</span>
+                        <span className="bg-background px-2 py-1 rounded font-mono text-xs">
+                          {fixture.providerData.result || "—"}
+                        </span>
+                      </span>
+                    </>
+                  )}
+                  {hasMismatch("name") && (
+                    <>
+                      <span className="text-muted-foreground">Name</span>
+                      <span className="bg-background px-2 py-1 rounded text-xs truncate" title={fixture.dbData.name || ""}>
+                        {fixture.dbData.name?.trim() || "—"}
+                      </span>
+                      <span className="flex items-center gap-1 min-w-0">
+                        <span className="text-muted-foreground flex-shrink-0">→</span>
+                        <span className="bg-background px-2 py-1 rounded text-xs truncate" title={fixture.providerData.name || ""}>
+                          {fixture.providerData.name?.trim() || "—"}
+                        </span>
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Tabs to switch between Provider and DB data */}
             {(fixture.providerData || fixture.dbData) && (
               <Tabs
