@@ -275,7 +275,12 @@ export function useSmartFilters({ fixtures, mode, groupTeamsIds, onNavigateToLea
         urgency: predictUrgency,
       });
     }
-    if (showSmartTime && smartTimeId) {
+    // When Predict is urgent/critical, skip "Today" chip so only "Predict Now!" is shown
+    const isUrgentPredict = predictUrgency === "urgent" || predictUrgency === "critical";
+    const predictChipShown = toPredictCount > 0 && toPredictCount < total;
+    const skipTodayChip =
+      smartTimeId === "time:today" && isUrgentPredict && predictChipShown;
+    if (showSmartTime && smartTimeId && !skipTodayChip) {
       actionChips.push({
         id: smartTimeId,
         label: smartTimeLabel,
