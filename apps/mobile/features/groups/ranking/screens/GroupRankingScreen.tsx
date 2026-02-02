@@ -13,10 +13,13 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { useQueryClient } from "@tanstack/react-query";
 import { Screen, Card, AppText, Row } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { useGroupQuery, useGroupRankingQuery } from "@/domains/groups";
+import { useGroupQuery, useGroupRankingQuery, useNudgeMutation } from "@/domains/groups";
+import { groupsKeys } from "@/domains/groups/groups.keys";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 import { shareText, buildRankingShareText } from "@/utils/sharing";
@@ -30,18 +33,55 @@ function RankingRow({
   item,
   isCurrentUser,
   groupId,
+  nudgeEnabled,
 }: {
   item: ApiRankingItem;
   isCurrentUser: boolean;
   groupId: number | null;
+  nudgeEnabled: boolean;
 }) {
   const { theme } = useTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const nudgeMutation = useNudgeMutation(groupId);
 
   const onPress = () => {
     if (groupId == null) return;
     router.push(
       `/groups/${groupId}/member/${item.userId}?username=${encodeURIComponent(item.username || `Player #${item.rank}`)}&rank=${item.rank}&totalPoints=${item.totalPoints}&correctScoreCount=${item.correctScoreCount}&predictionCount=${item.predictionCount}` as any
+    );
+  };
+
+  const showNudgeButton =
+    nudgeEnabled &&
+    item.nudgeable === true &&
+    !isCurrentUser &&
+    item.nudgeFixtureId != null;
+  const canNudge = showNudgeButton && !item.nudgedByMe;
+
+  const onNudgePress = () => {
+    if (!groupId || !canNudge || item.nudgeFixtureId == null) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    nudgeMutation.mutate(
+      { targetUserId: item.userId, fixtureId: item.nudgeFixtureId },
+      {
+        onSuccess: () => {
+          queryClient.setQueryData(
+            groupsKeys.ranking(groupId),
+            (old: { data: ApiRankingItem[] } | undefined) => {
+              if (!old) return old;
+              return {
+                ...old,
+                data: old.data.map((row) =>
+                  row.userId === item.userId
+                    ? { ...row, nudgedByMe: true }
+                    : row
+                ),
+              };
+            }
+          );
+        },
+      }
     );
   };
 
@@ -74,6 +114,20 @@ function RankingRow({
           >
             {item.username || `Player #${item.rank}`}
           </AppText>
+          {showNudgeButton && (
+            <Pressable
+              onPress={onNudgePress}
+              disabled={!canNudge || nudgeMutation.isPending}
+              hitSlop={8}
+              style={styles.nudgeButton}
+            >
+              <Ionicons
+                name={canNudge ? "notifications" : "notifications-off"}
+                size={22}
+                color={canNudge ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </Pressable>
+          )}
           <AppText variant="body" style={styles.points}>
             {item.totalPoints}
           </AppText>
@@ -163,6 +217,7 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
             item={item}
             isCurrentUser={user?.id != null && item.userId === user.id}
             groupId={groupId}
+            nudgeEnabled={groupData?.data?.nudgeEnabled === true}
           />
         )}
         contentContainerStyle={[
@@ -209,6 +264,9 @@ const styles = StyleSheet.create({
   username: {
     flex: 1,
     fontWeight: "500",
+  },
+  nudgeButton: {
+    padding: 4,
   },
   points: {
     fontSize: 18,

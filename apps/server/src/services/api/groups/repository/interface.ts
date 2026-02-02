@@ -66,6 +66,8 @@ export interface GroupsRepository {
     koRoundMode?: groupKoRoundMode;
     inviteAccess?: groupInviteAccess;
     maxMembers?: number;
+    nudgeEnabled?: boolean;
+    nudgeWindowMinutes?: number;
   }): Promise<Prisma.groupsGetPayload<{}>>;
   deleteGroup(id: number): Promise<Prisma.groupsGetPayload<{}>>;
   findGroupRules(groupId: number): Promise<{
@@ -78,7 +80,22 @@ export interface GroupsRepository {
     onTheNosePoints?: number;
     correctDifferencePoints?: number;
     outcomePoints?: number;
+    nudgeEnabled?: boolean;
+    nudgeWindowMinutes?: number;
   } | null>;
+  createNudgeEvent(data: {
+    groupId: number;
+    fixtureId: number;
+    nudgerUserId: number;
+    targetUserId: number;
+  }): Promise<unknown>;
+  findNudgesByNudgerInGroup(
+    groupId: number,
+    nudgerUserId: number
+  ): Promise<Array<{ targetUserId: number; fixtureId: number }>>;
+  findGroupRulesNudgeBatch(
+    groupIds: number[]
+  ): Promise<Array<{ groupId: number; nudgeEnabled: boolean; nudgeWindowMinutes: number }>>;
   findGroupMembersWithUsers(groupId: number): Promise<{
     members: Array<{ userId: number; role: string; createdAt: Date }>;
     users: Array<{ id: number; username: string | null }>;
@@ -116,6 +133,12 @@ export interface GroupsRepository {
   findFixtureByGroupFixtureId(
     groupFixtureId: number
   ): Promise<{ startTs: number; state: string; result: string | null } | null>;
+  findGroupFixturesWithFixtureDetails(groupId: number): Promise<Array<{
+    id: number;
+    fixtureId: number;
+    startTs: number;
+    state: string;
+  }>>;
   findStartedFixturesByGroupFixtureIds(
     groupFixtureIds: number[]
   ): Promise<Array<{ id: number }>>;
@@ -169,6 +192,14 @@ export interface GroupsRepository {
       prediction: string;
     }>
   ): Promise<Array<Prisma.groupPredictionsGetPayload<{}>>>;
+  findGroupPredictionByUserAndGroupFixture(
+    userId: number,
+    groupFixtureId: number
+  ): Promise<Prisma.groupPredictionsGetPayload<{}> | null>;
+  findGroupPredictionUserIdsByGroupFixtureIds(
+    groupId: number,
+    groupFixtureIds: number[]
+  ): Promise<Array<{ groupFixtureId: number; userId: number }>>;
   findPredictionsForOverview(groupId: number): Promise<Array<{
     userId: number;
     groupFixtureId: number;

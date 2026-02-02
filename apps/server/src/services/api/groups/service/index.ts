@@ -11,5 +11,6 @@ export { getGroupGamesFilters } from "./filters";
 export { getPredictionsOverview } from "./overview";
 export { getGroupRanking } from "./ranking";
 export { getGroupMembers } from "./members";
+export { sendNudge } from "./nudge";
 export { settlePredictionsForFixtures } from "./settlement";
 export { joinGroupByCode, joinPublicGroup, generateInviteCode, getInviteCode } from "./join";

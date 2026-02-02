@@ -29,8 +29,17 @@ export async function updateGroup(
   id: number,
   args: ApiUpdateGroupBody & { creatorId: number }
 ): Promise<ApiGroupResponse> {
+  const NUDGE_WINDOW_MIN = 15;
+  const NUDGE_WINDOW_MAX = 1440;
+
   log.debug({ id, args: { ...args, fixtureIds: undefined } }, "updateGroup - start");
-  const { creatorId, name, privacy, fixtureIds, inviteAccess } = args;
+  const { creatorId, name, privacy, fixtureIds, inviteAccess, nudgeEnabled, nudgeWindowMinutes } = args;
+
+  if (nudgeWindowMinutes !== undefined && (nudgeWindowMinutes < NUDGE_WINDOW_MIN || nudgeWindowMinutes > NUDGE_WINDOW_MAX)) {
+    throw new BadRequestError(
+      `nudgeWindowMinutes must be between ${NUDGE_WINDOW_MIN} and ${NUDGE_WINDOW_MAX}`
+    );
+  }
 
   // Verify group exists and user is creator
   await assertGroupCreator(id, creatorId);
@@ -46,13 +55,19 @@ export async function updateGroup(
     updateData.privacy = privacy;
   }
 
+  const hasRulesUpdate = inviteAccess !== undefined || nudgeEnabled !== undefined || nudgeWindowMinutes !== undefined;
+  const rulesUpdateData: Prisma.groupRulesUpdateInput = {};
+  if (inviteAccess !== undefined) rulesUpdateData.inviteAccess = inviteAccess as groupInviteAccess;
+  if (nudgeEnabled !== undefined) rulesUpdateData.nudgeEnabled = nudgeEnabled;
+  if (nudgeWindowMinutes !== undefined) rulesUpdateData.nudgeWindowMinutes = nudgeWindowMinutes;
+
   // Update group, groupFixtures, and optionally groupRules in a single transaction
-  const group = await (inviteAccess !== undefined
+  const group = await (hasRulesUpdate && Object.keys(rulesUpdateData).length > 0
     ? prisma.$transaction(async (tx) => {
         const g = await repo.updateGroupWithFixtures(id, updateData, fixtureIds, tx);
         await tx.groupRules.update({
           where: { groupId: id },
-          data: { inviteAccess: inviteAccess as groupInviteAccess },
+          data: rulesUpdateData,
         });
         return g;
       })
@@ -79,6 +94,9 @@ export async function publishGroup(
   id: number,
   args: ApiPublishGroupBody & { creatorId: number }
 ): Promise<ApiGroupResponse> {
+  const NUDGE_WINDOW_MIN = 15;
+  const NUDGE_WINDOW_MAX = 1440;
+
   log.debug({ id, args: { ...args, predictionMode: undefined, koRoundMode: undefined } }, "publishGroup - start");
   const {
     creatorId,
@@ -91,7 +109,15 @@ export async function publishGroup(
     koRoundMode,
     inviteAccess,
     maxMembers,
+    nudgeEnabled,
+    nudgeWindowMinutes,
   } = args;
+
+  if (nudgeWindowMinutes !== undefined && (nudgeWindowMinutes < NUDGE_WINDOW_MIN || nudgeWindowMinutes > NUDGE_WINDOW_MAX)) {
+    throw new BadRequestError(
+      `nudgeWindowMinutes must be between ${NUDGE_WINDOW_MIN} and ${NUDGE_WINDOW_MAX}`
+    );
+  }
 
   // 1. Business validations
   // Verify group exists and user is creator
@@ -121,6 +147,8 @@ export async function publishGroup(
     ...(koRoundMode !== undefined && { koRoundMode: koRoundMode as groupKoRoundMode }),
     ...(inviteAccess !== undefined && { inviteAccess: inviteAccess as groupInviteAccess }),
     ...(maxMembers !== undefined && { maxMembers }),
+    ...(nudgeEnabled !== undefined && { nudgeEnabled }),
+    ...(nudgeWindowMinutes !== undefined && { nudgeWindowMinutes }),
   };
 
   // 3. Call repository to perform all updates in a single transaction

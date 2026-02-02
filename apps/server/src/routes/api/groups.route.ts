@@ -17,6 +17,7 @@ import {
   getPredictionsOverview,
   getGroupRanking,
   getGroupMembers,
+  sendNudge,
   joinGroupByCode,
   joinPublicGroup,
   generateInviteCode,
@@ -38,6 +39,8 @@ import type {
   ApiPredictionsOverviewResponse,
   ApiJoinGroupByCodeBody,
   ApiInviteCodeResponse,
+  ApiNudgeBody,
+  ApiNudgeResponse,
 } from "@repo/types";
 import {
   createGroupBodySchema,
@@ -56,6 +59,8 @@ import {
   joinGroupByCodeBodySchema,
   publicGroupsQuerystringSchema,
   publicGroupsResponseSchema,
+  nudgeBodySchema,
+  nudgeResponseSchema,
 } from "../../schemas/api";
 
 /** Parse req.query into GroupFixturesFilter. Used only by GET :id and GET :id/fixtures. */
@@ -995,6 +1000,56 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
     const result = await getGroupRanking(id, userId);
 
     return reply.send(result);
+  });
+
+  /**
+   * POST /api/groups/:id/nudge
+   *
+   * - Requires auth + onboarding completion.
+   * - Verifies that the user is a group member.
+   * - Sends a nudge to a member for an upcoming fixture (remind to predict).
+   * - Body: { targetUserId, fixtureId }. Returns 201 on success, 409 if already nudged.
+   */
+  fastify.post<{ Params: { id: number }; Body: ApiNudgeBody }>("/groups/:id/nudge", {
+    preHandler: fastify.userAuth.requireOnboardingComplete,
+    schema: {
+      params: getGroupParamsSchema,
+      body: nudgeBodySchema,
+      response: {
+        201: nudgeResponseSchema,
+      },
+    },
+  }, async (req, reply) => {
+    if (!req.userAuth) {
+      return reply.status(401).send({
+        status: "error",
+        message: "Unauthorized",
+      } as any);
+    }
+
+    const id = Number(req.params.id);
+    const userId = req.userAuth.user.id;
+    const body = req.body as ApiNudgeBody;
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.status(400).send({
+        status: "error",
+        message: "Invalid 'id'. Must be a positive integer.",
+      } as any);
+    }
+
+    try {
+      const result = await sendNudge(id, userId, body.targetUserId, body.fixtureId);
+      return reply.status(201).send(result);
+    } catch (err: any) {
+      if (err.status === 409) {
+        return reply.status(409).send({
+          status: "error",
+          message: err.message || "Already nudged",
+        } as any);
+      }
+      throw err;
+    }
   });
 
   /**

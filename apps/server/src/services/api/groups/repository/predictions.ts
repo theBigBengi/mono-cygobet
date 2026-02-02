@@ -79,6 +79,35 @@ export type PredictionForOverview = {
 };
 
 /**
+ * Find a prediction by user and group fixture (for nudge: check if target has prediction).
+ */
+export async function findGroupPredictionByUserAndGroupFixture(
+  userId: number,
+  groupFixtureId: number
+) {
+  return await prisma.groupPredictions.findUnique({
+    where: {
+      userId_groupFixtureId: { userId, groupFixtureId },
+    },
+  });
+}
+
+/**
+ * Find (groupFixtureId, userId) for all predictions in the group for the given group fixture IDs (for ranking nudge).
+ */
+export async function findGroupPredictionUserIdsByGroupFixtureIds(
+  groupId: number,
+  groupFixtureIds: number[]
+): Promise<Array<{ groupFixtureId: number; userId: number }>> {
+  if (groupFixtureIds.length === 0) return [];
+  const rows = await prisma.groupPredictions.findMany({
+    where: { groupId, groupFixtureId: { in: groupFixtureIds } },
+    select: { groupFixtureId: true, userId: true },
+  });
+  return rows.map((r) => ({ groupFixtureId: r.groupFixtureId, userId: r.userId }));
+}
+
+/**
  * Find predictions for overview (raw query only).
  * Note: This is used by buildPredictionsMap in helpers.ts.
  */

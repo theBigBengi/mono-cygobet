@@ -20,6 +20,8 @@ import type {
   ApiRankingResponse,
   ApiGroupMembersResponse,
   ApiInviteCodeResponse,
+  ApiNudgeBody,
+  ApiNudgeResponse,
 } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -39,6 +41,7 @@ import {
   fetchPredictionsOverview,
   fetchGroupRanking,
   fetchGroupMembers,
+  sendNudge,
   joinGroupByCode,
   joinPublicGroup,
   fetchInviteCode,
@@ -400,6 +403,38 @@ export function useGroupRankingQuery(groupId: number | null) {
     queryFn: () => fetchGroupRanking(groupId as number),
     enabled,
     meta: { scope: "user" },
+  });
+}
+
+/**
+ * Hook to send a nudge to a group member for a fixture.
+ * - Requires authentication.
+ * - Invalidates ranking query on success.
+ */
+export function useNudgeMutation(groupId: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiNudgeResponse,
+    ApiError,
+    ApiNudgeBody
+  >({
+    mutationFn: (body) => {
+      if (!groupId) {
+        throw new Error("Group ID is required");
+      }
+      return sendNudge(groupId, body);
+    },
+    onSuccess: () => {
+      if (groupId) {
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.ranking(groupId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.detail(groupId),
+        });
+      }
+    },
   });
 }
 

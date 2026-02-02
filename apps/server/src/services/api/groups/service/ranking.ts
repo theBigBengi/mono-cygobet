@@ -4,6 +4,7 @@
 import { prisma } from "@repo/db";
 import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
+import { nowUnixSeconds } from "../../../../utils/dates";
 import { getLogger } from "../../../../logger";
 import type { RankingItem, RankingResponse } from "../types";
 
@@ -39,7 +40,7 @@ export async function getGroupRanking(
   log.debug({ groupId, userId }, "getGroupRanking - start");
   await assertGroupMember(groupId, userId);
 
-  const [rawRows, membersWithUsers] = await Promise.all([
+  const [rawRows, membersWithUsers, rules] = await Promise.all([
     prisma.$queryRaw<RawRankRow[]>`
       SELECT
         gp.user_id,
@@ -57,6 +58,7 @@ export async function getGroupRanking(
       ORDER BY total_points DESC, correct_score_count DESC, u.username ASC
     `,
     repo.findGroupMembersWithUsers(groupId),
+    repo.findGroupRules(groupId),
   ]);
 
   const userById = new Map(
@@ -99,7 +101,7 @@ export async function getGroupRanking(
   });
 
   let rank = 1;
-  const items: RankingItem[] = combined.map((row, index) => {
+  let items: RankingItem[] = combined.map((row, index) => {
     const prev = index > 0 ? combined[index - 1] : null;
     if (
       prev &&
@@ -112,6 +114,62 @@ export async function getGroupRanking(
     }
     return { ...row, rank };
   });
+
+  // Nudge enrichment: when nudge is enabled, add nudgeable, nudgeFixtureId, nudgedByMe per item
+  if (rules?.nudgeEnabled) {
+    const now = nowUnixSeconds();
+    const windowMinutes = rules.nudgeWindowMinutes ?? 60;
+    const windowEnd = now + windowMinutes * 60;
+
+    const allGroupFixtures = await repo.findGroupFixturesWithFixtureDetails(groupId);
+    const fixturesInWindow = allGroupFixtures
+      .filter((gf) => gf.state === "NS" && gf.startTs >= now && gf.startTs <= windowEnd)
+      .sort((a, b) => a.startTs - b.startTs);
+
+    let predictedByGroupFixture: Map<number, Set<number>> = new Map();
+    if (fixturesInWindow.length > 0) {
+      const groupFixtureIds = fixturesInWindow.map((gf) => gf.id);
+      const predictionRows = await repo.findGroupPredictionUserIdsByGroupFixtureIds(
+        groupId,
+        groupFixtureIds
+      );
+      for (const { groupFixtureId, userId } of predictionRows) {
+        let set = predictedByGroupFixture.get(groupFixtureId);
+        if (!set) {
+          set = new Set();
+          predictedByGroupFixture.set(groupFixtureId, set);
+        }
+        set.add(userId);
+      }
+    }
+
+    // For each item: earliest fixture in window for which this user has no prediction
+    const nudgedByMeSet = new Set<string>();
+    const nudgesByMe = await repo.findNudgesByNudgerInGroup(groupId, userId);
+    for (const { targetUserId, fixtureId } of nudgesByMe) {
+      nudgedByMeSet.add(`${targetUserId}_${fixtureId}`);
+    }
+
+    items = items.map((item) => {
+      let nudgeFixtureId: number | undefined;
+      for (const gf of fixturesInWindow) {
+        const predicted = predictedByGroupFixture.get(gf.id);
+        if (!predicted?.has(item.userId)) {
+          nudgeFixtureId = gf.fixtureId;
+          break;
+        }
+      }
+      const nudgeable = nudgeFixtureId != null;
+      const nudgedByMe =
+        nudgeFixtureId != null &&
+        nudgedByMeSet.has(`${item.userId}_${nudgeFixtureId}`);
+      return {
+        ...item,
+        ...(nudgeable && { nudgeable, nudgeFixtureId }),
+        ...(nudgeable && { nudgedByMe }),
+      };
+    });
+  }
 
   return {
     status: "success",

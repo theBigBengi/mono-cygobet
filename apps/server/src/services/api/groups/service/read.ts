@@ -50,8 +50,15 @@ export async function getMyGroups(
   const now = nowUnixSeconds();
   const groupIds = groups.map((g) => g.id);
 
-  // Fetch all stats in batch (6 queries total instead of 5 per group)
-  const stats = await repo.findGroupsStatsBatch(groupIds, userId, now);
+  // Fetch all stats and nudge rules in batch
+  const [stats, rulesNudge] = await Promise.all([
+    repo.findGroupsStatsBatch(groupIds, userId, now),
+    repo.findGroupRulesNudgeBatch(groupIds),
+  ]);
+
+  const nudgeByGroupId = new Map(
+    rulesNudge.map((r) => [r.groupId, { nudgeEnabled: r.nudgeEnabled, nudgeWindowMinutes: r.nudgeWindowMinutes }])
+  );
 
   // Build group items using batch stats
   // Format fixtures in one place (service layer) before passing to builders
@@ -64,7 +71,13 @@ export async function getMyGroups(
       // Service layer decides: no prediction, no result for first/last game in draft
       const firstGame = formatFixtureFromDb(rawFirstGame, null, null);
       const lastGame = formatFixtureFromDb(rawLastGame, null, null);
-      return buildDraftGroupItem(group, firstGame, lastGame);
+      const draftItem = buildDraftGroupItem(group, firstGame, lastGame);
+      const nudge = nudgeByGroupId.get(group.id);
+      if (nudge) {
+        draftItem.nudgeEnabled = nudge.nudgeEnabled;
+        draftItem.nudgeWindowMinutes = nudge.nudgeWindowMinutes;
+      }
+      return draftItem;
     } else {
       const memberCount = stats.memberCountByGroupId.get(group.id) ?? 0;
       const totalFixtures = stats.fixtureCountByGroupId.get(group.id) ?? 0;
@@ -88,7 +101,7 @@ export async function getMyGroups(
       const firstGame = formatFixtureFromDb(rawFirstGame, null, null);
       const lastGame = formatFixtureFromDb(rawLastGame, null, null);
 
-      return buildActiveGroupItem(
+      const activeItem = buildActiveGroupItem(
         group,
         {
           memberCount,
@@ -104,6 +117,12 @@ export async function getMyGroups(
         firstGame,
         lastGame
       );
+      const nudge = nudgeByGroupId.get(group.id);
+      if (nudge) {
+        activeItem.nudgeEnabled = nudge.nudgeEnabled;
+        activeItem.nudgeWindowMinutes = nudge.nudgeWindowMinutes;
+      }
+      return activeItem;
     }
   });
 
@@ -142,6 +161,8 @@ export async function getGroupById(
   data.onTheNosePoints = rules?.onTheNosePoints ?? 3;
   data.correctDifferencePoints = rules?.correctDifferencePoints ?? 2;
   data.outcomePoints = rules?.outcomePoints ?? 1;
+  data.nudgeEnabled = rules?.nudgeEnabled ?? true;
+  data.nudgeWindowMinutes = rules?.nudgeWindowMinutes ?? 60;
 
   // Include fixtures if requested
   if (includeFixtures) {

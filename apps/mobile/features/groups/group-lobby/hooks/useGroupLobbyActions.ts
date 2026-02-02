@@ -15,6 +15,8 @@ import type { KORoundMode } from "../components/KORoundModeSelector";
  * @param predictionMode - Current prediction mode
  * @param koRoundMode - Current KO round mode
  * @param maxMembers - Maximum number of members in the group
+ * @param nudgeEnabled - Whether nudge is enabled for the group
+ * @param nudgeWindowMinutes - Nudge window in minutes before kickoff
  * @returns Action handlers
  */
 export function useGroupLobbyActions(
@@ -31,6 +33,8 @@ export function useGroupLobbyActions(
       predictionMode?: string;
       koRoundMode?: string;
       maxMembers?: number;
+      nudgeEnabled?: boolean;
+      nudgeWindowMinutes?: number;
     }
   >,
   draftName: string,
@@ -39,7 +43,9 @@ export function useGroupLobbyActions(
   scoringValues: { onTheNose: number; goalDifference: number; outcome: number },
   predictionMode?: PredictionMode,
   koRoundMode?: KORoundMode,
-  maxMembers?: number
+  maxMembers?: number,
+  nudgeEnabled: boolean = true,
+  nudgeWindowMinutes: number = 60
 ): {
   handlePublish: () => Promise<void>;
 } {
@@ -75,6 +81,8 @@ export function useGroupLobbyActions(
       predictionMode?: string;
       koRoundMode?: string;
       maxMembers?: number;
+      nudgeEnabled?: boolean;
+      nudgeWindowMinutes?: number;
     } = {
       name: nextName,
       privacy: draftPrivacy,
@@ -83,6 +91,8 @@ export function useGroupLobbyActions(
       correctDifferencePoints: scoringValues.goalDifference,
       outcomePoints: scoringValues.outcome,
       maxMembers,
+      nudgeEnabled,
+      nudgeWindowMinutes,
     };
 
     if (predictionMode) {
@@ -107,6 +117,8 @@ export function useGroupLobbyActions(
     predictionMode,
     koRoundMode,
     maxMembers,
+    nudgeEnabled,
+    nudgeWindowMinutes,
     publishGroupMutation,
   ]);
 

@@ -276,6 +276,10 @@ export type ApiUpdateGroupBody = {
   privacy?: ApiGroupPrivacy;
   fixtureIds?: number[];
   inviteAccess?: ApiInviteAccess;
+  /** Whether members can nudge each other for upcoming games. */
+  nudgeEnabled?: boolean;
+  /** Minutes before kickoff within which nudge is allowed (15–1440). */
+  nudgeWindowMinutes?: number;
 };
 
 /**
@@ -292,6 +296,10 @@ export type ApiPublishGroupBody = {
   inviteAccess?: ApiInviteAccess;
   /** Maximum number of members in the group. Default 50. */
   maxMembers?: number;
+  /** Whether members can nudge each other for upcoming games. */
+  nudgeEnabled?: boolean;
+  /** Minutes before kickoff within which nudge is allowed (15–1440). */
+  nudgeWindowMinutes?: number;
 };
 
 /**
@@ -399,6 +407,10 @@ export type ApiGroupItem = {
   onTheNosePoints?: number;
   correctDifferencePoints?: number;
   outcomePoints?: number;
+  /** Whether nudge is enabled for this group. */
+  nudgeEnabled?: boolean;
+  /** Nudge window in minutes before kickoff. */
+  nudgeWindowMinutes?: number;
 };
 
 /**
@@ -607,6 +619,32 @@ export type ApiRankingItem = {
   predictionCount: number;
   correctScoreCount: number;
   correctOutcomeCount: number;
+  /** True if this member has no prediction for an upcoming fixture in the nudge window. */
+  nudgeable?: boolean;
+  /** Earliest fixture id in the nudge window they have not predicted. */
+  nudgeFixtureId?: number;
+  /** True if the current user already nudged this member for that fixture. */
+  nudgedByMe?: boolean;
+  /** Phase 2: number of nudges received (for sleeper badge). */
+  nudgeReceivedCount?: number;
+};
+
+/**
+ * Body for POST /api/groups/:id/nudge.
+ */
+export type ApiNudgeBody = {
+  targetUserId: number;
+  fixtureId: number;
+};
+
+/**
+ * Response from POST /api/groups/:id/nudge.
+ */
+export type ApiNudgeResponse = {
+  status: "success";
+  message: string;
+  /** Phase 2: daily nudges remaining. */
+  remaining?: number;
 };
 
 /**

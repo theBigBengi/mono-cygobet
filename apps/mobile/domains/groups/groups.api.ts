@@ -20,6 +20,8 @@ import type {
   ApiRankingResponse,
   ApiGroupMembersResponse,
   ApiInviteCodeResponse,
+  ApiNudgeBody,
+  ApiNudgeResponse,
 } from "@repo/types";
 import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
 import { buildQuery } from "@/lib/http/queryBuilder";
@@ -254,6 +256,25 @@ export async function fetchGroupRanking(
     `/api/groups/${groupId}/ranking`,
     {
       method: "GET",
+    }
+  );
+}
+
+/**
+ * Send a nudge to a group member for a fixture (remind them to predict).
+ * - Requires authentication.
+ * - Verifies that the user is a group member.
+ * - Returns 201 on success, 409 if already nudged.
+ */
+export async function sendNudge(
+  groupId: number,
+  body: ApiNudgeBody
+): Promise<ApiNudgeResponse> {
+  return apiFetchWithAuthRetry<ApiNudgeResponse>(
+    `/api/groups/${groupId}/nudge`,
+    {
+      method: "POST",
+      body,
     }
   );
 }

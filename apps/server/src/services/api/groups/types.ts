@@ -102,6 +102,10 @@ export type RankingItem = {
   predictionCount: number;
   correctScoreCount: number;
   correctOutcomeCount: number;
+  nudgeable?: boolean;
+  nudgeFixtureId?: number;
+  nudgedByMe?: boolean;
+  nudgeReceivedCount?: number;
 };
 
 export type RankingResponse = {

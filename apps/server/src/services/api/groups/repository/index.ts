@@ -19,6 +19,9 @@ import {
   findGroupByInviteCode,
   findGroupMember,
   updateGroupMember,
+  createNudgeEvent,
+  findNudgesByNudgerInGroup,
+  findGroupRulesNudgeBatch,
 } from "./core";
 
 // Fixtures functions
@@ -29,6 +32,7 @@ import {
   findGroupFixtureByGroupAndFixture,
   findGroupFixturesByFixtureIds,
   findFixtureByGroupFixtureId,
+  findGroupFixturesWithFixtureDetails,
   findStartedFixturesByGroupFixtureIds,
   fetchGroupFixturesWithPredictions,
   findGroupFixturesForOverview,
@@ -39,6 +43,8 @@ import {
 import {
   upsertGroupPrediction,
   upsertGroupPredictionsBatch,
+  findGroupPredictionByUserAndGroupFixture,
+  findGroupPredictionUserIdsByGroupFixtureIds,
   findPredictionsForOverview,
 } from "./predictions";
 
@@ -72,6 +78,9 @@ export const repository: GroupsRepository = {
   findGroupByInviteCode,
   findGroupMember,
   updateGroupMember,
+  createNudgeEvent,
+  findNudgesByNudgerInGroup,
+  findGroupRulesNudgeBatch,
 
   // Fixtures operations
   findGroupFixturesByGroupId,
@@ -80,6 +89,7 @@ export const repository: GroupsRepository = {
   findGroupFixtureByGroupAndFixture,
   findGroupFixturesByFixtureIds,
   findFixtureByGroupFixtureId,
+  findGroupFixturesWithFixtureDetails,
   findStartedFixturesByGroupFixtureIds,
   fetchGroupFixturesWithPredictions,
   findGroupFixturesForOverview,
@@ -87,6 +97,8 @@ export const repository: GroupsRepository = {
   // Predictions operations
   upsertGroupPrediction,
   upsertGroupPredictionsBatch,
+  findGroupPredictionByUserAndGroupFixture,
+  findGroupPredictionUserIdsByGroupFixtureIds,
   findPredictionsForOverview,
 
   // Stats operations

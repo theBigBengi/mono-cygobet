@@ -203,6 +203,8 @@ export async function findGroupRules(
   onTheNosePoints?: number;
   correctDifferencePoints?: number;
   outcomePoints?: number;
+  nudgeEnabled?: boolean;
+  nudgeWindowMinutes?: number;
 } | null> {
   return await prisma.groupRules.findUnique({
     where: { groupId },
@@ -216,8 +218,28 @@ export async function findGroupRules(
       onTheNosePoints: true,
       correctDifferencePoints: true,
       outcomePoints: true,
+      nudgeEnabled: true,
+      nudgeWindowMinutes: true,
     },
   });
+}
+
+/**
+ * Find nudge settings for multiple groups (for getMyGroups batch).
+ */
+export async function findGroupRulesNudgeBatch(
+  groupIds: number[]
+): Promise<Array<{ groupId: number; nudgeEnabled: boolean; nudgeWindowMinutes: number }>> {
+  if (groupIds.length === 0) return [];
+  const rows = await prisma.groupRules.findMany({
+    where: { groupId: { in: groupIds } },
+    select: { groupId: true, nudgeEnabled: true, nudgeWindowMinutes: true },
+  });
+  return rows.map((r) => ({
+    groupId: r.groupId,
+    nudgeEnabled: r.nudgeEnabled ?? true,
+    nudgeWindowMinutes: r.nudgeWindowMinutes ?? 60,
+  }));
 }
 
 /**
@@ -237,6 +259,8 @@ export async function publishGroupInternal(data: {
   koRoundMode?: groupKoRoundMode;
   inviteAccess?: groupInviteAccess;
   maxMembers?: number;
+  nudgeEnabled?: boolean;
+  nudgeWindowMinutes?: number;
 }): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // 1. Update groups table
@@ -294,6 +318,14 @@ export async function publishGroupInternal(data: {
         rulesUpdateData.maxMembers = data.maxMembers;
       }
 
+      if (data.nudgeEnabled !== undefined) {
+        rulesUpdateData.nudgeEnabled = data.nudgeEnabled;
+      }
+
+      if (data.nudgeWindowMinutes !== undefined) {
+        rulesUpdateData.nudgeWindowMinutes = data.nudgeWindowMinutes;
+      }
+
       // Only update if there are fields to update
       if (Object.keys(rulesUpdateData).length > 0) {
         await tx.groupRules.update({
@@ -331,6 +363,8 @@ export async function publishGroupInternal(data: {
           inviteAccess:
             data.inviteAccess ?? groupInviteAccess.all,
           maxMembers: data.maxMembers ?? DEFAULT_MAX_MEMBERS,
+          nudgeEnabled: data.nudgeEnabled ?? true,
+          nudgeWindowMinutes: data.nudgeWindowMinutes ?? 60,
         },
       });
     }
@@ -485,4 +519,38 @@ export async function updateGroupMember(
     where: { id },
     data: { status: data.status as groupMembersStatus },
   });
+}
+
+/**
+ * Create a nudge event. Throws on unique violation (groupId, fixtureId, nudgerUserId, targetUserId).
+ */
+export async function createNudgeEvent(data: {
+  groupId: number;
+  fixtureId: number;
+  nudgerUserId: number;
+  targetUserId: number;
+}) {
+  return await prisma.nudgeEvents.create({
+    data: {
+      groupId: data.groupId,
+      fixtureId: data.fixtureId,
+      nudgerUserId: data.nudgerUserId,
+      targetUserId: data.targetUserId,
+    },
+  });
+}
+
+/**
+ * Find all nudges sent by a user in a group (for ranking: nudgedByMe).
+ * Returns { targetUserId, fixtureId } for each nudge.
+ */
+export async function findNudgesByNudgerInGroup(
+  groupId: number,
+  nudgerUserId: number
+): Promise<Array<{ targetUserId: number; fixtureId: number }>> {
+  const rows = await prisma.nudgeEvents.findMany({
+    where: { groupId, nudgerUserId },
+    select: { targetUserId: true, fixtureId: true },
+  });
+  return rows.map((r) => ({ targetUserId: r.targetUserId, fixtureId: r.fixtureId }));
 }

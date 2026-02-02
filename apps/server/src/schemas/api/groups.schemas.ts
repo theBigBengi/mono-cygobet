@@ -46,6 +46,27 @@ export const getGroupParamsSchema = {
   },
 };
 
+/** Body for POST /api/groups/:id/nudge. */
+export const nudgeBodySchema = {
+  type: "object",
+  required: ["targetUserId", "fixtureId"],
+  properties: {
+    targetUserId: { type: "number", minimum: 1 },
+    fixtureId: { type: "number", minimum: 1 },
+  },
+};
+
+/** Response schema for POST /api/groups/:id/nudge. */
+export const nudgeResponseSchema = {
+  type: "object",
+  required: ["status", "message"],
+  properties: {
+    status: { type: "string", enum: ["success"] },
+    message: { type: "string" },
+    remaining: { type: "number" },
+  },
+};
+
 /** Optional filter params for group fixtures (GET :id?include=fixtures, GET :id/fixtures). */
 export const groupFixturesFilterQuerystringSchema = {
   type: "object",

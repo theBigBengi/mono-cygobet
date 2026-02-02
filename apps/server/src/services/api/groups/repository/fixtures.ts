@@ -180,6 +180,30 @@ export async function findFixtureByGroupFixtureId(groupFixtureId: number) {
 }
 
 /**
+ * Find all group fixtures with fixture startTs and state (for ranking nudge window).
+ */
+export async function findGroupFixturesWithFixtureDetails(groupId: number): Promise<
+  Array<{ id: number; fixtureId: number; startTs: number; state: string }>
+> {
+  const rows = await prisma.groupFixtures.findMany({
+    where: { groupId },
+    select: {
+      id: true,
+      fixtureId: true,
+      fixtures: { select: { startTs: true, state: true } },
+    },
+  });
+  return rows
+    .filter((r) => r.fixtures != null)
+    .map((r) => ({
+      id: r.id,
+      fixtureId: r.fixtureId,
+      startTs: r.fixtures!.startTs,
+      state: r.fixtures!.state,
+    }));
+}
+
+/**
  * Find group fixtures whose matches have already started (for batch validation).
  */
 export async function findStartedFixturesByGroupFixtureIds(

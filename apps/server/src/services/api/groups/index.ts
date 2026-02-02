@@ -16,6 +16,7 @@ export {
   getPredictionsOverview,
   getGroupRanking,
   getGroupMembers,
+  sendNudge,
   settlePredictionsForFixtures,
   joinGroupByCode,
   joinPublicGroup,

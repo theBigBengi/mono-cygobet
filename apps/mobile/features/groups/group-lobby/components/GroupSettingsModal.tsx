@@ -17,6 +17,8 @@ import { useTheme } from "@/lib/theme";
 import { useUpdateGroupMutation } from "@/domains/groups";
 import type { ApiGroupItem, ApiInviteAccess } from "@repo/types";
 
+const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
+
 interface GroupSettingsModalProps {
   visible: boolean;
   onClose: () => void;
@@ -42,6 +44,8 @@ export function GroupSettingsModal({
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [inviteAccess, setInviteAccess] = useState<ApiInviteAccess>("all");
+  const [nudgeEnabled, setNudgeEnabled] = useState(true);
+  const [nudgeWindowMinutes, setNudgeWindowMinutes] = useState(60);
 
   const updateGroupMutation = useUpdateGroupMutation(group?.id ?? null);
 
@@ -53,8 +57,22 @@ export function GroupSettingsModal({
     }
   }, [group?.inviteAccess]);
 
+  useEffect(() => {
+    if (group?.nudgeEnabled !== undefined) {
+      setNudgeEnabled(group.nudgeEnabled);
+    } else {
+      setNudgeEnabled(true);
+    }
+    if (group?.nudgeWindowMinutes !== undefined) {
+      setNudgeWindowMinutes(group.nudgeWindowMinutes);
+    } else {
+      setNudgeWindowMinutes(60);
+    }
+  }, [group?.nudgeEnabled, group?.nudgeWindowMinutes]);
+
   const showInviteToggle =
     isCreator && group?.privacy === "private" && group?.id != null;
+  const showNudgeSection = isCreator && group?.id != null;
   // Same convention as Draft (GroupLobbyInviteAccessSection): ON = all can share, OFF = admin only
   const switchOn = inviteAccess === "all";
 
@@ -62,6 +80,16 @@ export function GroupSettingsModal({
     const newValue: ApiInviteAccess = value ? "all" : "admin_only";
     setInviteAccess(newValue);
     updateGroupMutation.mutate({ inviteAccess: newValue });
+  };
+
+  const handleNudgeEnabledChange = (value: boolean) => {
+    setNudgeEnabled(value);
+    updateGroupMutation.mutate({ nudgeEnabled: value, nudgeWindowMinutes });
+  };
+
+  const handleNudgeWindowChange = (minutes: number) => {
+    setNudgeWindowMinutes(minutes);
+    updateGroupMutation.mutate({ nudgeEnabled, nudgeWindowMinutes: minutes });
   };
 
   return (
@@ -132,6 +160,69 @@ export function GroupSettingsModal({
               />
             </View>
           )}
+          {showNudgeSection && (
+            <>
+              <View style={styles.inviteRow}>
+                <View style={styles.inviteLabelContainer}>
+                  <AppText variant="body" style={styles.inviteLabel}>
+                    Nudge
+                  </AppText>
+                  <AppText variant="caption" color="secondary" style={styles.inviteHelper}>
+                    Allow members to nudge each other for upcoming games
+                  </AppText>
+                </View>
+                <Switch
+                  value={nudgeEnabled}
+                  onValueChange={handleNudgeEnabledChange}
+                  disabled={updateGroupMutation.isPending}
+                  trackColor={{
+                    false: theme.colors.border,
+                    true: theme.colors.primary,
+                  }}
+                  thumbColor={
+                    nudgeEnabled ? theme.colors.primaryText : theme.colors.surface
+                  }
+                />
+              </View>
+              {nudgeEnabled && (
+                <View style={styles.nudgeWindowRow}>
+                  <AppText variant="body" style={styles.inviteLabel}>
+                    Minutes before kickoff
+                  </AppText>
+                  <View style={styles.nudgeWindowChips}>
+                    {NUDGE_WINDOW_OPTIONS.map((min) => (
+                      <Pressable
+                        key={min}
+                        onPress={() => handleNudgeWindowChange(min)}
+                        style={[
+                          styles.nudgeWindowChip,
+                          {
+                            backgroundColor:
+                              nudgeWindowMinutes === min
+                                ? theme.colors.primary
+                                : theme.colors.surface,
+                            borderColor: theme.colors.border,
+                          },
+                        ]}
+                      >
+                        <AppText
+                          variant="body"
+                          style={{
+                            color:
+                              nudgeWindowMinutes === min
+                                ? theme.colors.primaryText
+                                : theme.colors.text,
+                          }}
+                        >
+                          {min}
+                        </AppText>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </>
+          )}
         </View>
       </View>
     </Modal>
@@ -179,5 +270,20 @@ const styles = StyleSheet.create({
   },
   inviteHelper: {
     marginTop: 0,
+  },
+  nudgeWindowRow: {
+    marginBottom: 16,
+  },
+  nudgeWindowChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+  nudgeWindowChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
   },
 });

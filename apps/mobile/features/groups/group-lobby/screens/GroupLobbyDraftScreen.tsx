@@ -3,10 +3,13 @@
 // Shows editable name, status card, privacy settings, and publish button.
 
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable, Switch } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, AppText } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import type { ApiGroupItem } from "@repo/types";
+
+const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
 import {
   GroupLobbyNameHeader,
   GroupLobbyStatusCard,
@@ -92,6 +95,14 @@ export function GroupLobbyDraftScreen({
   // Manage local state for max members, initialized from group
   const [maxMembers, setMaxMembers] = useState(() => group.maxMembers ?? 50);
 
+  // Manage local state for nudge settings, initialized from group
+  const [nudgeEnabled, setNudgeEnabled] = useState(() => group.nudgeEnabled ?? true);
+  const [nudgeWindowMinutes, setNudgeWindowMinutes] = useState(
+    () => group.nudgeWindowMinutes ?? 60
+  );
+
+  const { theme } = useTheme();
+
   // Sync state when group changes (e.g. after refresh)
   useEffect(() => {
     setPredictionMode(group.predictionMode === "MatchWinner" ? "3way" : "result");
@@ -104,6 +115,8 @@ export function GroupLobbyDraftScreen({
       outcome: group.outcomePoints ?? 1,
     });
     setMaxMembers(group.maxMembers ?? 50);
+    setNudgeEnabled(group.nudgeEnabled ?? true);
+    setNudgeWindowMinutes(group.nudgeWindowMinutes ?? 60);
   }, [
     group.predictionMode,
     group.koRoundMode,
@@ -111,6 +124,8 @@ export function GroupLobbyDraftScreen({
     group.correctDifferencePoints,
     group.outcomePoints,
     group.maxMembers,
+    group.nudgeEnabled,
+    group.nudgeWindowMinutes,
   ]);
 
   // Local mutations - tied to this group
@@ -223,6 +238,64 @@ export function GroupLobbyDraftScreen({
               onChange={setMaxMembers}
               disabled={!isEditable}
             />
+            <AppText variant="subtitle" style={styles.sectionTitle}>
+              Nudge
+            </AppText>
+            <View style={styles.nudgeRow}>
+              <AppText variant="body" style={styles.nudgeLabel}>
+                Allow members to nudge each other for upcoming games
+              </AppText>
+              <Switch
+                value={nudgeEnabled}
+                onValueChange={setNudgeEnabled}
+                disabled={!isEditable}
+                trackColor={{
+                  false: theme.colors.border,
+                  true: theme.colors.primary,
+                }}
+                thumbColor={
+                  nudgeEnabled ? theme.colors.primaryText : theme.colors.surface
+                }
+              />
+            </View>
+            {nudgeEnabled && (
+              <View style={styles.nudgeWindowRow}>
+                <AppText variant="body" style={styles.nudgeLabel}>
+                  Minutes before kickoff
+                </AppText>
+                <View style={styles.nudgeWindowChips}>
+                  {NUDGE_WINDOW_OPTIONS.map((min) => (
+                    <Pressable
+                      key={min}
+                      onPress={() => setNudgeWindowMinutes(min)}
+                      disabled={!isEditable}
+                      style={[
+                        styles.nudgeWindowChip,
+                        {
+                          backgroundColor:
+                            nudgeWindowMinutes === min
+                              ? theme.colors.primary
+                              : theme.colors.surface,
+                          borderColor: theme.colors.border,
+                        },
+                      ]}
+                    >
+                      <AppText
+                        variant="body"
+                        style={{
+                          color:
+                              nudgeWindowMinutes === min
+                                ? theme.colors.primaryText
+                                : theme.colors.textPrimary,
+                        }}
+                      >
+                        {min}
+                      </AppText>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
           </>
         )}
 
@@ -282,5 +355,30 @@ const styles = StyleSheet.create({
   },
   durationLine: {
     marginBottom: 4,
+  },
+  nudgeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  nudgeLabel: {
+    flex: 1,
+    marginEnd: 16,
+  },
+  nudgeWindowRow: {
+    marginBottom: 16,
+  },
+  nudgeWindowChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+  nudgeWindowChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
   },
 });
