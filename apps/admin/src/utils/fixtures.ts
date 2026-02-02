@@ -10,15 +10,21 @@ function normalizeString(str: string | null | undefined): string {
   return str.trim();
 }
 
-// Normalize result string - convert ":" to "-" for consistent comparison
-function normalizeResult(result: string | null | undefined): string {
+// Normalize result string - convert ":" to "-" for consistent comparison (exported for diff breakdown)
+export function normalizeResult(result: string | null | undefined): string {
   if (!result) return "";
   return result.trim().replace(/:/g, "-");
 }
 
+export type UnifyFixturesFilters = {
+  leagueExternalIds?: string[];
+  state?: string;
+};
+
 export function unifyFixtures(
   dbData: AdminFixturesListResponse | undefined,
-  providerData: AdminProviderFixturesResponse | undefined
+  providerData: AdminProviderFixturesResponse | undefined,
+  filters?: UnifyFixturesFilters
 ): UnifiedFixture[] {
   // Allow partial data - process what we have
   if (!dbData && !providerData) return [];
@@ -36,16 +42,29 @@ export function unifyFixtures(
     });
   }
 
-  const providerMap = new Map<string, FixtureProvider>();
-  if (providerData?.data) {
-    providerData.data.forEach((f: AdminProviderFixturesResponse["data"][0]) => {
-      providerMap.set(String(f.externalId), {
-        ...f,
-        leagueInDb: Boolean(f.leagueExternalId),
-        seasonInDb: Boolean(f.seasonExternalId),
-      });
-    });
+  let providerFixtures = providerData?.data ?? [];
+  if (filters) {
+    if (filters.leagueExternalIds?.length) {
+      const ids = new Set(filters.leagueExternalIds);
+      providerFixtures = providerFixtures.filter(
+        (f) => f.leagueExternalId != null && ids.has(String(f.leagueExternalId))
+      );
+    }
+    if (filters.state) {
+      providerFixtures = providerFixtures.filter(
+        (f) => f.state === filters.state
+      );
+    }
   }
+
+  const providerMap = new Map<string, FixtureProvider>();
+  providerFixtures.forEach((f: AdminProviderFixturesResponse["data"][0]) => {
+    providerMap.set(String(f.externalId), {
+      ...f,
+      leagueInDb: Boolean(f.leagueExternalId),
+      seasonInDb: Boolean(f.seasonExternalId),
+    });
+  });
 
   const result: UnifiedFixture[] = [];
   const allExternalIds = new Set([

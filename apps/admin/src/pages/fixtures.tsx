@@ -16,7 +16,11 @@ import { useLeaguesFromProvider } from "@/hooks/use-leagues";
 import { useCountriesFromProvider } from "@/hooks/use-countries";
 import { BatchesTable } from "@/components/table";
 import { fixturesService } from "@/services/fixtures.service";
-import { unifyFixtures, calculateDiffStats } from "@/utils/fixtures";
+import {
+  unifyFixtures,
+  calculateDiffStats,
+  normalizeResult,
+} from "@/utils/fixtures";
 import { FixturesTable } from "@/components/fixtures/fixtures-table";
 import { DateRangePicker } from "@/components/filters/date-range-picker";
 import {
@@ -209,7 +213,7 @@ export default function FixturesPage() {
     error: dbError,
   } = useFixturesFromDb(
     {
-      perPage: 500,
+      perPage: 10000,
       leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
       countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
       seasonId: seasonIdNum,
@@ -262,11 +266,44 @@ export default function FixturesPage() {
     enabled: viewMode === "history",
   });
 
-  // Unify and process data
+  const bothLoaded =
+    viewMode !== "provider" || (!!dbData && !!providerData);
+
   const unifiedData = useMemo(
-    () => unifyFixtures(dbData, providerData),
-    [dbData, providerData]
+    () =>
+      bothLoaded
+        ? unifyFixtures(dbData, providerData, {
+            leagueExternalIds:
+              appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
+            state: appliedState,
+          })
+        : [],
+    [
+      dbData,
+      providerData,
+      bothLoaded,
+      appliedLeagueIds,
+      appliedState,
+    ]
   );
+
+  const mismatchBreakdown = useMemo(() => {
+    if (!bothLoaded) return null;
+    let stateCount = 0;
+    let resultCount = 0;
+    let nameCount = 0;
+    for (const f of unifiedData) {
+      if (f.status !== "mismatch" || !f.dbData || !f.providerData) continue;
+      if (f.dbData.state !== f.providerData.state) stateCount++;
+      if (
+        normalizeResult(f.dbData.result) !==
+        normalizeResult(f.providerData.result)
+      )
+        resultCount++;
+      if (f.dbData.name?.trim() !== f.providerData.name?.trim()) nameCount++;
+    }
+    return { stateCount, resultCount, nameCount };
+  }, [unifiedData, bothLoaded]);
 
   // Sync mutation (bulk) - removed from UI for now
   // const syncMutation = useMutation({...});
@@ -380,10 +417,6 @@ export default function FixturesPage() {
     viewMode === "provider" &&
     ((dbData && !providerData && !providerLoading) ||
       (!dbData && providerData && !dbLoading));
-
-  // Don't show diff stats until both DB and provider have loaded (avoids wrong "Extra: 500" on first paint)
-  const bothLoaded =
-    viewMode !== "provider" || (!!dbData && !!providerData);
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
@@ -549,9 +582,32 @@ export default function FixturesPage() {
                 {diffStats.missing > 0 &&
                   `${diffStats.missing} fixture${diffStats.missing === 1 ? "" : "s"} in provider but not in DB.`}
                 {diffStats.missing > 0 && diffStats.mismatch > 0 && " "}
-                {diffStats.mismatch > 0 &&
-                  `${diffStats.mismatch} mismatch.`}
-                {" "}
+                {diffStats.mismatch > 0 && (
+                  <>
+                    {diffStats.mismatch} mismatch
+                    {mismatchBreakdown &&
+                      (mismatchBreakdown.stateCount > 0 ||
+                        mismatchBreakdown.resultCount > 0 ||
+                        mismatchBreakdown.nameCount > 0) && (
+                        <span className="text-amber-700">
+                          {" "}
+                          (
+                          {[
+                            mismatchBreakdown.stateCount > 0 &&
+                              `${mismatchBreakdown.stateCount} state`,
+                            mismatchBreakdown.resultCount > 0 &&
+                              `${mismatchBreakdown.resultCount} result`,
+                            mismatchBreakdown.nameCount > 0 &&
+                              `${mismatchBreakdown.nameCount} name`,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                          )
+                        </span>
+                    )}
+                    .
+                  </>
+                )}{" "}
                 Re-sync filtered range to update.
               </span>
               <Button

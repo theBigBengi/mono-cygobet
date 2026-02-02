@@ -35,6 +35,7 @@ import type {
   AdminProviderFixturesResponse,
 } from "@repo/types";
 import { format } from "date-fns";
+import { normalizeResult } from "@/utils/fixtures";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { FixtureDialog } from "./fixture-dialog";
 
@@ -88,8 +89,6 @@ export function FixturesTable({
   const [columnVisibility, setColumnVisibility] = useColumnVisibility(
     "fixtures-table",
     {
-      "name-db": false,
-      "state-db": false,
       stage: false,
       round: false,
     }
@@ -177,6 +176,39 @@ export function FixturesTable({
           },
         },
         {
+          id: "diff",
+          header: "Diff",
+          enableSorting: false,
+          cell: ({ row }: { row: Row<UnifiedFixture> }) => {
+            const f = row.original;
+            if (
+              f.status !== "mismatch" ||
+              !f.dbData ||
+              !f.providerData
+            )
+              return null;
+            const diffs: string[] = [];
+            if (f.dbData.state !== f.providerData.state)
+              diffs.push(
+                `state: ${f.dbData.state} → ${f.providerData.state}`
+              );
+            if (
+              normalizeResult(f.dbData.result) !==
+              normalizeResult(f.providerData.result)
+            )
+              diffs.push(
+                `result: ${f.dbData.result || "—"} → ${f.providerData.result || "—"}`
+              );
+            if (f.dbData.name?.trim() !== f.providerData.name?.trim())
+              diffs.push("name");
+            return (
+              <span className="text-xs text-amber-600">
+                {diffs.join(", ")}
+              </span>
+            );
+          },
+        },
+        {
           accessorKey: "externalId",
           header: ({
             column,
@@ -188,19 +220,6 @@ export function FixturesTable({
               {row.getValue("externalId")}
             </span>
           ),
-        },
-        {
-          id: "name-db",
-          header: "Name (DB)",
-          enableSorting: false,
-          cell: ({ row }: { row: Row<UnifiedFixture> }) => {
-            const fixture = row.original;
-            return (
-              <span className="text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis block">
-                {fixture.dbData?.name || "—"}
-              </span>
-            );
-          },
         },
         {
           id: "name-provider",
@@ -246,19 +265,6 @@ export function FixturesTable({
             } catch {
               return <span className="text-muted-foreground">—</span>;
             }
-          },
-        },
-        {
-          id: "state-db",
-          header: "State (DB)",
-          enableSorting: false,
-          cell: ({ row }: { row: Row<UnifiedFixture> }) => {
-            const fixture = row.original;
-            return (
-              <span className="text-xs sm:text-sm whitespace-nowrap">
-                {fixture.dbData?.state || "—"}
-              </span>
-            );
           },
         },
         {
