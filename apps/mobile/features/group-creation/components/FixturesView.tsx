@@ -21,6 +21,9 @@ import {
 import { groupFixturesByLeagueAndDate } from "@/utils/fixture";
 import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
+import { useFixtureFilters } from "@/features/group-creation/filters/useFixtureFilters";
+import { DateChips } from "@/features/group-creation/filters/DateChips";
+import { FilterDrawer } from "@/features/group-creation/filters/FilterDrawer";
 
 function GameFixtureCardWithSelection({
   fixture,
@@ -56,9 +59,20 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const toggleGroupGame = useToggleGroupGame();
+  const filters = useFixtureFilters();
+  const [drawerVisible, setDrawerVisible] = useState(false);
+
+  const mergedParams = useMemo(
+    () => ({
+      ...(queryParams ?? {}),
+      ...filters.queryParams,
+      page: 1,
+    }),
+    [queryParams, filters.queryParams]
+  );
 
   const { data, isLoading, error, refetch } = useUpcomingFixturesQuery(
-    queryParams ?? { page: 1 }
+    mergedParams
   );
 
   const [refreshing, setRefreshing] = useState(false);
@@ -93,6 +107,12 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         }
       >
         {tabs}
+        <DateChips
+          selected={filters.dateRange}
+          onSelect={filters.setDateRange}
+          activeFilterCount={filters.activeFilterCount}
+          onOpenFilters={() => setDrawerVisible(true)}
+        />
         {isLoading && (
           <AppText variant="body" color="secondary" style={styles.message}>
             Loading games…
@@ -148,6 +168,17 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           </>
         )}
       </ScrollView>
+
+      <FilterDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+        selectedLeagueIds={filters.selectedLeagueIds}
+        onApply={(ids) => {
+          filters.setLeagues(ids);
+          setDrawerVisible(false);
+        }}
+        onClear={filters.clearLeagues}
+      />
     </View>
   );
 }
