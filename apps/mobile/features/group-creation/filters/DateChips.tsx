@@ -2,18 +2,19 @@
 // Layer 1: horizontal scrolling date pills + filter icon with badge.
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { DateRangeKey } from "./useFixtureFilters";
 
-const DATE_OPTIONS: { value: DateRangeKey; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "today", label: "Today" },
-  { value: "tomorrow", label: "Tomorrow" },
-  { value: "3days", label: "3 Days" },
-  { value: "week", label: "This Week" },
+const DATE_OPTIONS: { value: DateRangeKey; labelKey: string }[] = [
+  { value: "all", labelKey: "groupCreation.dateAll" },
+  { value: "today", labelKey: "groupCreation.dateToday" },
+  { value: "tomorrow", labelKey: "groupCreation.dateTomorrow" },
+  { value: "3days", labelKey: "groupCreation.date3Days" },
+  { value: "week", labelKey: "groupCreation.dateThisWeek" },
 ];
 
 interface DateChipsProps {
@@ -23,6 +24,14 @@ interface DateChipsProps {
   onOpenFilters: () => void;
 }
 
+const FALLBACK_LABELS: Record<DateRangeKey, string> = {
+  all: "All",
+  today: "Today",
+  tomorrow: "Tomorrow",
+  "3days": "3 Days",
+  week: "This Week",
+};
+
 export function DateChips({
   selected,
   onSelect,
@@ -30,6 +39,7 @@ export function DateChips({
   onOpenFilters,
 }: DateChipsProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation("common");
 
   return (
     <View style={styles.container}>
@@ -38,7 +48,7 @@ export function DateChips({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.row}
       >
-        {DATE_OPTIONS.map(({ value, label }) => {
+        {DATE_OPTIONS.map(({ value, labelKey }) => {
           const isActive = selected === value;
           return (
             <Pressable
@@ -75,7 +85,7 @@ export function DateChips({
                   ]}
                   numberOfLines={1}
                 >
-                  {label}
+                  {t(labelKey, { defaultValue: FALLBACK_LABELS[value] })}
                 </AppText>
               </View>
             </Pressable>

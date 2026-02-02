@@ -2,6 +2,7 @@
 // Layer 2: full-screen modal for advanced filters (leagues).
 
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal, View, StyleSheet, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -24,6 +25,7 @@ export function FilterDrawer({
   onApply,
   onClear,
 }: FilterDrawerProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [localSelectedIds, setLocalSelectedIds] = useState<number[]>([]);
@@ -77,7 +79,7 @@ export function FilterDrawer({
             />
           </Pressable>
           <AppText variant="subtitle" style={styles.headerTitle}>
-            Filters
+            {t("groupCreation.filtersTitle")}
           </AppText>
           <Pressable
             onPress={handleClear}
@@ -85,14 +87,14 @@ export function FilterDrawer({
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <AppText variant="body" color="primary">
-              Clear
+              {t("groupCreation.filtersClear")}
             </AppText>
           </Pressable>
         </View>
 
         <View style={styles.body}>
           <AppText variant="subtitle" style={styles.sectionTitle}>
-            Leagues
+            {t("groupCreation.filtersLeaguesSection")}
           </AppText>
           <LeagueFilterList
             selectedLeagueIds={localSelectedIds}
@@ -106,7 +108,7 @@ export function FilterDrawer({
             { borderTopColor: theme.colors.border, paddingBottom: insets.bottom + 16 },
           ]}
         >
-          <Button title="Apply Filters" onPress={handleApply} />
+          <Button title={t("groupCreation.filtersApply")} onPress={handleApply} />
         </View>
       </View>
     </Modal>

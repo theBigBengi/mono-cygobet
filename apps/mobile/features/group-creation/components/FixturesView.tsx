@@ -175,7 +175,6 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         selectedLeagueIds={filters.selectedLeagueIds}
         onApply={(ids) => {
           filters.setLeagues(ids);
-          setDrawerVisible(false);
         }}
         onClear={filters.clearLeagues}
       />
