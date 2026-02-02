@@ -313,7 +313,10 @@ export function useSmartFilters({ fixtures, mode, groupTeamsIds, onNavigateToLea
           });
         }
       }
-      const teams = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+      const allowedIds = new Set(groupTeamsIds ?? []);
+      const teams = Array.from(teamMap.values())
+        .filter((t) => allowedIds.size === 0 || allowedIds.has(t.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
       if (teams.length > 1) {
         structuralFilter = {
           type: "teams",

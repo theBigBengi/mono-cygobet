@@ -62,7 +62,7 @@ export function RoundPickerSheet({
       setTimeout(() => {
         scrollRef.current?.scrollTo({
           y: Math.max(0, selectedIndex * 56 - 100),
-          animated: true,
+          animated: false,
         });
       }, 100);
     }
@@ -76,7 +76,7 @@ export function RoundPickerSheet({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="none"
       transparent={false}
       onRequestClose={onClose}
       presentationStyle="pageSheet"

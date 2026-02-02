@@ -1,8 +1,8 @@
 // components/SmartFilterChips.tsx
 // Two-layer smart filters: Layer 1 action chips (single-select), Layer 2 structural (teams/rounds).
 
-import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable, Animated } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet, Pressable } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -37,33 +37,12 @@ export function SmartFilterChips({
 }: SmartFilterChipsProps) {
   const { theme } = useTheme();
   const [roundPickerVisible, setRoundPickerVisible] = useState(false);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const isLiveChip = (id: string) => id === "live";
   const isPredictChip = (id: string) => id === "predict";
   const isResultsChip = (id: string) => id === "results";
   const isUrgentPredict = (chip: ActionChip) =>
     isPredictChip(chip.id) && (chip.urgency === "urgent" || chip.urgency === "critical");
-
-  useEffect(() => {
-    if (!actionChips.some((c) => isLiveChip(c.id) || isUrgentPredict(c))) return;
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.15,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 0.92,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [actionChips, pulseAnim]);
 
   if (actionChips.length === 0) {
     return null;
@@ -127,9 +106,6 @@ export function SmartFilterChips({
             }
           }
 
-          const showPulse = (live || urgent) && isActive;
-          const Wrapper = showPulse ? Animated.View : View;
-
           return (
             <Pressable
               key={chip.id}
@@ -139,7 +115,7 @@ export function SmartFilterChips({
                 pressed && styles.chipPressed,
               ]}
             >
-              <Wrapper
+              <View
                 style={[
                   styles.chip,
                   {
@@ -147,7 +123,6 @@ export function SmartFilterChips({
                     borderColor,
                     borderWidth: 1,
                   },
-                  showPulse && { transform: [{ scale: pulseAnim }] },
                 ]}
               >
                 {live && (
@@ -172,7 +147,7 @@ export function SmartFilterChips({
                 >
                   {chip.label}
                 </AppText>
-              </Wrapper>
+              </View>
             </Pressable>
           );
         })}
