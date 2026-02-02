@@ -237,7 +237,11 @@ export default function RunDetailPage() {
                     <div className="font-medium text-lg">
                       {typeof value === "boolean"
                         ? String(value)
-                        : value ?? "—"}
+                        : value == null
+                          ? "—"
+                          : typeof value === "object"
+                            ? JSON.stringify(value)
+                            : String(value)}
                     </div>
                   </div>
                 ))

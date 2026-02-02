@@ -61,7 +61,6 @@ export function MultiSelectCombobox({
   onSearchChange,
   searchValue,
 }: MultiSelectComboboxProps) {
-  const isAsyncSearch = onSearchChange != null;
   const [open, setOpen] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
 
@@ -168,10 +167,10 @@ export function MultiSelectCombobox({
   // Common content (options list)
   const optionsContent = (
     <>
-      <Command {...(isAsyncSearch && { shouldFilter: false })}>
+      <Command {...(onSearchChange != null && { shouldFilter: false })}>
         <CommandInput
           placeholder={searchPlaceholder}
-          {...(isAsyncSearch && {
+          {...(onSearchChange != null && {
             value: searchValue ?? "",
             onValueChange: onSearchChange,
           })}
