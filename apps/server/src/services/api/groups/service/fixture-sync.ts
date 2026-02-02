@@ -47,6 +47,7 @@ export async function syncNewFixturesToActiveGroups(opts?: {
   });
 
   let totalFixturesAttached = 0;
+  const now = Math.floor(Date.now() / 1000);
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const rules of groupRules) {
@@ -61,6 +62,8 @@ export async function syncNewFixturesToActiveGroups(opts?: {
 
       const baseWhere = {
         state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
+        startTs: { gt: now },
+        externalId: { gte: 0 },
       };
       const where = isLeagues
         ? buildFixturesByLeaguesWhere(baseWhere, leagueIds)
