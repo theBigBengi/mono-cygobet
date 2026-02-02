@@ -354,6 +354,10 @@ model groupRules {
   maxMembers     Int                 @default(50) @map("max_members")
   inviteAccess   groupInviteAccess   @default(all) @map("invite_access")
 
+  // Nudge feature settings
+  nudgeEnabled       Boolean @default(true) @map("nudge_enabled")
+  nudgeWindowMinutes Int     @default(60) @map("nudge_window_minutes")
+
   // ruleType     String    @map("rule_type")
   // leagueId  Int?     @map("league_id")
   // teamIds   Int[]    @map("team_ids")
@@ -515,6 +519,22 @@ model userActivityEvents {
   @@index([userId, createdAt(sort: Desc)], map: "user_activity_events_user_created_idx")
   @@index([userId, eventType, meta], map: "user_activity_events_dedup_idx")
   @@map("user_activity_events")
+}
+
+model nudgeEvents {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  groupId      Int      @map("group_id")
+  fixtureId    Int      @map("fixture_id")
+  nudgerUserId Int      @map("nudger_user_id")
+  targetUserId Int      @map("target_user_id")
+  message      String?  // הודעת preset (אופציונלי, Phase 2)
+  snappedBack  Boolean  @default(false) @map("snapped_back") // Phase 2 gamification
+
+  @@unique([groupId, fixtureId, nudgerUserId, targetUserId], map: "nudge_unique_per_fixture")
+  @@index([targetUserId, createdAt(sort: Desc)])
+  @@index([groupId, fixtureId])
+  @@map("nudge_events")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
