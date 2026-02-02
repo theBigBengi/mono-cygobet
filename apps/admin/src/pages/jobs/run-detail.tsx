@@ -25,6 +25,7 @@ import {
   formatDurationMs,
   jobNameFromKey,
   titleCaseWords,
+  camelToHuman,
 } from "./jobs.utils";
 
 export default function RunDetailPage() {
@@ -88,13 +89,34 @@ export default function RunDetailPage() {
     );
   }
 
-  const meta = run.meta ?? {};
+  const meta = (run.meta ?? {}) as Record<string, unknown>;
+  const standardKeys = ["inserted", "updated", "skipped", "fail"];
+  const hasStandard = standardKeys.some(
+    (k) => typeof meta[k] === "number"
+  );
   const inserted =
     typeof meta["inserted"] === "number" ? meta["inserted"] : null;
   const updated = typeof meta["updated"] === "number" ? meta["updated"] : null;
   const skipped = typeof meta["skipped"] === "number" ? meta["skipped"] : null;
   const failed =
     typeof meta["fail"] === "number" ? meta["fail"] : null;
+
+  const excludeSummaryKeys = new Set([
+    "batchId",
+    "jobRunId",
+    "environment",
+    "reason",
+  ]);
+  const dynamicSummaryEntries = hasStandard
+    ? []
+    : Object.entries(meta).filter(([key, value]) => {
+        if (excludeSummaryKeys.has(key)) return false;
+        return (
+          typeof value === "number" ||
+          typeof value === "string" ||
+          typeof value === "boolean"
+        );
+      });
 
   function formatChanges(ch: unknown): string {
     if (ch == null || typeof ch !== "object") return "—";
@@ -179,30 +201,47 @@ export default function RunDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-              <div>
-                <div className="text-muted-foreground">Inserted</div>
-                <div className="font-medium text-lg">
-                  {inserted ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Updated</div>
-                <div className="font-medium text-lg">
-                  {updated ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Skipped</div>
-                <div className="font-medium text-lg">
-                  {skipped ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Failed</div>
-                <div className="font-medium text-lg">
-                  {failed ?? "—"}
-                </div>
-              </div>
+              {hasStandard ? (
+                <>
+                  <div>
+                    <div className="text-muted-foreground">Inserted</div>
+                    <div className="font-medium text-lg">
+                      {inserted ?? "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Updated</div>
+                    <div className="font-medium text-lg">
+                      {updated ?? "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Skipped</div>
+                    <div className="font-medium text-lg">
+                      {skipped ?? "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Failed</div>
+                    <div className="font-medium text-lg">
+                      {failed ?? "—"}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                dynamicSummaryEntries.map(([key, value]) => (
+                  <div key={key}>
+                    <div className="text-muted-foreground">
+                      {titleCaseWords(camelToHuman(key))}
+                    </div>
+                    <div className="font-medium text-lg">
+                      {typeof value === "boolean"
+                        ? String(value)
+                        : value ?? "—"}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

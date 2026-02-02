@@ -43,7 +43,7 @@ function StatusDot({ job }: { job: JobRow }) {
       />
     );
   }
-  if (lastRun.status === "success" && isNoOp(lastRun as unknown as Record<string, unknown>, lastRun.rowsAffected)) {
+  if (lastRun.status === "success" && isNoOp((lastRun.meta ?? {}) as Record<string, unknown>, lastRun.rowsAffected)) {
     return (
       <span
         className="inline-block h-3 w-3 rounded-full bg-amber-500"
@@ -88,7 +88,7 @@ function MiniBar({ job }: { job: JobRow }) {
               r.status === "failed"
                 ? "bg-red-500"
                 : r.status === "success" &&
-                    (r.rowsAffected === 0 || r.rowsAffected == null)
+                    isNoOp((r.meta ?? {}) as Record<string, unknown>, r.rowsAffected ?? null)
                   ? "bg-amber-500"
                   : "bg-green-500"
             }`}

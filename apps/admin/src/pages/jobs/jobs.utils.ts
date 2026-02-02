@@ -228,12 +228,18 @@ export function getRunReason(meta: Record<string, unknown>): string | null {
 
 export function isNoOp(
   meta: Record<string, unknown>,
-  rowsAffected: number | null
+  _rowsAffected: number | null
 ): boolean {
-  return !!meta["reason"] || rowsAffected === 0;
+  return !!meta["reason"];
 }
 
-/** Summary string from run meta: "15 processed: 12 updated, 2 inserted, 1 skipped" */
+/** camelCase → human readable, e.g. "groupsProcessed" → "groups processed" */
+export function camelToHuman(s: string): string {
+  const withSpaces = s.replace(/([A-Z])/g, " $1").trim();
+  return withSpaces.toLowerCase();
+}
+
+/** Summary string from run meta: "15 processed: 12 updated, 2 inserted" or generic "3 groups processed, 12 fixtures attached" */
 export function formatRunSummary(meta: Record<string, unknown>): string {
   const total =
     typeof meta["total"] === "number"
@@ -246,11 +252,29 @@ export function formatRunSummary(meta: Record<string, unknown>): string {
   const updated = typeof meta["updated"] === "number" ? meta["updated"] : 0;
   const skipped = typeof meta["skipped"] === "number" ? meta["skipped"] : 0;
   const failed = typeof meta["fail"] === "number" ? meta["fail"] : 0;
-  if (total == null) return "—";
-  const parts: string[] = [];
-  if (updated) parts.push(`${updated} updated`);
-  if (inserted) parts.push(`${inserted} inserted`);
-  if (skipped) parts.push(`${skipped} skipped`);
-  if (failed) parts.push(`${failed} failed`);
-  return `${total} processed${parts.length ? `: ${parts.join(", ")}` : ""}`;
+
+  if (total != null) {
+    const parts: string[] = [];
+    if (updated) parts.push(`${updated} updated`);
+    if (inserted) parts.push(`${inserted} inserted`);
+    if (skipped) parts.push(`${skipped} skipped`);
+    if (failed) parts.push(`${failed} failed`);
+    return `${total} processed${parts.length ? `: ${parts.join(", ")}` : ""}`;
+  }
+
+  const excludeKeys = new Set([
+    "dryRun",
+    "batchId",
+    "jobRunId",
+    "environment",
+    "reason",
+  ]);
+  const numericParts: string[] = [];
+  for (const [key, value] of Object.entries(meta)) {
+    if (excludeKeys.has(key)) continue;
+    if (typeof value === "number" && Number.isFinite(value)) {
+      numericParts.push(`${value} ${camelToHuman(key)}`);
+    }
+  }
+  return numericParts.length ? numericParts.join(", ") : "—";
 }

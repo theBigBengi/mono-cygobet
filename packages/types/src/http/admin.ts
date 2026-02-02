@@ -242,6 +242,7 @@ export interface AdminJobsListResponse {
       durationMs: number | null;
       rowsAffected: number | null;
       errorMessage: string | null;
+      meta?: Record<string, unknown>;
     };
     /** Last 10 runs for mini bar on list cards (optional). */
     lastRuns?: Array<{
@@ -250,6 +251,7 @@ export interface AdminJobsListResponse {
       startedAt: string;
       durationMs: number | null;
       rowsAffected: number | null;
+      meta?: Record<string, unknown>;
     }>;
   }>;
   message: string;

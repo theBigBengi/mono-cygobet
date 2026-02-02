@@ -91,6 +91,7 @@ const selectJobWithLastRun = Prisma.validator<Prisma.jobsSelect>()({
       durationMs: true,
       rowsAffected: true,
       errorMessage: true,
+      meta: true,
     },
   },
 });
@@ -211,6 +212,7 @@ export class AdminJobsConfigService {
               durationMs: lastRun.durationMs ?? null,
               rowsAffected: lastRun.rowsAffected ?? null,
               errorMessage: lastRun.errorMessage ?? null,
+              meta: (lastRun.meta ?? {}) as Record<string, unknown>,
             }
           : null,
         lastRuns: runs.slice(0, 10).map((r) => ({
@@ -219,6 +221,7 @@ export class AdminJobsConfigService {
           startedAt: r.startedAt.toISOString(),
           durationMs: r.durationMs ?? null,
           rowsAffected: r.rowsAffected ?? null,
+          meta: (r.meta ?? {}) as Record<string, unknown>,
         })),
       } satisfies JobRow;
     });
