@@ -1332,12 +1332,12 @@ export default function SandboxPage() {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                    <Command
-                      shouldFilter={false}
-                      value={addFixtureAwaySearch}
-                      onValueChange={setAddFixtureAwaySearch}
-                    >
-                      <CommandInput placeholder="Type to search (min 2 chars)..." />
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Type to search (min 2 chars)..."
+                        value={addFixtureAwaySearch}
+                        onValueChange={setAddFixtureAwaySearch}
+                      />
                       <CommandList>
                         <CommandEmpty>Type at least 2 characters.</CommandEmpty>
                         <CommandGroup>
@@ -1373,9 +1373,11 @@ export default function SandboxPage() {
                     className="w-full justify-between font-normal"
                   >
                     {addFixtureForm.leagueId != null
-                      ? (addFixtureLeagueOptions.find(
-                          (o) => o.value === addFixtureForm.leagueId
-                        )?.label ?? `League #${addFixtureForm.leagueId}`)
+                      ? (addFixtureForm.leagueLabel ??
+                          addFixtureLeagueOptions.find(
+                            (o) => o.value === addFixtureForm.leagueId
+                          )?.label ??
+                          `League #${addFixtureForm.leagueId}`)
                       : "Search league (optional)..."}
                     <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
