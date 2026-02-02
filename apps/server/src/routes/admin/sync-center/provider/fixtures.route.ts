@@ -3,7 +3,12 @@ import { FastifyPluginAsync } from "fastify";
 import { adapter } from "../../../../utils/adapter";
 import { AdminProviderFixturesResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
-import { prisma } from "@repo/db";
+
+const CACHE_TTL_MS = 60_000; // 1 minute
+const cache = new Map<
+  string,
+  { data: AdminProviderFixturesResponse; ts: number }
+>();
 
 const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/provider/fixtures - Get fixtures from sports-data provider
@@ -66,18 +71,26 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
         toDate = toDateOnly;
       }
 
-      // Fetch fixtures between dates - get raw data with league, country, and odds
+      const cacheKey = `${fromDate}_${toDate}`;
+      const cached = cache.get(cacheKey);
+      if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+        return reply.send(cached.data);
+      }
+
+      // Fetch fixtures between dates - scores for diff; no odds needed
       const fixturesDto = await adapter.fetchFixturesBetween(fromDate, toDate, {
-        includeOdds: true,
+        includeOdds: false,
         includeScores: true,
       });
 
-      return reply.send({
+      const response: AdminProviderFixturesResponse = {
         status: "success",
         data: fixturesDto,
         message: "Fixtures fetched from provider successfully",
         provider: "sportmonks",
-      });
+      };
+      cache.set(cacheKey, { data: response, ts: Date.now() });
+      return reply.send(response);
     }
   );
 };

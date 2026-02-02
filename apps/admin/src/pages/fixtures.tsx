@@ -209,7 +209,7 @@ export default function FixturesPage() {
     error: dbError,
   } = useFixturesFromDb(
     {
-      perPage: 1000,
+      perPage: 500,
       leagueIds: appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
       countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
       seasonId: seasonIdNum,
@@ -381,6 +381,10 @@ export default function FixturesPage() {
     ((dbData && !providerData && !providerLoading) ||
       (!dbData && providerData && !dbLoading));
 
+  // Don't show diff stats until both DB and provider have loaded (avoids wrong "Extra: 500" on first paint)
+  const bothLoaded =
+    viewMode !== "provider" || (!!dbData && !!providerData);
+
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
       {/* Fixed Header Section */}
@@ -536,8 +540,9 @@ export default function FixturesPage() {
           </div>
         )}
 
-        {/* Diff-based re-sync suggestion: missing/mismatch in current filter range */}
+        {/* Diff-based re-sync suggestion: missing/mismatch in current filter range (only when both sources loaded) */}
         {viewMode === "provider" &&
+          bothLoaded &&
           (diffStats.missing > 0 || diffStats.mismatch > 0) && (
             <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-2 mt-2 flex flex-wrap items-center gap-2">
               <span className="text-sm">
@@ -583,10 +588,10 @@ export default function FixturesPage() {
           </div>
         )}
 
-        {/* Summary Overview */}
+        {/* Summary Overview — show skeletons until both DB and provider loaded in provider tab */}
         <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-2 py-2 sm:py-1">
           <div className="flex items-center gap-3 sm:gap-4 text-xs pb-1 min-w-max">
-            {isFetching ? (
+            {isFetching || !bothLoaded ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-3 w-12" />
               ))
