@@ -1,5 +1,6 @@
 import * as React from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +8,14 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -36,14 +41,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Play, Flag, RotateCcw, Trash2, Plus, Pencil } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Play, Flag, RotateCcw, Trash2, Plus, Pencil, ChevronDown } from "lucide-react";
 import { useSandboxList } from "@/hooks/use-sandbox";
 import {
   sandboxService,
   type SandboxFixture,
   type SandboxGroup,
 } from "@/services/sandbox.service";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { leaguesService } from "@/services/leagues.service";
+import { teamsService } from "@/services/teams.service";
+import { MultiSelectCombobox } from "@/components/filters/multi-select-combobox";
 
 function tsToDatetimeLocal(ts: number): string {
   const d = new Date(ts * 1000);
@@ -106,14 +126,44 @@ export default function SandboxPage() {
   const [setupForm, setSetupForm] = React.useState({
     selectionMode: "games" as "games" | "leagues" | "teams",
     fixtureCount: 3,
-    leagueIds: "",
-    teamIds: "",
+    selectedLeagueIds: [] as number[],
+    selectedTeamIds: [] as number[],
     memberUserIds: "",
     predictionMode: "CorrectScore" as "CorrectScore" | "MatchWinner",
     autoGeneratePredictions: true,
     groupName: "",
     startInMinutes: 60,
   });
+  const [leagueSearchQuery, setLeagueSearchQuery] = React.useState("");
+  const [teamSearchQuery, setTeamSearchQuery] = React.useState("");
+  const [debouncedLeagueQuery] = useDebounce(leagueSearchQuery, 300);
+  const [debouncedTeamQuery] = useDebounce(teamSearchQuery, 300);
+
+  const { data: leaguesSearchData } = useQuery({
+    queryKey: ["leagues", "search", debouncedLeagueQuery],
+    queryFn: () => leaguesService.search(debouncedLeagueQuery, 20),
+    enabled: setupForm.selectionMode === "leagues" && debouncedLeagueQuery.length >= 2,
+  });
+  const { data: teamsSearchData } = useQuery({
+    queryKey: ["teams", "search", debouncedTeamQuery],
+    queryFn: () => teamsService.search(debouncedTeamQuery, 20),
+    enabled: setupForm.selectionMode === "teams" && debouncedTeamQuery.length >= 2,
+  });
+
+  const leagueOptions = React.useMemo(() => {
+    const data = leaguesSearchData?.data ?? [];
+    return data.map((l) => ({
+      value: l.id,
+      label: l.country?.name ? `${l.name} (${l.country.name})` : l.name,
+    }));
+  }, [leaguesSearchData]);
+  const teamOptions = React.useMemo(() => {
+    const data = teamsSearchData?.data ?? [];
+    return data.map((t) => ({
+      value: t.id,
+      label: t.country?.name ? `${t.name} (${t.country.name})` : t.name,
+    }));
+  }, [teamsSearchData]);
 
   // Add fixture dialog
   const [addFixtureDialog, setAddFixtureDialog] = React.useState<{
@@ -121,12 +171,57 @@ export default function SandboxPage() {
     groupId: number | null;
   }>({ open: false, groupId: null });
   const [addFixtureForm, setAddFixtureForm] = React.useState({
-    homeTeamId: "",
-    awayTeamId: "",
-    leagueId: "",
+    homeTeamId: null as number | null,
+    awayTeamId: null as number | null,
+    leagueId: null as number | null,
+    homeTeamLabel: null as string | null,
+    awayTeamLabel: null as string | null,
+    leagueLabel: null as string | null,
     round: "",
     startInMinutes: 60,
   });
+  const [addFixtureHomeSearch, setAddFixtureHomeSearch] = React.useState("");
+  const [addFixtureAwaySearch, setAddFixtureAwaySearch] = React.useState("");
+  const [addFixtureLeagueSearch, setAddFixtureLeagueSearch] = React.useState("");
+  const [debouncedAddHome] = useDebounce(addFixtureHomeSearch, 300);
+  const [debouncedAddAway] = useDebounce(addFixtureAwaySearch, 300);
+  const [debouncedAddLeague] = useDebounce(addFixtureLeagueSearch, 300);
+  const { data: addHomeTeams } = useQuery({
+    queryKey: ["teams", "search", "addHome", debouncedAddHome],
+    queryFn: () => teamsService.search(debouncedAddHome, 20),
+    enabled: addFixtureDialog.open && debouncedAddHome.length >= 2,
+  });
+  const { data: addAwayTeams } = useQuery({
+    queryKey: ["teams", "search", "addAway", debouncedAddAway],
+    queryFn: () => teamsService.search(debouncedAddAway, 20),
+    enabled: addFixtureDialog.open && debouncedAddAway.length >= 2,
+  });
+  const { data: addLeagues } = useQuery({
+    queryKey: ["leagues", "search", "addLeague", debouncedAddLeague],
+    queryFn: () => leaguesService.search(debouncedAddLeague, 20),
+    enabled: addFixtureDialog.open && debouncedAddLeague.length >= 2,
+  });
+  const addFixtureHomeOptions = React.useMemo(() => {
+    const data = addHomeTeams?.data ?? [];
+    return data.map((t) => ({
+      value: t.id,
+      label: t.country?.name ? `${t.name} (${t.country.name})` : t.name,
+    }));
+  }, [addHomeTeams]);
+  const addFixtureAwayOptions = React.useMemo(() => {
+    const data = addAwayTeams?.data ?? [];
+    return data.map((t) => ({
+      value: t.id,
+      label: t.country?.name ? `${t.name} (${t.country.name})` : t.name,
+    }));
+  }, [addAwayTeams]);
+  const addFixtureLeagueOptions = React.useMemo(() => {
+    const data = addLeagues?.data ?? [];
+    return data.map((l) => ({
+      value: l.id,
+      label: l.country?.name ? `${l.name} (${l.country.name})` : l.name,
+    }));
+  }, [addLeagues]);
 
   // Full-time dialog
   const [ftDialog, setFtDialog] = React.useState<{
@@ -176,14 +271,16 @@ export default function SandboxPage() {
       setSetupForm({
         selectionMode: "games",
         fixtureCount: 3,
-        leagueIds: "",
-        teamIds: "",
+        selectedLeagueIds: [],
+        selectedTeamIds: [],
         memberUserIds: "",
         predictionMode: "CorrectScore",
         autoGeneratePredictions: true,
         groupName: "",
         startInMinutes: 60,
       });
+      setLeagueSearchQuery("");
+      setTeamSearchQuery("");
     },
     onError: (error: Error) => {
       toast.error("Setup failed", { description: error.message });
@@ -204,12 +301,18 @@ export default function SandboxPage() {
       queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
       setAddFixtureDialog({ open: false, groupId: null });
       setAddFixtureForm({
-        homeTeamId: "",
-        awayTeamId: "",
-        leagueId: "",
+        homeTeamId: null,
+        awayTeamId: null,
+        leagueId: null,
+        homeTeamLabel: null,
+        awayTeamLabel: null,
+        leagueLabel: null,
         round: "",
         startInMinutes: 60,
       });
+      setAddFixtureHomeSearch("");
+      setAddFixtureAwaySearch("");
+      setAddFixtureLeagueSearch("");
     },
     onError: (error: Error) => {
       toast.error("Add fixture failed", { description: error.message });
@@ -329,17 +432,13 @@ export default function SandboxPage() {
       }
     }
     if (setupForm.selectionMode === "leagues") {
-      const leagueIds = setupForm.leagueIds
-        .split(",")
-        .map((s) => Number(s.trim()))
-        .filter((n) => !Number.isNaN(n));
-      if (leagueIds.length === 0) {
-        toast.error("Leagues mode requires at least one league ID");
+      if (setupForm.selectedLeagueIds.length === 0) {
+        toast.error("Leagues mode requires at least one league");
         return;
       }
       setupMutation.mutate({
         selectionMode: "leagues",
-        leagueIds,
+        leagueIds: setupForm.selectedLeagueIds,
         memberUserIds,
         predictionMode: setupForm.predictionMode,
         autoGeneratePredictions: setupForm.autoGeneratePredictions,
@@ -349,17 +448,13 @@ export default function SandboxPage() {
       return;
     }
     if (setupForm.selectionMode === "teams") {
-      const teamIds = setupForm.teamIds
-        .split(",")
-        .map((s) => Number(s.trim()))
-        .filter((n) => !Number.isNaN(n));
-      if (teamIds.length === 0) {
-        toast.error("Teams mode requires at least one team ID");
+      if (setupForm.selectedTeamIds.length === 0) {
+        toast.error("Teams mode requires at least one team");
         return;
       }
       setupMutation.mutate({
         selectionMode: "teams",
-        teamIds,
+        teamIds: setupForm.selectedTeamIds,
         memberUserIds,
         predictionMode: setupForm.predictionMode,
         autoGeneratePredictions: setupForm.autoGeneratePredictions,
@@ -423,272 +518,281 @@ export default function SandboxPage() {
           </Button>
         </div>
 
-        {/* Setup Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Setup</CardTitle>
-            <CardDescription>
-              Create sandbox fixtures, group, members and predictions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSetup}>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="selectionMode">Selection Mode</Label>
-                  <Select
-                    value={setupForm.selectionMode}
-                    onValueChange={(v: "games" | "leagues" | "teams") =>
-                      setSetupForm((prev) => ({
-                        ...prev,
-                        selectionMode: v,
-                      }))
-                    }
-                  >
-                    <SelectTrigger id="selectionMode">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="games">Games (fictive)</SelectItem>
-                      <SelectItem value="leagues">Leagues</SelectItem>
-                      <SelectItem value="teams">Teams</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {setupForm.selectionMode === "games" && (
+        {/* Collapsible Create New Group */}
+        <Collapsible
+          defaultOpen={groups.length === 0}
+          className="rounded-lg border"
+        >
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              className="group flex w-full items-center justify-between px-4 py-3"
+            >
+              <span className="font-medium">Create New Group</span>
+              <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="border-t px-4 pb-4 pt-2">
+              <form onSubmit={handleSetup}>
+                <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-2">
-                    <Label htmlFor="fixtureCount">Fixtures</Label>
+                    <Label htmlFor="selectionMode">Selection Mode</Label>
+                    <Select
+                      value={setupForm.selectionMode}
+                      onValueChange={(v: "games" | "leagues" | "teams") =>
+                        setSetupForm((prev) => ({
+                          ...prev,
+                          selectionMode: v,
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="selectionMode">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="games">Games (fictive)</SelectItem>
+                        <SelectItem value="leagues">Leagues</SelectItem>
+                        <SelectItem value="teams">Teams</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="predictionMode">Prediction Mode</Label>
+                    <Select
+                      value={setupForm.predictionMode}
+                      onValueChange={(v: "CorrectScore" | "MatchWinner") =>
+                        setSetupForm((prev) => ({
+                          ...prev,
+                          predictionMode: v,
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="predictionMode">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CorrectScore">
+                          CorrectScore
+                        </SelectItem>
+                        <SelectItem value="MatchWinner">MatchWinner</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="memberUserIds">User IDs</Label>
                     <Input
-                      id="fixtureCount"
+                      id="memberUserIds"
+                      type="text"
+                      placeholder="1, 2, 3"
+                      value={setupForm.memberUserIds}
+                      onChange={(e) =>
+                        setSetupForm((prev) => ({
+                          ...prev,
+                          memberUserIds: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  {setupForm.selectionMode === "games" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="fixtureCount">Fixture count</Label>
+                      <Input
+                        id="fixtureCount"
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={setupForm.fixtureCount}
+                        onChange={(e) =>
+                          setSetupForm((prev) => ({
+                            ...prev,
+                            fixtureCount: Number(e.target.value) || 1,
+                          }))
+                        }
+                      />
+                    </div>
+                  )}
+                  {setupForm.selectionMode === "leagues" && (
+                    <div className="space-y-2 min-w-0">
+                      <Label>Leagues</Label>
+                      <MultiSelectCombobox
+                        options={leagueOptions}
+                        selectedValues={setupForm.selectedLeagueIds}
+                        onSelectionChange={(vals) =>
+                          setSetupForm((prev) => ({
+                            ...prev,
+                            selectedLeagueIds: vals.map(Number),
+                          }))
+                        }
+                        placeholder="Search leagues (min 2 chars)..."
+                        searchPlaceholder="Type to search..."
+                        emptyMessage="Type at least 2 characters to search."
+                        onSearchChange={setLeagueSearchQuery}
+                        searchValue={leagueSearchQuery}
+                      />
+                    </div>
+                  )}
+                  {setupForm.selectionMode === "teams" && (
+                    <div className="space-y-2 min-w-0">
+                      <Label>Teams</Label>
+                      <MultiSelectCombobox
+                        options={teamOptions}
+                        selectedValues={setupForm.selectedTeamIds}
+                        onSelectionChange={(vals) =>
+                          setSetupForm((prev) => ({
+                            ...prev,
+                            selectedTeamIds: vals.map(Number),
+                          }))
+                        }
+                        placeholder="Search teams (min 2 chars)..."
+                        searchPlaceholder="Type to search..."
+                        emptyMessage="Type at least 2 characters to search."
+                        onSearchChange={setTeamSearchQuery}
+                        searchValue={teamSearchQuery}
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="autoGenerate"
+                      checked={setupForm.autoGeneratePredictions}
+                      onCheckedChange={(checked) =>
+                        setSetupForm((prev) => ({
+                          ...prev,
+                          autoGeneratePredictions: checked === true,
+                        }))
+                      }
+                    />
+                    <Label htmlFor="autoGenerate" className="font-normal">
+                      Auto-generate predictions
+                    </Label>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="groupName">Group name (optional)</Label>
+                    <Input
+                      id="groupName"
+                      className="min-w-0"
+                      value={setupForm.groupName}
+                      onChange={(e) =>
+                        setSetupForm((prev) => ({
+                          ...prev,
+                          groupName: e.target.value,
+                        }))
+                      }
+                      placeholder="Test Group"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="startInMinutes">Start in (minutes)</Label>
+                    <Input
+                      id="startInMinutes"
                       type="number"
                       min={1}
-                      max={10}
-                      value={setupForm.fixtureCount}
+                      placeholder="60"
+                      className="min-w-0 max-w-[120px]"
+                      value={setupForm.startInMinutes}
                       onChange={(e) =>
                         setSetupForm((prev) => ({
                           ...prev,
-                          fixtureCount: Number(e.target.value) || 1,
+                          startInMinutes: Number(e.target.value) || 60,
                         }))
                       }
                     />
                   </div>
-                )}
-                {setupForm.selectionMode === "leagues" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="leagueIds">League IDs</Label>
-                    <Input
-                      id="leagueIds"
-                      type="text"
-                      placeholder="1, 2, 3"
-                      value={setupForm.leagueIds}
-                      onChange={(e) =>
-                        setSetupForm((prev) => ({
-                          ...prev,
-                          leagueIds: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                )}
-                {setupForm.selectionMode === "teams" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="teamIds">Team IDs</Label>
-                    <Input
-                      id="teamIds"
-                      type="text"
-                      placeholder="1, 2, 3"
-                      value={setupForm.teamIds}
-                      onChange={(e) =>
-                        setSetupForm((prev) => ({
-                          ...prev,
-                          teamIds: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="memberUserIds">User IDs</Label>
-                  <Input
-                    id="memberUserIds"
-                    type="text"
-                    placeholder="1, 2, 3"
-                    value={setupForm.memberUserIds}
-                    onChange={(e) =>
-                      setSetupForm((prev) => ({
-                        ...prev,
-                        memberUserIds: e.target.value,
-                      }))
-                    }
-                  />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="predictionMode">Prediction Mode</Label>
-                  <Select
-                    value={setupForm.predictionMode}
-                    onValueChange={(v: "CorrectScore" | "MatchWinner") =>
-                      setSetupForm((prev) => ({
-                        ...prev,
-                        predictionMode: v,
-                      }))
-                    }
+                <div className="mt-4">
+                  <Button
+                    type="submit"
+                    disabled={setupMutation.isPending}
                   >
-                    <SelectTrigger id="predictionMode">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CorrectScore">
-                        CorrectScore
-                      </SelectItem>
-                      <SelectItem value="MatchWinner">MatchWinner</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {setupMutation.isPending ? "Setting up..." : "Create"}
+                  </Button>
                 </div>
-              </div>
-              <div className="mt-4 flex flex-wrap items-center gap-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="autoGenerate"
-                    checked={setupForm.autoGeneratePredictions}
-                    onCheckedChange={(checked) =>
-                      setSetupForm((prev) => ({
-                        ...prev,
-                        autoGeneratePredictions: checked === true,
-                      }))
-                    }
-                  />
-                  <Label htmlFor="autoGenerate" className="font-normal">
-                    Auto-generate predictions
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="groupName" className="whitespace-nowrap">
-                    Group name (optional)
-                  </Label>
-                  <Input
-                    id="groupName"
-                    className="max-w-[200px]"
-                    value={setupForm.groupName}
-                    onChange={(e) =>
-                      setSetupForm((prev) => ({
-                        ...prev,
-                        groupName: e.target.value,
-                      }))
-                    }
-                    placeholder="Test Group"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="startInMinutes" className="whitespace-nowrap">
-                    Start in (minutes)
-                  </Label>
-                  <Input
-                    id="startInMinutes"
-                    type="number"
-                    min={1}
-                    placeholder="60"
-                    className="max-w-[100px]"
-                    value={setupForm.startInMinutes}
-                    onChange={(e) =>
-                      setSetupForm((prev) => ({
-                        ...prev,
-                        startInMinutes: Number(e.target.value) || 60,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-              <div className="mt-4">
-                <Button
-                  type="submit"
-                  disabled={setupMutation.isPending}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  {setupMutation.isPending ? "Setting up..." : "Create Sandbox"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+              </form>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
-        {/* Groups section */}
-        {groups.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Groups ({groups.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {groups.map((group: SandboxGroup) => (
-                  <div
-                    key={group.id}
-                    className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2"
-                  >
-                    <span className="font-medium">{group.name}</span>
-                    <Badge variant="secondary">{group.status}</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {group.memberCount} members, {group.fixtureCount} fixtures
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setAddFixtureDialog({ open: true, groupId: group.id });
-                        setAddFixtureForm({
-                          homeTeamId: "",
-                          awayTeamId: "",
-                          leagueId: "",
-                          round: "",
-                          startInMinutes: 60,
-                        });
-                      }}
-                    >
-                      <Plus className="mr-1 h-3 w-3" />
-                      Add Fixture
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Fixtures Table */}
+        {/* Fixtures Card */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle>
-                Fixtures (
-                {selectedGroupTab === "all"
-                  ? fixtures.length
-                  : groups.find((g) => g.id === selectedGroupTab)?.fixtureIds
-                      .length ?? 0}
-                )
-              </CardTitle>
-              {groups.length > 0 && (
-                <Tabs
-                  value={
-                    selectedGroupTab === "all"
-                      ? "all"
-                      : String(selectedGroupTab)
-                  }
-                  onValueChange={(v) =>
-                    setSelectedGroupTab(
-                      v === "all" ? "all" : Number(v)
-                    )
-                  }
-                >
-                  <TabsList>
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    {groups.map((g: SandboxGroup) => (
-                      <TabsTrigger key={g.id} value={String(g.id)}>
-                        {g.name.replace(/^\[SANDBOX\]\s*/, "")}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
-              )}
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                <CardTitle className="shrink-0">
+                  Fixtures (
+                  {selectedGroupTab === "all"
+                    ? fixtures.length
+                    : groups.find((g) => g.id === selectedGroupTab)?.fixtureIds
+                        .length ?? 0}
+                  )
+                </CardTitle>
+                {groups.length > 0 && (
+                  <Select
+                    value={
+                      selectedGroupTab === "all"
+                        ? "all"
+                        : String(selectedGroupTab)
+                    }
+                    onValueChange={(v) =>
+                      setSelectedGroupTab(v === "all" ? "all" : Number(v))
+                    }
+                  >
+                    <SelectTrigger className="w-full min-w-0 sm:w-[200px]">
+                      <SelectValue placeholder="Select group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {groups.map((g: SandboxGroup) => (
+                        <SelectItem key={g.id} value={String(g.id)}>
+                          {g.name.replace(/^\[SANDBOX\]\s*/, "")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {groups.length > 0 && selectedGroupTab !== "all" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setAddFixtureDialog({
+                        open: true,
+                        groupId: selectedGroupTab,
+                      });
+                      setAddFixtureForm({
+                        homeTeamId: null,
+                        awayTeamId: null,
+                        leagueId: null,
+                        homeTeamLabel: null,
+                        awayTeamLabel: null,
+                        leagueLabel: null,
+                        round: "",
+                        startInMinutes: 60,
+                      });
+                      setAddFixtureHomeSearch("");
+                      setAddFixtureAwaySearch("");
+                      setAddFixtureLeagueSearch("");
+                    }}
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Add Fixture
+                  </Button>
+                )}
+              </div>
             </div>
+            {selectedGroupTab !== "all" && groups.length > 0 && (() => {
+              const group = groups.find((g) => g.id === selectedGroupTab);
+              if (!group) return null;
+              return (
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <Badge variant="secondary">{group.status}</Badge>
+                  <span className="text-muted-foreground">
+                    {group.memberCount} members, {group.fixtureCount} fixtures
+                  </span>
+                </div>
+              );
+            })()}
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -702,6 +806,7 @@ export default function SandboxPage() {
                 No sandbox data. Use Setup to create.
               </p>
             ) : (
+              <div className="min-w-0 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -820,6 +925,7 @@ export default function SandboxPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -1155,52 +1261,155 @@ export default function SandboxPage() {
             <DialogTitle>Add Fixture to Group</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="addHomeTeamId">Home Team ID</Label>
-                <Input
-                  id="addHomeTeamId"
-                  type="number"
-                  placeholder="1"
-                  value={addFixtureForm.homeTeamId}
-                  onChange={(e) =>
-                    setAddFixtureForm((prev) => ({
-                      ...prev,
-                      homeTeamId: e.target.value,
-                    }))
-                  }
-                />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2 min-w-0">
+                <Label>Home Team</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between font-normal"
+                    >
+                      {addFixtureForm.homeTeamId != null
+                        ? (addFixtureForm.homeTeamLabel ??
+                          addFixtureHomeOptions.find(
+                            (o) => o.value === addFixtureForm.homeTeamId
+                          )?.label ??
+                          `Team #${addFixtureForm.homeTeamId}`)
+                        : "Search team..."}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Type to search (min 2 chars)..."
+                        value={addFixtureHomeSearch}
+                        onValueChange={setAddFixtureHomeSearch}
+                      />
+                      <CommandList>
+                        <CommandEmpty>Type at least 2 characters.</CommandEmpty>
+                        <CommandGroup>
+                          {addFixtureHomeOptions.map((opt) => (
+                            <CommandItem
+                              key={opt.value}
+                              value={String(opt.value)}
+                              onSelect={() => {
+                                setAddFixtureForm((prev) => ({
+                                  ...prev,
+                                  homeTeamId: Number(opt.value),
+                                  homeTeamLabel: opt.label,
+                                }));
+                              }}
+                            >
+                              {opt.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="addAwayTeamId">Away Team ID</Label>
-                <Input
-                  id="addAwayTeamId"
-                  type="number"
-                  placeholder="2"
-                  value={addFixtureForm.awayTeamId}
-                  onChange={(e) =>
-                    setAddFixtureForm((prev) => ({
-                      ...prev,
-                      awayTeamId: e.target.value,
-                    }))
-                  }
-                />
+              <div className="space-y-2 min-w-0">
+                <Label>Away Team</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between font-normal"
+                    >
+                      {addFixtureForm.awayTeamId != null
+                        ? (addFixtureForm.awayTeamLabel ??
+                          addFixtureAwayOptions.find(
+                            (o) => o.value === addFixtureForm.awayTeamId
+                          )?.label ??
+                          `Team #${addFixtureForm.awayTeamId}`)
+                        : "Search team..."}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                    <Command
+                      shouldFilter={false}
+                      value={addFixtureAwaySearch}
+                      onValueChange={setAddFixtureAwaySearch}
+                    >
+                      <CommandInput placeholder="Type to search (min 2 chars)..." />
+                      <CommandList>
+                        <CommandEmpty>Type at least 2 characters.</CommandEmpty>
+                        <CommandGroup>
+                          {addFixtureAwayOptions.map((opt) => (
+                            <CommandItem
+                              key={opt.value}
+                              value={String(opt.value)}
+                              onSelect={() => {
+                                setAddFixtureForm((prev) => ({
+                                  ...prev,
+                                  awayTeamId: Number(opt.value),
+                                  awayTeamLabel: opt.label,
+                                }));
+                              }}
+                            >
+                              {opt.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="addLeagueId">League ID (optional)</Label>
-              <Input
-                id="addLeagueId"
-                type="number"
-                placeholder=""
-                value={addFixtureForm.leagueId}
-                onChange={(e) =>
-                  setAddFixtureForm((prev) => ({
-                    ...prev,
-                    leagueId: e.target.value,
-                  }))
-                }
-              />
+            <div className="space-y-2 min-w-0">
+              <Label>League (optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between font-normal"
+                  >
+                    {addFixtureForm.leagueId != null
+                      ? (addFixtureLeagueOptions.find(
+                          (o) => o.value === addFixtureForm.leagueId
+                        )?.label ?? `League #${addFixtureForm.leagueId}`)
+                      : "Search league (optional)..."}
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Type to search (min 2 chars)..."
+                      value={addFixtureLeagueSearch}
+                      onValueChange={setAddFixtureLeagueSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>Type at least 2 characters.</CommandEmpty>
+                      <CommandGroup>
+                        {addFixtureLeagueOptions.map((opt) => (
+                          <CommandItem
+                            key={opt.value}
+                            value={String(opt.value)}
+                            onSelect={() => {
+                              setAddFixtureForm((prev) => ({
+                                ...prev,
+                                leagueId: Number(opt.value),
+                                leagueLabel: opt.label,
+                              }));
+                            }}
+                          >
+                            {opt.label}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label htmlFor="addRound">Round (optional)</Label>
@@ -1243,19 +1452,17 @@ export default function SandboxPage() {
             <Button
               onClick={() => {
                 if (addFixtureDialog.groupId == null) return;
-                const home = Number(addFixtureForm.homeTeamId);
-                const away = Number(addFixtureForm.awayTeamId);
-                if (Number.isNaN(home) || Number.isNaN(away)) {
-                  toast.error("Home and away team IDs are required");
+                const home = addFixtureForm.homeTeamId;
+                const away = addFixtureForm.awayTeamId;
+                if (home == null || away == null) {
+                  toast.error("Home and away teams are required");
                   return;
                 }
                 addFixtureMutation.mutate({
                   groupId: addFixtureDialog.groupId,
                   homeTeamId: home,
                   awayTeamId: away,
-                  leagueId: addFixtureForm.leagueId
-                    ? Number(addFixtureForm.leagueId)
-                    : undefined,
+                  leagueId: addFixtureForm.leagueId ?? undefined,
                   round: addFixtureForm.round || undefined,
                   startInMinutes: addFixtureForm.startInMinutes,
                 });

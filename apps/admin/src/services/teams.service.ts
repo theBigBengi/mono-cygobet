@@ -54,5 +54,18 @@ export const teamsService = {
       `/admin/sync-center/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
     );
   },
+
+  async search(query: string, take = 20) {
+    const params = new URLSearchParams({ q: query, take: String(take) });
+    return apiGet<{
+      status: string;
+      data: Array<{
+        id: number;
+        name: string;
+        shortCode: string | null;
+        country: { name: string } | null;
+      }>;
+    }>(`/admin/sync-center/db/teams/search?${params.toString()}`);
+  },
 };
 

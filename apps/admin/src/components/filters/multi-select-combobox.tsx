@@ -43,6 +43,10 @@ interface MultiSelectComboboxProps {
   emptyMessage?: string;
   className?: string;
   disabled?: boolean;
+  /** When provided, parent drives options from async search; called when user types in the search input */
+  onSearchChange?: (query: string) => void;
+  /** Controlled search value for async options (use with onSearchChange) */
+  searchValue?: string;
 }
 
 export function MultiSelectCombobox({
@@ -161,8 +165,14 @@ export function MultiSelectCombobox({
   // Common content (options list)
   const optionsContent = (
     <>
-      <Command>
-        <CommandInput placeholder={searchPlaceholder} />
+      <Command {...(isAsyncSearch && { shouldFilter: false })}>
+        <CommandInput
+          placeholder={searchPlaceholder}
+          {...(isAsyncSearch && {
+            value: searchValue ?? "",
+            onValueChange: onSearchChange,
+          })}
+        />
         <CommandList>
           <CommandEmpty>{emptyMessage}</CommandEmpty>
           <CommandGroup>
@@ -176,7 +186,6 @@ export function MultiSelectCombobox({
                   value={String(option.value)}
                   keywords={[option.label]}
                   onSelect={(currentValue) => {
-                    // currentValue is the value prop (String(option.value))
                     const selectedOption = options.find(
                       (opt) => String(opt.value) === currentValue
                     );
