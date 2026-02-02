@@ -200,6 +200,15 @@ export default function FixturesPage() {
     return options.sort((a, b) => a.label.localeCompare(b.label));
   }, [countriesProviderData]);
 
+  const appliedCountryNames = useMemo(() => {
+    if (!appliedCountryIds.length || !countriesProviderData?.data)
+      return undefined;
+    const idSet = new Set(appliedCountryIds);
+    return countriesProviderData.data
+      .filter((c) => idSet.has(String(c.externalId)))
+      .map((c) => c.name);
+  }, [appliedCountryIds, countriesProviderData]);
+
   const seasonIdNum = appliedSeasonId ? Number(appliedSeasonId) : undefined;
 
   const {
@@ -271,6 +280,7 @@ export default function FixturesPage() {
         ? unifyFixtures(dbData, providerData, {
             leagueExternalIds:
               appliedLeagueIds.length > 0 ? appliedLeagueIds : undefined,
+            countryNames: appliedCountryNames,
             state: appliedState,
           })
         : [],
@@ -279,6 +289,7 @@ export default function FixturesPage() {
       providerData,
       bothLoaded,
       appliedLeagueIds,
+      appliedCountryNames,
       appliedState,
     ]
   );
@@ -557,10 +568,25 @@ export default function FixturesPage() {
           (diffStats.missing > 0 || diffStats.mismatch > 0) && (
             <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-2 mt-2 flex flex-wrap items-center gap-2">
               <span className="text-sm">
-                {diffStats.missing > 0 &&
-                  `${diffStats.missing} missing`}
+                {diffStats.missing > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDiffFilter("missing")}
+                    className="underline cursor-pointer hover:no-underline font-medium"
+                  >
+                    {diffStats.missing} missing
+                  </button>
+                )}
                 {diffStats.missing > 0 && diffStats.mismatch > 0 && ", "}
-                {diffStats.mismatch > 0 && `${diffStats.mismatch} mismatch`}
+                {diffStats.mismatch > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDiffFilter("mismatch")}
+                    className="underline cursor-pointer hover:no-underline font-medium"
+                  >
+                    {diffStats.mismatch} mismatch
+                  </button>
+                )}
                 {" — Re-sync filtered range to update."}
               </span>
               <Button
@@ -597,44 +623,87 @@ export default function FixturesPage() {
           </div>
         )}
 
-        {/* Summary Overview — show skeletons until both DB and provider loaded in provider tab */}
-        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-2 py-2 sm:py-1">
-          <div className="flex items-center gap-3 sm:gap-4 text-xs pb-1 min-w-max">
-            {isFetching || !bothLoaded ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-3 w-12" />
-              ))
-            ) : (
-              <>
-                <span className="text-muted-foreground">
-                  DB:{" "}
-                  <span className="text-foreground">{diffStats.dbCount}</span>
-                </span>
-                <span className="text-muted-foreground">
-                  Provider:{" "}
-                  <span className="text-foreground">
-                    {diffStats.providerCount}
+        {/* Summary Overview — show skeletons until both DB and provider loaded (provider tab only) */}
+        {viewMode === "provider" && (
+          <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-2 py-2 sm:py-1">
+            <div className="flex items-center gap-3 sm:gap-4 text-xs pb-1 min-w-max">
+              {isFetching || !bothLoaded ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-3 w-12" />
+                ))
+              ) : (
+                <>
+                  <span className="text-muted-foreground">
+                    DB:{" "}
+                    <span className="text-foreground">{diffStats.dbCount}</span>
                   </span>
-                </span>
-                <span className="text-muted-foreground">
-                  Missing:{" "}
-                  <span className="text-foreground">{diffStats.missing}</span>
-                </span>
-                <span className="text-muted-foreground">
-                  Extra:{" "}
-                  <span className="text-foreground">{diffStats.extra}</span>
-                </span>
-                <span className="text-muted-foreground">
-                  Mismatch:{" "}
-                  <span className="text-foreground">{diffStats.mismatch}</span>
-                </span>
-                <span className="text-muted-foreground">
-                  OK: <span className="text-foreground">{diffStats.ok}</span>
-                </span>
-              </>
-            )}
+                  <span className="text-muted-foreground">
+                    Provider:{" "}
+                    <span className="text-foreground">
+                      {diffStats.providerCount}
+                    </span>
+                  </span>
+                  <span className="text-muted-foreground">
+                    Missing:{" "}
+                    {(diffStats.missing > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setDiffFilter("missing")}
+                        className="text-foreground underline cursor-pointer hover:no-underline font-medium"
+                      >
+                        {diffStats.missing}
+                      </button>
+                    ) : (
+                      <span className="text-foreground">{diffStats.missing}</span>
+                    ))}
+                  </span>
+                  <span className="text-muted-foreground">
+                    Extra:{" "}
+                    {(diffStats.extra > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setDiffFilter("extra")}
+                        className="text-foreground underline cursor-pointer hover:no-underline font-medium"
+                      >
+                        {diffStats.extra}
+                      </button>
+                    ) : (
+                      <span className="text-foreground">{diffStats.extra}</span>
+                    ))}
+                  </span>
+                  <span className="text-muted-foreground">
+                    Mismatch:{" "}
+                    {(diffStats.mismatch > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setDiffFilter("mismatch")}
+                        className="text-foreground underline cursor-pointer hover:no-underline font-medium"
+                      >
+                        {diffStats.mismatch}
+                      </button>
+                    ) : (
+                      <span className="text-foreground">{diffStats.mismatch}</span>
+                    ))}
+                  </span>
+                  <span className="text-muted-foreground">
+                    OK:{" "}
+                    {(diffStats.ok > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setDiffFilter("ok")}
+                        className="text-foreground underline cursor-pointer hover:no-underline font-medium"
+                      >
+                        {diffStats.ok}
+                      </button>
+                    ) : (
+                      <span className="text-foreground">{diffStats.ok}</span>
+                    ))}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Scrollable Content Area */}

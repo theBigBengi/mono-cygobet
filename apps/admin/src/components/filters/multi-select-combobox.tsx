@@ -58,7 +58,10 @@ export function MultiSelectCombobox({
   emptyMessage = "No items found.",
   className,
   disabled = false,
+  onSearchChange,
+  searchValue,
 }: MultiSelectComboboxProps) {
+  const isAsyncSearch = onSearchChange != null;
   const [open, setOpen] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
 

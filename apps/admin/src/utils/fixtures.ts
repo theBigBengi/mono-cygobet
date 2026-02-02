@@ -18,6 +18,7 @@ export function normalizeResult(result: string | null | undefined): string {
 
 export type UnifyFixturesFilters = {
   leagueExternalIds?: string[];
+  countryNames?: string[];
   state?: string;
 };
 
@@ -48,6 +49,16 @@ export function unifyFixtures(
       const ids = new Set(filters.leagueExternalIds);
       providerFixtures = providerFixtures.filter(
         (f) => f.leagueExternalId != null && ids.has(String(f.leagueExternalId))
+      );
+    }
+    if (filters.countryNames?.length) {
+      const names = new Set(
+        filters.countryNames.map((n) => n.toLowerCase())
+      );
+      providerFixtures = providerFixtures.filter(
+        (f) =>
+          f.countryName != null &&
+          names.has(f.countryName.toLowerCase())
       );
     }
     if (filters.state) {
