@@ -119,27 +119,28 @@ function toChangeVal(v: string | number | null | undefined): string {
   return String(v);
 }
 
+const AUDIT_LOG_FIELDS: (keyof ResolvedPayload)[] = [
+  "name",
+  "state",
+  "liveMinute",
+  "result",
+  "homeScore90",
+  "awayScore90",
+  "homeScoreET",
+  "awayScoreET",
+  "penHome",
+  "penAway",
+  "stage",
+  "round",
+];
+
 /** Build diff object for updated fixtures: only fields that changed, format "old→new". */
 function buildFixtureChanges(
   existing: ExistingRow,
   resolved: ResolvedPayload
 ): Record<string, string> {
   const changes: Record<string, string> = {};
-  const fields: (keyof ResolvedPayload)[] = [
-    "name",
-    "state",
-    "liveMinute",
-    "result",
-    "homeScore90",
-    "awayScore90",
-    "homeScoreET",
-    "awayScoreET",
-    "penHome",
-    "penAway",
-    "stage",
-    "round",
-  ];
-  for (const k of fields) {
+  for (const k of AUDIT_LOG_FIELDS) {
     const oldVal = (existing as Record<string, unknown>)[k];
     const newVal = resolved[k];
     if (
@@ -151,6 +152,24 @@ function buildFixtureChanges(
     }
   }
   return changes;
+}
+
+/**
+ * Convert "old→new" string map to { old, new } for fixture_audit_log.changes JSON.
+ * The admin Timeline displays each field as "old → new"; this shape is what we persist and return from the API.
+ */
+function changesToAuditShape(
+  raw: Record<string, string>
+): Record<string, { old: string; new: string }> {
+  const out: Record<string, { old: string; new: string }> = {};
+  for (const [key, val] of Object.entries(raw)) {
+    const idx = val.indexOf("→");
+    out[key] =
+      idx === -1
+        ? { old: "null", new: val }
+        : { old: val.slice(0, idx), new: val.slice(idx + 1) };
+  }
+  return out;
 }
 
 type FixtureOutcome =
@@ -179,10 +198,16 @@ type FixtureOutcome =
  */
 export async function syncFixtures(
   fixtures: FixtureDTO[],
-  opts?: { dryRun?: boolean; signal?: AbortSignal; batchId?: number }
+  opts?: {
+    dryRun?: boolean;
+    signal?: AbortSignal;
+    batchId?: number;
+    jobRunId?: number;
+  }
 ): Promise<SyncFixturesResult> {
   const dryRun = !!opts?.dryRun;
   const batchId = opts?.batchId;
+  const jobRunId = opts?.jobRunId ?? null;
   let inserted = 0;
   let updated = 0;
   let skipped = 0;
@@ -390,7 +415,7 @@ export async function syncFixtures(
 
         if (!existing) {
           if (!dryRun) {
-            await prisma.fixtures.upsert({
+            const upserted = await prisma.fixtures.upsert({
               where: { externalId: safeBigInt(payload.externalId) },
               create: {
                 externalId: safeBigInt(payload.externalId),
@@ -401,6 +426,27 @@ export async function syncFixtures(
                 updatedAt: new Date(),
               },
             });
+            // New fixture: log only fields that have a non-null value (avoid noisy null→null for penHome, penAway, etc.)
+            const insertChanges: Record<string, { old: string; new: string }> =
+              {};
+            for (const k of AUDIT_LOG_FIELDS) {
+              const newVal = toChangeVal(
+                resolvedPayload[k] as string | number | null | undefined
+              );
+              if (newVal !== "null") {
+                insertChanges[k] = { old: "null", new: newVal };
+              }
+            }
+            if (Object.keys(insertChanges).length > 0) {
+              await prisma.fixtureAuditLog.create({
+                data: {
+                  fixtureId: upserted.id,
+                  jobRunId,
+                  source: "job",
+                  changes: insertChanges,
+                },
+              });
+            }
           }
           return { outcome: "inserted", fixture, resolvedPayload };
         }
@@ -416,7 +462,7 @@ export async function syncFixtures(
         }
 
         if (!dryRun) {
-          await prisma.fixtures.upsert({
+          const upserted = await prisma.fixtures.upsert({
             where: { externalId: safeBigInt(payload.externalId) },
             create: {
               externalId: safeBigInt(payload.externalId),
@@ -427,6 +473,19 @@ export async function syncFixtures(
               updatedAt: new Date(),
             },
           });
+          // Record what changed: diff existing vs resolvedPayload, convert to { old, new } per field, then one audit row (source "job", jobRunId set so Timeline can show which run did it)
+          const rawChanges = buildFixtureChanges(existing, resolvedPayload);
+          const changes = changesToAuditShape(rawChanges);
+          if (Object.keys(changes).length > 0) {
+            await prisma.fixtureAuditLog.create({
+              data: {
+                fixtureId: upserted.id,
+                jobRunId,
+                source: "job",
+                changes,
+              },
+            });
+          }
         }
         return { outcome: "updated", fixture, existing, resolvedPayload };
       })

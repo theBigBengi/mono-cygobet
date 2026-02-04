@@ -820,6 +820,20 @@ export interface AdminFixtureResponse {
   message: string;
 }
 
+export interface AdminFixtureAuditLogEntry {
+  id: number;
+  source: string;
+  changes: Record<string, { old: string; new: string }>;
+  createdAt: string;
+  jobRun: { id: number; jobKey: string } | null;
+}
+
+export interface AdminFixtureAuditLogResponse {
+  status: string;
+  data: AdminFixtureAuditLogEntry[];
+  message: string;
+}
+
 export interface AdminProviderFixturesResponse {
   status: string;
   data: Array<FixtureDTO>;

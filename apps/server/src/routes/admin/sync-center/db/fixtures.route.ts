@@ -3,7 +3,11 @@ import { FastifyPluginAsync } from "fastify";
 import { Prisma, prisma } from "@repo/db";
 import { FixturesService } from "../../../../services/fixtures.service";
 import { getFixtureIssue } from "../../../../services/admin/dashboard.service";
-import { AdminFixturesListResponse, AdminFixtureResponse } from "@repo/types";
+import {
+  AdminFixturesListResponse,
+  AdminFixtureResponse,
+  AdminFixtureAuditLogResponse,
+} from "@repo/types";
 import {
   getPagination,
   createPaginationResponse,
@@ -23,6 +27,8 @@ import {
   updateFixtureBodySchema,
   updateFixtureResponseSchema,
   updateFixture404ResponseSchema,
+  getFixtureAuditLogParamsSchema,
+  getFixtureAuditLogResponseSchema,
 } from "../../../../schemas/admin/fixtures.schemas";
 import type {
   ListFixturesQuerystring,
@@ -206,6 +212,55 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
         data: fixtures.map(mapFixtureToResponse),
         pagination: createPaginationResponse(page, perPage, count),
         message: "Fixtures fetched from database successfully",
+      });
+    }
+  );
+
+  // GET /admin/db/fixtures/:id/audit-log - Get audit log for a fixture
+  fastify.get<{
+    Params: GetFixtureParams;
+    Reply: AdminFixtureAuditLogResponse;
+  }>(
+    "/fixtures/:id/audit-log",
+    {
+      schema: {
+        params: getFixtureAuditLogParamsSchema,
+        response: {
+          200: getFixtureAuditLogResponseSchema,
+        },
+      },
+    },
+    async (req, reply): Promise<AdminFixtureAuditLogResponse> => {
+      const { id } = req.params;
+      let fixtureId: number;
+      try {
+        fixtureId = parseId(id);
+      } catch (error: unknown) {
+        return reply.code(400).send({
+          status: "error",
+          message: getErrorMessage(error),
+          data: [],
+        } as any);
+      }
+      const entries = await prisma.fixtureAuditLog.findMany({
+        where: { fixtureId },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: {
+          jobRun: { select: { id: true, jobKey: true } },
+        },
+      });
+      const data = entries.map((e) => ({
+        id: e.id,
+        source: e.source,
+        changes: e.changes as Record<string, { old: string; new: string }>,
+        createdAt: e.createdAt.toISOString(),
+        jobRun: e.jobRun ? { id: e.jobRun.id, jobKey: e.jobRun.jobKey } : null,
+      }));
+      return reply.send({
+        status: "success",
+        data,
+        message: "Audit log fetched successfully",
       });
     }
   );

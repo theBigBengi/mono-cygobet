@@ -129,6 +129,7 @@ export async function runLiveFixturesJob(
           dryRun: false,
           signal: opts.signal,
           batchId,
+          jobRunId,
         });
 
         const ok = result.inserted + result.updated;

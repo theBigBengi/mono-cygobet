@@ -16,7 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fixturesService } from "@/services/fixtures.service";
 import { StatusBadge } from "@/components/table/status-badge";
 import { normalizeResult } from "@/utils/fixtures";
-import type { AdminFixtureSettlementGroup } from "@repo/types";
+import type {
+  AdminFixtureSettlementGroup,
+  AdminFixtureAuditLogEntry,
+} from "@repo/types";
 
 /** Parse start time string as UTC for comparison (provider often sends "YYYY-MM-DD HH:mm:ss" without Z). */
 function parseStartTimeAsUtc(s: string | null | undefined): number | null {
@@ -93,6 +96,12 @@ export default function FixtureDetailPage() {
     };
   }, [data?.data?.startIso]);
 
+  const { data: auditLogData } = useQuery({
+    queryKey: ["fixture", fixtureId, "audit-log"],
+    queryFn: () => fixturesService.getAuditLog(fixtureId),
+    enabled: Number.isFinite(fixtureId),
+  });
+
   const { data: providerData } = useQuery({
     queryKey: ["fixture", fixtureId, "provider", dateRange.from, dateRange.to],
     queryFn: () =>
@@ -119,6 +128,9 @@ export default function FixtureDetailPage() {
     queryClient.invalidateQueries({
       queryKey: ["fixture", fixtureId, "settlement"],
     });
+    queryClient.invalidateQueries({
+      queryKey: ["fixture", fixtureId, "audit-log"],
+    });
   };
 
   const handleResettle = async () => {
@@ -132,6 +144,9 @@ export default function FixtureDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["fixture", fixtureId] });
       queryClient.invalidateQueries({
         queryKey: ["fixture", fixtureId, "settlement"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["fixture", fixtureId, "audit-log"],
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Re-settlement failed");
@@ -380,13 +395,57 @@ export default function FixtureDetailPage() {
           <CardHeader>
             <CardTitle className="text-base">Timeline</CardTitle>
             <CardDescription>
-              State history from job runs will appear here when recorded.
+              Change history from job runs and admin overrides.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mb-3">
               Current state: <StatusBadge status={f.state} />
             </p>
+            {auditLogData?.data === undefined ? (
+              <Skeleton className="h-20 w-full" />
+            ) : auditLogData.data.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No audit entries yet.
+              </p>
+            ) : (
+              <ul className="space-y-3 text-sm">
+                {auditLogData.data.map((entry: AdminFixtureAuditLogEntry) => (
+                  <li
+                    key={entry.id}
+                    className="border-l-2 border-muted pl-3 py-1"
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-muted-foreground font-mono text-xs">
+                        {format(
+                          new Date(entry.createdAt),
+                          "yyyy-MM-dd HH:mm:ss"
+                        )}
+                      </span>
+                      <Badge variant="secondary" className="text-xs">
+                        {entry.source === "job" && entry.jobRun
+                          ? `job: ${entry.jobRun.jobKey}`
+                          : "admin"}
+                      </Badge>
+                    </div>
+                    <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                      {Object.entries(entry.changes).map(
+                        ([field, { old: oldVal, new: newVal }]) => (
+                          <li key={field}>
+                            <span className="font-medium text-foreground">
+                              {field}
+                            </span>{" "}
+                            <span>{oldVal}</span>
+                            <span className="mx-1">→</span>
+                            <span>{newVal}</span>
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
 

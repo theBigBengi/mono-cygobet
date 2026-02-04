@@ -173,6 +173,7 @@ export async function runFinishedFixturesJob(
           dryRun: false,
           signal: opts.signal,
           batchId,
+          jobRunId,
         });
         const updated = result.updated;
         const failed = result.failed;

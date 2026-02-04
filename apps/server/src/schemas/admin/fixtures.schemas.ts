@@ -105,3 +105,38 @@ export const updateFixture404ResponseSchema = {
     message: { type: "string" },
   },
 };
+
+export const getFixtureAuditLogParamsSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+  },
+  required: ["id"],
+};
+
+export const getFixtureAuditLogResponseSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string" },
+    data: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "number" },
+          source: { type: "string" },
+          changes: { type: "object" },
+          createdAt: { type: "string" },
+          jobRun: {
+            type: ["object", "null"],
+            properties: {
+              id: { type: "number" },
+              jobKey: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    message: { type: "string" },
+  },
+};

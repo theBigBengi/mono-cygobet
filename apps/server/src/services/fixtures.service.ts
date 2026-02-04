@@ -128,6 +128,14 @@ export class FixturesService {
     return fixtures;
   }
 
+  /**
+   * Update a fixture (admin override). Flow:
+   * 1. Fetch current values so we can record what changed in the audit log.
+   * 2. Build update payload from request data (name, state, scores, result, override metadata).
+   * 3. Persist via prisma.fixtures.update.
+   * 4. Compare old vs new for each field that was in the request; if any changed, write one row
+   *    to fixture_audit_log with source "admin" and jobRunId null (visible in admin Timeline).
+   */
   async update(
     id: number,
     data: {
@@ -140,6 +148,21 @@ export class FixturesService {
       overriddenById?: number | null;
     }
   ) {
+    // Snapshot current values before update — used later to build audit diff and to throw if not found
+    const current = await prisma.fixtures.findUnique({
+      where: { id },
+      select: {
+        name: true,
+        state: true,
+        homeScore90: true,
+        awayScore90: true,
+        result: true,
+      },
+    });
+    if (!current) {
+      throw new NotFoundError(`Fixture with id ${id} not found`);
+    }
+
     const updateData: Prisma.fixturesUpdateInput = {};
 
     if (data.name !== undefined) {
@@ -184,6 +207,62 @@ export class FixturesService {
         },
       },
     });
+
+    // Build audit diff: only fields that were in the request and actually changed (old !== new).
+    // Same shape as job audit entries: Record<fieldName, { old, new }> so the Timeline can show "old → new".
+    const toStr = (v: string | number | null | undefined): string =>
+      v === null || v === undefined ? "null" : String(v);
+    const auditChanges: Record<string, { old: string; new: string }> = {};
+    if (data.name !== undefined && toStr(current.name) !== toStr(data.name)) {
+      auditChanges.name = { old: toStr(current.name), new: toStr(data.name) };
+    }
+    if (
+      data.state !== undefined &&
+      toStr(current.state) !== toStr(data.state)
+    ) {
+      auditChanges.state = {
+        old: toStr(current.state),
+        new: toStr(data.state),
+      };
+    }
+    if (
+      data.homeScore90 !== undefined &&
+      toStr(current.homeScore90) !== toStr(data.homeScore90)
+    ) {
+      auditChanges.homeScore90 = {
+        old: toStr(current.homeScore90),
+        new: toStr(data.homeScore90),
+      };
+    }
+    if (
+      data.awayScore90 !== undefined &&
+      toStr(current.awayScore90) !== toStr(data.awayScore90)
+    ) {
+      auditChanges.awayScore90 = {
+        old: toStr(current.awayScore90),
+        new: toStr(data.awayScore90),
+      };
+    }
+    if (
+      data.result !== undefined &&
+      toStr(current.result) !== toStr(data.result)
+    ) {
+      auditChanges.result = {
+        old: toStr(current.result),
+        new: toStr(data.result),
+      };
+    }
+    // Write one audit row only when something actually changed; admin Timeline shows these as "admin" source
+    if (Object.keys(auditChanges).length > 0) {
+      await prisma.fixtureAuditLog.create({
+        data: {
+          fixtureId: id,
+          jobRunId: null,
+          source: "admin",
+          changes: auditChanges,
+        },
+      });
+    }
 
     return fixture;
   }

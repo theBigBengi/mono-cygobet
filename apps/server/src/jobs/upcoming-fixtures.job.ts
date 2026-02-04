@@ -142,13 +142,17 @@ export async function runUpcomingFixturesJob(
 
       let batchId: number | null = null;
       try {
-        const batch = await createBatchForJob(upcomingFixturesJob.key, jobRunId);
+        const batch = await createBatchForJob(
+          upcomingFixturesJob.key,
+          jobRunId
+        );
         batchId = batch.id;
 
         const result = await syncFixtures(scheduled, {
           dryRun: false,
           signal: opts.signal,
           batchId,
+          jobRunId,
         });
         const ok = result.inserted + result.updated;
 

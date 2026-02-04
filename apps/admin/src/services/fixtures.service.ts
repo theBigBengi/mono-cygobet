@@ -2,6 +2,7 @@ import { apiGet, apiPost, apiPatch } from "@/lib/adminApi";
 import type {
   AdminFixturesListResponse,
   AdminFixtureResponse,
+  AdminFixtureAuditLogResponse,
   AdminFixtureResettleResponse,
   AdminFixtureSettlementSummaryResponse,
   AdminProviderFixturesResponse,
@@ -162,6 +163,14 @@ export const fixturesService = {
   ): Promise<AdminFixtureSettlementSummaryResponse> {
     return apiGet<AdminFixtureSettlementSummaryResponse>(
       `/admin/fixtures/${id}/settlement`
+    );
+  },
+
+  async getAuditLog(
+    fixtureId: number | string
+  ): Promise<AdminFixtureAuditLogResponse> {
+    return apiGet<AdminFixtureAuditLogResponse>(
+      `/admin/sync-center/db/fixtures/${fixtureId}/audit-log`
     );
   },
 };
