@@ -175,6 +175,7 @@ model fixtures {
   // relations
   groupFixtures    groupFixtures[] // group fixtures that have been created for this fixture
   fixtureJobEvents fixtureJobEvents[] // job events that have been processed for this fixture
+  fixtureAuditLog  fixtureAuditLog[] // audit log for this fixture
 
   @@unique([homeTeamId, awayTeamId, startTs], map: "fixtures_home_away_start_uniq")
   @@index([id, startTs])
@@ -705,8 +706,25 @@ model jobRuns {
   triggeredBy   JobTriggerBy? @map("triggered_by")
   triggeredById String?       @map("triggered_by_id")
 
+  fixtureAuditLog fixtureAuditLog[]
+
   @@index([jobKey, startedAt(sort: Desc)], map: "job_runs_job_key_started_at_idx")
   @@map("job_runs")
+}
+
+model fixtureAuditLog {
+  id        Int      @id @default(autoincrement())
+  fixtureId Int      @map("fixture_id")
+  jobRunId  Int?     @map("job_run_id")
+  source    String // "job" | "admin"
+  changes   Json // { field: { old, new } }
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  fixture fixtures @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+  jobRun  jobRuns? @relation(fields: [jobRunId], references: [id], onDelete: SetNull)
+
+  @@index([fixtureId, createdAt(sort: Desc)])
+  @@map("fixture_audit_log")
 }
 
 enum fixtureJobEventType {
