@@ -2,7 +2,6 @@ import type { FastifyInstance } from "fastify";
 import { addDays, format } from "date-fns";
 import { RunStatus } from "@repo/db";
 import { adapter } from "../utils/adapter";
-import type { FixtureDTO } from "@repo/types/sport-data/common";
 import { syncFixtures } from "../etl/sync/sync.fixtures";
 import { finishSeedBatch } from "../etl/seeds/seed.utils";
 import { JobRunOpts, type StandardJobRunStats } from "../types/jobs";
@@ -14,28 +13,27 @@ import { runJob } from "./run-job";
 // Days ahead to fetch fixtures for
 const DAYS_AHEAD = 3;
 
+// NS(1) + cancelled states: CAN(6), INT(7), ABAN(8), SUSP(9), AWARDED(10), WO(11), POSTPONED(14)
+const UPCOMING_STATE_IDS = "1,6,7,8,9,10,11,14";
+
 /**
  * upcoming-fixtures job
  * --------------------
- * Goal: Keep our DB populated with upcoming fixtures (NS) for a forward-looking window.
+ * Goal: Keep our DB populated with upcoming fixtures (NS + cancelled states) for a forward-looking window.
  *
  * What it does:
- * - Fetch fixtures from sports-data provider between [today .. today+daysAhead]
- * - Filter to NS (Not Started)
+ * - Fetch fixtures from sports-data provider between [today .. today+daysAhead] in states NS or cancelled (POSTPONED, etc.)
  * - Upsert them into our DB using the existing fixtures seeder (which uses Prisma upsert)
  * - Track job execution in `job_runs` (jobRuns)
  *
  * Notes:
- * - This is intentionally "NS only" so it doesn't interfere with state progression jobs (LIVE/FT).
+ * - We include cancelled states so that when a fixture transitions NS → POSTPONED (etc.) on the provider,
+ *   we pick it up and sync the state; syncFixtures validates transitions via isValidFixtureStateTransition.
  * - The job is gated by the `jobs` table (jobs.enabled).
  */
 export const upcomingFixturesJob = UPCOMING_FIXTURES_JOB;
 
 const DEFAULT_DAYS_AHEAD = UPCOMING_FIXTURES_JOB.meta?.daysAhead ?? DAYS_AHEAD;
-
-function isNotStarted(fx: FixtureDTO): boolean {
-  return String(fx.state) === "NS";
-}
 
 export async function runUpcomingFixturesJob(
   fastify: FastifyInstance,
@@ -87,11 +85,10 @@ export async function runUpcomingFixturesJob(
       const to = format(addDays(new Date(), daysAhead), "yyyy-MM-dd");
 
       const fetched = await adapter.fetchFixturesBetween(from, to, {
-        filters: { fixtureStates: "1" },
+        filters: { fixtureStates: UPCOMING_STATE_IDS },
       });
-      const scheduled = fetched.filter(isNotStarted);
 
-      if (!scheduled.length) {
+      if (!fetched.length) {
         return {
           result: {
             jobRunId,
@@ -111,7 +108,7 @@ export async function runUpcomingFixturesJob(
             dryRun: !!opts.dryRun,
             countFetched: fetched.length,
             countScheduled: 0,
-            reason: "no-upcoming-ns",
+            reason: "no-fixtures-in-window",
           },
         };
       }
@@ -122,7 +119,7 @@ export async function runUpcomingFixturesJob(
             jobRunId,
             batchId: null,
             fetched: fetched.length,
-            scheduled: scheduled.length,
+            scheduled: fetched.length,
             total: 0,
             ok: 0,
             fail: 0,
@@ -135,7 +132,7 @@ export async function runUpcomingFixturesJob(
             daysAhead,
             dryRun: true,
             countFetched: fetched.length,
-            countScheduled: scheduled.length,
+            countScheduled: fetched.length,
           },
         };
       }
@@ -148,7 +145,7 @@ export async function runUpcomingFixturesJob(
         );
         batchId = batch.id;
 
-        const result = await syncFixtures(scheduled, {
+        const result = await syncFixtures(fetched, {
           dryRun: false,
           signal: opts.signal,
           batchId,
@@ -174,7 +171,7 @@ export async function runUpcomingFixturesJob(
             jobRunId,
             batchId,
             fetched: fetched.length,
-            scheduled: scheduled.length,
+            scheduled: fetched.length,
             total: result.total,
             ok,
             fail: result.failed,
@@ -188,7 +185,7 @@ export async function runUpcomingFixturesJob(
             daysAhead,
             dryRun: false,
             countFetched: fetched.length,
-            countScheduled: scheduled.length,
+            countScheduled: fetched.length,
             ok,
             fail: result.failed,
             total: result.total,
