@@ -3,7 +3,11 @@ import { View, TextInput, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { INPUT_STYLE, INPUT_BACKGROUND_COLOR } from "../utils/constants";
+import {
+  INPUT_STYLE,
+  INPUT_BACKGROUND_COLOR,
+  INPUT_BACKGROUND_COLOR_DISABLED,
+} from "../utils/constants";
 import { toDisplay } from "../utils/fixture-helpers";
 
 type ScoreInputProps = {
@@ -56,8 +60,8 @@ export function ScoreInput({
           {
             borderColor: isFocused
               ? theme.colors.textSecondary
-              : theme.colors.border,
-            borderWidth: isFocused ? 2 : INPUT_STYLE.borderWidth,
+              : theme.colors.textSecondary,
+            borderWidth: isFocused ? 2 : 0.5,
             backgroundColor: INPUT_BACKGROUND_COLOR,
             color: theme.colors.textPrimary,
           },
@@ -89,7 +93,7 @@ export function ScoreInput({
         INPUT_STYLE,
         {
           borderWidth: 0,
-          backgroundColor: INPUT_BACKGROUND_COLOR,
+          backgroundColor: INPUT_BACKGROUND_COLOR_DISABLED,
           justifyContent: "center",
           alignItems: "center",
         },

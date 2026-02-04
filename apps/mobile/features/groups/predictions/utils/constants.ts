@@ -20,6 +20,7 @@ export const SCROLL_OFFSET = 160;
 
 /** Background color for input fields */
 export const INPUT_BACKGROUND_COLOR = "rgba(15, 23, 42, 0.04)";
+export const INPUT_BACKGROUND_COLOR_DISABLED = "rgba(15, 23, 42, 0.07)";
 
 /** Base input style dimensions and properties */
 export const INPUT_STYLE = {

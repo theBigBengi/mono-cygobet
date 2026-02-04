@@ -1,6 +1,12 @@
 import React, { useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, ScrollView, Pressable, Dimensions } from "react-native";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Dimensions,
+} from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { GroupLobbyFixtureCard } from "./GroupLobbyFixtureCard";
@@ -55,7 +61,7 @@ interface GroupLobbyFixturesSectionProps {
  * Component for displaying the selected games section.
  * Handles loading, error, empty, and populated states.
  * Manages horizontal scroll view for fixtures.
- * 
+ *
  * The game cards are displayed outside the main card container,
  * allowing them to peek from the sides of the screen.
  */
@@ -107,10 +113,7 @@ export function GroupLobbyFixturesSection({
 
     // Position to center the card: card position - (screen width / 2) + (card width / 2)
     return (
-      index * (cardWidth + spacing) +
-      padding -
-      (screenWidth / 2) +
-      (cardWidth / 2)
+      index * (cardWidth + spacing) + padding - screenWidth / 2 + cardWidth / 2
     );
   });
 
@@ -151,10 +154,19 @@ export function GroupLobbyFixturesSection({
 
       {showProgress && (
         <View style={styles.progressBlock}>
-          <AppText variant="caption" color="secondary" style={styles.progressText}>
+          <AppText
+            variant="caption"
+            color="secondary"
+            style={styles.progressText}
+          >
             {predictionsCount}/{totalFixtures} predictions
           </AppText>
-          <View style={[styles.progressTrack, { backgroundColor: theme.colors.border }]}>
+          <View
+            style={[
+              styles.progressTrack,
+              { backgroundColor: theme.colors.border },
+            ]}
+          >
             <View
               style={[
                 styles.progressFill,

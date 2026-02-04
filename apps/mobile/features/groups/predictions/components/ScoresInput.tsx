@@ -1,5 +1,12 @@
 import React from "react";
-import { View, StyleSheet, TextInput, StyleProp, ViewStyle, TextStyle } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TextInput,
+  StyleProp,
+  ViewStyle,
+  TextStyle,
+} from "react-native";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -29,7 +36,10 @@ function toDisplay(value: number | null, isEditable: boolean): string {
   return String(value);
 }
 
-const variantStyles: Record<Variant, { input: TextStyle; separator: TextStyle }> = {
+const variantStyles: Record<
+  Variant,
+  { input: TextStyle; separator: TextStyle }
+> = {
   small: {
     input: {
       width: 28,
@@ -84,10 +94,12 @@ export function ScoresInput({
     if (isEditable) {
       // For large variant (SingleGameMatchCard), use only the last digit
       const finalText = isLarge
-        ? (text.length > 0 ? text[text.length - 1] : "")
+        ? text.length > 0
+          ? text[text.length - 1]
+          : ""
         : text;
       // Haptic feedback when entering prediction
-      if (process.env.EXPO_OS === 'ios' && finalText !== "") {
+      if (process.env.EXPO_OS === "ios" && finalText !== "") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       onChange("home", finalText);
@@ -99,10 +111,12 @@ export function ScoresInput({
     if (isEditable) {
       // For large variant (SingleGameMatchCard), use only the last digit
       const finalText = isLarge
-        ? (text.length > 0 ? text[text.length - 1] : "")
+        ? text.length > 0
+          ? text[text.length - 1]
+          : ""
         : text;
       // Haptic feedback when entering prediction
-      if (process.env.EXPO_OS === 'ios' && finalText !== "") {
+      if (process.env.EXPO_OS === "ios" && finalText !== "") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       onChange("away", finalText);

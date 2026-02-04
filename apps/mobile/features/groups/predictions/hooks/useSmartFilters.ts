@@ -390,8 +390,7 @@ export function useSmartFilters({ fixtures, mode, groupTeamsIds, onNavigateToLea
 
     let afterAction = applyActionFilter(fixtures, selectedAction);
 
-    // When "all" is selected, skip structural filter so "All" shows every fixture (avoids empty "all" when round/team narrows to nothing)
-    if (structuralFilter && selectedAction !== "all") {
+    if (structuralFilter) {
       if (structuralFilter.type === "teams" && structuralFilter.selectedTeamId != null) {
         const tid = structuralFilter.selectedTeamId;
         afterAction = afterAction.filter(
