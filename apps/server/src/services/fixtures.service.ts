@@ -23,7 +23,7 @@ export class FixturesService {
       args.orderBy?.length ? args.orderBy : [{ startTs: "desc" }]
     ) as Prisma.fixturesOrderByWithRelationInput[];
 
-    const where: Prisma.fixturesWhereInput = {};
+    const where: Prisma.fixturesWhereInput = { externalId: { gte: 0 } };
 
     if (args.leagueId !== undefined) {
       where.leagueId = args.leagueId;
