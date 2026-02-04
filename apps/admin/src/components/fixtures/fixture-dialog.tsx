@@ -200,8 +200,8 @@ export function FixtureDialog({
       const updatePayload: {
         name?: string;
         state?: string;
-        homeScore?: number | null;
-        awayScore?: number | null;
+        homeScore90?: number | null;
+        awayScore90?: number | null;
         result?: string | null;
       } = {};
 
@@ -221,8 +221,8 @@ export function FixtureDialog({
 
       if (homeScoreChanged || awayScoreChanged) {
         // Always send the scores (null if empty)
-        updatePayload.homeScore = homeScore;
-        updatePayload.awayScore = awayScore;
+        updatePayload.homeScore90 = homeScore;
+        updatePayload.awayScore90 = awayScore;
 
         // Build result string from scores if both are non-null
         // If either is null, set result to null
@@ -378,59 +378,71 @@ export function FixtureDialog({
               (hasMismatch("state") ||
                 hasMismatch("result") ||
                 hasMismatch("name")) && (
-              <div className="rounded-md border bg-muted/30 p-3 flex-shrink-0">
-                <div className="text-xs font-medium text-muted-foreground mb-2">
-                  Differences
-                </div>
-                <div className="grid grid-cols-[80px_1fr_1fr] gap-2 items-center text-sm">
-                  <span />
-                  <span className="text-[10px] text-muted-foreground">DB</span>
-                  <span className="text-[10px] text-muted-foreground">Provider</span>
-                  {hasMismatch("state") && (
-                    <>
-                      <span className="text-muted-foreground">State</span>
-                      <span className="bg-background px-2 py-1 rounded font-mono text-xs">
-                        {fixture.dbData.state || "—"}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="text-muted-foreground">→</span>
+                <div className="rounded-md border bg-muted/30 p-3 flex-shrink-0">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">
+                    Differences
+                  </div>
+                  <div className="grid grid-cols-[80px_1fr_1fr] gap-2 items-center text-sm">
+                    <span />
+                    <span className="text-[10px] text-muted-foreground">
+                      DB
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Provider
+                    </span>
+                    {hasMismatch("state") && (
+                      <>
+                        <span className="text-muted-foreground">State</span>
                         <span className="bg-background px-2 py-1 rounded font-mono text-xs">
-                          {fixture.providerData.state || "—"}
+                          {fixture.dbData.state || "—"}
                         </span>
-                      </span>
-                    </>
-                  )}
-                  {hasMismatch("result") && (
-                    <>
-                      <span className="text-muted-foreground">Result</span>
-                      <span className="bg-background px-2 py-1 rounded font-mono text-xs">
-                        {fixture.dbData.result || "—"}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="text-muted-foreground">→</span>
+                        <span className="flex items-center gap-1">
+                          <span className="text-muted-foreground">→</span>
+                          <span className="bg-background px-2 py-1 rounded font-mono text-xs">
+                            {fixture.providerData.state || "—"}
+                          </span>
+                        </span>
+                      </>
+                    )}
+                    {hasMismatch("result") && (
+                      <>
+                        <span className="text-muted-foreground">Result</span>
                         <span className="bg-background px-2 py-1 rounded font-mono text-xs">
-                          {fixture.providerData.result || "—"}
+                          {fixture.dbData.result || "—"}
                         </span>
-                      </span>
-                    </>
-                  )}
-                  {hasMismatch("name") && (
-                    <>
-                      <span className="text-muted-foreground">Name</span>
-                      <span className="bg-background px-2 py-1 rounded text-xs truncate" title={fixture.dbData.name || ""}>
-                        {fixture.dbData.name?.trim() || "—"}
-                      </span>
-                      <span className="flex items-center gap-1 min-w-0">
-                        <span className="text-muted-foreground flex-shrink-0">→</span>
-                        <span className="bg-background px-2 py-1 rounded text-xs truncate" title={fixture.providerData.name || ""}>
-                          {fixture.providerData.name?.trim() || "—"}
+                        <span className="flex items-center gap-1">
+                          <span className="text-muted-foreground">→</span>
+                          <span className="bg-background px-2 py-1 rounded font-mono text-xs">
+                            {fixture.providerData.result || "—"}
+                          </span>
                         </span>
-                      </span>
-                    </>
-                  )}
+                      </>
+                    )}
+                    {hasMismatch("name") && (
+                      <>
+                        <span className="text-muted-foreground">Name</span>
+                        <span
+                          className="bg-background px-2 py-1 rounded text-xs truncate"
+                          title={fixture.dbData.name || ""}
+                        >
+                          {fixture.dbData.name?.trim() || "—"}
+                        </span>
+                        <span className="flex items-center gap-1 min-w-0">
+                          <span className="text-muted-foreground flex-shrink-0">
+                            →
+                          </span>
+                          <span
+                            className="bg-background px-2 py-1 rounded text-xs truncate"
+                            title={fixture.providerData.name || ""}
+                          >
+                            {fixture.providerData.name?.trim() || "—"}
+                          </span>
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Tabs to switch between Provider and DB data */}
             {(fixture.providerData || fixture.dbData) && (

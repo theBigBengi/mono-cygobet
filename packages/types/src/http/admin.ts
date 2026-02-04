@@ -716,8 +716,8 @@ export interface AdminFixturesListResponse {
     startTs: number;
     state: string;
     result: string | null;
-    homeScore: number | null;
-    awayScore: number | null;
+    homeScore90: number | null;
+    awayScore90: number | null;
     stage: string | null;
     round: string | null;
     leagueId: number | null;
@@ -770,8 +770,8 @@ export interface AdminFixtureResponse {
     startTs: number;
     state: string;
     result: string | null;
-    homeScore: number | null;
-    awayScore: number | null;
+    homeScore90: number | null;
+    awayScore90: number | null;
     stage: string | null;
     round: string | null;
     leagueId: number | null;

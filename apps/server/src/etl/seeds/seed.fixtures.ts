@@ -40,10 +40,7 @@ export async function seedFixtures(
 }> {
   // In dry-run mode, skip all database writes including batch tracking
   if (opts?.dryRun) {
-    log.info(
-      { count: fixtures?.length ?? 0 },
-      "Dry run mode; no DB changes"
-    );
+    log.info({ count: fixtures?.length ?? 0 }, "Dry run mode; no DB changes");
     return {
       batchId: null,
       ok: 0,
@@ -220,7 +217,9 @@ export async function seedFixtures(
       const existingByExtId = new Map(
         existingRows.map((r) => [String(r.externalId), r])
       );
-      const existingSet = new Set(existingRows.map((r) => String(r.externalId)));
+      const existingSet = new Set(
+        existingRows.map((r) => String(r.externalId))
+      );
 
       // Process all fixtures in the chunk in parallel
       const chunkResults = await Promise.allSettled(
@@ -245,9 +244,16 @@ export async function seedFixtures(
 
             // State validation: if updating, disallow invalid state transitions.
             const existing = existingByExtId.get(extIdKey);
-            if (existing && !isValidFixtureStateTransition(existing.state, payload.state)) {
+            if (
+              existing &&
+              !isValidFixtureStateTransition(existing.state, payload.state)
+            ) {
               log.warn(
-                { externalId: fixture.externalId, current: existing.state, next: payload.state },
+                {
+                  externalId: fixture.externalId,
+                  current: existing.state,
+                  next: payload.state,
+                },
                 "Invalid fixture state transition; skipping update"
               );
               await trackSeedItem(
@@ -299,8 +305,12 @@ export async function seedFixtures(
               startTs: payload.startTs,
               state: payload.state,
               result: payload.result,
-              homeScore: payload.homeScore,
-              awayScore: payload.awayScore,
+              homeScore90: payload.homeScore90,
+              awayScore90: payload.awayScore90,
+              homeScoreET: payload.homeScoreET,
+              awayScoreET: payload.awayScoreET,
+              penHome: payload.penHome,
+              penAway: payload.penAway,
               stage: payload.stage,
               round: payload.round,
               updatedAt: new Date(),
@@ -316,8 +326,12 @@ export async function seedFixtures(
               startTs: payload.startTs,
               state: payload.state,
               result: payload.result,
-              homeScore: payload.homeScore,
-              awayScore: payload.awayScore,
+              homeScore90: payload.homeScore90,
+              awayScore90: payload.awayScore90,
+              homeScoreET: payload.homeScoreET,
+              awayScoreET: payload.awayScoreET,
+              penHome: payload.penHome,
+              penAway: payload.penAway,
               stage: payload.stage,
               round: payload.round,
             };
@@ -402,7 +416,10 @@ export async function seedFixtures(
         select: { errorMessage: true, meta: true },
       });
       if (failedItem?.errorMessage) {
-        const meta = failedItem.meta as { errorCode?: string; errorMessage?: string } | null;
+        const meta = failedItem.meta as {
+          errorCode?: string;
+          errorMessage?: string;
+        } | null;
         firstError = meta?.errorMessage ?? failedItem.errorMessage;
         if (meta?.errorCode) firstError = `[${meta.errorCode}] ${firstError}`;
       }

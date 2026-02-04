@@ -52,12 +52,12 @@ export const sandboxSimulateKickoffBodySchema = {
 
 export const sandboxSimulateFullTimeBodySchema = {
   type: "object",
-  required: ["fixtureId", "homeScore", "awayScore"],
+  required: ["fixtureId", "homeScore90", "awayScore90"],
   additionalProperties: false,
   properties: {
     fixtureId: { type: "integer" },
-    homeScore: { type: "integer", minimum: 0 },
-    awayScore: { type: "integer", minimum: 0 },
+    homeScore90: { type: "integer", minimum: 0 },
+    awayScore90: { type: "integer", minimum: 0 },
     state: { type: "string", enum: ["FT", "AET", "FT_PEN"], default: "FT" },
     homeScoreET: { type: "integer", minimum: 0 },
     awayScoreET: { type: "integer", minimum: 0 },
@@ -72,8 +72,8 @@ export const sandboxUpdateLiveBodySchema = {
   additionalProperties: false,
   properties: {
     fixtureId: { type: "integer" },
-    homeScore: { type: "integer", minimum: 0 },
-    awayScore: { type: "integer", minimum: 0 },
+    homeScore90: { type: "integer", minimum: 0 },
+    awayScore90: { type: "integer", minimum: 0 },
     liveMinute: { type: "integer", minimum: 0, maximum: 120 },
     state: {
       type: "string",

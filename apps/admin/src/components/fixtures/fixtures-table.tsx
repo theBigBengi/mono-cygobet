@@ -181,17 +181,11 @@ export function FixturesTable({
           enableSorting: false,
           cell: ({ row }: { row: Row<UnifiedFixture> }) => {
             const f = row.original;
-            if (
-              f.status !== "mismatch" ||
-              !f.dbData ||
-              !f.providerData
-            )
+            if (f.status !== "mismatch" || !f.dbData || !f.providerData)
               return null;
             const diffs: string[] = [];
             if (f.dbData.state !== f.providerData.state)
-              diffs.push(
-                `state: ${f.dbData.state} → ${f.providerData.state}`
-              );
+              diffs.push(`state: ${f.dbData.state} → ${f.providerData.state}`);
             if (
               normalizeResult(f.dbData.result) !==
               normalizeResult(f.providerData.result)
@@ -202,9 +196,7 @@ export function FixturesTable({
             if (f.dbData.name?.trim() !== f.providerData.name?.trim())
               diffs.push("name");
             return (
-              <span className="text-xs text-amber-600">
-                {diffs.join(", ")}
-              </span>
+              <span className="text-xs text-amber-600">{diffs.join(", ")}</span>
             );
           },
         },
@@ -459,9 +451,7 @@ export function FixturesTable({
           enableSorting: false,
           cell: ({ row }: { row: Row<FixtureDBRow> }) => {
             const fixture = row.original as { stage?: string | null };
-            return (
-              <span className="text-xs">{fixture.stage || "—"}</span>
-            );
+            return <span className="text-xs">{fixture.stage || "—"}</span>;
           },
         },
         {
@@ -471,9 +461,7 @@ export function FixturesTable({
           enableSorting: false,
           cell: ({ row }: { row: Row<FixtureDBRow> }) => {
             const fixture = row.original as { round?: string | null };
-            return (
-              <span className="text-xs">{fixture.round || "—"}</span>
-            );
+            return <span className="text-xs">{fixture.round || "—"}</span>;
           },
         },
         {
@@ -482,10 +470,10 @@ export function FixturesTable({
           enableSorting: false,
           cell: ({ row }: { row: Row<FixtureDBRow> }) => {
             const fixture = row.original;
-            if (fixture.homeScore !== null && fixture.awayScore !== null) {
+            if (fixture.homeScore90 !== null && fixture.awayScore90 !== null) {
               return (
                 <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
-                  {fixture.homeScore} - {fixture.awayScore}
+                  {fixture.homeScore90} - {fixture.awayScore90}
                 </span>
               );
             }

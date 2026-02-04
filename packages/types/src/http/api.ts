@@ -80,6 +80,8 @@ export type ApiUpcomingFixturesResponse = {
     homeTeam?: { id: number; name: string; imagePath: string | null };
     awayTeam?: { id: number; name: string; imagePath: string | null };
     result?: string | null;
+    homeScore90?: number | null;
+    awayScore90?: number | null;
     odds?: Array<{
       id: number;
       value: string;
@@ -586,6 +588,8 @@ export type ApiPredictionsOverviewFixture = {
   startTs: number;
   state: string;
   liveMinute?: number | null;
+  homeScore90?: number | null;
+  awayScore90?: number | null;
 };
 
 /**
@@ -706,8 +710,6 @@ export type ApiFixtureDetailData = {
   round: string | null;
   liveMinute: number | null;
   result: string | null;
-  homeScore: number | null;
-  awayScore: number | null;
   homeScore90: number | null;
   awayScore90: number | null;
   homeScoreET: number | null;

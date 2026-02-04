@@ -23,7 +23,7 @@ export class FixturesService {
       args.orderBy?.length ? args.orderBy : [{ startTs: "desc" }]
     ) as Prisma.fixturesOrderByWithRelationInput[];
 
-    const where: Prisma.fixturesWhereInput = { id: { gte: 0 } };
+    const where: Prisma.fixturesWhereInput = {};
 
     if (args.leagueId !== undefined) {
       where.leagueId = args.leagueId;
@@ -119,7 +119,6 @@ export class FixturesService {
   async search(query: string, take: number = 10) {
     const fixtures = await prisma.fixtures.findMany({
       where: {
-        id: { gte: 0 },
         name: { contains: query, mode: "insensitive" },
       },
       take,
@@ -134,8 +133,8 @@ export class FixturesService {
     data: {
       name?: string;
       state?: string;
-      homeScore?: number | null;
-      awayScore?: number | null;
+      homeScore90?: number | null;
+      awayScore90?: number | null;
       result?: string | null;
       /** When set, marks this update as a manual override (score/state) and records who did it. */
       overriddenById?: number | null;
@@ -151,12 +150,12 @@ export class FixturesService {
       updateData.state = data.state as any;
     }
 
-    if (data.homeScore !== undefined) {
-      updateData.homeScore = data.homeScore;
+    if (data.homeScore90 !== undefined) {
+      updateData.homeScore90 = data.homeScore90;
     }
 
-    if (data.awayScore !== undefined) {
-      updateData.awayScore = data.awayScore;
+    if (data.awayScore90 !== undefined) {
+      updateData.awayScore90 = data.awayScore90;
     }
 
     if (data.result !== undefined) {
@@ -164,8 +163,8 @@ export class FixturesService {
     }
 
     const isScoreOrStateOverride =
-      data.homeScore !== undefined ||
-      data.awayScore !== undefined ||
+      data.homeScore90 !== undefined ||
+      data.awayScore90 !== undefined ||
       data.state !== undefined ||
       data.result !== undefined;
     if (isScoreOrStateOverride) {

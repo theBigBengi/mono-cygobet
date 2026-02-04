@@ -32,13 +32,14 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
     finishedAllRows,
   ] = await Promise.all([
     prisma.fixtures.count({
-      where: { id: { gte: 0 }, state: { in: LIVE_STATES_ARR } },
+      where: { externalId: { gte: 0 }, state: { in: LIVE_STATES_ARR } },
     }),
     unsettledFixtureIds.length === 0
       ? 0
       : prisma.fixtures.count({
           where: {
-            id: { gte: 0, in: unsettledFixtureIds },
+            id: { in: unsettledFixtureIds },
+            externalId: { gte: 0 },
             state: { in: FINISHED_STATES_ARR },
           },
         }),
@@ -50,16 +51,16 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
     }),
     prisma.fixtures.count({
       where: {
-        id: { gte: 0 },
+        externalId: { gte: 0 },
         state: { in: LIVE_STATES_ARR },
         updatedAt: { lt: stuckCutoff },
       },
     }),
     prisma.fixtures.count({
-      where: { id: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
+      where: { externalId: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
     }),
     prisma.fixtures.findMany({
-      where: { id: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
+      where: { externalId: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
       orderBy: { startTs: "asc" },
       take: 20,
       select: {
@@ -87,7 +88,7 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
     }),
     prisma.fixtures.findMany({
       where: {
-        id: { gte: 0 },
+        externalId: { gte: 0 },
         state: { in: LIVE_STATES_ARR },
         updatedAt: { lt: stuckCutoff },
       },
@@ -97,7 +98,8 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
       ? []
       : prisma.fixtures.findMany({
           where: {
-            id: { gte: 0, in: unsettledFixtureIds },
+            id: { in: unsettledFixtureIds },
+            externalId: { gte: 0 },
             state: { in: FINISHED_STATES_ARR },
           },
           select: {
@@ -106,12 +108,12 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
             state: true,
             updatedAt: true,
             result: true,
-            homeScore: true,
-            awayScore: true,
+            homeScore90: true,
+            awayScore90: true,
           },
         }),
     prisma.fixtures.findMany({
-      where: { id: { gte: 0 }, state: { in: FINISHED_STATES_ARR } },
+      where: { externalId: { gte: 0 }, state: { in: FINISHED_STATES_ARR } },
       orderBy: { updatedAt: "desc" },
       take: 500,
       select: {
@@ -120,8 +122,8 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
         state: true,
         updatedAt: true,
         result: true,
-        homeScore: true,
-        awayScore: true,
+        homeScore90: true,
+        awayScore90: true,
       },
     }),
   ]);
@@ -130,7 +132,9 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
   const finishedWithScoreMismatch = finishedAllRows.filter((f) => {
     const parsed = parseScores(f.result);
     if (parsed.homeScore == null || parsed.awayScore == null) return false;
-    return f.homeScore !== parsed.homeScore || f.awayScore !== parsed.awayScore;
+    return (
+      f.homeScore90 !== parsed.homeScore || f.awayScore90 !== parsed.awayScore
+    );
   });
   const scoreMismatchIds = new Set(finishedWithScoreMismatch.map((f) => f.id));
 
@@ -225,9 +229,7 @@ async function getUnsettledFixtureIds(): Promise<number[]> {
     select: { fixtureId: true },
   });
 
-  return [
-    ...new Set(groupFixtures.map((gf) => gf.fixtureId).filter((id) => id >= 0)),
-  ];
+  return [...new Set(groupFixtures.map((gf) => gf.fixtureId))];
 }
 
 /** Compute issue for a single fixture (Stuck LIVE, Unsettled, Score mismatch). */
@@ -236,8 +238,8 @@ export async function getFixtureIssue(fixture: {
   state: string;
   updatedAt: Date;
   result: string | null;
-  homeScore: number | null;
-  awayScore: number | null;
+  homeScore90: number | null;
+  awayScore90: number | null;
 }): Promise<string | null> {
   const stuckCutoff = new Date(Date.now() - STUCK_THRESHOLD_MS);
   if (
@@ -253,8 +255,8 @@ export async function getFixtureIssue(fixture: {
   const scoreMismatch =
     parsed.homeScore != null &&
     parsed.awayScore != null &&
-    (fixture.homeScore !== parsed.homeScore ||
-      fixture.awayScore !== parsed.awayScore);
+    (fixture.homeScore90 !== parsed.homeScore ||
+      fixture.awayScore90 !== parsed.awayScore);
   const hasUnsettled =
     (await prisma.groupPredictions.count({
       where: {

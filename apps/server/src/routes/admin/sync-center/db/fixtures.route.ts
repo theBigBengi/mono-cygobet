@@ -40,8 +40,8 @@ function mapFixtureToResponse(f: any) {
     startTs: f.startTs,
     state: f.state,
     result: f.result,
-    homeScore: f.homeScore,
-    awayScore: f.awayScore,
+    homeScore90: f.homeScore90,
+    awayScore90: f.awayScore90,
     stage: f.stage,
     round: f.round,
     leagueId: f.leagueId,
@@ -332,8 +332,8 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
     Body: {
       name?: string;
       state?: string;
-      homeScore?: number | null;
-      awayScore?: number | null;
+      homeScore90?: number | null;
+      awayScore90?: number | null;
       result?: string | null;
     };
     Reply: AdminFixtureResponse;
@@ -370,12 +370,12 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
         let result = body.result;
         if (
           result === undefined &&
-          body.homeScore !== undefined &&
-          body.awayScore !== undefined
+          body.homeScore90 !== undefined &&
+          body.awayScore90 !== undefined
         ) {
           // Only build result if both scores are non-null
-          if (body.homeScore !== null && body.awayScore !== null) {
-            result = `${body.homeScore}-${body.awayScore}`;
+          if (body.homeScore90 !== null && body.awayScore90 !== null) {
+            result = `${body.homeScore90}-${body.awayScore90}`;
           } else {
             // If scores are null, set result to null
             result = null;
@@ -386,8 +386,8 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
         const fixture = await service.update(fixtureId, {
           name: body.name,
           state: body.state,
-          homeScore: body.homeScore,
-          awayScore: body.awayScore,
+          homeScore90: body.homeScore90,
+          awayScore90: body.awayScore90,
           result: result,
           overriddenById,
         });

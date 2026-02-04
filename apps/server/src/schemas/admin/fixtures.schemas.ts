@@ -83,8 +83,8 @@ export const updateFixtureBodySchema = {
   properties: {
     name: { type: "string" },
     state: { type: "string" },
-    homeScore: { type: "number" },
-    awayScore: { type: "number" },
+    homeScore90: { type: "number" },
+    awayScore90: { type: "number" },
     result: { type: "string" },
   },
 };
@@ -105,5 +105,3 @@ export const updateFixture404ResponseSchema = {
     message: { type: "string" },
   },
 };
-
-

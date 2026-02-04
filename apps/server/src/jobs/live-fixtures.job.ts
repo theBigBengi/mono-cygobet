@@ -1,15 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { RunStatus, prisma } from "@repo/db";
 import type { FixtureState } from "@repo/db";
-import { NOT_STARTED_STATES, LIVE_STATES, FINISHED_STATES } from "@repo/utils";
+import { NOT_STARTED_STATES, LIVE_STATES } from "@repo/utils";
 import { adapter } from "../utils/adapter";
 import { syncFixtures } from "../etl/sync/sync.fixtures";
 import { finishSeedBatch } from "../etl/seeds/seed.utils";
-import {
-  emitFixtureLiveEvents,
-  emitFixtureFTEvents,
-} from "../services/api/groups/service/chat-events";
-import { settlePredictionsForFixtures } from "../services/api/groups/service/settlement";
+import { emitFixtureLiveEvents } from "../services/api/groups/service/chat-events";
 import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
 import { LIVE_FIXTURES_JOB } from "./jobs.definitions";
 import { createBatchForJob } from "./jobs.db";
@@ -49,6 +45,7 @@ export async function runLiveFixturesJob(
       skipped: true,
     }),
     run: async ({ jobRunId }) => {
+      // --- Step 1: Fetch live fixtures from sports-data provider ---
       // SportMonks state IDs for LIVE states only:
       // 2=INPLAY_1ST_HALF, 3=HT, 4=BREAK, 6=INPLAY_ET,
       // 9=INPLAY_PENALTIES, 21=EXTRA_TIME_BREAK, 22=INPLAY_2ND_HALF, 25=PEN_BREAK
@@ -59,6 +56,7 @@ export async function runLiveFixturesJob(
         filters: { fixtureStates: LIVE_STATE_IDS },
       });
 
+      // Early exit: dryRun mode skips DB writes and returns fetch stats only
       if (opts.dryRun) {
         return {
           result: {
@@ -81,35 +79,27 @@ export async function runLiveFixturesJob(
 
       let batchId: number | null = null;
       try {
+        // --- Step 2: Create a batch record for this job run ---
         const batch = await createBatchForJob(liveFixturesJob.key, jobRunId);
         batchId = batch.id;
 
+        // --- Step 3: Snapshot fixtures that are NOT_STARTED before sync ---
+        // We need this to detect NS→LIVE transitions after sync. Only fixtures that
+        // were NS before and are LIVE after sync have "just kicked off".
         const fetchedExternalIds = fixtures.map((f) => BigInt(f.externalId));
-        // Snapshot NS and LIVE fixtures before sync (parallel — independent queries)
-        const [preStates, preLive] =
+        const preStates =
           fetchedExternalIds.length > 0
-            ? await Promise.all([
-                prisma.fixtures.findMany({
-                  where: {
-                    id: { gte: 0 },
-                    externalId: { in: fetchedExternalIds },
-                    state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
-                  },
-                  select: { id: true, externalId: true },
-                }),
-                prisma.fixtures.findMany({
-                  where: {
-                    id: { gte: 0 },
-                    externalId: { in: fetchedExternalIds },
-                    state: { in: [...LIVE_STATES] as FixtureState[] },
-                  },
-                  select: { id: true, externalId: true },
-                }),
-              ])
-            : [[], [] as { id: number; externalId: bigint }[]];
+            ? await prisma.fixtures.findMany({
+                where: {
+                  externalId: { in: fetchedExternalIds },
+                  state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
+                },
+                select: { id: true, externalId: true },
+              })
+            : [];
         const nsFixtureIds = new Set(preStates.map((f) => f.id));
-        const liveFixtureIds = new Set(preLive.map((f) => f.id));
 
+        // --- Step 4: Sync fetched fixtures into DB (upsert) ---
         const result = await syncFixtures(fixtures, {
           dryRun: false,
           signal: opts.signal,
@@ -117,6 +107,7 @@ export async function runLiveFixturesJob(
         });
 
         const ok = result.inserted + result.updated;
+        // --- Step 5: Mark batch as completed and record stats ---
         await finishSeedBatch(batchId, RunStatus.success, {
           itemsTotal: result.total,
           itemsSuccess: ok + result.skipped,
@@ -130,7 +121,9 @@ export async function runLiveFixturesJob(
           },
         });
 
-        // Emit fixture_live chat events for fixtures that transitioned NS → LIVE
+        // --- Step 6: Emit fixture_live chat events for fixtures that transitioned NS → LIVE ---
+        // Re-query those fixtures: if they are now in LIVE_STATES, they "just kicked off".
+        // Emit real-time events so group chats get notified (e.g. "Match has started!").
         if (nsFixtureIds.size > 0) {
           const nowLive = await prisma.fixtures.findMany({
             where: {
@@ -156,33 +149,6 @@ export async function runLiveFixturesJob(
           }
         }
 
-        let finishedTransitionCount = 0;
-        // Detect LIVE → FINISHED transitions and trigger settlement
-        if (liveFixtureIds.size > 0) {
-          const nowFinished = await prisma.fixtures.findMany({
-            where: {
-              id: { in: Array.from(liveFixtureIds) },
-              state: { in: [...FINISHED_STATES] as FixtureState[] },
-            },
-            select: {
-              id: true,
-              homeScore: true,
-              awayScore: true,
-              homeTeam: { select: { name: true } },
-              awayTeam: { select: { name: true } },
-            },
-          });
-
-          if (nowFinished.length > 0) {
-            await settlePredictionsForFixtures(
-              nowFinished.map((f) => f.id),
-              fastify.io
-            );
-            await emitFixtureFTEvents(nowFinished, fastify.io);
-            finishedTransitionCount = nowFinished.length;
-          }
-        }
-
         return {
           result: {
             jobRunId,
@@ -203,7 +169,6 @@ export async function runLiveFixturesJob(
             inserted: result.inserted,
             updated: result.updated,
             skipped: result.skipped,
-            finishedTransitions: finishedTransitionCount,
             ...(opts.meta ?? {}),
           },
         };

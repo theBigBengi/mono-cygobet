@@ -97,8 +97,9 @@ const adminOddsDbRoutes: FastifyPluginAsync = async (fastify) => {
       if (fixtureExternalIds.length > 0) {
         const fixtures = await prisma.fixtures.findMany({
           where: {
-            id: { gte: 0 },
-            externalId: { in: fixtureExternalIds.map((id) => BigInt(id)) },
+            externalId: {
+              in: fixtureExternalIds.map((id) => BigInt(id)),
+            },
           },
           select: { id: true },
         });

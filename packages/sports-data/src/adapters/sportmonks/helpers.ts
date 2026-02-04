@@ -288,10 +288,7 @@ export class SMHttp {
                 const retryAfter = res.headers.get("Retry-After");
                 if (retryAfter) {
                   const retryAfterMs = parseInt(retryAfter, 10) * 1000;
-                  if (
-                    Number.isFinite(retryAfterMs) &&
-                    retryAfterMs > 0
-                  ) {
+                  if (Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
                     this.logger.warn("SMHttp get retry (Retry-After)", {
                       attempt,
                       status: 429,
@@ -317,19 +314,12 @@ export class SMHttp {
               code: "UNKNOWN",
               statusCode: res.status,
             });
-            throw new SportsDataError(
-              "UNKNOWN",
-              "Request failed",
-              res.status
-            );
+            throw new SportsDataError("UNKNOWN", "Request failed", res.status);
           }
           this.circuitBreaker.recordSuccess();
           break;
         } catch (err) {
-          if (
-            err instanceof SportsDataError &&
-            err.code === "CIRCUIT_OPEN"
-          ) {
+          if (err instanceof SportsDataError && err.code === "CIRCUIT_OPEN") {
             throw err;
           }
           // Only record failure for network errors (not re-thrown HTTP errors
@@ -361,8 +351,7 @@ export class SMHttp {
             );
           }
           const jitter = Math.floor(Math.random() * 200);
-          const delayMs =
-            this.retryDelayMs * Math.pow(2, attempt - 1) + jitter;
+          const delayMs = this.retryDelayMs * Math.pow(2, attempt - 1) + jitter;
           this.logger.warn("SMHttp get retry", {
             attempt,
             status: undefined,
@@ -420,7 +409,8 @@ export function mapSmStateToApp(
   developerName: string | undefined
 ): (typeof FixtureState)[keyof typeof FixtureState] {
   if (!developerName) return "NS";
-  return (SM_DEVELOPER_NAME_MAP[developerName] ?? "NS") as (typeof FixtureState)[keyof typeof FixtureState];
+  return (SM_DEVELOPER_NAME_MAP[developerName] ??
+    "NS") as (typeof FixtureState)[keyof typeof FixtureState];
 }
 
 export function extractLiveMinute(
@@ -448,9 +438,7 @@ function extractScore(
 ): number | null {
   if (!Array.isArray(scores) || scores.length === 0) return null;
   const entry = scores.find(
-    (s) =>
-      s.type_id === typeId &&
-      s.score.participant.toLowerCase() === side
+    (s) => s.type_id === typeId && s.score.participant.toLowerCase() === side
   );
   return entry?.score.goals ?? null;
 }
@@ -568,8 +556,8 @@ export function buildFixtures(f: FixtureSportmonks): FixtureDTO | null {
     result: pickScoreString(f?.scores),
     homeScore: scores.home,
     awayScore: scores.away,
-    homeScore90: scores.home90,
-    awayScore90: scores.away90,
+    homeScore90: scores.home90 ?? scores.home,
+    awayScore90: scores.away90 ?? scores.away,
     homeScoreET: scores.homeET,
     awayScoreET: scores.awayET,
     penHome: scores.penHome,

@@ -57,13 +57,11 @@ export async function settlePredictionsForFixtures(
   // Step 1: Load FT fixtures (including period scores for KO scoring)
   const fixtures = await prisma.fixtures.findMany({
     where: {
-      id: { in: fixtureIds, gte: 0 },
+      id: { in: fixtureIds },
       state: "FT",
     },
     select: {
       id: true,
-      homeScore: true,
-      awayScore: true,
       homeScore90: true,
       awayScore90: true,
       homeScoreET: true,
@@ -206,18 +204,18 @@ export async function settlePredictionsForFixtures(
       continue;
     }
 
-    // Resolve final scores: use DB values, or parse from result string when null (safety net)
-    let homeScore = fixture.homeScore;
-    let awayScore = fixture.awayScore;
-    if (homeScore == null || awayScore == null) {
+    // Resolve scores: use homeScore90/awayScore90 (primary), or parse from result string when null (safety net)
+    let homeScore90 = fixture.homeScore90;
+    let awayScore90 = fixture.awayScore90;
+    if (homeScore90 == null || awayScore90 == null) {
       if (fixture.result?.trim()) {
         const parsed = parseScores(fixture.result);
         if (parsed.homeScore != null && parsed.awayScore != null) {
-          homeScore = parsed.homeScore;
-          awayScore = parsed.awayScore;
+          homeScore90 = parsed.homeScore;
+          awayScore90 = parsed.awayScore;
         }
       }
-      if (homeScore == null || awayScore == null) {
+      if (homeScore90 == null || awayScore90 == null) {
         log.warn(
           { predictionId: pred.id, fixtureId },
           "Fixture has null scores"
@@ -238,13 +236,11 @@ export async function settlePredictionsForFixtures(
       continue;
     }
 
-    // Build full fixture result for scoring (period scores used by koRoundMode; null for non-ET matches)
+    // Build full fixture result for scoring (homeScore90/awayScore90 primary; ET/PEN optional)
     const fixtureResult = {
-      homeScore,
-      awayScore,
+      homeScore90,
+      awayScore90,
       state: fixture.state,
-      homeScore90: fixture.homeScore90 ?? null,
-      awayScore90: fixture.awayScore90 ?? null,
       homeScoreET: fixture.homeScoreET ?? null,
       awayScoreET: fixture.awayScoreET ?? null,
       penHome: fixture.penHome ?? null,

@@ -149,13 +149,13 @@ export type FixtureDTO = {
   /** Provider raw result string (nullable) -> fixtures.result */
   result: string | null;
 
-  /** Home team score (nullable) -> fixtures.home_score */
+  /** Provider current/live score (home). Not stored in DB; used only for ETL fallback to homeScore90. */
   homeScore: number | null;
 
-  /** Away team score (nullable) -> fixtures.away_score */
+  /** Provider current/live score (away). Not stored in DB; used only for ETL fallback to awayScore90. */
   awayScore: number | null;
 
-  /** Score at end of 90min -> fixtures.home_score_90 */
+  /** Score at end of 90min (primary). During live: current score from provider type_id 1525. */
   homeScore90?: number | null;
 
   /** Score at end of 90min -> fixtures.away_score_90 */

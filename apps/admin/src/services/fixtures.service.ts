@@ -12,9 +12,7 @@ import type {
 
 export const fixturesService = {
   async getById(id: number | string) {
-    return apiGet<AdminFixtureResponse>(
-      `/admin/sync-center/db/fixtures/${id}`
-    );
+    return apiGet<AdminFixtureResponse>(`/admin/sync-center/db/fixtures/${id}`);
   },
 
   async getFromDb(params?: {
@@ -145,8 +143,8 @@ export const fixturesService = {
     data: {
       name?: string;
       state?: string;
-      homeScore?: number | null;
-      awayScore?: number | null;
+      homeScore90?: number | null;
+      awayScore90?: number | null;
       result?: string | null;
     }
   ) {

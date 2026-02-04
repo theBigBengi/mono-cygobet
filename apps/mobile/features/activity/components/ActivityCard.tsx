@@ -54,12 +54,15 @@ export function ActivityCard({ item }: ActivityCardProps) {
   const awayTeam = (meta.awayTeam as string) ?? "";
   const username = (meta.username as string) ?? "";
   const newPosition = (meta.newPosition as number) ?? 0;
-  const homeScore = meta.homeScore as number | undefined;
-  const awayScore = meta.awayScore as number | undefined;
+  const homeScore = meta.homeScore90 as number | undefined;
+  const awayScore = meta.awayScore90 as number | undefined;
 
   let subtitle = item.body;
   if (item.eventType === "fixture_live" && (homeTeam || awayTeam)) {
-    subtitle = t("activity.fixtureLive", { homeTeam: homeTeam || "?", awayTeam: awayTeam || "?" });
+    subtitle = t("activity.fixtureLive", {
+      homeTeam: homeTeam || "?",
+      awayTeam: awayTeam || "?",
+    });
   } else if (item.eventType === "fixture_ft" && (homeTeam || awayTeam)) {
     subtitle = t("activity.fixtureFt", {
       homeTeam: homeTeam || "?",
@@ -71,14 +74,18 @@ export function ActivityCard({ item }: ActivityCardProps) {
     subtitle = t("activity.memberJoined", { username });
   } else if (item.eventType === "ranking_change" && username) {
     subtitle = t("activity.rankingChange", { username, position: newPosition });
-  } else if (item.eventType === "prediction_reminder" && (homeTeam || awayTeam)) {
+  } else if (
+    item.eventType === "prediction_reminder" &&
+    (homeTeam || awayTeam)
+  ) {
     subtitle = t("activity.predictionReminder", {
       homeTeam: homeTeam || "?",
       awayTeam: awayTeam || "?",
     });
   }
 
-  const isReminder = item.eventType === "prediction_reminder" || item.source === "user";
+  const isReminder =
+    item.eventType === "prediction_reminder" || item.source === "user";
 
   return (
     <Pressable
@@ -103,7 +110,9 @@ export function ActivityCard({ item }: ActivityCardProps) {
           <AppText variant="body" color="secondary" numberOfLines={2}>
             {subtitle}
           </AppText>
-          <View style={[styles.badge, { backgroundColor: theme.colors.surface }]}>
+          <View
+            style={[styles.badge, { backgroundColor: theme.colors.surface }]}
+          >
             <AppText variant="caption" color="secondary">
               {item.groupName}
             </AppText>

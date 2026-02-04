@@ -47,14 +47,14 @@ export const FIXTURE_SELECT_BASE = {
 export const FIXTURE_SELECT_WITH_RESULT = {
   ...FIXTURE_SELECT_BASE,
   result: true,
+  homeScore90: true,
+  awayScore90: true,
 } as const satisfies Prisma.fixturesSelect;
 
 /** Full fixture select for detail endpoint: base + result + period scores. */
 export const FIXTURE_SELECT_DETAIL = {
   ...FIXTURE_SELECT_BASE,
   result: true,
-  homeScore: true,
-  awayScore: true,
   homeScore90: true,
   awayScore90: true,
   homeScoreET: true,
@@ -70,6 +70,8 @@ export const FIXTURE_SELECT_DETAIL = {
  * @param includeResult - Whether to include the result field (default: false)
  * @returns Prisma select object for fixtures
  */
-export function buildFixtureSelect(includeResult = false): Prisma.fixturesSelect {
+export function buildFixtureSelect(
+  includeResult = false
+): Prisma.fixturesSelect {
   return includeResult ? FIXTURE_SELECT_WITH_RESULT : FIXTURE_SELECT_BASE;
 }

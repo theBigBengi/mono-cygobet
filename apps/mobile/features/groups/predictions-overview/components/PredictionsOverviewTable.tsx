@@ -18,7 +18,9 @@ const GAME_COLUMN_WIDTH = 50;
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 110;
 
-export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps) {
+export function PredictionsOverviewTable({
+  data,
+}: PredictionsOverviewTableProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -60,7 +62,11 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
     const fixture = fixtures.find((f) => f.id === fixtureId);
     if (!fixture) return "-:-";
 
-    const hasStarted = hasMatchStarted(fixture.state, fixture.result, fixture.startTs);
+    const hasStarted = hasMatchStarted(
+      fixture.state,
+      fixture.result,
+      fixture.startTs
+    );
 
     // If match hasn't started, show "?"
     if (!hasStarted) {
@@ -89,8 +95,18 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
     return `${day}/${month}`;
   };
 
-  // Check which team won based on result (e.g., "2:1" -> home wins, "1:2" -> away wins, "1:1" -> draw)
-  const getWinner = (result: string | null): "home" | "away" | "draw" | null => {
+  // Check which team won: prefer numeric scores, fallback to parsing result string
+  const getWinner = (fixture: {
+    result: string | null;
+    homeScore90?: number | null;
+    awayScore90?: number | null;
+  }): "home" | "away" | "draw" | null => {
+    if (fixture.homeScore90 != null && fixture.awayScore90 != null) {
+      if (fixture.homeScore90 > fixture.awayScore90) return "home";
+      if (fixture.awayScore90 > fixture.homeScore90) return "away";
+      return "draw";
+    }
+    const result = fixture.result;
     if (!result) return null;
     const [home, away] = result.split("-").map(Number);
     if (isNaN(home) || isNaN(away)) return null;
@@ -158,10 +174,12 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
             {/* Column layout: Home Logo, Home Abbr, Away Abbr, Away Logo, Result */}
             <View style={styles.gameHeaderColumn}>
               {(() => {
-                const winner = getWinner(fixture.result);
+                const winner = getWinner(fixture);
                 const isHomeLoser = winner === "away";
                 return (
-                  <View style={isHomeLoser ? styles.logoContainerDimmed : undefined}>
+                  <View
+                    style={isHomeLoser ? styles.logoContainerDimmed : undefined}
+                  >
                     <TeamLogo
                       imagePath={fixture.homeTeam.imagePath}
                       teamName={fixture.homeTeam.name}
@@ -171,14 +189,24 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
                 );
               })()}
               {(() => {
-                const winner = getWinner(fixture.result);
+                const winner = getWinner(fixture);
                 const isHomeWinner = winner === "home";
-                const matchStarted = hasMatchStarted(fixture.state, fixture.result, fixture.startTs);
+                const matchStarted = hasMatchStarted(
+                  fixture.state,
+                  fixture.result,
+                  fixture.startTs
+                );
                 const isNotStarted = !matchStarted;
                 return (
                   <AppText
                     variant="caption"
-                    color={isHomeWinner ? "primary" : isNotStarted ? "primary" : "secondary"}
+                    color={
+                      isHomeWinner
+                        ? "primary"
+                        : isNotStarted
+                          ? "primary"
+                          : "secondary"
+                    }
                     style={[
                       styles.teamAbbr,
                       isHomeWinner && styles.teamAbbrWinner,
@@ -190,14 +218,24 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
                 );
               })()}
               {(() => {
-                const winner = getWinner(fixture.result);
+                const winner = getWinner(fixture);
                 const isAwayWinner = winner === "away";
-                const matchStarted = hasMatchStarted(fixture.state, fixture.result, fixture.startTs);
+                const matchStarted = hasMatchStarted(
+                  fixture.state,
+                  fixture.result,
+                  fixture.startTs
+                );
                 const isNotStarted = !matchStarted;
                 return (
                   <AppText
                     variant="caption"
-                    color={isAwayWinner ? "primary" : isNotStarted ? "primary" : "secondary"}
+                    color={
+                      isAwayWinner
+                        ? "primary"
+                        : isNotStarted
+                          ? "primary"
+                          : "secondary"
+                    }
                     style={[
                       styles.teamAbbr,
                       isAwayWinner && styles.teamAbbrWinner,
@@ -209,10 +247,12 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
                 );
               })()}
               {(() => {
-                const winner = getWinner(fixture.result);
+                const winner = getWinner(fixture);
                 const isAwayLoser = winner === "home";
                 return (
-                  <View style={isAwayLoser ? styles.logoContainerDimmed : undefined}>
+                  <View
+                    style={isAwayLoser ? styles.logoContainerDimmed : undefined}
+                  >
                     <TeamLogo
                       imagePath={fixture.awayTeam.imagePath}
                       teamName={fixture.awayTeam.name}
@@ -222,11 +262,19 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
                 );
               })()}
               {fixture.result ? (
-                <AppText variant="caption" color="primary" style={styles.resultText}>
+                <AppText
+                  variant="caption"
+                  color="primary"
+                  style={styles.resultText}
+                >
                   {fixture.result}
                 </AppText>
               ) : (
-                <AppText variant="caption" color="secondary" style={styles.dateText}>
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.dateText}
+                >
                   {formatDate(fixture.startTs)}
                 </AppText>
               )}
@@ -238,7 +286,11 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
   };
 
   // Render left column row
-  const renderLeftRow = ({ item: participant }: { item: typeof participants[0] }) => {
+  const renderLeftRow = ({
+    item: participant,
+  }: {
+    item: (typeof participants)[0];
+  }) => {
     const isCurrentUser = participant.id === currentUserId;
     return (
       <View
@@ -272,7 +324,11 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
   };
 
   // Render participant row - ONLY match cells (left column is outside)
-  const renderRow = ({ item: participant }: { item: typeof participants[0] }) => {
+  const renderRow = ({
+    item: participant,
+  }: {
+    item: (typeof participants)[0];
+  }) => {
     const isCurrentUser = participant.id === currentUserId;
     return (
       <View
@@ -353,7 +409,9 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <View style={styles.contentRow}>
         {/* Left Column - Fixed, OUTSIDE horizontal scroll */}
         <View
@@ -378,7 +436,9 @@ export function PredictionsOverviewTable({ data }: PredictionsOverviewTableProps
               },
             ]}
           >
-            <AppText variant="body" style={styles.headerText}>#</AppText>
+            <AppText variant="body" style={styles.headerText}>
+              #
+            </AppText>
           </View>
 
           {/* Left Column Rows - Fixed, OUTSIDE horizontal scroll */}

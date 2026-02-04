@@ -27,8 +27,8 @@ const FIXTURE_STATE_VALUES = Object.values(FixtureState);
 export type FixtureForOverride = {
   id: number;
   name: string;
-  homeScore: number | null;
-  awayScore: number | null;
+  homeScore90: number | null;
+  awayScore90: number | null;
   state: string;
 };
 
@@ -55,10 +55,10 @@ export function ScoreOverrideDialog({
   useEffect(() => {
     if (fixture && open) {
       setHomeScore(
-        fixture.homeScore != null ? String(fixture.homeScore) : ""
+        fixture.homeScore90 != null ? String(fixture.homeScore90) : ""
       );
       setAwayScore(
-        fixture.awayScore != null ? String(fixture.awayScore) : ""
+        fixture.awayScore90 != null ? String(fixture.awayScore90) : ""
       );
       setState(fixture.state || "");
       setConfirmStep(false);
@@ -99,8 +99,8 @@ export function ScoreOverrideDialog({
     setSaving(true);
     try {
       await fixturesService.update(fixture.id, {
-        homeScore: home ?? undefined,
-        awayScore: away ?? undefined,
+        homeScore90: home ?? undefined,
+        awayScore90: away ?? undefined,
         state: state || undefined,
       });
       toast.success("Score and state updated");

@@ -34,29 +34,36 @@ export function GroupLobbyFixtureCard({
 
   // Parse score from prediction or result
   const scoreDisplay = (() => {
-    if (showFinalScore && fixture.result) {
-      const parts = fixture.result.replace(":", "-").split("-");
-      if (parts.length === 2) {
-        return { home: parts[0].trim(), away: parts[1].trim() };
+    if (showFinalScore) {
+      if (fixture.homeScore90 != null && fixture.awayScore90 != null) {
+        return {
+          home: String(fixture.homeScore90),
+          away: String(fixture.awayScore90),
+        };
+      }
+      if (fixture.result) {
+        const parts = fixture.result.replace(":", "-").split("-");
+        if (parts.length === 2) {
+          return { home: parts[0].trim(), away: parts[1].trim() };
+        }
       }
     }
     if (!showFinalScore && fixture.prediction) {
       const home = fixture.prediction.home;
       const away = fixture.prediction.away;
-      if (home !== null && home !== undefined && away !== null && away !== undefined) {
+      if (
+        home !== null &&
+        home !== undefined &&
+        away !== null &&
+        away !== undefined
+      ) {
         return { home: String(home), away: String(away) };
       }
     }
     return null;
   })();
-  const homeTeamName = translateTeam(
-    fixture.homeTeam?.name,
-    t("common.home")
-  );
-  const awayTeamName = translateTeam(
-    fixture.awayTeam?.name,
-    t("common.away")
-  );
+  const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
+  const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
   const kickoffTime = formatKickoffTime(fixture.kickoffAt);
 
   // Format date label (DD.MM.YY)
@@ -109,7 +116,11 @@ export function GroupLobbyFixtureCard({
           <AppText variant="body" style={styles.scoreText}>
             {scoreDisplay?.home ?? "—"}
           </AppText>
-          <AppText variant="caption" color="secondary" style={styles.scoreSeparator}>
+          <AppText
+            variant="caption"
+            color="secondary"
+            style={styles.scoreSeparator}
+          >
             {" : "}
           </AppText>
           <AppText variant="body" style={styles.scoreText}>

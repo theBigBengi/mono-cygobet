@@ -5,12 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -54,7 +49,15 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Play, Flag, RotateCcw, Trash2, Plus, Pencil, ChevronDown } from "lucide-react";
+import {
+  Play,
+  Flag,
+  RotateCcw,
+  Trash2,
+  Plus,
+  Pencil,
+  ChevronDown,
+} from "lucide-react";
 import { useSandboxList } from "@/hooks/use-sandbox";
 import {
   sandboxService,
@@ -142,12 +145,14 @@ export default function SandboxPage() {
   const { data: leaguesSearchData } = useQuery({
     queryKey: ["leagues", "search", debouncedLeagueQuery],
     queryFn: () => leaguesService.search(debouncedLeagueQuery, 20),
-    enabled: setupForm.selectionMode === "leagues" && debouncedLeagueQuery.length >= 2,
+    enabled:
+      setupForm.selectionMode === "leagues" && debouncedLeagueQuery.length >= 2,
   });
   const { data: teamsSearchData } = useQuery({
     queryKey: ["teams", "search", debouncedTeamQuery],
     queryFn: () => teamsService.search(debouncedTeamQuery, 20),
-    enabled: setupForm.selectionMode === "teams" && debouncedTeamQuery.length >= 2,
+    enabled:
+      setupForm.selectionMode === "teams" && debouncedTeamQuery.length >= 2,
   });
 
   const leagueOptions = React.useMemo(() => {
@@ -182,7 +187,8 @@ export default function SandboxPage() {
   });
   const [addFixtureHomeSearch, setAddFixtureHomeSearch] = React.useState("");
   const [addFixtureAwaySearch, setAddFixtureAwaySearch] = React.useState("");
-  const [addFixtureLeagueSearch, setAddFixtureLeagueSearch] = React.useState("");
+  const [addFixtureLeagueSearch, setAddFixtureLeagueSearch] =
+    React.useState("");
   const [debouncedAddHome] = useDebounce(addFixtureHomeSearch, 300);
   const [debouncedAddAway] = useDebounce(addFixtureAwaySearch, 300);
   const [debouncedAddLeague] = useDebounce(addFixtureLeagueSearch, 300);
@@ -244,8 +250,8 @@ export default function SandboxPage() {
     fixtureId: number | null;
   }>({ open: false, fixtureId: null });
   const [editLiveForm, setEditLiveForm] = React.useState({
-    homeScore: 0,
-    awayScore: 0,
+    homeScore90: 0,
+    awayScore90: 0,
     liveMinute: 1,
     state: "INPLAY_1ST_HALF",
   });
@@ -334,8 +340,8 @@ export default function SandboxPage() {
   const fullTimeMutation = useMutation({
     mutationFn: (args: {
       fixtureId: number;
-      homeScore: number;
-      awayScore: number;
+      homeScore90: number;
+      awayScore90: number;
       state?: "FT" | "AET" | "FT_PEN";
       homeScoreET?: number;
       awayScoreET?: number;
@@ -345,8 +351,8 @@ export default function SandboxPage() {
     onSuccess: (data) => {
       const s = data.data.settlement;
       const msg = s
-        ? `FT ${data.data.homeScore}-${data.data.awayScore} | Settled: ${s.settled} predictions`
-        : `FT ${data.data.homeScore}-${data.data.awayScore}`;
+        ? `FT ${data.data.homeScore90}-${data.data.awayScore90} | Settled: ${s.settled} predictions`
+        : `FT ${data.data.homeScore90}-${data.data.awayScore90}`;
       toast.success(msg);
       queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
       setFtDialog({ open: false, fixtureId: null });
@@ -359,8 +365,8 @@ export default function SandboxPage() {
   const updateLiveMutation = useMutation({
     mutationFn: (args: {
       fixtureId: number;
-      homeScore?: number;
-      awayScore?: number;
+      homeScore90?: number;
+      awayScore90?: number;
       liveMinute?: number;
       state?: string;
     }) => sandboxService.updateLive(args),
@@ -476,8 +482,8 @@ export default function SandboxPage() {
 
   const openEditLiveDialog = (fixture: SandboxFixture) => {
     setEditLiveForm({
-      homeScore: fixture.homeScore ?? 0,
-      awayScore: fixture.awayScore ?? 0,
+      homeScore90: fixture.homeScore90 ?? 0,
+      awayScore90: fixture.awayScore90 ?? 0,
       liveMinute: fixture.liveMinute ?? 1,
       state: fixture.state,
     });
@@ -701,10 +707,7 @@ export default function SandboxPage() {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <Button
-                    type="submit"
-                    disabled={setupMutation.isPending}
-                  >
+                  <Button type="submit" disabled={setupMutation.isPending}>
                     <Plus className="mr-2 h-4 w-4" />
                     {setupMutation.isPending ? "Setting up..." : "Create"}
                   </Button>
@@ -723,8 +726,8 @@ export default function SandboxPage() {
                   Fixtures (
                   {selectedGroupTab === "all"
                     ? fixtures.length
-                    : groups.find((g) => g.id === selectedGroupTab)?.fixtureIds
-                        .length ?? 0}
+                    : (groups.find((g) => g.id === selectedGroupTab)?.fixtureIds
+                        .length ?? 0)}
                   )
                 </CardTitle>
                 {groups.length > 0 && (
@@ -781,18 +784,20 @@ export default function SandboxPage() {
                 )}
               </div>
             </div>
-            {selectedGroupTab !== "all" && groups.length > 0 && (() => {
-              const group = groups.find((g) => g.id === selectedGroupTab);
-              if (!group) return null;
-              return (
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <Badge variant="secondary">{group.status}</Badge>
-                  <span className="text-muted-foreground">
-                    {group.memberCount} members, {group.fixtureCount} fixtures
-                  </span>
-                </div>
-              );
-            })()}
+            {selectedGroupTab !== "all" &&
+              groups.length > 0 &&
+              (() => {
+                const group = groups.find((g) => g.id === selectedGroupTab);
+                if (!group) return null;
+                return (
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <Badge variant="secondary">{group.status}</Badge>
+                    <span className="text-muted-foreground">
+                      {group.memberCount} members, {group.fixtureCount} fixtures
+                    </span>
+                  </div>
+                );
+              })()}
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -807,124 +812,125 @@ export default function SandboxPage() {
               </p>
             ) : (
               <div className="min-w-0 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Match</TableHead>
-                    <TableHead>State</TableHead>
-                    <TableHead>Min</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Start</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredFixtures.map((fixture) => {
-                    const action = getFixtureAction(fixture.state);
-                    const matchName =
-                      fixture.homeTeam && fixture.awayTeam
-                        ? `${fixture.homeTeam} vs ${fixture.awayTeam}`
-                        : fixture.name;
-                    const score =
-                      fixture.homeScore !== null && fixture.awayScore !== null
-                        ? `${fixture.homeScore} - ${fixture.awayScore}`
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Match</TableHead>
+                      <TableHead>State</TableHead>
+                      <TableHead>Min</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead>Start</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredFixtures.map((fixture) => {
+                      const action = getFixtureAction(fixture.state);
+                      const matchName =
+                        fixture.homeTeam && fixture.awayTeam
+                          ? `${fixture.homeTeam} vs ${fixture.awayTeam}`
+                          : fixture.name;
+                      const score =
+                        fixture.homeScore90 !== null &&
+                        fixture.awayScore90 !== null
+                          ? `${fixture.homeScore90} - ${fixture.awayScore90}`
+                          : "—";
+                      const isLive = LIVE_STATES.includes(
+                        fixture.state as (typeof LIVE_STATES)[number]
+                      );
+                      const minDisplay = isLive
+                        ? (fixture.liveMinute ?? "—")
                         : "—";
-                    const isLive = LIVE_STATES.includes(
-                      fixture.state as (typeof LIVE_STATES)[number]
-                    );
-                    const minDisplay = isLive
-                      ? fixture.liveMinute ?? "—"
-                      : "—";
-                    return (
-                      <TableRow key={fixture.id}>
-                        <TableCell>{fixture.id}</TableCell>
-                        <TableCell>{matchName}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={getStateBadgeVariant(fixture.state)}
-                          >
-                            {fixture.state}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{minDisplay}</TableCell>
-                        <TableCell>{score}</TableCell>
-                        <TableCell>
-                          {fixture.state === "NS" ? (
-                            <Input
-                              type="datetime-local"
-                              className="w-[180px]"
-                              value={tsToDatetimeLocal(fixture.startTs)}
-                              onChange={(e) => {
-                                if (!e.target.value) return;
-                                updateStartTimeMutation.mutate({
-                                  fixtureId: fixture.id,
-                                  startTime: new Date(
-                                    e.target.value
-                                  ).toISOString(),
-                                });
-                              }}
-                            />
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              {new Date(
-                                fixture.startTs * 1000
-                              ).toLocaleString()}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {action === "kickoff" && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() =>
-                                kickoffMutation.mutate(fixture.id)
-                              }
-                              disabled={kickoffMutation.isPending}
+                      return (
+                        <TableRow key={fixture.id}>
+                          <TableCell>{fixture.id}</TableCell>
+                          <TableCell>{matchName}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={getStateBadgeVariant(fixture.state)}
                             >
-                              <Play className="mr-1 h-3 w-3" />
-                              Kickoff
-                            </Button>
-                          )}
-                          {action === "full-time" && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openEditLiveDialog(fixture)}
-                                className="mr-1"
-                              >
-                                <Pencil className="mr-1 h-3 w-3" />
-                                Edit
-                              </Button>
+                              {fixture.state}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{minDisplay}</TableCell>
+                          <TableCell>{score}</TableCell>
+                          <TableCell>
+                            {fixture.state === "NS" ? (
+                              <Input
+                                type="datetime-local"
+                                className="w-[180px]"
+                                value={tsToDatetimeLocal(fixture.startTs)}
+                                onChange={(e) => {
+                                  if (!e.target.value) return;
+                                  updateStartTimeMutation.mutate({
+                                    fixtureId: fixture.id,
+                                    startTime: new Date(
+                                      e.target.value
+                                    ).toISOString(),
+                                  });
+                                }}
+                              />
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                {new Date(
+                                  fixture.startTs * 1000
+                                ).toLocaleString()}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {action === "kickoff" && (
                               <Button
                                 size="sm"
                                 variant="default"
-                                onClick={() => openFtDialog(fixture.id)}
+                                onClick={() =>
+                                  kickoffMutation.mutate(fixture.id)
+                                }
+                                disabled={kickoffMutation.isPending}
                               >
-                                <Flag className="mr-1 h-3 w-3" />
-                                Full Time
+                                <Play className="mr-1 h-3 w-3" />
+                                Kickoff
                               </Button>
-                            </>
-                          )}
-                          {action === "reset" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => resetMutation.mutate(fixture.id)}
-                              disabled={resetMutation.isPending}
-                            >
-                              <RotateCcw className="mr-1 h-3 w-3" />
-                              Reset
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                            )}
+                            {action === "full-time" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openEditLiveDialog(fixture)}
+                                  className="mr-1"
+                                >
+                                  <Pencil className="mr-1 h-3 w-3" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  onClick={() => openFtDialog(fixture.id)}
+                                >
+                                  <Flag className="mr-1 h-3 w-3" />
+                                  Full Time
+                                </Button>
+                              </>
+                            )}
+                            {action === "reset" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => resetMutation.mutate(fixture.id)}
+                                disabled={resetMutation.isPending}
+                              >
+                                <RotateCcw className="mr-1 h-3 w-3" />
+                                Reset
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </CardContent>
@@ -1071,8 +1077,8 @@ export default function SandboxPage() {
                 if (ftDialog.fixtureId == null) return;
                 fullTimeMutation.mutate({
                   fixtureId: ftDialog.fixtureId,
-                  homeScore: ftScores.home,
-                  awayScore: ftScores.away,
+                  homeScore90: ftScores.home,
+                  awayScore90: ftScores.away,
                   state: ftScores.state,
                   ...(ftScores.state === "AET" || ftScores.state === "FT_PEN"
                     ? {
@@ -1117,11 +1123,11 @@ export default function SandboxPage() {
                   id="editHomeScore"
                   type="number"
                   min={0}
-                  value={editLiveForm.homeScore}
+                  value={editLiveForm.homeScore90}
                   onChange={(e) =>
                     setEditLiveForm((prev) => ({
                       ...prev,
-                      homeScore: Math.max(0, Number(e.target.value) || 0),
+                      homeScore90: Math.max(0, Number(e.target.value) || 0),
                     }))
                   }
                 />
@@ -1132,11 +1138,11 @@ export default function SandboxPage() {
                   id="editAwayScore"
                   type="number"
                   min={0}
-                  value={editLiveForm.awayScore}
+                  value={editLiveForm.awayScore90}
                   onChange={(e) =>
                     setEditLiveForm((prev) => ({
                       ...prev,
-                      awayScore: Math.max(0, Number(e.target.value) || 0),
+                      awayScore90: Math.max(0, Number(e.target.value) || 0),
                     }))
                   }
                 />
@@ -1207,8 +1213,8 @@ export default function SandboxPage() {
                 if (editLiveDialog.fixtureId == null) return;
                 updateLiveMutation.mutate({
                   fixtureId: editLiveDialog.fixtureId,
-                  homeScore: editLiveForm.homeScore,
-                  awayScore: editLiveForm.awayScore,
+                  homeScore90: editLiveForm.homeScore90,
+                  awayScore90: editLiveForm.awayScore90,
                   liveMinute: editLiveForm.liveMinute,
                   state: editLiveForm.state,
                 });
@@ -1281,7 +1287,10 @@ export default function SandboxPage() {
                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <PopoverContent
+                    className="w-[var(--radix-popover-trigger-width)] p-0"
+                    align="start"
+                  >
                     <Command shouldFilter={false}>
                       <CommandInput
                         placeholder="Type to search (min 2 chars)..."
@@ -1331,7 +1340,10 @@ export default function SandboxPage() {
                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <PopoverContent
+                    className="w-[var(--radix-popover-trigger-width)] p-0"
+                    align="start"
+                  >
                     <Command shouldFilter={false}>
                       <CommandInput
                         placeholder="Type to search (min 2 chars)..."
@@ -1374,15 +1386,18 @@ export default function SandboxPage() {
                   >
                     {addFixtureForm.leagueId != null
                       ? (addFixtureForm.leagueLabel ??
-                          addFixtureLeagueOptions.find(
-                            (o) => o.value === addFixtureForm.leagueId
-                          )?.label ??
-                          `League #${addFixtureForm.leagueId}`)
+                        addFixtureLeagueOptions.find(
+                          (o) => o.value === addFixtureForm.leagueId
+                        )?.label ??
+                        `League #${addFixtureForm.leagueId}`)
                       : "Search league (optional)..."}
                     <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <PopoverContent
+                  className="w-[var(--radix-popover-trigger-width)] p-0"
+                  align="start"
+                >
                   <Command shouldFilter={false}>
                     <CommandInput
                       placeholder="Type to search (min 2 chars)..."
@@ -1447,7 +1462,9 @@ export default function SandboxPage() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setAddFixtureDialog({ open: false, groupId: null })}
+              onClick={() =>
+                setAddFixtureDialog({ open: false, groupId: null })
+              }
             >
               Cancel
             </Button>

@@ -4,7 +4,10 @@
 import { prisma, type FixtureState } from "@repo/db";
 import { LIVE_STATES } from "@repo/utils";
 import { settlePredictionsForFixtures } from "../api/groups/service/settlement";
-import { emitFixtureLiveEvents, emitFixtureFTEvents } from "../api/groups/service/chat-events";
+import {
+  emitFixtureLiveEvents,
+  emitFixtureFTEvents,
+} from "../api/groups/service/chat-events";
 import { getLogger } from "../../logger";
 import type { TypedIOServer } from "../../types/socket";
 
@@ -117,10 +120,9 @@ async function createSandboxGroupWithFixtures(
         groupId: gf.groupId,
         groupFixtureId: gf.id,
         userId,
-        prediction:
-          RANDOM_SCORES[
-            Math.floor(Math.random() * RANDOM_SCORES.length)
-          ] as string,
+        prediction: RANDOM_SCORES[
+          Math.floor(Math.random() * RANDOM_SCORES.length)
+        ] as string,
       }))
     );
     await tx.groupPredictions.createMany({
@@ -246,8 +248,7 @@ export async function sandboxSetup(args: {
 
     return prisma.$transaction(async (tx) => {
       const fixtureData = realFixtures.map((src, i) => {
-        const startTs =
-          offsetSec != null ? nowTs + offsetSec + i : src.startTs;
+        const startTs = offsetSec != null ? nowTs + offsetSec + i : src.startTs;
         const startIso =
           offsetSec != null
             ? new Date(startTs * 1000).toISOString()
@@ -310,9 +311,7 @@ export async function sandboxSetup(args: {
     }
   }
   if (teams.length < count * 2) {
-    throw new Error(
-      `Need ${count * 2} teams, only ${teams.length} available`
-    );
+    throw new Error(`Need ${count * 2} teams, only ${teams.length} available`);
   }
 
   let nextExtId = await nextSandboxExternalId();
@@ -390,8 +389,14 @@ export async function sandboxAddFixture(args: {
   }
 
   const [homeTeam, awayTeam] = await Promise.all([
-    prisma.teams.findUnique({ where: { id: homeTeamId }, select: { name: true } }),
-    prisma.teams.findUnique({ where: { id: awayTeamId }, select: { name: true } }),
+    prisma.teams.findUnique({
+      where: { id: homeTeamId },
+      select: { name: true },
+    }),
+    prisma.teams.findUnique({
+      where: { id: awayTeamId },
+      select: { name: true },
+    }),
   ]);
   if (!homeTeam || !awayTeam) {
     throw new Error("One or both teams not found");
@@ -423,7 +428,10 @@ export async function sandboxAddFixture(args: {
       data: { groupId, fixtureId: fixture.id },
     });
 
-    log.info({ groupId, fixtureId: fixture.id }, "Sandbox add fixture complete");
+    log.info(
+      { groupId, fixtureId: fixture.id },
+      "Sandbox add fixture complete"
+    );
 
     return {
       fixtureId: fixture.id,
@@ -450,8 +458,8 @@ export async function sandboxSimulateKickoff(
     data: {
       state: "INPLAY_1ST_HALF",
       liveMinute: 1,
-      homeScore: 0,
-      awayScore: 0,
+      homeScore90: 0,
+      awayScore90: 0,
       result: "0-0",
     },
   });
@@ -479,8 +487,8 @@ export async function sandboxSimulateKickoff(
 export async function sandboxSimulateFullTime(
   args: {
     fixtureId: number;
-    homeScore: number;
-    awayScore: number;
+    homeScore90: number;
+    awayScore90: number;
     state?: "FT" | "AET" | "FT_PEN";
     homeScoreET?: number;
     awayScoreET?: number;
@@ -503,16 +511,14 @@ export async function sandboxSimulateFullTime(
     where: { id: args.fixtureId },
     data: {
       state: finishedState,
-      homeScore: args.homeScore,
-      awayScore: args.awayScore,
-      result: `${args.homeScore}-${args.awayScore}`,
-      homeScore90: args.homeScore,
-      awayScore90: args.awayScore,
+      result: `${args.homeScore90}-${args.awayScore90}`,
+      homeScore90: args.homeScore90,
+      awayScore90: args.awayScore90,
       liveMinute: 90,
       ...(finishedState === "AET" || finishedState === "FT_PEN"
         ? {
-            homeScoreET: args.homeScoreET ?? args.homeScore,
-            awayScoreET: args.awayScoreET ?? args.awayScore,
+            homeScoreET: args.homeScoreET ?? args.homeScore90,
+            awayScoreET: args.awayScoreET ?? args.awayScore90,
           }
         : {}),
       ...(finishedState === "FT_PEN"
@@ -530,8 +536,8 @@ export async function sandboxSimulateFullTime(
     [
       {
         id: args.fixtureId,
-        homeScore: args.homeScore,
-        awayScore: args.awayScore,
+        homeScore90: args.homeScore90,
+        awayScore90: args.awayScore90,
         homeTeam: fixture.homeTeam,
         awayTeam: fixture.awayTeam,
       },
@@ -542,8 +548,8 @@ export async function sandboxSimulateFullTime(
   return {
     fixtureId: args.fixtureId,
     state: finishedState,
-    homeScore: args.homeScore,
-    awayScore: args.awayScore,
+    homeScore90: args.homeScore90,
+    awayScore90: args.awayScore90,
     settlement,
   };
 }
@@ -552,8 +558,8 @@ export async function sandboxSimulateFullTime(
 
 export async function sandboxUpdateLive(args: {
   fixtureId: number;
-  homeScore?: number;
-  awayScore?: number;
+  homeScore90?: number;
+  awayScore90?: number;
   liveMinute?: number;
   state?: string;
 }) {
@@ -563,16 +569,16 @@ export async function sandboxUpdateLive(args: {
     throw new Error("Fixture must be LIVE. Run kickoff first.");
   }
   const data: {
-    homeScore?: number;
-    awayScore?: number;
+    homeScore90?: number;
+    awayScore90?: number;
     result?: string;
     liveMinute?: number;
     state?: FixtureState;
   } = {};
-  if (args.homeScore !== undefined) data.homeScore = args.homeScore;
-  if (args.awayScore !== undefined) data.awayScore = args.awayScore;
-  if (args.homeScore !== undefined && args.awayScore !== undefined) {
-    data.result = `${args.homeScore}-${args.awayScore}`;
+  if (args.homeScore90 !== undefined) data.homeScore90 = args.homeScore90;
+  if (args.awayScore90 !== undefined) data.awayScore90 = args.awayScore90;
+  if (args.homeScore90 !== undefined && args.awayScore90 !== undefined) {
+    data.result = `${args.homeScore90}-${args.awayScore90}`;
   }
   if (args.liveMinute !== undefined) data.liveMinute = args.liveMinute;
   if (args.state !== undefined) {
@@ -618,8 +624,6 @@ export async function sandboxResetFixture(fixtureId: number) {
     where: { id: fixtureId },
     data: {
       state: "NS",
-      homeScore: null,
-      awayScore: null,
       result: null,
       homeScore90: null,
       awayScore90: null,
@@ -689,10 +693,7 @@ export async function sandboxCleanup() {
     select: { id: true },
   });
   const allGroupIds = [
-    ...new Set([
-      ...groupIds,
-      ...sandboxGroupsByName.map((g) => g.id),
-    ]),
+    ...new Set([...groupIds, ...sandboxGroupsByName.map((g) => g.id)]),
   ];
 
   let deletedGroups = 0;
@@ -728,8 +729,8 @@ export async function sandboxList() {
       externalId: true,
       name: true,
       state: true,
-      homeScore: true,
-      awayScore: true,
+      homeScore90: true,
+      awayScore90: true,
       liveMinute: true,
       startTs: true,
       homeTeam: { select: { name: true } },
@@ -789,8 +790,8 @@ export async function sandboxList() {
       externalId: f.externalId.toString(),
       name: f.name,
       state: f.state,
-      homeScore: f.homeScore,
-      awayScore: f.awayScore,
+      homeScore90: f.homeScore90,
+      awayScore90: f.awayScore90,
       liveMinute: f.liveMinute,
       startTs: f.startTs,
       homeTeam: f.homeTeam?.name ?? null,

@@ -104,8 +104,8 @@ export async function emitFixtureLiveEvents(
 
 type FixtureWithScoresAndTeams = {
   id: number;
-  homeScore: number | null;
-  awayScore: number | null;
+  homeScore90: number | null;
+  awayScore90: number | null;
   homeTeam: { name: string } | null;
   awayTeam: { name: string } | null;
 };
@@ -141,8 +141,8 @@ export async function emitFixtureFTEvents(
           fixtureId,
           homeTeam: fixture.homeTeam?.name || "TBD",
           awayTeam: fixture.awayTeam?.name || "TBD",
-          homeScore: fixture.homeScore,
-          awayScore: fixture.awayScore,
+          homeScore90: fixture.homeScore90,
+          awayScore90: fixture.awayScore90,
         },
         io
       );

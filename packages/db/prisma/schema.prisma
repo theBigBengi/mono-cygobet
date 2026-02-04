@@ -39,27 +39,27 @@ model sessions {
 }
 
 model users {
-  image             String?
-  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  id                Int                 @id @default(autoincrement())
-  name              String?             @db.VarChar(255)
-  email             String              @unique @db.VarChar(255)
-  password          String?
-  username          String?             @unique @db.VarChar(50)
+  image                   String?
+  createdAt               DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                      Int                  @id @default(autoincrement())
+  name                    String?              @db.VarChar(255)
+  email                   String               @unique @db.VarChar(255)
+  password                String?
+  username                String?              @unique @db.VarChar(50)
   // predictions     predictions[]
-  groupPredictions  groupPredictions[]
-  groupMessages     groupMessages[]
-  groupMessageReads groupMessageReads[]
-  accounts          accounts[]
-  sessions          sessions[]
-  role              userRole            @default(user)
-  refreshSessions   refreshSessions[]
-  emailVerifiedAt   DateTime?           @map("email_verified_at") @db.Timestamptz(6)
-  lastLoginAt       DateTime?           @map("last_login_at") @db.Timestamptz(6)
-  userProfiles      userProfiles[]
+  groupPredictions        groupPredictions[]
+  groupMessages           groupMessages[]
+  groupMessageReads       groupMessageReads[]
+  accounts                accounts[]
+  sessions                sessions[]
+  role                    userRole             @default(user)
+  refreshSessions         refreshSessions[]
+  emailVerifiedAt         DateTime?            @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt             DateTime?            @map("last_login_at") @db.Timestamptz(6)
+  userProfiles            userProfiles[]
   // publicPredictions publicPredictions[]
-  userActivityEvents userActivityEvents[]
-  fixturesScoreOverridden fixtures[] @relation("FixtureScoreOverriddenBy")
+  userActivityEvents      userActivityEvents[]
+  fixturesScoreOverridden fixtures[]           @relation("FixtureScoreOverriddenBy")
 
   // groups groups[]
 
@@ -137,40 +137,38 @@ model countries {
 }
 
 model fixtures {
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
-  id          Int          @id @default(autoincrement())
-  leagueId    Int?         @map("league_id")
-  seasonId    Int?         @map("season_id")
-  homeTeamId  Int          @map("home_team_id")
-  awayTeamId  Int          @map("away_team_id")
-  name        String
-  startIso    String       @map("start_iso")
-  startTs     Int          @map("start_ts")
-  state       FixtureState @default(NS)
-  liveMinute  Int?         @map("live_minute")
-  result      String?
-  homeScore   Int?         @map("home_score")
-  awayScore   Int?         @map("away_score")
-  // period-specific scores (nullable - only populated for matches with ET/PEN)
-  homeScore90 Int?         @map("home_score_90")
-  awayScore90 Int?         @map("away_score_90")
-  homeScoreET Int?         @map("home_score_et")
-  awayScoreET Int?         @map("away_score_et")
-  penHome     Int?         @map("pen_home")
-  penAway     Int?         @map("pen_away")
-  stage       String?
-  round       String?
-  externalId  BigInt       @unique @map("external_id")
-  hasOdds     Boolean      @default(false) @map("has_odds")
-  scoreOverriddenAt   DateTime? @map("score_overridden_at") @db.Timestamptz(6)
-  scoreOverriddenById Int?     @map("score_overridden_by_id")
-  awayTeam    teams        @relation("fixtures_away_team_idToteams", fields: [awayTeamId], references: [id], onUpdate: NoAction)
-  homeTeam    teams        @relation("fixtures_home_team_idToteams", fields: [homeTeamId], references: [id], onUpdate: NoAction)
-  league      leagues?     @relation(fields: [leagueId], references: [id], onUpdate: NoAction)
-  season      seasons?     @relation(fields: [seasonId], references: [id], onUpdate: NoAction)
-  scoreOverriddenBy users?  @relation("FixtureScoreOverriddenBy", fields: [scoreOverriddenById], references: [id], onDelete: SetNull)
-  odds        odds[]
+  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  id                  Int          @id @default(autoincrement())
+  leagueId            Int?         @map("league_id")
+  seasonId            Int?         @map("season_id")
+  homeTeamId          Int          @map("home_team_id")
+  awayTeamId          Int          @map("away_team_id")
+  name                String
+  startIso            String       @map("start_iso")
+  startTs             Int          @map("start_ts")
+  state               FixtureState @default(NS)
+  liveMinute          Int?         @map("live_minute")
+  result              String?
+  // period-specific scores (primary: homeScore90/awayScore90; ET/PEN optional)
+  homeScore90         Int?         @map("home_score_90")
+  awayScore90         Int?         @map("away_score_90")
+  homeScoreET         Int?         @map("home_score_et")
+  awayScoreET         Int?         @map("away_score_et")
+  penHome             Int?         @map("pen_home")
+  penAway             Int?         @map("pen_away")
+  stage               String?
+  round               String?
+  externalId          BigInt       @unique @map("external_id")
+  hasOdds             Boolean      @default(false) @map("has_odds")
+  scoreOverriddenAt   DateTime?    @map("score_overridden_at") @db.Timestamptz(6)
+  scoreOverriddenById Int?         @map("score_overridden_by_id")
+  awayTeam            teams        @relation("fixtures_away_team_idToteams", fields: [awayTeamId], references: [id], onUpdate: NoAction)
+  homeTeam            teams        @relation("fixtures_home_team_idToteams", fields: [homeTeamId], references: [id], onUpdate: NoAction)
+  league              leagues?     @relation(fields: [leagueId], references: [id], onUpdate: NoAction)
+  season              seasons?     @relation(fields: [seasonId], references: [id], onUpdate: NoAction)
+  scoreOverriddenBy   users?       @relation("FixtureScoreOverriddenBy", fields: [scoreOverriddenById], references: [id], onDelete: SetNull)
+  odds                odds[]
   // predictions    predictions[]
   // publicPredictions publicPredictions[]
 
@@ -288,9 +286,9 @@ model groups {
 
   // group_invites           groupInvites[]
   // group_member_invites    groupMemberInvites[]
-  groupMembers      groupMembers[]      @relation("groupMembersRelation")
-  groupMessages     groupMessages[]
-  groupMessageReads groupMessageReads[]
+  groupMembers       groupMembers[]       @relation("groupMembersRelation")
+  groupMessages      groupMessages[]
+  groupMessageReads  groupMessageReads[]
   userActivityEvents userActivityEvents[]
 
   // relations
@@ -509,7 +507,7 @@ model userActivityEvents {
   userId    Int      @map("user_id")
   groupId   Int?     @map("group_id")
   eventType String   @map("event_type") // "prediction_reminder", future: "group_ended", etc.
-  body      String   // Human-readable text
+  body      String // Human-readable text
   meta      Json     @default("{}") // { fixtureId, homeTeam, awayTeam, kickoffAt, groupName }
   read      Boolean  @default(false) // For future "mark as read"
 
@@ -528,7 +526,7 @@ model nudgeEvents {
   fixtureId    Int      @map("fixture_id")
   nudgerUserId Int      @map("nudger_user_id")
   targetUserId Int      @map("target_user_id")
-  message      String?  // הודעת preset (אופציונלי, Phase 2)
+  message      String? // הודעת preset (אופציונלי, Phase 2)
   snappedBack  Boolean  @default(false) @map("snapped_back") // Phase 2 gamification
 
   @@unique([groupId, fixtureId, nudgerUserId, targetUserId], map: "nudge_unique_per_fixture")

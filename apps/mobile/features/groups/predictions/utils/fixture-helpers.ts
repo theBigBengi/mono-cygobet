@@ -52,22 +52,37 @@ export function getGameResultOrTime(fixture: FixtureItem): GameResultOrTime {
   const isEditable = isEditableState(fixture.state);
   const isCancelled = isCancelledState(fixture.state);
 
-  if ((isLive || isFinished) && fixture.result) {
-    const resultParts = fixture.result.replace(":", "-").split("-");
-    if (resultParts.length === 2) {
+  if (isLive || isFinished) {
+    const home =
+      fixture.homeScore90 != null ? String(fixture.homeScore90) : null;
+    const away =
+      fixture.awayScore90 != null ? String(fixture.awayScore90) : null;
+    if (home != null && away != null) {
       return {
-        home: resultParts[0].trim(),
-        away: resultParts[1].trim(),
-        // For live games, include the match time; for finished games, time is null
+        home,
+        away,
         time: isLive
           ? formatLiveDisplay(fixture.state, fixture.liveMinute ?? null)
           : null,
       };
     }
+    if (fixture.result) {
+      const resultParts = fixture.result.replace(":", "-").split("-");
+      if (resultParts.length === 2) {
+        return {
+          home: resultParts[0].trim(),
+          away: resultParts[1].trim(),
+          time: isLive
+            ? formatLiveDisplay(fixture.state, fixture.liveMinute ?? null)
+            : null,
+        };
+      }
+    }
   }
 
   if (isCancelled) {
-    const statusText = FIXTURE_STATE_MAP[fixture.state] || `Status: ${fixture.state}`;
+    const statusText =
+      FIXTURE_STATE_MAP[fixture.state] || `Status: ${fixture.state}`;
     return { home: statusText, away: null, time: null };
   }
 
@@ -79,7 +94,10 @@ export function getGameResultOrTime(fixture: FixtureItem): GameResultOrTime {
 
   // Live game without result yet: show minute or status (e.g. 67', HT, PEN)
   if (isLive) {
-    const timeStr = formatLiveDisplay(fixture.state, fixture.liveMinute ?? null);
+    const timeStr = formatLiveDisplay(
+      fixture.state,
+      fixture.liveMinute ?? null
+    );
     return { home: null, away: null, time: timeStr };
   }
 
@@ -91,9 +109,16 @@ export function getGameResultOrTime(fixture: FixtureItem): GameResultOrTime {
  * Points are shown once in the middle, not per team
  */
 export function getFixturePoints(fixture: FixtureItem): number | null {
-  if (fixture.prediction && fixture.prediction.points !== undefined && fixture.prediction.points !== null) {
+  if (
+    fixture.prediction &&
+    fixture.prediction.points !== undefined &&
+    fixture.prediction.points !== null
+  ) {
     const pointsValue = fixture.prediction.points;
-    const parsed = typeof pointsValue === "number" ? pointsValue : parseInt(String(pointsValue), 10);
+    const parsed =
+      typeof pointsValue === "number"
+        ? pointsValue
+        : parseInt(String(pointsValue), 10);
     // Return 0 if it's a valid number (including 0), otherwise null
     return !isNaN(parsed) ? parsed : null;
   }
@@ -165,7 +190,10 @@ export function getCardBorderStyle(positionInGroup: PositionInGroup) {
 /**
  * Convert prediction value to display string
  */
-export function toDisplay(value: number | null, isFinished: boolean = false): string {
+export function toDisplay(
+  value: number | null,
+  isFinished: boolean = false
+): string {
   if (value === null) {
     return isFinished ? "-" : "";
   }

@@ -1,7 +1,11 @@
 // groups/builders.ts
 // DTO builders for groups - transform Prisma data to API format.
 
-import type { ApiFixturesListResponse, ApiGroupPrivacy, ApiGroupItem } from "@repo/types";
+import type {
+  ApiFixturesListResponse,
+  ApiGroupPrivacy,
+  ApiGroupItem,
+} from "@repo/types";
 import { GROUP_STATUS } from "./constants";
 import type {
   FixtureWithRelations,
@@ -149,7 +153,10 @@ export function buildActiveGroupItem(
  * @returns Formatted fixture in API format, or null if fixture is invalid
  */
 export function formatFixtureFromDb(
-  fixture: (FixtureWithRelations | FixtureWithRelationsAndResult) | null | undefined,
+  fixture:
+    | (FixtureWithRelations | FixtureWithRelationsAndResult)
+    | null
+    | undefined,
   prediction: ParsedPrediction | null | undefined,
   result: string | null
 ): ApiFixturesListResponse["data"][0] | null {
@@ -197,5 +204,9 @@ export function formatFixtureFromDb(
     odds: undefined,
     prediction: prediction ?? undefined,
     result: result ?? null,
+    homeScore90:
+      (fixture as { homeScore90?: number | null }).homeScore90 ?? undefined,
+    awayScore90:
+      (fixture as { awayScore90?: number | null }).awayScore90 ?? undefined,
   };
 }

@@ -52,7 +52,8 @@ export async function getFixtureDetail(
       const pred = gf.groupPredictions[0]!;
       const settled = pred.settledAt != null;
       const points = settled ? Number(pred.points) || 0 : null;
-      const predictionMode = gf.groups.groupRules?.predictionMode ?? "CorrectScore";
+      const predictionMode =
+        gf.groups.groupRules?.predictionMode ?? "CorrectScore";
       return {
         groupId: gf.groups.id,
         groupName: gf.groups.name,
@@ -102,8 +103,6 @@ export async function getFixtureDetail(
     round: fixture.round ?? null,
     liveMinute: fixture.liveMinute ?? null,
     result: fixture.result ?? null,
-    homeScore: fixture.homeScore ?? null,
-    awayScore: fixture.awayScore ?? null,
     homeScore90: fixture.homeScore90 ?? null,
     awayScore90: fixture.awayScore90 ?? null,
     homeScoreET: fixture.homeScoreET ?? null,

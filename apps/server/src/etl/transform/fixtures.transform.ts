@@ -25,8 +25,6 @@ export type FixtureTransformResult = {
   startTs: number;
   state: (typeof DbFixtureState)[keyof typeof DbFixtureState];
   result: string | null;
-  homeScore: number | null;
-  awayScore: number | null;
   homeScore90: number | null;
   awayScore90: number | null;
   homeScoreET: number | null;
@@ -75,7 +73,8 @@ export function coerceDbFixtureState(
   state: FixtureDTO["state"] | string
 ): (typeof DbFixtureState)[keyof typeof DbFixtureState] {
   const s = String(state);
-  if (DB_STATES.has(s)) return s as (typeof DbFixtureState)[keyof typeof DbFixtureState];
+  if (DB_STATES.has(s))
+    return s as (typeof DbFixtureState)[keyof typeof DbFixtureState];
   return DbFixtureState.NS;
 }
 
@@ -95,8 +94,6 @@ function startIsoFromStartTs(startTs: number): string {
 export function transformFixtureDto(dto: FixtureDTO): FixtureTransformResult {
   const result = normalizeResult(dto.result);
   const parsed = parseScores(result ?? dto.result);
-  const homeScore = dto.homeScore ?? parsed.homeScore;
-  const awayScore = dto.awayScore ?? parsed.awayScore;
   const state = coerceDbFixtureState(dto.state);
   const startIso = startIsoFromStartTs(dto.startTs);
 
@@ -111,10 +108,8 @@ export function transformFixtureDto(dto: FixtureDTO): FixtureTransformResult {
     startTs: dto.startTs,
     state,
     result,
-    homeScore: homeScore ?? null,
-    awayScore: awayScore ?? null,
-    homeScore90: dto.homeScore90 ?? null,
-    awayScore90: dto.awayScore90 ?? null,
+    homeScore90: dto.homeScore90 ?? dto.homeScore ?? parsed.homeScore ?? null,
+    awayScore90: dto.awayScore90 ?? dto.awayScore ?? parsed.awayScore ?? null,
     homeScoreET: dto.homeScoreET ?? null,
     awayScoreET: dto.awayScoreET ?? null,
     penHome: dto.penHome ?? null,

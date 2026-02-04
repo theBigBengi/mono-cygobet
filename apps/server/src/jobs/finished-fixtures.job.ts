@@ -62,7 +62,6 @@ export async function runFinishedFixturesJob(
 
       const candidates = await prisma.fixtures.findMany({
         where: {
-          id: { gte: 0 },
           state: { in: [...LIVE_STATES] as FixtureState[] },
           startTs: { lte: cutoffTs },
         },
@@ -196,8 +195,9 @@ export async function runFinishedFixturesJob(
         // Settle predictions for FT fixtures
         const ftFixtures = await prisma.fixtures.findMany({
           where: {
-            id: { gte: 0 },
-            externalId: { in: fetched.map((f) => BigInt(f.externalId)) },
+            externalId: {
+              in: fetched.map((f) => BigInt(f.externalId)),
+            },
             state: { in: [...FINISHED_STATES] as FixtureState[] },
           },
           select: { id: true },
@@ -214,8 +214,8 @@ export async function runFinishedFixturesJob(
             where: { id: { in: ftFixtures.map((f) => f.id) } },
             select: {
               id: true,
-              homeScore: true,
-              awayScore: true,
+              homeScore90: true,
+              awayScore90: true,
               homeTeam: { select: { name: true } },
               awayTeam: { select: { name: true } },
             },

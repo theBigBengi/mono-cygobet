@@ -13,7 +13,10 @@ interface MatchScoreHeaderProps {
   data: ApiFixtureDetailData;
 }
 
-function getStateBadgeColor(state: string, theme: { colors: Record<string, string> }): string {
+function getStateBadgeColor(
+  state: string,
+  theme: { colors: Record<string, string> }
+): string {
   if (state === "LIVE" || state.startsWith("INPLAY") || state === "HT") {
     return theme.colors.error ?? "#dc2626";
   }
@@ -30,12 +33,21 @@ export function MatchScoreHeader({ data }: MatchScoreHeaderProps) {
 
   const homeName = translateTeam(data.homeTeam.name, t("common.home"));
   const awayName = translateTeam(data.awayTeam.name, t("common.away"));
-  const isNotStarted = data.state === "NS" || data.state === "TBA" || data.state === "DELAYED" || data.state === "PENDING";
+  const isNotStarted =
+    data.state === "NS" ||
+    data.state === "TBA" ||
+    data.state === "DELAYED" ||
+    data.state === "PENDING";
   const scoreDisplay = isNotStarted
     ? "vs"
-    : `${data.homeScore ?? "—"} - ${data.awayScore ?? "—"}`;
+    : `${data.homeScore90 ?? "—"} - ${data.awayScore90 ?? "—"}`;
   const stateBadgeColor = getStateBadgeColor(data.state, theme);
-  const showLiveMinute = data.liveMinute != null && data.state !== "NS" && data.state !== "FT" && data.state !== "AET" && data.state !== "FT_PEN";
+  const showLiveMinute =
+    data.liveMinute != null &&
+    data.state !== "NS" &&
+    data.state !== "FT" &&
+    data.state !== "AET" &&
+    data.state !== "FT_PEN";
 
   return (
     <View style={styles.container}>
@@ -56,13 +68,20 @@ export function MatchScoreHeader({ data }: MatchScoreHeaderProps) {
             {scoreDisplay}
           </AppText>
           <View style={styles.badges}>
-            <View style={[styles.stateBadge, { backgroundColor: stateBadgeColor }]}>
+            <View
+              style={[styles.stateBadge, { backgroundColor: stateBadgeColor }]}
+            >
               <AppText variant="caption" style={styles.stateText}>
                 {data.state}
               </AppText>
             </View>
             {showLiveMinute && (
-              <View style={[styles.liveMinuteBadge, { backgroundColor: theme.colors.surface }]}>
+              <View
+                style={[
+                  styles.liveMinuteBadge,
+                  { backgroundColor: theme.colors.surface },
+                ]}
+              >
                 <AppText variant="caption" color="secondary">
                   {t("matchDetail.liveMinute", { minute: data.liveMinute })}
                 </AppText>

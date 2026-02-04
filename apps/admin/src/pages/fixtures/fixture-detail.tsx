@@ -179,8 +179,8 @@ export default function FixtureDetailPage() {
   const fixtureForOverride: FixtureForOverride = {
     id: f.id,
     name: f.name,
-    homeScore: f.homeScore,
-    awayScore: f.awayScore,
+    homeScore90: f.homeScore90,
+    awayScore90: f.awayScore90,
     state: f.state,
   };
   const settlementGroups = settlementData?.groups ?? [];

@@ -22,7 +22,6 @@ export type GroupStatus =
 // Re-export types for convenience
 export type { ParsedPrediction } from "./types";
 
-
 /**
  * Resolve group name - pure function.
  * Use provided name or generate automatic name from username and draft count.
@@ -38,7 +37,6 @@ export function resolveGroupName(
 
   return `${username} Draft #${draftCount + 1}`;
 }
-
 
 /**
  * Parse a prediction string and row data into a structured format.
@@ -119,6 +117,8 @@ export function buildOverviewFixtures(
       state: string;
       liveMinute?: number | null;
       result: string | null;
+      homeScore90?: number | null;
+      awayScore90?: number | null;
       homeTeam: {
         id: number;
         name: string;
@@ -153,6 +153,8 @@ export function buildOverviewFixtures(
       startTs: fixtures.startTs,
       state: String(fixtures.state),
       liveMinute: fixtures.liveMinute ?? null,
+      homeScore90: fixtures.homeScore90 ?? null,
+      awayScore90: fixtures.awayScore90 ?? null,
     };
   });
 }

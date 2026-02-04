@@ -7,8 +7,8 @@ export type SandboxFixture = {
   externalId: string;
   name: string;
   state: string;
-  homeScore: number | null;
-  awayScore: number | null;
+  homeScore90: number | null;
+  awayScore90: number | null;
   liveMinute: number | null;
   startTs: number;
   homeTeam: string | null;
@@ -48,8 +48,8 @@ export type SandboxSimulateResponse = {
     fixtureId: number;
     state: string;
     name?: string;
-    homeScore?: number;
-    awayScore?: number;
+    homeScore90?: number;
+    awayScore90?: number;
     settlement?: { settled: number; skipped: number; groupsEnded: number };
   };
   message: string;
@@ -119,23 +119,20 @@ export const sandboxService = {
 
   simulateFullTime: (args: {
     fixtureId: number;
-    homeScore: number;
-    awayScore: number;
+    homeScore90: number;
+    awayScore90: number;
     state?: "FT" | "AET" | "FT_PEN";
     homeScoreET?: number;
     awayScoreET?: number;
     penHome?: number;
     penAway?: number;
   }): Promise<SandboxSimulateResponse> =>
-    apiPost<SandboxSimulateResponse>(
-      "/admin/sandbox/simulate/full-time",
-      args
-    ),
+    apiPost<SandboxSimulateResponse>("/admin/sandbox/simulate/full-time", args),
 
   updateLive: (args: {
     fixtureId: number;
-    homeScore?: number;
-    awayScore?: number;
+    homeScore90?: number;
+    awayScore90?: number;
     liveMinute?: number;
     state?: string;
   }): Promise<SandboxSimulateResponse> =>
@@ -153,10 +150,7 @@ export const sandboxService = {
     fixtureId: number;
     startTime: string;
   }): Promise<SandboxSimulateResponse> =>
-    apiPost<SandboxSimulateResponse>(
-      "/admin/sandbox/update-start-time",
-      args
-    ),
+    apiPost<SandboxSimulateResponse>("/admin/sandbox/update-start-time", args),
 
   cleanup: (): Promise<SandboxCleanupResponse> =>
     apiDelete<SandboxCleanupResponse>("/admin/sandbox/cleanup"),

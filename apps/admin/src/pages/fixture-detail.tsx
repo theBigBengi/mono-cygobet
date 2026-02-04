@@ -111,8 +111,8 @@ export default function FixtureDetailPage() {
                   Score
                 </p>
                 <p>
-                  {f.homeScore != null && f.awayScore != null
-                    ? `${f.homeScore} - ${f.awayScore}`
+                  {f.homeScore90 != null && f.awayScore90 != null
+                    ? `${f.homeScore90} - ${f.awayScore90}`
                     : "—"}
                 </p>
               </div>

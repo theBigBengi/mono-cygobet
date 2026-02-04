@@ -38,8 +38,6 @@ type ExistingRow = {
   state: DbFixtureState;
   liveMinute: number | null;
   result: string | null;
-  homeScore: number | null;
-  awayScore: number | null;
   homeScore90: number | null;
   awayScore90: number | null;
   homeScoreET: number | null;
@@ -63,8 +61,6 @@ function isSameFixture(
     state: DbFixtureState;
     liveMinute: number | null;
     result: string | null;
-    homeScore: number | null;
-    awayScore: number | null;
     homeScore90: number | null;
     awayScore90: number | null;
     homeScoreET: number | null;
@@ -86,8 +82,6 @@ function isSameFixture(
     existing.state === payload.state &&
     existing.liveMinute === payload.liveMinute &&
     existing.result === payload.result &&
-    existing.homeScore === payload.homeScore &&
-    existing.awayScore === payload.awayScore &&
     existing.homeScore90 === payload.homeScore90 &&
     existing.awayScore90 === payload.awayScore90 &&
     existing.homeScoreET === payload.homeScoreET &&
@@ -110,8 +104,6 @@ type ResolvedPayload = {
   state: DbFixtureState;
   liveMinute: number | null;
   result: string | null;
-  homeScore: number | null;
-  awayScore: number | null;
   homeScore90: number | null;
   awayScore90: number | null;
   homeScoreET: number | null;
@@ -138,8 +130,6 @@ function buildFixtureChanges(
     "state",
     "liveMinute",
     "result",
-    "homeScore",
-    "awayScore",
     "homeScore90",
     "awayScore90",
     "homeScoreET",
@@ -152,15 +142,23 @@ function buildFixtureChanges(
   for (const k of fields) {
     const oldVal = (existing as Record<string, unknown>)[k];
     const newVal = resolved[k];
-    if (toChangeVal(oldVal as string | number | null) !== toChangeVal(newVal as string | number | null)) {
-      changes[k] = `${toChangeVal(oldVal as string | number | null)}→${toChangeVal(newVal as string | number | null)}`;
+    if (
+      toChangeVal(oldVal as string | number | null) !==
+      toChangeVal(newVal as string | number | null)
+    ) {
+      changes[k] =
+        `${toChangeVal(oldVal as string | number | null)}→${toChangeVal(newVal as string | number | null)}`;
     }
   }
   return changes;
 }
 
 type FixtureOutcome =
-  | { outcome: "inserted"; fixture: FixtureDTO; resolvedPayload: ResolvedPayload }
+  | {
+      outcome: "inserted";
+      fixture: FixtureDTO;
+      resolvedPayload: ResolvedPayload;
+    }
   | {
       outcome: "updated";
       fixture: FixtureDTO;
@@ -294,8 +292,6 @@ export async function syncFixtures(
         state: true,
         liveMinute: true,
         result: true,
-        homeScore: true,
-        awayScore: true,
         homeScore90: true,
         awayScore90: true,
         homeScoreET: true,
@@ -329,11 +325,11 @@ export async function syncFixtures(
         const payload = transformFixtureDto(fixture);
         const leagueId =
           payload.leagueExternalId != null
-            ? leagueMap.get(String(payload.leagueExternalId)) ?? null
+            ? (leagueMap.get(String(payload.leagueExternalId)) ?? null)
             : null;
         const seasonId =
           payload.seasonExternalId != null
-            ? seasonMap.get(String(payload.seasonExternalId)) ?? null
+            ? (seasonMap.get(String(payload.seasonExternalId)) ?? null)
             : null;
         const homeTeamId = teamMap.get(String(payload.homeTeamExternalId));
         const awayTeamId = teamMap.get(String(payload.awayTeamExternalId));
@@ -360,8 +356,6 @@ export async function syncFixtures(
           state: payload.state,
           liveMinute: payload.liveMinute,
           result: payload.result,
-          homeScore: payload.homeScore,
-          awayScore: payload.awayScore,
           homeScore90: payload.homeScore90,
           awayScore90: payload.awayScore90,
           homeScoreET: payload.homeScoreET,
@@ -373,9 +367,16 @@ export async function syncFixtures(
         };
 
         // State validation: disallow invalid transitions
-        if (existing && !isValidFixtureStateTransition(existing.state, payload.state)) {
+        if (
+          existing &&
+          !isValidFixtureStateTransition(existing.state, payload.state)
+        ) {
           log.warn(
-            { externalId: fixture.externalId, current: existing.state, next: payload.state },
+            {
+              externalId: fixture.externalId,
+              current: existing.state,
+              next: payload.state,
+            },
             "Invalid fixture state transition; skipping update"
           );
           return {
@@ -452,7 +453,9 @@ export async function syncFixtures(
           const meta: Prisma.InputJsonObject = {
             name: fixture.name ?? "",
             action: v.outcome === "skipped" ? "skipped" : v.outcome,
-            ...(v.outcome === "skipped" && v.reason ? { reason: v.reason } : {}),
+            ...(v.outcome === "skipped" && v.reason
+              ? { reason: v.reason }
+              : {}),
             ...(v.outcome === "updated" && v.existing && v.resolvedPayload
               ? { changes: buildFixtureChanges(v.existing, v.resolvedPayload) }
               : {}),
@@ -470,9 +473,15 @@ export async function syncFixtures(
         if (batchId && !dryRun) {
           const err = r.reason as { message?: string } | undefined;
           const errorMessage = (err?.message ?? String(r.reason)).slice(0, 500);
-          await trackSeedItem(batchId, itemKey, RunStatus.failed, errorMessage, {
-            name: fixture.name ?? "",
-          });
+          await trackSeedItem(
+            batchId,
+            itemKey,
+            RunStatus.failed,
+            errorMessage,
+            {
+              name: fixture.name ?? "",
+            }
+          );
         }
       }
     }

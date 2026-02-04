@@ -152,8 +152,8 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
             state: f.state,
             liveMinute: f.liveMinute ?? null,
             result: f.result ?? null,
-            homeScore: f.homeScore ?? null,
-            awayScore: f.awayScore ?? null,
+            homeScore90: f.homeScore90 ?? null,
+            awayScore90: f.awayScore90 ?? null,
             stage: f.stage ?? null,
             round: f.round ?? null,
             leagueExternalId: f.leagueExternalId ?? null,
@@ -179,4 +179,3 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
 };
 
 export default adminFixturesSeasonProviderRoutes;
-

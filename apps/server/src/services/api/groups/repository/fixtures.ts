@@ -32,7 +32,12 @@ export async function resolveInitialFixturesInternal(
     // Build where condition using Query Layer
     const baseWhere = buildUpcomingFixturesWhere({ now });
     const where = buildFixturesByLeaguesWhere(baseWhere, leagueIds);
-    const upcoming = await findFixturesTx(tx, where, { id: true }, { startTs: "asc" });
+    const upcoming = await findFixturesTx(
+      tx,
+      where,
+      { id: true },
+      { startTs: "asc" }
+    );
     return upcoming.map((f) => f.id);
   }
 
@@ -40,7 +45,12 @@ export async function resolveInitialFixturesInternal(
     // Build where condition using Query Layer
     const baseWhere = buildUpcomingFixturesWhere({ now });
     const where = buildFixturesByTeamsWhere(baseWhere, teamIds);
-    const upcoming = await findFixturesTx(tx, where, { id: true }, { startTs: "asc" });
+    const upcoming = await findFixturesTx(
+      tx,
+      where,
+      { id: true },
+      { startTs: "asc" }
+    );
     return upcoming.map((f) => f.id);
   }
 
@@ -84,7 +94,7 @@ export async function deleteGroupFixtures(
   fixtureIds: number[]
 ) {
   if (fixtureIds.length === 0) return;
-  
+
   return await prisma.groupFixtures.deleteMany({
     where: {
       groupId,
@@ -182,7 +192,9 @@ export async function findFixtureByGroupFixtureId(groupFixtureId: number) {
 /**
  * Find all group fixtures with fixture startTs and state (for ranking nudge window).
  */
-export async function findGroupFixturesWithFixtureDetails(groupId: number): Promise<
+export async function findGroupFixturesWithFixtureDetails(
+  groupId: number
+): Promise<
   Array<{ id: number; fixtureId: number; startTs: number; state: string }>
 > {
   const rows = await prisma.groupFixtures.findMany({
@@ -268,7 +280,7 @@ export async function fetchGroupFixturesWithPredictions(
       },
     },
   } satisfies Prisma.groupFixturesFindManyArgs["select"];
-  
+
   return await prisma.groupFixtures.findMany({
     where: { groupId },
     orderBy: {
@@ -301,6 +313,8 @@ export async function findGroupFixturesForOverview(groupId: number) {
           state: true,
           liveMinute: true,
           result: true,
+          homeScore90: true,
+          awayScore90: true,
           homeTeam: {
             select: {
               id: true,
