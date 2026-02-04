@@ -124,7 +124,9 @@ export function MatchPredictionCardVertical({
             onPress={onPressCard}
             style={({ pressed }) => [
               styles.rowsContainer,
-              { opacity: pressed ? 0.95 : 1 },
+              {
+                opacity: pressed ? 0.95 : isCancelled ? 0.6 : 1,
+              },
             ]}
           >
             {/* Home Team Row */}

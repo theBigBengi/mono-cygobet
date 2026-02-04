@@ -12,9 +12,7 @@ import { RoundPickerSheet } from "./RoundPickerSheet";
 import { TeamAvatarChips } from "./TeamAvatarChips";
 import type { ActionChip, StructuralFilter } from "../hooks/useSmartFilters";
 
-const AMBER = "#F59E0B";
-const RED = "#EF4444";
-const MUTED = "#9CA3AF";
+const RED = "#EF4444"; // used only for Live dot indicator
 
 interface SmartFilterChipsProps {
   actionChips: ActionChip[];
@@ -84,32 +82,19 @@ export function SmartFilterChips({
           const isActive = selectedAction === chip.id;
           const live = isLiveChip(chip.id);
           const predict = isPredictChip(chip.id);
-          const results = isResultsChip(chip.id);
           const urgent = isUrgentPredict(chip);
           const warning = predict && chip.urgency === "warning";
 
-          let bgColor = theme.colors.cardBackground;
-          let borderColor = theme.colors.border;
-          let textColor = theme.colors.textSecondary;
-          if (isActive) {
-            if (live || urgent) {
-              bgColor = RED;
-              borderColor = RED;
-              textColor = "#fff";
-            } else if (predict && !urgent) {
-              bgColor = AMBER;
-              borderColor = AMBER;
-              textColor = "#fff";
-            } else if (results) {
-              bgColor = theme.colors.cardBackground;
-              borderColor = theme.colors.border;
-              textColor = MUTED;
-            } else {
-              bgColor = theme.colors.primary;
-              borderColor = theme.colors.primary;
-              textColor = theme.colors.primaryText;
-            }
-          }
+          // Unified styling: same selected / unselected look for all tabs
+          const bgColor = isActive
+            ? theme.colors.primary
+            : theme.colors.cardBackground;
+          const borderColor = isActive
+            ? theme.colors.primary
+            : theme.colors.border;
+          const textColor = isActive
+            ? theme.colors.primaryText
+            : theme.colors.textSecondary;
 
           return (
             <Pressable
@@ -134,7 +119,11 @@ export function SmartFilterChips({
                   <View
                     style={[
                       styles.dot,
-                      { backgroundColor: isActive ? "#fff" : RED },
+                      {
+                        backgroundColor: isActive
+                          ? theme.colors.primaryText
+                          : RED,
+                      },
                     ]}
                   />
                 )}
@@ -142,7 +131,7 @@ export function SmartFilterChips({
                   <MaterialIcons
                     name="warning"
                     size={14}
-                    color="#fff"
+                    color={theme.colors.primaryText}
                     style={styles.chipIcon}
                   />
                 )}

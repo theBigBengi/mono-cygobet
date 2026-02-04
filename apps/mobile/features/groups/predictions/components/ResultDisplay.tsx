@@ -43,13 +43,33 @@ export function ResultDisplay({
     );
   }
 
+  // When finished: winner score in primary (team emphasis), loser in secondary
+  const homeScoreColor = isLive
+    ? result.home
+      ? undefined
+      : "secondary"
+    : isFinished
+      ? isHomeWinner
+        ? "primary"
+        : "secondary"
+      : "secondary";
+  const awayScoreColor = isLive
+    ? result.away
+      ? undefined
+      : "secondary"
+    : isFinished
+      ? isAwayWinner
+        ? "primary"
+        : "secondary"
+      : "secondary";
+
   return (
     <View style={styles.timeResultContainer}>
       <View style={styles.timeResultColumn}>
         <View style={styles.timeResultBadge}>
           <AppText
             variant="caption"
-            color={result.home ? (isLive ? undefined : "secondary") : "secondary"}
+            color={result.home ? homeScoreColor : "secondary"}
             style={[
               styles.resultText,
               result.home && isLive && styles.liveResultText,
@@ -62,7 +82,7 @@ export function ResultDisplay({
         <View style={styles.timeResultBadge}>
           <AppText
             variant="caption"
-            color={result.away ? (isLive ? undefined : "secondary") : "secondary"}
+            color={result.away ? awayScoreColor : "secondary"}
             style={[
               styles.resultText,
               result.away && isLive && styles.liveResultText,
