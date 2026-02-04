@@ -29,21 +29,18 @@ import {
 import { useDashboard } from "@/hooks/use-dashboard";
 import { StatusBadge } from "@/components/table/status-badge";
 
-type StatusCardVariant = "green" | "yellow" | "red";
+type StatusCardVariant = "gray" | "green" | "yellow" | "red";
 
 function getStatusCardVariant(label: string, count: number): StatusCardVariant {
-  if (label === "Live Now" || label === "Pending Settlement") {
-    return count === 0 ? "green" : count > 10 ? "yellow" : "green";
+  if (label === "Live Now") {
+    return count === 0 ? "gray" : "green";
   }
-  if (label === "Failed Jobs (24h)") {
-    if (count === 0) return "green";
-    if (count <= 5) return "yellow";
-    return "red";
-  }
-  if (label === "Stuck Fixtures") {
-    return count === 0 ? "green" : "red";
-  }
-  if (label === "Overdue NS") {
+  if (
+    label === "Pending Settlement" ||
+    label === "Failed Jobs (24h)" ||
+    label === "Stuck Fixtures" ||
+    label === "Overdue NS"
+  ) {
     return count === 0 ? "green" : "red";
   }
   return "green";
@@ -62,6 +59,7 @@ function StatusCard({
 }) {
   const variant = getStatusCardVariant(label, count);
   const variantStyles: Record<StatusCardVariant, string> = {
+    gray: "border-l-gray-400",
     green: "border-l-green-500",
     yellow: "border-l-yellow-500",
     red: "border-l-red-500",
