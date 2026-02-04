@@ -2,6 +2,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { Prisma, prisma } from "@repo/db";
 import { FixturesService } from "../../../../services/fixtures.service";
+import { getFixtureIssue } from "../../../../services/admin/dashboard.service";
 import { AdminFixturesListResponse, AdminFixtureResponse } from "@repo/types";
 import {
   getPagination,
@@ -273,10 +274,14 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
 
       try {
         const fixture = await service.getById(fixtureId, includeObj);
+        const issue = await getFixtureIssue(fixture);
 
         return reply.send({
           status: "success",
-          data: mapFixtureToResponse(fixture),
+          data: {
+            ...mapFixtureToResponse(fixture),
+            ...(issue != null && { issue }),
+          },
           message: "Fixture fetched from database successfully",
         });
       } catch (error: unknown) {

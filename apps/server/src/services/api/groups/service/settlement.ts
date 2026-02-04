@@ -57,7 +57,7 @@ export async function settlePredictionsForFixtures(
   // Step 1: Load FT fixtures (including period scores for KO scoring)
   const fixtures = await prisma.fixtures.findMany({
     where: {
-      id: { in: fixtureIds },
+      id: { in: fixtureIds, gte: 0 },
       state: "FT",
     },
     select: {
@@ -81,9 +81,7 @@ export async function settlePredictionsForFixtures(
   }
 
   // Build fixture map
-  const fixtureMap = new Map(
-    fixtures.map((f) => [f.id, f])
-  );
+  const fixtureMap = new Map(fixtures.map((f) => [f.id, f]));
 
   log.debug({ fixtureCount: fixtures.length }, "Loaded FT fixtures");
 
@@ -110,15 +108,18 @@ export async function settlePredictionsForFixtures(
   );
 
   // Build groupId map (groupFixtureId -> groupId)
-  const groupIdMap = new Map(
-    groupFixtures.map((gf) => [gf.id, gf.groupId])
+  const groupIdMap = new Map(groupFixtures.map((gf) => [gf.id, gf.groupId]));
+
+  log.debug(
+    { groupFixtureCount: groupFixtures.length },
+    "Loaded group fixtures"
   );
 
-  log.debug({ groupFixtureCount: groupFixtures.length }, "Loaded group fixtures");
-
   // Step 3: Load scoring rules
-  const uniqueGroupIds = Array.from(new Set(groupFixtures.map((gf) => gf.groupId)));
-  
+  const uniqueGroupIds = Array.from(
+    new Set(groupFixtures.map((gf) => gf.groupId))
+  );
+
   const groupRules = await prisma.groupRules.findMany({
     where: {
       groupId: { in: uniqueGroupIds },
@@ -170,7 +171,10 @@ export async function settlePredictionsForFixtures(
     return { settled: 0, skipped: 0, groupsEnded: 0 };
   }
 
-  log.info({ predictionCount: predictions.length }, "Loaded unsettled predictions");
+  log.info(
+    { predictionCount: predictions.length },
+    "Loaded unsettled predictions"
+  );
 
   // Step 5: Calculate scores
   const updates: Array<{
@@ -194,7 +198,10 @@ export async function settlePredictionsForFixtures(
     // Get fixture from fixture map
     const fixture = fixtureMap.get(fixtureId);
     if (!fixture) {
-      log.warn({ predictionId: pred.id, fixtureId }, "Missing fixture for prediction");
+      log.warn(
+        { predictionId: pred.id, fixtureId },
+        "Missing fixture for prediction"
+      );
       skipped++;
       continue;
     }
@@ -211,7 +218,10 @@ export async function settlePredictionsForFixtures(
         }
       }
       if (homeScore == null || awayScore == null) {
-        log.warn({ predictionId: pred.id, fixtureId }, "Fixture has null scores");
+        log.warn(
+          { predictionId: pred.id, fixtureId },
+          "Fixture has null scores"
+        );
         skipped++;
         continue;
       }
@@ -220,7 +230,10 @@ export async function settlePredictionsForFixtures(
     // Get rules from rules map
     const rules = rulesMap.get(pred.groupId);
     if (!rules) {
-      log.warn({ predictionId: pred.id, groupId: pred.groupId }, "Missing rules for group");
+      log.warn(
+        { predictionId: pred.id, groupId: pred.groupId },
+        "Missing rules for group"
+      );
       skipped++;
       continue;
     }
@@ -356,10 +369,16 @@ export async function settlePredictionsForFixtures(
       }
     }
 
-    log.info({ settled: updates.length, skipped, groupsEnded }, "Settlement completed successfully");
+    log.info(
+      { settled: updates.length, skipped, groupsEnded },
+      "Settlement completed successfully"
+    );
     return { settled: updates.length, skipped, groupsEnded };
   } catch (error) {
-    log.error({ error, updateCount: updates.length }, "Failed to settle predictions");
+    log.error(
+      { error, updateCount: updates.length },
+      "Failed to settle predictions"
+    );
     throw error;
   }
 }

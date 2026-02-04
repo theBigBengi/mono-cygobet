@@ -62,6 +62,7 @@ export async function runFinishedFixturesJob(
 
       const candidates = await prisma.fixtures.findMany({
         where: {
+          id: { gte: 0 },
           state: { in: [...LIVE_STATES] as FixtureState[] },
           startTs: { lte: cutoffTs },
         },
@@ -163,7 +164,10 @@ export async function runFinishedFixturesJob(
 
       let batchId: number | null = null;
       try {
-        const batch = await createBatchForJob(finishedFixturesJob.key, jobRunId);
+        const batch = await createBatchForJob(
+          finishedFixturesJob.key,
+          jobRunId
+        );
         batchId = batch.id;
 
         const result = await syncFixtures(fetched, {
@@ -192,6 +196,7 @@ export async function runFinishedFixturesJob(
         // Settle predictions for FT fixtures
         const ftFixtures = await prisma.fixtures.findMany({
           where: {
+            id: { gte: 0 },
             externalId: { in: fetched.map((f) => BigInt(f.externalId)) },
             state: { in: [...FINISHED_STATES] as FixtureState[] },
           },

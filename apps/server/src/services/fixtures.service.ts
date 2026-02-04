@@ -23,7 +23,7 @@ export class FixturesService {
       args.orderBy?.length ? args.orderBy : [{ startTs: "desc" }]
     ) as Prisma.fixturesOrderByWithRelationInput[];
 
-    const where: Prisma.fixturesWhereInput = {};
+    const where: Prisma.fixturesWhereInput = { id: { gte: 0 } };
 
     if (args.leagueId !== undefined) {
       where.leagueId = args.leagueId;
@@ -119,6 +119,7 @@ export class FixturesService {
   async search(query: string, take: number = 10) {
     const fixtures = await prisma.fixtures.findMany({
       where: {
+        id: { gte: 0 },
         name: { contains: query, mode: "insensitive" },
       },
       take,

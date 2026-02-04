@@ -24,16 +24,14 @@ import {
   Zap,
   Eye,
   RefreshCw,
+  TimerOff,
 } from "lucide-react";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { StatusBadge } from "@/components/table/status-badge";
 
 type StatusCardVariant = "green" | "yellow" | "red";
 
-function getStatusCardVariant(
-  label: string,
-  count: number
-): StatusCardVariant {
+function getStatusCardVariant(label: string, count: number): StatusCardVariant {
   if (label === "Live Now" || label === "Pending Settlement") {
     return count === 0 ? "green" : count > 10 ? "yellow" : "green";
   }
@@ -43,6 +41,9 @@ function getStatusCardVariant(
     return "red";
   }
   if (label === "Stuck Fixtures") {
+    return count === 0 ? "green" : "red";
+  }
+  if (label === "Overdue NS") {
     return count === 0 ? "green" : "red";
   }
   return "green";
@@ -88,7 +89,8 @@ function StatusCard({
 }
 
 export default function DashboardPage() {
-  const { data, isLoading, isError, error, refetch, isFetching } = useDashboard();
+  const { data, isLoading, isError, error, refetch, isFetching } =
+    useDashboard();
 
   if (isError) {
     return (
@@ -101,16 +103,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      <div className="flex-shrink-0 mb-4 sm:mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            Operational Management Console
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            What needs your attention, what went wrong, and how to fix it
-          </p>
-        </div>
+    <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-4">
+      <div className="flex-shrink-0 mb-2 flex items-center justify-between gap-4">
+        <h1 className="text-lg font-semibold">
+          Operational Management Console
+        </h1>
         <Button
           variant="outline"
           size="sm"
@@ -124,11 +121,11 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto space-y-6">
+      <div className="flex-1 min-h-0 overflow-auto space-y-4">
         {/* Row 1 – Status Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {isLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
+            Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-24 w-full" />
             ))
           ) : (
@@ -157,11 +154,71 @@ export default function DashboardPage() {
                 href="/fixtures?state=INPLAY_1ST_HALF,INPLAY_2ND_HALF,INPLAY_ET,INPLAY_PENALTIES,HT,BREAK,EXTRA_TIME_BREAK,PEN_BREAK"
                 icon={Zap}
               />
+              <StatusCard
+                label="Overdue NS"
+                count={data?.overdueNsCount ?? 0}
+                href="/fixtures?state=NS"
+                icon={TimerOff}
+              />
             </>
           )}
         </div>
 
-        {/* Row 2 – Recent Job Failures */}
+        {/* Row 2 – Overdue NS Fixtures */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Overdue NS Fixtures</CardTitle>
+            <CardDescription>
+              Fixtures with state NS whose scheduled start time has passed
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : !data?.overdueNsFixtures?.length ? (
+              <p className="text-sm text-muted-foreground py-4">
+                No overdue NS fixtures
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fixture</TableHead>
+                    <TableHead>Scheduled Start</TableHead>
+                    <TableHead>League</TableHead>
+                    <TableHead className="w-[80px]">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.overdueNsFixtures.map((f) => (
+                    <TableRow key={f.id}>
+                      <TableCell className="font-medium max-w-[200px] truncate">
+                        {f.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDistanceToNow(new Date(f.startIso), {
+                          addSuffix: true,
+                        })}{" "}
+                        ({new Date(f.startIso).toLocaleString()})
+                      </TableCell>
+                      <TableCell>{f.league?.name ?? "—"}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to={`/fixtures/${f.id}`}>
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Row 3 – Recent Job Failures */}
         <Card>
           <CardHeader>
             <CardTitle>Recent Job Failures</CardTitle>
@@ -189,7 +246,9 @@ export default function DashboardPage() {
                 <TableBody>
                   {data.recentFailedJobs.map((run) => (
                     <TableRow key={run.id}>
-                      <TableCell className="font-medium">{run.jobKey}</TableCell>
+                      <TableCell className="font-medium">
+                        {run.jobKey}
+                      </TableCell>
                       <TableCell className="max-w-[320px]">
                         <span
                           className="block truncate"
@@ -219,7 +278,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Row 3 – Fixtures Needing Attention */}
+        {/* Row 4 – Fixtures Needing Attention */}
         <Card>
           <CardHeader>
             <CardTitle>Fixtures Needing Attention</CardTitle>

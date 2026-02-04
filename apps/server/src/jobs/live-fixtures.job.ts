@@ -1,11 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { RunStatus, prisma } from "@repo/db";
 import type { FixtureState } from "@repo/db";
-import {
-  NOT_STARTED_STATES,
-  LIVE_STATES,
-  FINISHED_STATES,
-} from "@repo/utils";
+import { NOT_STARTED_STATES, LIVE_STATES, FINISHED_STATES } from "@repo/utils";
 import { adapter } from "../utils/adapter";
 import { syncFixtures } from "../etl/sync/sync.fixtures";
 import { finishSeedBatch } from "../etl/seeds/seed.utils";
@@ -95,6 +91,7 @@ export async function runLiveFixturesJob(
             ? await Promise.all([
                 prisma.fixtures.findMany({
                   where: {
+                    id: { gte: 0 },
                     externalId: { in: fetchedExternalIds },
                     state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
                   },
@@ -102,6 +99,7 @@ export async function runLiveFixturesJob(
                 }),
                 prisma.fixtures.findMany({
                   where: {
+                    id: { gte: 0 },
                     externalId: { in: fetchedExternalIds },
                     state: { in: [...LIVE_STATES] as FixtureState[] },
                   },
@@ -148,7 +146,11 @@ export async function runLiveFixturesJob(
 
           if (nowLive.length > 0) {
             await emitFixtureLiveEvents(
-              nowLive as { id: number; homeTeam: { name: string } | null; awayTeam: { name: string } | null }[],
+              nowLive as {
+                id: number;
+                homeTeam: { name: string } | null;
+                awayTeam: { name: string } | null;
+              }[],
               fastify.io
             );
           }

@@ -21,6 +21,7 @@ export function buildUpcomingFixturesWhere(params: {
 
   const where: Prisma.fixturesWhereInput = {
     state,
+    id: { gte: 0 },
     externalId: { gte: 0 },
   };
 
@@ -64,10 +65,7 @@ export function buildFixturesByTeamsWhere(
 
   return {
     ...baseWhere,
-    OR: [
-      { homeTeamId: { in: teamIds } },
-      { awayTeamId: { in: teamIds } },
-    ],
+    OR: [{ homeTeamId: { in: teamIds } }, { awayTeamId: { in: teamIds } }],
   };
 }
 

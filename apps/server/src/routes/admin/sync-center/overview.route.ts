@@ -54,7 +54,7 @@ const adminSyncCenterOverviewRoutes: FastifyPluginAsync = async (fastify) => {
         prisma.leagues.count(),
         prisma.seasons.count(),
         prisma.teams.count(),
-        prisma.fixtures.count(),
+        prisma.fixtures.count({ where: { id: { gte: 0 } } }),
         prisma.bookmakers.count(),
         Promise.all(
           SEED_NAMES.map((name) =>
@@ -67,6 +67,7 @@ const adminSyncCenterOverviewRoutes: FastifyPluginAsync = async (fastify) => {
         ),
         prisma.fixtures.groupBy({
           by: ["state"],
+          where: { id: { gte: 0 } },
           _count: { state: true },
         }),
         prisma.seasons.count({ where: { isCurrent: true } }),
@@ -89,15 +90,18 @@ const adminSyncCenterOverviewRoutes: FastifyPluginAsync = async (fastify) => {
       const entities = ENTITY_NAMES.map((name, i) => {
         const batch = batches[i];
         const lastSyncedAt =
-          batch?.finishedAt?.toISOString() ?? batch?.startedAt?.toISOString() ?? null;
+          batch?.finishedAt?.toISOString() ??
+          batch?.startedAt?.toISOString() ??
+          null;
         const lastSyncStatus = batch ? mapBatchStatus(batch.status) : null;
 
-        const entity: AdminSyncCenterOverviewResponse["data"]["entities"][number] = {
-          name,
-          dbCount: counts[i] ?? 0,
-          lastSyncedAt,
-          lastSyncStatus,
-        };
+        const entity: AdminSyncCenterOverviewResponse["data"]["entities"][number] =
+          {
+            name,
+            dbCount: counts[i] ?? 0,
+            lastSyncedAt,
+            lastSyncStatus,
+          };
 
         if (name === "fixtures" && Object.keys(breakdownByState).length > 0) {
           entity.breakdown = breakdownByState;
