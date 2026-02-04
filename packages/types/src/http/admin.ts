@@ -888,16 +888,12 @@ export interface AdminFixtureResettleResponse {
   predictionsRecalculated: number;
 }
 
-/** One group in settlement summary for a fixture */
-export interface AdminFixtureSettlementGroup {
-  groupId: number;
-  groupName: string;
-  predictionsSettled: number;
-}
-
-/** Response shape for GET /admin/fixtures/:id/settlement */
-export interface AdminFixtureSettlementSummaryResponse {
-  groups: AdminFixtureSettlementGroup[];
+/** Response shape for GET /admin/fixtures/:id/settlement (groups summary) */
+export interface AdminFixtureGroupsSummaryResponse {
+  totalGroups: number;
+  totalPredictions: number;
+  settledPredictions: number;
+  unsettledPredictions: number;
 }
 
 export interface AdminSyncTeamsResponse {

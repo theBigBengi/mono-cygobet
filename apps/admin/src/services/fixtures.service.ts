@@ -4,7 +4,7 @@ import type {
   AdminFixtureResponse,
   AdminFixtureAuditLogResponse,
   AdminFixtureResettleResponse,
-  AdminFixtureSettlementSummaryResponse,
+  AdminFixtureGroupsSummaryResponse,
   AdminProviderFixturesResponse,
   AdminBatchesListResponse,
   AdminBatchItemsResponse,
@@ -158,10 +158,10 @@ export const fixturesService = {
     );
   },
 
-  async getSettlementSummary(
+  async getGroupsSummary(
     id: number | string
-  ): Promise<AdminFixtureSettlementSummaryResponse> {
-    return apiGet<AdminFixtureSettlementSummaryResponse>(
+  ): Promise<AdminFixtureGroupsSummaryResponse> {
+    return apiGet<AdminFixtureGroupsSummaryResponse>(
       `/admin/fixtures/${id}/settlement`
     );
   },

@@ -16,10 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fixturesService } from "@/services/fixtures.service";
 import { StatusBadge } from "@/components/table/status-badge";
 import { normalizeResult } from "@/utils/fixtures";
-import type {
-  AdminFixtureSettlementGroup,
-  AdminFixtureAuditLogEntry,
-} from "@repo/types";
+import type { AdminFixtureAuditLogEntry } from "@repo/types";
 
 /** Parse start time string as UTC for comparison (provider often sends "YYYY-MM-DD HH:mm:ss" without Z). */
 function parseStartTimeAsUtc(s: string | null | undefined): number | null {
@@ -117,16 +114,16 @@ export default function FixtureDetailPage() {
     return list.find((f) => String(f.externalId) === String(extId));
   }, [data?.data?.externalId, providerData?.data]);
 
-  const { data: settlementData } = useQuery({
-    queryKey: ["fixture", fixtureId, "settlement"],
-    queryFn: () => fixturesService.getSettlementSummary(fixtureId),
+  const { data: groupsSummaryData } = useQuery({
+    queryKey: ["fixture", fixtureId, "groups-summary"],
+    queryFn: () => fixturesService.getGroupsSummary(fixtureId),
     enabled: Number.isFinite(fixtureId) && !!data?.data,
   });
 
   const handleSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["fixture", fixtureId] });
     queryClient.invalidateQueries({
-      queryKey: ["fixture", fixtureId, "settlement"],
+      queryKey: ["fixture", fixtureId, "groups-summary"],
     });
     queryClient.invalidateQueries({
       queryKey: ["fixture", fixtureId, "audit-log"],
@@ -143,7 +140,7 @@ export default function FixtureDetailPage() {
       });
       queryClient.invalidateQueries({ queryKey: ["fixture", fixtureId] });
       queryClient.invalidateQueries({
-        queryKey: ["fixture", fixtureId, "settlement"],
+        queryKey: ["fixture", fixtureId, "groups-summary"],
       });
       queryClient.invalidateQueries({
         queryKey: ["fixture", fixtureId, "audit-log"],
@@ -198,8 +195,6 @@ export default function FixtureDetailPage() {
     awayScore90: f.awayScore90,
     state: f.state,
   };
-  const settlementGroups = settlementData?.groups ?? [];
-
   const startTimeDbTs = parseStartTimeAsUtc(f.startIso);
   const startTimeProviderTs = providerFixture
     ? parseStartTimeAsUtc(providerFixture.startIso)
@@ -464,10 +459,10 @@ export default function FixtureDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Settlement */}
+        {/* Groups Appearance */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base">Settlement</CardTitle>
+            <CardTitle className="text-base">Groups Appearance</CardTitle>
             {f.state === "FT" && (
               <Button
                 variant="outline"
@@ -483,22 +478,17 @@ export default function FixtureDetailPage() {
             )}
           </CardHeader>
           <CardContent>
-            {settlementGroups.length === 0 ? (
+            {!groupsSummaryData || groupsSummaryData.totalGroups === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No groups contain this fixture.
               </p>
             ) : (
-              <ul className="text-sm space-y-1">
-                {settlementGroups.map((g: AdminFixtureSettlementGroup) => (
-                  <li key={g.groupId}>
-                    <span className="font-medium">{g.groupName}</span>
-                    <span className="text-muted-foreground">
-                      {" "}
-                      — {g.predictionsSettled} prediction(s) settled
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <p className="text-sm text-muted-foreground">
+                Groups: {groupsSummaryData.totalGroups} · Predictions:{" "}
+                {groupsSummaryData.totalPredictions} · Settled:{" "}
+                {groupsSummaryData.settledPredictions} · Unsettled:{" "}
+                {groupsSummaryData.unsettledPredictions}
+              </p>
             )}
           </CardContent>
         </Card>

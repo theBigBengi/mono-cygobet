@@ -4,8 +4,7 @@
 import { prisma } from "@repo/db";
 import type {
   AdminFixtureResettleResponse,
-  AdminFixtureSettlementSummaryResponse,
-  AdminFixtureSettlementGroup,
+  AdminFixtureGroupsSummaryResponse,
 } from "@repo/types";
 import { settlePredictionsForFixtures } from "../api/groups/service/settlement";
 
@@ -23,15 +22,17 @@ export async function resettleFixture(
   });
 
   if (!fixture) {
-    const err = new Error("Fixture not found") as Error & { statusCode?: number };
+    const err = new Error("Fixture not found") as Error & {
+      statusCode?: number;
+    };
     err.statusCode = 404;
     throw err;
   }
 
   if (fixture.state !== "FT") {
-    const err = new Error(
-      "Fixture must be FT to resettle"
-    ) as Error & { statusCode?: number };
+    const err = new Error("Fixture must be FT to resettle") as Error & {
+      statusCode?: number;
+    };
     err.statusCode = 400;
     throw err;
   }
@@ -50,47 +51,45 @@ export async function resettleFixture(
   };
 }
 
-
 /**
- * Get settlement summary for a fixture: groups containing it and settled prediction counts.
+ * Get groups summary for a fixture: aggregate counts across all groups containing it.
  */
-export async function getSettlementSummary(
+export async function getGroupsSummary(
   fixtureId: number
-): Promise<AdminFixtureSettlementSummaryResponse> {
+): Promise<AdminFixtureGroupsSummaryResponse> {
   const groupFixtures = await prisma.groupFixtures.findMany({
     where: { fixtureId },
-    select: {
-      id: true,
-      groupId: true,
-      groups: {
-        select: { id: true, name: true },
-      },
-    },
+    select: { id: true },
   });
 
   if (!groupFixtures.length) {
-    return { groups: [] };
+    return {
+      totalGroups: 0,
+      totalPredictions: 0,
+      settledPredictions: 0,
+      unsettledPredictions: 0,
+    };
   }
 
+  const totalGroups = groupFixtures.length;
   const groupFixtureIds = groupFixtures.map((gf) => gf.id);
-  const settledCounts = await prisma.groupPredictions.groupBy({
-    by: ["groupId"],
-    where: {
-      groupFixtureId: { in: groupFixtureIds },
-      settledAt: { not: null },
-    },
-    _count: { id: true },
-  });
 
-  const countByGroup = new Map(
-    settledCounts.map((s) => [s.groupId, s._count.id])
-  );
+  const [totalPredictions, settledPredictions] = await Promise.all([
+    prisma.groupPredictions.count({
+      where: { groupFixtureId: { in: groupFixtureIds } },
+    }),
+    prisma.groupPredictions.count({
+      where: {
+        groupFixtureId: { in: groupFixtureIds },
+        settledAt: { not: null },
+      },
+    }),
+  ]);
 
-  const groups: AdminFixtureSettlementGroup[] = groupFixtures.map((gf) => ({
-    groupId: gf.groups.id,
-    groupName: gf.groups.name,
-    predictionsSettled: countByGroup.get(gf.groupId) ?? 0,
-  }));
-
-  return { groups };
+  return {
+    totalGroups,
+    totalPredictions,
+    settledPredictions,
+    unsettledPredictions: totalPredictions - settledPredictions,
+  };
 }

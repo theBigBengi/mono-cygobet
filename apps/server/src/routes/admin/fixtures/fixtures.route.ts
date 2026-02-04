@@ -6,7 +6,7 @@ import { parseId } from "../../../utils/routes";
 import { getErrorMessage, getErrorProp } from "../../../utils/error.utils";
 import {
   resettleFixture,
-  getSettlementSummary,
+  getGroupsSummary,
 } from "../../../services/admin/fixtures.service";
 
 const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
@@ -67,7 +67,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
-  // GET /admin/fixtures/:id/settlement - Settlement summary for a fixture
+  // GET /admin/fixtures/:id/settlement - Groups summary for a fixture
   fastify.get(
     "/:id/settlement",
     {
@@ -81,20 +81,17 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           200: {
             type: "object",
             properties: {
-              groups: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    groupId: { type: "number" },
-                    groupName: { type: "string" },
-                    predictionsSettled: { type: "number" },
-                  },
-                  required: ["groupId", "groupName", "predictionsSettled"],
-                },
-              },
+              totalGroups: { type: "number" },
+              totalPredictions: { type: "number" },
+              settledPredictions: { type: "number" },
+              unsettledPredictions: { type: "number" },
             },
-            required: ["groups"],
+            required: [
+              "totalGroups",
+              "totalPredictions",
+              "settledPredictions",
+              "unsettledPredictions",
+            ],
           },
         },
       },
@@ -109,7 +106,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           message: getErrorMessage(error),
         });
       }
-      const summary = await getSettlementSummary(fixtureId);
+      const summary = await getGroupsSummary(fixtureId);
       return reply.send(summary);
     }
   );
