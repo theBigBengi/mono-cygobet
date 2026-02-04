@@ -20,7 +20,10 @@ import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFoot
 import { SingleGameView } from "../components/SingleGameView";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { HEADER_HEIGHT, FOOTER_PADDING } from "../utils/constants";
-import { calculateContentPaddingTopDefault, getPositionInGroup } from "../utils/utils";
+import {
+  calculateContentPaddingTopDefault,
+  getPositionInGroup,
+} from "../utils/utils";
 import { shareText, buildPredictionShareText } from "@/utils/sharing";
 
 type Props = {
@@ -39,7 +42,14 @@ type Props = {
  * - state for predictions
  * - wiring of keyboard/nav/scroll behaviors
  */
-export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMode, groupName, selectionMode, groupTeamsIds }: Props) {
+export function GroupGamesScreen({
+  groupId,
+  fixtures: fixturesProp,
+  predictionMode,
+  groupName,
+  selectionMode,
+  groupTeamsIds,
+}: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
@@ -187,7 +197,11 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
     Keyboard.dismiss();
   };
 
-  const handleMatchPredictionCardChange = (fixtureId: number, type: "home" | "away", text: string) => {
+  const handleMatchPredictionCardChange = (
+    fixtureId: number,
+    type: "home" | "away",
+    text: string
+  ) => {
     updatePrediction(fixtureId, type, text, (fixtureId, t) => {
       const nextIndex = getNextFieldIndex(fixtureId, t);
       if (nextIndex >= 0) navigateToField(nextIndex);
@@ -204,14 +218,14 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
       viewMode={viewMode}
       onBack={() => router.back()}
       onFillRandom={fillRandomPredictions}
-      onToggleView={() =>
-        setViewMode(viewMode === "list" ? "single" : "list")
-      }
+      onToggleView={() => setViewMode(viewMode === "list" ? "single" : "list")}
     />
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {viewMode === "single" ? (
         <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
           <SingleGameView
@@ -230,7 +244,9 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
             navigateToField={navigateToField}
             onSaveAllChanged={saveAllChangedPredictions}
             predictionMode={predictionModeTyped}
-            onSelectOutcome={predictionMode === "MatchWinner" ? handleSelectOutcome : undefined}
+            onSelectOutcome={
+              predictionMode === "MatchWinner" ? handleSelectOutcome : undefined
+            }
           />
         </View>
       ) : (
@@ -261,13 +277,20 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
           >
             {emptyState && filteredFixtures.length === 0 ? (
               <View style={styles.emptyStateContainer}>
-                <AppText variant="body" color="secondary" style={styles.emptyStateMessage}>
+                <AppText
+                  variant="body"
+                  color="secondary"
+                  style={styles.emptyStateMessage}
+                >
                   {emptyState.message}
                 </AppText>
                 {emptyState.suggestion && (
                   <AppText
                     variant="body"
-                    style={[styles.emptyStateSuggestion, { color: theme.colors.primary }]}
+                    style={[
+                      styles.emptyStateSuggestion,
+                      { color: theme.colors.primary },
+                    ]}
                     onPress={emptyState.suggestion.action}
                   >
                     {emptyState.suggestion.label}
@@ -276,101 +299,111 @@ export function GroupGamesScreen({ groupId, fixtures: fixturesProp, predictionMo
               </View>
             ) : (
               <>
-            {leagueDateGroups.map((group) => (
-              <LeagueDateGroupSection
-                key={group.key}
-                leagueName={group.leagueName}
-                dateKey={group.dateKey}
-                kickoffIso={null}
-              >
-                <View style={styles.groupCardContainer}>
-                  {/* Render each fixture in the group */}
-                  {group.fixtures.map((fixture, index) => {
-                    const cardRef = matchCardRefs.current[String(fixture.id)];
-                    const prediction = predictions[String(fixture.id)] || {
-                      home: null,
-                      away: null,
-                    };
+                {leagueDateGroups.map((group) => (
+                  <LeagueDateGroupSection
+                    key={group.key}
+                    leagueName={group.leagueName}
+                    dateKey={group.dateKey}
+                    kickoffIso={null}
+                  >
+                    <View style={styles.groupCardContainer}>
+                      {/* Render each fixture in the group */}
+                      {group.fixtures.map((fixture, index) => {
+                        const cardRef =
+                          matchCardRefs.current[String(fixture.id)];
+                        const prediction = predictions[String(fixture.id)] || {
+                          home: null,
+                          away: null,
+                        };
 
-                    const positionInGroup = getPositionInGroup(
-                      index,
-                      group.fixtures.length
-                    );
+                        const positionInGroup = getPositionInGroup(
+                          index,
+                          group.fixtures.length
+                        );
 
-                    const canShare =
-                      groupName &&
-                      isFinished(fixture.state) &&
-                      fixture.prediction != null &&
-                      fixture.prediction.settled &&
-                      fixture.prediction.points != null;
-                    const onShare = canShare
-                      ? () => {
-                          const pred = fixture.prediction!;
-                          const predictionStr =
-                            predictionModeTyped === "MatchWinner"
-                              ? pred.home === pred.away
-                                ? "X"
-                                : pred.home > pred.away
-                                  ? "1"
-                                  : "2"
-                              : `${pred.home}-${pred.away}`;
-                          shareText(
-                            buildPredictionShareText({
-                              fixtureName: fixture.name ?? `${fixture.homeTeam?.name ?? "Home"} vs ${fixture.awayTeam?.name ?? "Away"}`,
-                              prediction: predictionStr,
-                              actual: fixture.result ?? "-",
-                              points: fixture.prediction!.points ?? 0,
-                              groupName: groupName!,
-                            })
-                          );
-                        }
-                      : undefined;
+                        const canShare =
+                          groupName &&
+                          isFinished(fixture.state) &&
+                          fixture.prediction != null &&
+                          fixture.prediction.settled &&
+                          fixture.prediction.points != null;
+                        const onShare = canShare
+                          ? () => {
+                              const pred = fixture.prediction!;
+                              const predictionStr =
+                                predictionModeTyped === "MatchWinner"
+                                  ? pred.home === pred.away
+                                    ? "X"
+                                    : pred.home > pred.away
+                                      ? "1"
+                                      : "2"
+                                  : `${pred.home}-${pred.away}`;
+                              shareText(
+                                buildPredictionShareText({
+                                  fixtureName:
+                                    fixture.name ??
+                                    `${fixture.homeTeam?.name ?? "Home"} vs ${fixture.awayTeam?.name ?? "Away"}`,
+                                  prediction: predictionStr,
+                                  actual: fixture.result ?? "-",
+                                  points: fixture.prediction!.points ?? 0,
+                                  groupName: groupName!,
+                                })
+                              );
+                            }
+                          : undefined;
 
-                    const commonProps = {
-                      positionInGroup,
-                      fixture,
-                      prediction,
-                      inputRefs,
-                      currentFocusedField,
-                      savedPredictions,
-                      cardRef,
-                      onFocus: (type: "home" | "away") => {
-                        handleFieldFocus(fixture.id, type);
-                        scrollToMatchCard(fixture.id);
-                      },
-                      onBlur: () => {
-                        handleFieldBlur(fixture.id);
-                      },
-                      onChange: (type: "home" | "away", text: string) =>
-                        handleMatchPredictionCardChange(fixture.id, type, text),
-                      onAutoNext: (type: "home" | "away") => {
-                        handleAutoNext(fixture.id, type);
-                      },
-                      predictionMode: predictionModeTyped,
-                      onSelectOutcome:
-                        predictionMode === "MatchWinner"
-                          ? (outcome: "home" | "draw" | "away") =>
-                              handleSelectOutcome(fixture.id, outcome)
-                          : undefined,
-                      onShare,
-                      showShare: Boolean(canShare),
-                    };
+                        const commonProps = {
+                          positionInGroup,
+                          fixture,
+                          prediction,
+                          inputRefs,
+                          currentFocusedField,
+                          savedPredictions,
+                          cardRef,
+                          onFocus: (type: "home" | "away") => {
+                            handleFieldFocus(fixture.id, type);
+                            scrollToMatchCard(fixture.id);
+                          },
+                          onBlur: () => {
+                            handleFieldBlur(fixture.id);
+                          },
+                          onChange: (type: "home" | "away", text: string) =>
+                            handleMatchPredictionCardChange(
+                              fixture.id,
+                              type,
+                              text
+                            ),
+                          onAutoNext: (type: "home" | "away") => {
+                            handleAutoNext(fixture.id, type);
+                          },
+                          predictionMode: predictionModeTyped,
+                          onSelectOutcome:
+                            predictionMode === "MatchWinner"
+                              ? (outcome: "home" | "draw" | "away") =>
+                                  handleSelectOutcome(fixture.id, outcome)
+                              : undefined,
+                          onShare,
+                          showShare: Boolean(canShare),
+                        };
 
-                    return (
-                      <MatchPredictionCardVertical key={fixture.id} {...commonProps} />
-                    );
-                  })}
-                </View>
-              </LeagueDateGroupSection>
-            ))}
+                        return (
+                          <MatchPredictionCardVertical
+                            key={fixture.id}
+                            {...commonProps}
+                          />
+                        );
+                      })}
+                    </View>
+                  </LeagueDateGroupSection>
+                ))}
 
-            <GroupGamesLastSavedFooter
-              latestUpdatedAt={latestUpdatedAt}
-              isSaving={isSaving}
-              savedCount={savedPredictionsCount}
-              totalCount={totalPredictionsCount}
-            />
-            </>
+                <GroupGamesLastSavedFooter
+                  latestUpdatedAt={latestUpdatedAt}
+                  isSaving={isSaving}
+                  savedCount={savedPredictionsCount}
+                  totalCount={totalPredictionsCount}
+                />
+              </>
             )}
           </ScrollView>
 
