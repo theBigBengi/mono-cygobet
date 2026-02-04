@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { ScrollView, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
-import { isEditable } from "@repo/utils";
+import { canPredict } from "@repo/utils";
 import type { LeagueDateGroup } from "@/utils/fixture";
 import type { FocusedField } from "../types";
 import { SCROLL_OFFSET } from "../utils/constants";
@@ -42,7 +42,7 @@ export function usePredictionNavigation(leagueDateGroups: LeagueDateGroup[]) {
     leagueDateGroups.forEach((group) => {
       group.fixtures.forEach((fixture) => {
         // Only include editable fixtures (not started)
-        if (isEditable(fixture.state)) {
+        if (canPredict(fixture.state, fixture.startTs)) {
           fields.push({ fixtureId: fixture.id, type: "home" });
           fields.push({ fixtureId: fixture.id, type: "away" });
         }

@@ -8,23 +8,39 @@ type ResultDisplayProps = {
   result: GameResultOrTime;
   isLive: boolean;
   isFinished: boolean;
+  isCancelled: boolean;
   isHomeWinner: boolean;
   isAwayWinner: boolean;
 };
 
 /**
- * Displays game result scores vertically
- * Only shown when game is live or finished
+ * Displays game result scores vertically, or status text for cancelled games
  */
 export function ResultDisplay({
   result,
   isLive,
   isFinished,
+  isCancelled,
   isHomeWinner,
   isAwayWinner,
 }: ResultDisplayProps) {
-  if (!result || (!isLive && !isFinished)) {
+  if (!result || (!isLive && !isFinished && !isCancelled)) {
     return null;
+  }
+
+  // Cancelled games: show status text (e.g. "Postponed", "Cancelled")
+  if (isCancelled) {
+    return (
+      <View style={styles.timeResultContainer}>
+        <AppText
+          variant="caption"
+          color="secondary"
+          style={styles.cancelledText}
+        >
+          {result.home || "-"}
+        </AppText>
+      </View>
+    );
   }
 
   return (
@@ -90,5 +106,10 @@ const styles = StyleSheet.create({
   },
   winnerResultText: {
     fontWeight: "700",
+  },
+  cancelledText: {
+    fontSize: 10,
+    fontWeight: "500",
+    textAlign: "center",
   },
 });

@@ -1,5 +1,5 @@
 import {
-  isEditable as isEditableState,
+  canPredict,
   isLive as isLiveState,
   isFinished as isFinishedState,
   isCancelled as isCancelledState,
@@ -49,7 +49,7 @@ export function formatLiveDisplay(
 export function getGameResultOrTime(fixture: FixtureItem): GameResultOrTime {
   const isLive = isLiveState(fixture.state);
   const isFinished = isFinishedState(fixture.state);
-  const isEditable = isEditableState(fixture.state);
+  const isEditable = canPredict(fixture.state, fixture.startTs);
   const isCancelled = isCancelledState(fixture.state);
 
   if (isLive || isFinished) {

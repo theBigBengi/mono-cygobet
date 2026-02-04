@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Dimensions, TextInput } from "react-native";
 import {
-  isEditable as isEditableState,
+  canPredict,
   isLive as isLiveState,
   isFinished as isFinishedState,
   isCancelled as isCancelledState,
@@ -64,7 +64,7 @@ export function SingleGameMatchCard({
   const { translateTeam } = useEntityTranslation();
   const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
-  const isEditable = isEditableState(fixture.state);
+  const isEditable = canPredict(fixture.state, fixture.startTs);
   const isLive = isLiveState(fixture.state);
   const isFinished = isFinishedState(fixture.state);
   const isCancelled = isCancelledState(fixture.state);

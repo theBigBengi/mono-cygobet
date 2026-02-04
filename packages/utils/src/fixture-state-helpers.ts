@@ -57,3 +57,6 @@ export const isNotStarted = (s: string) => NOT_STARTED_STATES.has(s);
 export const isTerminal = (s: string) =>
   FINISHED_STATES.has(s) || CANCELLED_STATES.has(s);
 export const isEditable = (s: string) => NOT_STARTED_STATES.has(s);
+/** Fixture is open for predictions: state is not-started AND kickoff is in the future */
+export const canPredict = (state: string, startTs: number) =>
+  NOT_STARTED_STATES.has(state) && startTs > Math.floor(Date.now() / 1000);

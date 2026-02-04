@@ -90,6 +90,7 @@ export function MatchPredictionCardVertical({
     isEditable,
     isLive,
     isFinished,
+    isCancelled,
     gameResultOrTime,
     points,
     isHomeWinner,
@@ -108,10 +109,9 @@ export function MatchPredictionCardVertical({
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
 
   return (
-    <Pressable onPress={onPressCard} style={({ pressed }) => [{ opacity: pressed ? 0.95 : 1 }]}>
-      <View ref={cardRef}>
-        <Card
-          style={[
+    <View ref={cardRef}>
+      <Card
+        style={[
           styles.matchCard,
           cardRadiusStyle,
           cardBorderStyle,
@@ -119,7 +119,14 @@ export function MatchPredictionCardVertical({
         ]}
       >
         <View style={styles.matchContent}>
-          <View style={styles.rowsContainer}>
+          {/* Only teams area (logos + names) navigates to fixture detail; checkbox/time do not */}
+          <Pressable
+            onPress={onPressCard}
+            style={({ pressed }) => [
+              styles.rowsContainer,
+              { opacity: pressed ? 0.95 : 1 },
+            ]}
+          >
             {/* Home Team Row */}
             <TeamRow
               team={fixture.homeTeam}
@@ -133,13 +140,14 @@ export function MatchPredictionCardVertical({
               teamName={awayTeamName}
               isWinner={isAwayWinner}
             />
-          </View>
+          </Pressable>
 
           {/* Result - displayed vertically in the middle (only when game started or finished) */}
           <ResultDisplay
             result={gameResultOrTime}
             isLive={isLive}
             isFinished={isFinished}
+            isCancelled={isCancelled}
             isHomeWinner={isHomeWinner}
             isAwayWinner={isAwayWinner}
           />
@@ -193,7 +201,6 @@ export function MatchPredictionCardVertical({
         </View>
       </Card>
     </View>
-  </Pressable>
   );
 }
 

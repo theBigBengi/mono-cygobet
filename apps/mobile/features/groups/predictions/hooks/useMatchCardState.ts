@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import {
-  isEditable as isEditableState,
+  canPredict,
   isLive as isLiveState,
   isFinished as isFinishedState,
   isCancelled as isCancelledState,
@@ -46,7 +46,7 @@ export function useMatchCardState({
   currentFocusedField,
 }: UseMatchCardStateParams): UseMatchCardStateReturn {
   return useMemo(() => {
-    const isEditable = isEditableState(fixture.state);
+    const isEditable = canPredict(fixture.state, fixture.startTs);
     const isLive = isLiveState(fixture.state);
     const isFinished = isFinishedState(fixture.state);
     const isCancelled = isCancelledState(fixture.state);

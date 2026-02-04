@@ -24,8 +24,9 @@ type Props = {
   containerStyle?: StyleProp<ViewStyle>;
 };
 
-function toDisplay(value: number | null): string {
-  return value === null ? "" : String(value);
+function toDisplay(value: number | null, isEditable: boolean): string {
+  if (value === null) return isEditable ? "" : "-";
+  return String(value);
 }
 
 const variantStyles: Record<Variant, { input: TextStyle; separator: TextStyle }> = {
@@ -144,7 +145,7 @@ export function ScoresInput({
             opacity: isEditable || isLive ? 1 : 0.5,
           },
         ]}
-        value={toDisplay(prediction.home)}
+        value={toDisplay(prediction.home, isEditable)}
         onChangeText={handleHomeChange}
         keyboardType="number-pad"
         maxLength={2}
@@ -180,7 +181,7 @@ export function ScoresInput({
             opacity: isEditable || isLive ? 1 : 0.5,
           },
         ]}
-        value={toDisplay(prediction.away)}
+        value={toDisplay(prediction.away, isEditable)}
         onChangeText={handleAwayChange}
         keyboardType="number-pad"
         maxLength={2}
