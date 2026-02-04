@@ -769,6 +769,7 @@ export interface AdminFixtureResponse {
     startIso: string;
     startTs: number;
     state: string;
+    liveMinute: number | null;
     result: string | null;
     homeScore90: number | null;
     awayScore90: number | null;

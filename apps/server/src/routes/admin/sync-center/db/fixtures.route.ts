@@ -45,6 +45,7 @@ function mapFixtureToResponse(f: any) {
     startIso: f.startIso,
     startTs: f.startTs,
     state: f.state,
+    liveMinute: f.liveMinute,
     result: f.result,
     homeScore90: f.homeScore90,
     awayScore90: f.awayScore90,

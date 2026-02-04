@@ -219,9 +219,14 @@ export default function FixtureDetailPage() {
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
       <div className="flex-shrink-0 mb-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="text-lg font-medium"
+        >
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+          {f.name}
         </Button>
       </div>
 
@@ -229,13 +234,7 @@ export default function FixtureDetailPage() {
         {/* Header + Actions row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">{f.name}</CardTitle>
-              <CardDescription>
-                Fixture ID: {f.id} | External ID: {f.externalId}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-3">
+            <CardContent className="flex flex-wrap items-center gap-3 pt-6">
               {f.issue && (
                 <div className="w-full flex flex-col gap-1">
                   <Badge
@@ -321,10 +320,17 @@ export default function FixtureDetailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              Internal ID: {f.id} · External ID: {f.externalId}
+            </p>
             <div className="grid grid-cols-4 gap-2 text-sm">
               <div className="font-medium text-muted-foreground">Field</div>
-              <div className="font-medium text-muted-foreground">Database</div>
-              <div className="font-medium text-muted-foreground">Provider</div>
+              <div className="font-medium text-muted-foreground">
+                Internal (DB)
+              </div>
+              <div className="font-medium text-muted-foreground">
+                External (Provider)
+              </div>
               <div className="font-medium text-muted-foreground">Match</div>
               <div className="py-1">Name</div>
               <div className="py-1 truncate">{f.name}</div>
@@ -345,21 +351,6 @@ export default function FixtureDetailPage() {
                 <ComparisonBadge
                   match={
                     providerFixture ? f.state === providerFixture.state : true
-                  }
-                />
-              </div>
-              <div className="py-1">Round</div>
-              <div className="py-1">{f.round ?? f.stage ?? "—"}</div>
-              <div className="py-1">
-                {providerFixture?.round ?? providerFixture?.stage ?? "—"}
-              </div>
-              <div className="py-1">
-                <ComparisonBadge
-                  match={
-                    providerFixture
-                      ? (f.round ?? f.stage ?? "") ===
-                        (providerFixture.round ?? providerFixture.stage ?? "")
-                      : true
                   }
                 />
               </div>
@@ -385,6 +376,30 @@ export default function FixtureDetailPage() {
               </div>
               <div className="py-1">
                 <ComparisonBadge match={startTimeMatch} />
+              </div>
+              <div className="py-1">Stage</div>
+              <div className="py-1">{f.stage ?? "—"}</div>
+              <div className="py-1">{providerFixture?.stage ?? "—"}</div>
+              <div className="py-1">
+                <ComparisonBadge
+                  match={
+                    providerFixture
+                      ? (f.stage ?? "") === (providerFixture.stage ?? "")
+                      : true
+                  }
+                />
+              </div>
+              <div className="py-1">Round</div>
+              <div className="py-1">{f.round ?? "—"}</div>
+              <div className="py-1">{providerFixture?.round ?? "—"}</div>
+              <div className="py-1">
+                <ComparisonBadge
+                  match={
+                    providerFixture
+                      ? (f.round ?? "") === (providerFixture.round ?? "")
+                      : true
+                  }
+                />
               </div>
             </div>
           </CardContent>
