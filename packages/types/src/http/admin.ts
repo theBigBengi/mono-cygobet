@@ -814,7 +814,7 @@ export interface AdminFixtureResponse {
       name: string | null;
       email: string;
     } | null;
-    /** Present when fixture needs attention (Stuck LIVE, Unsettled, Score mismatch). */
+    /** Present when fixture needs attention (Stuck LIVE, Unsettled). */
     issue?: string | null;
   };
   message: string;
@@ -911,22 +911,12 @@ export interface AdminDashboardFixtureNeedingAttention {
   issue: string;
 }
 
-export interface AdminDashboardOverdueNsFixture {
-  id: number;
-  name: string;
-  state: string;
-  startIso: string;
-  startTs: number;
-  league: { name: string } | null;
-}
-
 export interface AdminDashboardResponse {
   liveCount: number;
   pendingSettlement: number;
   failedJobs24h: number;
   stuckFixtures: number;
   overdueNsCount: number;
-  overdueNsFixtures: AdminDashboardOverdueNsFixture[];
   recentFailedJobs: AdminDashboardRecentFailedJob[];
   fixturesNeedingAttention: AdminDashboardFixtureNeedingAttention[];
 }

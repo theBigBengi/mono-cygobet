@@ -3,7 +3,6 @@ import type { FixtureState } from "@repo/db";
 import type { AdminDashboardResponse } from "@repo/types";
 import { LIVE_STATES, FINISHED_STATES } from "@repo/utils";
 import { nowUnixSeconds } from "../../utils/dates";
-import { parseScores } from "../../etl/transform/fixtures.transform";
 
 const LIVE_STATES_ARR = [...LIVE_STATES] as FixtureState[];
 const FINISHED_STATES_ARR = [...FINISHED_STATES] as FixtureState[];
@@ -29,7 +28,6 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
     recentFailedJobsRows,
     stuckFixtureRows,
     finishedUnsettledRows,
-    finishedAllRows,
   ] = await Promise.all([
     prisma.fixtures.count({
       where: { externalId: { gte: 0 }, state: { in: LIVE_STATES_ARR } },
@@ -112,31 +110,7 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
             awayScore90: true,
           },
         }),
-    prisma.fixtures.findMany({
-      where: { externalId: { gte: 0 }, state: { in: FINISHED_STATES_ARR } },
-      orderBy: { updatedAt: "desc" },
-      take: 500,
-      select: {
-        id: true,
-        name: true,
-        state: true,
-        updatedAt: true,
-        result: true,
-        homeScore90: true,
-        awayScore90: true,
-      },
-    }),
   ]);
-
-  const unsettledSet = new Set(unsettledFixtureIds);
-  const finishedWithScoreMismatch = finishedAllRows.filter((f) => {
-    const parsed = parseScores(f.result);
-    if (parsed.homeScore == null || parsed.awayScore == null) return false;
-    return (
-      f.homeScore90 !== parsed.homeScore || f.awayScore90 !== parsed.awayScore
-    );
-  });
-  const scoreMismatchIds = new Set(finishedWithScoreMismatch.map((f) => f.id));
 
   const attentionMap = new Map<
     number,
@@ -166,18 +140,18 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
       name: f.name,
       state: f.state,
       updatedAt: f.updatedAt.toISOString(),
-      issue: scoreMismatchIds.has(f.id) ? "Score mismatch" : "Unsettled",
+      issue: "Unsettled",
     });
   }
 
-  for (const f of finishedWithScoreMismatch) {
+  for (const f of overdueNsRows) {
     if (attentionMap.has(f.id)) continue;
     attentionMap.set(f.id, {
       id: f.id,
       name: f.name,
       state: f.state,
-      updatedAt: f.updatedAt.toISOString(),
-      issue: "Score mismatch",
+      updatedAt: f.startIso,
+      issue: "Overdue NS",
     });
   }
 
@@ -191,23 +165,12 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
 
   const fixturesNeedingAttention = Array.from(attentionMap.values());
 
-  const overdueNsFixtures: AdminDashboardResponse["overdueNsFixtures"] =
-    overdueNsRows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      state: r.state,
-      startIso: r.startIso,
-      startTs: r.startTs,
-      league: r.league,
-    }));
-
   return {
     liveCount,
     pendingSettlement,
     failedJobs24h,
     stuckFixtures,
     overdueNsCount,
-    overdueNsFixtures,
     recentFailedJobs,
     fixturesNeedingAttention,
   };
@@ -232,31 +195,32 @@ async function getUnsettledFixtureIds(): Promise<number[]> {
   return [...new Set(groupFixtures.map((gf) => gf.fixtureId))];
 }
 
-/** Compute issue for a single fixture (Stuck LIVE, Unsettled, Score mismatch). */
+/** Compute issue for a single fixture (Stuck LIVE, Overdue NS, or Unsettled). */
 export async function getFixtureIssue(fixture: {
   id: number;
   state: string;
   updatedAt: Date;
-  result: string | null;
-  homeScore90: number | null;
-  awayScore90: number | null;
+  startTs?: number | null;
 }): Promise<string | null> {
   const stuckCutoff = new Date(Date.now() - STUCK_THRESHOLD_MS);
+  const nowTs = Math.floor(Date.now() / 1000);
+
   if (
     LIVE_STATES_ARR.includes(fixture.state as FixtureState) &&
     fixture.updatedAt < stuckCutoff
   ) {
     return "Stuck LIVE";
   }
+  if (
+    fixture.state === "NS" &&
+    fixture.startTs != null &&
+    fixture.startTs < nowTs
+  ) {
+    return "Overdue NS";
+  }
   if (!FINISHED_STATES_ARR.includes(fixture.state as FixtureState)) {
     return null;
   }
-  const parsed = parseScores(fixture.result);
-  const scoreMismatch =
-    parsed.homeScore != null &&
-    parsed.awayScore != null &&
-    (fixture.homeScore90 !== parsed.homeScore ||
-      fixture.awayScore90 !== parsed.awayScore);
   const hasUnsettled =
     (await prisma.groupPredictions.count({
       where: {
@@ -264,7 +228,5 @@ export async function getFixtureIssue(fixture: {
         groupFixtures: { fixtureId: fixture.id },
       },
     })) > 0;
-  if (scoreMismatch) return "Score mismatch";
-  if (hasUnsettled) return "Unsettled";
-  return null;
+  return hasUnsettled ? "Unsettled" : null;
 }

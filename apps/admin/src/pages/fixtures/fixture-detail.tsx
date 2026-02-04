@@ -50,8 +50,8 @@ const ISSUE_DESCRIPTIONS: Record<string, string> = {
     "Fixture is in LIVE state but has not been updated for over 3 hours. Run the Finished Fixtures job or check the provider.",
   Unsettled:
     "Fixture is finished (FT) but has predictions that have not been settled yet. Use Re-settle to resolve.",
-  "Score mismatch":
-    "The result string does not match the stored home/away scores. Review and fix, or use Re-settle after correcting.",
+  "Overdue NS":
+    "Fixture is NS but its scheduled start time has passed. Run the Live Fixtures or Finished Fixtures job to update.",
 };
 
 function ComparisonBadge({ match }: { match: boolean }) {
@@ -219,23 +219,23 @@ export default function FixtureDetailPage() {
               <CardDescription>
                 Fixture ID: {f.id} | External ID: {f.externalId}
               </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-3">
               {f.issue && (
-                <div className="mt-2">
+                <div className="w-full flex flex-col gap-1">
                   <Badge
                     variant="secondary"
-                    className="bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                    className="w-fit bg-amber-500/15 text-amber-700 dark:text-amber-400"
                   >
                     {f.issue}
                   </Badge>
                   {ISSUE_DESCRIPTIONS[f.issue] && (
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <p className="text-sm text-muted-foreground">
                       {ISSUE_DESCRIPTIONS[f.issue]}
                     </p>
                   )}
                 </div>
               )}
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-3">
               {f.scoreOverriddenAt && (
                 <Badge
                   variant="secondary"

@@ -164,61 +164,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Row 2 – Overdue NS Fixtures */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Overdue NS Fixtures</CardTitle>
-            <CardDescription>
-              Fixtures with state NS whose scheduled start time has passed
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-48 w-full" />
-            ) : !data?.overdueNsFixtures?.length ? (
-              <p className="text-sm text-muted-foreground py-4">
-                No overdue NS fixtures
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fixture</TableHead>
-                    <TableHead>Scheduled Start</TableHead>
-                    <TableHead>League</TableHead>
-                    <TableHead className="w-[80px]">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.overdueNsFixtures.map((f) => (
-                    <TableRow key={f.id}>
-                      <TableCell className="font-medium max-w-[200px] truncate">
-                        {f.name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDistanceToNow(new Date(f.startIso), {
-                          addSuffix: true,
-                        })}{" "}
-                        ({new Date(f.startIso).toLocaleString()})
-                      </TableCell>
-                      <TableCell>{f.league?.name ?? "—"}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/fixtures/${f.id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Row 3 – Recent Job Failures */}
+        {/* Row 2 – Recent Job Failures */}
         <Card>
           <CardHeader>
             <CardTitle>Recent Job Failures</CardTitle>
@@ -278,12 +224,12 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Row 4 – Fixtures Needing Attention */}
+        {/* Row 3 – Fixtures Needing Attention */}
         <Card>
           <CardHeader>
             <CardTitle>Fixtures Needing Attention</CardTitle>
             <CardDescription>
-              Stuck LIVE, unsettled, or score mismatch
+              Stuck LIVE, unsettled, or overdue NS
             </CardDescription>
           </CardHeader>
           <CardContent>
