@@ -203,6 +203,8 @@ export async function syncFixtures(
     signal?: AbortSignal;
     batchId?: number;
     jobRunId?: number;
+    /** When true, skip state transition validation (e.g. admin explicitly syncing one fixture). */
+    bypassStateValidation?: boolean;
   }
 ): Promise<SyncFixturesResult> {
   const dryRun = !!opts?.dryRun;
@@ -391,8 +393,9 @@ export async function syncFixtures(
           round: payload.round,
         };
 
-        // State validation: disallow invalid transitions
+        // State validation: disallow invalid transitions (unless bypassed, e.g. admin sync-by-id)
         if (
+          !opts?.bypassStateValidation &&
           existing &&
           !isValidFixtureStateTransition(existing.state, payload.state)
         ) {

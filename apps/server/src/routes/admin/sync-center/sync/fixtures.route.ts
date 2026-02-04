@@ -70,9 +70,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         batchesToSync = [{ fixturesDto }];
       } else if (from && to) {
         const fixturesDto = await adapter.fetchFixturesBetween(from, to, {
-          filters: fetchAllFixtureStates
-            ? undefined
-            : { fixtureStates: "1" },
+          filters: fetchAllFixtureStates ? undefined : { fixtureStates: "1" },
         });
         batchesToSync = [{ fixturesDto }];
       } else {
@@ -160,10 +158,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               } catch (error) {
                 totalFail += 1;
                 totalTotal += 1;
-                if (
-                  firstErrorSeen === undefined &&
-                  error instanceof Error
-                ) {
+                if (firstErrorSeen === undefined && error instanceof Error) {
                   firstErrorSeen = error.message;
                 }
               }
@@ -268,6 +263,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           async () => {
             const result = await syncFixtures([fixtureDto], {
               dryRun,
+              bypassStateValidation: !dryRun,
             });
             const ok = result.inserted + result.updated;
             return reply.send({

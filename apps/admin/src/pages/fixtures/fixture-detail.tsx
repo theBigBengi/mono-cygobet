@@ -76,6 +76,7 @@ export default function FixtureDetailPage() {
   const fixtureId = id ? parseInt(id, 10) : NaN;
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [resettling, setResettling] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["fixture", fixtureId],
@@ -211,6 +212,35 @@ export default function FixtureDetailPage() {
       ? formatStartTimeDisplay(startTimeDbTs)
       : null;
 
+  const hasMismatch =
+    providerFixture != null &&
+    (f.name !== providerFixture.name ||
+      f.state !== providerFixture.state ||
+      normalizeResult(f.result) !== normalizeResult(providerFixture.result) ||
+      !startTimeMatch ||
+      (f.stage ?? "") !== (providerFixture.stage ?? "") ||
+      (f.round ?? "") !== (providerFixture.round ?? ""));
+
+  const handleSyncFromProvider = async () => {
+    if (!f.externalId) return;
+    setSyncing(true);
+    try {
+      await fixturesService.syncById(f.externalId, false);
+      toast.success("Fixture synced from provider");
+      queryClient.invalidateQueries({ queryKey: ["fixture", fixtureId] });
+      queryClient.invalidateQueries({
+        queryKey: ["fixture", fixtureId, "audit-log"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["fixture", fixtureId, "provider"],
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
       <div className="flex-shrink-0 mb-4">
@@ -300,6 +330,19 @@ export default function FixtureDetailPage() {
                     className={`h-4 w-4 mr-1 ${resettling ? "animate-spin" : ""}`}
                   />
                   Trigger re-settlement
+                </Button>
+              )}
+              {hasMismatch && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncFromProvider}
+                  disabled={syncing}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`}
+                  />
+                  Sync from provider
                 </Button>
               )}
             </CardContent>
@@ -397,6 +440,21 @@ export default function FixtureDetailPage() {
                 />
               </div>
             </div>
+            {hasMismatch && (
+              <div className="mt-3 pt-3 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncFromProvider}
+                  disabled={syncing}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`}
+                  />
+                  Sync from provider
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
