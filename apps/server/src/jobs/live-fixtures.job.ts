@@ -44,7 +44,7 @@ export async function runLiveFixturesJob(
       batchId: null,
       skipped: true,
     }),
-    run: async ({ jobRunId }) => {
+    run: async ({ jobRunId, log }) => {
       // --- Step 1: Fetch live fixtures from sports-data provider ---
       // SportMonks state IDs for LIVE states only:
       // 2=INPLAY_1ST_HALF, 3=HT, 4=BREAK, 6=INPLAY_ET,
@@ -77,6 +77,23 @@ export async function runLiveFixturesJob(
         };
       }
 
+      // Early return: no live fixtures right now, avoid unnecessary batch/sync writes
+      if (!fixtures.length) {
+        return {
+          result: {
+            jobRunId,
+            fetched: 0,
+            total: 0,
+            ok: 0,
+            fail: 0,
+            batchId: null,
+            skipped: false,
+          },
+          rowsAffected: 0,
+          meta: { reason: "no-live-fixtures", ...(opts.meta ?? {}) },
+        };
+      }
+
       let batchId: number | null = null;
       try {
         // --- Step 2: Create a batch record for this job run ---
@@ -86,7 +103,15 @@ export async function runLiveFixturesJob(
         // --- Step 3: Snapshot fixtures that are NOT_STARTED before sync ---
         // We need this to detect NS→LIVE transitions after sync. Only fixtures that
         // were NS before and are LIVE after sync have "just kicked off".
-        const fetchedExternalIds = fixtures.map((f) => BigInt(f.externalId));
+        const fetchedExternalIds = fixtures
+          .map((f) => {
+            try {
+              return BigInt(f.externalId);
+            } catch {
+              return null;
+            }
+          })
+          .filter((id): id is bigint => id !== null);
         const preStates =
           fetchedExternalIds.length > 0
             ? await prisma.fixtures.findMany({
@@ -138,14 +163,21 @@ export async function runLiveFixturesJob(
           });
 
           if (nowLive.length > 0) {
-            await emitFixtureLiveEvents(
-              nowLive as {
-                id: number;
-                homeTeam: { name: string } | null;
-                awayTeam: { name: string } | null;
-              }[],
-              fastify.io
-            );
+            try {
+              await emitFixtureLiveEvents(
+                nowLive as {
+                  id: number;
+                  homeTeam: { name: string } | null;
+                  awayTeam: { name: string } | null;
+                }[],
+                fastify.io
+              );
+            } catch (err) {
+              log.error(
+                { err, count: nowLive.length },
+                "Failed to emit fixture_live events"
+              );
+            }
           }
         }
 
