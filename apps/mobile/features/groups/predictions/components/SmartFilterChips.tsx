@@ -2,7 +2,7 @@
 // Two-layer smart filters: Layer 1 action chips (single-select), Layer 2 structural (teams/rounds).
 
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, ScrollView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -42,7 +42,8 @@ export function SmartFilterChips({
   const isPredictChip = (id: string) => id === "predict";
   const isResultsChip = (id: string) => id === "results";
   const isUrgentPredict = (chip: ActionChip) =>
-    isPredictChip(chip.id) && (chip.urgency === "urgent" || chip.urgency === "critical");
+    isPredictChip(chip.id) &&
+    (chip.urgency === "urgent" || chip.urgency === "critical");
 
   if (actionChips.length === 0) {
     return null;
@@ -73,15 +74,19 @@ export function SmartFilterChips({
         },
       ]}
     >
-      <View style={styles.actionRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.actionRow}
+        style={styles.actionRowScroll}
+      >
         {actionChips.map((chip) => {
           const isActive = selectedAction === chip.id;
           const live = isLiveChip(chip.id);
           const predict = isPredictChip(chip.id);
           const results = isResultsChip(chip.id);
           const urgent = isUrgentPredict(chip);
-          const warning =
-            predict && chip.urgency === "warning";
+          const warning = predict && chip.urgency === "warning";
 
           let bgColor = theme.colors.cardBackground;
           let borderColor = theme.colors.border;
@@ -126,7 +131,12 @@ export function SmartFilterChips({
                 ]}
               >
                 {live && (
-                  <View style={[styles.dot, { backgroundColor: isActive ? "#fff" : RED }]} />
+                  <View
+                    style={[
+                      styles.dot,
+                      { backgroundColor: isActive ? "#fff" : RED },
+                    ]}
+                  />
                 )}
                 {warning && isActive && (
                   <MaterialIcons
@@ -151,7 +161,7 @@ export function SmartFilterChips({
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       {teamsFilter && (
         <TeamAvatarChips
@@ -195,10 +205,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderBottomWidth: 1,
   },
+  actionRowScroll: {
+    flexGrow: 0,
+  },
   actionRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    alignItems: "center",
     gap: 8,
+    paddingRight: 12,
   },
   chipWrap: {
     borderRadius: 20,
