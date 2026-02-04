@@ -152,6 +152,8 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
             state: f.state,
             liveMinute: f.liveMinute ?? null,
             result: f.result ?? null,
+            homeScore: f.homeScore ?? f.homeScore90 ?? null,
+            awayScore: f.awayScore ?? f.awayScore90 ?? null,
             homeScore90: f.homeScore90 ?? null,
             awayScore90: f.awayScore90 ?? null,
             stage: f.stage ?? null,
