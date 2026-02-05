@@ -5,7 +5,7 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, TextInput, Pressable } from "react-native";
-import { AppText, Screen, Card } from "@/components/ui";
+import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useLeaguesQuery } from "@/domains/leagues/leagues.hooks";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
@@ -22,6 +22,7 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchFocused, setSearchFocused] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 400);
 
   // Determine query parameters based on search state
@@ -100,23 +101,41 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
           <View
             style={[
               styles.searchInputContainer,
-              { borderColor: theme.colors.border },
+              {
+                backgroundColor: searchFocused
+                  ? `${theme.colors.primary}15`
+                  : theme.colors.cardBackground,
+                borderColor: searchFocused
+                  ? theme.colors.primary
+                  : theme.colors.border,
+              },
             ]}
           >
             <MaterialIcons
               name="search"
               size={20}
-              color={theme.colors.textSecondary}
+              color={
+                searchFocused
+                  ? theme.colors.primary
+                  : theme.colors.textSecondary
+              }
               style={styles.searchIcon}
             />
             <TextInput
               style={[styles.searchInput, { color: theme.colors.textPrimary }]}
               placeholder={t("groupCreation.searchLeaguesPlaceholder")}
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={
+                searchFocused
+                  ? `${theme.colors.primary}99`
+                  : theme.colors.textSecondary
+              }
               value={searchQuery}
               onChangeText={setSearchQuery}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               autoCapitalize="none"
               autoCorrect={false}
+              multiline={false}
             />
             {searchQuery.length > 0 && (
               <Pressable
@@ -127,7 +146,7 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
                 <MaterialIcons
                   name="close"
                   size={20}
-                  color={theme.colors.textSecondary}
+                  color={theme.colors.textPrimary}
                 />
               </Pressable>
             )}
@@ -152,10 +171,11 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingHorizontal: 16,
     paddingVertical: 8,
+    minHeight: 48,
   },
   searchIcon: {
     marginEnd: 8,
@@ -164,6 +184,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     padding: 0,
+    minHeight: 24,
+    maxHeight: 24,
   },
   clearButton: {
     marginStart: 8,
