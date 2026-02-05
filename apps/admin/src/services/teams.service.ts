@@ -1,9 +1,10 @@
-import { apiGet, apiPost } from "@/lib/adminApi";
+import { apiGet, apiPost, apiPatch } from "@/lib/adminApi";
 import type {
   AdminTeamsListResponse,
   AdminProviderTeamsResponse,
   AdminBatchesListResponse,
   AdminBatchItemsResponse,
+  AdminUpdateTeamResponse,
 } from "@repo/types";
 
 export const teamsService = {
@@ -29,7 +30,9 @@ export const teamsService = {
   },
 
   async getFromProvider() {
-    return apiGet<AdminProviderTeamsResponse>("/admin/sync-center/provider/teams");
+    return apiGet<AdminProviderTeamsResponse>(
+      "/admin/sync-center/provider/teams"
+    );
   },
 
   async sync(dryRun = false) {
@@ -57,15 +60,24 @@ export const teamsService = {
 
   async search(query: string, take = 20) {
     const params = new URLSearchParams({ q: query, take: String(take) });
-    return apiGet<{
-      status: string;
-      data: Array<{
-        id: number;
-        name: string;
-        shortCode: string | null;
-        country: { name: string } | null;
-      }>;
-    }>(`/admin/sync-center/db/teams/search?${params.toString()}`);
+    return apiGet<AdminTeamsListResponse>(
+      `/admin/sync-center/db/teams/search?${params.toString()}`
+    );
+  },
+
+  async update(
+    id: number,
+    data: {
+      name?: string;
+      shortCode?: string | null;
+      primaryColor?: string | null;
+      secondaryColor?: string | null;
+      tertiaryColor?: string | null;
+    }
+  ) {
+    return apiPatch<AdminUpdateTeamResponse>(
+      `/admin/sync-center/db/teams/${id}`,
+      data
+    );
   },
 };
-

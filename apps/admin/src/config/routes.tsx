@@ -9,6 +9,7 @@ import JobDetailPage from "@/pages/jobs/job-detail";
 import RunDetailPage from "@/pages/jobs/run-detail";
 import SandboxPage from "@/pages/sandbox";
 import UsersPage from "@/pages/users";
+import TeamsPage from "@/pages/teams";
 import UserSettingsPage from "@/pages/settings/user";
 import LoginPage from "@/pages/login";
 import { AdminLayout } from "@/components/layout";
@@ -32,6 +33,7 @@ export const routes: RouteObject[] = [
       { path: "/sync-center", element: <SyncCenterPage /> },
       { path: "/fixtures", element: <FixturesPage /> },
       { path: "/fixtures/:id", element: <FixtureDetailPage /> },
+      { path: "/teams", element: <TeamsPage /> },
       { path: "/jobs", element: <JobsListPage /> },
       { path: "/jobs/:jobKey", element: <JobDetailPage /> },
       { path: "/jobs/:jobKey/runs/:runId", element: <RunDetailPage /> },

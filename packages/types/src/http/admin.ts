@@ -448,6 +448,9 @@ export interface AdminTeamsListResponse {
       iso3: string | null;
       externalId: string;
     } | null;
+    primaryColor: string | null;
+    secondaryColor: string | null;
+    tertiaryColor: string | null;
     externalId: string;
     createdAt: string;
     updatedAt: string;
@@ -479,10 +482,41 @@ export interface AdminTeamResponse {
       iso3: string | null;
       externalId: string;
     } | null;
+    primaryColor: string | null;
+    secondaryColor: string | null;
+    tertiaryColor: string | null;
     externalId: string;
     createdAt: string;
     updatedAt: string;
   };
+  message: string;
+}
+
+export interface AdminUpdateTeamRequest {
+  name?: string;
+  shortCode?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  tertiaryColor?: string | null;
+}
+
+export interface AdminUpdateTeamResponse {
+  status: "success" | "error";
+  data: {
+    id: number;
+    name: string;
+    type: string | null;
+    shortCode: string | null;
+    imagePath: string | null;
+    founded: number | null;
+    countryId: number | null;
+    primaryColor: string | null;
+    secondaryColor: string | null;
+    tertiaryColor: string | null;
+    externalId: string;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
   message: string;
 }
 

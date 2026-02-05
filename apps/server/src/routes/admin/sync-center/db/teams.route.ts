@@ -2,7 +2,11 @@
 import { FastifyPluginAsync } from "fastify";
 import { Prisma } from "@repo/db";
 import { TeamsService } from "../../../../services/teams.service";
-import { AdminTeamsListResponse, AdminTeamResponse } from "@repo/types";
+import {
+  AdminTeamsListResponse,
+  AdminTeamResponse,
+  AdminUpdateTeamResponse,
+} from "@repo/types";
 import {
   getPagination,
   createPaginationResponse,
@@ -10,6 +14,7 @@ import {
   parseIncludeString,
 } from "../../../../utils/routes";
 import { getErrorMessage } from "../../../../utils/error.utils";
+import { NotFoundError } from "../../../../utils/errors";
 import {
   listTeamsQuerystringSchema,
   listTeamsResponseSchema,
@@ -19,6 +24,8 @@ import {
   getTeam404ResponseSchema,
   searchTeamsQuerystringSchema,
   searchTeamsResponseSchema,
+  updateTeamBodySchema,
+  updateTeamResponseSchema,
 } from "../../../../schemas/admin/teams.schemas";
 import type {
   ListTeamsQuerystring,
@@ -98,6 +105,9 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
                 externalId: (t as any).countries.externalId.toString(),
               }
             : null,
+          primaryColor: (t as any).fisrtKitColor ?? null,
+          secondaryColor: (t as any).secondKitColor ?? null,
+          tertiaryColor: (t as any).thirdKitColor ?? null,
           externalId: t.externalId.toString(),
           createdAt: t.createdAt.toISOString(),
           updatedAt: t.updatedAt.toISOString(),
@@ -185,6 +195,9 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
                 externalId: team.countries.externalId.toString(),
               }
             : null,
+          primaryColor: (team as any).fisrtKitColor ?? null,
+          secondaryColor: (team as any).secondKitColor ?? null,
+          tertiaryColor: (team as any).thirdKitColor ?? null,
           externalId: team.externalId.toString(),
           createdAt: team.createdAt.toISOString(),
           updatedAt: team.updatedAt.toISOString(),
@@ -230,6 +243,9 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
                 externalId: (t as any).countries.externalId.toString(),
               }
             : null,
+          primaryColor: (t as any).fisrtKitColor ?? null,
+          secondaryColor: (t as any).secondKitColor ?? null,
+          tertiaryColor: (t as any).thirdKitColor ?? null,
           externalId: t.externalId.toString(),
           createdAt: t.createdAt.toISOString(),
           updatedAt: t.updatedAt.toISOString(),
@@ -237,6 +253,77 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
         pagination: createPaginationResponse(1, take, teams.length),
         message: "Teams search completed",
       });
+    }
+  );
+
+  // PATCH /admin/sync-center/db/teams/:id - Update team
+  fastify.patch<{
+    Params: GetTeamParams;
+    Body: {
+      name?: string;
+      shortCode?: string | null;
+      primaryColor?: string | null;
+      secondaryColor?: string | null;
+      tertiaryColor?: string | null;
+    };
+    Reply: AdminUpdateTeamResponse;
+  }>(
+    "/teams/:id",
+    {
+      schema: {
+        params: getTeamParamsSchema,
+        body: updateTeamBodySchema,
+        response: {
+          200: updateTeamResponseSchema,
+        },
+      },
+    },
+    async (req, reply): Promise<AdminUpdateTeamResponse> => {
+      const { id } = req.params;
+
+      let teamId: number;
+      try {
+        teamId = parseId(id);
+      } catch (error: unknown) {
+        return reply.code(400).send({
+          status: "error",
+          data: null,
+          message: getErrorMessage(error),
+        });
+      }
+
+      try {
+        const team = await service.update(teamId, req.body);
+
+        return reply.send({
+          status: "success",
+          data: {
+            id: team.id,
+            name: team.name,
+            type: team.type,
+            shortCode: team.shortCode,
+            imagePath: team.imagePath,
+            founded: team.founded,
+            countryId: team.countryId,
+            primaryColor: (team as any).fisrtKitColor ?? null,
+            secondaryColor: (team as any).secondKitColor ?? null,
+            tertiaryColor: (team as any).thirdKitColor ?? null,
+            externalId: team.externalId.toString(),
+            createdAt: team.createdAt.toISOString(),
+            updatedAt: team.updatedAt.toISOString(),
+          },
+          message: "Team updated successfully",
+        });
+      } catch (error: unknown) {
+        if (error instanceof NotFoundError) {
+          return reply.code(404).send({
+            status: "error",
+            data: null,
+            message: error.message,
+          });
+        }
+        throw error;
+      }
     }
   );
 };

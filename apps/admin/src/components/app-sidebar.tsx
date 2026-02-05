@@ -31,6 +31,7 @@ const data = {
       title: "Operations",
       items: [
         { title: "Fixtures", url: "/fixtures" },
+        { title: "Teams", url: "/teams" },
         { title: "Jobs", url: "/jobs" },
       ],
     },

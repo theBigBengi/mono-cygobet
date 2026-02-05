@@ -73,4 +73,58 @@ export const searchTeamsResponseSchema = {
   },
 };
 
+export type UpdateTeamBody = {
+  name?: string;
+  shortCode?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  tertiaryColor?: string | null;
+};
 
+export const updateTeamBodySchema = {
+  type: "object",
+  properties: {
+    name: { type: "string", minLength: 1, maxLength: 255 },
+    shortCode: { type: ["string", "null"], maxLength: 10 },
+    primaryColor: {
+      type: ["string", "null"],
+      pattern: "^#[0-9A-Fa-f]{6}$",
+      description: "Hex color code (e.g. #FF0000)",
+    },
+    secondaryColor: {
+      type: ["string", "null"],
+      pattern: "^#[0-9A-Fa-f]{6}$",
+    },
+    tertiaryColor: {
+      type: ["string", "null"],
+      pattern: "^#[0-9A-Fa-f]{6}$",
+    },
+  },
+  additionalProperties: false,
+} as const;
+
+export const updateTeamResponseSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string" },
+    data: {
+      type: ["object", "null"],
+      properties: {
+        id: { type: "number" },
+        name: { type: "string" },
+        type: { type: ["string", "null"] },
+        shortCode: { type: ["string", "null"] },
+        imagePath: { type: ["string", "null"] },
+        founded: { type: ["number", "null"] },
+        countryId: { type: ["number", "null"] },
+        primaryColor: { type: ["string", "null"] },
+        secondaryColor: { type: ["string", "null"] },
+        tertiaryColor: { type: ["string", "null"] },
+        externalId: { type: "string" },
+        createdAt: { type: "string" },
+        updatedAt: { type: "string" },
+      },
+    },
+    message: { type: "string" },
+  },
+} as const;

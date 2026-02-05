@@ -108,4 +108,50 @@ export class TeamsService {
 
     return teams;
   }
+
+  async update(
+    id: number,
+    data: {
+      name?: string;
+      shortCode?: string | null;
+      primaryColor?: string | null;
+      secondaryColor?: string | null;
+      tertiaryColor?: string | null;
+    }
+  ) {
+    const existing = await prisma.teams.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundError(`Team with id ${id} not found`);
+    }
+
+    const prismaData: Parameters<typeof prisma.teams.update>[0]["data"] = {};
+    if (data.name !== undefined) prismaData.name = data.name;
+    if (data.shortCode !== undefined) prismaData.shortCode = data.shortCode;
+    if (data.primaryColor !== undefined)
+      (prismaData as any).fisrtKitColor = data.primaryColor;
+    if (data.secondaryColor !== undefined)
+      (prismaData as any).secondKitColor = data.secondaryColor;
+    if (data.tertiaryColor !== undefined)
+      (prismaData as any).thirdKitColor = data.tertiaryColor;
+    prismaData.updatedAt = new Date();
+
+    const team = await prisma.teams.update({
+      where: { id },
+      data: prismaData,
+      include: {
+        countries: {
+          select: {
+            id: true,
+            name: true,
+            imagePath: true,
+            iso2: true,
+            iso3: true,
+            externalId: true,
+          },
+        },
+      },
+    });
+
+    return team;
+  }
 }
