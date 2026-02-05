@@ -301,6 +301,7 @@ export function GroupGamesScreen({
       {viewMode === "single" ? (
         /* Single view: full-screen page with its own header (back only), horizontal game slider, and filtered fixtures only. */
         <SingleGameView
+          groupId={groupId}
           fixtures={filteredFixtures}
           predictions={predictions}
           savedPredictions={savedPredictions}

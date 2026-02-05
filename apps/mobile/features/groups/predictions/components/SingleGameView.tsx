@@ -1,10 +1,19 @@
 import React, { useRef, useState, useEffect } from "react";
-import { View, StyleSheet, FlatList, Dimensions, Keyboard } from "react-native";
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  ScrollView,
+  Dimensions,
+  Keyboard,
+} from "react-native";
 import { useTheme } from "@/lib/theme";
 import { SingleGameMatchCard } from "./SingleGameMatchCard";
 import { GroupGamesHeader } from "./GroupGamesHeader";
 import { GameSlider } from "./GameSlider";
 import { ScoreSlider } from "./ScoreSlider";
+import { FixturePredictionsList } from "./FixturePredictionsList";
+import { canPredict } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 import type {
   PredictionMode,
@@ -13,6 +22,7 @@ import type {
 } from "../types";
 
 type Props = {
+  groupId: number | null;
   fixtures: FixtureItem[];
   predictions: PredictionsByFixtureId;
   savedPredictions: Set<number>;
@@ -46,6 +56,7 @@ type Props = {
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export function SingleGameView({
+  groupId,
   fixtures,
   predictions,
   savedPredictions,
@@ -145,31 +156,42 @@ export function SingleGameView({
 
     return (
       <View style={[styles.gameContainer, { width: SCREEN_WIDTH }]}>
-        <SingleGameMatchCard
-          fixture={fixture}
-          prediction={prediction}
-          homeRef={homeRef}
-          awayRef={awayRef}
-          homeFocused={isHomeFocused}
-          awayFocused={isAwayFocused}
-          isSaved={isSaved}
-          onFocus={(type) => onFieldFocus(fixture.id, type)}
-          onBlur={() => onFieldBlur(fixture.id)}
-          onChange={(type, text) => onUpdatePrediction(fixture.id, type, text)}
-          onAutoNext={(type) => {
-            // In single view, auto-next can advance to next game if at end of current game
-            const nextIndex = getNextFieldIndex(fixture.id, type);
-            if (nextIndex >= 0) {
-              navigateToField(nextIndex);
+        <ScrollView
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.gameScrollContent}
+        >
+          <SingleGameMatchCard
+            fixture={fixture}
+            prediction={prediction}
+            homeRef={homeRef}
+            awayRef={awayRef}
+            homeFocused={isHomeFocused}
+            awayFocused={isAwayFocused}
+            isSaved={isSaved}
+            onFocus={(type) => onFieldFocus(fixture.id, type)}
+            onBlur={() => onFieldBlur(fixture.id)}
+            onChange={(type, text) =>
+              onUpdatePrediction(fixture.id, type, text)
             }
-          }}
-          predictionMode={predictionMode}
-          onSelectOutcome={
-            onSelectOutcome
-              ? (outcome) => onSelectOutcome(fixture.id, outcome)
-              : undefined
-          }
-        />
+            onAutoNext={(type) => {
+              // In single view, auto-next can advance to next game if at end of current game
+              const nextIndex = getNextFieldIndex(fixture.id, type);
+              if (nextIndex >= 0) {
+                navigateToField(nextIndex);
+              }
+            }}
+            predictionMode={predictionMode}
+            onSelectOutcome={
+              onSelectOutcome
+                ? (outcome) => onSelectOutcome(fixture.id, outcome)
+                : undefined
+            }
+          />
+          {!canPredict(fixture.state, fixture.startTs) && (
+            <FixturePredictionsList groupId={groupId} fixtureId={fixture.id} />
+          )}
+        </ScrollView>
       </View>
     );
   };
@@ -213,17 +235,20 @@ export function SingleGameView({
         onSelectGame={handleSelectGame}
       />
       <View style={[styles.contentContainer, { flex: 1 }]}>
-        {/* Vertical score sliders - full height, left and right */}
-        <ScoreSlider
-          side="home"
-          value={currentPrediction.home}
-          onValueChange={(val) => handleSliderChange("home", val)}
-        />
-        <ScoreSlider
-          side="away"
-          value={currentPrediction.away}
-          onValueChange={(val) => handleSliderChange("away", val)}
-        />
+        {canPredict(currentFixture.state, currentFixture.startTs) ? (
+          <>
+            <ScoreSlider
+              side="home"
+              value={currentPrediction.home}
+              onValueChange={(val) => handleSliderChange("home", val)}
+            />
+            <ScoreSlider
+              side="away"
+              value={currentPrediction.away}
+              onValueChange={(val) => handleSliderChange("away", val)}
+            />
+          </>
+        ) : null}
 
         {/* FlatList for games - takes full width */}
         <FlatList
@@ -271,9 +296,10 @@ const styles = StyleSheet.create({
   gameContainer: {
     width: SCREEN_WIDTH,
     paddingHorizontal: 0,
-    // paddingTop: 16,
-    // paddingBottom: 8,
     alignItems: "center",
     justifyContent: "flex-start",
+  },
+  gameScrollContent: {
+    paddingBottom: 24,
   },
 });
