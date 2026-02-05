@@ -4,6 +4,7 @@
 import React from "react";
 import { View, Pressable, StyleSheet } from "react-native";
 import { Card, AppText, TeamLogo } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import {
   useToggleLeague,
   useIsLeagueSelected,
@@ -16,6 +17,7 @@ interface LeagueListItemProps {
 }
 
 export function LeagueListItem({ league }: LeagueListItemProps) {
+  const { theme } = useTheme();
   const toggleLeague = useToggleLeague();
   const isSelected = useIsLeagueSelected(league.id);
 
@@ -24,7 +26,9 @@ export function LeagueListItem({ league }: LeagueListItemProps) {
       onPress={() => toggleLeague(league)}
       style={({ pressed }) => [styles.wrapper, { opacity: pressed ? 0.8 : 1 }]}
     >
-      <Card style={styles.card}>
+      <Card
+        style={[styles.card, { backgroundColor: theme.colors.cardBackground }]}
+      >
         <View style={styles.row}>
           <TeamLogo
             imagePath={league.imagePath}

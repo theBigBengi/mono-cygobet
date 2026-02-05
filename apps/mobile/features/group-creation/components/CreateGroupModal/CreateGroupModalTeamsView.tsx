@@ -79,7 +79,13 @@ export function CreateGroupModalTeamsView() {
     <>
       <SelectionSummaryCard items={summaryItems} loading={previewLoading} />
       {teams.map((team) => (
-        <Card key={team.id} style={styles.listCard}>
+        <Card
+          key={team.id}
+          style={[
+            styles.listCard,
+            { backgroundColor: theme.colors.cardBackground },
+          ]}
+        >
           <View style={styles.row}>
             <TeamLogo
               imagePath={team.imagePath}
