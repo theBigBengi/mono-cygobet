@@ -152,6 +152,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
         include: includeWithCountry,
       });
 
+      // Prisma can't infer payload type when include is dynamic; cast is intentional
       return reply.send({
         status: "success",
         data: (teams as TeamWithCountry[]).map(mapTeamToResponse),
@@ -217,6 +218,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
 
       const team = await service.getById(teamId, includeWithCountry);
 
+      // Prisma can't infer payload type when include is dynamic; cast is intentional
       return reply.send({
         status: "success",
         data: mapTeamToResponse(team as TeamWithCountry),
@@ -244,6 +246,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
 
       const teams = await service.search(q, take);
 
+      // Prisma can't infer payload type when include is dynamic; cast is intentional
       return reply.send({
         status: "success",
         data: (teams as TeamWithCountry[]).map(mapTeamToResponse),
