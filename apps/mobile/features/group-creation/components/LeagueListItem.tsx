@@ -1,15 +1,14 @@
 // features/group-creation/components/LeagueListItem.tsx
-// Single league list item. Toggle selection (max 1). Shows check when selected.
+// Single league list item. Toggle selection (max 1). Shows +/× toggle when selected.
 
 import React from "react";
 import { View, Pressable, StyleSheet } from "react-native";
 import { Card, AppText, TeamLogo } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
-import { MaterialIcons } from "@expo/vector-icons";
 import {
   useToggleLeague,
   useIsLeagueSelected,
 } from "@/features/group-creation/selection/leagues";
+import { SelectionToggleButton } from "./SelectionToggleButton";
 import type { ApiLeagueItem } from "@repo/types";
 
 interface LeagueListItemProps {
@@ -17,7 +16,6 @@ interface LeagueListItemProps {
 }
 
 export function LeagueListItem({ league }: LeagueListItemProps) {
-  const { theme } = useTheme();
   const toggleLeague = useToggleLeague();
   const isSelected = useIsLeagueSelected(league.id);
 
@@ -26,15 +24,7 @@ export function LeagueListItem({ league }: LeagueListItemProps) {
       onPress={() => toggleLeague(league)}
       style={({ pressed }) => [styles.wrapper, { opacity: pressed ? 0.8 : 1 }]}
     >
-      <Card
-        style={[
-          styles.card,
-          isSelected && {
-            borderColor: theme.colors.primary,
-            borderWidth: 2,
-          },
-        ]}
-      >
+      <Card style={styles.card}>
         <View style={styles.row}>
           <TeamLogo
             imagePath={league.imagePath}
@@ -51,14 +41,10 @@ export function LeagueListItem({ league }: LeagueListItemProps) {
               </AppText>
             )}
           </View>
-          {isSelected && (
-            <MaterialIcons
-              name="check"
-              size={22}
-              color={theme.colors.primary}
-              style={styles.check}
-            />
-          )}
+          <SelectionToggleButton
+            isSelected={isSelected}
+            onPress={() => toggleLeague(league)}
+          />
         </View>
       </Card>
     </Pressable>
@@ -81,7 +67,4 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {},
-  check: {
-    marginStart: 8,
-  },
 });

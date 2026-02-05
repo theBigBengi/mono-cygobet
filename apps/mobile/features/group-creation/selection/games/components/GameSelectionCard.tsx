@@ -1,16 +1,15 @@
 // features/group-creation/selection/games/components/GameSelectionCard.tsx
 // Vertical game selection card component for group games selection.
-// Shows teams vertically with logos on the left, kickoff time on the right.
-// Card is pressable and shows border when selected (like leagues/teams).
+// Shows teams vertically with logos on the left, selection toggle on the right.
 
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Card, AppText } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
-import { formatKickoffTime } from "@/utils/fixture";
 import { TeamRow } from "@/features/groups/predictions/components/TeamRow";
+import { SelectionToggleButton } from "../../../components/SelectionToggleButton";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
 
 interface GameSelectionCardProps {
@@ -32,7 +31,6 @@ export function GameSelectionCard({
 
   const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
-  const kickoffTime = formatKickoffTime(fixture.kickoffAt);
 
   // Calculate card radius style based on position in group
   const cardRadiusStyle =
@@ -55,34 +53,24 @@ export function GameSelectionCard({
           : { borderRadius: 0 };
 
   const cardBorderStyle =
-  !isSelected && (positionInGroup === "middle" || positionInGroup === "bottom")
+    positionInGroup === "middle" || positionInGroup === "bottom"
       ? { borderTopWidth: 0 }
       : {};
 
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.wrapper,
-        { opacity: pressed ? 0.8 : 1 },
-      ]}
+      style={({ pressed }) => [styles.wrapper, { opacity: pressed ? 0.8 : 1 }]}
     >
       <Card
         style={[
           styles.matchCard,
           cardRadiusStyle,
           cardBorderStyle,
-        
           { backgroundColor: theme.colors.cardBackground },
-          isSelected && {
-            borderColor: theme.colors.primary,
-            borderWidth: 2,
-            backgroundColor: theme.colors.primary + '15',
-          },
         ]}
       >
         <View style={styles.matchContent}>
-          {/* Teams container - vertical layout */}
           <View style={styles.rowsContainer}>
             <TeamRow
               team={fixture.homeTeam}
@@ -95,15 +83,10 @@ export function GameSelectionCard({
               isWinner={false}
             />
           </View>
-
-          {/* Right side - kickoff time */}
-          <View style={styles.rightContainer}>
-            <View style={styles.timeContainer}>
-              <AppText variant="caption" color="secondary" style={styles.timeText}>
-                {kickoffTime}
-              </AppText>
-            </View>
-          </View>
+          <SelectionToggleButton
+            isSelected={isSelected}
+            onPress={onPress ?? (() => {})}
+          />
         </View>
       </Card>
     </Pressable>
@@ -122,25 +105,10 @@ const styles = StyleSheet.create({
   matchContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
   },
   rowsContainer: {
     flex: 1,
     flexDirection: "column",
     gap: 6,
-  },
-  rightContainer: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  timeContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 40,
-  },
-  timeText: {
-    fontSize: 12,
   },
 });

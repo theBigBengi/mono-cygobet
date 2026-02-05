@@ -78,11 +78,11 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
     }
 
     return (
-      <>
+      <View style={styles.listContainer}>
         {leagues.map((league) => (
           <LeagueListItem key={league.id} league={league} />
         ))}
-      </>
+      </View>
     );
   };
 
@@ -96,7 +96,7 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
       >
         {tabs}
         {/* Search Input */}
-        <Card style={styles.searchContainer}>
+        <View style={styles.searchContainer}>
           <View
             style={[
               styles.searchInputContainer,
@@ -132,7 +132,7 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
               </Pressable>
             )}
           </View>
-        </Card>
+        </View>
 
         {renderContent()}
       </Screen>
@@ -146,6 +146,8 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     marginBottom: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   searchInputContainer: {
     flexDirection: "row",
@@ -179,5 +181,8 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     textAlign: "center",
+  },
+  listContainer: {
+    paddingHorizontal: 8,
   },
 });
