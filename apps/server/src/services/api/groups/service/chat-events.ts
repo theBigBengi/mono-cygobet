@@ -28,8 +28,8 @@ export async function emitSystemEvent(
       meta: message.meta as Record<string, unknown> | null,
       sender: null,
     });
-  } catch {
-    // Silently fail — never break the calling operation
+  } catch (err) {
+    log.warn({ groupId, eventType, err }, "Failed to emit system event");
   }
 }
 
@@ -58,14 +58,16 @@ export async function emitMemberJoinedEvent(
   }
 }
 
-type FixtureWithTeams = {
+type FixtureBase = {
   id: number;
   homeTeam: { name: string } | null;
   awayTeam: { name: string } | null;
 };
 
-export async function emitFixtureLiveEvents(
-  fixtures: FixtureWithTeams[],
+async function emitFixtureEventsInternal<T extends FixtureBase>(
+  fixtures: T[],
+  eventType: string,
+  buildEventData: (fixture: T, fixtureId: number) => Record<string, unknown>,
   io?: TypedIOServer
 ): Promise<void> {
   const fixtureIds = fixtures.map((f) => f.id);
@@ -87,19 +89,36 @@ export async function emitFixtureLiveEvents(
     for (const fixtureId of fIds) {
       const fixture = fixtureMap.get(fixtureId);
       if (!fixture) continue;
-
       await emitSystemEvent(
         groupId,
-        "fixture_live",
-        {
-          fixtureId,
-          homeTeam: fixture.homeTeam?.name || "TBD",
-          awayTeam: fixture.awayTeam?.name || "TBD",
-        },
+        eventType,
+        buildEventData(fixture, fixtureId),
         io
       );
     }
   }
+}
+
+type FixtureWithTeams = {
+  id: number;
+  homeTeam: { name: string } | null;
+  awayTeam: { name: string } | null;
+};
+
+export async function emitFixtureLiveEvents(
+  fixtures: FixtureWithTeams[],
+  io?: TypedIOServer
+): Promise<void> {
+  await emitFixtureEventsInternal(
+    fixtures,
+    "fixture_live",
+    (f, fixtureId) => ({
+      fixtureId,
+      homeTeam: f.homeTeam?.name || "TBD",
+      awayTeam: f.awayTeam?.name || "TBD",
+    }),
+    io
+  );
 }
 
 type FixtureWithScoresAndTeams = {
@@ -114,38 +133,16 @@ export async function emitFixtureFTEvents(
   fixtures: FixtureWithScoresAndTeams[],
   io?: TypedIOServer
 ): Promise<void> {
-  const fixtureIds = fixtures.map((f) => f.id);
-  const groupFixtures = await prisma.groupFixtures.findMany({
-    where: { fixtureId: { in: fixtureIds } },
-    select: { groupId: true, fixtureId: true },
-  });
-
-  const groupMap = new Map<number, number[]>();
-  for (const gf of groupFixtures) {
-    const arr = groupMap.get(gf.groupId) || [];
-    arr.push(gf.fixtureId);
-    groupMap.set(gf.groupId, arr);
-  }
-
-  const fixtureMap = new Map(fixtures.map((f) => [f.id, f]));
-
-  for (const [groupId, fIds] of groupMap) {
-    for (const fixtureId of fIds) {
-      const fixture = fixtureMap.get(fixtureId);
-      if (!fixture) continue;
-
-      await emitSystemEvent(
-        groupId,
-        "fixture_ft",
-        {
-          fixtureId,
-          homeTeam: fixture.homeTeam?.name || "TBD",
-          awayTeam: fixture.awayTeam?.name || "TBD",
-          homeScore90: fixture.homeScore90,
-          awayScore90: fixture.awayScore90,
-        },
-        io
-      );
-    }
-  }
+  await emitFixtureEventsInternal(
+    fixtures,
+    "fixture_ft",
+    (f, fixtureId) => ({
+      fixtureId,
+      homeTeam: f.homeTeam?.name || "TBD",
+      awayTeam: f.awayTeam?.name || "TBD",
+      homeScore90: f.homeScore90,
+      awayScore90: f.awayScore90,
+    }),
+    io
+  );
 }

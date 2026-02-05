@@ -6,6 +6,7 @@ import type {
   ApiPublicGroupItem,
   ApiPublicGroupsResponse,
 } from "@repo/types";
+import { prisma } from "@repo/db";
 import { nowUnixSeconds } from "../../../../utils/dates";
 import { repository as repo } from "../repository";
 
@@ -46,13 +47,11 @@ export async function getPublicGroups(
   const stats = await repo.findGroupsStatsBatch(groupIds, userId, now);
 
   const creatorIds = [...new Set(groups.map((g) => g.creatorId))];
-  const creatorUsernameByUserId = new Map<number, string | null>();
-  await Promise.all(
-    creatorIds.map(async (uid) => {
-      const username = await repo.getUserUsername(uid);
-      creatorUsernameByUserId.set(uid, username);
-    })
-  );
+  const users = await prisma.users.findMany({
+    where: { id: { in: creatorIds } },
+    select: { id: true, username: true },
+  });
+  const creatorUsernameByUserId = new Map(users.map((u) => [u.id, u.username]));
 
   const data: ApiPublicGroupItem[] = groups.map((g) => ({
     id: g.id,

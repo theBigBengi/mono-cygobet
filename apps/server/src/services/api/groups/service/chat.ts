@@ -1,4 +1,5 @@
-import { prisma, type Prisma } from "@repo/db";
+import { prisma, Prisma } from "@repo/db";
+import { BadRequestError } from "../../../../utils/errors";
 import { assertGroupMember } from "../permissions";
 import { getLogger } from "../../../../logger";
 import type { MentionData } from "../../../../types/socket";
@@ -17,15 +18,16 @@ export async function sendMessage(
   await assertGroupMember(groupId, senderId);
 
   const trimmed = body.trim();
-  if (!trimmed) throw new Error("Message body cannot be empty");
-  if (trimmed.length > MAX_BODY) throw new Error(`Max ${MAX_BODY} characters`);
+  if (!trimmed) throw new BadRequestError("Message body cannot be empty");
+  if (trimmed.length > MAX_BODY)
+    throw new BadRequestError(`Max ${MAX_BODY} characters`);
 
   // Block sends to ended groups
   const group = await prisma.groups.findUnique({
     where: { id: groupId },
     select: { status: true },
   });
-  if (group?.status === "ended") throw new Error("Group has ended");
+  if (group?.status === "ended") throw new BadRequestError("Group has ended");
 
   const meta = mentions?.length
     ? ({ mentions } as unknown as Prisma.InputJsonValue)
@@ -118,19 +120,19 @@ export async function getUnreadCounts(
 ): Promise<Record<number, number>> {
   if (!groupIds.length) return {};
 
-  const reads = await prisma.groupMessageReads.findMany({
-    where: { userId, groupId: { in: groupIds } },
-  });
-  const readMap = new Map(reads.map((r) => [r.groupId, r.lastReadMessageId]));
+  const rows = await prisma.$queryRaw<Array<{ group_id: number; cnt: bigint }>>`
+    SELECT gm.group_id, COUNT(*) as cnt
+    FROM group_messages gm
+    LEFT JOIN group_message_reads gmr
+      ON gmr.group_id = gm.group_id AND gmr.user_id = ${userId}
+    WHERE gm.group_id IN (${Prisma.join(groupIds)})
+      AND gm.id > COALESCE(gmr.last_read_message_id, 0)
+    GROUP BY gm.group_id
+  `;
 
   const counts: Record<number, number> = {};
-  await Promise.all(
-    groupIds.map(async (gid) => {
-      counts[gid] = await prisma.groupMessages.count({
-        where: { groupId: gid, id: { gt: readMap.get(gid) ?? 0 } },
-      });
-    })
-  );
+  for (const gid of groupIds) counts[gid] = 0;
+  for (const row of rows) counts[Number(row.group_id)] = Number(row.cnt);
   return counts;
 }
 

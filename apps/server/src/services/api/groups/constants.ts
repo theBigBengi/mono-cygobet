@@ -31,3 +31,6 @@ export const INVITE_ACCESS = {
   ALL: "all",
   ADMIN_ONLY: "admin_only",
 } as const;
+
+export const NUDGE_WINDOW_MIN = 15;
+export const NUDGE_WINDOW_MAX = 1440;

@@ -1,9 +1,7 @@
 // groups/service/overview.ts
 // Predictions overview service.
 
-import type {
-  PredictionsOverviewResponse,
-} from "../types";
+import type { PredictionsOverviewResponse } from "../types";
 import type { PredictionForOverview } from "../repository/predictions";
 import {
   buildParticipants,
@@ -41,7 +39,11 @@ export async function getPredictionsOverview(
 
   // Build predictions map and prediction points map
   const { predictionsMap, predictionPointsMap, fixtureStartedMap } =
-    buildPredictionsMap(predictions as PredictionForOverview[], userId, fixtures);
+    buildPredictionsMap(
+      predictions as PredictionForOverview[],
+      userId,
+      fixtures
+    );
 
   // Initialize all possible combinations with null (for missing predictions)
   // Only for current user OR for matches that have started
@@ -71,7 +73,8 @@ export async function getPredictionsOverview(
       const key = `${p.id}_${fixture.id}`;
       const pts = predictionPointsMap[key];
       if (pts !== null && pts !== undefined) {
-        total += parseInt(pts, 10) || 0;
+        const parsed = parseInt(pts, 10);
+        total += Number.isNaN(parsed) ? 0 : parsed;
       }
     }
     return { ...p, totalPoints: total };

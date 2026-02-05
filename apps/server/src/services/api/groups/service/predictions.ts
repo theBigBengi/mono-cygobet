@@ -10,6 +10,15 @@ import { hasMatchStarted } from "../helpers";
 
 const log = getLogger("groups.predictions");
 
+function validatePredictionScores(home: number, away: number): void {
+  if (!Number.isInteger(home) || !Number.isInteger(away)) {
+    throw new BadRequestError("Prediction scores must be integers");
+  }
+  if (home < 0 || home > 99 || away < 0 || away > 99) {
+    throw new BadRequestError("Prediction scores must be between 0 and 99");
+  }
+}
+
 /**
  * Save or update a group prediction for a specific fixture.
  * - Verifies that the user is a group member.
@@ -22,8 +31,12 @@ export async function saveGroupPrediction(
   userId: number,
   prediction: { home: number; away: number }
 ): Promise<{ status: "success"; message: string }> {
-  log.debug({ groupId, fixtureId, userId, prediction }, "saveGroupPrediction - start");
+  log.debug(
+    { groupId, fixtureId, userId, prediction },
+    "saveGroupPrediction - start"
+  );
   await assertGroupMember(groupId, userId);
+  validatePredictionScores(prediction.home, prediction.away);
 
   // Verify fixture belongs to group and get groupFixtureId
   const groupFixture = await repo.findGroupFixtureByGroupAndFixture(
@@ -40,7 +53,9 @@ export async function saveGroupPrediction(
   // Fetch fixture to check if match has started
   const fixture = await repo.findFixtureByGroupFixtureId(groupFixture.id);
   if (fixture && hasMatchStarted(fixture)) {
-    throw new BadRequestError("Cannot save prediction after the match has started");
+    throw new BadRequestError(
+      "Cannot save prediction after the match has started"
+    );
   }
 
   // Format prediction as string "home:away" (e.g., "2:1")
@@ -78,7 +93,10 @@ export async function saveGroupPredictionsBatch(
   saved: Array<{ fixtureId: number }>;
   rejected: Array<{ fixtureId: number; reason: string }>;
 }> {
-  log.debug({ groupId, userId, count: predictions.length }, "saveGroupPredictionsBatch - start");
+  log.debug(
+    { groupId, userId, count: predictions.length },
+    "saveGroupPredictionsBatch - start"
+  );
   if (predictions.length === 0) {
     log.info({ groupId, userId }, "saveGroupPredictionsBatch - no predictions");
     return {
@@ -112,11 +130,16 @@ export async function saveGroupPredictionsBatch(
   );
 
   // Split predictions into to-upsert vs rejected
-  const predictionsToUpsert: Array<{ groupFixtureId: number; prediction: string }> = [];
+  const predictionsToUpsert: Array<{
+    groupFixtureId: number;
+    prediction: string;
+  }> = [];
   const saved: Array<{ fixtureId: number }> = [];
   const rejected: Array<{ fixtureId: number; reason: string }> = [];
 
   for (const pred of predictions) {
+    validatePredictionScores(pred.home, pred.away);
+
     const groupFixtureId = fixtureIdToGroupFixtureId.get(pred.fixtureId);
     if (!groupFixtureId) {
       throw new NotFoundError(
@@ -137,7 +160,11 @@ export async function saveGroupPredictionsBatch(
 
   // Update only non-rejected predictions in a single transaction
   if (predictionsToUpsert.length > 0) {
-    await repo.upsertGroupPredictionsBatch(groupId, userId, predictionsToUpsert);
+    await repo.upsertGroupPredictionsBatch(
+      groupId,
+      userId,
+      predictionsToUpsert
+    );
   }
 
   log.info(

@@ -281,8 +281,11 @@ export async function settlePredictionsForFixtures(
         rankMap.set(item.userId, item.rank);
       }
       rankingsBefore.set(g.id, rankMap);
-    } catch {
-      // Skip if ranking fails
+    } catch (err) {
+      log.warn(
+        { groupId: g.id, err },
+        "Failed to snapshot ranking before settlement"
+      );
     }
   }
 
@@ -360,8 +363,11 @@ export async function settlePredictionsForFixtures(
             io
           );
         }
-      } catch {
-        // Don't fail settlement if ranking events fail
+      } catch (err) {
+        log.warn(
+          { groupId: g.id, err },
+          "Failed to emit ranking change events after settlement"
+        );
       }
     }
 

@@ -22,7 +22,10 @@ type RawRankRow = {
 function toNumber(value: string | number | bigint): number {
   if (typeof value === "number" && Number.isInteger(value)) return value;
   if (typeof value === "bigint") return Number(value);
-  if (typeof value === "string") return parseInt(value, 10) || 0;
+  if (typeof value === "string") {
+    const parsed = parseInt(value, 10);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
   return 0;
 }
 
@@ -121,18 +124,23 @@ export async function getGroupRanking(
     const windowMinutes = rules.nudgeWindowMinutes ?? 60;
     const windowEnd = now + windowMinutes * 60;
 
-    const allGroupFixtures = await repo.findGroupFixturesWithFixtureDetails(groupId);
+    const allGroupFixtures =
+      await repo.findGroupFixturesWithFixtureDetails(groupId);
     const fixturesInWindow = allGroupFixtures
-      .filter((gf) => gf.state === "NS" && gf.startTs >= now && gf.startTs <= windowEnd)
+      .filter(
+        (gf) =>
+          gf.state === "NS" && gf.startTs >= now && gf.startTs <= windowEnd
+      )
       .sort((a, b) => a.startTs - b.startTs);
 
     let predictedByGroupFixture: Map<number, Set<number>> = new Map();
     if (fixturesInWindow.length > 0) {
       const groupFixtureIds = fixturesInWindow.map((gf) => gf.id);
-      const predictionRows = await repo.findGroupPredictionUserIdsByGroupFixtureIds(
-        groupId,
-        groupFixtureIds
-      );
+      const predictionRows =
+        await repo.findGroupPredictionUserIdsByGroupFixtureIds(
+          groupId,
+          groupFixtureIds
+        );
       for (const { groupFixtureId, userId } of predictionRows) {
         let set = predictedByGroupFixture.get(groupFixtureId);
         if (!set) {

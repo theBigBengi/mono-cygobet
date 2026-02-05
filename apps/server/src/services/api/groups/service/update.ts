@@ -9,9 +9,13 @@ import type {
 } from "@repo/types";
 import type { Prisma } from "@repo/db";
 import { prisma } from "@repo/db";
-import type { groupPredictionMode, groupKoRoundMode, groupInviteAccess } from "@repo/db";
+import type {
+  groupPredictionMode,
+  groupKoRoundMode,
+  groupInviteAccess,
+} from "@repo/db";
 import { BadRequestError } from "../../../../utils/errors";
-import { GROUP_STATUS } from "../constants";
+import { GROUP_STATUS, NUDGE_WINDOW_MIN, NUDGE_WINDOW_MAX } from "../constants";
 import { buildGroupItem } from "../builders";
 import { assertGroupCreator } from "../permissions";
 import { repository as repo } from "../repository";
@@ -29,13 +33,25 @@ export async function updateGroup(
   id: number,
   args: ApiUpdateGroupBody & { creatorId: number }
 ): Promise<ApiGroupResponse> {
-  const NUDGE_WINDOW_MIN = 15;
-  const NUDGE_WINDOW_MAX = 1440;
+  log.debug(
+    { id, args: { ...args, fixtureIds: undefined } },
+    "updateGroup - start"
+  );
+  const {
+    creatorId,
+    name,
+    privacy,
+    fixtureIds,
+    inviteAccess,
+    nudgeEnabled,
+    nudgeWindowMinutes,
+  } = args;
 
-  log.debug({ id, args: { ...args, fixtureIds: undefined } }, "updateGroup - start");
-  const { creatorId, name, privacy, fixtureIds, inviteAccess, nudgeEnabled, nudgeWindowMinutes } = args;
-
-  if (nudgeWindowMinutes !== undefined && (nudgeWindowMinutes < NUDGE_WINDOW_MIN || nudgeWindowMinutes > NUDGE_WINDOW_MAX)) {
+  if (
+    nudgeWindowMinutes !== undefined &&
+    (nudgeWindowMinutes < NUDGE_WINDOW_MIN ||
+      nudgeWindowMinutes > NUDGE_WINDOW_MAX)
+  ) {
     throw new BadRequestError(
       `nudgeWindowMinutes must be between ${NUDGE_WINDOW_MIN} and ${NUDGE_WINDOW_MAX}`
     );
@@ -55,23 +71,33 @@ export async function updateGroup(
     updateData.privacy = privacy;
   }
 
-  const hasRulesUpdate = inviteAccess !== undefined || nudgeEnabled !== undefined || nudgeWindowMinutes !== undefined;
+  const hasRulesUpdate =
+    inviteAccess !== undefined ||
+    nudgeEnabled !== undefined ||
+    nudgeWindowMinutes !== undefined;
   const rulesUpdateData: Prisma.groupRulesUpdateInput = {};
-  if (inviteAccess !== undefined) rulesUpdateData.inviteAccess = inviteAccess as groupInviteAccess;
+  if (inviteAccess !== undefined)
+    rulesUpdateData.inviteAccess = inviteAccess as groupInviteAccess;
   if (nudgeEnabled !== undefined) rulesUpdateData.nudgeEnabled = nudgeEnabled;
-  if (nudgeWindowMinutes !== undefined) rulesUpdateData.nudgeWindowMinutes = nudgeWindowMinutes;
+  if (nudgeWindowMinutes !== undefined)
+    rulesUpdateData.nudgeWindowMinutes = nudgeWindowMinutes;
 
   // Update group, groupFixtures, and optionally groupRules in a single transaction
-  const group = await (hasRulesUpdate && Object.keys(rulesUpdateData).length > 0
-    ? prisma.$transaction(async (tx) => {
-        const g = await repo.updateGroupWithFixtures(id, updateData, fixtureIds, tx);
-        await tx.groupRules.update({
-          where: { groupId: id },
-          data: rulesUpdateData,
-        });
-        return g;
-      })
-    : repo.updateGroupWithFixtures(id, updateData, fixtureIds));
+  const group = await prisma.$transaction(async (tx) => {
+    const g = await repo.updateGroupWithFixtures(
+      id,
+      updateData,
+      fixtureIds,
+      tx
+    );
+    if (hasRulesUpdate && Object.keys(rulesUpdateData).length > 0) {
+      await tx.groupRules.update({
+        where: { groupId: id },
+        data: rulesUpdateData,
+      });
+    }
+    return g;
+  });
 
   const data = buildGroupItem(group);
   log.info({ id, creatorId }, "updateGroup - success");
@@ -94,10 +120,13 @@ export async function publishGroup(
   id: number,
   args: ApiPublishGroupBody & { creatorId: number }
 ): Promise<ApiGroupResponse> {
-  const NUDGE_WINDOW_MIN = 15;
-  const NUDGE_WINDOW_MAX = 1440;
-
-  log.debug({ id, args: { ...args, predictionMode: undefined, koRoundMode: undefined } }, "publishGroup - start");
+  log.debug(
+    {
+      id,
+      args: { ...args, predictionMode: undefined, koRoundMode: undefined },
+    },
+    "publishGroup - start"
+  );
   const {
     creatorId,
     name,
@@ -113,7 +142,11 @@ export async function publishGroup(
     nudgeWindowMinutes,
   } = args;
 
-  if (nudgeWindowMinutes !== undefined && (nudgeWindowMinutes < NUDGE_WINDOW_MIN || nudgeWindowMinutes > NUDGE_WINDOW_MAX)) {
+  if (
+    nudgeWindowMinutes !== undefined &&
+    (nudgeWindowMinutes < NUDGE_WINDOW_MIN ||
+      nudgeWindowMinutes > NUDGE_WINDOW_MAX)
+  ) {
     throw new BadRequestError(
       `nudgeWindowMinutes must be between ${NUDGE_WINDOW_MIN} and ${NUDGE_WINDOW_MAX}`
     );
@@ -144,8 +177,12 @@ export async function publishGroup(
     ...(predictionMode !== undefined && {
       predictionMode: predictionMode as groupPredictionMode,
     }),
-    ...(koRoundMode !== undefined && { koRoundMode: koRoundMode as groupKoRoundMode }),
-    ...(inviteAccess !== undefined && { inviteAccess: inviteAccess as groupInviteAccess }),
+    ...(koRoundMode !== undefined && {
+      koRoundMode: koRoundMode as groupKoRoundMode,
+    }),
+    ...(inviteAccess !== undefined && {
+      inviteAccess: inviteAccess as groupInviteAccess,
+    }),
     ...(maxMembers !== undefined && { maxMembers }),
     ...(nudgeEnabled !== undefined && { nudgeEnabled }),
     ...(nudgeWindowMinutes !== undefined && { nudgeWindowMinutes }),

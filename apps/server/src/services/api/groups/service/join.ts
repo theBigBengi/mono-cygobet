@@ -3,8 +3,18 @@
 
 import { randomBytes } from "crypto";
 import { prisma } from "@repo/db";
-import { BadRequestError, NotFoundError, ConflictError, ForbiddenError } from "../../../../utils/errors/app-error";
-import { DEFAULT_MAX_MEMBERS, GROUP_STATUS, MEMBER_STATUS, GROUP_PRIVACY } from "../constants";
+import {
+  BadRequestError,
+  NotFoundError,
+  ConflictError,
+  ForbiddenError,
+} from "../../../../utils/errors/app-error";
+import {
+  DEFAULT_MAX_MEMBERS,
+  GROUP_STATUS,
+  MEMBER_STATUS,
+  GROUP_PRIVACY,
+} from "../constants";
 import { buildGroupItem } from "../builders";
 import { assertGroupExists, assertGroupCreator } from "../permissions";
 import { repository as repo } from "../repository";
@@ -29,13 +39,19 @@ function generateCode(): string {
 export async function generateInviteCode(
   groupId: number,
   userId: number
-): Promise<{ status: "success"; data: { inviteCode: string }; message: string }> {
+): Promise<{
+  status: "success";
+  data: { inviteCode: string };
+  message: string;
+}> {
   log.info({ groupId, userId }, "generateInviteCode - start");
 
   const group = await assertGroupCreator(groupId, userId);
 
   if (group.status !== GROUP_STATUS.ACTIVE) {
-    throw new BadRequestError("Invite codes can only be generated for active groups");
+    throw new BadRequestError(
+      "Invite codes can only be generated for active groups"
+    );
   }
 
   const inviteCode = generateCode();
@@ -56,7 +72,11 @@ export async function generateInviteCode(
 export async function getInviteCode(
   groupId: number,
   userId: number
-): Promise<{ status: "success"; data: { inviteCode: string }; message: string }> {
+): Promise<{
+  status: "success";
+  data: { inviteCode: string };
+  message: string;
+}> {
   log.info({ groupId, userId }, "getInviteCode - start");
 
   const group = await assertGroupExists(groupId);
@@ -82,9 +102,12 @@ export async function getInviteCode(
 
   // If admin_only, check role (creator is always allowed as owner)
   if (rules?.inviteAccess === "admin_only" && group.creatorId !== userId) {
-    const member = memberFromCheck ?? (await repo.findGroupMember(groupId, userId));
+    const member =
+      memberFromCheck ?? (await repo.findGroupMember(groupId, userId));
     if (!member || (member.role !== "admin" && member.role !== "owner")) {
-      throw new ForbiddenError("Only admins can share the invite link for this group");
+      throw new ForbiddenError(
+        "Only admins can share the invite link for this group"
+      );
     }
   }
 
@@ -171,35 +194,49 @@ export async function joinPublicGroup(
 /**
  * Shared validation + join logic for both code and public flows.
  * Checks: not already joined, max members not reached, creates/reactivates member.
+ * Runs in a transaction to prevent race conditions (concurrent joins exceeding maxMembers).
  */
 async function validateAndJoin(groupId: number, userId: number): Promise<void> {
-  // Check if already a member
-  const existingMember = await repo.findGroupMember(groupId, userId);
-  if (existingMember && existingMember.status === MEMBER_STATUS.JOINED) {
-    throw new ConflictError("You are already a member of this group");
-  }
-
-  // Check max members (from groupRules)
-  const rules = await prisma.groupRules.findUnique({
-    where: { groupId },
-    select: { maxMembers: true },
-  });
-  const maxMembers = rules?.maxMembers ?? DEFAULT_MAX_MEMBERS;
-
-  const memberCount = await repo.countGroupMembers(groupId);
-  if (memberCount >= maxMembers) {
-    throw new BadRequestError("This group has reached its maximum number of members");
-  }
-
-  // Create or reactivate member
-  if (existingMember) {
-    await repo.updateGroupMember(existingMember.id, { status: MEMBER_STATUS.JOINED });
-  } else {
-    await repo.createGroupMember({
-      groupId,
-      userId,
-      role: "member",
-      status: "joined",
+  await prisma.$transaction(async (tx) => {
+    // Check if already a member
+    const existingMember = await tx.groupMembers.findUnique({
+      where: { groupId_userId: { groupId, userId } },
     });
-  }
+    if (existingMember && existingMember.status === MEMBER_STATUS.JOINED) {
+      throw new ConflictError("You are already a member of this group");
+    }
+
+    // Check max members (from groupRules)
+    const rules = await tx.groupRules.findUnique({
+      where: { groupId },
+      select: { maxMembers: true },
+    });
+    const maxMembers = rules?.maxMembers ?? DEFAULT_MAX_MEMBERS;
+
+    const memberCount = await tx.groupMembers.count({
+      where: { groupId, status: MEMBER_STATUS.JOINED },
+    });
+    if (memberCount >= maxMembers) {
+      throw new BadRequestError(
+        "This group has reached its maximum number of members"
+      );
+    }
+
+    // Create or reactivate member
+    if (existingMember) {
+      await tx.groupMembers.update({
+        where: { id: existingMember.id },
+        data: { status: MEMBER_STATUS.JOINED },
+      });
+    } else {
+      await tx.groupMembers.create({
+        data: {
+          groupId,
+          userId,
+          role: "member",
+          status: "joined",
+        },
+      });
+    }
+  });
 }
