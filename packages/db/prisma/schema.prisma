@@ -610,6 +610,10 @@ model teams {
   fixtures_fixtures_home_team_idToteams fixtures[] @relation("fixtures_home_team_idToteams")
   countries                             countries? @relation(fields: [countryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  fisrtKitColor  String? @map("first_kit_color")
+  secondKitColor String? @map("second_kit_color")
+  thirdKitColor  String? @map("third_kit_color")
+
   @@unique([name, countryId], map: "teams_name_country_unique")
   @@index([id], map: "idx_teams_id")
   @@index([name, countryId], map: "idx_teams_name_country")
