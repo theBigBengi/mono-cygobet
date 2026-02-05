@@ -154,7 +154,7 @@ export const bulkUpdateTeamsBodySchema = {
         required: ["name"],
       },
       minItems: 1,
-      maxItems: 500,
+      maxItems: 1000,
     },
   },
   required: ["teams"],
