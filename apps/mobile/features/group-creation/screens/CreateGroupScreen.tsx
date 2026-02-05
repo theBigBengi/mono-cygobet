@@ -37,27 +37,21 @@ export function CreateGroupScreen() {
         {mode === "fixtures" && (
           <FixturesView
             tabs={
-            
-                <SelectionModeTabs value={mode} onChange={handleModeChange} />
-            
+              <SelectionModeTabs value={mode} onChange={handleModeChange} />
             }
           />
         )}
         {mode === "leagues" && (
           <LeaguesView
             tabs={
-           
-                <SelectionModeTabs value={mode} onChange={handleModeChange} />
-           
+              <SelectionModeTabs value={mode} onChange={handleModeChange} />
             }
           />
         )}
         {mode === "teams" && (
           <TeamsView
             tabs={
-        
-                <SelectionModeTabs value={mode} onChange={handleModeChange} />
-           
+              <SelectionModeTabs value={mode} onChange={handleModeChange} />
             }
           />
         )}
@@ -70,10 +64,8 @@ export function CreateGroupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
- 
   },
   content: {
     flex: 1,
-    
   },
 });
