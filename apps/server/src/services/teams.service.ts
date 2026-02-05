@@ -102,7 +102,16 @@ export class TeamsService {
       take,
       orderBy: { name: "asc" },
       include: {
-        countries: true,
+        countries: {
+          select: {
+            id: true,
+            name: true,
+            imagePath: true,
+            iso2: true,
+            iso3: true,
+            externalId: true,
+          },
+        },
       },
     });
 
@@ -128,11 +137,11 @@ export class TeamsService {
     if (data.name !== undefined) prismaData.name = data.name;
     if (data.shortCode !== undefined) prismaData.shortCode = data.shortCode;
     if (data.primaryColor !== undefined)
-      (prismaData as any).fisrtKitColor = data.primaryColor;
+      prismaData.firstKitColor = data.primaryColor;
     if (data.secondaryColor !== undefined)
-      (prismaData as any).secondKitColor = data.secondaryColor;
+      prismaData.secondKitColor = data.secondaryColor;
     if (data.tertiaryColor !== undefined)
-      (prismaData as any).thirdKitColor = data.tertiaryColor;
+      prismaData.thirdKitColor = data.tertiaryColor;
     prismaData.updatedAt = new Date();
 
     const team = await prisma.teams.update({

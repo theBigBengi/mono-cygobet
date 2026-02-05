@@ -34,11 +34,80 @@ import type {
   SearchTeamsQuerystring,
 } from "../../../../types";
 
+// Prisma payload type with countries relation
+type TeamWithCountry = Prisma.teamsGetPayload<{
+  include: {
+    countries: {
+      select: {
+        id: true;
+        name: true;
+        imagePath: true;
+        iso2: true;
+        iso3: true;
+        externalId: true;
+      };
+    };
+  };
+}>;
+
+// Response mapper - single source of truth for team serialization
+function mapTeamToResponse(team: TeamWithCountry) {
+  return {
+    id: team.id,
+    name: team.name,
+    type: team.type,
+    shortCode: team.shortCode,
+    imagePath: team.imagePath,
+    founded: team.founded,
+    countryId: team.countryId,
+    country: team.countries
+      ? {
+          id: team.countries.id,
+          name: team.countries.name,
+          imagePath: team.countries.imagePath,
+          iso2: team.countries.iso2,
+          iso3: team.countries.iso3,
+          externalId: team.countries.externalId.toString(),
+        }
+      : null,
+    primaryColor: team.firstKitColor ?? null,
+    secondaryColor: team.secondKitColor ?? null,
+    tertiaryColor: team.thirdKitColor ?? null,
+    externalId: team.externalId.toString(),
+    createdAt: team.createdAt.toISOString(),
+    updatedAt: team.updatedAt.toISOString(),
+  };
+}
+
+// Mapper for update response (without country)
+function mapTeamToUpdateResponse(
+  team: Prisma.teamsGetPayload<{ include: { countries: true } }>
+) {
+  return {
+    id: team.id,
+    name: team.name,
+    type: team.type,
+    shortCode: team.shortCode,
+    imagePath: team.imagePath,
+    founded: team.founded,
+    countryId: team.countryId,
+    primaryColor: team.firstKitColor ?? null,
+    secondaryColor: team.secondKitColor ?? null,
+    tertiaryColor: team.thirdKitColor ?? null,
+    externalId: team.externalId.toString(),
+    createdAt: team.createdAt.toISOString(),
+    updatedAt: team.updatedAt.toISOString(),
+  };
+}
+
 const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new TeamsService(fastify);
 
   // GET /admin/teams/db - List teams from database
-  fastify.get<{ Reply: AdminTeamsListResponse }>(
+  fastify.get<{
+    Querystring: ListTeamsQuerystring;
+    Reply: AdminTeamsListResponse;
+  }>(
     "/teams",
     {
       schema: {
@@ -49,17 +118,15 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminTeamsListResponse> => {
-      const query = req.query as ListTeamsQuerystring;
+      const query = req.query;
       const { page, perPage, skip, take } = getPagination(query);
 
       // Parse include string to Prisma include object
       const includeKeys = parseIncludeString(query.include);
       const include: Prisma.teamsInclude = {};
-      includeKeys.forEach((key) => {
-        if (key === "countries") {
-          (include as any)[key] = true;
-        }
-      });
+      if (includeKeys.includes("countries")) {
+        include.countries = true;
+      }
 
       // Always include country
       const includeWithCountry: Prisma.teamsInclude = {
@@ -87,31 +154,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.send({
         status: "success",
-        data: teams.map((t) => ({
-          id: t.id,
-          name: t.name,
-          type: t.type,
-          shortCode: t.shortCode,
-          imagePath: t.imagePath,
-          founded: t.founded,
-          countryId: t.countryId,
-          country: (t as any).countries
-            ? {
-                id: (t as any).countries.id,
-                name: (t as any).countries.name,
-                imagePath: (t as any).countries.imagePath,
-                iso2: (t as any).countries.iso2,
-                iso3: (t as any).countries.iso3,
-                externalId: (t as any).countries.externalId.toString(),
-              }
-            : null,
-          primaryColor: (t as any).fisrtKitColor ?? null,
-          secondaryColor: (t as any).secondKitColor ?? null,
-          tertiaryColor: (t as any).thirdKitColor ?? null,
-          externalId: t.externalId.toString(),
-          createdAt: t.createdAt.toISOString(),
-          updatedAt: t.updatedAt.toISOString(),
-        })),
+        data: (teams as TeamWithCountry[]).map(mapTeamToResponse),
         pagination: createPaginationResponse(page, perPage, count),
         message: "Teams fetched successfully",
       });
@@ -145,18 +188,17 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
       } catch (error: unknown) {
         return reply.code(400).send({
           status: "error",
+          data: null,
           message: getErrorMessage(error),
-        } as any);
+        });
       }
 
       // Parse include string to Prisma include object
       const includeKeys = parseIncludeString(include);
       const includeObj: Prisma.teamsInclude = {};
-      includeKeys.forEach((key) => {
-        if (key === "countries") {
-          (includeObj as any)[key] = true;
-        }
-      });
+      if (includeKeys.includes("countries")) {
+        includeObj.countries = true;
+      }
 
       // Always include country
       const includeWithCountry: Prisma.teamsInclude = {
@@ -177,38 +219,17 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.send({
         status: "success",
-        data: {
-          id: team.id,
-          name: team.name,
-          type: team.type,
-          shortCode: team.shortCode,
-          imagePath: team.imagePath,
-          founded: team.founded,
-          countryId: team.countryId,
-          country: team.countries
-            ? {
-                id: team.countries.id,
-                name: team.countries.name,
-                imagePath: team.countries.imagePath,
-                iso2: team.countries.iso2,
-                iso3: team.countries.iso3,
-                externalId: team.countries.externalId.toString(),
-              }
-            : null,
-          primaryColor: (team as any).fisrtKitColor ?? null,
-          secondaryColor: (team as any).secondKitColor ?? null,
-          tertiaryColor: (team as any).thirdKitColor ?? null,
-          externalId: team.externalId.toString(),
-          createdAt: team.createdAt.toISOString(),
-          updatedAt: team.updatedAt.toISOString(),
-        },
+        data: mapTeamToResponse(team as TeamWithCountry),
         message: "Team fetched successfully",
       });
     }
   );
 
   // GET /admin/teams/db/search - Search teams
-  fastify.get<{ Reply: any }>(
+  fastify.get<{
+    Querystring: SearchTeamsQuerystring;
+    Reply: AdminTeamsListResponse;
+  }>(
     "/teams/search",
     {
       schema: {
@@ -219,37 +240,13 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminTeamsListResponse> => {
-      const { q, take = 10 } = req.query as SearchTeamsQuerystring;
+      const { q, take = 10 } = req.query;
 
       const teams = await service.search(q, take);
 
       return reply.send({
         status: "success",
-        data: teams.map((t) => ({
-          id: t.id,
-          name: t.name,
-          type: t.type,
-          shortCode: t.shortCode,
-          imagePath: t.imagePath,
-          founded: t.founded,
-          countryId: t.countryId,
-          country: (t as any).countries
-            ? {
-                id: (t as any).countries.id,
-                name: (t as any).countries.name,
-                imagePath: (t as any).countries.imagePath,
-                iso2: (t as any).countries.iso2,
-                iso3: (t as any).countries.iso3,
-                externalId: (t as any).countries.externalId.toString(),
-              }
-            : null,
-          primaryColor: (t as any).fisrtKitColor ?? null,
-          secondaryColor: (t as any).secondKitColor ?? null,
-          tertiaryColor: (t as any).thirdKitColor ?? null,
-          externalId: t.externalId.toString(),
-          createdAt: t.createdAt.toISOString(),
-          updatedAt: t.updatedAt.toISOString(),
-        })),
+        data: (teams as TeamWithCountry[]).map(mapTeamToResponse),
         pagination: createPaginationResponse(1, take, teams.length),
         message: "Teams search completed",
       });
@@ -297,21 +294,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
 
         return reply.send({
           status: "success",
-          data: {
-            id: team.id,
-            name: team.name,
-            type: team.type,
-            shortCode: team.shortCode,
-            imagePath: team.imagePath,
-            founded: team.founded,
-            countryId: team.countryId,
-            primaryColor: (team as any).fisrtKitColor ?? null,
-            secondaryColor: (team as any).secondKitColor ?? null,
-            tertiaryColor: (team as any).thirdKitColor ?? null,
-            externalId: team.externalId.toString(),
-            createdAt: team.createdAt.toISOString(),
-            updatedAt: team.updatedAt.toISOString(),
-          },
+          data: mapTeamToUpdateResponse(team),
           message: "Team updated successfully",
         });
       } catch (error: unknown) {

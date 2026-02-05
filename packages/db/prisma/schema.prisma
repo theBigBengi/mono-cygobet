@@ -596,23 +596,25 @@ model seasons {
 }
 
 model teams {
-  id                                    Int        @id @default(autoincrement())
-  countryId                             Int?       @map("country_id")
-  name                                  String
-  shortCode                             String?    @map("short_code")
-  imagePath                             String?    @map("image_path")
-  founded                               Int?
-  type                                  String?
-  createdAt                             DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                             DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
-  externalId                            BigInt     @unique @map("external_id")
-  fixtures_fixtures_away_team_idToteams fixtures[] @relation("fixtures_away_team_idToteams")
-  fixtures_fixtures_home_team_idToteams fixtures[] @relation("fixtures_home_team_idToteams")
-  countries                             countries? @relation(fields: [countryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id         Int        @id @default(autoincrement())
+  countryId  Int?       @map("country_id")
+  name       String
+  shortCode  String?    @map("short_code")
+  imagePath  String?    @map("image_path")
+  founded    Int?
+  type       String?
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  externalId BigInt     @unique @map("external_id")
+  countries  countries? @relation(fields: [countryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  fisrtKitColor  String? @map("first_kit_color")
+  firstKitColor  String? @map("first_kit_color")
   secondKitColor String? @map("second_kit_color")
   thirdKitColor  String? @map("third_kit_color")
+
+  // relations
+  fixtures_fixtures_away_team_idToteams fixtures[] @relation("fixtures_away_team_idToteams")
+  fixtures_fixtures_home_team_idToteams fixtures[] @relation("fixtures_home_team_idToteams")
 
   @@unique([name, countryId], map: "teams_name_country_unique")
   @@index([id], map: "idx_teams_id")

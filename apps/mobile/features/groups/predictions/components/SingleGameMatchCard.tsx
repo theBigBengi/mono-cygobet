@@ -9,6 +9,7 @@ import type { GroupPrediction } from "@/features/group-creation/selection/games"
 import type { FixtureItem } from "@/types/common";
 import type { PredictionMode } from "../types";
 import { getOutcomeFromPrediction } from "../utils/utils";
+import { formatKickoffDateTime } from "@/utils/fixture";
 import { useMatchCardState } from "../hooks/useMatchCardState";
 import { LIVE_RESULT_COLOR } from "../utils/constants";
 
@@ -71,6 +72,13 @@ export function SingleGameMatchCard({
   return (
     <View style={[!isEditable && !isLive && styles.dimmedContainer]}>
       <Card style={styles.matchCard}>
+        {fixture.league?.name && (
+          <View style={styles.leagueRow}>
+            <AppText variant="caption" color="secondary" numberOfLines={1}>
+              {fixture.league.name}
+            </AppText>
+          </View>
+        )}
         <View style={styles.matchContent}>
           {/* Home Team - Logo above Name */}
           <View style={styles.teamSection}>
@@ -107,7 +115,7 @@ export function SingleGameMatchCard({
               onBlur={onBlur}
               onChange={onChange}
               onAutoNext={onAutoNext}
-              variant="large"
+              variant="medium"
               containerStyle={styles.scoreSection}
             />
           )}
@@ -128,6 +136,11 @@ export function SingleGameMatchCard({
             </AppText>
           </View>
         </View>
+        {isEditable && fixture.kickoffAt && (
+          <AppText variant="caption" color="secondary" style={styles.dateTime}>
+            {formatKickoffDateTime(fixture.kickoffAt)}
+          </AppText>
+        )}
         {resultOrReasonText && (
           <View style={styles.resultContainer}>
             <AppText
@@ -148,6 +161,13 @@ const styles = StyleSheet.create({
   dimmedContainer: {
     opacity: 0.6,
     // backgroundColor: "red",
+  },
+  leagueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginBottom: 12,
   },
   matchCard: {
     marginHorizontal: 0,
@@ -200,6 +220,10 @@ const styles = StyleSheet.create({
     direction: "ltr",
     paddingHorizontal: 4,
     flexShrink: 0,
+  },
+  dateTime: {
+    textAlign: "center",
+    marginTop: 8,
   },
   resultContainer: {
     alignItems: "center",

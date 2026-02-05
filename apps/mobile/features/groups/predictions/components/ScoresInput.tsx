@@ -12,7 +12,7 @@ import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 
-type Variant = "small" | "large";
+type Variant = "small" | "medium" | "large";
 
 type Props = {
   prediction: GroupPrediction;
@@ -52,6 +52,18 @@ const variantStyles: Record<
       marginHorizontal: 1,
     },
   },
+  medium: {
+    input: {
+      width: 36,
+      height: 36,
+      fontSize: 20,
+    },
+    separator: {
+      fontSize: 20,
+      fontWeight: "700",
+      marginHorizontal: 2,
+    },
+  },
   large: {
     input: {
       width: 48,
@@ -89,11 +101,12 @@ export function ScoresInput({
   const { theme } = useTheme();
   const variantStyle = variantStyles[variant];
   const isLarge = variant === "large";
+  const isMediumOrLarge = variant === "medium" || variant === "large";
 
   const handleHomeChange = (text: string) => {
     if (isEditable) {
       // For large variant (SingleGameMatchCard), use only the last digit
-      const finalText = isLarge
+      const finalText = isMediumOrLarge
         ? text.length > 0
           ? text[text.length - 1]
           : ""
@@ -110,7 +123,7 @@ export function ScoresInput({
   const handleAwayChange = (text: string) => {
     if (isEditable) {
       // For large variant (SingleGameMatchCard), use only the last digit
-      const finalText = isLarge
+      const finalText = isMediumOrLarge
         ? text.length > 0
           ? text[text.length - 1]
           : ""
@@ -126,7 +139,7 @@ export function ScoresInput({
 
   const inputStyle: TextStyle = {
     ...variantStyle.input,
-    borderRadius: isLarge ? 8 : 4,
+    borderRadius: isMediumOrLarge ? 8 : 4,
     borderWidth: 1,
     fontWeight: "700",
   };

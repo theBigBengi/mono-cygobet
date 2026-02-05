@@ -77,6 +77,25 @@ export function formatKickoff(iso: string | null | undefined): string {
 }
 
 /**
+ * Format kickoff date + time compact (e.g., "Wed, Feb 5 · 20:00").
+ * Returns "TBD" if missing/null/undefined.
+ */
+export function formatKickoffDateTime(iso: string | null | undefined): string {
+  if (!iso) return "TBD";
+  try {
+    const date = new Date(iso);
+    const locale = getCurrentLocale();
+    const dayDate = format(date, "EEE, MMM d", {
+      locale: getDateFnsLocale(locale),
+    });
+    const time = formatTime24Locale(date, locale);
+    return `${dayDate} · ${time}`;
+  } catch {
+    return "TBD";
+  }
+}
+
+/**
  * Get team display name with fallback.
  * Returns safe fallback string if missing.
  */
