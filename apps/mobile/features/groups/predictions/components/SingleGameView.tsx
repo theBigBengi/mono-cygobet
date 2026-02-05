@@ -11,6 +11,7 @@ import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { SingleGameMatchCard } from "./SingleGameMatchCard";
+import { GroupGamesHeader } from "./GroupGamesHeader";
 import type { FixtureItem } from "@/types/common";
 import type {
   PredictionMode,
@@ -43,6 +44,10 @@ type Props = {
     fixtureId: number,
     outcome: "home" | "draw" | "away"
   ) => void;
+  /** Initial game index to scroll to (default 0). */
+  initialIndex?: number;
+  /** Called when user taps back (single view as own page). */
+  onBack: () => void;
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -62,9 +67,11 @@ export function SingleGameView({
   onSaveAllChanged,
   predictionMode = "CorrectScore",
   onSelectOutcome,
+  initialIndex,
+  onBack,
 }: Props) {
   const { theme } = useTheme();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex ?? 0);
   const flatListRef = useRef<FlatList>(null);
 
   const handlePrevious = () => {
@@ -175,8 +182,8 @@ export function SingleGameView({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      {/* Navigation buttons and FlatList */}
-      <View style={styles.contentContainer}>
+      <GroupGamesHeader backOnly onBack={onBack} />
+      <View style={[styles.contentContainer, { flex: 1 }]}>
         {/* Previous button - positioned absolutely on left */}
         <Pressable
           style={[
@@ -219,7 +226,7 @@ export function SingleGameView({
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          initialScrollIndex={0}
+          initialScrollIndex={initialIndex ?? 0}
           onScrollToIndexFailed={handleScrollToIndexFailed}
           onMomentumScrollEnd={(event) => {
             const index = Math.round(

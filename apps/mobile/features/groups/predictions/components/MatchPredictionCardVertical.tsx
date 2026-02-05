@@ -36,6 +36,8 @@ type Props = {
   /** When "MatchWinner", shows 1/X/2 OutcomePicker instead of score inputs */
   predictionMode?: PredictionMode;
   onSelectOutcome?: (outcome: "home" | "draw" | "away") => void;
+  /** If provided, called on card press instead of router.push to fixture detail. */
+  onPressCard?: () => void;
 };
 
 /**
@@ -56,6 +58,7 @@ export function MatchPredictionCardVertical({
   onAutoNext,
   predictionMode = "CorrectScore",
   onSelectOutcome,
+  onPressCard: onPressCardProp,
 }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -64,7 +67,11 @@ export function MatchPredictionCardVertical({
   const fixtureIdStr = String(fixture.id);
 
   const onPressCard = () => {
-    router.push(`/fixtures/${fixture.id}` as any);
+    if (onPressCardProp) {
+      onPressCardProp();
+    } else {
+      router.push(`/fixtures/${fixture.id}` as any);
+    }
   };
 
   // Get refs for input fields

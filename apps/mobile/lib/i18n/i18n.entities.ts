@@ -3,6 +3,7 @@
 
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import type { i18n as I18nType } from "i18next";
 
 function toEntityKey(name: string): string {
   return name
@@ -13,7 +14,7 @@ function toEntityKey(name: string): string {
 }
 
 export function useEntityTranslation() {
-  const { t } = useTranslation(["entities"]);
+  const { t, i18n } = useTranslation(["entities"]);
 
   const translateLeague = useCallback(
     (apiName: string | null | undefined, fallback = "Unknown league"): string => {

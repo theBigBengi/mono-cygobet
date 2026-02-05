@@ -22,7 +22,7 @@ import type { PredictionMode } from "../types";
 import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
 import { SingleGameView } from "../components/SingleGameView";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
-import { HEADER_HEIGHT, FOOTER_PADDING } from "../utils/constants";
+import { FOOTER_PADDING } from "../utils/constants";
 import { calculateContentPaddingTopDefault } from "../utils/utils";
 
 type Props = {
@@ -59,6 +59,8 @@ export function GroupGamesScreen({
   const { theme } = useTheme();
   /** Toggle between full list of fixtures and single-fixture swipe view. */
   const [viewMode, setViewMode] = React.useState<"list" | "single">("list");
+  /** When opening single view from a card press, scroll to this index; 0 when opening via toggle. */
+  const [singleViewInitialIndex, setSingleViewInitialIndex] = React.useState(0);
 
   const mode = selectionMode ?? "games";
 
@@ -231,6 +233,18 @@ export function GroupGamesScreen({
     Keyboard.dismiss();
   }, [handleSaveAllChanged]);
 
+  /** Open single view scrolled to the pressed fixture (index in filtered list). */
+  const handlePressCard = useCallback(
+    (fixtureId: number) => {
+      const index = filteredFixtures.findIndex((f) => f.id === fixtureId);
+      if (index >= 0) {
+        setSingleViewInitialIndex(index);
+        setViewMode("single");
+      }
+    },
+    [filteredFixtures]
+  );
+
   /** Update prediction for a field and optionally move focus to next field. */
   const handleCardChange = useCallback(
     (fixtureId: number, type: "home" | "away", text: string) => {
@@ -269,7 +283,14 @@ export function GroupGamesScreen({
       viewMode={viewMode}
       onBack={() => router.back()}
       onFillRandom={handleFillRandom}
-      onToggleView={() => setViewMode(viewMode === "list" ? "single" : "list")}
+      onToggleView={() => {
+        if (viewMode === "list") {
+          setSingleViewInitialIndex(0);
+          setViewMode("single");
+        } else {
+          setViewMode("list");
+        }
+      }}
     />
   );
 
@@ -278,31 +299,31 @@ export function GroupGamesScreen({
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       {viewMode === "single" ? (
-        /* Single-fixture swipe view with one card at a time. */
-        <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
-          <SingleGameView
-            fixtures={fixtures}
-            predictions={predictions}
-            savedPredictions={savedPredictions}
-            inputRefs={inputRefs}
-            currentFocusedField={currentFocusedField}
-            setCurrentFocusedField={setCurrentFocusedField}
-            onUpdatePrediction={updatePrediction}
-            onFieldFocus={(fixtureId, type) => {
-              handleFieldFocus(fixtureId, type);
-            }}
-            onFieldBlur={handleFieldBlur}
-            getNextFieldIndex={getNextFieldIndex}
-            navigateToField={navigateToField}
-            onSaveAllChanged={handleSaveAllChanged}
-            predictionMode={predictionModeTyped}
-            onSelectOutcome={
-              predictionMode === "MatchWinner" ? handleSelectOutcome : undefined
-            }
-          />
-        </View>
+        /* Single view as full-screen page with its own header (back only). */
+        <SingleGameView
+          fixtures={filteredFixtures}
+          predictions={predictions}
+          savedPredictions={savedPredictions}
+          inputRefs={inputRefs}
+          currentFocusedField={currentFocusedField}
+          setCurrentFocusedField={setCurrentFocusedField}
+          onUpdatePrediction={updatePrediction}
+          initialIndex={singleViewInitialIndex}
+          onBack={() => setViewMode("list")}
+          onFieldFocus={(fixtureId, type) => {
+            handleFieldFocus(fixtureId, type);
+          }}
+          onFieldBlur={handleFieldBlur}
+          getNextFieldIndex={getNextFieldIndex}
+          navigateToField={navigateToField}
+          onSaveAllChanged={handleSaveAllChanged}
+          predictionMode={predictionModeTyped}
+          onSelectOutcome={
+            predictionMode === "MatchWinner" ? handleSelectOutcome : undefined
+          }
+        />
       ) : (
-        /* List view: filter chips, scrollable fixture list, nav bar. */
+        /* List view: filter chips, scrollable fixture list, nav bar, header overlay. */
         <>
           {hasAnyChips && (
             <SmartFilterChips
@@ -391,6 +412,7 @@ export function GroupGamesScreen({
                               : undefined
                           }
                           onScrollToCard={scrollToMatchCard}
+                          onPressCard={handlePressCard}
                         />
                       ))}
                     </View>
@@ -415,12 +437,16 @@ export function GroupGamesScreen({
             keyboardHeight={keyboardHeight}
             onDone={handleDone}
           />
+
+          {/* Header floats above list content; only in list mode. */}
+          <View
+            style={[styles.headerOverlay, { top: 0 }]}
+            pointerEvents="box-none"
+          >
+            {header}
+          </View>
         </>
       )}
-      {/* Header floats above content; pointerEvents so taps pass through to list. */}
-      <View style={[styles.headerOverlay, { top: 0 }]} pointerEvents="box-none">
-        {header}
-      </View>
     </View>
   );
 }

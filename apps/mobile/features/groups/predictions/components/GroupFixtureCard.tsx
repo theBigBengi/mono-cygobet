@@ -54,6 +54,8 @@ export type GroupFixtureCardProps = {
     outcome: "home" | "draw" | "away"
   ) => void;
   onScrollToCard: (fixtureId: number) => void;
+  /** If provided, called when card is pressed instead of navigating to fixture detail. */
+  onPressCard?: (fixtureId: number) => void;
 };
 
 function GroupFixtureCardInner({
@@ -73,6 +75,7 @@ function GroupFixtureCardInner({
   onAutoNext,
   onSelectOutcome,
   onScrollToCard,
+  onPressCard,
 }: GroupFixtureCardProps) {
   /** Used for card border/radius styling (first/middle/last in group). */
   const positionInGroup = getPositionInGroup(index, totalInGroup);
@@ -160,6 +163,7 @@ function GroupFixtureCardInner({
       onAutoNext={onAutoNextLocal}
       predictionMode={predictionMode}
       onSelectOutcome={onSelectOutcome ? onSelectOutcomeLocal : undefined}
+      onPressCard={onPressCard ? () => onPressCard(fixture.id) : undefined}
     />
   );
 }
