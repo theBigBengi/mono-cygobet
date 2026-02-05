@@ -3,7 +3,8 @@
     "groups": "Groups",
     "games": "Games",
     "activity": "Activity",
-    "profile": "Profile"
+    "profile": "Profile",
+    "settings": "Settings"
   },
   "activity": {
     "empty": "No activity yet",

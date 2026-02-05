@@ -3,7 +3,8 @@
     "groups": "קבוצות",
     "games": "משחקים",
     "activity": "פעילות",
-    "profile": "פרופיל"
+    "profile": "פרופיל",
+    "settings": "הגדרות"
   },
   "activity": {
     "empty": "עדיין אין פעילות",

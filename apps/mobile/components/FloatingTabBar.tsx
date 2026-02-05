@@ -18,7 +18,11 @@ import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
 import { currentSelectionModeAtom } from "@/features/group-creation/selection/mode.atom";
 import { createGroupModalVisibleAtom } from "@/features/group-creation/screens/create-group-modal.atom";
 
-export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+export function FloatingTabBar({
+  state,
+  descriptors,
+  navigation,
+}: BottomTabBarProps) {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === "dark";
   const currentMode = useAtomValue(currentSelectionModeAtom);
@@ -36,8 +40,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   const groupsNeedAttention = useMemo(() => {
     const groups = groupsData?.data ?? [];
     return groups.some(
-      (g) =>
-        (g.liveGamesCount ?? 0) > 0 || (g.todayUnpredictedCount ?? 0) > 0
+      (g) => (g.liveGamesCount ?? 0) > 0 || (g.todayUnpredictedCount ?? 0) > 0
     );
   }, [groupsData]);
 
@@ -47,10 +50,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
     : 0;
 
   return (
-    <View
-      style={styles.container}
-      pointerEvents="box-none"
-    >
+    <View style={styles.container} pointerEvents="box-none">
       <View
         style={[
           styles.tabBar,
@@ -110,14 +110,22 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
               route.name === "home"
                 ? "add"
                 : route.name === "groups"
-                ? "people"
-                : route.name === "activity"
-                ? "flash"
-                : route.name === "profile"
-                ? "person"
-                : null;
-
-         
+                  ? isFocused
+                    ? "people"
+                    : "people-outline"
+                  : route.name === "activity"
+                    ? isFocused
+                      ? "flash"
+                      : "flash-outline"
+                    : route.name === "profile"
+                      ? isFocused
+                        ? "person"
+                        : "person-outline"
+                      : route.name === "settings"
+                        ? isFocused
+                          ? "settings"
+                          : "settings-outline"
+                        : null;
 
             // Special rendering for home tab with selection
             const showBadge = route.name === "home" && hasSelection;
@@ -184,7 +192,9 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                           { color: theme.colors.primaryText },
                         ]}
                       >
-                        {totalUnreadCount > 99 ? "99+" : String(totalUnreadCount)}
+                        {totalUnreadCount > 99
+                          ? "99+"
+                          : String(totalUnreadCount)}
                       </AppText>
                     </View>
                   )}
