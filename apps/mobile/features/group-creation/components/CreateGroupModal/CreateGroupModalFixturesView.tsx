@@ -9,8 +9,8 @@ import { useTheme } from "@/lib/theme";
 import {
   useSelectedGroupGames,
   useToggleGroupGame,
+  SelectedGameCard,
 } from "@/features/group-creation/selection/games";
-import { SelectedGameCard } from "@/features/group-creation/selection/games";
 import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
 import { groupFixturesByLeagueAndDate } from "@/utils/fixture";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
@@ -20,9 +20,7 @@ interface GroupedGame {
   game: FixtureItem;
 }
 
-function groupGroupedGamesByLeagueAndDate(
-  games: GroupedGame[]
-): {
+function groupGroupedGamesByLeagueAndDate(games: GroupedGame[]): {
   key: string;
   leagueName: string;
   dateKey: string;
