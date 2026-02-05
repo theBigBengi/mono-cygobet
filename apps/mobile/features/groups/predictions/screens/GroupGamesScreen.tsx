@@ -1,13 +1,15 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView, Keyboard } from "react-native";
 import { useRouter } from "expo-router";
-import { isFinished } from "@repo/utils";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { ScoreInputNavigationBar, SmartFilterChips } from "../components";
+import {
+  ScoreInputNavigationBar,
+  SmartFilterChips,
+  GroupFixtureCard,
+} from "../components";
 import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
-import { MatchPredictionCardVertical } from "../components/MatchPredictionCardVertical";
 import { useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { usePredictionNavigation } from "../hooks/usePredictionNavigation";
 import { useGroupGamePredictions } from "../hooks/useGroupGamePredictions";
@@ -20,15 +22,12 @@ import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFoot
 import { SingleGameView } from "../components/SingleGameView";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { HEADER_HEIGHT, FOOTER_PADDING } from "../utils/constants";
-import {
-  calculateContentPaddingTopDefault,
-  getPositionInGroup,
-} from "../utils/utils";
-import { shareText, buildPredictionShareText } from "@/utils/sharing";
+import { calculateContentPaddingTopDefault } from "../utils/utils";
 
 type Props = {
   groupId: number | null;
-  fixtures: FixtureItem[]; // Fixtures passed from parent (already fetched with group)
+  /** Fixtures passed from parent (already fetched with group). */
+  fixtures: FixtureItem[];
   predictionMode?: string;
   groupName?: string;
   selectionMode?: "games" | "teams" | "leagues";
@@ -37,10 +36,14 @@ type Props = {
 
 /**
  * Feature screen for group games score predictions.
- * This file intentionally keeps only high-level orchestration:
- * - data query
- * - state for predictions
- * - wiring of keyboard/nav/scroll behaviors
+ *
+ * This file keeps only high-level orchestration:
+ * - Normalises fixtures from props and applies filters (teams/rounds/actions).
+ * - Groups fixtures by league/date and manages prediction state (local + save).
+ * - Wires keyboard height, focus saving, and prev/next field navigation.
+ * - Renders either list view (ScrollView + GroupFixtureCard per fixture) or
+ *   single-game view (SingleGameView). Handlers are memoized so fixture cards
+ *   re-render only when their props change.
  */
 export function GroupGamesScreen({
   groupId,
@@ -53,11 +56,12 @@ export function GroupGamesScreen({
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
+  /** Toggle between full list of fixtures and single-fixture swipe view. */
   const [viewMode, setViewMode] = React.useState<"list" | "single">("list");
 
   const mode = selectionMode ?? "games";
 
-  // Use fixtures from props (already fetched with group query)
+  /** Normalise fixtures from props; ensure we always have an array. */
   const fixtures = useMemo(() => {
     return Array.isArray(fixturesProp) ? fixturesProp : [];
   }, [fixturesProp]);
@@ -68,6 +72,7 @@ export function GroupGamesScreen({
     }
   }, [groupId, router]);
 
+  /** Filter chips (teams, rounds, actions) and empty-state messaging. */
   const {
     actionChips,
     selectedAction,
@@ -86,9 +91,10 @@ export function GroupGamesScreen({
     onNavigateToLeaderboard: navigateToLeaderboard,
   });
 
-  // Group fixtures by league/date with LIVE fixtures separated
+  /** Fixtures grouped by league + date; LIVE fixtures are separated for layout. */
   const leagueDateGroups = useGroupedFixtures(filteredFixtures);
 
+  /** Local prediction state, save-to-server, and MatchWinner 1/X/2 handling. */
   const {
     predictions,
     savedPredictions,
@@ -106,6 +112,7 @@ export function GroupGamesScreen({
   const predictionModeTyped: "CorrectScore" | "MatchWinner" =
     predictionMode === "MatchWinner" ? "MatchWinner" : "CorrectScore";
 
+  /** For MatchWinner mode: set 1/X/2 and trigger a save shortly after. */
   const handleSelectOutcome = React.useCallback(
     (fixtureId: number, outcome: "home" | "draw" | "away") => {
       setOutcomePrediction(fixtureId, outcome);
@@ -114,7 +121,7 @@ export function GroupGamesScreen({
     [setOutcomePrediction, saveAllChangedPredictions]
   );
 
-  // Calculate predictions statistics
+  /** Stats for footer: last saved time, saved count, total count. */
   const { latestUpdatedAt, savedPredictionsCount, totalPredictionsCount } =
     usePredictionsStats({
       fixtures,
@@ -122,6 +129,7 @@ export function GroupGamesScreen({
       savedPredictions,
     });
 
+  /** Refs for inputs/cards, scroll ref, focus state, prev/next and scroll-to-card. */
   const {
     inputRefs,
     matchCardRefs,
@@ -139,12 +147,13 @@ export function GroupGamesScreen({
 
   const keyboardHeight = useKeyboardHeight();
 
+  /** Persist focus in state so nav bar and scroll-to-card know current field. */
   const { handleFieldFocus, handleFieldBlur } = useCardFocusSaving({
     currentFocusedField,
     setCurrentFocusedField,
   });
 
-  // Listen for keyboard dismissal (when user taps background, not just Done button)
+  /** Save pending predictions when keyboard hides (tap outside or system dismiss). */
   React.useEffect(() => {
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
@@ -161,7 +170,7 @@ export function GroupGamesScreen({
     };
   }, [saveAllChangedPredictions]);
 
-  // Ensure refs exist for all fixtures currently rendered
+  /** Create input/card refs for each fixture so cards can focus and scroll. */
   React.useEffect(() => {
     fixtures.forEach((fixture) => {
       const fixtureIdStr = String(fixture.id);
@@ -177,6 +186,33 @@ export function GroupGamesScreen({
     });
   }, [fixtures, inputRefs, matchCardRefs]);
 
+  /** Save all changed predictions then dismiss keyboard (Done button). */
+  const handleDone = useCallback(() => {
+    saveAllChangedPredictions();
+    Keyboard.dismiss();
+  }, [saveAllChangedPredictions]);
+
+  /** Update prediction for a field and optionally move focus to next field. */
+  const handleCardChange = useCallback(
+    (fixtureId: number, type: "home" | "away", text: string) => {
+      updatePrediction(fixtureId, type, text, (fId, t) => {
+        const nextIndex = getNextFieldIndex(fId, t);
+        if (nextIndex >= 0) navigateToField(nextIndex);
+      });
+    },
+    [updatePrediction, getNextFieldIndex, navigateToField]
+  );
+
+  /** Move focus to the next input (e.g. after max digits in score field). */
+  const handleAutoNext = useCallback(
+    (fixtureId: number, type: "home" | "away") => {
+      const nextIndex = getNextFieldIndex(fixtureId, type);
+      if (nextIndex >= 0) navigateToField(nextIndex);
+    },
+    [getNextFieldIndex, navigateToField]
+  );
+
+  /** No fixtures at all (e.g. group has no games selected). */
   if (fixtures.length === 0) {
     return (
       <Screen>
@@ -188,30 +224,6 @@ export function GroupGamesScreen({
       </Screen>
     );
   }
-
-  const handleDone = () => {
-    // Save all changed predictions before dismissing keyboard
-    // The saveAllChangedPredictions function already checks if there are changes
-    // and prevents double saves, so this is safe to call
-    saveAllChangedPredictions();
-    Keyboard.dismiss();
-  };
-
-  const handleMatchPredictionCardChange = (
-    fixtureId: number,
-    type: "home" | "away",
-    text: string
-  ) => {
-    updatePrediction(fixtureId, type, text, (fixtureId, t) => {
-      const nextIndex = getNextFieldIndex(fixtureId, t);
-      if (nextIndex >= 0) navigateToField(nextIndex);
-    });
-  };
-
-  const handleAutoNext = (fixtureId: number, type: "home" | "away") => {
-    const nextIndex = getNextFieldIndex(fixtureId, type);
-    if (nextIndex >= 0) navigateToField(nextIndex);
-  };
 
   const header = (
     <GroupGamesHeader
@@ -227,6 +239,7 @@ export function GroupGamesScreen({
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       {viewMode === "single" ? (
+        /* Single-fixture swipe view with one card at a time. */
         <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
           <SingleGameView
             fixtures={fixtures}
@@ -250,6 +263,7 @@ export function GroupGamesScreen({
           />
         </View>
       ) : (
+        /* List view: filter chips, scrollable fixture list, nav bar. */
         <>
           {hasAnyChips && (
             <SmartFilterChips
@@ -275,6 +289,7 @@ export function GroupGamesScreen({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            {/* Filters applied but no fixtures match. */}
             {emptyState && filteredFixtures.length === 0 ? (
               <View style={styles.emptyStateContainer}>
                 <AppText
@@ -299,6 +314,7 @@ export function GroupGamesScreen({
               </View>
             ) : (
               <>
+                {/* One section per league/date; each section has a list of fixture cards. */}
                 {leagueDateGroups.map((group) => (
                   <LeagueDateGroupSection
                     key={group.key}
@@ -307,92 +323,37 @@ export function GroupGamesScreen({
                     kickoffIso={null}
                   >
                     <View style={styles.groupCardContainer}>
-                      {/* Render each fixture in the group */}
-                      {group.fixtures.map((fixture, index) => {
-                        const cardRef =
-                          matchCardRefs.current[String(fixture.id)];
-                        const prediction = predictions[String(fixture.id)] || {
-                          home: null,
-                          away: null,
-                        };
-
-                        const positionInGroup = getPositionInGroup(
-                          index,
-                          group.fixtures.length
-                        );
-
-                        const canShare =
-                          groupName &&
-                          isFinished(fixture.state) &&
-                          fixture.prediction != null &&
-                          fixture.prediction.settled &&
-                          fixture.prediction.points != null;
-                        const onShare = canShare
-                          ? () => {
-                              const pred = fixture.prediction!;
-                              const predictionStr =
-                                predictionModeTyped === "MatchWinner"
-                                  ? pred.home === pred.away
-                                    ? "X"
-                                    : pred.home > pred.away
-                                      ? "1"
-                                      : "2"
-                                  : `${pred.home}-${pred.away}`;
-                              shareText(
-                                buildPredictionShareText({
-                                  fixtureName:
-                                    fixture.name ??
-                                    `${fixture.homeTeam?.name ?? "Home"} vs ${fixture.awayTeam?.name ?? "Away"}`,
-                                  prediction: predictionStr,
-                                  actual: fixture.result ?? "-",
-                                  points: fixture.prediction!.points ?? 0,
-                                  groupName: groupName!,
-                                })
-                              );
+                      {/* Per-fixture card: position, share, and bound callbacks live in GroupFixtureCard. */}
+                      {group.fixtures.map((fixture, index) => (
+                        <GroupFixtureCard
+                          key={fixture.id}
+                          fixture={fixture}
+                          index={index}
+                          totalInGroup={group.fixtures.length}
+                          prediction={
+                            predictions[String(fixture.id)] || {
+                              home: null,
+                              away: null,
                             }
-                          : undefined;
-
-                        const commonProps = {
-                          positionInGroup,
-                          fixture,
-                          prediction,
-                          inputRefs,
-                          currentFocusedField,
-                          savedPredictions,
-                          cardRef,
-                          onFocus: (type: "home" | "away") => {
-                            handleFieldFocus(fixture.id, type);
-                            scrollToMatchCard(fixture.id);
-                          },
-                          onBlur: () => {
-                            handleFieldBlur(fixture.id);
-                          },
-                          onChange: (type: "home" | "away", text: string) =>
-                            handleMatchPredictionCardChange(
-                              fixture.id,
-                              type,
-                              text
-                            ),
-                          onAutoNext: (type: "home" | "away") => {
-                            handleAutoNext(fixture.id, type);
-                          },
-                          predictionMode: predictionModeTyped,
-                          onSelectOutcome:
+                          }
+                          inputRefs={inputRefs}
+                          currentFocusedField={currentFocusedField}
+                          savedPredictions={savedPredictions}
+                          matchCardRefs={matchCardRefs}
+                          predictionMode={predictionModeTyped}
+                          groupName={groupName}
+                          onFieldFocus={handleFieldFocus}
+                          onFieldBlur={handleFieldBlur}
+                          onCardChange={handleCardChange}
+                          onAutoNext={handleAutoNext}
+                          onSelectOutcome={
                             predictionMode === "MatchWinner"
-                              ? (outcome: "home" | "draw" | "away") =>
-                                  handleSelectOutcome(fixture.id, outcome)
-                              : undefined,
-                          onShare,
-                          showShare: Boolean(canShare),
-                        };
-
-                        return (
-                          <MatchPredictionCardVertical
-                            key={fixture.id}
-                            {...commonProps}
-                          />
-                        );
-                      })}
+                              ? handleSelectOutcome
+                              : undefined
+                          }
+                          onScrollToCard={scrollToMatchCard}
+                        />
+                      ))}
                     </View>
                   </LeagueDateGroupSection>
                 ))}
@@ -417,6 +378,7 @@ export function GroupGamesScreen({
           />
         </>
       )}
+      {/* Header floats above content; pointerEvents so taps pass through to list. */}
       <View style={[styles.headerOverlay, { top: 0 }]} pointerEvents="box-none">
         {header}
       </View>
@@ -424,6 +386,7 @@ export function GroupGamesScreen({
   );
 }
 
+/** Layout: full-screen container, scroll content with padding, floating header overlay. */
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
