@@ -1,12 +1,11 @@
 // features/group-creation/components/SelectionModeTabs.tsx
 // 3-way mode selector for group creation: Upcoming games | Leagues | Teams.
-// Selected state: text color only (no background pill).
-// English only. Uses theme colors, spacing, radius.
+// Pill-shaped tabs (like reference): unselected = white + primary border + primary text; selected = primary fill + white text.
+// Layout: full-width row, equal-width pills, fixed height bar.
 
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, Pressable, StyleSheet } from "react-native";
-import { BlurView } from "expo-blur";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 
@@ -19,8 +18,7 @@ interface SelectionModeTabsProps {
 
 export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
   const { t } = useTranslation("common");
-  const { theme, colorScheme } = useTheme();
-  const isDark = colorScheme === "dark";
+  const { theme } = useTheme();
   const MODES: { value: SelectionMode; labelKey: string }[] = [
     { value: "fixtures", labelKey: "groupCreation.games" },
     { value: "leagues", labelKey: "groupCreation.leagues" },
@@ -29,56 +27,42 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
 
   return (
     <View style={styles.wrapper}>
-      <View
-        style={[
-          styles.container,
-          {
-            borderColor: theme.colors.border,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 4,
-          },
-        ]}
-      >
-        <BlurView
-          intensity={80}
-          tint={isDark ? "dark" : "light"}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.content}>
-          {MODES.map((m) => {
-            const isSelected = value === m.value;
-            return (
-              <Pressable
-                key={m.value}
-                onPress={() => onChange(m.value)}
-                style={({ pressed }) => [
-                  styles.tab,
+      <View style={styles.content}>
+        {MODES.map((m) => {
+          const isSelected = value === m.value;
+          return (
+            <Pressable
+              key={m.value}
+              onPress={() => onChange(m.value)}
+              style={({ pressed }) => [
+                styles.tab,
+                {
+                  backgroundColor: isSelected
+                    ? theme.colors.primary
+                    : theme.colors.background,
+                  borderColor: theme.colors.primary,
+                  borderWidth: 1.5,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <AppText
+                variant="body"
+                style={[
+                  styles.tabText,
                   {
-                    opacity: pressed ? 0.7 : 1,
+                    color: isSelected
+                      ? theme.colors.primaryText
+                      : theme.colors.primary,
+                    fontWeight: "500",
                   },
                 ]}
               >
-                <AppText
-                  variant="body"
-                  style={[
-                    styles.tabText,
-                    {
-                      color: isSelected
-                        ? theme.colors.primary
-                        : theme.colors.textSecondary,
-                      fontWeight: isSelected ? "600" : "400",
-                    },
-                  ]}
-                >
-                  {t(m.labelKey as any)}
-                </AppText>
-              </Pressable>
-            );
-          })}
-        </View>
+                {t(m.labelKey as any)}
+              </AppText>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
@@ -87,25 +71,26 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
 const styles = StyleSheet.create({
   wrapper: {
     width: "100%",
-  },
-  container: {
-    overflow: "hidden",
-    borderBottomWidth: 1,
-    borderTopWidth: 1,
-    minHeight: 42,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    minHeight: 40,
+    justifyContent: "center",
   },
   content: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 4,
+    justifyContent: "space-between",
+    gap: 6,
   },
   tab: {
-    flex: 1,
+    // flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    zIndex: 1,
+    minHeight: 34,
+    paddingVertical: 6,
+    paddingHorizontal: 22,
+    borderRadius: 999,
+    minWidth: "30%",
   },
   tabText: {
     fontSize: 14,
