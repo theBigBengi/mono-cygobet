@@ -172,40 +172,81 @@ export class TeamsService {
       tertiaryColor?: string | null;
     }[]
   ) {
+    // 1. Fetch ALL teams in ONE query (id, name, current colors for ?? preservation)
+    const allTeams = await prisma.teams.findMany({
+      select: {
+        id: true,
+        name: true,
+        firstKitColor: true,
+        secondKitColor: true,
+        thirdKitColor: true,
+      },
+    });
+
+    // 2. Case-insensitive name -> team map
+    const teamMap = new Map<
+      string,
+      {
+        id: number;
+        firstKitColor: string | null;
+        secondKitColor: string | null;
+        thirdKitColor: string | null;
+      }
+    >();
+    for (const t of allTeams) {
+      teamMap.set(t.name.toLowerCase(), {
+        id: t.id,
+        firstKitColor: t.firstKitColor,
+        secondKitColor: t.secondKitColor,
+        thirdKitColor: t.thirdKitColor,
+      });
+    }
+
     const results = {
       updated: 0,
       notFound: [] as string[],
       errors: [] as { name: string; error: string }[],
     };
 
+    const updates: {
+      id: number;
+      data: Parameters<typeof prisma.teams.update>[0]["data"];
+    }[] = [];
+
     for (const team of teams) {
-      try {
-        const existing = await prisma.teams.findFirst({
-          where: { name: { equals: team.name, mode: "insensitive" } },
-        });
-
-        if (!existing) {
-          results.notFound.push(team.name);
-          continue;
-        }
-
-        await prisma.teams.update({
-          where: { id: existing.id },
-          data: {
-            firstKitColor: team.primaryColor ?? existing.firstKitColor,
-            secondKitColor: team.secondaryColor ?? existing.secondKitColor,
-            thirdKitColor: team.tertiaryColor ?? existing.thirdKitColor,
-            updatedAt: new Date(),
-          },
-        });
-
-        results.updated++;
-      } catch (error) {
-        results.errors.push({
-          name: team.name,
-          error: error instanceof Error ? error.message : "Unknown error",
-        });
+      const existing = teamMap.get(team.name.toLowerCase());
+      if (!existing) {
+        results.notFound.push(team.name);
+        continue;
       }
+
+      updates.push({
+        id: existing.id,
+        data: {
+          firstKitColor: team.primaryColor ?? existing.firstKitColor,
+          secondKitColor: team.secondaryColor ?? existing.secondKitColor,
+          thirdKitColor: team.tertiaryColor ?? existing.thirdKitColor,
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    // 4. Execute all updates in a single transaction
+    try {
+      await prisma.$transaction(
+        updates.map((u) =>
+          prisma.teams.update({
+            where: { id: u.id },
+            data: u.data,
+          })
+        )
+      );
+      results.updated = updates.length;
+    } catch (error) {
+      results.errors.push({
+        name: "batch",
+        error: error instanceof Error ? error.message : "Transaction failed",
+      });
     }
 
     return results;
