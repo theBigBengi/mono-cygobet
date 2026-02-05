@@ -128,6 +128,11 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
     );
   }, [isFetchingNextPage, t]);
 
+  const keyboardVerticalOffset = useMemo(
+    () => (Platform.OS === "ios" ? insets.top + HEADER_HEIGHT : 0),
+    [insets.top]
+  );
+
   if (!groupId) {
     return (
       <View style={styles.centered}>
@@ -150,11 +155,6 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
       />
     );
   }
-
-  const keyboardVerticalOffset = useMemo(
-    () => (Platform.OS === "ios" ? insets.top + HEADER_HEIGHT : 0),
-    [insets.top]
-  );
 
   return (
     <KeyboardAvoidingView
