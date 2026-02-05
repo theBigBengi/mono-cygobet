@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   matchCard: {
-    marginHorizontal: 4,
+    // marginHorizontal: 4,
     marginBottom: 0,
     paddingVertical: 8,
   },

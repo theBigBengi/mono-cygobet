@@ -32,11 +32,7 @@ export function LeagueDateGroupSection({
             {leagueName}
           </AppText>
         </View>
-        <AppText
-          variant="caption"
-          color="secondary"
-          style={styles.headerText}
-        >
+        <AppText variant="caption" color="secondary" style={styles.headerText}>
           {kickoffIso
             ? formatDateHeader(dateKey, formatKickoffTime24(kickoffIso))
             : formatDateHeader(dateKey)}
@@ -53,8 +49,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 4,
-    paddingVertical: 8,
+    // paddingHorizontal: 4,
+    // paddingVertical: 8,
     backgroundColor: "transparent",
   },
   headerLeft: {

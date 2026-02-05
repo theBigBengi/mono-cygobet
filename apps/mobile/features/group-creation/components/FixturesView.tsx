@@ -71,9 +71,8 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
     [queryParams, filters.queryParams]
   );
 
-  const { data, isLoading, error, refetch } = useUpcomingFixturesQuery(
-    mergedParams
-  );
+  const { data, isLoading, error, refetch } =
+    useUpcomingFixturesQuery(mergedParams);
 
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = useCallback(async () => {
@@ -91,7 +90,9 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
   }, [data?.data]);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -107,12 +108,12 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         }
       >
         {tabs}
-        <DateChips
+        {/* <DateChips
           selected={filters.dateRange}
           onSelect={filters.setDateRange}
           activeFilterCount={filters.activeFilterCount}
           onOpenFilters={() => setDrawerVisible(true)}
-        />
+        /> */}
         {isLoading && (
           <AppText variant="body" color="secondary" style={styles.message}>
             Loading games…

@@ -125,7 +125,10 @@ export function DateChips({
               >
                 <AppText
                   variant="caption"
-                  style={[styles.badgeText, { color: theme.colors.primaryText }]}
+                  style={[
+                    styles.badgeText,
+                    { color: theme.colors.primaryText },
+                  ]}
                 >
                   {activeFilterCount > 99 ? "99+" : activeFilterCount}
                 </AppText>
@@ -141,7 +144,7 @@ export function DateChips({
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    // paddingHorizontal: 12,
   },
   row: {
     flexDirection: "row",

@@ -71,7 +71,7 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
 const styles = StyleSheet.create({
   wrapper: {
     width: "100%",
-    paddingHorizontal: 12,
+    // paddingHorizontal: 12,
     paddingVertical: 6,
     minHeight: 40,
     justifyContent: "center",

@@ -211,8 +211,8 @@ export function FloatingTabBar({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    left: 64,
-    right: 64,
+    left: 32,
+    right: 32,
     bottom: 30,
     alignItems: "center",
     zIndex: 1000,
