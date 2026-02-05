@@ -1,17 +1,10 @@
 import React, { useRef, useState, useEffect } from "react";
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  Pressable,
-  Dimensions,
-  Keyboard,
-} from "react-native";
+import { View, StyleSheet, FlatList, Dimensions, Keyboard } from "react-native";
 import { useTheme } from "@/lib/theme";
-import { Ionicons } from "@expo/vector-icons";
 import { SingleGameMatchCard } from "./SingleGameMatchCard";
 import { GroupGamesHeader } from "./GroupGamesHeader";
 import { GameSlider } from "./GameSlider";
+import { ScoreSlider } from "./ScoreSlider";
 import type { FixtureItem } from "@/types/common";
 import type {
   PredictionMode,
@@ -196,27 +189,9 @@ export function SingleGameView({
         onSelectGame={handleSelectGame}
       />
       <View style={[styles.contentContainer, { flex: 1 }]}>
-        {/* Previous button - positioned absolutely on left */}
-        <Pressable
-          style={[
-            styles.navButton,
-            styles.navButtonLeft,
-            currentIndex === 0 && styles.navButtonDisabled,
-            { borderColor: theme.colors.border },
-          ]}
-          onPress={handlePrevious}
-          disabled={currentIndex === 0}
-        >
-          <Ionicons
-            name="chevron-back"
-            size={24}
-            color={
-              currentIndex === 0
-                ? theme.colors.textSecondary
-                : theme.colors.textPrimary
-            }
-          />
-        </Pressable>
+        {/* Vertical score sliders - full height, left and right */}
+        <ScoreSlider side="home" />
+        <ScoreSlider side="away" />
 
         {/* FlatList for games - takes full width */}
         <FlatList
@@ -244,28 +219,6 @@ export function SingleGameView({
           })}
           style={styles.flatList}
         />
-
-        {/* Next button - positioned absolutely on right */}
-        <Pressable
-          style={[
-            styles.navButton,
-            styles.navButtonRight,
-            currentIndex === fixtures.length - 1 && styles.navButtonDisabled,
-            { borderColor: theme.colors.border },
-          ]}
-          onPress={handleNext}
-          disabled={currentIndex === fixtures.length - 1}
-        >
-          <Ionicons
-            name="chevron-forward"
-            size={24}
-            color={
-              currentIndex === fixtures.length - 1
-                ? theme.colors.textSecondary
-                : theme.colors.textPrimary
-            }
-          />
-        </Pressable>
       </View>
     </View>
   );
@@ -282,27 +235,6 @@ const styles = StyleSheet.create({
   },
   flatList: {
     width: SCREEN_WIDTH,
-  },
-  navButton: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 20,
-    borderWidth: 1,
-    position: "absolute",
-    top: "50%",
-    marginTop: -20,
-    zIndex: 10,
-  },
-  navButtonLeft: {
-    left: 8,
-  },
-  navButtonRight: {
-    right: 8,
-  },
-  navButtonDisabled: {
-    opacity: 0.3,
   },
   gameContainer: {
     width: SCREEN_WIDTH,

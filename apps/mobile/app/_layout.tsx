@@ -18,7 +18,12 @@ import { I18nBootstrap } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { SocketProvider } from "@/lib/socket";
-import { useAuth, isAuthenticated, isOnboarding, isUnauthenticated } from "@/lib/auth/useAuth";
+import {
+  useAuth,
+  isAuthenticated,
+  isOnboarding,
+  isUnauthenticated,
+} from "@/lib/auth/useAuth";
 import { queryClient } from "@/lib/query/queryClient";
 import { StatusBar } from "expo-status-bar";
 import { jotaiStore } from "@/lib/state/jotaiStore";
@@ -27,6 +32,7 @@ import { DegradedBanner } from "@/components/DegradedBanner";
 import { initializeGlobalErrorHandlers } from "@/lib/errors/globalErrorHandlers";
 import { handleError, getUserFriendlyMessage } from "@/lib/errors";
 import { View, Text, StyleSheet, Pressable } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 
@@ -78,11 +84,14 @@ function AppContent() {
               />
               <Stack.Screen
                 name="groups/[id]/ranking"
-                options={{   headerShown: false }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="groups/[id]/predictions-overview"
-                options={{ title: t("groups.predictionsOverview"), headerShown: false }}
+                options={{
+                  title: t("groups.predictionsOverview"),
+                  headerShown: false,
+                }}
               />
               <Stack.Screen
                 name="groups/[id]/invite"
@@ -98,7 +107,10 @@ function AppContent() {
               />
               <Stack.Screen
                 name="groups/[id]/member/[userId]"
-                options={{ title: t("groups.memberProfile"), headerShown: false }}
+                options={{
+                  title: t("groups.memberProfile"),
+                  headerShown: false,
+                }}
               />
               <Stack.Screen
                 name="groups/join"
@@ -110,7 +122,7 @@ function AppContent() {
               />
               <Stack.Screen
                 name="profile/head-to-head"
-                options={{   headerShown: false }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="tooltip-demo"
@@ -148,26 +160,28 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <JotaiProvider store={jotaiStore}>
-      <QueryClientProvider client={queryClient}>
-        <I18nBootstrap>
-          <ThemeProvider>
-            <AuthProvider>
-              <SocketProvider>
-                <AppContent />
-              </SocketProvider>
-            </AuthProvider>
-          </ThemeProvider>
-        </I18nBootstrap>
-      </QueryClientProvider>
-    </JotaiProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <JotaiProvider store={jotaiStore}>
+        <QueryClientProvider client={queryClient}>
+          <I18nBootstrap>
+            <ThemeProvider>
+              <AuthProvider>
+                <SocketProvider>
+                  <AppContent />
+                </SocketProvider>
+              </AuthProvider>
+            </ThemeProvider>
+          </I18nBootstrap>
+        </QueryClientProvider>
+      </JotaiProvider>
+    </GestureHandlerRootView>
   );
 }
 
 /**
  * Root-level ErrorBoundary for Expo Router
  * Catches all unhandled errors in the app
- * 
+ *
  * Note: This component must be self-contained and not depend on any providers
  * (Theme, Auth, etc.) as it may run before they are initialized.
  */
@@ -207,21 +221,26 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
           {t("errors.somethingWentWrongTitle") || "Something went wrong"}
         </Text>
         <Text style={errorBoundaryStyles.message}>{userMessage}</Text>
-        
-        <Pressable
-          style={errorBoundaryStyles.button}
-          onPress={handleRetry}
-        >
+
+        <Pressable style={errorBoundaryStyles.button} onPress={handleRetry}>
           <Text style={errorBoundaryStyles.buttonText}>
             {t("errors.tryAgain") || "Try Again"}
           </Text>
         </Pressable>
-        
+
         <Pressable
-          style={[errorBoundaryStyles.button, errorBoundaryStyles.buttonSecondary]}
+          style={[
+            errorBoundaryStyles.button,
+            errorBoundaryStyles.buttonSecondary,
+          ]}
           onPress={handleGoHome}
         >
-          <Text style={[errorBoundaryStyles.buttonText, errorBoundaryStyles.buttonTextSecondary]}>
+          <Text
+            style={[
+              errorBoundaryStyles.buttonText,
+              errorBoundaryStyles.buttonTextSecondary,
+            ]}
+          >
             {t("errors.goToHome") || "Go to Home"}
           </Text>
         </Pressable>
