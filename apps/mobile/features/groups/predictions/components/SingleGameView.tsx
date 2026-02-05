@@ -19,11 +19,173 @@ import { HorizontalScoreSlider } from "./HorizontalScoreSlider";
 import { FixturePredictionsList } from "./FixturePredictionsList";
 import { canPredict } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
+import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type {
   PredictionMode,
   PredictionsByFixtureId,
   FocusedField,
 } from "../types";
+
+type SingleGamePageProps = {
+  fixture: FixtureItem;
+  prediction: GroupPrediction;
+  groupId: number | null;
+  savedPredictions: Set<number>;
+  inputRefs: React.MutableRefObject<
+    Record<string, { home: React.RefObject<any>; away: React.RefObject<any> }>
+  >;
+  currentFocusedField: FocusedField;
+  predictions: PredictionsByFixtureId;
+  onFieldFocus: (fixtureId: number, type: "home" | "away") => void;
+  onFieldBlur: (fixtureId: number) => void;
+  onUpdatePrediction: (
+    fixtureId: number,
+    type: "home" | "away",
+    text: string,
+    onAutoNext?: (fixtureId: number, type: "home" | "away") => void
+  ) => void;
+  getNextFieldIndex: (fixtureId: number, type: "home" | "away") => number;
+  navigateToField: (index: number) => void;
+  predictionMode: PredictionMode;
+  onSelectOutcome?: (
+    fixtureId: number,
+    outcome: "home" | "draw" | "away"
+  ) => void;
+};
+
+const SingleGamePage = React.memo(function SingleGamePage({
+  fixture,
+  prediction,
+  groupId,
+  savedPredictions,
+  inputRefs,
+  currentFocusedField,
+  predictions,
+  onFieldFocus,
+  onFieldBlur,
+  onUpdatePrediction,
+  getNextFieldIndex,
+  navigateToField,
+  predictionMode,
+  onSelectOutcome,
+}: SingleGamePageProps) {
+  const { t } = useTranslation("common");
+
+  const isEditable = canPredict(fixture.state, fixture.startTs);
+  const defaultTab: TabId = isEditable ? "predict" : "predictions";
+  const [activeTab, setActiveTab] = useState<TabId>(defaultTab);
+
+  const tabs = [
+    ...(isEditable
+      ? [{ id: "predict" as const, label: t("predictions.predict") }]
+      : []),
+    ...(!isEditable
+      ? [{ id: "predictions" as const, label: t("predictions.predictions") }]
+      : []),
+    { id: "statistics" as const, label: t("predictions.statistics") },
+  ];
+
+  const fixtureIdStr = String(fixture.id);
+  const isHomeFocused =
+    currentFocusedField?.fixtureId === fixture.id &&
+    currentFocusedField.type === "home";
+  const isAwayFocused =
+    currentFocusedField?.fixtureId === fixture.id &&
+    currentFocusedField.type === "away";
+  const homeRef = inputRefs.current[fixtureIdStr]?.home;
+  const awayRef = inputRefs.current[fixtureIdStr]?.away;
+  const isSaved = savedPredictions.has(fixture.id);
+
+  const handleSliderChange = (
+    side: "home" | "away",
+    val: number | null,
+    fixtureId: number
+  ) => {
+    const pred = predictions[String(fixtureId)] || { home: null, away: null };
+    const otherSide = side === "home" ? "away" : "home";
+    const otherValue = pred[otherSide];
+
+    if (val != null && otherValue == null) {
+      onUpdatePrediction(fixtureId, otherSide, "0");
+    } else if (val == null && otherValue != null) {
+      onUpdatePrediction(fixtureId, otherSide, "");
+    }
+
+    onUpdatePrediction(fixtureId, side, val != null ? String(val) : "");
+  };
+
+  return (
+    <View style={[styles.gameContainer, { width: SCREEN_WIDTH }]}>
+      <ScrollView
+        nestedScrollEnabled
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.gameScrollContent}
+      >
+        <SingleGameMatchCard
+          fixture={fixture}
+          prediction={prediction}
+          homeRef={homeRef}
+          awayRef={awayRef}
+          homeFocused={isHomeFocused}
+          awayFocused={isAwayFocused}
+          isSaved={isSaved}
+          onFocus={(type) => onFieldFocus(fixture.id, type)}
+          onBlur={() => onFieldBlur(fixture.id)}
+          onChange={(type, text) => onUpdatePrediction(fixture.id, type, text)}
+          onAutoNext={(type) => {
+            const nextIndex = getNextFieldIndex(fixture.id, type);
+            if (nextIndex >= 0) {
+              navigateToField(nextIndex);
+            }
+          }}
+          predictionMode={predictionMode}
+          onSelectOutcome={
+            onSelectOutcome
+              ? (outcome) => onSelectOutcome(fixture.id, outcome)
+              : undefined
+          }
+        />
+        <GameDetailTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+        />
+        {activeTab === "predict" && (
+          <>
+            <HorizontalScoreSlider
+              side="home"
+              value={prediction.home}
+              onValueChange={(val) =>
+                handleSliderChange("home", val, fixture.id)
+              }
+              teamImagePath={fixture.homeTeam?.imagePath}
+              teamName={fixture.homeTeam?.name}
+            />
+            <HorizontalScoreSlider
+              side="away"
+              value={prediction.away}
+              onValueChange={(val) =>
+                handleSliderChange("away", val, fixture.id)
+              }
+              teamImagePath={fixture.awayTeam?.imagePath}
+              teamName={fixture.awayTeam?.name}
+            />
+          </>
+        )}
+        {activeTab === "predictions" && (
+          <FixturePredictionsList groupId={groupId} fixtureId={fixture.id} />
+        )}
+        {activeTab === "statistics" && (
+          <View style={styles.placeholderContainer}>
+            <AppText variant="body" color="secondary">
+              {t("predictions.statistics")}
+            </AppText>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+});
 
 type Props = {
   groupId: number | null;
@@ -79,30 +241,8 @@ export function SingleGameView({
   onBack,
 }: Props) {
   const { theme } = useTheme();
-  const { t } = useTranslation("common");
   const [currentIndex, setCurrentIndex] = useState(initialIndex ?? 0);
-  const [activeTabs, setActiveTabs] = useState<Record<number, TabId>>({});
   const flatListRef = useRef<FlatList>(null);
-
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      const newIndex = currentIndex - 1;
-      setCurrentIndex(newIndex);
-      flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
-      Keyboard.dismiss();
-      onSaveAllChanged();
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex < fixtures.length - 1) {
-      const newIndex = currentIndex + 1;
-      setCurrentIndex(newIndex);
-      flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
-      Keyboard.dismiss();
-      onSaveAllChanged();
-    }
-  };
 
   const handleSelectGame = (index: number) => {
     setCurrentIndex(index);
@@ -137,7 +277,6 @@ export function SingleGameView({
 
   const renderItem = ({
     item: fixture,
-    index,
   }: {
     item: FixtureItem;
     index: number;
@@ -148,136 +287,29 @@ export function SingleGameView({
       away: null,
     };
 
-    const isHomeFocused =
-      currentFocusedField?.fixtureId === fixture.id &&
-      currentFocusedField.type === "home";
-    const isAwayFocused =
-      currentFocusedField?.fixtureId === fixture.id &&
-      currentFocusedField.type === "away";
-
-    const homeRef = inputRefs.current[fixtureIdStr]?.home;
-    const awayRef = inputRefs.current[fixtureIdStr]?.away;
-
-    const isSaved = savedPredictions.has(fixture.id);
-
-    const isEditable = canPredict(fixture.state, fixture.startTs);
-    const defaultTab: TabId = isEditable ? "predict" : "predictions";
-    const tabs = [
-      ...(isEditable
-        ? [{ id: "predict" as const, label: t("predictions.predict") }]
-        : []),
-      ...(!isEditable
-        ? [
-            {
-              id: "predictions" as const,
-              label: t("predictions.predictions"),
-            },
-          ]
-        : []),
-      { id: "statistics" as const, label: t("predictions.statistics") },
-    ];
-    const activeTab = activeTabs[fixture.id] ?? defaultTab;
-    const handleSelectTab = (tab: TabId) => {
-      setActiveTabs((prev) => ({ ...prev, [fixture.id]: tab }));
-    };
-
     return (
-      <View style={[styles.gameContainer, { width: SCREEN_WIDTH }]}>
-        <ScrollView
-          nestedScrollEnabled
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.gameScrollContent}
-        >
-          <SingleGameMatchCard
-            fixture={fixture}
-            prediction={prediction}
-            homeRef={homeRef}
-            awayRef={awayRef}
-            homeFocused={isHomeFocused}
-            awayFocused={isAwayFocused}
-            isSaved={isSaved}
-            onFocus={(type) => onFieldFocus(fixture.id, type)}
-            onBlur={() => onFieldBlur(fixture.id)}
-            onChange={(type, text) =>
-              onUpdatePrediction(fixture.id, type, text)
-            }
-            onAutoNext={(type) => {
-              // In single view, auto-next can advance to next game if at end of current game
-              const nextIndex = getNextFieldIndex(fixture.id, type);
-              if (nextIndex >= 0) {
-                navigateToField(nextIndex);
-              }
-            }}
-            predictionMode={predictionMode}
-            onSelectOutcome={
-              onSelectOutcome
-                ? (outcome) => onSelectOutcome(fixture.id, outcome)
-                : undefined
-            }
-          />
-          <GameDetailTabs
-            tabs={tabs}
-            activeTab={activeTab}
-            onSelectTab={handleSelectTab}
-          />
-          {activeTab === "predict" && (
-            <>
-              <HorizontalScoreSlider
-                side="home"
-                value={prediction.home}
-                onValueChange={(val) =>
-                  handleSliderChange("home", val, fixture.id)
-                }
-                teamImagePath={fixture.homeTeam?.imagePath}
-                teamName={fixture.homeTeam?.name}
-              />
-              <HorizontalScoreSlider
-                side="away"
-                value={prediction.away}
-                onValueChange={(val) =>
-                  handleSliderChange("away", val, fixture.id)
-                }
-                teamImagePath={fixture.awayTeam?.imagePath}
-                teamName={fixture.awayTeam?.name}
-              />
-            </>
-          )}
-          {activeTab === "predictions" && (
-            <FixturePredictionsList groupId={groupId} fixtureId={fixture.id} />
-          )}
-          {activeTab === "statistics" && (
-            <View style={styles.placeholderContainer}>
-              <AppText variant="body" color="secondary">
-                {t("predictions.statistics")}
-              </AppText>
-            </View>
-          )}
-        </ScrollView>
-      </View>
+      <SingleGamePage
+        fixture={fixture}
+        prediction={prediction}
+        groupId={groupId}
+        savedPredictions={savedPredictions}
+        inputRefs={inputRefs}
+        currentFocusedField={currentFocusedField}
+        predictions={predictions}
+        onFieldFocus={onFieldFocus}
+        onFieldBlur={onFieldBlur}
+        onUpdatePrediction={onUpdatePrediction}
+        getNextFieldIndex={getNextFieldIndex}
+        navigateToField={navigateToField}
+        predictionMode={predictionMode}
+        onSelectOutcome={onSelectOutcome}
+      />
     );
   };
 
   if (fixtures.length === 0) {
     return null;
   }
-
-  const handleSliderChange = (
-    side: "home" | "away",
-    val: number | null,
-    fixtureId: number
-  ) => {
-    const pred = predictions[String(fixtureId)] || { home: null, away: null };
-    const otherSide = side === "home" ? "away" : "home";
-    const otherValue = pred[otherSide];
-
-    if (val != null && otherValue == null) {
-      onUpdatePrediction(fixtureId, otherSide, "0");
-    } else if (val == null && otherValue != null) {
-      onUpdatePrediction(fixtureId, otherSide, "");
-    }
-
-    onUpdatePrediction(fixtureId, side, val != null ? String(val) : "");
-  };
 
   return (
     <View

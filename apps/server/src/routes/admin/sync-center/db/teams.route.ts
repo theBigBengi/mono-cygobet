@@ -83,9 +83,24 @@ function mapTeamToResponse(team: TeamWithCountry) {
   };
 }
 
-// Mapper for update response (without country)
+// Mapper for update response (uses only team scalar fields)
 function mapTeamToUpdateResponse(
-  team: Prisma.teamsGetPayload<{ include: { countries: true } }>
+  team: Pick<
+    Prisma.teamsGetPayload<Record<string, never>>,
+    | "id"
+    | "name"
+    | "type"
+    | "shortCode"
+    | "imagePath"
+    | "founded"
+    | "countryId"
+    | "firstKitColor"
+    | "secondKitColor"
+    | "thirdKitColor"
+    | "externalId"
+    | "createdAt"
+    | "updatedAt"
+  >
 ) {
   return {
     id: team.id,
@@ -195,7 +210,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
           status: "error",
           data: null,
           message: getErrorMessage(error),
-        });
+        } as unknown as AdminTeamResponse);
       }
 
       // Parse include string to Prisma include object
@@ -293,7 +308,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
           status: "error",
           data: null,
           message: getErrorMessage(error),
-        });
+        } as unknown as AdminUpdateTeamResponse);
       }
 
       try {
@@ -310,7 +325,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
             status: "error",
             data: null,
             message: error.message,
-          });
+          } as unknown as AdminUpdateTeamResponse);
         }
         throw error;
       }
