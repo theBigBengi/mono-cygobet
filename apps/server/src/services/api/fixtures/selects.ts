@@ -33,6 +33,9 @@ export const FIXTURE_SELECT_BASE = {
       id: true,
       name: true,
       imagePath: true,
+      firstKitColor: true,
+      secondKitColor: true,
+      thirdKitColor: true,
     },
   },
   awayTeam: {
@@ -40,6 +43,9 @@ export const FIXTURE_SELECT_BASE = {
       id: true,
       name: true,
       imagePath: true,
+      firstKitColor: true,
+      secondKitColor: true,
+      thirdKitColor: true,
     },
   },
 } as const satisfies Prisma.fixturesSelect;

@@ -77,8 +77,22 @@ export type ApiUpcomingFixturesResponse = {
       name: string;
       imagePath: string | null;
     } | null;
-    homeTeam?: { id: number; name: string; imagePath: string | null };
-    awayTeam?: { id: number; name: string; imagePath: string | null };
+    homeTeam?: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      firstKitColor?: string | null;
+      secondKitColor?: string | null;
+      thirdKitColor?: string | null;
+    };
+    awayTeam?: {
+      id: number;
+      name: string;
+      imagePath: string | null;
+      firstKitColor?: string | null;
+      secondKitColor?: string | null;
+      thirdKitColor?: string | null;
+    };
     result?: string | null;
     homeScore90?: number | null;
     awayScore90?: number | null;
@@ -580,11 +594,17 @@ export type ApiPredictionsOverviewFixture = {
     id: number;
     name: string;
     imagePath: string | null;
+    firstKitColor?: string | null;
+    secondKitColor?: string | null;
+    thirdKitColor?: string | null;
   };
   awayTeam: {
     id: number;
     name: string;
     imagePath: string | null;
+    firstKitColor?: string | null;
+    secondKitColor?: string | null;
+    thirdKitColor?: string | null;
   };
   result: string | null; // final score (e.g., "2:1")
   startTs: number;
@@ -718,8 +738,22 @@ export type ApiFixtureDetailData = {
   awayScoreET: number | null;
   penHome: number | null;
   penAway: number | null;
-  homeTeam: { id: number; name: string; imagePath: string | null };
-  awayTeam: { id: number; name: string; imagePath: string | null };
+  homeTeam: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    firstKitColor?: string | null;
+    secondKitColor?: string | null;
+    thirdKitColor?: string | null;
+  };
+  awayTeam: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    firstKitColor?: string | null;
+    secondKitColor?: string | null;
+    thirdKitColor?: string | null;
+  };
   league: { id: number; name: string; imagePath: string | null } | null;
   country: { id: number; name: string; imagePath: string | null } | null;
   predictions: ApiFixtureDetailPrediction[];

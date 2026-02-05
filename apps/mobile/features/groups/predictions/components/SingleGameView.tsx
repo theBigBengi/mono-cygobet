@@ -17,6 +17,7 @@ import { GameDetailTabs } from "./GameDetailTabs";
 import type { TabId } from "./GameDetailTabs";
 import { HorizontalScoreSlider } from "./HorizontalScoreSlider";
 import { FixturePredictionsList } from "./FixturePredictionsList";
+import { getAwaySliderColor } from "../utils/color-helpers";
 import { canPredict } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
@@ -160,6 +161,7 @@ const SingleGamePage = React.memo(function SingleGamePage({
               }
               teamImagePath={fixture.homeTeam?.imagePath}
               teamName={fixture.homeTeam?.name}
+              thumbColor={fixture.homeTeam?.firstKitColor ?? "#22C55E"}
             />
             <HorizontalScoreSlider
               side="away"
@@ -169,6 +171,12 @@ const SingleGamePage = React.memo(function SingleGamePage({
               }
               teamImagePath={fixture.awayTeam?.imagePath}
               teamName={fixture.awayTeam?.name}
+              thumbColor={getAwaySliderColor(
+                fixture.homeTeam?.firstKitColor,
+                fixture.awayTeam?.secondKitColor,
+                fixture.awayTeam?.thirdKitColor,
+                "#3B82F6"
+              )}
             />
           </>
         )}

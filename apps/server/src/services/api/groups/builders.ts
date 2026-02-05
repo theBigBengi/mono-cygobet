@@ -191,6 +191,9 @@ export function formatFixtureFromDb(
           id: fixture.homeTeam.id,
           name: fixture.homeTeam.name,
           imagePath: fixture.homeTeam.imagePath ?? null,
+          firstKitColor: fixture.homeTeam.firstKitColor ?? null,
+          secondKitColor: fixture.homeTeam.secondKitColor ?? null,
+          thirdKitColor: fixture.homeTeam.thirdKitColor ?? null,
         }
       : undefined,
     awayTeam: fixture.awayTeam
@@ -198,6 +201,9 @@ export function formatFixtureFromDb(
           id: fixture.awayTeam.id,
           name: fixture.awayTeam.name,
           imagePath: fixture.awayTeam.imagePath ?? null,
+          firstKitColor: fixture.awayTeam.firstKitColor ?? null,
+          secondKitColor: fixture.awayTeam.secondKitColor ?? null,
+          thirdKitColor: fixture.awayTeam.thirdKitColor ?? null,
         }
       : undefined,
     country,

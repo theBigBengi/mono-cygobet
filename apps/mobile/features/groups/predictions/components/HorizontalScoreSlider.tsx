@@ -13,6 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
+import { getContrastTextColor, isLightColor } from "../utils/color-helpers";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const TRACK_PADDING = 24;
@@ -45,6 +46,8 @@ export type HorizontalScoreSliderProps = {
   onValueChange?: (value: number | null) => void;
   teamImagePath?: string | null;
   teamName?: string;
+  /** Override default green/blue thumb color. */
+  thumbColor?: string;
 };
 
 /** Animated digit — opacity/scale based on distance from thumb. */
@@ -119,6 +122,7 @@ export function HorizontalScoreSlider({
   onValueChange,
   teamImagePath,
   teamName,
+  thumbColor,
 }: HorizontalScoreSliderProps) {
   const { theme } = useTheme();
   const reversed = side === "away";
@@ -194,7 +198,9 @@ export function HorizontalScoreSlider({
     left: tabX.value + CELL_WIDTH / 2 - THUMB_SIZE / 2,
   }));
 
-  const tabColor = side === "home" ? "#22C55E" : "#3B82F6";
+  const tabColor = thumbColor ?? (side === "home" ? "#22C55E" : "#3B82F6");
+  const textColor = getContrastTextColor(tabColor);
+  const needsBorder = isLightColor(tabColor);
   const secondaryColor = theme.colors.textSecondary;
 
   return (
@@ -245,7 +251,7 @@ export function HorizontalScoreSlider({
             thumbStyle,
             {
               backgroundColor: tabColor,
-              borderColor: "white",
+              borderColor: needsBorder ? "#ddd" : "white",
             },
           ]}
         >
@@ -256,7 +262,9 @@ export function HorizontalScoreSlider({
               size={36}
             />
           ) : (
-            <Text style={styles.thumbValue}>{displayValue}</Text>
+            <Text style={[styles.thumbValue, { color: textColor }]}>
+              {displayValue}
+            </Text>
           )}
         </Animated.View>
       </GestureDetector>
