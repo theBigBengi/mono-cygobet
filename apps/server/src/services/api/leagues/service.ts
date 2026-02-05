@@ -1,31 +1,20 @@
 // leagues/service.ts
 // API service for leagues (get leagues list).
 
-import type { ApiLeaguesResponse, ApiLeagueItem } from "@repo/types";
+import type { ApiLeaguesResponse } from "@repo/types";
 import { buildLeaguesWhere } from "./queries";
 import { findLeagues, countLeagues } from "./repository";
 import { buildLeagueItem } from "./builders";
 
-/**
- * Mock popular leagues data.
- * Returns 5 popular leagues for the preset="popular" query.
- */
-function getPopularLeagues(): ApiLeagueItem[] {
-  return [
-    { id: 1, name: "Premier League", imagePath: null, countryId: 1, type: "league", shortCode: "EPL" },
-    { id: 2, name: "La Liga", imagePath: null, countryId: 2, type: "league", shortCode: "LL" },
-    { id: 3, name: "Serie A", imagePath: null, countryId: 3, type: "league", shortCode: "SA" },
-    { id: 4, name: "Bundesliga", imagePath: null, countryId: 4, type: "league", shortCode: "BL" },
-    { id: 5, name: "Ligue 1", imagePath: null, countryId: 5, type: "league", shortCode: "L1" },
-  ];
-}
+/** League IDs to show when preset="popular". */
+const POPULAR_LEAGUE_IDS = [1, 5];
 
 /**
  * Get paginated list of leagues for pool creation.
  * Returns minimal fields needed for UI.
  * Optionally includes seasons when includeSeasons is true.
  * Optionally filters to only leagues with active seasons when onlyActiveSeasons is true.
- * Supports preset="popular" to return popular leagues (mock data).
+ * Supports preset="popular" to return leagues by fixed IDs from DB.
  * Supports optional search by league name.
  */
 export async function getLeagues(args: {
@@ -45,38 +34,25 @@ export async function getLeagues(args: {
     search,
   } = args;
 
-  // If preset is "popular", return mock data immediately (bypass database query)
-  if (preset === "popular") {
-    const allPopularLeagues = getPopularLeagues();
-    const skip = (page - 1) * perPage;
-    const take = perPage;
-    const paginatedLeagues = allPopularLeagues.slice(skip, skip + take);
-    const totalItems = allPopularLeagues.length;
-    const totalPages = Math.ceil(totalItems / perPage);
-
-    return {
-      status: "success",
-      data: paginatedLeagues,
-      pagination: {
-        page,
-        perPage,
-        totalItems,
-        totalPages,
-        pageCount: paginatedLeagues.length,
-        hasMore: totalItems > page * perPage,
-      },
-      message: "Popular leagues fetched successfully",
-    };
-  }
-
-  // Continue with existing database query logic
   const skip = (page - 1) * perPage;
   const take = perPage;
 
-  const where = buildLeaguesWhere({ onlyActiveSeasons, search });
+  const where =
+    preset === "popular"
+      ? { id: { in: POPULAR_LEAGUE_IDS } }
+      : buildLeaguesWhere({ onlyActiveSeasons, search });
+
+  const effectiveOnlyActive = preset === "popular" ? false : onlyActiveSeasons;
 
   const [leagues, count] = await Promise.all([
-    findLeagues(where, includeSeasons, onlyActiveSeasons, { name: "asc" }, take, skip),
+    findLeagues(
+      where,
+      includeSeasons,
+      effectiveOnlyActive,
+      { name: "asc" },
+      take,
+      skip
+    ),
     countLeagues(where),
   ]);
 
