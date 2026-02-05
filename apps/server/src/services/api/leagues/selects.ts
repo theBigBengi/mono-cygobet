@@ -37,3 +37,22 @@ export const LEAGUE_SELECT_WITH_COUNTRY = {
     select: { id: true, name: true, imagePath: true },
   },
 } as const satisfies Prisma.leaguesSelect;
+
+// Select with seasons and country
+export const LEAGUE_SELECT_WITH_SEASONS_AND_COUNTRY = {
+  ...LEAGUE_SELECT_BASE,
+  country: {
+    select: { id: true, name: true, imagePath: true },
+  },
+  seasons: {
+    select: {
+      id: true,
+      name: true,
+      startDate: true,
+      endDate: true,
+      isCurrent: true,
+      leagueId: true,
+    },
+    orderBy: { name: "asc" },
+  },
+} as const satisfies Prisma.leaguesSelect;

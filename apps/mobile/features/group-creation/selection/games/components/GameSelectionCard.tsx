@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   matchCard: {
     marginHorizontal: 4,
     marginBottom: 0,
-    padding: 8,
+    paddingVertical: 8,
   },
   matchContent: {
     flexDirection: "row",

@@ -4,7 +4,23 @@
 
 import { prisma } from "@repo/db";
 import type { Prisma } from "@repo/db";
-import { LEAGUE_SELECT_BASE, LEAGUE_SELECT_WITH_SEASONS } from "./selects";
+import {
+  LEAGUE_SELECT_BASE,
+  LEAGUE_SELECT_WITH_SEASONS,
+  LEAGUE_SELECT_WITH_COUNTRY,
+  LEAGUE_SELECT_WITH_SEASONS_AND_COUNTRY,
+} from "./selects";
+
+function getLeaguesSelect(
+  includeSeasons: boolean,
+  includeCountry: boolean
+): Prisma.leaguesSelect {
+  if (includeSeasons && includeCountry)
+    return LEAGUE_SELECT_WITH_SEASONS_AND_COUNTRY;
+  if (includeSeasons) return LEAGUE_SELECT_WITH_SEASONS;
+  if (includeCountry) return LEAGUE_SELECT_WITH_COUNTRY;
+  return LEAGUE_SELECT_BASE;
+}
 
 /**
  * Find leagues by where condition.
@@ -18,17 +34,9 @@ export async function findLeagues(
   take?: number,
   skip?: number
 ) {
-  let select = includeSeasons ? LEAGUE_SELECT_WITH_SEASONS : LEAGUE_SELECT_BASE;
-  if (includeCountry) {
-    select = {
-      ...select,
-      country: {
-        select: { id: true, name: true, imagePath: true },
-      },
-    };
-  }
+  const select = getLeaguesSelect(includeSeasons, includeCountry);
 
-  // If including seasons and filtering to active only, add where condition to seasons
+  // If including seasons and filtering to active only, override seasons with where
   if (includeSeasons && onlyActiveSeasons) {
     return await prisma.leagues.findMany({
       where,
