@@ -22,6 +22,8 @@ export type SummaryItem = {
 interface SelectionSummaryCardProps {
   items: SummaryItem[];
   loading?: boolean;
+  /** Number of skeleton slots to show when loading. Defaults to 3. */
+  skeletonCount?: number;
 }
 
 /** Skeleton placeholder bar with pulse animation. */
@@ -52,17 +54,21 @@ function SkeletonBar({ width, height }: { width: number; height: number }) {
   );
 }
 
+const DEFAULT_SKELETON_COUNT = 3;
+
 export function SelectionSummaryCard({
   items,
   loading,
+  skeletonCount = DEFAULT_SKELETON_COUNT,
 }: SelectionSummaryCardProps) {
   const { theme } = useTheme();
 
   if (loading) {
+    const count = Math.max(1, skeletonCount);
     return (
       <Card style={styles.card}>
         <View style={styles.row}>
-          {[0, 1, 2].map((i) => (
+          {Array.from({ length: count }, (_, i) => i).map((i) => (
             <React.Fragment key={i}>
               {i > 0 && (
                 <View

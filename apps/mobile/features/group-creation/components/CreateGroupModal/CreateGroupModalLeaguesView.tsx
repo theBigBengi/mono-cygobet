@@ -69,7 +69,11 @@ export function CreateGroupModalLeaguesView() {
 
   return (
     <>
-      <SelectionSummaryCard items={summaryItems} loading={previewLoading} />
+      <SelectionSummaryCard
+        items={summaryItems}
+        loading={previewLoading}
+        skeletonCount={2}
+      />
       {leagues.map((l) => (
         <Card
           key={l.id}
