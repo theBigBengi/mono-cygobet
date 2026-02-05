@@ -850,3 +850,30 @@ export type ApiH2HOpponentsResponse = {
   data: { opponents: ApiH2HOpponentItem[] };
   message: string;
 };
+
+/**
+ * Body for POST /api/groups/preview.
+ * Simulates fixture resolution and returns summary stats.
+ */
+export type ApiGroupPreviewBody = {
+  selectionMode: "games" | "teams" | "leagues";
+  fixtureIds?: number[];
+  teamIds?: number[];
+  leagueIds?: number[];
+};
+
+/**
+ * Response data from POST /api/groups/preview.
+ */
+export type ApiGroupPreviewData = {
+  fixtureCount: number;
+  leagueCount: number;
+  teamCount: number;
+  startDate: string | null;
+  endDate: string | null;
+};
+
+export type ApiGroupPreviewResponse = {
+  status: "success";
+  data: ApiGroupPreviewData;
+};

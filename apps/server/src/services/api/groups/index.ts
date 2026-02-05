@@ -22,4 +22,5 @@ export {
   joinPublicGroup,
   generateInviteCode,
   getInviteCode,
+  getGroupPreview,
 } from "./service/index";

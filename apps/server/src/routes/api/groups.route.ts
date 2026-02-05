@@ -22,6 +22,7 @@ import {
   joinPublicGroup,
   generateInviteCode,
   getInviteCode,
+  getGroupPreview,
 } from "../../services/api/groups";
 import type { GroupFixturesFilter } from "../../types/groups";
 import type {
@@ -41,6 +42,8 @@ import type {
   ApiInviteCodeResponse,
   ApiNudgeBody,
   ApiNudgeResponse,
+  ApiGroupPreviewBody,
+  ApiGroupPreviewResponse,
 } from "@repo/types";
 import {
   createGroupBodySchema,
@@ -61,6 +64,8 @@ import {
   publicGroupsResponseSchema,
   nudgeBodySchema,
   nudgeResponseSchema,
+  groupPreviewBodySchema,
+  groupPreviewResponseSchema,
 } from "../../schemas/api";
 
 /** Parse req.query into GroupFixturesFilter. Used only by GET :id and GET :id/fixtures. */
@@ -70,13 +75,13 @@ function parseGroupFixturesFilterFromQuery(
   const filter: GroupFixturesFilter = {};
 
   if (q.next != null) {
-    const n = typeof q.next === "string" ? parseInt(q.next, 10) : Number(q.next);
+    const n =
+      typeof q.next === "string" ? parseInt(q.next, 10) : Number(q.next);
     if (!isNaN(n) && n >= 1) filter.next = n;
   }
   if (q.nearestDateOnly != null) {
     const v = q.nearestDateOnly;
-    filter.nearestDateOnly =
-      v === true || v === "true" || v === "1" || v === 1;
+    filter.nearestDateOnly = v === true || v === "true" || v === "1" || v === 1;
   }
   if (q.leagueIds != null) {
     const arr = parseNumArray(q.leagueIds);
@@ -87,11 +92,13 @@ function parseGroupFixturesFilterFromQuery(
     if (arr.length > 0) filter.teamIds = arr;
   }
   if (q.fromTs != null) {
-    const n = typeof q.fromTs === "string" ? parseInt(q.fromTs, 10) : Number(q.fromTs);
+    const n =
+      typeof q.fromTs === "string" ? parseInt(q.fromTs, 10) : Number(q.fromTs);
     if (!isNaN(n)) filter.fromTs = n;
   }
   if (q.toTs != null) {
-    const n = typeof q.toTs === "string" ? parseInt(q.toTs, 10) : Number(q.toTs);
+    const n =
+      typeof q.toTs === "string" ? parseInt(q.toTs, 10) : Number(q.toTs);
     if (!isNaN(n)) filter.toTs = n;
   }
   if (q.states != null) {
@@ -112,10 +119,15 @@ function parseGroupFixturesFilterFromQuery(
 
 function parseNumArray(v: unknown): number[] {
   if (Array.isArray(v)) {
-    return v.map((x) => (typeof x === "string" ? parseInt(x, 10) : Number(x))).filter((n) => !isNaN(n));
+    return v
+      .map((x) => (typeof x === "string" ? parseInt(x, 10) : Number(x)))
+      .filter((n) => !isNaN(n));
   }
   if (typeof v === "string") {
-    return v.split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n));
+    return v
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !isNaN(n));
   }
   return [];
 }
@@ -125,7 +137,10 @@ function parseStringArray(v: unknown): string[] {
     return v.map((x) => String(x).trim()).filter(Boolean);
   }
   if (typeof v === "string") {
-    return v.split(",").map((s) => s.trim()).filter(Boolean);
+    return v
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
   return [];
 }
@@ -277,12 +292,52 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
 
       const userId = req.userAuth.user.id;
       const page = req.query.page != null ? Number(req.query.page) : undefined;
-      const perPage = req.query.perPage != null ? Number(req.query.perPage) : undefined;
+      const perPage =
+        req.query.perPage != null ? Number(req.query.perPage) : undefined;
       const search = req.query.search;
-      const result = await getPublicGroups(
-        { page, perPage, search },
-        userId
-      );
+      const result = await getPublicGroups({ page, perPage, search }, userId);
+
+      return reply.send(result);
+    }
+  );
+
+  /**
+   * POST /api/groups/preview
+   *
+   * - Requires auth + onboarding completion.
+   * - Simulates fixture resolution and returns summary (fixture count, league count, team count, date range).
+   * - Does NOT create a group. Read-only preview.
+   */
+  fastify.post<{
+    Body: ApiGroupPreviewBody;
+    Reply: ApiGroupPreviewResponse;
+  }>(
+    "/groups/preview",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        body: groupPreviewBodySchema,
+        response: {
+          200: groupPreviewResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const { selectionMode, fixtureIds, teamIds, leagueIds } = req.body;
+
+      const result = await getGroupPreview({
+        selectionMode,
+        fixtureIds,
+        teamIds,
+        leagueIds,
+      });
 
       return reply.send(result);
     }
@@ -301,39 +356,45 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
     Params: { id: number };
     Querystring: Record<string, unknown>;
     Reply: ApiGroupResponse;
-  }>("/groups/:id", {
-    preHandler: fastify.userAuth.requireOnboardingComplete,
-    schema: {
-      params: getGroupParamsSchema,
-      querystring: groupFixturesFilterQuerystringSchema,
-      response: {
-        200: groupResponseSchema,
+  }>(
+    "/groups/:id",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        querystring: groupFixturesFilterQuerystringSchema,
+        response: {
+          200: groupResponseSchema,
+        },
       },
     },
-  }, async (req, reply) => {
-    if (!req.userAuth) {
-      return reply.status(401).send({
-        status: "error",
-        message: "Unauthorized",
-      } as any);
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const includeFixtures = req.query.include === "fixtures";
+      const filters = parseGroupFixturesFilterFromQuery(
+        req.query as Record<string, unknown>
+      );
+      const result = await getGroupById(id, userId, includeFixtures, filters);
+
+      return reply.send(result);
     }
-
-    const id = Number(req.params.id);
-    const userId = req.userAuth.user.id;
-
-    if (!Number.isInteger(id) || id <= 0) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid 'id'. Must be a positive integer.",
-      } as any);
-    }
-
-    const includeFixtures = req.query.include === "fixtures";
-    const filters = parseGroupFixturesFilterFromQuery(req.query as Record<string, unknown>);
-    const result = await getGroupById(id, userId, includeFixtures, filters);
-
-    return reply.send(result);
-  });
+  );
 
   /**
    * PATCH /api/groups/:id
@@ -533,48 +594,52 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{
     Params: { id: number };
     Reply: ApiInviteCodeResponse;
-  }>("/groups/:id/invite-code", {
-    preHandler: fastify.userAuth.requireOnboardingComplete,
-    schema: {
-      params: getGroupParamsSchema,
-      response: {
-        200: {
-          type: "object",
-          required: ["status", "data", "message"],
-          properties: {
-            status: { type: "string", enum: ["success"] },
-            data: {
-              type: "object",
-              required: ["inviteCode"],
-              properties: { inviteCode: { type: "string" } },
+  }>(
+    "/groups/:id/invite-code",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        response: {
+          200: {
+            type: "object",
+            required: ["status", "data", "message"],
+            properties: {
+              status: { type: "string", enum: ["success"] },
+              data: {
+                type: "object",
+                required: ["inviteCode"],
+                properties: { inviteCode: { type: "string" } },
+              },
+              message: { type: "string" },
             },
-            message: { type: "string" },
           },
         },
       },
     },
-  }, async (req, reply) => {
-    if (!req.userAuth) {
-      return reply.status(401).send({
-        status: "error",
-        message: "Unauthorized",
-      } as any);
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await getInviteCode(id, userId);
+
+      return reply.send(result);
     }
-
-    const id = Number(req.params.id);
-    const userId = req.userAuth.user.id;
-
-    if (!Number.isInteger(id) || id <= 0) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid 'id'. Must be a positive integer.",
-      } as any);
-    }
-
-    const result = await getInviteCode(id, userId);
-
-    return reply.send(result);
-  });
+  );
 
   /**
    * POST /api/groups/:id/invite-code
@@ -644,38 +709,44 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
     Params: { id: number };
     Querystring: Record<string, unknown>;
     Reply: ApiGroupFixturesResponse;
-  }>("/groups/:id/fixtures", {
-    preHandler: fastify.userAuth.requireOnboardingComplete,
-    schema: {
-      params: getGroupParamsSchema,
-      querystring: groupFixturesFilterQuerystringSchema,
-      response: {
-        200: groupFixturesResponseSchema,
+  }>(
+    "/groups/:id/fixtures",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        querystring: groupFixturesFilterQuerystringSchema,
+        response: {
+          200: groupFixturesResponseSchema,
+        },
       },
     },
-  }, async (req, reply) => {
-    if (!req.userAuth) {
-      return reply.status(401).send({
-        status: "error",
-        message: "Unauthorized",
-      } as any);
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const filters = parseGroupFixturesFilterFromQuery(
+        req.query as Record<string, unknown>
+      );
+      const result = await getGroupFixtures(id, userId, filters);
+
+      return reply.send(result);
     }
-
-    const id = Number(req.params.id);
-    const userId = req.userAuth.user.id;
-
-    if (!Number.isInteger(id) || id <= 0) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid 'id'. Must be a positive integer.",
-      } as any);
-    }
-
-    const filters = parseGroupFixturesFilterFromQuery(req.query as Record<string, unknown>);
-    const result = await getGroupFixtures(id, userId, filters);
-
-    return reply.send(result);
-  });
+  );
 
   /**
    * GET /api/groups/:id/games-filters
@@ -689,35 +760,39 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{
     Params: { id: number };
     Reply: ApiGroupGamesFiltersResponse;
-  }>("/groups/:id/games-filters", {
-    preHandler: fastify.userAuth.requireOnboardingComplete,
-    schema: {
-      params: getGroupParamsSchema,
-      response: {
-        200: groupGamesFiltersResponseSchema,
+  }>(
+    "/groups/:id/games-filters",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        response: {
+          200: groupGamesFiltersResponseSchema,
+        },
       },
     },
-  }, async (req, reply) => {
-    if (!req.userAuth) {
-      return reply.status(401).send({
-        status: "error",
-        message: "Unauthorized",
-      } as any);
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await getGroupGamesFilters(id, userId);
+      return reply.send(result);
     }
-
-    const id = Number(req.params.id);
-    const userId = req.userAuth.user.id;
-
-    if (!Number.isInteger(id) || id <= 0) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid 'id'. Must be a positive integer.",
-      } as any);
-    }
-
-    const result = await getGroupGamesFilters(id, userId);
-    return reply.send(result);
-  });
+  );
 
   /**
    * PUT /api/groups/:id/predictions/:fixtureId
@@ -936,36 +1011,40 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{
     Params: { id: number };
     Reply: ApiPredictionsOverviewResponse;
-  }>("/groups/:id/predictions-overview", {
-    preHandler: fastify.userAuth.requireOnboardingComplete,
-    schema: {
-      params: getGroupParamsSchema,
-      response: {
-        200: predictionsOverviewResponseSchema,
+  }>(
+    "/groups/:id/predictions-overview",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        response: {
+          200: predictionsOverviewResponseSchema,
+        },
       },
     },
-  }, async (req, reply) => {
-    if (!req.userAuth) {
-      return reply.status(401).send({
-        status: "error",
-        message: "Unauthorized",
-      } as any);
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await getPredictionsOverview(id, userId);
+
+      return reply.send(result);
     }
-
-    const id = Number(req.params.id);
-    const userId = req.userAuth.user.id;
-
-    if (!Number.isInteger(id) || id <= 0) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid 'id'. Must be a positive integer.",
-      } as any);
-    }
-
-    const result = await getPredictionsOverview(id, userId);
-
-    return reply.send(result);
-  });
+  );
 
   /**
    * GET /api/groups/:id/ranking
@@ -974,33 +1053,37 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
    * - Verifies that the user is a group member (creator or joined).
    * - Returns group ranking with all joined members and aggregated stats.
    */
-  fastify.get<{ Params: { id: number } }>("/groups/:id/ranking", {
-    preHandler: fastify.userAuth.requireOnboardingComplete,
-    schema: {
-      params: getGroupParamsSchema,
+  fastify.get<{ Params: { id: number } }>(
+    "/groups/:id/ranking",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+      },
     },
-  }, async (req, reply) => {
-    if (!req.userAuth) {
-      return reply.status(401).send({
-        status: "error",
-        message: "Unauthorized",
-      } as any);
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await getGroupRanking(id, userId);
+
+      return reply.send(result);
     }
-
-    const id = Number(req.params.id);
-    const userId = req.userAuth.user.id;
-
-    if (!Number.isInteger(id) || id <= 0) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid 'id'. Must be a positive integer.",
-      } as any);
-    }
-
-    const result = await getGroupRanking(id, userId);
-
-    return reply.send(result);
-  });
+  );
 
   /**
    * POST /api/groups/:id/nudge
@@ -1010,47 +1093,56 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
    * - Sends a nudge to a member for an upcoming fixture (remind to predict).
    * - Body: { targetUserId, fixtureId }. Returns 201 on success, 409 if already nudged.
    */
-  fastify.post<{ Params: { id: number }; Body: ApiNudgeBody }>("/groups/:id/nudge", {
-    preHandler: fastify.userAuth.requireOnboardingComplete,
-    schema: {
-      params: getGroupParamsSchema,
-      body: nudgeBodySchema,
-      response: {
-        201: nudgeResponseSchema,
+  fastify.post<{ Params: { id: number }; Body: ApiNudgeBody }>(
+    "/groups/:id/nudge",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        body: nudgeBodySchema,
+        response: {
+          201: nudgeResponseSchema,
+        },
       },
     },
-  }, async (req, reply) => {
-    if (!req.userAuth) {
-      return reply.status(401).send({
-        status: "error",
-        message: "Unauthorized",
-      } as any);
-    }
-
-    const id = Number(req.params.id);
-    const userId = req.userAuth.user.id;
-    const body = req.body as ApiNudgeBody;
-
-    if (!Number.isInteger(id) || id <= 0) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid 'id'. Must be a positive integer.",
-      } as any);
-    }
-
-    try {
-      const result = await sendNudge(id, userId, body.targetUserId, body.fixtureId);
-      return reply.status(201).send(result);
-    } catch (err: any) {
-      if (err.status === 409) {
-        return reply.status(409).send({
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
           status: "error",
-          message: err.message || "Already nudged",
+          message: "Unauthorized",
         } as any);
       }
-      throw err;
+
+      const id = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+      const body = req.body as ApiNudgeBody;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      try {
+        const result = await sendNudge(
+          id,
+          userId,
+          body.targetUserId,
+          body.fixtureId
+        );
+        return reply.status(201).send(result);
+      } catch (err: any) {
+        if (err.status === 409) {
+          return reply.status(409).send({
+            status: "error",
+            message: err.message || "Already nudged",
+          } as any);
+        }
+        throw err;
+      }
     }
-  });
+  );
 
   /**
    * GET /api/groups/:id/members
@@ -1059,36 +1151,40 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
    * - Verifies that the user is a group member (creator or joined).
    * - Returns list of joined members with userId, username, role, joinedAt.
    */
-  fastify.get<{ Params: { id: number } }>("/groups/:id/members", {
-    preHandler: fastify.userAuth.requireOnboardingComplete,
-    schema: {
-      params: getGroupParamsSchema,
-      response: {
-        200: groupMembersResponseSchema,
+  fastify.get<{ Params: { id: number } }>(
+    "/groups/:id/members",
+    {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
+      schema: {
+        params: getGroupParamsSchema,
+        response: {
+          200: groupMembersResponseSchema,
+        },
       },
     },
-  }, async (req, reply) => {
-    if (!req.userAuth) {
-      return reply.status(401).send({
-        status: "error",
-        message: "Unauthorized",
-      } as any);
+    async (req, reply) => {
+      if (!req.userAuth) {
+        return reply.status(401).send({
+          status: "error",
+          message: "Unauthorized",
+        } as any);
+      }
+
+      const id = Number(req.params.id);
+      const userId = req.userAuth.user.id;
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid 'id'. Must be a positive integer.",
+        } as any);
+      }
+
+      const result = await getGroupMembers(id, userId);
+
+      return reply.send(result);
     }
-
-    const id = Number(req.params.id);
-    const userId = req.userAuth.user.id;
-
-    if (!Number.isInteger(id) || id <= 0) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid 'id'. Must be a positive integer.",
-      } as any);
-    }
-
-    const result = await getGroupMembers(id, userId);
-
-    return reply.send(result);
-  });
+  );
 };
 
 export default groupsRoutes;

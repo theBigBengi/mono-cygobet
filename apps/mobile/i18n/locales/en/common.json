@@ -201,7 +201,14 @@
     "compare": "Compare",
     "cancelled": "Cancelled",
     "halfTime": "Half Time",
-    "interrupted": "Interrupted"
+    "interrupted": "Interrupted",
+    "fillRandom": "Fill Random",
+    "fillRandomOverwrite": "This will overwrite {{count}} existing prediction(s). Continue?",
+    "fill": "Fill",
+    "somePredictionsSkipped": "Some predictions skipped",
+    "somePredictionsSkippedMessage": "{{count}} prediction(s) were skipped because the match has already started.",
+    "saveFailed": "Save Failed",
+    "saveFailedMessage": "Could not save your predictions. Please try again."
   },
   "countdown": {
     "inHoursMinutes": "in {{hours}}h {{minutes}}m",
@@ -374,6 +381,15 @@
     "noUpcomingGames": "No upcoming games found",
     "noGamesSelected": "No games selected",
     "noTeamsSelected": "No teams selected",
-    "noLeagueSelected": "No league selected"
+    "noLeagueSelected": "No league selected",
+    "selectionSummaryDateRange": "Date range",
+    "selectionSummaryGames": "Games",
+    "selectionSummaryGamesCount": "{{count}} games",
+    "selectionSummaryLeagues": "Leagues",
+    "selectionSummaryLeaguesCount": "{{count}} leagues",
+    "selectionSummaryLeaguesSelected": "Leagues selected",
+    "selectionSummaryTeams": "Teams",
+    "selectionSummaryTeamsSelected": "Teams selected",
+    "selectionSummaryTeamsCount": "{{count}} teams"
   }
 }

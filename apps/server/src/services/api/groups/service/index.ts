@@ -13,4 +13,10 @@ export { getGroupRanking } from "./ranking";
 export { getGroupMembers } from "./members";
 export { sendNudge } from "./nudge";
 export { settlePredictionsForFixtures } from "./settlement";
-export { joinGroupByCode, joinPublicGroup, generateInviteCode, getInviteCode } from "./join";
+export {
+  joinGroupByCode,
+  joinPublicGroup,
+  generateInviteCode,
+  getInviteCode,
+} from "./join";
+export { getGroupPreview } from "./preview";

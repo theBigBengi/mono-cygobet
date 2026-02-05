@@ -394,7 +394,15 @@ export const predictionsOverviewParticipantSchema = {
 /** Fixture item in predictions overview response. */
 export const predictionsOverviewFixtureSchema = {
   type: "object",
-  required: ["id", "name", "homeTeam", "awayTeam", "result", "startTs", "state"],
+  required: [
+    "id",
+    "name",
+    "homeTeam",
+    "awayTeam",
+    "result",
+    "startTs",
+    "state",
+  ],
   properties: {
     id: { type: "number" },
     name: { type: "string" },
@@ -463,4 +471,54 @@ export const joinGroupByCodeBodySchema = {
   type: "object",
   required: ["code"],
   properties: { code: { type: "string", minLength: 1 } },
+};
+
+/** Body schema for POST /api/groups/preview. */
+export const groupPreviewBodySchema = {
+  type: "object",
+  required: ["selectionMode"],
+  properties: {
+    selectionMode: {
+      type: "string",
+      enum: ["games", "teams", "leagues"],
+    },
+    fixtureIds: {
+      type: "array",
+      items: { type: "number" },
+    },
+    teamIds: {
+      type: "array",
+      items: { type: "number" },
+    },
+    leagueIds: {
+      type: "array",
+      items: { type: "number" },
+    },
+  },
+};
+
+/** Response schema for POST /api/groups/preview. */
+export const groupPreviewResponseSchema = {
+  type: "object",
+  required: ["status", "data"],
+  properties: {
+    status: { type: "string", enum: ["success"] },
+    data: {
+      type: "object",
+      required: [
+        "fixtureCount",
+        "leagueCount",
+        "teamCount",
+        "startDate",
+        "endDate",
+      ],
+      properties: {
+        fixtureCount: { type: "number" },
+        leagueCount: { type: "number" },
+        teamCount: { type: "number" },
+        startDate: { type: ["string", "null"] },
+        endDate: { type: ["string", "null"] },
+      },
+    },
+  },
 };

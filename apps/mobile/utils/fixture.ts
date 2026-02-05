@@ -1,6 +1,7 @@
 // utils/fixture.ts
 // Utility functions for fixture formatting and manipulation.
 
+import { format } from "date-fns";
 import i18n from "i18next";
 import type { FixtureItem } from "@/types/common";
 import {
@@ -8,6 +9,7 @@ import {
   formatTime24Locale,
   formatDateHeaderLocale,
   formatKickoffLocale,
+  getDateFnsLocale,
 } from "@/lib/i18n/i18n.date";
 import type { Locale } from "@/lib/i18n/i18n.types";
 import { isLocale } from "@/lib/i18n/i18n.types";
@@ -15,6 +17,21 @@ import { isLocale } from "@/lib/i18n/i18n.types";
 function getCurrentLocale(): Locale {
   const lang = i18n.language?.split("-")[0]?.toLowerCase() ?? "en";
   return isLocale(lang) ? lang : "en";
+}
+
+/**
+ * Format date as month + day (e.g., "Jan 15") for range display.
+ * Returns "—" if missing/null/undefined.
+ */
+export function formatMonthDay(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  try {
+    const date = new Date(iso);
+    const locale = getCurrentLocale();
+    return format(date, "MMM d", { locale: getDateFnsLocale(locale) });
+  } catch {
+    return "—";
+  }
 }
 
 /**
@@ -259,9 +276,7 @@ export type RoundGroup = {
   fixtures: FixtureItem[];
 };
 
-export function groupFixturesByRound(
-  fixtures: FixtureItem[]
-): RoundGroup[] {
+export function groupFixturesByRound(fixtures: FixtureItem[]): RoundGroup[] {
   const grouped: Record<string, RoundGroup> = {};
 
   // Guard against undefined or null fixtures
@@ -297,20 +312,20 @@ export function groupFixturesByRound(
   return Object.values(grouped).sort((a, b) => {
     const roundA = a.round;
     const roundB = b.round;
-    
+
     // Try to parse as numbers
     const numA = parseInt(roundA, 10);
     const numB = parseInt(roundB, 10);
-    
+
     if (!isNaN(numA) && !isNaN(numB)) {
       return numA - numB;
     }
-    
+
     // If both are not numbers, sort alphabetically
     if (isNaN(numA) && isNaN(numB)) {
       return roundA.localeCompare(roundB);
     }
-    
+
     // Numbers come before non-numbers
     return isNaN(numA) ? 1 : -1;
   });

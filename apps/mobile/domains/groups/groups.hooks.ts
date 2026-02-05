@@ -22,6 +22,8 @@ import type {
   ApiInviteCodeResponse,
   ApiNudgeBody,
   ApiNudgeResponse,
+  ApiGroupPreviewBody,
+  ApiGroupPreviewResponse,
 } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -46,6 +48,7 @@ import {
   joinPublicGroup,
   fetchInviteCode,
   regenerateInviteCode,
+  fetchGroupPreview,
 } from "./groups.api";
 import { groupsKeys } from "./groups.keys";
 
@@ -323,18 +326,15 @@ export function useDeleteGroupMutation(groupId: number | null) {
       );
 
       // Optimistically update the groups list by removing the deleted group
-      queryClient.setQueryData<ApiGroupsResponse>(
-        groupsKeys.list(),
-        (old) => {
-          if (!old) {
-            return old;
-          }
-          return {
-            ...old,
-            data: old.data.filter((group) => group.id !== groupId),
-          };
+      queryClient.setQueryData<ApiGroupsResponse>(groupsKeys.list(), (old) => {
+        if (!old) {
+          return old;
         }
-      );
+        return {
+          ...old,
+          data: old.data.filter((group) => group.id !== groupId),
+        };
+      });
 
       // Also remove the group detail from cache
       queryClient.removeQueries({
@@ -414,11 +414,7 @@ export function useGroupRankingQuery(groupId: number | null) {
 export function useNudgeMutation(groupId: number | null) {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    ApiNudgeResponse,
-    ApiError,
-    ApiNudgeBody
-  >({
+  return useMutation<ApiNudgeResponse, ApiError, ApiNudgeBody>({
     mutationFn: (body) => {
       if (!groupId) {
         throw new Error("Group ID is required");
@@ -545,5 +541,28 @@ export function useRegenerateInviteCodeMutation(groupId: number | null) {
         });
       }
     },
+  });
+}
+
+/**
+ * Hook to preview group selection summary.
+ * - Enabled only when authenticated and there are selected items.
+ * - Returns fixture count, league/team count, date range.
+ */
+export function useGroupPreviewQuery(body: ApiGroupPreviewBody) {
+  const { status, user } = useAuth();
+
+  const hasItems =
+    (body.selectionMode === "games" && (body.fixtureIds?.length ?? 0) > 0) ||
+    (body.selectionMode === "leagues" && (body.leagueIds?.length ?? 0) > 0) ||
+    (body.selectionMode === "teams" && (body.teamIds?.length ?? 0) > 0);
+
+  const enabled = isReadyForProtected(status, user) && hasItems;
+
+  return useQuery<ApiGroupPreviewResponse, ApiError>({
+    queryKey: groupsKeys.preview(body),
+    queryFn: () => fetchGroupPreview(body),
+    enabled,
+    meta: { scope: "user" },
   });
 }

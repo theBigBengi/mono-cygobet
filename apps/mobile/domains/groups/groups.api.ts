@@ -22,6 +22,8 @@ import type {
   ApiInviteCodeResponse,
   ApiNudgeBody,
   ApiNudgeResponse,
+  ApiGroupPreviewBody,
+  ApiGroupPreviewResponse,
 } from "@repo/types";
 import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
 import { buildQuery } from "@/lib/http/queryBuilder";
@@ -284,9 +286,7 @@ export async function sendNudge(
  * - Requires authentication.
  * - Body: { code }. Returns the joined group.
  */
-export async function joinGroupByCode(
-  code: string
-): Promise<ApiGroupResponse> {
+export async function joinGroupByCode(code: string): Promise<ApiGroupResponse> {
   return apiFetchWithAuthRetry<ApiGroupResponse>("/api/groups/join", {
     method: "POST",
     body: { code },
@@ -339,4 +339,17 @@ export async function regenerateInviteCode(
       body: {},
     }
   );
+}
+
+/**
+ * Preview group selection — returns summary stats (fixture count, date range, etc.).
+ * Does NOT create a group. Read-only preview.
+ */
+export async function fetchGroupPreview(
+  body: ApiGroupPreviewBody
+): Promise<ApiGroupPreviewResponse> {
+  return apiFetchWithAuthRetry<ApiGroupPreviewResponse>("/api/groups/preview", {
+    method: "POST",
+    body,
+  });
 }

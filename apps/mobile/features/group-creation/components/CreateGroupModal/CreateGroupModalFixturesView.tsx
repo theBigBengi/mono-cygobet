@@ -12,8 +12,9 @@ import {
   SelectedGameCard,
 } from "@/features/group-creation/selection/games";
 import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
-import { groupFixturesByLeagueAndDate } from "@/utils/fixture";
+import { groupFixturesByLeagueAndDate, formatMonthDay } from "@/utils/fixture";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
+import { SelectionSummaryCard } from "@/features/group-creation/components/SelectionSummaryCard";
 
 interface GroupedGame {
   fixtureId: number;
@@ -57,6 +58,43 @@ export function CreateGroupModalFixturesView() {
     [games]
   );
 
+  const summaryItems = useMemo(() => {
+    if (games.length === 0) return [];
+    const timestamps = games.map((g) => new Date(g.game.kickoffAt).getTime());
+    const minTs = Math.min(...timestamps);
+    const maxTs = Math.max(...timestamps);
+    const startDate = new Date(minTs);
+    const endDate = new Date(maxTs);
+    const startStr = formatMonthDay(startDate.toISOString());
+    const endStr = formatMonthDay(endDate.toISOString());
+    const dateRangeValue =
+      minTs === maxTs ? startStr : `${startStr} - ${endStr}`;
+    const leaguesCount = new Set(
+      games.map((g) => g.game.league?.id).filter(Boolean)
+    ).size;
+    return [
+      {
+        icon: "event",
+        label: t("fixtures.selectionSummaryDateRange"),
+        value: dateRangeValue,
+      },
+      {
+        icon: "sports-soccer",
+        label: t("fixtures.selectionSummaryGames"),
+        value: t("fixtures.selectionSummaryGamesCount", {
+          count: games.length,
+        }),
+      },
+      {
+        icon: "emoji-events",
+        label: t("fixtures.selectionSummaryLeagues"),
+        value: t("fixtures.selectionSummaryLeaguesCount", {
+          count: leaguesCount,
+        }),
+      },
+    ];
+  }, [games, t]);
+
   if (games.length === 0) {
     return (
       <View style={styles.empty}>
@@ -69,6 +107,7 @@ export function CreateGroupModalFixturesView() {
 
   return (
     <>
+      <SelectionSummaryCard items={summaryItems} />
       {groupedGames.map((group) => (
         <LeagueDateGroupSection
           key={group.key}

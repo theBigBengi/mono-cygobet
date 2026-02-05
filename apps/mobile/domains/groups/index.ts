@@ -21,6 +21,7 @@ export {
   useJoinGroupByCodeMutation,
   useJoinPublicGroupMutation,
   useRegenerateInviteCodeMutation,
+  useGroupPreviewQuery,
 } from "./groups.hooks";
 export {
   useGroupMessagesQuery,
@@ -39,11 +40,9 @@ export {
   joinPublicGroup,
   fetchInviteCode,
   regenerateInviteCode,
+  fetchGroupPreview,
 } from "./groups.api";
-export {
-  fetchGroupMessages,
-  fetchUnreadCounts,
-} from "./groups-chat.api";
+export { fetchGroupMessages, fetchUnreadCounts } from "./groups-chat.api";
 export type {
   ApiCreateGroupBody,
   ApiGroupItem,
@@ -54,4 +53,6 @@ export type {
   ApiPublicGroupsQuery,
   ApiPublicGroupItem,
   ApiPublicGroupsResponse,
+  ApiGroupPreviewBody,
+  ApiGroupPreviewResponse,
 } from "@repo/types";
