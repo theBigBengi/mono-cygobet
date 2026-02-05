@@ -299,7 +299,7 @@ export function GroupGamesScreen({
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       {viewMode === "single" ? (
-        /* Single view as full-screen page with its own header (back only). */
+        /* Single view: full-screen page with its own header (back only), horizontal game slider, and filtered fixtures only. */
         <SingleGameView
           fixtures={filteredFixtures}
           predictions={predictions}

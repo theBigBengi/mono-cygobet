@@ -7,11 +7,11 @@ import {
   Dimensions,
   Keyboard,
 } from "react-native";
-import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { SingleGameMatchCard } from "./SingleGameMatchCard";
 import { GroupGamesHeader } from "./GroupGamesHeader";
+import { GameSlider } from "./GameSlider";
 import type { FixtureItem } from "@/types/common";
 import type {
   PredictionMode,
@@ -92,6 +92,13 @@ export function SingleGameView({
       Keyboard.dismiss();
       onSaveAllChanged();
     }
+  };
+
+  const handleSelectGame = (index: number) => {
+    setCurrentIndex(index);
+    flatListRef.current?.scrollToIndex({ index, animated: true });
+    Keyboard.dismiss();
+    onSaveAllChanged();
   };
 
   // Save when keyboard is dismissed in single view
@@ -183,6 +190,11 @@ export function SingleGameView({
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <GroupGamesHeader backOnly onBack={onBack} />
+      <GameSlider
+        fixtures={fixtures}
+        currentIndex={currentIndex}
+        onSelectGame={handleSelectGame}
+      />
       <View style={[styles.contentContainer, { flex: 1 }]}>
         {/* Previous button - positioned absolutely on left */}
         <Pressable
@@ -205,17 +217,6 @@ export function SingleGameView({
             }
           />
         </Pressable>
-
-        {/* Game indicator - positioned absolutely in center top */}
-        <View style={styles.indicatorContainer}>
-          <AppText
-            variant="caption"
-            color="secondary"
-            style={styles.indicatorText}
-          >
-            Game {currentIndex + 1} of {fixtures.length}
-          </AppText>
-        </View>
 
         {/* FlatList for games - takes full width */}
         <FlatList
@@ -273,19 +274,6 @@ export function SingleGameView({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  indicatorContainer: {
-    position: "absolute",
-    top: "50%",
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    zIndex: 5,
-    marginTop: -10,
-  },
-  indicatorText: {
-    fontSize: 12,
-    fontWeight: "500",
   },
   contentContainer: {
     flex: 1,
