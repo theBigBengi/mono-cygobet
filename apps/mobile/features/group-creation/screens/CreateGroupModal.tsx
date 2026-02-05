@@ -98,6 +98,7 @@ export function CreateGroupModal() {
           fixtureIds: games.map((g) => g.fixtureId),
         });
         clearGames();
+        setModalVisible(false);
         // Use replace to remove modal and previous screen from stack (overlay stays on)
         router.replace(`/groups/${result.data.id}` as any);
         return;
@@ -110,6 +111,7 @@ export function CreateGroupModal() {
           leagueIds: leagues.map((l) => l.id),
         });
         clearLeagues();
+        setModalVisible(false);
         // Use replace to remove modal and previous screen from stack (overlay stays on)
         router.replace(`/groups/${result.data.id}` as any);
         return;
@@ -122,6 +124,7 @@ export function CreateGroupModal() {
           teamIds: teams.map((t) => t.id),
         });
         clearTeams();
+        setModalVisible(false);
         // Use replace to remove modal and previous screen from stack (overlay stays on)
         router.replace(`/groups/${result.data.id}` as any);
       }
@@ -164,10 +167,7 @@ export function CreateGroupModal() {
         ]}
       >
         <View
-          style={[
-            styles.header,
-            { borderBottomColor: theme.colors.border },
-          ]}
+          style={[styles.header, { borderBottomColor: theme.colors.border }]}
         >
           <Pressable
             onPress={handleRequestClose}
@@ -228,12 +228,17 @@ export function CreateGroupModal() {
               ]}
             >
               <AppText variant="caption" color="danger" style={styles.errorTxt}>
-                {createGroupMutation.error?.message ?? t("groupCreation.failedCreate")}
+                {createGroupMutation.error?.message ??
+                  t("groupCreation.failedCreate")}
               </AppText>
             </View>
           )}
           <Button
-            label={isCreating ? t("groupCreation.creating") : t("groupCreation.createGroup")}
+            label={
+              isCreating
+                ? t("groupCreation.creating")
+                : t("groupCreation.createGroup")
+            }
             onPress={handleCreate}
             disabled={isCreating || !canCreate}
             style={styles.createBtn}
@@ -251,7 +256,11 @@ export function CreateGroupModal() {
           />
           <View style={styles.globalOverlayContent}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <AppText variant="body" color="secondary" style={styles.globalOverlayText}>
+            <AppText
+              variant="body"
+              color="secondary"
+              style={styles.globalOverlayText}
+            >
               Creating group...
             </AppText>
           </View>
