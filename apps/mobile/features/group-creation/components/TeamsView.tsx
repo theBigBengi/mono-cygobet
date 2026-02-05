@@ -5,7 +5,7 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, TextInput, Pressable } from "react-native";
-import { AppText, Screen, Card } from "@/components/ui";
+import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useTeamsQuery } from "@/domains/teams/teams.hooks";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
@@ -78,16 +78,16 @@ export function TeamsView({ tabs }: TeamsViewProps) {
     }
 
     return (
-      <>
+      <View style={styles.listContainer}>
         {teams.map((team) => (
           <TeamListItem key={team.id} team={team} />
         ))}
-      </>
+      </View>
     );
   };
 
   return (
-    <View style={[styles.root]}>
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <Screen
         scroll
         onRefresh={async () => {
@@ -96,7 +96,7 @@ export function TeamsView({ tabs }: TeamsViewProps) {
       >
         {tabs}
         {/* Search Input */}
-        <Card style={styles.searchContainer}>
+        <View style={styles.searchContainer}>
           <View
             style={[
               styles.searchInputContainer,
@@ -132,7 +132,7 @@ export function TeamsView({ tabs }: TeamsViewProps) {
               </Pressable>
             )}
           </View>
-        </Card>
+        </View>
 
         {renderContent()}
       </Screen>
@@ -146,6 +146,8 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     marginBottom: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   searchInputContainer: {
     flexDirection: "row",
@@ -179,5 +181,8 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     textAlign: "center",
+  },
+  listContainer: {
+    paddingHorizontal: 8,
   },
 });
