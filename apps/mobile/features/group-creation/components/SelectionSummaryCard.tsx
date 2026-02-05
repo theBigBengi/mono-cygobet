@@ -140,7 +140,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   value: {
+    fontSize: 13,
     fontWeight: "600",
+    lineHeight: 22,
   },
   divider: {
     width: 1,
