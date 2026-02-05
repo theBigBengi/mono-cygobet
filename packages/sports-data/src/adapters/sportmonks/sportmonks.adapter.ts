@@ -78,7 +78,12 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       semaphore,
     };
 
-    this.httpFootball = new SMHttp(token, footballBaseUrl, authMode, smHttpOptions);
+    this.httpFootball = new SMHttp(
+      token,
+      footballBaseUrl,
+      authMode,
+      smHttpOptions
+    );
     this.httpCore = new SMHttp(token, coreBaseUrl, authMode, smHttpOptions);
 
     const baseV3Url = new URL(footballBaseUrl).origin + "/v3";
@@ -106,7 +111,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
     http: SMHttp,
     path: string,
     opts: RequestOpts,
-    map: (raw: TRaw) => TResult | null,
+    map: (raw: TRaw) => TResult | null
   ): Promise<TResult | null> {
     this.logger.info(methodName, { path });
     try {
@@ -119,13 +124,9 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       this.logger.info(methodName, { count: result ? 1 : 0 });
       return result;
     } catch (error) {
-      const code =
-        error instanceof SportsDataError ? error.code : undefined;
+      const code = error instanceof SportsDataError ? error.code : undefined;
       this.logger.error(methodName, { code });
-      if (
-        error instanceof SportsDataError &&
-        error.statusCode === 404
-      ) {
+      if (error instanceof SportsDataError && error.statusCode === 404) {
         return null;
       }
       throw error;
@@ -230,7 +231,10 @@ export class SportMonksAdapter implements ISportsDataAdapter {
     this.logger.info("fetchFixturesBetween", { startIso, endIso });
     const encodedFrom = encodeURIComponent(startIso);
     const encodedTo = encodeURIComponent(endIso);
-    const include = [...this.fixtureInclude, ...this.buildFixtureInclude(options)];
+    const include = [
+      ...this.fixtureInclude,
+      ...this.buildFixtureInclude(options),
+    ];
 
     const rows = await this.httpFootball.get<FixtureSportmonks>(
       `fixtures/between/${encodedFrom}/${encodedTo}`,
@@ -300,7 +304,9 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * Fetches currently live fixtures
    * Uses /fixtures/live endpoint
    */
-  async fetchLiveFixtures(options?: FixtureFetchOptions): Promise<FixtureDTO[]> {
+  async fetchLiveFixtures(
+    options?: FixtureFetchOptions
+  ): Promise<FixtureDTO[]> {
     const startMs = performance.now();
     this.logger.info("fetchLiveFixtures", {});
     const include = [
@@ -308,11 +314,14 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       { name: "periods" },
       ...this.buildFixtureInclude(options),
     ];
-    const rows = await this.httpFootball.get<FixtureSportmonks>("livescores/inplay", {
-      include,
-      perPage: options?.perPage ?? this.config.defaultPerPage,
-      filters: options?.filters,
-    });
+    const rows = await this.httpFootball.get<FixtureSportmonks>(
+      "livescores/inplay",
+      {
+        include,
+        perPage: options?.perPage ?? this.config.defaultPerPage,
+        filters: options?.filters,
+      }
+    );
 
     const out: FixtureDTO[] = [];
 
@@ -363,13 +372,9 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       });
       return result;
     } catch (error) {
-      const code =
-        error instanceof SportsDataError ? error.code : undefined;
+      const code = error instanceof SportsDataError ? error.code : undefined;
       this.logger.error("fetchFixtureById", { code });
-      if (
-        error instanceof SportsDataError &&
-        error.statusCode === 404
-      ) {
+      if (error instanceof SportsDataError && error.statusCode === 404) {
         return null;
       }
       throw error;
@@ -435,13 +440,15 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       paginate: true,
     });
 
-    const out = rows.map((c: SmCountryRaw): CountryDTO => ({
-      externalId: c.id,
-      name: c.name,
-      imagePath: c.image_path ?? null,
-      iso2: c.iso2 ?? null,
-      iso3: c.iso3 ?? null,
-    }));
+    const out = rows.map(
+      (c: SmCountryRaw): CountryDTO => ({
+        externalId: c.id,
+        name: c.name,
+        imagePath: c.image_path ?? null,
+        iso2: c.iso2 ?? null,
+        iso3: c.iso3 ?? null,
+      })
+    );
     this.logger.info("fetchCountries", { count: out.length });
     return out;
   }
@@ -464,7 +471,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
         imagePath: c.image_path ?? null,
         iso2: c.iso2 ?? null,
         iso3: c.iso3 ?? null,
-      }),
+      })
     );
   }
 
@@ -489,15 +496,17 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       paginate: true,
     });
 
-    const out = rows.map((l: SmLeagueRaw): LeagueDTO => ({
-      externalId: l.id,
-      name: l.name,
-      imagePath: l.image_path ?? null,
-      shortCode: l.short_code ?? null,
-      countryExternalId: l.country_id ?? null,
-      type: l.type ?? null,
-      subType: l.sub_type ?? null,
-    }));
+    const out = rows.map(
+      (l: SmLeagueRaw): LeagueDTO => ({
+        externalId: l.id,
+        name: l.name,
+        imagePath: l.image_path ?? null,
+        shortCode: l.short_code ?? null,
+        countryExternalId: l.country_id ?? null,
+        type: l.type ?? null,
+        subType: l.sub_type ?? null,
+      })
+    );
     this.logger.info("fetchLeagues", { count: out.length });
     return out;
   }
@@ -537,7 +546,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
         countryExternalId: l.country_id ?? null,
         type: l.type ?? null,
         subType: l.sub_type ?? null,
-      }),
+      })
     );
   }
 
@@ -570,16 +579,18 @@ export class SportMonksAdapter implements ISportsDataAdapter {
 
     const out = rows
       .filter((s: SmSeasonRaw) => !Boolean(s.finished))
-      .map((s: SmSeasonRaw): SeasonDTO => ({
-        externalId: s.id,
-        leagueExternalId: s.league_id ?? 0,
-        name: s.name ?? "",
-        startDate: s.starting_at ?? "",
-        endDate: s.ending_at ?? "",
-        isCurrent: Boolean(s.is_current),
-        leagueName: s.league?.name ?? "",
-        countryName: s.league?.country?.name ?? "",
-      }));
+      .map(
+        (s: SmSeasonRaw): SeasonDTO => ({
+          externalId: s.id,
+          leagueExternalId: s.league_id ?? 0,
+          name: s.name ?? "",
+          startDate: s.starting_at ?? "",
+          endDate: s.ending_at ?? "",
+          isCurrent: Boolean(s.is_current),
+          leagueName: s.league?.name ?? "",
+          countryName: s.league?.country?.name ?? "",
+        })
+      );
     this.logger.info("fetchSeasons", { count: out.length });
     return out;
   }
@@ -624,7 +635,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
           leagueName: s.league?.name ?? "",
           countryName: s.league?.country?.name ?? "",
         };
-      },
+      }
     );
   }
 
@@ -787,7 +798,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
           founded: Number.isInteger(t.founded) ? t.founded : null,
           type: typeof t.type === "string" ? t.type.toLowerCase() : null,
         };
-      },
+      }
     );
   }
 }

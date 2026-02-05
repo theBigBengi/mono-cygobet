@@ -30,7 +30,9 @@ export const seasonsService = {
   },
 
   async getFromProvider() {
-    return apiGet<AdminProviderSeasonsResponse>("/admin/sync-center/provider/seasons");
+    return apiGet<AdminProviderSeasonsResponse>(
+      "/admin/sync-center/provider/seasons"
+    );
   },
 
   async sync(dryRun = false) {
@@ -56,4 +58,3 @@ export const seasonsService = {
     );
   },
 };
-
