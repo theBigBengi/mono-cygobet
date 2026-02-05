@@ -17,7 +17,7 @@ import { View, TextInput } from "react-native";
 import { isFinished } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
-import type { FocusedField } from "../types";
+import type { FocusedField, PredictionMode } from "../types";
 import { shareText, buildPredictionShareText } from "@/utils/sharing";
 import { MatchPredictionCardVertical } from "./MatchPredictionCardVertical";
 import { getPositionInGroup, formatPredictionForShare } from "../utils/utils";
@@ -39,7 +39,7 @@ export type GroupFixtureCardProps = {
   matchCardRefs: React.MutableRefObject<
     Record<string, React.RefObject<View | null>>
   >;
-  predictionMode: "CorrectScore" | "MatchWinner";
+  predictionMode: PredictionMode;
   groupName?: string;
   onFieldFocus: (fixtureId: number, type: "home" | "away") => void;
   onFieldBlur: (fixtureId: number) => void;
@@ -160,8 +160,6 @@ function GroupFixtureCardInner({
       onAutoNext={onAutoNextLocal}
       predictionMode={predictionMode}
       onSelectOutcome={onSelectOutcome ? onSelectOutcomeLocal : undefined}
-      onShare={canShare ? onShare : undefined}
-      showShare={Boolean(canShare)}
     />
   );
 }

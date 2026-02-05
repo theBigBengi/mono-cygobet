@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, ScrollView, Keyboard } from "react-native";
+import { View, StyleSheet, ScrollView, Keyboard, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -18,6 +18,7 @@ import { useSmartFilters } from "../hooks/useSmartFilters";
 import { useGroupedFixtures } from "../hooks/useGroupedFixtures";
 import { usePredictionsStats } from "../hooks/usePredictionsStats";
 import type { FixtureItem } from "@/types/common";
+import type { PredictionMode } from "../types";
 import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
 import { SingleGameView } from "../components/SingleGameView";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
@@ -28,7 +29,7 @@ type Props = {
   groupId: number | null;
   /** Fixtures passed from parent (already fetched with group). */
   fixtures: FixtureItem[];
-  predictionMode?: string;
+  predictionMode?: PredictionMode;
   groupName?: string;
   selectionMode?: "games" | "teams" | "leagues";
   groupTeamsIds?: number[];
@@ -100,6 +101,7 @@ export function GroupGamesScreen({
     savedPredictions,
     updatePrediction,
     setOutcomePrediction,
+    getFillRandomConfirm,
     fillRandomPredictions,
     saveAllChangedPredictions,
     isSaving,
@@ -109,16 +111,58 @@ export function GroupGamesScreen({
     predictionMode,
   });
 
-  const predictionModeTyped: "CorrectScore" | "MatchWinner" =
-    predictionMode === "MatchWinner" ? "MatchWinner" : "CorrectScore";
+  /** Show confirmation if needed, then fill random. Caller shows alerts using t(). */
+  const handleFillRandom = useCallback(() => {
+    const confirmInfo = getFillRandomConfirm();
+    if (confirmInfo !== null) {
+      Alert.alert(
+        t("predictions.fillRandom"),
+        t("predictions.fillRandomOverwrite", {
+          count: confirmInfo.existingCount,
+        }),
+        [
+          { text: t("groups.cancel"), style: "cancel" },
+          {
+            text: t("predictions.fill"),
+            onPress: () => fillRandomPredictions(true),
+          },
+        ]
+      );
+    } else {
+      fillRandomPredictions(true);
+    }
+  }, [getFillRandomConfirm, fillRandomPredictions, t]);
+
+  /** Save all changed predictions and show alerts on rejected/error using t(). */
+  const handleSaveAllChanged = useCallback(() => {
+    saveAllChangedPredictions()
+      .then((result) => {
+        if (result.rejected != null && result.rejected > 0) {
+          Alert.alert(
+            t("predictions.somePredictionsSkipped"),
+            t("predictions.somePredictionsSkippedMessage", {
+              count: result.rejected,
+            })
+          );
+        }
+      })
+      .catch(() => {
+        Alert.alert(
+          t("predictions.saveFailed"),
+          t("predictions.saveFailedMessage")
+        );
+      });
+  }, [saveAllChangedPredictions, t]);
+
+  const predictionModeTyped = predictionMode ?? "CorrectScore";
 
   /** For MatchWinner mode: set 1/X/2 and trigger a save shortly after. */
   const handleSelectOutcome = React.useCallback(
     (fixtureId: number, outcome: "home" | "draw" | "away") => {
       setOutcomePrediction(fixtureId, outcome);
-      setTimeout(() => saveAllChangedPredictions(), 50);
+      setTimeout(() => handleSaveAllChanged(), 50);
     },
-    [setOutcomePrediction, saveAllChangedPredictions]
+    [setOutcomePrediction, handleSaveAllChanged]
   );
 
   /** Stats for footer: last saved time, saved count, total count. */
@@ -157,18 +201,13 @@ export function GroupGamesScreen({
   React.useEffect(() => {
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
-      () => {
-        // Save all changed predictions when keyboard is dismissed
-        // The saveAllChangedPredictions function already checks if there are changes
-        // and if a save is in progress, so this is safe to call
-        saveAllChangedPredictions();
-      }
+      () => handleSaveAllChanged()
     );
 
     return () => {
       keyboardDidHideListener.remove();
     };
-  }, [saveAllChangedPredictions]);
+  }, [handleSaveAllChanged]);
 
   /** Create input/card refs for each fixture so cards can focus and scroll. */
   React.useEffect(() => {
@@ -188,9 +227,9 @@ export function GroupGamesScreen({
 
   /** Save all changed predictions then dismiss keyboard (Done button). */
   const handleDone = useCallback(() => {
-    saveAllChangedPredictions();
+    handleSaveAllChanged();
     Keyboard.dismiss();
-  }, [saveAllChangedPredictions]);
+  }, [handleSaveAllChanged]);
 
   /** Update prediction for a field and optionally move focus to next field. */
   const handleCardChange = useCallback(
@@ -229,7 +268,7 @@ export function GroupGamesScreen({
     <GroupGamesHeader
       viewMode={viewMode}
       onBack={() => router.back()}
-      onFillRandom={fillRandomPredictions}
+      onFillRandom={handleFillRandom}
       onToggleView={() => setViewMode(viewMode === "list" ? "single" : "list")}
     />
   );
@@ -255,7 +294,7 @@ export function GroupGamesScreen({
             onFieldBlur={handleFieldBlur}
             getNextFieldIndex={getNextFieldIndex}
             navigateToField={navigateToField}
-            onSaveAllChanged={saveAllChangedPredictions}
+            onSaveAllChanged={handleSaveAllChanged}
             predictionMode={predictionModeTyped}
             onSelectOutcome={
               predictionMode === "MatchWinner" ? handleSelectOutcome : undefined

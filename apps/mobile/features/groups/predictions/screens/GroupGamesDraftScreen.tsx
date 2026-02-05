@@ -5,7 +5,10 @@ import { useRouter } from "expo-router";
 import { AppText, Screen, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useUpdateGroupMutation } from "@/domains/groups";
+import {
+  useGroupGamesFiltersQuery,
+  useUpdateGroupMutation,
+} from "@/domains/groups";
 import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
 import { MatchDraftCard } from "../components/MatchDraftCard";
 import type { FixtureItem } from "@/types/common";
@@ -13,7 +16,10 @@ import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { SmartFilterChips } from "../components";
 import { useSmartFilters } from "../hooks/useSmartFilters";
 import { useGroupedFixtures } from "../hooks/useGroupedFixtures";
-import { calculateContentPaddingTopDefault } from "../utils/utils";
+import {
+  calculateContentPaddingTopDefault,
+  getPositionInGroup,
+} from "../utils/utils";
 
 type Props = {
   groupId: number | null;
@@ -26,7 +32,11 @@ type Props = {
  * Shows fixtures with remove (X) / restore (blue plus) in the middle.
  * X marks as deselected (dimmed); plus restores.
  */
-export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp, selectionMode }: Props) {
+export function GroupGamesDraftScreen({
+  groupId,
+  fixtures: fixturesProp,
+  selectionMode,
+}: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
@@ -39,14 +49,17 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp, selecti
   const { data: filtersData } = useGroupGamesFiltersQuery(groupId);
   const mode = selectionMode ?? filtersData?.data.mode ?? "games";
 
-  const toggleDeselected = useCallback((fixtureId: number, deselect: boolean) => {
-    setDeselectedIds((prev) => {
-      const next = new Set(prev);
-      if (deselect) next.add(fixtureId);
-      else next.delete(fixtureId);
-      return next;
-    });
-  }, []);
+  const toggleDeselected = useCallback(
+    (fixtureId: number, deselect: boolean) => {
+      setDeselectedIds((prev) => {
+        const next = new Set(prev);
+        if (deselect) next.add(fixtureId);
+        else next.delete(fixtureId);
+        return next;
+      });
+    },
+    []
+  );
 
   // Use fixtures from props (already fetched with group query)
   const fixtures = useMemo(
@@ -106,10 +119,7 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp, selecti
     );
   }, [groupId, remainingFixtureIds, updateGroupMutation]);
 
-  const leagueDateGroups = useMemo(
-    () => groupFixturesByLeagueAndDate(filteredFixtures as FixtureItem[]),
-    [filteredFixtures]
-  );
+  const leagueDateGroups = useGroupedFixtures(filteredFixtures);
 
   if (filteredFixtures.length === 0) {
     return (
@@ -122,8 +132,6 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp, selecti
       </Screen>
     );
   }
-
-  const HEADER_HEIGHT = 64;
 
   const header = (
     <GroupGamesHeader
@@ -139,7 +147,9 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp, selecti
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {hasAnyChips && (
         <SmartFilterChips
           actionChips={actionChips}
@@ -171,17 +181,10 @@ export function GroupGamesDraftScreen({ groupId, fixtures: fixturesProp, selecti
           >
             <View style={styles.groupCardContainer}>
               {group.fixtures.map((fixture, index) => {
-                const isFirst = index === 0;
-                const isLast = index === group.fixtures.length - 1;
-                const positionInGroup =
-                  group.fixtures.length === 1
-                    ? "single"
-                    : isFirst
-                      ? "top"
-                      : isLast
-                        ? "bottom"
-                        : "middle";
-
+                const positionInGroup = getPositionInGroup(
+                  index,
+                  group.fixtures.length
+                );
                 const fixtureItem = fixture as FixtureItem;
                 const isDeselected = deselectedIds.has(fixture.id);
 
@@ -269,13 +272,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-  },
-  deleteButtonContainer: {
-    marginTop: 24,
-    marginBottom: 32,
-    paddingHorizontal: 16,
-  },
-  deleteButton: {
-    width: "100%",
   },
 });

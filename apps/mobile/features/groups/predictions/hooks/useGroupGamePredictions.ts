@@ -1,13 +1,13 @@
 import React from "react";
-import { Alert } from "react-native";
 import { useSaveGroupPredictionsBatchMutation } from "@/domains/groups";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type { FixtureItem } from "@/types/common";
+import type { PredictionMode } from "../types";
 
 type UseGroupGamePredictionsArgs = {
   groupId: number | null;
   fixtures: FixtureItem[];
-  predictionMode?: string;
+  predictionMode?: PredictionMode;
 };
 
 type PredictionsByFixtureId = Record<string, GroupPrediction>;
@@ -39,7 +39,8 @@ export function useGroupGamePredictions({
   const [savedPredictionSnapshots, setSavedPredictionSnapshots] =
     React.useState<PredictionsByFixtureId>({});
 
-  const savePredictionsBatchMutation = useSaveGroupPredictionsBatchMutation(groupId);
+  const savePredictionsBatchMutation =
+    useSaveGroupPredictionsBatchMutation(groupId);
 
   // Sync local predictions & snapshots whenever fixtures from the server change
   React.useEffect(() => {
@@ -114,7 +115,7 @@ export function useGroupGamePredictions({
         const currentStr = String(currentValue);
         const firstChar = numericValue[0];
         const lastChar = numericValue[1];
-        
+
         // If the last char matches current, user typed at the end - take last (new)
         // If the first char matches current, user clicked left and typed - take first (new)
         // Otherwise, take the one that's different from current (the new digit)
@@ -133,8 +134,7 @@ export function useGroupGamePredictions({
         numericValue = numericValue.slice(-1);
       }
 
-      const numValue =
-        numericValue === "" ? null : parseInt(numericValue, 10);
+      const numValue = numericValue === "" ? null : parseInt(numericValue, 10);
       if (numValue !== null && (numValue < 0 || numValue > 9)) return;
 
       setPredictions((prev) => {
@@ -158,12 +158,25 @@ export function useGroupGamePredictions({
     [predictions]
   );
 
-  const fillRandomPredictions = React.useCallback(() => {
+  /**
+   * Returns info needed for the UI to show a confirmation before fill-random, or null if no confirmation needed.
+   */
+  const getFillRandomConfirm = React.useCallback((): {
+    needsConfirmation: boolean;
+    existingCount: number;
+  } | null => {
     const existingCount = Object.values(predictions).filter(
       (p) => p.home !== null && p.away !== null
     ).length;
+    if (existingCount === 0) return null;
+    return { needsConfirmation: true, existingCount };
+  }, [predictions]);
 
-    const doFill = () => {
+  const fillRandomPredictions = React.useCallback(
+    (confirmed?: boolean) => {
+      const confirmInfo = getFillRandomConfirm();
+      if (confirmInfo !== null && confirmed !== true) return;
+
       const randomPredictions: PredictionsByFixtureId = {};
       const outcomes: GroupPrediction[] = [
         { home: 1, away: 0 },
@@ -183,21 +196,9 @@ export function useGroupGamePredictions({
         }
       });
       setPredictions(randomPredictions);
-    };
-
-    if (existingCount > 0) {
-      Alert.alert(
-        "Fill Random",
-        `This will overwrite ${existingCount} existing prediction(s). Continue?`,
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Fill", onPress: doFill },
-        ]
-      );
-    } else {
-      doFill();
-    }
-  }, [fixtures, predictionMode, predictions]);
+    },
+    [fixtures, predictionMode, getFillRandomConfirm]
+  );
 
   const clearAllPredictions = React.useCallback(() => {
     setPredictions({});
@@ -234,10 +235,7 @@ export function useGroupGamePredictions({
 
       if (!isUnchanged && prediction) {
         // Only include if both home and away are filled
-        if (
-          prediction.home !== null &&
-          prediction.away !== null
-        ) {
+        if (prediction.home !== null && prediction.away !== null) {
           changed.push({
             fixtureId,
             home: prediction.home,
@@ -252,53 +250,54 @@ export function useGroupGamePredictions({
 
   /**
    * Saves all changed predictions in a single batch request.
+   * Returns a Promise that resolves with { rejected?: number } when some predictions were rejected (match started),
+   * or rejects with the error when the request fails. Caller should show alerts based on result.
    */
-  const saveAllChangedPredictions = React.useCallback(async () => {
-    // Prevent double saves if already saving
-    if (savePredictionsBatchMutation.isPending) {
-      return;
-    }
-
-    const changed = getChangedPredictions();
-
-    if (changed.length === 0 || !groupId) {
-      return;
-    }
-
-    savePredictionsBatchMutation.mutate(
-      {
-        predictions: changed,
-      },
-      {
-        onSuccess: (data) => {
-          // Mark only successfully saved predictions (rejected ones stay as unsaved)
-          const savedFixtureIds = new Set((data.saved ?? []).map((s) => s.fixtureId));
-          changed
-            .filter((c) => savedFixtureIds.has(c.fixtureId))
-            .forEach(({ fixtureId, home, away }) => {
-              setSavedPredictions((prev) => new Set(prev).add(fixtureId));
-              const fixtureIdStr = String(fixtureId);
-              setSavedPredictionSnapshots((prev) => ({
-                ...prev,
-                [fixtureIdStr]: { home, away },
-              }));
-            });
-          if (data.rejected?.length) {
-            Alert.alert(
-              "Some predictions skipped",
-              `${data.rejected.length} prediction(s) were skipped because the match has already started.`
-            );
-          }
-        },
-        onError: (error: unknown) => {
-          console.error("Failed to save predictions:", error);
-          Alert.alert(
-            "Save Failed",
-            "Could not save your predictions. Please try again."
-          );
-        },
+  const saveAllChangedPredictions = React.useCallback((): Promise<{
+    rejected?: number;
+  }> => {
+    return new Promise((resolve, reject) => {
+      if (savePredictionsBatchMutation.isPending) {
+        resolve({});
+        return;
       }
-    );
+
+      const changed = getChangedPredictions();
+
+      if (changed.length === 0 || !groupId) {
+        resolve({});
+        return;
+      }
+
+      savePredictionsBatchMutation.mutate(
+        {
+          predictions: changed,
+        },
+        {
+          onSuccess: (data) => {
+            const savedFixtureIds = new Set(
+              (data.saved ?? []).map((s) => s.fixtureId)
+            );
+            changed
+              .filter((c) => savedFixtureIds.has(c.fixtureId))
+              .forEach(({ fixtureId, home, away }) => {
+                setSavedPredictions((prev) => new Set(prev).add(fixtureId));
+                const fixtureIdStr = String(fixtureId);
+                setSavedPredictionSnapshots((prev) => ({
+                  ...prev,
+                  [fixtureIdStr]: { home, away },
+                }));
+              });
+            const rejectedCount = data.rejected?.length ?? 0;
+            resolve(rejectedCount > 0 ? { rejected: rejectedCount } : {});
+          },
+          onError: (error: unknown) => {
+            console.error("Failed to save predictions:", error);
+            reject(error);
+          },
+        }
+      );
+    });
   }, [getChangedPredictions, groupId, savePredictionsBatchMutation]);
 
   return {
@@ -306,6 +305,7 @@ export function useGroupGamePredictions({
     savedPredictions,
     updatePrediction,
     setOutcomePrediction,
+    getFillRandomConfirm,
     fillRandomPredictions,
     clearAllPredictions,
     getChangedPredictions,
@@ -313,4 +313,3 @@ export function useGroupGamePredictions({
     isSaving: savePredictionsBatchMutation.isPending,
   };
 }
-

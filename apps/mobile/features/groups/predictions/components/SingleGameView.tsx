@@ -12,24 +12,21 @@ import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { SingleGameMatchCard } from "./SingleGameMatchCard";
 import type { FixtureItem } from "@/types/common";
-import type { GroupPrediction } from "@/features/group-creation/selection/games";
-
-type PredictionsByFixtureId = Record<string, GroupPrediction>;
+import type {
+  PredictionMode,
+  PredictionsByFixtureId,
+  FocusedField,
+} from "../types";
 
 type Props = {
   fixtures: FixtureItem[];
   predictions: PredictionsByFixtureId;
   savedPredictions: Set<number>;
   inputRefs: React.MutableRefObject<
-    Record<
-      string,
-      { home: React.RefObject<any>; away: React.RefObject<any> }
-    >
+    Record<string, { home: React.RefObject<any>; away: React.RefObject<any> }>
   >;
-  currentFocusedField: { fixtureId: number; type: "home" | "away" } | null;
-  setCurrentFocusedField: (
-    field: { fixtureId: number; type: "home" | "away" } | null
-  ) => void;
+  currentFocusedField: FocusedField;
+  setCurrentFocusedField: (field: FocusedField) => void;
   onUpdatePrediction: (
     fixtureId: number,
     type: "home" | "away",
@@ -41,8 +38,11 @@ type Props = {
   getNextFieldIndex: (fixtureId: number, type: "home" | "away") => number;
   navigateToField: (index: number) => void;
   onSaveAllChanged: () => void;
-  predictionMode?: "CorrectScore" | "MatchWinner";
-  onSelectOutcome?: (fixtureId: number, outcome: "home" | "draw" | "away") => void;
+  predictionMode?: PredictionMode;
+  onSelectOutcome?: (
+    fixtureId: number,
+    outcome: "home" | "draw" | "away"
+  ) => void;
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -111,7 +111,13 @@ export function SingleGameView({
     });
   };
 
-  const renderItem = ({ item: fixture, index }: { item: FixtureItem; index: number }) => {
+  const renderItem = ({
+    item: fixture,
+    index,
+  }: {
+    item: FixtureItem;
+    index: number;
+  }) => {
     const fixtureIdStr = String(fixture.id);
     const prediction = predictions[fixtureIdStr] || {
       home: null,
@@ -142,9 +148,7 @@ export function SingleGameView({
           isSaved={isSaved}
           onFocus={(type) => onFieldFocus(fixture.id, type)}
           onBlur={() => onFieldBlur(fixture.id)}
-          onChange={(type, text) =>
-            onUpdatePrediction(fixture.id, type, text)
-          }
+          onChange={(type, text) => onUpdatePrediction(fixture.id, type, text)}
           onAutoNext={(type) => {
             // In single view, auto-next can advance to next game if at end of current game
             const nextIndex = getNextFieldIndex(fixture.id, type);
@@ -153,7 +157,11 @@ export function SingleGameView({
             }
           }}
           predictionMode={predictionMode}
-          onSelectOutcome={onSelectOutcome ? (outcome) => onSelectOutcome(fixture.id, outcome) : undefined}
+          onSelectOutcome={
+            onSelectOutcome
+              ? (outcome) => onSelectOutcome(fixture.id, outcome)
+              : undefined
+          }
         />
       </View>
     );
@@ -164,7 +172,9 @@ export function SingleGameView({
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {/* Navigation buttons and FlatList */}
       <View style={styles.contentContainer}>
         {/* Previous button - positioned absolutely on left */}
@@ -191,7 +201,11 @@ export function SingleGameView({
 
         {/* Game indicator - positioned absolutely in center top */}
         <View style={styles.indicatorContainer}>
-          <AppText variant="caption" color="secondary" style={styles.indicatorText}>
+          <AppText
+            variant="caption"
+            color="secondary"
+            style={styles.indicatorText}
+          >
             Game {currentIndex + 1} of {fixtures.length}
           </AppText>
         </View>

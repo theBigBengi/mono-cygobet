@@ -3,7 +3,21 @@
  * content padding (header + optional filter tabs), and prediction formatting for share.
  */
 import type { PositionInGroup } from "@/types/common";
+import type { PredictionMode } from "../types";
 import { HEADER_HEIGHT, FILTER_TABS_HEIGHT } from "./constants";
+
+/**
+ * Derives outcome (home/draw/away) from a prediction's home/away scores.
+ */
+export function getOutcomeFromPrediction(prediction: {
+  home: number | null;
+  away: number | null;
+}): "home" | "draw" | "away" | null {
+  if (prediction.home === null || prediction.away === null) return null;
+  if (prediction.home > prediction.away) return "home";
+  if (prediction.home < prediction.away) return "away";
+  return "draw";
+}
 
 /**
  * Determines the position of a card within a group of cards.
@@ -75,7 +89,7 @@ export function calculateContentPaddingTopDefault(hasFilters: boolean): number {
  */
 export function formatPredictionForShare(
   prediction: { home: number | null; away: number | null },
-  predictionMode: "CorrectScore" | "MatchWinner"
+  predictionMode: PredictionMode
 ): string {
   if (predictionMode === "MatchWinner") {
     if (prediction.home === prediction.away) return "X";

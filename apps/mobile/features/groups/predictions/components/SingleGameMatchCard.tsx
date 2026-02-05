@@ -1,29 +1,18 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Dimensions, TextInput } from "react-native";
-import {
-  canPredict,
-  isLive as isLiveState,
-  isFinished as isFinishedState,
-  isCancelled as isCancelledState,
-} from "@repo/utils";
 import { Card, AppText, TeamLogo } from "@/components/ui";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { ScoresInput } from "./ScoresInput";
 import { OutcomePicker } from "./OutcomePicker";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type { FixtureItem } from "@/types/common";
+import type { PredictionMode } from "../types";
+import { getOutcomeFromPrediction } from "../utils/utils";
+import { useMatchCardState } from "../hooks/useMatchCardState";
+import { LIVE_RESULT_COLOR } from "../utils/constants";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-function getOutcomeFromPrediction(
-  prediction: GroupPrediction
-): "home" | "draw" | "away" | null {
-  if (prediction.home === null || prediction.away === null) return null;
-  if (prediction.home > prediction.away) return "home";
-  if (prediction.home < prediction.away) return "away";
-  return "draw";
-}
 
 type Props = {
   fixture: FixtureItem;
@@ -37,7 +26,7 @@ type Props = {
   onBlur?: () => void;
   onChange: (type: "home" | "away", nextText: string) => void;
   onAutoNext?: (type: "home" | "away") => void;
-  predictionMode?: "CorrectScore" | "MatchWinner";
+  predictionMode?: PredictionMode;
   onSelectOutcome?: (outcome: "home" | "draw" | "away") => void;
 };
 
@@ -60,34 +49,24 @@ export function SingleGameMatchCard({
   predictionMode = "CorrectScore",
   onSelectOutcome,
 }: Props) {
-  const { t } = useTranslation("common");
   const { translateTeam } = useEntityTranslation();
+  const { t } = useTranslation("common");
   const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
-  const isEditable = canPredict(fixture.state, fixture.startTs);
-  const isLive = isLiveState(fixture.state);
-  const isFinished = isFinishedState(fixture.state);
-  const isCancelled = isCancelledState(fixture.state);
 
-  // Get result or reason text
-  const getResultOrReasonText = (): string | null => {
-    // For LIVE and FT games, show result if available
-    if ((isLive || isFinished) && fixture.result) {
-      // Normalize result format (can be "2-1" or "2:1")
-      return fixture.result.replace(":", "-");
-    }
-    if (isCancelled) {
-      const stateMap: Record<string, string> = {
-        CAN: t("predictions.cancelled"),
-        HT: t("predictions.halfTime"),
-        INT: t("predictions.interrupted"),
-      };
-      return stateMap[fixture.state] || `${t("common.unknown")}: ${fixture.state}`;
-    }
-    return null;
-  };
+  const { isEditable, isLive, isFinished, gameResultOrTime } =
+    useMatchCardState({
+      fixture,
+      positionInGroup: "single",
+      currentFocusedField: null,
+    });
 
-  const resultOrReasonText = getResultOrReasonText();
+  const resultOrReasonText =
+    gameResultOrTime != null
+      ? gameResultOrTime.home != null && gameResultOrTime.away != null
+        ? `${gameResultOrTime.home}-${gameResultOrTime.away}`
+        : gameResultOrTime.home
+      : null;
 
   return (
     <View style={[!isEditable && !isLive && styles.dimmedContainer]}>
@@ -140,7 +119,11 @@ export function SingleGameMatchCard({
               teamName={awayTeamName}
               size={48}
             />
-            <AppText variant="body" style={styles.teamNameAway} numberOfLines={2}>
+            <AppText
+              variant="body"
+              style={styles.teamNameAway}
+              numberOfLines={2}
+            >
               {awayTeamName}
             </AppText>
           </View>
@@ -150,10 +133,7 @@ export function SingleGameMatchCard({
             <AppText
               variant="caption"
               color={isLive ? undefined : "secondary"}
-              style={[
-                styles.resultText,
-                isLive && styles.liveResultText,
-              ]}
+              style={[styles.resultText, isLive && styles.liveResultText]}
             >
               {resultOrReasonText}
             </AppText>
@@ -229,7 +209,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   liveResultText: {
-    color: "#EF4444",
+    color: LIVE_RESULT_COLOR,
     fontWeight: "700",
   },
 });

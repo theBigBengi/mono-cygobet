@@ -2,14 +2,14 @@ import React from "react";
 import { View, StyleSheet, TextInput, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
-import type { FocusedField } from "../types";
+import type { FocusedField, PredictionMode } from "../types";
 import { useMatchCardState } from "../hooks/useMatchCardState";
+import { getOutcomeFromPrediction } from "../utils/utils";
 import { ScoreInput } from "./ScoreInput";
 import { OutcomePicker } from "./OutcomePicker";
 import { TeamRow } from "./TeamRow";
@@ -20,15 +20,6 @@ type InputRefs = {
   home: React.RefObject<TextInput | null>;
   away: React.RefObject<TextInput | null>;
 };
-
-function getOutcomeFromPrediction(
-  prediction: GroupPrediction
-): "home" | "draw" | "away" | null {
-  if (prediction.home === null || prediction.away === null) return null;
-  if (prediction.home > prediction.away) return "home";
-  if (prediction.home < prediction.away) return "away";
-  return "draw";
-}
 
 type Props = {
   fixture: FixtureItem;
@@ -43,11 +34,8 @@ type Props = {
   onChange: (type: "home" | "away", nextText: string) => void;
   onAutoNext?: (type: "home" | "away") => void;
   /** When "MatchWinner", shows 1/X/2 OutcomePicker instead of score inputs */
-  predictionMode?: "CorrectScore" | "MatchWinner";
+  predictionMode?: PredictionMode;
   onSelectOutcome?: (outcome: "home" | "draw" | "away") => void;
-  /** When finished and user has a settled prediction, show share icon and call on press */
-  onShare?: () => void;
-  showShare?: boolean;
 };
 
 /**
@@ -68,8 +56,6 @@ export function MatchPredictionCardVertical({
   onAutoNext,
   predictionMode = "CorrectScore",
   onSelectOutcome,
-  onShare,
-  showShare = false,
 }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -228,13 +214,5 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     gap: 6,
     flexShrink: 0,
-  },
-  pointsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  shareButton: {
-    padding: 4,
   },
 });
