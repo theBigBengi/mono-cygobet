@@ -178,6 +178,30 @@ export function SingleGameView({
     return null;
   }
 
+  const currentFixture = fixtures[currentIndex];
+  const currentFixtureId = currentFixture?.id;
+  const currentPrediction = currentFixtureId
+    ? predictions[String(currentFixtureId)] || { home: null, away: null }
+    : { home: null, away: null };
+
+  const handleSliderChange = (side: "home" | "away", val: number | null) => {
+    if (currentFixtureId == null) return;
+
+    const otherSide = side === "home" ? "away" : "home";
+    const otherValue = currentPrediction[otherSide];
+
+    if (val != null && otherValue == null) {
+      // Moving from "-" to a number → reset other slider to 0
+      onUpdatePrediction(currentFixtureId, otherSide, "0");
+    } else if (val == null && otherValue != null) {
+      // Moving to "-" → clear other slider too
+      onUpdatePrediction(currentFixtureId, otherSide, "");
+    }
+
+    // Update this slider's value
+    onUpdatePrediction(currentFixtureId, side, val != null ? String(val) : "");
+  };
+
   return (
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -190,8 +214,16 @@ export function SingleGameView({
       />
       <View style={[styles.contentContainer, { flex: 1 }]}>
         {/* Vertical score sliders - full height, left and right */}
-        <ScoreSlider side="home" />
-        <ScoreSlider side="away" />
+        <ScoreSlider
+          side="home"
+          value={currentPrediction.home}
+          onValueChange={(val) => handleSliderChange("home", val)}
+        />
+        <ScoreSlider
+          side="away"
+          value={currentPrediction.away}
+          onValueChange={(val) => handleSliderChange("away", val)}
+        />
 
         {/* FlatList for games - takes full width */}
         <FlatList
@@ -230,7 +262,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    width: "100%",
+    // width: "100%",
     position: "relative",
   },
   flatList: {
@@ -239,8 +271,8 @@ const styles = StyleSheet.create({
   gameContainer: {
     width: SCREEN_WIDTH,
     paddingHorizontal: 0,
-    paddingTop: 16,
-    paddingBottom: 8,
+    // paddingTop: 16,
+    // paddingBottom: 8,
     alignItems: "center",
     justifyContent: "flex-start",
   },

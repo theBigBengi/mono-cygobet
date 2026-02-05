@@ -147,15 +147,17 @@ export function SingleGameMatchCard({
 const styles = StyleSheet.create({
   dimmedContainer: {
     opacity: 0.6,
+    // backgroundColor: "red",
   },
   matchCard: {
     marginHorizontal: 0,
     marginTop: 0,
     marginBottom: 16,
     padding: 16,
-    borderRadius: 0,
+    borderRadius: 12,
     alignSelf: "center",
-    width: SCREEN_WIDTH,
+    width: SCREEN_WIDTH - 16,
+    // backgroundColor: "red",
   },
   matchContent: {
     flexDirection: "row",

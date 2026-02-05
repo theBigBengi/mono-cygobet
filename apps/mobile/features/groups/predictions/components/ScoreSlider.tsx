@@ -7,6 +7,7 @@ import Animated, {
   useAnimatedReaction,
   runOnJS,
   withSpring,
+  withTiming,
   interpolate,
   interpolateColor,
 } from "react-native-reanimated";
@@ -24,6 +25,9 @@ const CONTAINER_WIDTH = 44;
 // 11 rows: 10 digits + dash; MAX_Y = 10 * ROW_HEIGHT
 const MAX_Y = 10 * ROW_HEIGHT; // 320
 
+// value 9 → y=0, value 0 → y=9*ROW_HEIGHT
+const valueToY = (value: number) => (9 - value) * ROW_HEIGHT;
+
 function triggerHaptic() {
   if (process.env.EXPO_OS === "ios") {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -32,6 +36,8 @@ function triggerHaptic() {
 
 export type ScoreSliderProps = {
   side: "home" | "away";
+  value?: number | null;
+  onValueChange?: (value: number | null) => void;
 };
 
 /** Animated digit that highlights based on proximity to the tab. */
@@ -116,19 +122,40 @@ function AnimatedDash({
   );
 }
 
-export function ScoreSlider({ side }: ScoreSliderProps) {
+export function ScoreSlider({ side, value, onValueChange }: ScoreSliderProps) {
   const { theme } = useTheme();
-  const [displayValue, setDisplayValue] = React.useState("—");
+  const [displayValue, setDisplayValue] = React.useState(
+    value != null ? String(value) : "—"
+  );
 
   // Tab Y shared value: 0 = top (value 9), MAX_Y = bottom (dash = no prediction)
-  const tabY = useSharedValue(MAX_Y);
+  const tabY = useSharedValue(value != null ? valueToY(value) : MAX_Y);
   const dragStartY = useSharedValue(0);
+  const isSyncingFromProp = useSharedValue(0);
+  const isDraggingRef = React.useRef(false);
+  const setIsDragging = React.useCallback((val: boolean) => {
+    isDraggingRef.current = val;
+  }, []);
+
+  // Sync tabY when value prop changes (e.g., user swipes to new game)
+  React.useEffect(() => {
+    if (isDraggingRef.current) return;
+    isSyncingFromProp.value = 1;
+    const targetY = value != null ? valueToY(value) : MAX_Y;
+    tabY.value = withTiming(targetY, { duration: 200 }, (finished) => {
+      if (finished) isSyncingFromProp.value = 0;
+    });
+  }, [value]);
 
   useAnimatedReaction(
     () => Math.round(tabY.value / ROW_HEIGHT),
     (current, previous) => {
       if (previous !== null && current !== previous) {
         runOnJS(triggerHaptic)();
+        if (isSyncingFromProp.value === 0) {
+          const numVal = current >= 10 ? null : 9 - current;
+          if (onValueChange) runOnJS(onValueChange)(numVal);
+        }
       }
       const val = current >= 10 ? "—" : String(9 - current);
       runOnJS(setDisplayValue)(val);
@@ -137,6 +164,7 @@ export function ScoreSlider({ side }: ScoreSliderProps) {
 
   const panGesture = Gesture.Pan()
     .onStart(() => {
+      runOnJS(setIsDragging)(true);
       dragStartY.value = tabY.value;
     })
     .onUpdate((event) => {
@@ -144,9 +172,14 @@ export function ScoreSlider({ side }: ScoreSliderProps) {
       tabY.value = Math.max(0, Math.min(MAX_Y, newY));
     })
     .onEnd(() => {
-      // Snap to nearest digit row
       const snapped = Math.round(tabY.value / ROW_HEIGHT) * ROW_HEIGHT;
-      tabY.value = withSpring(snapped, { damping: 20, stiffness: 200 });
+      tabY.value = withSpring(
+        snapped,
+        { damping: 20, stiffness: 200 },
+        (finished) => {
+          if (finished) runOnJS(setIsDragging)(false);
+        }
+      );
     });
 
   // Tab position — centered vertically on the current digit row
