@@ -5,6 +5,8 @@ import { TeamsService } from "../../../../services/teams.service";
 import {
   AdminTeamsListResponse,
   AdminTeamResponse,
+  AdminTeamsBulkUpdateRequest,
+  AdminTeamsBulkUpdateResponse,
   AdminUpdateTeamResponse,
 } from "@repo/types";
 import {
@@ -26,6 +28,8 @@ import {
   searchTeamsResponseSchema,
   updateTeamBodySchema,
   updateTeamResponseSchema,
+  bulkUpdateTeamsBodySchema,
+  bulkUpdateTeamsResponseSchema,
 } from "../../../../schemas/admin/teams.schemas";
 import type {
   ListTeamsQuerystring,
@@ -310,6 +314,31 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
         }
         throw error;
       }
+    }
+  );
+
+  // POST /admin/sync-center/db/teams/bulk-update - Bulk update team colors
+  fastify.post<{
+    Body: { teams: AdminTeamsBulkUpdateRequest["teams"] };
+    Reply: AdminTeamsBulkUpdateResponse;
+  }>(
+    "/teams/bulk-update",
+    {
+      schema: {
+        body: bulkUpdateTeamsBodySchema,
+        response: {
+          200: bulkUpdateTeamsResponseSchema,
+        },
+      },
+    },
+    async (req, reply): Promise<AdminTeamsBulkUpdateResponse> => {
+      const results = await service.bulkUpdateColors(req.body.teams);
+
+      return reply.send({
+        status: "success",
+        data: results,
+        message: `Updated ${results.updated} teams. ${results.notFound.length} not found.`,
+      });
     }
   );
 };

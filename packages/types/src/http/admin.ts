@@ -520,6 +520,25 @@ export interface AdminUpdateTeamResponse {
   message: string;
 }
 
+export interface AdminTeamsBulkUpdateRequest {
+  teams: {
+    name: string;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    tertiaryColor?: string | null;
+  }[];
+}
+
+export interface AdminTeamsBulkUpdateResponse {
+  status: "success" | "error";
+  data: {
+    updated: number;
+    notFound: string[];
+    errors: { name: string; error: string }[];
+  };
+  message: string;
+}
+
 export interface AdminProviderTeamsResponse {
   status: string;
   data: Array<{

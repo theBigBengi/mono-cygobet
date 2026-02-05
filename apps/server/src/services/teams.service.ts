@@ -163,4 +163,51 @@ export class TeamsService {
 
     return team;
   }
+
+  async bulkUpdateColors(
+    teams: {
+      name: string;
+      primaryColor?: string | null;
+      secondaryColor?: string | null;
+      tertiaryColor?: string | null;
+    }[]
+  ) {
+    const results = {
+      updated: 0,
+      notFound: [] as string[],
+      errors: [] as { name: string; error: string }[],
+    };
+
+    for (const team of teams) {
+      try {
+        const existing = await prisma.teams.findFirst({
+          where: { name: { equals: team.name, mode: "insensitive" } },
+        });
+
+        if (!existing) {
+          results.notFound.push(team.name);
+          continue;
+        }
+
+        await prisma.teams.update({
+          where: { id: existing.id },
+          data: {
+            firstKitColor: team.primaryColor ?? existing.firstKitColor,
+            secondKitColor: team.secondaryColor ?? existing.secondKitColor,
+            thirdKitColor: team.tertiaryColor ?? existing.thirdKitColor,
+            updatedAt: new Date(),
+          },
+        });
+
+        results.updated++;
+      } catch (error) {
+        results.errors.push({
+          name: team.name,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+
+    return results;
+  }
 }

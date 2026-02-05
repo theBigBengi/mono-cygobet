@@ -1,6 +1,7 @@
 import { apiGet, apiPost, apiPatch } from "@/lib/adminApi";
 import type {
   AdminTeamsListResponse,
+  AdminTeamsBulkUpdateResponse,
   AdminProviderTeamsResponse,
   AdminBatchesListResponse,
   AdminBatchItemsResponse,
@@ -78,6 +79,20 @@ export const teamsService = {
     return apiPatch<AdminUpdateTeamResponse>(
       `/admin/sync-center/db/teams/${id}`,
       data
+    );
+  },
+
+  async bulkUpdate(
+    teams: {
+      name: string;
+      primaryColor?: string | null;
+      secondaryColor?: string | null;
+      tertiaryColor?: string | null;
+    }[]
+  ) {
+    return apiPost<AdminTeamsBulkUpdateResponse>(
+      "/admin/sync-center/db/teams/bulk-update",
+      { teams }
     );
   },
 };

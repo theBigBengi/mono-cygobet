@@ -128,3 +128,59 @@ export const updateTeamResponseSchema = {
     message: { type: "string" },
   },
 } as const;
+
+export const bulkUpdateTeamsBodySchema = {
+  type: "object",
+  properties: {
+    teams: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string", minLength: 1 },
+          primaryColor: {
+            type: ["string", "null"],
+            pattern: "^#[0-9A-Fa-f]{6}$",
+          },
+          secondaryColor: {
+            type: ["string", "null"],
+            pattern: "^#[0-9A-Fa-f]{6}$",
+          },
+          tertiaryColor: {
+            type: ["string", "null"],
+            pattern: "^#[0-9A-Fa-f]{6}$",
+          },
+        },
+        required: ["name"],
+      },
+      minItems: 1,
+      maxItems: 500,
+    },
+  },
+  required: ["teams"],
+} as const;
+
+export const bulkUpdateTeamsResponseSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string" },
+    data: {
+      type: "object",
+      properties: {
+        updated: { type: "number" },
+        notFound: { type: "array", items: { type: "string" } },
+        errors: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    message: { type: "string" },
+  },
+} as const;

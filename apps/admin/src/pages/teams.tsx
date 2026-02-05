@@ -36,9 +36,18 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { teamsService } from "@/services/teams.service";
 import type { AdminTeamsListResponse } from "@repo/types";
-import { Pencil, Search, X } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle,
+  FileText,
+  Pencil,
+  Search,
+  Upload,
+  X,
+} from "lucide-react";
 
 type Team = AdminTeamsListResponse["data"][number];
 
@@ -57,6 +66,13 @@ export default function TeamsPage() {
     secondaryColor: "",
     tertiaryColor: "",
   });
+
+  const [csvFile, setCsvFile] = React.useState<File | null>(null);
+  const [importResults, setImportResults] = React.useState<{
+    updated: number;
+    notFound: string[];
+    errors: { name: string; error: string }[];
+  } | null>(null);
 
   // Debounce search input
   React.useEffect(() => {
@@ -100,6 +116,62 @@ export default function TeamsPage() {
       toast.error("Failed to update team", { description: error.message });
     },
   });
+
+  const importMutation = useMutation({
+    mutationFn: (teams: Parameters<typeof teamsService.bulkUpdate>[0]) =>
+      teamsService.bulkUpdate(teams),
+    onSuccess: (response) => {
+      setImportResults(response.data);
+      setCsvFile(null);
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      toast.success(response.message);
+    },
+    onError: (error: Error) => {
+      toast.error("Import failed", { description: error.message });
+    },
+  });
+
+  const parseCSV = (text: string) => {
+    const lines = text.trim().split("\n");
+    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+
+    const nameIdx = headers.indexOf("name");
+    const primaryIdx = headers.indexOf("primarycolor");
+    const secondaryIdx = headers.indexOf("secondarycolor");
+    const tertiaryIdx = headers.indexOf("tertiarycolor");
+
+    if (nameIdx === -1) {
+      throw new Error("CSV must have a 'name' column");
+    }
+
+    return lines
+      .slice(1)
+      .map((line) => {
+        const values = line.split(",").map((v) => v.trim());
+        return {
+          name: values[nameIdx],
+          primaryColor: primaryIdx >= 0 ? values[primaryIdx] || null : null,
+          secondaryColor:
+            secondaryIdx >= 0 ? values[secondaryIdx] || null : null,
+          tertiaryColor: tertiaryIdx >= 0 ? values[tertiaryIdx] || null : null,
+        };
+      })
+      .filter((t) => t.name);
+  };
+
+  const handleFileUpload = async () => {
+    if (!csvFile) return;
+
+    try {
+      const text = await csvFile.text();
+      const teams = parseCSV(text);
+      importMutation.mutate(teams);
+    } catch (error) {
+      toast.error("Failed to parse CSV", {
+        description: error instanceof Error ? error.message : "Invalid format",
+      });
+    }
+  };
 
   // Open edit sheet
   const handleEdit = (team: Team) => {
@@ -185,6 +257,76 @@ export default function TeamsPage() {
                 </Button>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* CSV Import */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Bulk Import Colors
+            </CardTitle>
+            <CardDescription>
+              Upload a CSV file to update team colors in bulk
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                type="file"
+                accept=".csv"
+                onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleFileUpload}
+                disabled={!csvFile || importMutation.isPending}
+              >
+                {importMutation.isPending ? "Importing..." : "Import"}
+              </Button>
+            </div>
+
+            <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+              <p className="font-medium flex items-center gap-1">
+                <FileText className="h-4 w-4" /> CSV Format:
+              </p>
+              <code className="text-xs block mt-1">
+                name,primaryColor,secondaryColor,tertiaryColor
+                <br />
+                Manchester City,#6CABDD,#FFFFFF,#1C2C5B
+                <br />
+                Liverpool,#C8102E,#00B2A9,#F6EB61
+              </code>
+            </div>
+
+            {importResults && (
+              <div className="space-y-2">
+                <Alert
+                  variant={
+                    importResults.notFound.length > 0 ? "default" : "default"
+                  }
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertTitle>Import Complete</AlertTitle>
+                  <AlertDescription>
+                    Updated {importResults.updated} teams
+                  </AlertDescription>
+                </Alert>
+
+                {importResults.notFound.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>
+                      Teams Not Found ({importResults.notFound.length})
+                    </AlertTitle>
+                    <AlertDescription className="max-h-32 overflow-y-auto">
+                      {importResults.notFound.join(", ")}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
