@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -30,13 +30,12 @@ import type {
 type SingleGamePageProps = {
   fixture: FixtureItem;
   prediction: GroupPrediction;
+  isSaved: boolean;
   groupId: number | null;
-  savedPredictions: Set<number>;
-  inputRefs: React.MutableRefObject<
-    Record<string, { home: React.RefObject<any>; away: React.RefObject<any> }>
-  >;
-  currentFocusedField: FocusedField;
-  predictions: PredictionsByFixtureId;
+  homeRef: React.RefObject<any> | undefined;
+  awayRef: React.RefObject<any> | undefined;
+  isHomeFocused: boolean;
+  isAwayFocused: boolean;
   onFieldFocus: (fixtureId: number, type: "home" | "away") => void;
   onFieldBlur: (fixtureId: number) => void;
   onUpdatePrediction: (
@@ -57,11 +56,12 @@ type SingleGamePageProps = {
 const SingleGamePage = React.memo(function SingleGamePage({
   fixture,
   prediction,
+  isSaved,
   groupId,
-  savedPredictions,
-  inputRefs,
-  currentFocusedField,
-  predictions,
+  homeRef,
+  awayRef,
+  isHomeFocused,
+  isAwayFocused,
   onFieldFocus,
   onFieldBlur,
   onUpdatePrediction,
@@ -86,34 +86,20 @@ const SingleGamePage = React.memo(function SingleGamePage({
     { id: "statistics" as const, label: t("predictions.statistics") },
   ];
 
-  const fixtureIdStr = String(fixture.id);
-  const isHomeFocused =
-    currentFocusedField?.fixtureId === fixture.id &&
-    currentFocusedField.type === "home";
-  const isAwayFocused =
-    currentFocusedField?.fixtureId === fixture.id &&
-    currentFocusedField.type === "away";
-  const homeRef = inputRefs.current[fixtureIdStr]?.home;
-  const awayRef = inputRefs.current[fixtureIdStr]?.away;
-  const isSaved = savedPredictions.has(fixture.id);
+  const handleSliderChange = useCallback(
+    (side: "home" | "away", val: number | null) => {
+      const otherSide = side === "home" ? "away" : "home";
+      const otherValue = prediction[otherSide];
 
-  const handleSliderChange = (
-    side: "home" | "away",
-    val: number | null,
-    fixtureId: number
-  ) => {
-    const pred = predictions[String(fixtureId)] || { home: null, away: null };
-    const otherSide = side === "home" ? "away" : "home";
-    const otherValue = pred[otherSide];
-
-    if (val != null && otherValue == null) {
-      onUpdatePrediction(fixtureId, otherSide, "0");
-    } else if (val == null && otherValue != null) {
-      onUpdatePrediction(fixtureId, otherSide, "");
-    }
-
-    onUpdatePrediction(fixtureId, side, val != null ? String(val) : "");
-  };
+      if (val != null && otherValue == null) {
+        onUpdatePrediction(fixture.id, otherSide, "0");
+      } else if (val == null && otherValue != null) {
+        onUpdatePrediction(fixture.id, otherSide, "");
+      }
+      onUpdatePrediction(fixture.id, side, val != null ? String(val) : "");
+    },
+    [fixture.id, prediction, onUpdatePrediction]
+  );
 
   return (
     <View style={[styles.gameContainer, { width: SCREEN_WIDTH }]}>
@@ -156,9 +142,7 @@ const SingleGamePage = React.memo(function SingleGamePage({
             <HorizontalScoreSlider
               side="home"
               value={prediction.home}
-              onValueChange={(val) =>
-                handleSliderChange("home", val, fixture.id)
-              }
+              onValueChange={(val) => handleSliderChange("home", val)}
               teamImagePath={fixture.homeTeam?.imagePath}
               teamName={fixture.homeTeam?.name}
               thumbColor={fixture.homeTeam?.firstKitColor ?? "#22C55E"}
@@ -166,9 +150,7 @@ const SingleGamePage = React.memo(function SingleGamePage({
             <HorizontalScoreSlider
               side="away"
               value={prediction.away}
-              onValueChange={(val) =>
-                handleSliderChange("away", val, fixture.id)
-              }
+              onValueChange={(val) => handleSliderChange("away", val)}
               teamImagePath={fixture.awayTeam?.imagePath}
               teamName={fixture.awayTeam?.name}
               thumbColor={getAwaySliderColor(
@@ -283,37 +265,58 @@ export function SingleGameView({
     });
   };
 
-  const renderItem = ({
-    item: fixture,
-  }: {
-    item: FixtureItem;
-    index: number;
-  }) => {
-    const fixtureIdStr = String(fixture.id);
-    const prediction = predictions[fixtureIdStr] || {
-      home: null,
-      away: null,
-    };
+  const renderItem = useCallback(
+    ({ item: fixture }: { item: FixtureItem }) => {
+      const fixtureIdStr = String(fixture.id);
+      const prediction = predictions[fixtureIdStr] || {
+        home: null,
+        away: null,
+      };
+      const isSaved = savedPredictions.has(fixture.id);
+      const isHomeFocused =
+        currentFocusedField?.fixtureId === fixture.id &&
+        currentFocusedField.type === "home";
+      const isAwayFocused =
+        currentFocusedField?.fixtureId === fixture.id &&
+        currentFocusedField.type === "away";
+      const homeRef = inputRefs.current[fixtureIdStr]?.home;
+      const awayRef = inputRefs.current[fixtureIdStr]?.away;
 
-    return (
-      <SingleGamePage
-        fixture={fixture}
-        prediction={prediction}
-        groupId={groupId}
-        savedPredictions={savedPredictions}
-        inputRefs={inputRefs}
-        currentFocusedField={currentFocusedField}
-        predictions={predictions}
-        onFieldFocus={onFieldFocus}
-        onFieldBlur={onFieldBlur}
-        onUpdatePrediction={onUpdatePrediction}
-        getNextFieldIndex={getNextFieldIndex}
-        navigateToField={navigateToField}
-        predictionMode={predictionMode}
-        onSelectOutcome={onSelectOutcome}
-      />
-    );
-  };
+      return (
+        <SingleGamePage
+          fixture={fixture}
+          prediction={prediction}
+          isSaved={isSaved}
+          groupId={groupId}
+          homeRef={homeRef}
+          awayRef={awayRef}
+          isHomeFocused={isHomeFocused}
+          isAwayFocused={isAwayFocused}
+          onFieldFocus={onFieldFocus}
+          onFieldBlur={onFieldBlur}
+          onUpdatePrediction={onUpdatePrediction}
+          getNextFieldIndex={getNextFieldIndex}
+          navigateToField={navigateToField}
+          predictionMode={predictionMode}
+          onSelectOutcome={onSelectOutcome}
+        />
+      );
+    },
+    [
+      predictions,
+      savedPredictions,
+      currentFocusedField,
+      groupId,
+      inputRefs,
+      onFieldFocus,
+      onFieldBlur,
+      onUpdatePrediction,
+      getNextFieldIndex,
+      navigateToField,
+      predictionMode,
+      onSelectOutcome,
+    ]
+  );
 
   if (fixtures.length === 0) {
     return null;
@@ -334,6 +337,7 @@ export function SingleGameView({
         <FlatList
           ref={flatListRef}
           data={fixtures}
+          extraData={predictions}
           renderItem={renderItem}
           keyExtractor={(item) => String(item.id)}
           horizontal

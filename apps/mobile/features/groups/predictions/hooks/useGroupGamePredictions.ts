@@ -91,6 +91,10 @@ export function useGroupGamePredictions({
     []
   );
 
+  // Keep predictions in a ref so updatePrediction can stay stable (no deps on predictions).
+  const predictionsRef = React.useRef(predictions);
+  predictionsRef.current = predictions;
+
   const updatePrediction = React.useCallback(
     (
       fixtureId: number,
@@ -103,7 +107,7 @@ export function useGroupGamePredictions({
 
       // Get current prediction value to detect if user is replacing existing digit
       const fixtureIdStr = String(fixtureId);
-      const currentPrediction = predictions[fixtureIdStr];
+      const currentPrediction = predictionsRef.current[fixtureIdStr];
       const currentValue = currentPrediction?.[type];
 
       // If we have 2 digits, it means user typed a new digit when there was
@@ -155,7 +159,7 @@ export function useGroupGamePredictions({
         setTimeout(() => onAutoNext(fixtureId, type), 50);
       }
     },
-    [predictions]
+    []
   );
 
   /**
