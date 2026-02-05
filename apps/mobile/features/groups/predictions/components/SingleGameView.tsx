@@ -7,10 +7,14 @@ import {
   Dimensions,
   Keyboard,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/lib/theme";
+import { AppText } from "@/components/ui";
 import { SingleGameMatchCard } from "./SingleGameMatchCard";
 import { GroupGamesHeader } from "./GroupGamesHeader";
 import { GameSlider } from "./GameSlider";
+import { GameDetailTabs } from "./GameDetailTabs";
+import type { TabId } from "./GameDetailTabs";
 import { HorizontalScoreSlider } from "./HorizontalScoreSlider";
 import { FixturePredictionsList } from "./FixturePredictionsList";
 import { canPredict } from "@repo/utils";
@@ -75,7 +79,9 @@ export function SingleGameView({
   onBack,
 }: Props) {
   const { theme } = useTheme();
+  const { t } = useTranslation("common");
   const [currentIndex, setCurrentIndex] = useState(initialIndex ?? 0);
+  const [activeTabs, setActiveTabs] = useState<Record<number, TabId>>({});
   const flatListRef = useRef<FlatList>(null);
 
   const handlePrevious = () => {
@@ -154,6 +160,27 @@ export function SingleGameView({
 
     const isSaved = savedPredictions.has(fixture.id);
 
+    const isEditable = canPredict(fixture.state, fixture.startTs);
+    const defaultTab: TabId = isEditable ? "predict" : "predictions";
+    const tabs = [
+      ...(isEditable
+        ? [{ id: "predict" as const, label: t("predictions.predict") }]
+        : []),
+      ...(!isEditable
+        ? [
+            {
+              id: "predictions" as const,
+              label: t("predictions.predictions"),
+            },
+          ]
+        : []),
+      { id: "statistics" as const, label: t("predictions.statistics") },
+    ];
+    const activeTab = activeTabs[fixture.id] ?? defaultTab;
+    const handleSelectTab = (tab: TabId) => {
+      setActiveTabs((prev) => ({ ...prev, [fixture.id]: tab }));
+    };
+
     return (
       <View style={[styles.gameContainer, { width: SCREEN_WIDTH }]}>
         <ScrollView
@@ -188,7 +215,12 @@ export function SingleGameView({
                 : undefined
             }
           />
-          {canPredict(fixture.state, fixture.startTs) && (
+          <GameDetailTabs
+            tabs={tabs}
+            activeTab={activeTab}
+            onSelectTab={handleSelectTab}
+          />
+          {activeTab === "predict" && (
             <>
               <HorizontalScoreSlider
                 side="home"
@@ -210,8 +242,15 @@ export function SingleGameView({
               />
             </>
           )}
-          {!canPredict(fixture.state, fixture.startTs) && (
+          {activeTab === "predictions" && (
             <FixturePredictionsList groupId={groupId} fixtureId={fixture.id} />
+          )}
+          {activeTab === "statistics" && (
+            <View style={styles.placeholderContainer}>
+              <AppText variant="body" color="secondary">
+                {t("predictions.statistics")}
+              </AppText>
+            </View>
           )}
         </ScrollView>
       </View>
@@ -300,5 +339,9 @@ const styles = StyleSheet.create({
   },
   gameScrollContent: {
     paddingBottom: 24,
+  },
+  placeholderContainer: {
+    padding: 16,
+    alignItems: "center",
   },
 });

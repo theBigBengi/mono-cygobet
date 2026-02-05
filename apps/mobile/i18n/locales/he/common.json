@@ -207,6 +207,9 @@
     "winnerPoints": "{{points}} נק׳"
   },
   "predictions": {
+    "predict": "בחר תחזית",
+    "predictions": "תחזיות",
+    "statistics": "סטטיסטיקות",
     "saving": "שומר...",
     "saved": "{{count}} מתוך {{total}} תחזיות נשמרו",
     "updating": "מעדכן...",

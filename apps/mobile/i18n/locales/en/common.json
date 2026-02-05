@@ -207,6 +207,9 @@
     "winnerPoints": "{{points}} pts"
   },
   "predictions": {
+    "predict": "Predict",
+    "predictions": "Predictions",
+    "statistics": "Statistics",
     "saving": "Saving...",
     "saved": "{{count}} of {{total}} predictions saved",
     "loadingComparison": "Loading comparison...",
