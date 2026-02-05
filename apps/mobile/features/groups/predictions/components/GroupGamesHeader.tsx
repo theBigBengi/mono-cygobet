@@ -3,6 +3,7 @@ import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
+import { HEADER_HEIGHT } from "../utils/constants";
 
 export type GroupGamesViewMode = "list" | "single";
 
@@ -54,13 +55,19 @@ export function GroupGamesHeader(props: GroupGamesHeaderProps) {
       style={[
         styles.container,
         Platform.OS === "android" && { elevation: 0 },
-        { backgroundColor: theme.colors.background },
+        { backgroundColor: theme.colors.background, height: HEADER_HEIGHT },
       ]}
       pointerEvents="box-none"
     >
       <View style={styles.leftRow}>
         <Pressable onPress={onBack}>
-          <View style={[styles.iconButton, styles.iconButtonClip, { borderWidth: 0, backgroundColor: theme.colors.background }]}>
+          <View
+            style={[
+              styles.iconButton,
+              styles.iconButtonClip,
+              { borderWidth: 0, backgroundColor: theme.colors.background },
+            ]}
+          >
             <View style={styles.iconButtonInner}>
               <Ionicons
                 name="chevron-back"
@@ -70,7 +77,9 @@ export function GroupGamesHeader(props: GroupGamesHeaderProps) {
             </View>
           </View>
         </Pressable>
-        {leftContent ? leftContent : showTitle ? (
+        {leftContent ? (
+          leftContent
+        ) : showTitle ? (
           <AppText
             variant="subtitle"
             style={[styles.titleText, { color: theme.colors.textPrimary }]}
@@ -83,14 +92,24 @@ export function GroupGamesHeader(props: GroupGamesHeaderProps) {
       </View>
       {!backOnly ? (
         <View style={styles.rightRow}>
-        <Pressable onPress={props.onFillRandom!}> 
-          <View style={[styles.iconButton, ]}>
-            <Ionicons name="dice-outline" size={20} color={theme.colors.textPrimary} />
+          <Pressable onPress={props.onFillRandom!}>
+            <View style={[styles.iconButton]}>
+              <Ionicons
+                name="dice-outline"
+                size={20}
+                color={theme.colors.textPrimary}
+              />
             </View>
           </Pressable>
           <Pressable onPress={props.onToggleView!}>
-            <View style={[styles.iconButton,  ]}>
-              <Ionicons name={props.viewMode === "list" ? "albums-outline" : "list-outline"} size={20} color={theme.colors.textPrimary} />
+            <View style={[styles.iconButton]}>
+              <Ionicons
+                name={
+                  props.viewMode === "list" ? "albums-outline" : "list-outline"
+                }
+                size={20}
+                color={theme.colors.textPrimary}
+              />
             </View>
           </Pressable>
         </View>
@@ -108,7 +127,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
     paddingHorizontal: 8,
-    paddingVertical: 8,
   },
   iconButton: {
     width: 44,

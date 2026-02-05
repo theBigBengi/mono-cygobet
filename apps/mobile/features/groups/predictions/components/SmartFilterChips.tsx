@@ -70,7 +70,7 @@ export function SmartFilterChips({
         styles.container,
         {
           backgroundColor: theme.colors.background,
-          borderBottomColor: theme.colors.border,
+          borderColor: theme.colors.border,
         },
       ]}
     >
@@ -164,11 +164,16 @@ export function SmartFilterChips({
       </ScrollView>
 
       {teamsFilter && (
-        <TeamAvatarChips
-          teams={teamsFilter.teams}
-          selectedTeamId={teamsFilter.selectedTeamId}
-          onSelectTeam={onSelectTeam}
-        />
+        <>
+          <View
+            style={[styles.separator, { backgroundColor: theme.colors.border }]}
+          />
+          <TeamAvatarChips
+            teams={teamsFilter.teams}
+            selectedTeamId={teamsFilter.selectedTeamId}
+            onSelectTeam={onSelectTeam}
+          />
+        </>
       )}
 
       {roundsFilter && (
@@ -201,9 +206,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 5,
-    paddingVertical: 8,
+    paddingVertical: 4,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
+    // borderTopWidth: 1,
   },
   actionRowScroll: {
     flexGrow: 0,
@@ -226,7 +232,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    minHeight: 36,
+    minHeight: 32,
   },
   chipIcon: {
     marginRight: 4,
@@ -243,5 +249,11 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     marginRight: 6,
+  },
+  separator: {
+    height: 1,
+    // backgroundColor: "red",
+    marginVertical: 8,
+    width: "100%",
   },
 });

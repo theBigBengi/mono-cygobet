@@ -26,7 +26,7 @@ export function TeamAvatarChips({
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={[
         styles.container,
-        { borderTopColor: theme.colors.border },
+        // { borderTopColor: theme.colors.border },
       ]}
       style={styles.scroll}
     >
@@ -47,7 +47,7 @@ export function TeamAvatarChips({
             <TeamLogo
               imagePath={team.imagePath}
               teamName={team.name}
-              size={32}
+              size={24}
             />
           </Pressable>
         );
@@ -59,15 +59,15 @@ export function TeamAvatarChips({
 const styles = StyleSheet.create({
   scroll: {
     flexGrow: 0,
+    // borderTopWidth: 1,
   },
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderTopWidth: 1,
     gap: 10,
-    paddingRight: 12,
+    // paddingRight: 12,
+    // backgroundColor: "red",
   },
   avatarWrap: {
     borderRadius: 18,
