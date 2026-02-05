@@ -11,7 +11,7 @@ import { useTheme } from "@/lib/theme";
 import { SingleGameMatchCard } from "./SingleGameMatchCard";
 import { GroupGamesHeader } from "./GroupGamesHeader";
 import { GameSlider } from "./GameSlider";
-import { ScoreSlider } from "./ScoreSlider";
+import { HorizontalScoreSlider } from "./HorizontalScoreSlider";
 import { FixturePredictionsList } from "./FixturePredictionsList";
 import { canPredict } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
@@ -188,6 +188,28 @@ export function SingleGameView({
                 : undefined
             }
           />
+          {canPredict(fixture.state, fixture.startTs) && (
+            <>
+              <HorizontalScoreSlider
+                side="home"
+                value={prediction.home}
+                onValueChange={(val) =>
+                  handleSliderChange("home", val, fixture.id)
+                }
+                teamImagePath={fixture.homeTeam?.imagePath}
+                teamName={fixture.homeTeam?.name}
+              />
+              <HorizontalScoreSlider
+                side="away"
+                value={prediction.away}
+                onValueChange={(val) =>
+                  handleSliderChange("away", val, fixture.id)
+                }
+                teamImagePath={fixture.awayTeam?.imagePath}
+                teamName={fixture.awayTeam?.name}
+              />
+            </>
+          )}
           {!canPredict(fixture.state, fixture.startTs) && (
             <FixturePredictionsList groupId={groupId} fixtureId={fixture.id} />
           )}
@@ -200,28 +222,22 @@ export function SingleGameView({
     return null;
   }
 
-  const currentFixture = fixtures[currentIndex];
-  const currentFixtureId = currentFixture?.id;
-  const currentPrediction = currentFixtureId
-    ? predictions[String(currentFixtureId)] || { home: null, away: null }
-    : { home: null, away: null };
-
-  const handleSliderChange = (side: "home" | "away", val: number | null) => {
-    if (currentFixtureId == null) return;
-
+  const handleSliderChange = (
+    side: "home" | "away",
+    val: number | null,
+    fixtureId: number
+  ) => {
+    const pred = predictions[String(fixtureId)] || { home: null, away: null };
     const otherSide = side === "home" ? "away" : "home";
-    const otherValue = currentPrediction[otherSide];
+    const otherValue = pred[otherSide];
 
     if (val != null && otherValue == null) {
-      // Moving from "-" to a number → reset other slider to 0
-      onUpdatePrediction(currentFixtureId, otherSide, "0");
+      onUpdatePrediction(fixtureId, otherSide, "0");
     } else if (val == null && otherValue != null) {
-      // Moving to "-" → clear other slider too
-      onUpdatePrediction(currentFixtureId, otherSide, "");
+      onUpdatePrediction(fixtureId, otherSide, "");
     }
 
-    // Update this slider's value
-    onUpdatePrediction(currentFixtureId, side, val != null ? String(val) : "");
+    onUpdatePrediction(fixtureId, side, val != null ? String(val) : "");
   };
 
   return (
@@ -235,21 +251,6 @@ export function SingleGameView({
         onSelectGame={handleSelectGame}
       />
       <View style={[styles.contentContainer, { flex: 1 }]}>
-        {canPredict(currentFixture.state, currentFixture.startTs) ? (
-          <>
-            <ScoreSlider
-              side="home"
-              value={currentPrediction.home}
-              onValueChange={(val) => handleSliderChange("home", val)}
-            />
-            <ScoreSlider
-              side="away"
-              value={currentPrediction.away}
-              onValueChange={(val) => handleSliderChange("away", val)}
-            />
-          </>
-        ) : null}
-
         {/* FlatList for games - takes full width */}
         <FlatList
           ref={flatListRef}
@@ -287,8 +288,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    // width: "100%",
-    position: "relative",
   },
   flatList: {
     width: SCREEN_WIDTH,
