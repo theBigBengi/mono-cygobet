@@ -22,6 +22,7 @@ export async function getLeagues(args: {
   perPage: number;
   includeSeasons?: boolean;
   onlyActiveSeasons?: boolean;
+  includeCountry?: boolean;
   preset?: "popular";
   search?: string;
 }): Promise<ApiLeaguesResponse> {
@@ -30,6 +31,7 @@ export async function getLeagues(args: {
     perPage,
     includeSeasons = false,
     onlyActiveSeasons = false,
+    includeCountry = false,
     preset,
     search,
   } = args;
@@ -49,6 +51,7 @@ export async function getLeagues(args: {
       where,
       includeSeasons,
       effectiveOnlyActive,
+      includeCountry,
       { name: "asc" },
       take,
       skip
@@ -56,7 +59,9 @@ export async function getLeagues(args: {
     countLeagues(where),
   ]);
 
-  const data = leagues.map((league) => buildLeagueItem(league, includeSeasons));
+  const data = leagues.map((league) =>
+    buildLeagueItem(league, includeSeasons, includeCountry)
+  );
   const totalPages = Math.ceil(count / perPage);
 
   return {

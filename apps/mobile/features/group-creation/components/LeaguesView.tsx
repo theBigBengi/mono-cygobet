@@ -35,6 +35,7 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
   const { data, isLoading, error, refetch } = useLeaguesQuery({
     page: 1,
     perPage: 20,
+    includeCountry: true,
     ...queryParams,
   });
 
@@ -59,9 +60,15 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
       return (
         <View style={styles.emptyContainer}>
           <AppText variant="title" style={styles.emptyTitle}>
-            {isSearchMode ? t("groupCreation.noLeaguesFound") : t("groupCreation.noPopularLeagues")}
+            {isSearchMode
+              ? t("groupCreation.noLeaguesFound")
+              : t("groupCreation.noPopularLeagues")}
           </AppText>
-          <AppText variant="body" color="secondary" style={styles.emptySubtitle}>
+          <AppText
+            variant="body"
+            color="secondary"
+            style={styles.emptySubtitle}
+          >
             {isSearchMode
               ? t("groupCreation.tryDifferentSearch")
               : t("groupCreation.noPopularLeaguesDisplay")}
@@ -81,11 +88,21 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <Screen scroll onRefresh={async () => { await refetch(); }}>
-      {tabs}
+      <Screen
+        scroll
+        onRefresh={async () => {
+          await refetch();
+        }}
+      >
+        {tabs}
         {/* Search Input */}
         <Card style={styles.searchContainer}>
-          <View style={[styles.searchInputContainer, { borderColor: theme.colors.border }]}>
+          <View
+            style={[
+              styles.searchInputContainer,
+              { borderColor: theme.colors.border },
+            ]}
+          >
             <MaterialIcons
               name="search"
               size={20}
@@ -117,7 +134,6 @@ export function LeaguesView({ tabs }: LeaguesViewProps) {
           </View>
         </Card>
 
-       
         {renderContent()}
       </Screen>
     </View>

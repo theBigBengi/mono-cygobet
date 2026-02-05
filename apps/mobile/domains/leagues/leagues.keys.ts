@@ -10,6 +10,7 @@ export const leaguesKeys = {
     perPage?: number;
     includeSeasons?: boolean;
     onlyActiveSeasons?: boolean;
+    includeCountry?: boolean;
     preset?: "popular";
     search?: string;
   }) => [...leaguesKeys.lists(), params] as const,

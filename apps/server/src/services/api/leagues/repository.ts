@@ -13,11 +13,20 @@ export async function findLeagues(
   where: Prisma.leaguesWhereInput,
   includeSeasons: boolean,
   onlyActiveSeasons: boolean,
+  includeCountry: boolean,
   orderBy?: Prisma.leaguesOrderByWithRelationInput,
   take?: number,
   skip?: number
 ) {
-  const select = includeSeasons ? LEAGUE_SELECT_WITH_SEASONS : LEAGUE_SELECT_BASE;
+  let select = includeSeasons ? LEAGUE_SELECT_WITH_SEASONS : LEAGUE_SELECT_BASE;
+  if (includeCountry) {
+    select = {
+      ...select,
+      country: {
+        select: { id: true, name: true, imagePath: true },
+      },
+    };
+  }
 
   // If including seasons and filtering to active only, add where condition to seasons
   if (includeSeasons && onlyActiveSeasons) {

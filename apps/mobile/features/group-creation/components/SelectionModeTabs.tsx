@@ -68,8 +68,8 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
                     {
                       color: isSelected
                         ? theme.colors.primary
-                        : theme.colors.textPrimary,
-                      fontWeight: isSelected ? "700" : "500",
+                        : theme.colors.textSecondary,
+                      fontWeight: isSelected ? "600" : "400",
                     },
                   ]}
                 >
@@ -90,7 +90,8 @@ const styles = StyleSheet.create({
   },
   container: {
     overflow: "hidden",
-    borderWidth: 1,
+    borderBottomWidth: 1,
+    borderTopWidth: 1,
     minHeight: 42,
   },
   content: {
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 12,
     zIndex: 1,
   },

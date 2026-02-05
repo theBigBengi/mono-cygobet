@@ -35,6 +35,7 @@ export function TeamsView({ tabs }: TeamsViewProps) {
   const { data, isLoading, error, refetch } = useTeamsQuery({
     page: 1,
     perPage: 20,
+    includeCountry: true,
     ...queryParams,
   });
 
@@ -59,9 +60,15 @@ export function TeamsView({ tabs }: TeamsViewProps) {
       return (
         <View style={styles.emptyContainer}>
           <AppText variant="title" style={styles.emptyTitle}>
-            {isSearchMode ? t("groupCreation.noTeamsFound") : t("groupCreation.noPopularTeams")}
+            {isSearchMode
+              ? t("groupCreation.noTeamsFound")
+              : t("groupCreation.noPopularTeams")}
           </AppText>
-          <AppText variant="body" color="secondary" style={styles.emptySubtitle}>
+          <AppText
+            variant="body"
+            color="secondary"
+            style={styles.emptySubtitle}
+          >
             {isSearchMode
               ? t("groupCreation.tryDifferentSearch")
               : t("groupCreation.noPopularTeamsDisplay")}
@@ -81,11 +88,21 @@ export function TeamsView({ tabs }: TeamsViewProps) {
 
   return (
     <View style={[styles.root]}>
-      <Screen scroll onRefresh={async () => { await refetch(); }}>
-      {tabs}
+      <Screen
+        scroll
+        onRefresh={async () => {
+          await refetch();
+        }}
+      >
+        {tabs}
         {/* Search Input */}
         <Card style={styles.searchContainer}>
-          <View style={[styles.searchInputContainer, { borderColor: theme.colors.border }]}>
+          <View
+            style={[
+              styles.searchInputContainer,
+              { borderColor: theme.colors.border },
+            ]}
+          >
             <MaterialIcons
               name="search"
               size={20}
@@ -117,7 +134,6 @@ export function TeamsView({ tabs }: TeamsViewProps) {
           </View>
         </Card>
 
-       
         {renderContent()}
       </Screen>
     </View>
@@ -127,7 +143,6 @@ export function TeamsView({ tabs }: TeamsViewProps) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  
   },
   searchContainer: {
     marginBottom: 8,
@@ -147,7 +162,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     padding: 0,
-    
   },
   clearButton: {
     marginStart: 8,

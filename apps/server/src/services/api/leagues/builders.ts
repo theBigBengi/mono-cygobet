@@ -3,17 +3,29 @@
 
 import type { ApiLeagueItem, ApiSeasonItem } from "@repo/types";
 import type { Prisma } from "@repo/db";
-import { LEAGUE_SELECT_BASE, LEAGUE_SELECT_WITH_SEASONS } from "./selects";
+import {
+  LEAGUE_SELECT_BASE,
+  LEAGUE_SELECT_WITH_COUNTRY,
+  LEAGUE_SELECT_WITH_SEASONS,
+} from "./selects";
 
-type LeagueBase = Prisma.leaguesGetPayload<{ select: typeof LEAGUE_SELECT_BASE }>;
-type LeagueWithSeasons = Prisma.leaguesGetPayload<{ select: typeof LEAGUE_SELECT_WITH_SEASONS }>;
+type LeagueBase = Prisma.leaguesGetPayload<{
+  select: typeof LEAGUE_SELECT_BASE;
+}>;
+type LeagueWithSeasons = Prisma.leaguesGetPayload<{
+  select: typeof LEAGUE_SELECT_WITH_SEASONS;
+}>;
+type LeagueWithCountry = Prisma.leaguesGetPayload<{
+  select: typeof LEAGUE_SELECT_WITH_COUNTRY;
+}>;
 
 /**
  * Build league item from Prisma data to API format.
  */
 export function buildLeagueItem(
-  league: LeagueBase | LeagueWithSeasons,
-  includeSeasons: boolean
+  league: LeagueBase | LeagueWithSeasons | LeagueWithCountry,
+  includeSeasons: boolean,
+  includeCountry: boolean
 ): ApiLeagueItem {
   const item: ApiLeagueItem = {
     id: league.id,
@@ -35,6 +47,14 @@ export function buildLeagueItem(
         leagueId: season.leagueId,
       })
     );
+  }
+
+  if (includeCountry && "country" in league && league.country) {
+    item.country = {
+      id: league.country.id,
+      name: league.country.name,
+      imagePath: league.country.imagePath ?? null,
+    };
   }
 
   return item;

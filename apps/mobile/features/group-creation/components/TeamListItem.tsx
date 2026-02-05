@@ -6,7 +6,10 @@ import { View, Pressable, StyleSheet } from "react-native";
 import { Card, AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useToggleTeam, useIsTeamSelected } from "@/features/group-creation/selection/teams";
+import {
+  useToggleTeam,
+  useIsTeamSelected,
+} from "@/features/group-creation/selection/teams";
 import type { ApiTeamItem } from "@repo/types";
 
 interface TeamListItemProps {
@@ -21,10 +24,7 @@ export function TeamListItem({ team }: TeamListItemProps) {
   return (
     <Pressable
       onPress={() => toggleTeam(team)}
-      style={({ pressed }) => [
-        styles.wrapper,
-        { opacity: pressed ? 0.8 : 1 },
-      ]}
+      style={({ pressed }) => [styles.wrapper, { opacity: pressed ? 0.8 : 1 }]}
     >
       <Card
         style={[
@@ -36,14 +36,17 @@ export function TeamListItem({ team }: TeamListItemProps) {
         ]}
       >
         <View style={styles.row}>
-          <TeamLogo
-            imagePath={team.imagePath}
-            teamName={team.name}
-            size={32}
-          />
-          <AppText variant="body" style={styles.name}>
-            {team.name}
-          </AppText>
+          <TeamLogo imagePath={team.imagePath} teamName={team.name} size={32} />
+          <View style={styles.nameContainer}>
+            <AppText variant="body" style={styles.name}>
+              {team.name}
+            </AppText>
+            {team.country?.name && (
+              <AppText variant="caption" color="secondary">
+                {team.country.name}
+              </AppText>
+            )}
+          </View>
           {isSelected && (
             <MaterialIcons
               name="check"
@@ -69,10 +72,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  name: {
+  nameContainer: {
     marginStart: 12,
     flex: 1,
   },
+  name: {},
   check: {
     marginStart: 8,
   },

@@ -45,6 +45,11 @@ const leaguesRoutes: FastifyPluginAsync = async (fastify) => {
         q.onlyActiveSeasons === true ||
         String(q.onlyActiveSeasons ?? "").toLowerCase() === "true";
 
+      // Parse includeCountry: can be boolean or string "true"/"false"
+      const includeCountry =
+        q.includeCountry === true ||
+        String(q.includeCountry ?? "").toLowerCase() === "true";
+
       // Extract preset and search - they are mutually exclusive
       const preset = q.preset === "popular" ? "popular" : undefined;
       const search = q.search ? String(q.search).trim() : undefined;
@@ -62,6 +67,7 @@ const leaguesRoutes: FastifyPluginAsync = async (fastify) => {
         perPage,
         includeSeasons,
         onlyActiveSeasons,
+        includeCountry,
         preset,
         search,
       });

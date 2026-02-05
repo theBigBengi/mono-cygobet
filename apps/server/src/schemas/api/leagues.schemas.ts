@@ -8,6 +8,7 @@ export const leaguesQuerystringSchema = {
     perPage: { type: "number", default: 20, minimum: 1, maximum: 100 },
     includeSeasons: { type: "boolean", default: false },
     onlyActiveSeasons: { type: "boolean", default: false },
+    includeCountry: { type: "boolean", default: false },
     preset: { type: "string", enum: ["popular"] },
     search: { type: "string", minLength: 1 },
   },
@@ -41,6 +42,19 @@ export const leaguesResponseSchema = {
                 leagueId: { type: "number" },
               },
             },
+          },
+          country: {
+            anyOf: [
+              { type: "null" },
+              {
+                type: "object",
+                properties: {
+                  id: { type: "number" },
+                  name: { type: "string" },
+                  imagePath: { type: ["string", "null"] },
+                },
+              },
+            ],
           },
         },
       },

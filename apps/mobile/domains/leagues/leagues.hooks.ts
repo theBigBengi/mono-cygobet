@@ -19,7 +19,15 @@ import { leaguesKeys } from "./leagues.keys";
  */
 export function useLeaguesQuery(params: ApiLeaguesQuery = {}) {
   const { status, user } = useAuth();
-  const { page = 1, perPage = 20, includeSeasons, onlyActiveSeasons, preset, search } = params;
+  const {
+    page = 1,
+    perPage = 20,
+    includeSeasons,
+    onlyActiveSeasons,
+    includeCountry,
+    preset,
+    search,
+  } = params;
 
   const enabled = isReadyForProtected(status, user);
 
@@ -29,11 +37,20 @@ export function useLeaguesQuery(params: ApiLeaguesQuery = {}) {
       perPage,
       includeSeasons,
       onlyActiveSeasons,
+      includeCountry,
       preset,
       search,
     }),
     queryFn: () =>
-      fetchLeagues({ page, perPage, includeSeasons, onlyActiveSeasons, preset, search }),
+      fetchLeagues({
+        page,
+        perPage,
+        includeSeasons,
+        onlyActiveSeasons,
+        includeCountry,
+        preset,
+        search,
+      }),
     enabled,
     meta: { scope: "user" },
   });

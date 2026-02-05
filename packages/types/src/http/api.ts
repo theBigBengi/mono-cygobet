@@ -153,6 +153,7 @@ export type ApiLeaguesQuery = {
   perPage?: number;
   includeSeasons?: boolean;
   onlyActiveSeasons?: boolean;
+  includeCountry?: boolean;
   preset?: "popular";
   search?: string;
 };
@@ -168,6 +169,7 @@ export type ApiLeagueItem = {
   type: string;
   shortCode: string | null;
   seasons?: ApiSeasonItem[];
+  country?: ApiCountryItem | null;
 };
 
 /**
