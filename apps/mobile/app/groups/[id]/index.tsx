@@ -12,7 +12,11 @@ import { useSetAtom } from "jotai";
 import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { BlurView } from "expo-blur";
 import { Screen, AppText } from "@/components/ui";
-import { useGroupQuery, useGroupGamesFiltersQuery, useDeleteGroupMutation } from "@/domains/groups";
+import {
+  useGroupQuery,
+  useGroupGamesFiltersQuery,
+  useDeleteGroupMutation,
+} from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
@@ -26,7 +30,7 @@ import {
 
 /**
  * Group Lobby Screen
- * 
+ *
  * Main screen component for viewing and managing group lobby.
  * Handles data fetching, error states, and routes to appropriate screen based on status.
  */
@@ -41,8 +45,12 @@ export default function GroupLobbyScreen() {
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
 
-  const { data, isLoading, error, refetch: refetchGroup } =
-    useGroupQuery(groupId, { includeFixtures: true });
+  const {
+    data,
+    isLoading,
+    error,
+    refetch: refetchGroup,
+  } = useGroupQuery(groupId, { includeFixtures: true });
 
   useGroupGamesFiltersQuery(groupId);
 
@@ -81,34 +89,30 @@ export default function GroupLobbyScreen() {
   }, []);
 
   const handleDeleteGroup = React.useCallback(() => {
-    Alert.alert(
-      t("groups.deleteGroupDraft"),
-      t("groups.deleteGroupConfirm"),
-      [
-        { text: t("groups.cancel"), style: "cancel" },
-        {
-          text: t("groups.delete"),
-          style: "destructive",
-          onPress: () => {
-            deleteGroupMutation.mutate(undefined, {
-              onSuccess: () => {
-                router.back();
-                fallbackTimerRef.current = setTimeout(() => {
-                  router.replace("/(tabs)/groups" as any);
-                  fallbackTimerRef.current = null;
-                }, 300);
-              },
-              onError: (error: any) => {
-                Alert.alert(
-                  t("errors.error"),
-                  error?.message || t("groups.deleteGroupDraftFailed")
-                );
-              },
-            });
-          },
+    Alert.alert(t("groups.deleteGroupDraft"), t("groups.deleteGroupConfirm"), [
+      { text: t("groups.cancel"), style: "cancel" },
+      {
+        text: t("groups.delete"),
+        style: "destructive",
+        onPress: () => {
+          deleteGroupMutation.mutate(undefined, {
+            onSuccess: () => {
+              router.back();
+              fallbackTimerRef.current = setTimeout(() => {
+                router.replace("/(tabs)/groups" as any);
+                fallbackTimerRef.current = null;
+              }, 300);
+            },
+            onError: (error: any) => {
+              Alert.alert(
+                t("errors.error"),
+                error?.message || t("groups.deleteGroupDraftFailed")
+              );
+            },
+          });
         },
-      ]
-    );
+      },
+    ]);
   }, [deleteGroupMutation, router]);
 
   // Loading state
@@ -127,7 +131,12 @@ export default function GroupLobbyScreen() {
   // Route to appropriate screen based on status
   if (group.status === "ended") {
     return (
-      <LobbyWithHeader status={group.status} groupName={group.name}>
+      <LobbyWithHeader
+        status={group.status}
+        groupName={group.name}
+        group={group}
+        isCreator={isCreator}
+      >
         <GroupLobbyEndedScreen group={group} onRefresh={handleRefresh} />
       </LobbyWithHeader>
     );
@@ -158,7 +167,7 @@ export default function GroupLobbyScreen() {
             <View style={styles.overlayContent}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
               <AppText variant="body" style={styles.overlayText}>
-                Deleting group...
+                {t("lobby.deletingGroup")}
               </AppText>
             </View>
           </View>
@@ -214,5 +223,3 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 });
-
-

@@ -5,11 +5,10 @@
 
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
-import { useUnreadCountsQuery } from "@/domains/groups";
-import { useTheme } from "@/lib/theme";
+import { useGroupRankingQuery, useUnreadCountsQuery } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
 import {
   GroupLobbyFixturesSection,
@@ -17,6 +16,7 @@ import {
   type FixtureItem,
 } from "../index";
 import { formatDate } from "@/utils/date";
+import { LobbyActionCard } from "../components/LobbyActionCard";
 
 interface GroupLobbyEndedScreenProps {
   group: ApiGroupItem;
@@ -36,14 +36,14 @@ export function GroupLobbyEndedScreen({
 }: GroupLobbyEndedScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const { theme } = useTheme();
+  const { data: rankingData } = useGroupRankingQuery(group.id);
   const { data: unreadData } = useUnreadCountsQuery();
   const chatUnreadCount = unreadData?.data?.[String(group.id)] ?? 0;
+  const winner = rankingData?.data?.[0];
 
-  const fixtures =
-    Array.isArray((group as any).fixtures)
-      ? ((group as any).fixtures as FixtureItem[])
-      : [];
+  const fixtures = Array.isArray((group as any).fixtures)
+    ? ((group as any).fixtures as FixtureItem[])
+    : [];
 
   const duration = useGroupDuration(fixtures);
 
@@ -57,10 +57,6 @@ export function GroupLobbyEndedScreen({
 
   const handleViewRanking = () => {
     router.push(`/groups/${group.id}/ranking` as any);
-  };
-
-  const handleViewMembers = () => {
-    router.push(`/groups/${group.id}/members` as any);
   };
 
   const handleViewChat = () => {
@@ -87,6 +83,23 @@ export function GroupLobbyEndedScreen({
           </AppText>
         </Card>
 
+        {/* Winner card */}
+        {winner && (
+          <Card style={styles.winnerCard}>
+            <View style={styles.winnerRow}>
+              <AppText style={styles.winnerEmoji}>🏆</AppText>
+              <View style={styles.winnerTextBlock}>
+                <AppText variant="body" style={styles.winnerName}>
+                  {winner.username ?? t("lobby.winner")}
+                </AppText>
+                <AppText variant="caption" color="secondary">
+                  {t("lobby.winnerPoints", { points: winner.totalPoints })}
+                </AppText>
+              </View>
+            </View>
+          </Card>
+        )}
+
         {/* Fixtures Section with final scores */}
         <GroupLobbyFixturesSection
           onViewAll={handleViewAllGames}
@@ -97,72 +110,26 @@ export function GroupLobbyEndedScreen({
         />
 
         {/* Ranking Section */}
-        <Card style={styles.bannerCard}>
-          <Pressable
-            onPress={handleViewRanking}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <AppText variant="body" style={styles.bannerText}>
-              Ranking
-            </AppText>
-          </Pressable>
-        </Card>
-
-        {/* Members Section */}
-        <Card style={styles.bannerCard}>
-          <Pressable
-            onPress={handleViewMembers}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <AppText variant="body" style={styles.bannerText}>
-              Members
-            </AppText>
-          </Pressable>
-        </Card>
+        <LobbyActionCard
+          icon="trophy-outline"
+          title={t("lobby.ranking")}
+          onPress={handleViewRanking}
+        />
 
         {/* Chat Section (read-only for ended groups) */}
-        <Card style={styles.bannerCard}>
-          <Pressable
-            onPress={handleViewChat}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <View style={styles.chatRow}>
-              <AppText variant="body" style={styles.bannerText}>
-                Chat
-              </AppText>
-              {chatUnreadCount > 0 && (
-                <View
-                  style={[
-                    styles.chatUnreadBadge,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                >
-                  <AppText
-                    variant="caption"
-                    style={[
-                      styles.chatUnreadText,
-                      { color: theme.colors.primaryText },
-                    ]}
-                  >
-                    {chatUnreadCount > 99 ? "99+" : String(chatUnreadCount)}
-                  </AppText>
-                </View>
-              )}
-            </View>
-          </Pressable>
-        </Card>
+        <LobbyActionCard
+          icon="chatbubble-outline"
+          title={t("lobby.chat")}
+          badge={chatUnreadCount}
+          onPress={handleViewChat}
+        />
 
         {/* Predictions Overview Section */}
-        <Card style={styles.predictionsOverviewCard}>
-          <Pressable
-            onPress={handleViewPredictionsOverview}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <AppText variant="body" style={styles.predictionsOverviewText}>
-              Predictions Overview
-            </AppText>
-          </Pressable>
-        </Card>
+        <LobbyActionCard
+          icon="stats-chart-outline"
+          title={t("lobby.predictionsOverview")}
+          onPress={handleViewPredictionsOverview}
+        />
       </Screen>
     </View>
   );
@@ -181,27 +148,21 @@ const styles = StyleSheet.create({
   bannerText: {
     fontWeight: "600",
   },
-  chatRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  chatUnreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-  },
-  chatUnreadText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  predictionsOverviewCard: {
+  winnerCard: {
     marginBottom: 16,
   },
-  predictionsOverviewText: {
-    fontWeight: "600",
+  winnerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  winnerEmoji: {
+    fontSize: 32,
+  },
+  winnerTextBlock: {
+    flex: 1,
+  },
+  winnerName: {
+    fontWeight: "700",
   },
 });

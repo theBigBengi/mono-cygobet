@@ -119,16 +119,17 @@ export function GroupLobbyFixturesSection({
 
   // Scroll to first card (centered) when fixtures are loaded
   useEffect(() => {
-    if (gamesCount > 0 && scrollViewRef.current && snapOffsets.length > 0) {
-      // Use setTimeout to ensure layout is complete
+    if (gamesCount > 0 && scrollViewRef.current) {
+      const padding = theme.spacing.md;
+      const firstOffset = padding - screenWidth / 2 + GAME_CARD_WIDTH / 2;
       setTimeout(() => {
         scrollViewRef.current?.scrollTo({
-          x: Math.max(0, snapOffsets[0]),
+          x: Math.max(0, firstOffset),
           animated: false,
         });
       }, 100);
     }
-  }, [gamesCount, snapOffsets]);
+  }, [gamesCount]);
 
   const headerContent = (
     <>
@@ -146,7 +147,7 @@ export function GroupLobbyFixturesSection({
               color="secondary"
               style={styles.viewAllText}
             >
-              View all games
+              {t("lobby.viewAllGames")}
             </AppText>
           </Pressable>
         )}
@@ -159,7 +160,10 @@ export function GroupLobbyFixturesSection({
             color="secondary"
             style={styles.progressText}
           >
-            {predictionsCount}/{totalFixtures} predictions
+            {t("lobby.predictionsProgress", {
+              count: predictionsCount!,
+              total: totalFixtures!,
+            })}
           </AppText>
           <View
             style={[

@@ -15,7 +15,6 @@ import type { ApiGroupStatus, ApiGroupItem } from "@repo/types";
 
 const HEADER_HEIGHT = 64;
 
-
 interface LobbyWithHeaderProps {
   children: React.ReactNode;
   status: ApiGroupStatus | string;
@@ -32,7 +31,7 @@ interface LobbyWithHeaderProps {
 
 /**
  * LobbyWithHeader
- * 
+ *
  * Wrapper component that provides a consistent header layout for group lobby screens.
  * Displays status badge and optionally the group name (for active groups).
  */
@@ -56,13 +55,14 @@ export function LobbyWithHeader({
   };
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const isActive = status === "active";
+  const isActiveOrEnded = status === "active" || status === "ended";
   const isDraft = status === "draft";
-  
+
   const statusLabel =
     status in STATUS_LABELS
       ? STATUS_LABELS[status as ApiGroupStatus]
       : (status as string);
-  
+
   const hasBackground = isActive || (isDraft && !onDeleteGroup);
   const backgroundColor = isActive
     ? theme.colors.primary
@@ -74,9 +74,9 @@ export function LobbyWithHeader({
     : isDraft && !onDeleteGroup
       ? theme.colors.textPrimary
       : theme.colors.textSecondary;
-  
+
   const leftContent =
-    isActive && groupName ? (
+    isActiveOrEnded && groupName ? (
       <AppText
         variant="subtitle"
         style={[styles.groupNameText, { color: theme.colors.textPrimary }]}
@@ -87,7 +87,7 @@ export function LobbyWithHeader({
       </AppText>
     ) : undefined;
 
-  const rightContent = isActive ? (
+  const rightContent = isActiveOrEnded ? (
     <Pressable onPress={() => setIsSettingsModalVisible(true)}>
       <View style={styles.settingsButton}>
         <Ionicons
@@ -132,10 +132,13 @@ export function LobbyWithHeader({
       </AppText>
     </View>
   );
-  
+
   return (
     <View
-      style={[styles.lobbyContainer, { backgroundColor: theme.colors.background }]}
+      style={[
+        styles.lobbyContainer,
+        { backgroundColor: theme.colors.background },
+      ]}
     >
       <View style={[styles.lobbyContent, { paddingTop: HEADER_HEIGHT }]}>
         {children}
@@ -148,7 +151,7 @@ export function LobbyWithHeader({
           rightContent={rightContent}
         />
       </View>
-      {isActive && (
+      {isActiveOrEnded && (
         <GroupSettingsModal
           visible={isSettingsModalVisible}
           onClose={() => setIsSettingsModalVisible(false)}

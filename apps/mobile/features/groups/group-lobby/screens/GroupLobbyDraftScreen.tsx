@@ -3,6 +3,7 @@
 // Shows editable name, status card, privacy settings, and publish button.
 
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Switch } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, AppText } from "@/components/ui";
@@ -52,7 +53,7 @@ interface GroupLobbyDraftScreenProps {
 
 /**
  * Group Lobby Draft Screen
- * 
+ *
  * Screen component for viewing and managing a group in draft status.
  * Shows editable name, status card, privacy settings, and publish button.
  */
@@ -61,6 +62,7 @@ export function GroupLobbyDraftScreen({
   onRefresh,
   isCreator,
 }: GroupLobbyDraftScreenProps) {
+  const { t } = useTranslation("common");
   const router = useRouter();
 
   // Manage local state for draft name, privacy, and invite access
@@ -74,8 +76,8 @@ export function GroupLobbyDraftScreen({
   } = useGroupLobbyState(group.name, group.privacy, group.inviteAccess);
 
   // Manage local state for prediction mode, initialized from group
-  const [predictionMode, setPredictionMode] = useState<PredictionMode>(
-    () => (group.predictionMode === "MatchWinner" ? "3way" : "result")
+  const [predictionMode, setPredictionMode] = useState<PredictionMode>(() =>
+    group.predictionMode === "MatchWinner" ? "3way" : "result"
   );
 
   // Manage local state for KO round mode, initialized from group
@@ -96,7 +98,9 @@ export function GroupLobbyDraftScreen({
   const [maxMembers, setMaxMembers] = useState(() => group.maxMembers ?? 50);
 
   // Manage local state for nudge settings, initialized from group
-  const [nudgeEnabled, setNudgeEnabled] = useState(() => group.nudgeEnabled ?? true);
+  const [nudgeEnabled, setNudgeEnabled] = useState(
+    () => group.nudgeEnabled ?? true
+  );
   const [nudgeWindowMinutes, setNudgeWindowMinutes] = useState(
     () => group.nudgeWindowMinutes ?? 60
   );
@@ -105,9 +109,15 @@ export function GroupLobbyDraftScreen({
 
   // Sync state when group changes (e.g. after refresh)
   useEffect(() => {
-    setPredictionMode(group.predictionMode === "MatchWinner" ? "3way" : "result");
+    setPredictionMode(
+      group.predictionMode === "MatchWinner" ? "3way" : "result"
+    );
     setKORoundMode(
-      group.koRoundMode === "ExtraTime" ? "extraTime" : group.koRoundMode === "Penalties" ? "penalties" : "90min"
+      group.koRoundMode === "ExtraTime"
+        ? "extraTime"
+        : group.koRoundMode === "Penalties"
+          ? "penalties"
+          : "90min"
     );
     setScoringValues({
       onTheNose: group.onTheNosePoints ?? 3,
@@ -133,8 +143,9 @@ export function GroupLobbyDraftScreen({
   const publishGroupMutation = usePublishGroupMutation(group.id);
 
   // Derive fixtures from group.fixtures
-  const fixtures =
-    Array.isArray((group as any).fixtures) ? ((group as any).fixtures as FixtureItem[]) : [];
+  const fixtures = Array.isArray((group as any).fixtures)
+    ? ((group as any).fixtures as FixtureItem[])
+    : [];
 
   const duration = useGroupDuration(fixtures);
 
@@ -166,9 +177,8 @@ export function GroupLobbyDraftScreen({
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
       >
-         {/* Status Section - Draft Badge */}
-         <GroupLobbyStatusCard status={group.status} isCreator={isCreator} />
-
+        {/* Status Section - Draft Badge */}
+        <GroupLobbyStatusCard status={group.status} isCreator={isCreator} />
 
         {/* Header Section - Group Name (Editable) */}
         <GroupLobbyNameHeader
@@ -180,7 +190,7 @@ export function GroupLobbyDraftScreen({
 
         {/* Section: Games */}
         <AppText variant="subtitle" style={styles.sectionTitle}>
-          Games
+          {t("lobby.games")}
         </AppText>
         <GroupLobbyFixturesSection
           fixtures={fixtures}
@@ -190,22 +200,34 @@ export function GroupLobbyDraftScreen({
 
         {/* Section: Group Duration */}
         <AppText variant="subtitle" style={styles.sectionTitle}>
-          Group Duration
+          {t("lobby.groupDuration")}
         </AppText>
         {duration ? (
           <>
-            <AppText variant="body" color="secondary" style={styles.durationLine}>
+            <AppText
+              variant="body"
+              color="secondary"
+              style={styles.durationLine}
+            >
               {formatDate(duration.startDate)} – {formatDate(duration.endDate)}
             </AppText>
-            <AppText variant="caption" color="secondary" style={styles.durationLine}>
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.durationLine}
+            >
               {duration.durationDays === 0
-                ? `${fixtures.length} ${fixtures.length === 1 ? "game" : "games"}`
-                : `${duration.durationDays} ${duration.durationDays === 1 ? "day" : "days"} · ${fixtures.length} ${fixtures.length === 1 ? "game" : "games"}`}
+                ? t("lobby.gamesCount", { count: fixtures.length })
+                : `${t("lobby.daysCount", { count: duration.durationDays })} · ${t("lobby.gamesCount", { count: fixtures.length })}`}
             </AppText>
           </>
         ) : (
-          <AppText variant="caption" color="secondary" style={styles.durationLine}>
-            Add games to see duration
+          <AppText
+            variant="caption"
+            color="secondary"
+            style={styles.durationLine}
+          >
+            {t("lobby.addGamesToSeeDuration")}
           </AppText>
         )}
 
@@ -213,7 +235,7 @@ export function GroupLobbyDraftScreen({
         {isCreator && (
           <>
             <AppText variant="subtitle" style={styles.sectionTitle}>
-              Prediction rules
+              {t("lobby.predictionRules")}
             </AppText>
             <PredictionModeSelector
               value={predictionMode}
@@ -239,11 +261,11 @@ export function GroupLobbyDraftScreen({
               disabled={!isEditable}
             />
             <AppText variant="subtitle" style={styles.sectionTitle}>
-              Nudge
+              {t("lobby.nudge")}
             </AppText>
             <View style={styles.nudgeRow}>
               <AppText variant="body" style={styles.nudgeLabel}>
-                Allow members to nudge each other for upcoming games
+                {t("lobby.nudgeDescription")}
               </AppText>
               <Switch
                 value={nudgeEnabled}
@@ -261,7 +283,7 @@ export function GroupLobbyDraftScreen({
             {nudgeEnabled && (
               <View style={styles.nudgeWindowRow}>
                 <AppText variant="body" style={styles.nudgeLabel}>
-                  Minutes before kickoff
+                  {t("lobby.minutesBeforeKickoff")}
                 </AppText>
                 <View style={styles.nudgeWindowChips}>
                   {NUDGE_WINDOW_OPTIONS.map((min) => (
@@ -284,9 +306,9 @@ export function GroupLobbyDraftScreen({
                         variant="body"
                         style={{
                           color:
-                              nudgeWindowMinutes === min
-                                ? theme.colors.primaryText
-                                : theme.colors.textPrimary,
+                            nudgeWindowMinutes === min
+                              ? theme.colors.primaryText
+                              : theme.colors.textPrimary,
                         }}
                       >
                         {min}
@@ -301,7 +323,7 @@ export function GroupLobbyDraftScreen({
 
         {/* Section: Privacy & invite */}
         <AppText variant="subtitle" style={styles.sectionTitle}>
-          Privacy & invite
+          {t("lobby.privacyAndInvite")}
         </AppText>
         <GroupLobbyPrivacySection
           privacy={draftPrivacy}
@@ -334,7 +356,6 @@ export function GroupLobbyDraftScreen({
             isPending={publishGroupMutation.isPending}
             disabled={publishGroupMutation.isPending || !draftName.trim()}
           />
-       
         </>
       )}
     </View>

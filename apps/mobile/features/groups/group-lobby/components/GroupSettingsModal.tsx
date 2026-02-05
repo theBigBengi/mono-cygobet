@@ -4,8 +4,8 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal, View, StyleSheet, Pressable, Switch } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useUpdateGroupMutation } from "@/domains/groups";
@@ -35,8 +35,8 @@ export function GroupSettingsModal({
   isCreator = false,
 }: GroupSettingsModalProps) {
   const { t } = useTranslation("common");
+  const router = useRouter();
   const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
   const [inviteAccess, setInviteAccess] = useState<ApiInviteAccess>("all");
   const [nudgeEnabled, setNudgeEnabled] = useState(true);
   const [nudgeWindowMinutes, setNudgeWindowMinutes] = useState(60);
@@ -96,13 +96,7 @@ export function GroupSettingsModal({
       statusBarTranslucent={false}
     >
       <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.background,
-            paddingTop: insets.top,
-          },
-        ]}
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
       >
         <View
           style={[styles.header, { borderBottomColor: theme.colors.border }]}
@@ -119,12 +113,46 @@ export function GroupSettingsModal({
             />
           </Pressable>
           <AppText variant="subtitle" style={styles.headerTitle}>
-            Group Settings
+            {t("lobby.groupSettings")}
           </AppText>
           <View style={styles.headerBtn} />
         </View>
 
         <View style={styles.content}>
+          {group?.id != null && (
+            <Pressable
+              onPress={() => {
+                onClose();
+                router.push(`/groups/${group.id}/members` as any);
+              }}
+              style={[
+                styles.inviteRow,
+                {
+                  borderBottomWidth: 1,
+                  borderBottomColor: theme.colors.border,
+                  paddingBottom: 16,
+                },
+              ]}
+            >
+              <View style={styles.inviteLabelContainer}>
+                <AppText variant="body" style={styles.inviteLabel}>
+                  {t("lobby.members")}
+                </AppText>
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.inviteHelper}
+                >
+                  {t("lobby.viewGroupMembers")}
+                </AppText>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.textSecondary}
+              />
+            </Pressable>
+          )}
           {showInviteToggle && (
             <View style={styles.inviteRow}>
               <View style={styles.inviteLabelContainer}>
@@ -160,14 +188,14 @@ export function GroupSettingsModal({
               <View style={styles.inviteRow}>
                 <View style={styles.inviteLabelContainer}>
                   <AppText variant="body" style={styles.inviteLabel}>
-                    Nudge
+                    {t("lobby.nudge")}
                   </AppText>
                   <AppText
                     variant="caption"
                     color="secondary"
                     style={styles.inviteHelper}
                   >
-                    Allow members to nudge each other for upcoming games
+                    {t("lobby.nudgeDescription")}
                   </AppText>
                 </View>
                 <Switch
@@ -188,7 +216,7 @@ export function GroupSettingsModal({
               {nudgeEnabled && (
                 <View style={styles.nudgeWindowRow}>
                   <AppText variant="body" style={styles.inviteLabel}>
-                    Minutes before kickoff
+                    {t("lobby.minutesBeforeKickoff")}
                   </AppText>
                   <View style={styles.nudgeWindowChips}>
                     {NUDGE_WINDOW_OPTIONS.map((min) => (

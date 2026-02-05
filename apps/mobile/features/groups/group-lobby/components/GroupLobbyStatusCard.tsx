@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -23,6 +24,7 @@ export function GroupLobbyStatusCard({
   status,
   isCreator,
 }: GroupLobbyStatusCardProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   // Only show status card for draft groups
@@ -34,7 +36,7 @@ export function GroupLobbyStatusCard({
     <Card style={styles.section}>
       <View style={styles.statusHeader}>
         <AppText variant="body" style={styles.statusTitle}>
-          Finish setup the group 
+          {t("lobby.finishSetup")}
         </AppText>
         <View
           style={[
@@ -46,7 +48,7 @@ export function GroupLobbyStatusCard({
           ]}
         >
           <AppText variant="caption" style={styles.badgeText}>
-            Draft
+            {t("lobby.draftBadge")}
           </AppText>
         </View>
       </View>
@@ -55,7 +57,7 @@ export function GroupLobbyStatusCard({
         color="secondary"
         style={styles.statusSubtitle}
       >
-       Set group rules and publish the group to start.
+        {t("lobby.finishSetupDescription")}
       </AppText>
     </Card>
   );
