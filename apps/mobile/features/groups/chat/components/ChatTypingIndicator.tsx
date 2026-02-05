@@ -3,6 +3,7 @@
 
 import React from "react";
 import { View, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 
@@ -13,19 +14,23 @@ interface ChatTypingIndicatorProps {
   currentUserId: number;
 }
 
-function formatTypingLabel(users: TypingUser[], currentUserId: number): string {
+function formatTypingLabel(
+  users: TypingUser[],
+  currentUserId: number,
+  t: (key: string, opts?: Record<string, string | number>) => string
+): string {
   const others = users.filter((u) => u.userId !== currentUserId);
   if (others.length === 0) return "";
 
-  const names = others.map((u) => u.username || `Someone`);
+  const names = others.map((u) => u.username ?? t("chat.someone"));
 
   if (names.length === 1) {
-    return `${names[0]} is typing...`;
+    return t("chat.isTypingOne", { name: names[0] });
   }
   if (names.length === 2) {
-    return `${names[0]} and ${names[1]} are typing...`;
+    return t("chat.isTypingTwo", { name1: names[0], name2: names[1] });
   }
-  return `${names[0]} and ${names.length - 1} others are typing...`;
+  return t("chat.isTypingMany", { name: names[0], count: names.length - 1 });
 }
 
 export function ChatTypingIndicator({
@@ -33,8 +38,9 @@ export function ChatTypingIndicator({
   currentUserId,
 }: ChatTypingIndicatorProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation("common");
 
-  const label = formatTypingLabel(typingUsers, currentUserId);
+  const label = formatTypingLabel(typingUsers, currentUserId, t);
   if (!label) return null;
 
   return (

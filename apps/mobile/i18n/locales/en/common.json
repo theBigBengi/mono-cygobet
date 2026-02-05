@@ -267,8 +267,18 @@
     "loadingOlderMessages": "Loading older messages...",
     "invalidGroup": "Invalid group",
     "isTyping": "{{name}} is typing...",
+    "isTypingOne": "{{name}} is typing...",
+    "isTypingTwo": "{{name1}} and {{name2}} are typing...",
+    "isTypingMany": "{{name}} and {{count}} others are typing...",
     "member": "Member",
-    "game": "Game"
+    "game": "Game",
+    "readOnlyEnded": "Chat is read-only for ended groups",
+    "send": "Send",
+    "playerFallback": "Player #{{id}}",
+    "someone": "Someone",
+    "noMentionResults": "No matches",
+    "mentionMembers": "Members",
+    "mentionGames": "Games"
   },
   "invite": {
     "groupInvite": "Group invite",

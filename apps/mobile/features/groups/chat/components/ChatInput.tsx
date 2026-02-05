@@ -1,7 +1,7 @@
 // features/groups/chat/components/ChatInput.tsx
 // TextInput + Send button. Typing indicator with 2 second debounce. @mentions picker. Read-only for ended groups.
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   View,
@@ -10,7 +10,11 @@ import {
   Pressable,
   Platform,
   Keyboard,
+  NativeSyntheticEvent,
+  TextInputSelectionChangeEventData,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import type { MentionData } from "@/lib/socket";
@@ -18,6 +22,7 @@ import { MentionPicker } from "./MentionPicker";
 import type { MentionOption } from "./MentionPicker";
 
 const TYPING_DEBOUNCE_MS = 2000;
+const MAX_MENTION_QUERY_LENGTH = 30;
 
 interface ChatInputProps {
   onSend: (body: string, mentions?: MentionData[]) => void;
@@ -38,10 +43,33 @@ export function ChatInput({
 }: ChatInputProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const [mentions, setMentions] = useState<MentionData[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const typingStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastLengthRef = useRef(0);
+  const lastCursorRef = useRef(0);
+  const mentionStartRef = useRef(0);
+  const textRef = useRef("");
+
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => setIsKeyboardVisible(true)
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setIsKeyboardVisible(false)
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  textRef.current = text;
 
   const scheduleTypingStop = useCallback(() => {
     if (typingStopTimerRef.current) {
@@ -53,14 +81,39 @@ export function ChatInput({
     }, TYPING_DEBOUNCE_MS);
   }, [onTypingStop]);
 
+  const handleSelectionChange = useCallback(
+    (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
+      const { start } = e.nativeEvent.selection;
+      lastCursorRef.current = start;
+    },
+    []
+  );
+
   const handleChangeText = useCallback(
     (value: string) => {
       if (readOnly) return;
       setText(value);
-      const lastAtIndex = value.lastIndexOf("@");
-      if (lastAtIndex >= 0) {
-        const afterAt = value.slice(lastAtIndex + 1);
-        if (!afterAt.includes(" ") && afterAt.length <= 30) {
+      const prevLen = lastLengthRef.current;
+      const prevCursor = lastCursorRef.current;
+      const newLen = value.length;
+      let cursor = prevCursor;
+      if (newLen > prevLen) {
+        cursor = prevCursor + (newLen - prevLen);
+      } else if (newLen < prevLen) {
+        cursor = Math.min(prevCursor, newLen);
+      }
+      lastLengthRef.current = newLen;
+      lastCursorRef.current = cursor;
+
+      const beforeCursor = value.slice(0, cursor);
+      const atIndex = beforeCursor.lastIndexOf("@");
+      if (atIndex >= 0) {
+        const afterAt = value.slice(atIndex + 1);
+        if (
+          !afterAt.includes(" ") &&
+          afterAt.length <= MAX_MENTION_QUERY_LENGTH
+        ) {
+          mentionStartRef.current = atIndex;
           setMentionQuery(afterAt);
         } else {
           setMentionQuery(null);
@@ -68,6 +121,7 @@ export function ChatInput({
       } else {
         setMentionQuery(null);
       }
+
       if (value.length > 0) {
         onTypingStart();
         scheduleTypingStop();
@@ -82,26 +136,54 @@ export function ChatInput({
     [readOnly, onTypingStart, onTypingStop, scheduleTypingStop]
   );
 
-  const handleMentionSelect = useCallback(
-    (option: MentionOption) => {
-      const lastAtIndex = text.lastIndexOf("@");
-      if (lastAtIndex < 0) return;
-      const before = text.slice(0, lastAtIndex);
-      const newText = `${before}@${option.display} `;
+  const handleMentionSelect = useCallback((option: MentionOption) => {
+    const value = textRef.current;
+    const start = mentionStartRef.current;
+    const end = lastCursorRef.current;
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const newText = `${before}@${option.display} ${after}`;
+    setText(newText);
+    setMentionQuery(null);
+    lastLengthRef.current = newText.length;
+    lastCursorRef.current = start + option.display.length + 2; // "@" + display + " "
+    setMentions((prev) => {
+      if (prev.some((m) => m.type === option.type && m.id === option.id)) {
+        return prev;
+      }
+      return [
+        ...prev,
+        { type: option.type, id: option.id, display: option.display },
+      ];
+    });
+  }, []);
+
+  const handleCloseMentionPicker = useCallback(() => {
+    const value = textRef.current;
+    const start = mentionStartRef.current;
+    const end = lastCursorRef.current;
+    if (start < value.length && value[start] === "@") {
+      const before = value.slice(0, start);
+      const after = value.slice(end);
+      const newText = before + after;
       setText(newText);
-      setMentionQuery(null);
-      setMentions((prev) => {
-        if (prev.some((m) => m.type === option.type && m.id === option.id)) {
-          return prev;
-        }
-        return [
-          ...prev,
-          { type: option.type, id: option.id, display: option.display },
-        ];
-      });
-    },
-    [text]
-  );
+      lastLengthRef.current = newText.length;
+      lastCursorRef.current = start;
+    }
+    setMentionQuery(null);
+  }, []);
+
+  const handleAtPress = useCallback(() => {
+    if (readOnly) return;
+    const value = textRef.current;
+    const cursor = lastCursorRef.current;
+    const next = value.slice(0, cursor) + "@" + value.slice(cursor);
+    setText(next);
+    lastLengthRef.current = next.length;
+    lastCursorRef.current = cursor + 1;
+    mentionStartRef.current = cursor;
+    setMentionQuery("");
+  }, [readOnly]);
 
   const handleSend = useCallback(() => {
     const trimmed = text.trim();
@@ -114,6 +196,8 @@ export function ChatInput({
     setText("");
     setMentions([]);
     setMentionQuery(null);
+    lastLengthRef.current = 0;
+    lastCursorRef.current = 0;
     onTypingStop();
     if (typingStopTimerRef.current) {
       clearTimeout(typingStopTimerRef.current);
@@ -132,11 +216,16 @@ export function ChatInput({
           {
             backgroundColor: theme.colors.surface,
             borderTopColor: theme.colors.border,
+            paddingBottom: isKeyboardVisible ? 12 : Math.max(12, insets.bottom),
           },
         ]}
       >
-        <AppText variant="caption" color="secondary" style={styles.readOnlyText}>
-          Chat is read-only for ended groups
+        <AppText
+          variant="caption"
+          color="secondary"
+          style={styles.readOnlyText}
+        >
+          {t("chat.readOnlyEnded")}
         </AppText>
       </View>
     );
@@ -150,6 +239,7 @@ export function ChatInput({
           members={memberOptions}
           fixtures={fixtureOptions}
           onSelect={handleMentionSelect}
+          onClose={handleCloseMentionPicker}
         />
       )}
       <View
@@ -158,47 +248,65 @@ export function ChatInput({
           {
             backgroundColor: theme.colors.background,
             borderTopColor: theme.colors.border,
+            paddingBottom: isKeyboardVisible ? 0 : Math.max(12, insets.bottom),
           },
         ]}
       >
-        <TextInput
-        style={[
-          styles.input,
-          {
-            backgroundColor: theme.colors.surface,
-            color: theme.colors.textPrimary,
-            borderColor: theme.colors.border,
-          },
-        ]}
-        placeholder={t("chat.typePlaceholder")}
-        placeholderTextColor={theme.colors.textSecondary}
-        value={text}
-        onChangeText={handleChangeText}
-        multiline
-        maxLength={2000}
-        editable={!readOnly}
-      />
-      <Pressable
-        onPress={handleSend}
-        disabled={!canSend}
-        style={({ pressed }) => [
-          styles.sendButton,
-          {
-            backgroundColor: canSend ? theme.colors.primary : theme.colors.surface,
-            opacity: pressed && canSend ? 0.8 : 1,
-          },
-        ]}
-      >
-        <AppText
-          variant="body"
-          style={{
-            color: canSend ? theme.colors.primaryText : theme.colors.textSecondary,
-            fontWeight: "600",
-          }}
+        <Pressable
+          onPress={handleAtPress}
+          style={({ pressed }) => [
+            styles.atButton,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+              opacity: pressed ? 0.8 : 1,
+            },
+          ]}
         >
-          Send
-        </AppText>
-      </Pressable>
+          <AppText variant="body" style={{ fontWeight: "600" }}>
+            @
+          </AppText>
+        </Pressable>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: theme.colors.surface,
+              color: theme.colors.textPrimary,
+              borderColor: theme.colors.border,
+            },
+          ]}
+          placeholder={t("chat.typePlaceholder")}
+          placeholderTextColor={theme.colors.textSecondary}
+          value={text}
+          onChangeText={handleChangeText}
+          onSelectionChange={handleSelectionChange}
+          multiline
+          scrollEnabled={text.split("\n").length > 3}
+          maxLength={2000}
+          editable={!readOnly}
+        />
+        <Pressable
+          onPress={handleSend}
+          disabled={!canSend}
+          style={({ pressed }) => [
+            styles.sendButton,
+            {
+              backgroundColor: canSend
+                ? theme.colors.primary
+                : theme.colors.surface,
+              opacity: pressed && canSend ? 0.8 : 1,
+            },
+          ]}
+        >
+          <MaterialIcons
+            name="send"
+            size={22}
+            color={
+              canSend ? theme.colors.primaryText : theme.colors.textSecondary
+            }
+          />
+        </Pressable>
       </View>
     </>
   );
@@ -212,6 +320,14 @@ const styles = StyleSheet.create({
     gap: 8,
     borderTopWidth: 1,
   },
+  atButton: {
+    width: 44,
+    height: 40,
+    borderRadius: 22,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   input: {
     flex: 1,
     minHeight: 40,
@@ -223,10 +339,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sendButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    width: 44,
+    height: 40,
+    borderRadius: 22,
     justifyContent: "center",
+    alignItems: "center",
   },
   readOnlyText: {
     textAlign: "center",

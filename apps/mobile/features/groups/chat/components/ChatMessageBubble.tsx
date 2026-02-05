@@ -2,7 +2,8 @@
 // Message bubble for user messages — yours on right (primary bg), others on left (surface bg). Mentions highlighted.
 
 import React from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet, Text, Image } from "react-native";
+import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
@@ -80,11 +81,23 @@ export function ChatMessageBubble({
   isCurrentUser,
 }: ChatMessageBubbleProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation("common");
 
   if (message.type !== "user_message") return null;
 
   const displayName =
-    message.sender?.username ?? `Player #${message.senderId ?? "?"}`;
+    message.sender?.username ??
+    t("chat.playerFallback", { id: message.senderId ?? "?" });
+
+  const bubbleBg = isCurrentUser ? theme.colors.primary : theme.colors.surface;
+  const bubbleStyle = [
+    styles.bubble,
+    {
+      backgroundColor: bubbleBg,
+      borderBottomRightRadius: isCurrentUser ? 4 : 16,
+      borderBottomLeftRadius: isCurrentUser ? 16 : 4,
+    },
+  ];
 
   return (
     <View
@@ -93,17 +106,27 @@ export function ChatMessageBubble({
         isCurrentUser ? styles.containerRight : styles.containerLeft,
       ]}
     >
-      <View
-        style={[
-          styles.bubble,
-          {
-            backgroundColor: isCurrentUser
-              ? theme.colors.primary
-              : theme.colors.surface,
-            alignSelf: isCurrentUser ? "flex-end" : "flex-start",
-          },
-        ]}
-      >
+      {!isCurrentUser &&
+        (message.sender?.image ? (
+          <Image
+            source={{ uri: message.sender.image }}
+            style={styles.avatar}
+            accessibilityIgnoresInvertColors
+          />
+        ) : (
+          <View
+            style={[
+              styles.avatar,
+              styles.avatarFallback,
+              { backgroundColor: theme.colors.border },
+            ]}
+          >
+            <AppText variant="caption" style={styles.avatarInitial}>
+              {(displayName.charAt(0) || "?").toUpperCase()}
+            </AppText>
+          </View>
+        ))}
+      <View style={bubbleStyle}>
         {!isCurrentUser && (
           <AppText
             variant="caption"
@@ -127,9 +150,7 @@ export function ChatMessageBubble({
                 key={i}
                 style={{
                   fontWeight: "700",
-                  color: isCurrentUser
-                    ? "#fff"
-                    : theme.colors.primary,
+                  color: isCurrentUser ? "#fff" : theme.colors.primary,
                 }}
               >
                 {segment.text}
@@ -147,6 +168,7 @@ export function ChatMessageBubble({
               color: isCurrentUser
                 ? "rgba(255,255,255,0.8)"
                 : theme.colors.textSecondary,
+              textAlign: isCurrentUser ? "right" : "left",
             },
           ]}
         >
@@ -157,16 +179,33 @@ export function ChatMessageBubble({
   );
 }
 
+const AVATAR_SIZE = 32;
+
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: 16,
     marginVertical: 4,
   },
   containerLeft: {
-    alignItems: "flex-start",
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 8,
   },
   containerRight: {
     alignItems: "flex-end",
+  },
+  avatar: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+  },
+  avatarFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarInitial: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   bubble: {
     maxWidth: "80%",

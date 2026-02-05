@@ -1,7 +1,7 @@
 // features/groups/chat/screens/GroupChatScreen.tsx
 // Chat screen with inverted FlatList, KeyboardAvoidingView, auto markAsRead.
 
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   View,
@@ -11,6 +11,7 @@ import {
   Platform,
   ListRenderItem,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
@@ -22,7 +23,8 @@ import { ChatSystemEvent } from "../components/ChatSystemEvent";
 import { ChatInput } from "../components/ChatInput";
 import { ChatTypingIndicator } from "../components/ChatTypingIndicator";
 import { useMentionOptions } from "../hooks/useMentionOptions";
-import type { FixtureItem } from "@/features/groups/group-lobby";
+import { HEADER_HEIGHT } from "@/features/groups/predictions/utils/constants";
+import type { FixtureItem } from "@/types/common";
 import type { ChatMessage } from "@/lib/socket";
 
 interface GroupChatScreenProps {
@@ -50,6 +52,7 @@ function ChatItem({
 export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const currentUserId = user?.id ?? 0;
 
@@ -58,12 +61,11 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   });
   const isEnded = groupData?.data?.status === "ended";
 
-  const fixtures: FixtureItem[] = Array.isArray(
-    (groupData?.data as { fixtures?: FixtureItem[] })?.fixtures
-  )
-    ? ((groupData?.data as { fixtures: FixtureItem[] }).fixtures)
-    : [];
-  const { memberOptions, fixtureOptions } = useMentionOptions(groupId, fixtures);
+  const fixtures: FixtureItem[] = groupData?.data?.fixtures ?? [];
+  const { memberOptions, fixtureOptions } = useMentionOptions(
+    groupId,
+    fixtures
+  );
 
   const {
     messages,
@@ -81,10 +83,13 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   } = useGroupChat(groupId);
 
   const lastMarkedRef = useRef<number>(0);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: { item: ChatMessage }[] }) => {
-      const newest = messages[0];
+      const currentMessages = messagesRef.current;
+      const newest = currentMessages[0];
       if (!newest || newest.id <= 0) return;
 
       const isNewestVisible = viewableItems.some(
@@ -95,7 +100,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
         markAsRead(newest.id);
       }
     },
-    [messages, markAsRead]
+    [markAsRead]
   );
 
   const viewabilityConfig = useRef({
@@ -103,9 +108,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   }).current;
 
   const renderItem: ListRenderItem<ChatMessage> = useCallback(
-    ({ item }) => (
-      <ChatItem message={item} currentUserId={currentUserId} />
-    ),
+    ({ item }) => <ChatItem message={item} currentUserId={currentUserId} />,
     [currentUserId]
   );
 
@@ -114,22 +117,8 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
     return `msg-${item.id}`;
   }, []);
 
-  const ListEmptyComponent = useCallback(() => {
-    if (isLoading) return null;
-    // Counteract FlatList inverted transform so empty state text reads normally
-    return (
-      <View style={styles.emptyContainer}>
-        <View style={styles.emptyTextWrapper}>
-          <AppText variant="body" color="secondary" style={styles.emptyText}>
-            {t("chat.noMessagesYet")}
-          </AppText>
-        </View>
-      </View>
-    );
-  }, [isLoading]);
-
   const ListFooterComponent = useCallback(() => {
-    if (!hasNextPage || !isFetchingNextPage) return null;
+    if (!isFetchingNextPage) return null;
     return (
       <View style={styles.loadingMore}>
         <AppText variant="caption" color="secondary">
@@ -137,7 +126,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
         </AppText>
       </View>
     );
-  }, [hasNextPage, isFetchingNextPage]);
+  }, [isFetchingNextPage, t]);
 
   if (!groupId) {
     return (
@@ -162,31 +151,41 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
     );
   }
 
+  const keyboardVerticalOffset = useMemo(
+    () => (Platform.OS === "ios" ? insets.top + HEADER_HEIGHT : 0),
+    [insets.top]
+  );
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      keyboardVerticalOffset={keyboardVerticalOffset}
     >
-      <FlatList
-        data={messages}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        inverted
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) {
-            fetchNextPage();
-          }
-        }}
-        onEndReachedThreshold={0.3}
-        ListEmptyComponent={ListEmptyComponent}
-        ListFooterComponent={ListFooterComponent}
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        contentContainerStyle={
-          messages.length === 0 ? styles.emptyList : styles.listContent
-        }
-      />
+      {messages.length === 0 && !isLoading ? (
+        <View style={styles.emptyContainer}>
+          <AppText variant="body" color="secondary" style={styles.emptyText}>
+            {t("chat.noMessagesYet")}
+          </AppText>
+        </View>
+      ) : (
+        <FlatList
+          data={messages}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          inverted
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={ListFooterComponent}
+          onViewableItemsChanged={handleViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
 
       <ChatTypingIndicator
         typingUsers={typingUsers}
@@ -212,18 +211,11 @@ const styles = StyleSheet.create({
   listContent: {
     paddingVertical: 12,
   },
-  emptyList: {
-    flex: 1,
-    paddingVertical: 12,
-  },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
-  },
-  emptyTextWrapper: {
-    transform: [{ scaleX: -1 }, { scaleY: -1 }],
   },
   emptyText: {
     textAlign: "center",

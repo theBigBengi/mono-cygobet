@@ -267,8 +267,18 @@
     "loadingOlderMessages": "טוען הודעות ישנות...",
     "invalidGroup": "קבוצה לא תקינה",
     "isTyping": "{{name}} מקליד...",
+    "isTypingOne": "{{name}} מקליד...",
+    "isTypingTwo": "{{name1}} ו-{{name2}} מקלידים...",
+    "isTypingMany": "{{name}} ו-{{count}} אחרים מקלידים...",
     "member": "חבר",
-    "game": "משחק"
+    "game": "משחק",
+    "readOnlyEnded": "הצ'אט לקריאה בלבד בקבוצות שהסתיימו",
+    "send": "שלח",
+    "playerFallback": "שחקן #{{id}}",
+    "someone": "מישהו",
+    "noMentionResults": "אין התאמות",
+    "mentionMembers": "חברים",
+    "mentionGames": "משחקים"
   },
   "predictionsOverview": {
     "loadingPredictions": "טוען סקירת תחזיות...",
