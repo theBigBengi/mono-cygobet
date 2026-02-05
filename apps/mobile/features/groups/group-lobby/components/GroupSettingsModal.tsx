@@ -3,13 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Modal,
-  View,
-  StyleSheet,
-  Pressable,
-  Switch,
-} from "react-native";
+import { Modal, View, StyleSheet, Pressable, Switch } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
@@ -111,10 +105,7 @@ export function GroupSettingsModal({
         ]}
       >
         <View
-          style={[
-            styles.header,
-            { borderBottomColor: theme.colors.border },
-          ]}
+          style={[styles.header, { borderBottomColor: theme.colors.border }]}
         >
           <Pressable
             onPress={onClose}
@@ -140,7 +131,11 @@ export function GroupSettingsModal({
                 <AppText variant="body" style={styles.inviteLabel}>
                   {t("lobby.inviteSharing")}
                 </AppText>
-                <AppText variant="caption" color="secondary" style={styles.inviteHelper}>
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.inviteHelper}
+                >
                   {switchOn
                     ? t("lobby.allMembersCanShare")
                     : t("lobby.onlyAdminsCanShare")}
@@ -167,7 +162,11 @@ export function GroupSettingsModal({
                   <AppText variant="body" style={styles.inviteLabel}>
                     Nudge
                   </AppText>
-                  <AppText variant="caption" color="secondary" style={styles.inviteHelper}>
+                  <AppText
+                    variant="caption"
+                    color="secondary"
+                    style={styles.inviteHelper}
+                  >
                     Allow members to nudge each other for upcoming games
                   </AppText>
                 </View>
@@ -180,7 +179,9 @@ export function GroupSettingsModal({
                     true: theme.colors.primary,
                   }}
                   thumbColor={
-                    nudgeEnabled ? theme.colors.primaryText : theme.colors.surface
+                    nudgeEnabled
+                      ? theme.colors.primaryText
+                      : theme.colors.surface
                   }
                 />
               </View>
@@ -211,7 +212,7 @@ export function GroupSettingsModal({
                             color:
                               nudgeWindowMinutes === min
                                 ? theme.colors.primaryText
-                                : theme.colors.text,
+                                : theme.colors.textPrimary,
                           }}
                         >
                           {min}

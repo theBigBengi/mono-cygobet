@@ -154,7 +154,7 @@ export function CreateGroupModal() {
       animationType="slide"
       transparent={false}
       onRequestClose={handleRequestClose}
-      presentationStyle="fullScreen"
+      presentationStyle="pageSheet"
       statusBarTranslucent={false}
     >
       <View
@@ -162,7 +162,7 @@ export function CreateGroupModal() {
           styles.container,
           {
             backgroundColor: theme.colors.background,
-            paddingTop: insets.top,
+            // paddingTop: insets.top,
           },
         ]}
       >
@@ -273,8 +273,13 @@ export function CreateGroupModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    overflow: "hidden",
+    // backgroundColor: "red",
   },
   header: {
+    // backgroundColor: "red",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -333,7 +338,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    borderRadius: 99,
+    borderRadius: 12,
   },
   globalOverlay: {
     ...StyleSheet.absoluteFillObject,
