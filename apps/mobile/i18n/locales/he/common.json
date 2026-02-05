@@ -287,7 +287,10 @@
   },
   "ranking": {
     "loadingRanking": "טוען דירוג...",
-    "failedLoadRanking": "טעינת דירוג נכשלה"
+    "failedLoadRanking": "טעינת דירוג נכשלה",
+    "statsLine": "{{exact}} מדויקים / {{predictions}} תחזיות",
+    "pts": "נק׳",
+    "empty": "עדיין אין חברים בדירוג"
   },
   "invite": {
     "groupInvite": "הזמנת קבוצה",

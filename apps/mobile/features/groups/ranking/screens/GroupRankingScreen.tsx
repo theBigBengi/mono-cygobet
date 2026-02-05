@@ -1,7 +1,7 @@
 // features/groups/ranking/screens/GroupRankingScreen.tsx
 // Screen component for group ranking.
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FlatList,
@@ -18,11 +18,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Screen, Card, AppText, Row } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { useGroupQuery, useGroupRankingQuery, useNudgeMutation } from "@/domains/groups";
+import {
+  useGroupQuery,
+  useGroupRankingQuery,
+  useNudgeMutation,
+} from "@/domains/groups";
 import { groupsKeys } from "@/domains/groups/groups.keys";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
-import { shareText, buildRankingShareText } from "@/utils/sharing";
 import type { ApiRankingItem } from "@repo/types";
 
 interface GroupRankingScreenProps {
@@ -44,13 +47,17 @@ function RankingRow({
   onNudgePress: (targetUserId: number, fixtureId: number) => void;
   isNudgePending: boolean;
 }) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const router = useRouter();
+
+  const displayName =
+    item.username || t("chat.playerFallback", { id: item.rank });
 
   const onPress = () => {
     if (groupId == null) return;
     router.push(
-      `/groups/${groupId}/member/${item.userId}?username=${encodeURIComponent(item.username || `Player #${item.rank}`)}&rank=${item.rank}&totalPoints=${item.totalPoints}&correctScoreCount=${item.correctScoreCount}&predictionCount=${item.predictionCount}` as any
+      `/groups/${groupId}/member/${item.userId}?username=${encodeURIComponent(displayName)}&rank=${item.rank}&totalPoints=${item.totalPoints}&correctScoreCount=${item.correctScoreCount}&predictionCount=${item.predictionCount}` as any
     );
   };
 
@@ -67,11 +74,24 @@ function RankingRow({
     onNudgePress(item.userId, item.nudgeFixtureId);
   };
 
+  const rankDisplay =
+    item.rank === 1
+      ? "🥇"
+      : item.rank === 2
+        ? "🥈"
+        : item.rank === 3
+          ? "🥉"
+          : String(item.rank);
+
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        { marginHorizontal: theme.spacing.md, marginBottom: theme.spacing.sm, opacity: pressed ? 0.8 : 1 },
+        {
+          marginHorizontal: theme.spacing.md,
+          marginBottom: theme.spacing.sm,
+          opacity: pressed ? 0.8 : 1,
+        },
       ]}
     >
       <Card
@@ -87,14 +107,13 @@ function RankingRow({
       >
         <Row gap={theme.spacing.md} style={styles.row}>
           <AppText variant="body" style={styles.rank}>
-            {item.rank}
+            {rankDisplay}
           </AppText>
-          <AppText
-            variant="body"
-            numberOfLines={1}
-            style={styles.username}
-          >
-            {item.username || `Player #${item.rank}`}
+          <AppText variant="body" numberOfLines={1} style={styles.username}>
+            {displayName}
+          </AppText>
+          <AppText variant="body" style={styles.points}>
+            {item.totalPoints} {t("ranking.pts")}
           </AppText>
           {showNudgeButton && (
             <Pressable
@@ -106,16 +125,18 @@ function RankingRow({
               <Ionicons
                 name={canNudge ? "notifications" : "notifications-off"}
                 size={22}
-                color={canNudge ? theme.colors.primary : theme.colors.textSecondary}
+                color={
+                  canNudge ? theme.colors.primary : theme.colors.textSecondary
+                }
               />
             </Pressable>
           )}
-          <AppText variant="body" style={styles.points}>
-            {item.totalPoints}
-          </AppText>
         </Row>
         <AppText variant="caption" color="secondary" style={styles.stats}>
-          {item.correctScoreCount} exact / {item.predictionCount} predictions
+          {t("ranking.statsLine", {
+            exact: item.correctScoreCount,
+            predictions: item.predictionCount,
+          })}
         </AppText>
       </Card>
     </Pressable>
@@ -134,29 +155,25 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: groupData } = useGroupQuery(groupId);
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-    isRefetching,
-  } = useGroupRankingQuery(groupId);
+  const { data, isLoading, error, refetch, isRefetching } =
+    useGroupRankingQuery(groupId);
   const nudgeMutation = useNudgeMutation(groupId);
+  const flatListRef = useRef<FlatList>(null);
+  const items = data?.data ?? [];
+  const myIndex = items.findIndex((i) => i.userId === user?.id);
 
-  const groupName = groupData?.data?.name;
-  const myRow = data?.data?.find((item) => item.userId === user?.id);
-  const canShare = groupId != null && groupName && myRow != null;
-  const handleShare = () => {
-    if (!canShare || !myRow) return;
-    shareText(
-      buildRankingShareText({
-        username: myRow.username ?? "Me",
-        rank: myRow.rank,
-        totalPoints: myRow.totalPoints,
-        groupName: groupName!,
-      })
-    );
-  };
+  useEffect(() => {
+    if (myIndex > 0 && flatListRef.current) {
+      const timer = setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: myIndex,
+          animated: true,
+          viewPosition: 0.5,
+        });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [myIndex]);
 
   const handleNudgePress = (targetUserId: number, fixtureId: number) => {
     if (!groupId) return;
@@ -202,23 +219,20 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
     );
   }
 
-  const items = data.data;
+  if (items.length === 0) {
+    return (
+      <View style={styles.container}>
+        <AppText variant="body" color="secondary" style={styles.emptyState}>
+          {t("ranking.empty")}
+        </AppText>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {canShare && (
-        <Pressable onPress={handleShare} style={styles.shareButton}>
-          <Ionicons
-            name="share-outline"
-            size={22}
-            color={theme.colors.primary}
-          />
-          <AppText variant="body" style={{ color: theme.colors.primary, marginLeft: 6 }}>
-            {t("share.shareRanking")}
-          </AppText>
-        </Pressable>
-      )}
       <FlatList
+        ref={flatListRef}
         data={items}
         keyExtractor={(item) => String(item.userId)}
         renderItem={({ item }) => (
@@ -240,9 +254,14 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
             refreshing={isRefetching}
             onRefresh={() => refetch()}
             tintColor={theme.colors.primary}
-            colors={Platform.OS === "android" ? [theme.colors.primary] : undefined}
+            colors={
+              Platform.OS === "android" ? [theme.colors.primary] : undefined
+            }
           />
         }
+        onScrollToIndexFailed={() => {
+          // Fallback when list isn't ready; user can scroll manually
+        }}
       />
     </View>
   );
@@ -252,12 +271,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  shareButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  emptyState: {
+    flex: 1,
+    textAlign: "center",
+    paddingVertical: 48,
+    paddingHorizontal: 24,
   },
   listContent: {
     flexGrow: 1,

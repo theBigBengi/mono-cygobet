@@ -342,7 +342,10 @@
   },
   "ranking": {
     "loadingRanking": "Loading ranking...",
-    "failedLoadRanking": "Failed to load ranking"
+    "failedLoadRanking": "Failed to load ranking",
+    "statsLine": "{{exact}} exact / {{predictions}} predictions",
+    "pts": "pts",
+    "empty": "No members in ranking yet"
   },
   "predictionsOverview": {
     "loadingPredictions": "Loading predictions overview...",
