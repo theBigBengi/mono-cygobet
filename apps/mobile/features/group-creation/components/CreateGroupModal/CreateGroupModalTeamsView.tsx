@@ -54,16 +54,18 @@ export function CreateGroupModalTeamsView() {
       });
     }
 
-    items.push({
-      icon: "groups",
-      label: t("fixtures.selectionSummaryTeams"),
-      value: t("fixtures.selectionSummaryTeamsCount", {
-        count: teams.length,
-      }),
-    });
+    if (preview?.data?.leagueCount != null) {
+      items.push({
+        icon: "emoji-events",
+        label: t("fixtures.selectionSummaryLeagues"),
+        value: t("fixtures.selectionSummaryLeaguesCount", {
+          count: preview.data.leagueCount,
+        }),
+      });
+    }
 
     return items;
-  }, [preview, teams, t]);
+  }, [preview, t]);
 
   if (teams.length === 0) {
     return (

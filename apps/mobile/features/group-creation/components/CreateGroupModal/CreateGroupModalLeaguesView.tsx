@@ -54,16 +54,8 @@ export function CreateGroupModalLeaguesView() {
       });
     }
 
-    items.push({
-      icon: "emoji-events",
-      label: t("fixtures.selectionSummaryLeagues"),
-      value: t("fixtures.selectionSummaryLeaguesCount", {
-        count: leagues.length,
-      }),
-    });
-
     return items;
-  }, [preview, leagues, t]);
+  }, [preview, t]);
 
   if (leagues.length === 0) {
     return (
