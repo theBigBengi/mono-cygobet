@@ -10,6 +10,7 @@ import Animated, {
   withSpring,
   withTiming,
   interpolate,
+  type SharedValue,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
@@ -59,7 +60,7 @@ function AnimatedDigit({
 }: {
   digit: number;
   cellIndex: number;
-  tabX: Animated.SharedValue<number>;
+  tabX: SharedValue<number>;
   secondaryColor: string;
 }) {
   const animatedStyle = useAnimatedStyle(() => {
@@ -91,7 +92,7 @@ function AnimatedTeamLogo({
   imagePath,
   teamName,
 }: {
-  tabX: Animated.SharedValue<number>;
+  tabX: SharedValue<number>;
   cellIndex: number;
   imagePath?: string | null;
   teamName?: string;
@@ -130,7 +131,7 @@ export function HorizontalScoreSlider({
     value == null ? "logo" : String(value)
   );
 
-  const tabX = useSharedValue(valueToX(value, reversed));
+  const tabX = useSharedValue(valueToX(value ?? null, reversed));
   const dragStartX = useSharedValue(0);
   const isSyncingFromProp = useSharedValue(0);
   const isDraggingRef = React.useRef(false);
@@ -141,10 +142,12 @@ export function HorizontalScoreSlider({
   React.useEffect(() => {
     if (isDraggingRef.current) return;
     isSyncingFromProp.value = 1;
-    const targetX = valueToX(value, reversed);
+    const targetX = valueToX(value ?? null, reversed);
     tabX.value = withTiming(targetX, { duration: 200 }, (finished) => {
       if (finished) isSyncingFromProp.value = 0;
     });
+    // tabX and isSyncingFromProp are stable shared values (ref-like)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, reversed]);
 
   useAnimatedReaction(
