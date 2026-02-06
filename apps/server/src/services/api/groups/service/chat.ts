@@ -1,4 +1,5 @@
 import { prisma, Prisma } from "@repo/db";
+import type { LastMessageInfo } from "@repo/types";
 import { BadRequestError } from "../../../../utils/errors";
 import { assertGroupMember } from "../permissions";
 import { getLogger } from "../../../../logger";
@@ -134,6 +135,95 @@ export async function getUnreadCounts(
   for (const gid of groupIds) counts[gid] = 0;
   for (const row of rows) counts[Number(row.group_id)] = Number(row.cnt);
   return counts;
+}
+
+export async function getGroupsChatPreview(
+  userId: number,
+  groupIds: number[]
+): Promise<
+  Record<string, { unreadCount: number; lastMessage: LastMessageInfo | null }>
+> {
+  if (!groupIds.length) return {};
+
+  // 1. Get unread counts (already batched)
+  const unreadCounts = await getUnreadCounts(userId, groupIds);
+
+  // 2. Get last user message per group in one query (DISTINCT ON)
+  const lastMessagesRaw = await prisma.$queryRaw<
+    Array<{
+      group_id: number;
+      id: number;
+      body: string;
+      created_at: Date;
+      sender_id: number;
+      sender_username: string | null;
+      sender_image: string | null;
+    }>
+  >`
+    SELECT DISTINCT ON (gm.group_id)
+      gm.group_id,
+      gm.id,
+      gm.body,
+      gm.created_at,
+      gm.sender_id,
+      u.username as sender_username,
+      u.image as sender_image
+    FROM group_messages gm
+    JOIN users u ON u.id = gm.sender_id
+    WHERE gm.group_id IN (${Prisma.join(groupIds)})
+      AND gm.sender_id IS NOT NULL
+    ORDER BY gm.group_id, gm.created_at DESC
+  `;
+
+  // 3. Get read records in one query
+  const readRecords = await prisma.groupMessageReads.findMany({
+    where: {
+      userId,
+      groupId: { in: groupIds },
+    },
+  });
+  const readMap = new Map(
+    readRecords.map((r) => [r.groupId, r.lastReadMessageId])
+  );
+
+  // 4. Build result (one row per group from raw; fill missing groups with null lastMessage)
+  const lastMessagesByGroup = new Map(
+    lastMessagesRaw.map((m) => [m.group_id, m])
+  );
+  const result: Record<
+    string,
+    { unreadCount: number; lastMessage: LastMessageInfo | null }
+  > = {};
+
+  for (const groupId of groupIds) {
+    const unreadCount = unreadCounts[groupId] ?? 0;
+    const msg = lastMessagesByGroup.get(groupId);
+
+    if (!msg) {
+      result[String(groupId)] = { unreadCount, lastMessage: null };
+      continue;
+    }
+
+    const lastReadMessageId = readMap.get(groupId) ?? 0;
+    const isRead = lastReadMessageId >= msg.id;
+
+    result[String(groupId)] = {
+      unreadCount,
+      lastMessage: {
+        id: msg.id,
+        text: msg.body,
+        createdAt: msg.created_at.toISOString(),
+        sender: {
+          id: msg.sender_id,
+          username: msg.sender_username || `User ${msg.sender_id}`,
+          avatar: msg.sender_image,
+        },
+        isRead,
+      },
+    };
+  }
+
+  return result;
 }
 
 function buildEventBody(

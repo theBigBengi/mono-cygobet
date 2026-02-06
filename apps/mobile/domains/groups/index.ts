@@ -26,6 +26,7 @@ export {
 export {
   useGroupMessagesQuery,
   useUnreadCountsQuery,
+  useGroupChatPreviewQuery,
   useGroupChat,
 } from "./groups-chat.hooks";
 export { groupsKeys } from "./groups.keys";
@@ -42,7 +43,11 @@ export {
   regenerateInviteCode,
   fetchGroupPreview,
 } from "./groups.api";
-export { fetchGroupMessages, fetchUnreadCounts } from "./groups-chat.api";
+export {
+  fetchGroupMessages,
+  fetchUnreadCounts,
+  fetchGroupChatPreview,
+} from "./groups-chat.api";
 export type {
   ApiCreateGroupBody,
   ApiGroupItem,

@@ -12,11 +12,13 @@ import {
   ListRenderItem,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { useGroupChat, useGroupQuery } from "@/domains/groups";
+import { useGroupChat, useGroupQuery, groupsKeys } from "@/domains/groups";
 import { useAuth } from "@/lib/auth/useAuth";
 import { ChatMessageBubble } from "../components/ChatMessageBubble";
 import { ChatSystemEvent } from "../components/ChatSystemEvent";
@@ -67,6 +69,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
     fixtures
   );
 
+  const queryClient = useQueryClient();
   const {
     messages,
     sendMessage,
@@ -81,6 +84,15 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
     isLoading,
     isError,
   } = useGroupChat(groupId);
+
+  // When leaving the chat screen, invalidate chat preview so lobby card updates
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        queryClient.invalidateQueries({ queryKey: groupsKeys.chatPreview() });
+      };
+    }, [queryClient])
+  );
 
   const lastMarkedRef = useRef<number>(0);
   const messagesRef = useRef(messages);

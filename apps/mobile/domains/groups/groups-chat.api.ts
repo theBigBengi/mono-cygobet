@@ -1,5 +1,6 @@
 import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
 import type { ChatMessage } from "@/lib/socket";
+import type { GroupChatPreviewResponse } from "@repo/types";
 
 interface GetMessagesResponse {
   data: ChatMessage[];
@@ -35,6 +36,16 @@ export async function fetchGroupMessages(
 export async function fetchUnreadCounts(): Promise<UnreadCountsResponse> {
   return apiFetchWithAuthRetry<UnreadCountsResponse>(
     "/api/groups/unread-counts"
+  );
+}
+
+/**
+ * Fetch chat preview (unread count + last message) for all of the user's joined groups.
+ * - Requires authentication and onboarding complete.
+ */
+export async function fetchGroupChatPreview(): Promise<GroupChatPreviewResponse> {
+  return apiFetchWithAuthRetry<GroupChatPreviewResponse>(
+    "/api/groups/chat/preview"
   );
 }
 

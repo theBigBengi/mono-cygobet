@@ -3,10 +3,7 @@ import * as chatService from "../../services/api/groups/service/chat";
 import { prisma } from "@repo/db";
 
 const chatRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.addHook(
-    "preHandler",
-    fastify.userAuth.requireOnboardingComplete
-  );
+  fastify.addHook("preHandler", fastify.userAuth.requireOnboardingComplete);
 
   // GET /api/groups/unread-counts — must be defined before /groups/:id to avoid :id capturing "unread-counts"
   fastify.get("/groups/unread-counts", async (req) => {
@@ -22,6 +19,21 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
       memberships.map((m) => m.groupId)
     );
     return { data: counts };
+  });
+
+  // GET /api/groups/chat/preview — must be before /groups/:id
+  fastify.get("/groups/chat/preview", async (req) => {
+    const userId = req.userAuth!.user.id;
+
+    const memberships = await prisma.groupMembers.findMany({
+      where: { userId, status: "joined" },
+      select: { groupId: true },
+    });
+
+    const groupIds = memberships.map((m) => m.groupId);
+    const preview = await chatService.getGroupsChatPreview(userId, groupIds);
+
+    return { status: "success", data: preview };
   });
 
   // GET /api/groups/:id/messages?before=<cursor>&limit=30

@@ -11,10 +11,12 @@ import { useGroupSocket } from "@/lib/socket";
 import {
   fetchGroupMessages,
   fetchUnreadCounts,
+  fetchGroupChatPreview,
   markMessagesAsRead,
 } from "./groups-chat.api";
 import { groupsKeys } from "./groups.keys";
 import type { ApiError } from "@/lib/http/apiError";
+import type { LastMessageInfo } from "@repo/types";
 
 const MESSAGES_PAGE_SIZE = 30;
 const TYPING_INDICATOR_TIMEOUT_MS = 5000;
@@ -44,7 +46,9 @@ export function useGroupMessagesQuery(groupId: number | null) {
     getNextPageParam: (lastPage) => {
       const msgs = lastPage.data;
       if (msgs.length < MESSAGES_PAGE_SIZE) return undefined;
-      const oldestId = Math.min(...msgs.map((m) => m.id).filter((id) => id > 0));
+      const oldestId = Math.min(
+        ...msgs.map((m) => m.id).filter((id) => id > 0)
+      );
       return Number.isFinite(oldestId) ? oldestId : undefined;
     },
     enabled,
@@ -65,6 +69,24 @@ export function useUnreadCountsQuery() {
     queryFn: () => fetchUnreadCounts(),
     enabled,
     refetchInterval: 30_000, // Refresh every 30 seconds
+    meta: { scope: "user" } as const,
+  });
+}
+
+/**
+ * Fetch chat preview (unread count + last message) for all of the user's joined groups.
+ */
+export function useGroupChatPreviewQuery() {
+  const { status, user } = useAuth();
+
+  const enabled = isReadyForProtected(status, user);
+
+  return useQuery({
+    queryKey: groupsKeys.chatPreview(),
+    queryFn: () => fetchGroupChatPreview(),
+    enabled,
+    staleTime: 30_000, // 30 seconds
+    refetchInterval: 60_000, // Refetch every minute
     meta: { scope: "user" } as const,
   });
 }
@@ -104,7 +126,11 @@ export function useGroupChat(groupId: number | null) {
 
       queryClient.setQueryData(
         key,
-        (old: { pages: { data: ChatMessage[] }[]; pageParams: unknown[] } | undefined) => {
+        (
+          old:
+            | { pages: { data: ChatMessage[] }[]; pageParams: unknown[] }
+            | undefined
+        ) => {
           if (!old) {
             return {
               pages: [{ data: [message] }],
@@ -218,7 +244,11 @@ export function useGroupChat(groupId: number | null) {
       const key = groupsKeys.messages(groupId);
       queryClient.setQueryData(
         key,
-        (old: { pages: { data: ChatMessage[] }[]; pageParams: unknown[] } | undefined) => {
+        (
+          old:
+            | { pages: { data: ChatMessage[] }[]; pageParams: unknown[] }
+            | undefined
+        ) => {
           if (!old) {
             return {
               pages: [{ data: [optimisticMessage] }],
@@ -250,20 +280,55 @@ export function useGroupChat(groupId: number | null) {
     async (lastReadMessageId: number) => {
       if (!groupId) return;
 
-      // Optimistic unread count clear (immediate UI feedback)
-      queryClient.setQueryData(groupsKeys.unreadCounts(), (old: { data: Record<string, number> } | undefined) => {
-        if (!old) return old;
-        const next = { ...old.data };
-        delete next[String(groupId)];
-        return { data: next };
-      });
+      // 1. Optimistic update for unread counts (existing)
+      queryClient.setQueryData(
+        groupsKeys.unreadCounts(),
+        (old: { data: Record<string, number> } | undefined) => {
+          if (!old) return old;
+          const next = { ...old.data };
+          delete next[String(groupId)];
+          return { data: next };
+        }
+      );
 
-      // Reliable HTTP call (persists to DB)
+      // 2. Optimistic update for chat preview
+      queryClient.setQueryData(
+        groupsKeys.chatPreview(),
+        (
+          old:
+            | {
+                status: string;
+                data: Record<
+                  string,
+                  { unreadCount: number; lastMessage: LastMessageInfo | null }
+                >;
+              }
+            | undefined
+        ) => {
+          if (!old?.data?.[String(groupId)]) return old;
+          const currentPreview = old.data[String(groupId)];
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              [String(groupId)]: {
+                unreadCount: 0,
+                lastMessage: currentPreview.lastMessage
+                  ? { ...currentPreview.lastMessage, isRead: true }
+                  : null,
+              },
+            },
+          };
+        }
+      );
+
+      // 3. Reliable HTTP call (persists to DB)
       try {
         await markMessagesAsRead(groupId, lastReadMessageId);
       } catch {
-        // Revert optimistic update on failure
+        // Revert optimistic updates on failure
         queryClient.invalidateQueries({ queryKey: groupsKeys.unreadCounts() });
+        queryClient.invalidateQueries({ queryKey: groupsKeys.chatPreview() });
       }
     },
     [groupId, queryClient]

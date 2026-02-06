@@ -8,7 +8,10 @@ import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
-import { useGroupRankingQuery, useUnreadCountsQuery } from "@/domains/groups";
+import {
+  useGroupRankingQuery,
+  useGroupChatPreviewQuery,
+} from "@/domains/groups";
 import { useAuth } from "@/lib/auth/useAuth";
 import type { ApiGroupItem } from "@repo/types";
 import { useCountdown } from "@/features/groups/predictions/hooks";
@@ -16,7 +19,7 @@ import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSecti
 import { useGroupDuration } from "../hooks/useGroupDuration";
 import type { FixtureItem } from "../types";
 import { useGroupActivityStats } from "../hooks/useGroupActivityStats";
-import { formatDate } from "@/utils/date";
+import { formatDate, formatRelativeTime } from "@/utils/date";
 import { LobbyActionCard } from "../components/LobbyActionCard";
 
 interface GroupLobbyActiveScreenProps {
@@ -50,8 +53,9 @@ export function GroupLobbyActiveScreen({
   const router = useRouter();
   const { user } = useAuth();
   const { data: rankingData } = useGroupRankingQuery(group.id);
-  const { data: unreadData } = useUnreadCountsQuery();
-  const chatUnreadCount = unreadData?.data?.[String(group.id)] ?? 0;
+  const { data: chatPreviewData } = useGroupChatPreviewQuery();
+  const chatPreview = chatPreviewData?.data?.[String(group.id)];
+  const lastMessage = chatPreview?.lastMessage;
 
   const leader = rankingData?.data?.[0];
   const myRank =
@@ -211,7 +215,19 @@ export function GroupLobbyActiveScreen({
         <LobbyActionCard
           icon="chatbubbles-outline"
           title={t("lobby.chat")}
-          badge={chatUnreadCount}
+          badge={chatPreview?.unreadCount}
+          subtitle={!lastMessage ? t("lobby.startChatting") : undefined}
+          lastMessage={
+            lastMessage
+              ? {
+                  text: lastMessage.text,
+                  senderName: lastMessage.sender.username,
+                  senderAvatar: lastMessage.sender.avatar,
+                  timestamp: formatRelativeTime(lastMessage.createdAt),
+                  isRead: lastMessage.isRead,
+                }
+              : undefined
+          }
           onPress={handleViewChat}
         />
 
