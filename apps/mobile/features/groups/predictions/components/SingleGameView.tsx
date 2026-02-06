@@ -234,6 +234,17 @@ export function SingleGameView({
   const [currentIndex, setCurrentIndex] = useState(initialIndex ?? 0);
   const flatListRef = useRef<FlatList>(null);
 
+  // Sync index and scroll when initialIndex changes (e.g. re-open from a different card).
+  useEffect(() => {
+    if (initialIndex != null) {
+      setCurrentIndex(initialIndex);
+      flatListRef.current?.scrollToIndex({
+        index: initialIndex,
+        animated: false,
+      });
+    }
+  }, [initialIndex]);
+
   const handleSelectGame = (index: number) => {
     setCurrentIndex(index);
     flatListRef.current?.scrollToIndex({ index, animated: true });
