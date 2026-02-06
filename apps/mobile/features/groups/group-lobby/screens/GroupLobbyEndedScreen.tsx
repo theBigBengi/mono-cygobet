@@ -10,11 +10,9 @@ import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
 import { useGroupRankingQuery, useUnreadCountsQuery } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
-import {
-  GroupLobbyFixturesSection,
-  useGroupDuration,
-  type FixtureItem,
-} from "../index";
+import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSection";
+import { useGroupDuration } from "../hooks/useGroupDuration";
+import type { FixtureItem } from "../types";
 import { formatDate } from "@/utils/date";
 import { LobbyActionCard } from "../components/LobbyActionCard";
 

@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   timeResultColumn: {
     flexDirection: "column",
-    direction: "ltr",
+    writingDirection: "ltr",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,

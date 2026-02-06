@@ -11,25 +11,27 @@ import { useTheme } from "@/lib/theme";
 import type { ApiGroupItem } from "@repo/types";
 
 const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
+import { GroupLobbyNameHeader } from "../components/GroupLobbyNameHeader";
+import { GroupLobbyStatusCard } from "../components/GroupLobbyStatusCard";
+import { GroupLobbyScoringSection } from "../components/GroupLobbyScoringSection";
+import { GroupLobbyMaxMembersSection } from "../components/GroupLobbyMaxMembersSection";
 import {
-  GroupLobbyNameHeader,
-  GroupLobbyStatusCard,
-  GroupLobbyScoringSection,
-  GroupLobbyMaxMembersSection,
   PredictionModeSelector,
-  KORoundModeSelector,
-  GroupLobbyFixturesSection,
-  GroupLobbyPrivacySection,
-  GroupLobbyInviteAccessSection,
-  GroupLobbyMetaSection,
-  PublishGroupButton,
-  useGroupLobbyState,
-  useGroupLobbyActions,
-  useGroupDuration,
-  type FixtureItem,
   type PredictionMode,
+} from "../components/PredictionModeSelector";
+import {
+  KORoundModeSelector,
   type KORoundMode,
-} from "../index";
+} from "../components/KORoundModeSelector";
+import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSection";
+import { GroupLobbyPrivacySection } from "../components/GroupLobbyPrivacySection";
+import { GroupLobbyInviteAccessSection } from "../components/GroupLobbyInviteAccessSection";
+import { GroupLobbyMetaSection } from "../components/GroupLobbyMetaSection";
+import { PublishGroupButton } from "../components/PublishGroupButton";
+import { useGroupLobbyState } from "../hooks/useGroupLobbyState";
+import { useGroupLobbyActions } from "../hooks/useGroupLobbyActions";
+import { useGroupDuration } from "../hooks/useGroupDuration";
+import type { FixtureItem } from "../types";
 import { formatDate } from "@/utils/date";
 import {
   usePublishGroupMutation,

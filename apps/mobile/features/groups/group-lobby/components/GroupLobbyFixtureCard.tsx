@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   },
   scoreContainer: {
     flexDirection: "row",
-    direction: "ltr",
+    writingDirection: "ltr",
     alignItems: "center",
     justifyContent: "center",
     minWidth: 60,

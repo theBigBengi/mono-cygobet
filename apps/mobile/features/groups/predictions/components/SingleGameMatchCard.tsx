@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   scoreSection: {
     justifyContent: "center",
-    direction: "ltr",
+    writingDirection: "ltr",
     paddingHorizontal: 4,
     flexShrink: 0,
   },
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   resultContainer: {
     alignItems: "center",
-    direction: "ltr",
+    writingDirection: "ltr",
     marginTop: 8,
     paddingTop: 8,
   },

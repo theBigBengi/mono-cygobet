@@ -12,11 +12,9 @@ import { useGroupRankingQuery, useUnreadCountsQuery } from "@/domains/groups";
 import { useAuth } from "@/lib/auth/useAuth";
 import type { ApiGroupItem } from "@repo/types";
 import { useCountdown } from "@/features/groups/predictions/hooks";
-import {
-  GroupLobbyFixturesSection,
-  useGroupDuration,
-  type FixtureItem,
-} from "../index";
+import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSection";
+import { useGroupDuration } from "../hooks/useGroupDuration";
+import type { FixtureItem } from "../types";
 import { useGroupActivityStats } from "../hooks/useGroupActivityStats";
 import { formatDate } from "@/utils/date";
 import { LobbyActionCard } from "../components/LobbyActionCard";
