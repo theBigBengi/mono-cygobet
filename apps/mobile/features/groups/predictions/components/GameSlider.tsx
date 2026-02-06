@@ -1,16 +1,33 @@
-import React, { useRef, useEffect } from "react";
-import { View, StyleSheet, FlatList, Pressable } from "react-native";
+import React, { useRef, useEffect, useState } from "react";
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  Pressable,
+  Dimensions,
+  Animated,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import type { FixtureItem } from "@/types/common";
-import { getGameResultOrTime } from "../utils/fixture-helpers";
 
+const SCREEN_WIDTH = Dimensions.get("window").width;
 const SLIDER_ITEM_WIDTH = 110;
 const SLIDER_ITEM_MARGIN = 8;
 const SLIDER_ITEM_TOTAL = SLIDER_ITEM_WIDTH + SLIDER_ITEM_MARGIN;
 const LOGO_SIZE = 16;
+
+/** Padding so first/last item can be centered on screen. */
+const HORIZONTAL_PADDING = (SCREEN_WIDTH - SLIDER_ITEM_WIDTH) / 2;
+
+/** Offset to center the item at the given index on screen. */
+function getOffsetForIndex(index: number): number {
+  const itemCenter =
+    HORIZONTAL_PADDING + index * SLIDER_ITEM_TOTAL + SLIDER_ITEM_WIDTH / 2;
+  return Math.max(0, itemCenter - SCREEN_WIDTH / 2);
+}
 
 function getTeamAbbr(teamName: string): string {
   const trimmed = teamName.trim();
@@ -23,16 +40,6 @@ function getTeamAbbr(teamName: string): string {
       .join("");
   }
   return trimmed.substring(0, 3).toUpperCase();
-}
-
-function getCenterLabel(fixture: FixtureItem): string {
-  const result = getGameResultOrTime(fixture);
-  if (!result) return "—";
-  if (result.time) return result.time;
-  if (result.home != null && result.away != null)
-    return `${result.home}-${result.away}`;
-  if (result.home) return result.home;
-  return "—";
 }
 
 export type GameSliderProps = {
@@ -50,20 +57,52 @@ export function GameSlider({
   const { t } = useTranslation("common");
   const { translateTeam } = useEntityTranslation();
   const flatListRef = useRef<FlatList>(null);
+  const prevIndexRef = useRef(currentIndex);
+  const [isReady, setIsReady] = useState(false);
+  const opacity = useRef(new Animated.Value(0)).current;
 
+  // Initial scroll (hidden) + fade in
   useEffect(() => {
+    if (isReady) return;
+    if (fixtures.length === 0) return;
+
+    const timer = setTimeout(() => {
+      flatListRef.current?.scrollToOffset({
+        offset: getOffsetForIndex(currentIndex),
+        animated: false,
+      });
+
+      setTimeout(() => {
+        setIsReady(true);
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }).start();
+      }, 50);
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [fixtures.length, isReady]);
+
+  // Animated scroll when index changes (after initial ready)
+  useEffect(() => {
+    if (!isReady) return;
+    if (prevIndexRef.current === currentIndex) return;
+    prevIndexRef.current = currentIndex;
+
     if (
       fixtures.length === 0 ||
       currentIndex < 0 ||
       currentIndex >= fixtures.length
     )
       return;
-    flatListRef.current?.scrollToIndex({
-      index: currentIndex,
+
+    flatListRef.current?.scrollToOffset({
+      offset: getOffsetForIndex(currentIndex),
       animated: true,
-      viewPosition: 0.5,
     });
-  }, [currentIndex, fixtures.length]);
+  }, [currentIndex, isReady, fixtures.length]);
 
   const renderItem = ({
     item: fixture,
@@ -76,7 +115,6 @@ export function GameSlider({
     const awayName = translateTeam(fixture.awayTeam?.name, t("common.away"));
     const homeAbbr = getTeamAbbr(homeName);
     const awayAbbr = getTeamAbbr(awayName);
-    const centerLabel = getCenterLabel(fixture);
     const isActive = index === currentIndex;
 
     return (
@@ -130,14 +168,6 @@ export function GameSlider({
             />
           </View>
         </View>
-        {/* Row 2: time/score centered */}
-        <AppText
-          variant="caption"
-          numberOfLines={1}
-          style={[styles.center, { color: theme.colors.textSecondary }]}
-        >
-          {centerLabel}
-        </AppText>
       </Pressable>
     );
   };
@@ -145,53 +175,43 @@ export function GameSlider({
   if (fixtures.length === 0) return null;
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    <Animated.View
+      style={[
+        styles.container,
+        { backgroundColor: theme.colors.background, opacity },
+      ]}
     >
       <FlatList
         ref={flatListRef}
         data={fixtures}
         renderItem={renderItem}
         keyExtractor={(item) => String(item.id)}
+        extraData={currentIndex}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-        onScrollToIndexFailed={(info) => {
-          const wait = new Promise((resolve) => setTimeout(resolve, 100));
-          wait.then(() => {
-            flatListRef.current?.scrollToIndex({
-              index: info.index,
-              animated: true,
-              viewPosition: 0.5,
-            });
-          });
-        }}
+        contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING }}
         getItemLayout={(_, index) => ({
           length: SLIDER_ITEM_TOTAL,
-          offset: SLIDER_ITEM_TOTAL * index,
+          offset: HORIZONTAL_PADDING + SLIDER_ITEM_TOTAL * index,
           index,
         })}
       />
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 10,
-    minHeight: 64,
-  },
-  content: {
-    paddingHorizontal: 8,
+    minHeight: 48,
   },
   item: {
     width: SLIDER_ITEM_WIDTH,
     marginRight: SLIDER_ITEM_MARGIN,
     borderRadius: 12,
     paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingVertical: 6,
     flexDirection: "column",
-    gap: 4,
   },
   teamsRow: {
     flexDirection: "row",
@@ -207,9 +227,5 @@ const styles = StyleSheet.create({
   abbr: {
     fontSize: 10,
     fontWeight: "500",
-  },
-  center: {
-    fontSize: 10,
-    textAlign: "center",
   },
 });

@@ -62,6 +62,16 @@ export function SingleGameMatchCard({
       currentFocusedField: null,
     });
 
+  console.log("DEBUG fixture:", {
+    id: fixture.id,
+    state: fixture.state,
+    isFinished,
+    homeScore90: fixture.homeScore90,
+    awayScore90: fixture.awayScore90,
+    result: fixture.result,
+    gameResultOrTime,
+  });
+
   const resultOrReasonText =
     gameResultOrTime != null
       ? gameResultOrTime.home != null && gameResultOrTime.away != null
@@ -70,7 +80,9 @@ export function SingleGameMatchCard({
       : null;
 
   return (
-    <View style={[!isEditable && !isLive && styles.dimmedContainer]}>
+    <View
+      style={[!isEditable && !isLive && !isFinished && styles.dimmedContainer]}
+    >
       <Card style={styles.matchCard}>
         {fixture.league?.name && (
           <View style={styles.leagueRow}>
@@ -92,32 +104,54 @@ export function SingleGameMatchCard({
             </AppText>
           </View>
 
-          {/* Score Inputs or Outcome Picker Section */}
-          {predictionMode === "MatchWinner" && onSelectOutcome ? (
-            <View style={styles.scoreSection}>
-              <OutcomePicker
-                selectedOutcome={getOutcomeFromPrediction(prediction)}
+          {/* Score Section - Result or Prediction */}
+          {isEditable ? (
+            predictionMode === "MatchWinner" && onSelectOutcome ? (
+              <View style={styles.scoreSection}>
+                <OutcomePicker
+                  selectedOutcome={getOutcomeFromPrediction(prediction)}
+                  isEditable={isEditable}
+                  onSelect={onSelectOutcome}
+                />
+              </View>
+            ) : (
+              <ScoresInput
+                prediction={prediction}
+                homeRef={homeRef}
+                awayRef={awayRef}
+                homeFocused={homeFocused}
+                awayFocused={awayFocused}
+                isSaved={isSaved}
                 isEditable={isEditable}
-                onSelect={onSelectOutcome}
+                isLive={isLive}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                onChange={onChange}
+                onAutoNext={onAutoNext}
+                variant="medium"
+                containerStyle={styles.scoreSection}
               />
+            )
+          ) : isLive ? (
+            <View style={styles.resultScore}>
+              <AppText style={styles.resultScoreText}>
+                {gameResultOrTime?.home ?? "0"}
+              </AppText>
+              <AppText style={styles.resultScoreSeparator}>:</AppText>
+              <AppText style={styles.resultScoreText}>
+                {gameResultOrTime?.away ?? "0"}
+              </AppText>
             </View>
           ) : (
-            <ScoresInput
-              prediction={prediction}
-              homeRef={homeRef}
-              awayRef={awayRef}
-              homeFocused={homeFocused}
-              awayFocused={awayFocused}
-              isSaved={isSaved}
-              isEditable={isEditable}
-              isLive={isLive}
-              onFocus={onFocus}
-              onBlur={onBlur}
-              onChange={onChange}
-              onAutoNext={onAutoNext}
-              variant="medium"
-              containerStyle={styles.scoreSection}
-            />
+            <View style={styles.resultScore}>
+              <AppText style={styles.resultScoreText}>
+                {gameResultOrTime?.home ?? "-"}
+              </AppText>
+              <AppText style={styles.resultScoreSeparator}>:</AppText>
+              <AppText style={styles.resultScoreText}>
+                {gameResultOrTime?.away ?? "-"}
+              </AppText>
+            </View>
           )}
 
           {/* Away Team - Logo above Name */}
@@ -141,7 +175,7 @@ export function SingleGameMatchCard({
             {formatKickoffDateTime(fixture.kickoffAt)}
           </AppText>
         )}
-        {resultOrReasonText && (
+        {isLive && resultOrReasonText && (
           <View style={styles.resultContainer}>
             <AppText
               variant="caption"
@@ -220,6 +254,27 @@ const styles = StyleSheet.create({
     writingDirection: "ltr",
     paddingHorizontal: 4,
     flexShrink: 0,
+  },
+  resultScore: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    flexShrink: 0,
+    minWidth: 80,
+    minHeight: 40,
+  },
+  resultScoreText: {
+    fontSize: 28,
+    fontWeight: "700",
+    lineHeight: 34,
+  },
+  resultScoreSeparator: {
+    fontSize: 28,
+    fontWeight: "700",
+    lineHeight: 34,
   },
   dateTime: {
     textAlign: "center",
