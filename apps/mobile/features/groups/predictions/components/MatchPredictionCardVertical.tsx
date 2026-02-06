@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, TextInput, Pressable } from "react-native";
+import { View, StyleSheet, TextInput, Pressable, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { Card } from "@/components/ui";
@@ -116,25 +116,35 @@ export function MatchPredictionCardVertical({
           <Pressable
             onPress={onPressCard}
             style={({ pressed }) => [
-              styles.rowsContainer,
+              styles.rowsWrapper,
               {
-                opacity: pressed ? 0.95 : isCancelled ? 0.6 : 1,
+                opacity: pressed ? 0.7 : isCancelled ? 0.6 : 1,
               },
             ]}
           >
-            {/* Home Team Row */}
-            <TeamRow
-              team={fixture.homeTeam}
-              teamName={homeTeamName}
-              isWinner={isHomeWinner}
-            />
+            <View style={styles.rowsContainer}>
+              {/* Home Team Row */}
+              <TeamRow
+                team={fixture.homeTeam}
+                teamName={homeTeamName}
+                isWinner={isHomeWinner}
+              />
 
-            {/* Away Team Row */}
-            <TeamRow
-              team={fixture.awayTeam}
-              teamName={awayTeamName}
-              isWinner={isAwayWinner}
-            />
+              {/* Away Team Row */}
+              <TeamRow
+                team={fixture.awayTeam}
+                teamName={awayTeamName}
+                isWinner={isAwayWinner}
+              />
+            </View>
+            {onPressCardProp != null && (
+              <Text
+                style={[styles.chevron, { color: theme.colors.textSecondary }]}
+                allowFontScaling={false}
+              >
+                ›
+              </Text>
+            )}
           </Pressable>
 
           {/* Result - displayed vertically in the middle (only when game started or finished) */}
@@ -210,10 +220,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  rowsWrapper: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   rowsContainer: {
     flex: 1,
     flexDirection: "column",
     gap: 6,
+  },
+  chevron: {
+    fontSize: 12,
+    opacity: 0.4,
   },
   predictionsContainer: {
     flexDirection: "column",
