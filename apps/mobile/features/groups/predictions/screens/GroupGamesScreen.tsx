@@ -1,6 +1,13 @@
 import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, ScrollView, Keyboard, Alert } from "react-native";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Keyboard,
+  Alert,
+  InteractionManager,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -61,8 +68,15 @@ export function GroupGamesScreen({
   const [viewMode, setViewMode] = React.useState<"list" | "single">("list");
   /** When opening single view from a card press, scroll to this index; 0 when opening via toggle. */
   const [singleViewInitialIndex, setSingleViewInitialIndex] = React.useState(0);
-  /** Lazy-mount guard: SingleGameView mounts on first open, then stays mounted for instant toggles. */
-  const [hasOpenedSingle, setHasOpenedSingle] = React.useState(false);
+  /** Pre-mount SingleGameView after interactions so first tap is instant. */
+  const [singleViewReady, setSingleViewReady] = React.useState(false);
+
+  React.useEffect(() => {
+    const handle = InteractionManager.runAfterInteractions(() => {
+      setSingleViewReady(true);
+    });
+    return () => handle.cancel();
+  }, []);
 
   const mode = selectionMode ?? "games";
 
@@ -241,7 +255,6 @@ export function GroupGamesScreen({
       const index = filteredFixtures.findIndex((f) => f.id === fixtureId);
       if (index >= 0) {
         setSingleViewInitialIndex(index);
-        setHasOpenedSingle(true);
         setViewMode("single");
       }
     },
@@ -289,7 +302,6 @@ export function GroupGamesScreen({
       onToggleView={() => {
         if (viewMode === "list") {
           setSingleViewInitialIndex(0);
-          setHasOpenedSingle(true);
           setViewMode("single");
         } else {
           setViewMode("list");
@@ -302,15 +314,16 @@ export function GroupGamesScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      {/* Single game view — lazy mounted on first open, then always kept alive for instant toggles. */}
+      {/* Single game view — pre-mounted after interactions, hidden when list is shown. */}
       <View
         style={{
           display: viewMode === "single" ? "flex" : "none",
           flex: 1,
         }}
       >
-        {hasOpenedSingle && (
+        {singleViewReady && (
           <SingleGameView
+            isVisible={viewMode === "single"}
             groupId={groupId}
             fixtures={filteredFixtures}
             predictions={predictions}

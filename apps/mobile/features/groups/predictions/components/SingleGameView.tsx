@@ -178,6 +178,8 @@ const SingleGamePage = React.memo(function SingleGamePage({
 });
 
 type Props = {
+  /** Whether this view is currently visible (not hidden by display: "none"). */
+  isVisible: boolean;
   groupId: number | null;
   fixtures: FixtureItem[];
   predictions: PredictionsByFixtureId;
@@ -212,6 +214,7 @@ type Props = {
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export function SingleGameView({
+  isVisible,
   groupId,
   fixtures,
   predictions,
@@ -252,8 +255,10 @@ export function SingleGameView({
     onSaveAllChanged();
   };
 
-  // Save when keyboard is dismissed in single view
+  // Save when keyboard is dismissed in single view (only when visible to avoid double-save)
   useEffect(() => {
+    if (!isVisible) return;
+
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
       () => {
@@ -264,7 +269,7 @@ export function SingleGameView({
     return () => {
       keyboardDidHideListener.remove();
     };
-  }, [onSaveAllChanged]);
+  }, [onSaveAllChanged, isVisible]);
 
   const handleScrollToIndexFailed = (info: { index: number }) => {
     const wait = new Promise((resolve) => setTimeout(resolve, 500));
