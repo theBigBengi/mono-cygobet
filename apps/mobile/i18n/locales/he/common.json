@@ -246,7 +246,8 @@
     "somePredictionsSkipped": "חלק מהתחזיות דולגו",
     "somePredictionsSkippedMessage": "{{count}} תחזית(ות) דולגו כי המשחק כבר התחיל.",
     "saveFailed": "השמירה נכשלה",
-    "saveFailedMessage": "לא ניתן לשמור את התחזיות. נסה שוב."
+    "saveFailedMessage": "לא ניתן לשמור את התחזיות. נסה שוב.",
+    "noPredictionsFromOtherGroups": "אין ניחושים מקבוצות אחרות."
   },
   "countdown": {
     "inHoursMinutes": "בעוד {{hours}} שעות {{minutes}} דקות",

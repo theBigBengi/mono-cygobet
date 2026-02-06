@@ -246,7 +246,8 @@
     "somePredictionsSkipped": "Some predictions skipped",
     "somePredictionsSkippedMessage": "{{count}} prediction(s) were skipped because the match has already started.",
     "saveFailed": "Save Failed",
-    "saveFailedMessage": "Could not save your predictions. Please try again."
+    "saveFailedMessage": "Could not save your predictions. Please try again.",
+    "noPredictionsFromOtherGroups": "No predictions from other groups."
   },
   "countdown": {
     "inHoursMinutes": "in {{hours}}h {{minutes}}m",
