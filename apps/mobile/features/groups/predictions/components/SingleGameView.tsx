@@ -248,15 +248,9 @@ export function SingleGameView({
   const [currentIndex, setCurrentIndex] = useState(initialIndex ?? 0);
   const flatListRef = useRef<FlatList>(null);
 
-  // Sync index and scroll when initialIndex changes (e.g. re-open from a different card).
+  // Sync currentIndex state when initialIndex prop changes (FlatList remounts via key).
   useEffect(() => {
-    if (initialIndex != null) {
-      setCurrentIndex(initialIndex);
-      flatListRef.current?.scrollToIndex({
-        index: initialIndex,
-        animated: false,
-      });
-    }
+    setCurrentIndex(initialIndex ?? 0);
   }, [initialIndex]);
 
   const handleSelectGame = (index: number) => {
@@ -364,6 +358,7 @@ export function SingleGameView({
       <View style={[styles.contentContainer, { flex: 1 }]}>
         {/* FlatList for games - takes full width */}
         <FlatList
+          key={`flatlist-${initialIndex ?? 0}`}
           ref={flatListRef}
           data={fixtures}
           extraData={predictions}
@@ -388,6 +383,10 @@ export function SingleGameView({
             index,
           })}
           style={styles.flatList}
+          windowSize={3}
+          maxToRenderPerBatch={3}
+          initialNumToRender={3}
+          removeClippedSubviews
         />
       </View>
     </View>

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -104,73 +104,78 @@ export function GameSlider({
     });
   }, [currentIndex, isReady, fixtures.length]);
 
-  const renderItem = ({
-    item: fixture,
-    index,
-  }: {
-    item: FixtureItem;
-    index: number;
-  }) => {
-    const homeName = translateTeam(fixture.homeTeam?.name, t("common.home"));
-    const awayName = translateTeam(fixture.awayTeam?.name, t("common.away"));
-    const homeAbbr = getTeamAbbr(homeName);
-    const awayAbbr = getTeamAbbr(awayName);
-    const isActive = index === currentIndex;
+  const renderItem = useCallback(
+    ({ item: fixture, index }: { item: FixtureItem; index: number }) => {
+      const homeName = translateTeam(fixture.homeTeam?.name, t("common.home"));
+      const awayName = translateTeam(fixture.awayTeam?.name, t("common.away"));
+      const homeAbbr = getTeamAbbr(homeName);
+      const awayAbbr = getTeamAbbr(awayName);
+      const isActive = index === currentIndex;
 
-    return (
-      <Pressable
-        onPress={() => onSelectGame(index)}
-        style={[
-          styles.item,
-          {
-            backgroundColor: isActive
-              ? `${theme.colors.primary}18`
-              : theme.colors.surface,
-            borderColor: isActive ? theme.colors.primary : theme.colors.border,
-            borderWidth: isActive ? 1.5 : 1,
-          },
-        ]}
-      >
-        {/* Row 1: logos + short names */}
-        <View style={styles.teamsRow}>
-          <View style={styles.teamGroup}>
-            <TeamLogo
-              imagePath={fixture.homeTeam?.imagePath}
-              teamName={homeName}
-              size={LOGO_SIZE}
-            />
-            <AppText
-              variant="caption"
-              numberOfLines={1}
-              style={[
-                styles.abbr,
-                isActive && { fontWeight: "600", color: theme.colors.primary },
-              ]}
-            >
-              {homeAbbr}
-            </AppText>
+      return (
+        <Pressable
+          onPress={() => onSelectGame(index)}
+          style={[
+            styles.item,
+            {
+              backgroundColor: isActive
+                ? `${theme.colors.primary}18`
+                : theme.colors.surface,
+              borderColor: isActive
+                ? theme.colors.primary
+                : theme.colors.border,
+              borderWidth: isActive ? 1.5 : 1,
+            },
+          ]}
+        >
+          {/* Row 1: logos + short names */}
+          <View style={styles.teamsRow}>
+            <View style={styles.teamGroup}>
+              <TeamLogo
+                imagePath={fixture.homeTeam?.imagePath}
+                teamName={homeName}
+                size={LOGO_SIZE}
+              />
+              <AppText
+                variant="caption"
+                numberOfLines={1}
+                style={[
+                  styles.abbr,
+                  isActive && {
+                    fontWeight: "600",
+                    color: theme.colors.primary,
+                  },
+                ]}
+              >
+                {homeAbbr}
+              </AppText>
+            </View>
+            <View style={styles.teamGroup}>
+              <AppText
+                variant="caption"
+                numberOfLines={1}
+                style={[
+                  styles.abbr,
+                  isActive && {
+                    fontWeight: "600",
+                    color: theme.colors.primary,
+                  },
+                ]}
+              >
+                {awayAbbr}
+              </AppText>
+              <TeamLogo
+                imagePath={fixture.awayTeam?.imagePath}
+                teamName={awayName}
+                size={LOGO_SIZE}
+              />
+            </View>
           </View>
-          <View style={styles.teamGroup}>
-            <AppText
-              variant="caption"
-              numberOfLines={1}
-              style={[
-                styles.abbr,
-                isActive && { fontWeight: "600", color: theme.colors.primary },
-              ]}
-            >
-              {awayAbbr}
-            </AppText>
-            <TeamLogo
-              imagePath={fixture.awayTeam?.imagePath}
-              teamName={awayName}
-              size={LOGO_SIZE}
-            />
-          </View>
-        </View>
-      </Pressable>
-    );
-  };
+        </Pressable>
+      );
+    },
+    [currentIndex, theme, translateTeam, t, onSelectGame]
+  );
 
   if (fixtures.length === 0) return null;
 
@@ -195,6 +200,10 @@ export function GameSlider({
           offset: HORIZONTAL_PADDING + SLIDER_ITEM_TOTAL * index,
           index,
         })}
+        windowSize={5}
+        maxToRenderPerBatch={5}
+        initialNumToRender={5}
+        removeClippedSubviews
       />
     </Animated.View>
   );
