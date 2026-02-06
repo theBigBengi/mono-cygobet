@@ -61,6 +61,8 @@ export function GroupGamesScreen({
   const [viewMode, setViewMode] = React.useState<"list" | "single">("list");
   /** When opening single view from a card press, scroll to this index; 0 when opening via toggle. */
   const [singleViewInitialIndex, setSingleViewInitialIndex] = React.useState(0);
+  /** Lazy-mount guard: SingleGameView mounts on first open, then stays mounted for instant toggles. */
+  const [hasOpenedSingle, setHasOpenedSingle] = React.useState(false);
 
   const mode = selectionMode ?? "games";
 
@@ -239,6 +241,7 @@ export function GroupGamesScreen({
       const index = filteredFixtures.findIndex((f) => f.id === fixtureId);
       if (index >= 0) {
         setSingleViewInitialIndex(index);
+        setHasOpenedSingle(true);
         setViewMode("single");
       }
     },
@@ -286,6 +289,7 @@ export function GroupGamesScreen({
       onToggleView={() => {
         if (viewMode === "list") {
           setSingleViewInitialIndex(0);
+          setHasOpenedSingle(true);
           setViewMode("single");
         } else {
           setViewMode("list");
@@ -298,156 +302,168 @@ export function GroupGamesScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      {viewMode === "single" ? (
-        /* Single view: full-screen page with its own header (back only), horizontal game slider, and filtered fixtures only. */
-        <SingleGameView
-          groupId={groupId}
-          fixtures={filteredFixtures}
-          predictions={predictions}
-          savedPredictions={savedPredictions}
-          inputRefs={inputRefs}
-          currentFocusedField={currentFocusedField}
-          setCurrentFocusedField={setCurrentFocusedField}
-          onUpdatePrediction={updatePrediction}
-          initialIndex={singleViewInitialIndex}
-          onBack={() => setViewMode("list")}
-          onFieldFocus={(fixtureId, type) => {
-            handleFieldFocus(fixtureId, type);
-          }}
-          onFieldBlur={handleFieldBlur}
-          getNextFieldIndex={getNextFieldIndex}
-          navigateToField={navigateToField}
-          onSaveAllChanged={handleSaveAllChanged}
-          predictionMode={predictionModeTyped}
-          onSelectOutcome={
-            predictionMode === "MatchWinner" ? handleSelectOutcome : undefined
-          }
-        />
-      ) : (
-        /* List view: filter chips, scrollable fixture list, nav bar, header overlay. */
-        <>
-          {hasAnyChips && (
-            <SmartFilterChips
-              actionChips={actionChips}
-              selectedAction={selectedAction}
-              onSelectAction={selectAction}
-              structuralFilter={structuralFilter}
-              onSelectTeam={selectTeam}
-              onSelectRound={selectRound}
-              onNavigateRound={navigateRound}
-            />
-          )}
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.scrollView}
-            contentContainerStyle={[
-              styles.contentContainer,
-              {
-                paddingTop: calculateContentPaddingTopDefault(hasAnyChips),
-                paddingBottom: FOOTER_PADDING + keyboardHeight,
-              },
-            ]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Filters applied but no fixtures match. */}
-            {emptyState && filteredFixtures.length === 0 ? (
-              <View style={styles.emptyStateContainer}>
+      {/* Single game view — lazy mounted on first open, then always kept alive for instant toggles. */}
+      <View
+        style={{
+          display: viewMode === "single" ? "flex" : "none",
+          flex: 1,
+        }}
+      >
+        {hasOpenedSingle && (
+          <SingleGameView
+            groupId={groupId}
+            fixtures={filteredFixtures}
+            predictions={predictions}
+            savedPredictions={savedPredictions}
+            inputRefs={inputRefs}
+            currentFocusedField={currentFocusedField}
+            setCurrentFocusedField={setCurrentFocusedField}
+            onUpdatePrediction={updatePrediction}
+            initialIndex={singleViewInitialIndex}
+            onBack={() => setViewMode("list")}
+            onFieldFocus={(fixtureId, type) => {
+              handleFieldFocus(fixtureId, type);
+            }}
+            onFieldBlur={handleFieldBlur}
+            getNextFieldIndex={getNextFieldIndex}
+            navigateToField={navigateToField}
+            onSaveAllChanged={handleSaveAllChanged}
+            predictionMode={predictionModeTyped}
+            onSelectOutcome={
+              predictionMode === "MatchWinner" ? handleSelectOutcome : undefined
+            }
+          />
+        )}
+      </View>
+
+      {/* List view — always mounted. */}
+      <View
+        style={{
+          display: viewMode === "list" ? "flex" : "none",
+          flex: 1,
+        }}
+      >
+        {hasAnyChips && (
+          <SmartFilterChips
+            actionChips={actionChips}
+            selectedAction={selectedAction}
+            onSelectAction={selectAction}
+            structuralFilter={structuralFilter}
+            onSelectTeam={selectTeam}
+            onSelectRound={selectRound}
+            onNavigateRound={navigateRound}
+          />
+        )}
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.contentContainer,
+            {
+              paddingTop: calculateContentPaddingTopDefault(hasAnyChips),
+              paddingBottom: FOOTER_PADDING + keyboardHeight,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Filters applied but no fixtures match. */}
+          {emptyState && filteredFixtures.length === 0 ? (
+            <View style={styles.emptyStateContainer}>
+              <AppText
+                variant="body"
+                color="secondary"
+                style={styles.emptyStateMessage}
+              >
+                {emptyState.message}
+              </AppText>
+              {emptyState.suggestion && (
                 <AppText
                   variant="body"
-                  color="secondary"
-                  style={styles.emptyStateMessage}
+                  style={[
+                    styles.emptyStateSuggestion,
+                    { color: theme.colors.primary },
+                  ]}
+                  onPress={emptyState.suggestion.action}
                 >
-                  {emptyState.message}
+                  {emptyState.suggestion.label}
                 </AppText>
-                {emptyState.suggestion && (
-                  <AppText
-                    variant="body"
-                    style={[
-                      styles.emptyStateSuggestion,
-                      { color: theme.colors.primary },
-                    ]}
-                    onPress={emptyState.suggestion.action}
-                  >
-                    {emptyState.suggestion.label}
-                  </AppText>
-                )}
-              </View>
-            ) : (
-              <>
-                {/* One section per league/date; each section has a list of fixture cards. */}
-                {leagueDateGroups.map((group) => (
-                  <LeagueDateGroupSection
-                    key={group.key}
-                    leagueName={group.leagueName}
-                    dateKey={group.dateKey}
-                    kickoffIso={null}
-                  >
-                    <View style={styles.groupCardContainer}>
-                      {/* Per-fixture card: position, share, and bound callbacks live in GroupFixtureCard. */}
-                      {group.fixtures.map((fixture, index) => (
-                        <GroupFixtureCard
-                          key={fixture.id}
-                          fixture={fixture}
-                          index={index}
-                          totalInGroup={group.fixtures.length}
-                          prediction={
-                            predictions[String(fixture.id)] || {
-                              home: null,
-                              away: null,
-                            }
+              )}
+            </View>
+          ) : (
+            <>
+              {/* One section per league/date; each section has a list of fixture cards. */}
+              {leagueDateGroups.map((group) => (
+                <LeagueDateGroupSection
+                  key={group.key}
+                  leagueName={group.leagueName}
+                  dateKey={group.dateKey}
+                  kickoffIso={null}
+                >
+                  <View style={styles.groupCardContainer}>
+                    {/* Per-fixture card: position, share, and bound callbacks live in GroupFixtureCard. */}
+                    {group.fixtures.map((fixture, index) => (
+                      <GroupFixtureCard
+                        key={fixture.id}
+                        fixture={fixture}
+                        index={index}
+                        totalInGroup={group.fixtures.length}
+                        prediction={
+                          predictions[String(fixture.id)] || {
+                            home: null,
+                            away: null,
                           }
-                          inputRefs={inputRefs}
-                          currentFocusedField={currentFocusedField}
-                          savedPredictions={savedPredictions}
-                          matchCardRefs={matchCardRefs}
-                          predictionMode={predictionModeTyped}
-                          groupName={groupName}
-                          onFieldFocus={handleFieldFocus}
-                          onFieldBlur={handleFieldBlur}
-                          onCardChange={handleCardChange}
-                          onAutoNext={handleAutoNext}
-                          onSelectOutcome={
-                            predictionMode === "MatchWinner"
-                              ? handleSelectOutcome
-                              : undefined
-                          }
-                          onScrollToCard={scrollToMatchCard}
-                          onPressCard={handlePressCard}
-                        />
-                      ))}
-                    </View>
-                  </LeagueDateGroupSection>
-                ))}
+                        }
+                        inputRefs={inputRefs}
+                        currentFocusedField={currentFocusedField}
+                        savedPredictions={savedPredictions}
+                        matchCardRefs={matchCardRefs}
+                        predictionMode={predictionModeTyped}
+                        groupName={groupName}
+                        onFieldFocus={handleFieldFocus}
+                        onFieldBlur={handleFieldBlur}
+                        onCardChange={handleCardChange}
+                        onAutoNext={handleAutoNext}
+                        onSelectOutcome={
+                          predictionMode === "MatchWinner"
+                            ? handleSelectOutcome
+                            : undefined
+                        }
+                        onScrollToCard={scrollToMatchCard}
+                        onPressCard={handlePressCard}
+                      />
+                    ))}
+                  </View>
+                </LeagueDateGroupSection>
+              ))}
 
-                <GroupGamesLastSavedFooter
-                  latestUpdatedAt={latestUpdatedAt}
-                  isSaving={isSaving}
-                  savedCount={savedPredictionsCount}
-                  totalCount={totalPredictionsCount}
-                />
-              </>
-            )}
-          </ScrollView>
+              <GroupGamesLastSavedFooter
+                latestUpdatedAt={latestUpdatedAt}
+                isSaving={isSaving}
+                savedCount={savedPredictionsCount}
+                totalCount={totalPredictionsCount}
+              />
+            </>
+          )}
+        </ScrollView>
 
-          <ScoreInputNavigationBar
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-            canGoPrevious={canGoPrevious}
-            canGoNext={canGoNext}
-            keyboardHeight={keyboardHeight}
-            onDone={handleDone}
-          />
+        <ScoreInputNavigationBar
+          onPrevious={handlePrevious}
+          onNext={handleNext}
+          canGoPrevious={canGoPrevious}
+          canGoNext={canGoNext}
+          keyboardHeight={keyboardHeight}
+          onDone={handleDone}
+        />
 
-          {/* Header floats above list content; only in list mode. */}
-          <View
-            style={[styles.headerOverlay, { top: 0 }]}
-            pointerEvents="box-none"
-          >
-            {header}
-          </View>
-        </>
-      )}
+        {/* Header floats above list content. */}
+        <View
+          style={[styles.headerOverlay, { top: 0 }]}
+          pointerEvents="box-none"
+        >
+          {header}
+        </View>
+      </View>
     </View>
   );
 }
