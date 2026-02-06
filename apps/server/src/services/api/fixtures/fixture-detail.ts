@@ -3,7 +3,12 @@
 
 import { prisma } from "@repo/db";
 import { FIXTURE_SELECT_DETAIL } from "./selects";
-import type { ApiFixtureDetailResponse } from "@repo/types";
+import type {
+  ApiFixtureDetailResponse,
+  ApiMyPredictionForFixtureItem,
+} from "@repo/types";
+import { findUserPredictionsForFixture } from "../groups/repository/predictions";
+import { parsePrediction } from "../groups/helpers";
 
 export type FixtureDetailData = ApiFixtureDetailResponse["data"];
 
@@ -115,4 +120,36 @@ export async function getFixtureDetail(
     country,
     predictions,
   };
+}
+
+/**
+ * Get current user's predictions for a fixture across all joined groups.
+ */
+export async function getMyPredictionsForFixture(
+  userId: number,
+  fixtureId: number
+): Promise<ApiMyPredictionForFixtureItem[]> {
+  const rows = await findUserPredictionsForFixture(userId, fixtureId);
+  return rows.map((p) => {
+    const parsed = parsePrediction(p.prediction, {
+      prediction: p.prediction,
+      points: p.points,
+      settledAt: p.settledAt,
+      placedAt: p.placedAt,
+      updatedAt: p.updatedAt,
+    });
+    const points =
+      p.points != null && p.points !== ""
+        ? typeof p.points === "string"
+          ? parseInt(p.points, 10)
+          : p.points
+        : null;
+    return {
+      groupId: p.groupFixtures.groups.id,
+      groupName: p.groupFixtures.groups.name,
+      prediction: parsed ? { home: parsed.home, away: parsed.away } : null,
+      points: points != null && !isNaN(points) ? points : null,
+      isSettled: p.settledAt != null,
+    };
+  });
 }

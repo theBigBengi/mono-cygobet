@@ -104,7 +104,36 @@ export async function findGroupPredictionUserIdsByGroupFixtureIds(
     where: { groupId, groupFixtureId: { in: groupFixtureIds } },
     select: { groupFixtureId: true, userId: true },
   });
-  return rows.map((r) => ({ groupFixtureId: r.groupFixtureId, userId: r.userId }));
+  return rows.map((r) => ({
+    groupFixtureId: r.groupFixtureId,
+    userId: r.userId,
+  }));
+}
+
+/**
+ * Find current user's predictions for a fixture across all groups (joined only).
+ */
+export async function findUserPredictionsForFixture(
+  userId: number,
+  fixtureId: number
+) {
+  return await prisma.groupPredictions.findMany({
+    where: {
+      userId,
+      groupFixtures: { fixtureId },
+      groupMembers: { status: MEMBER_STATUS.JOINED },
+    },
+    select: {
+      prediction: true,
+      points: true,
+      settledAt: true,
+      placedAt: true,
+      updatedAt: true,
+      groupFixtures: {
+        select: { groups: { select: { id: true, name: true } } },
+      },
+    },
+  });
 }
 
 /**

@@ -118,6 +118,7 @@ export function GroupGamesScreen({
     predictions,
     savedPredictions,
     updatePrediction,
+    updateSliderValue,
     setOutcomePrediction,
     getFillRandomConfirm,
     fillRandomPredictions,
@@ -332,6 +333,7 @@ export function GroupGamesScreen({
             currentFocusedField={currentFocusedField}
             setCurrentFocusedField={setCurrentFocusedField}
             onUpdatePrediction={updatePrediction}
+            onUpdateSliderValue={updateSliderValue}
             initialIndex={singleViewInitialIndex}
             onBack={() => setViewMode("list")}
             onFieldFocus={(fixtureId, type) => {

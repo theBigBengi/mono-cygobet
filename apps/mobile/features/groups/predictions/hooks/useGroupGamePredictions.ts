@@ -163,6 +163,36 @@ export function useGroupGamePredictions({
   );
 
   /**
+   * Update slider value with auto-pair logic.
+   * Uses functional state update so it always sees the latest state.
+   */
+  const updateSliderValue = React.useCallback(
+    (fixtureId: number, side: "home" | "away", val: number | null) => {
+      setPredictions((prev) => {
+        const fixtureIdStr = String(fixtureId);
+        const current = prev[fixtureIdStr] || { home: null, away: null };
+        const otherSide = side === "home" ? "away" : "home";
+        const otherValue = current[otherSide];
+
+        const newPrediction = { ...current };
+        newPrediction[side] = val;
+
+        if (val != null && otherValue == null) {
+          newPrediction[otherSide] = 0;
+        } else if (val == null && otherValue != null) {
+          newPrediction[otherSide] = null;
+        }
+
+        return {
+          ...prev,
+          [fixtureIdStr]: newPrediction,
+        };
+      });
+    },
+    []
+  );
+
+  /**
    * Returns info needed for the UI to show a confirmation before fill-random, or null if no confirmation needed.
    */
   const getFillRandomConfirm = React.useCallback((): {
@@ -308,6 +338,7 @@ export function useGroupGamePredictions({
     predictions,
     savedPredictions,
     updatePrediction,
+    updateSliderValue,
     setOutcomePrediction,
     getFillRandomConfirm,
     fillRandomPredictions,

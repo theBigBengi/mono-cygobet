@@ -17,6 +17,7 @@ import { GameDetailTabs } from "./GameDetailTabs";
 import type { TabId } from "./GameDetailTabs";
 import { HorizontalScoreSlider } from "./HorizontalScoreSlider";
 import { FixturePredictionsList } from "./FixturePredictionsList";
+import { MyPredictionsList } from "./MyPredictionsList";
 import { getAwaySliderColor } from "../utils/color-helpers";
 import { canPredict } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
@@ -44,6 +45,11 @@ type SingleGamePageProps = {
     text: string,
     onAutoNext?: (fixtureId: number, type: "home" | "away") => void
   ) => void;
+  onUpdateSliderValue?: (
+    fixtureId: number,
+    side: "home" | "away",
+    val: number | null
+  ) => void;
   getNextFieldIndex: (fixtureId: number, type: "home" | "away") => number;
   navigateToField: (index: number) => void;
   predictionMode: PredictionMode;
@@ -65,6 +71,7 @@ const SingleGamePage = React.memo(function SingleGamePage({
   onFieldFocus,
   onFieldBlur,
   onUpdatePrediction,
+  onUpdateSliderValue,
   getNextFieldIndex,
   navigateToField,
   predictionMode,
@@ -88,17 +95,11 @@ const SingleGamePage = React.memo(function SingleGamePage({
 
   const handleSliderChange = useCallback(
     (side: "home" | "away", val: number | null) => {
-      const otherSide = side === "home" ? "away" : "home";
-      const otherValue = prediction[otherSide];
-
-      if (val != null && otherValue == null) {
-        onUpdatePrediction(fixture.id, otherSide, "0");
-      } else if (val == null && otherValue != null) {
-        onUpdatePrediction(fixture.id, otherSide, "");
+      if (onUpdateSliderValue) {
+        onUpdateSliderValue(fixture.id, side, val);
       }
-      onUpdatePrediction(fixture.id, side, val != null ? String(val) : "");
     },
-    [fixture.id, prediction, onUpdatePrediction]
+    [fixture.id, onUpdateSliderValue]
   );
 
   return (
@@ -160,6 +161,10 @@ const SingleGamePage = React.memo(function SingleGamePage({
                 "#3B82F6"
               )}
             />
+            <MyPredictionsList
+              fixtureId={fixture.id}
+              currentGroupId={groupId}
+            />
           </>
         )}
         {activeTab === "predictions" && (
@@ -195,6 +200,11 @@ type Props = {
     text: string,
     onAutoNext?: (fixtureId: number, type: "home" | "away") => void
   ) => void;
+  onUpdateSliderValue?: (
+    fixtureId: number,
+    side: "home" | "away",
+    val: number | null
+  ) => void;
   onFieldFocus: (fixtureId: number, type: "home" | "away") => void;
   onFieldBlur: (fixtureId: number) => void;
   getNextFieldIndex: (fixtureId: number, type: "home" | "away") => number;
@@ -223,6 +233,7 @@ export function SingleGameView({
   currentFocusedField,
   setCurrentFocusedField,
   onUpdatePrediction,
+  onUpdateSliderValue,
   onFieldFocus,
   onFieldBlur,
   getNextFieldIndex,
@@ -311,6 +322,7 @@ export function SingleGameView({
           onFieldFocus={onFieldFocus}
           onFieldBlur={onFieldBlur}
           onUpdatePrediction={onUpdatePrediction}
+          onUpdateSliderValue={onUpdateSliderValue}
           getNextFieldIndex={getNextFieldIndex}
           navigateToField={navigateToField}
           predictionMode={predictionMode}
@@ -327,6 +339,7 @@ export function SingleGameView({
       onFieldFocus,
       onFieldBlur,
       onUpdatePrediction,
+      onUpdateSliderValue,
       getNextFieldIndex,
       navigateToField,
       predictionMode,

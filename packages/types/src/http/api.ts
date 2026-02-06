@@ -767,6 +767,21 @@ export type ApiFixtureDetailResponse = {
   data: ApiFixtureDetailData;
 };
 
+/** Item in GET /api/fixtures/:id/my-predictions (user's prediction per group). */
+export type ApiMyPredictionForFixtureItem = {
+  groupId: number;
+  groupName: string;
+  prediction: { home: number; away: number } | null;
+  points: number | null;
+  isSettled: boolean;
+};
+
+/** Response from GET /api/fixtures/:id/my-predictions. */
+export type ApiMyPredictionsForFixtureResponse = {
+  status: "success";
+  data: ApiMyPredictionForFixtureItem[];
+};
+
 // --- User Stats ---
 
 /** Badge IDs for user profile stats. */
