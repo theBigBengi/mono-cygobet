@@ -192,6 +192,8 @@
     "deletingGroup": "מוחק קבוצה...",
     "predictionsProgress": "{{count}}/{{total}} ניחושים",
     "ranking": "דירוג",
+    "rankingPending": "הדירוג יחושב לאחר סיום המשחק הראשון",
+    "pts": "נק׳",
     "yourRank": "אתה במקום #{{rank}}",
     "leaderWithPoints": "מוביל: {{name}} · {{points}} נק׳",
     "members": "חברים",
@@ -205,7 +207,8 @@
     "groupSettings": "הגדרות קבוצה",
     "winner": "מנצח",
     "winnerWithPoints": "{{name}} · {{points}} נק׳",
-    "winnerPoints": "{{points}} נק׳"
+    "winnerPoints": "{{points}} נק׳",
+    "viewAll": "צפה בדירוג המלא"
   },
   "predictions": {
     "predict": "בחר תחזית",

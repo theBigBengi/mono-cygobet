@@ -192,6 +192,8 @@
     "deletingGroup": "Deleting group...",
     "predictionsProgress": "{{count}}/{{total}} predictions",
     "ranking": "Ranking",
+    "rankingPending": "Ranking will be calculated after the first game ends",
+    "pts": "pts",
     "yourRank": "You're #{{rank}}",
     "leaderWithPoints": "Leader: {{name}} · {{points}} pts",
     "members": "Members",
@@ -205,7 +207,8 @@
     "groupSettings": "Group Settings",
     "winner": "Winner",
     "winnerWithPoints": "{{name}} · {{points}} pts",
-    "winnerPoints": "{{points}} pts"
+    "winnerPoints": "{{points}} pts",
+    "viewAll": "View full ranking"
   },
   "predictions": {
     "predict": "Predict",

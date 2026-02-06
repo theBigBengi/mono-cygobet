@@ -6,6 +6,7 @@ import { View, StyleSheet, Pressable, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { LobbyCardSkeleton } from "./LobbyCardSkeleton";
 
 export interface LobbyActionCardLastMessage {
   text: string;
@@ -24,6 +25,8 @@ export interface LobbyActionCardProps {
   onPress: () => void;
   /** When provided, shows a preview row (avatar, sender + text, timestamp) instead of subtitle */
   lastMessage?: LobbyActionCardLastMessage;
+  /** True while data is loading. Shows skeleton instead of content. */
+  isLoading?: boolean;
 }
 
 export function LobbyActionCard({
@@ -34,9 +37,14 @@ export function LobbyActionCard({
   badge = 0,
   onPress,
   lastMessage,
+  isLoading = false,
 }: LobbyActionCardProps) {
   const { theme } = useTheme();
   const color = iconColor ?? theme.colors.primary;
+
+  if (isLoading) {
+    return <LobbyCardSkeleton height={80} />;
+  }
 
   return (
     <Card style={styles.card}>

@@ -12,7 +12,6 @@ import {
   useGroupRankingQuery,
   useGroupChatPreviewQuery,
 } from "@/domains/groups";
-import { useAuth } from "@/lib/auth/useAuth";
 import type { ApiGroupItem } from "@repo/types";
 import { useCountdown } from "@/features/groups/predictions/hooks";
 import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSection";
@@ -21,6 +20,7 @@ import type { FixtureItem } from "../types";
 import { useGroupActivityStats } from "../hooks/useGroupActivityStats";
 import { formatDate, formatRelativeTime } from "@/utils/date";
 import { LobbyActionCard } from "../components/LobbyActionCard";
+import { LobbyRankingPreview } from "../components/LobbyRankingPreview";
 
 interface GroupLobbyActiveScreenProps {
   /**
@@ -51,15 +51,12 @@ export function GroupLobbyActiveScreen({
 }: GroupLobbyActiveScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const { user } = useAuth();
-  const { data: rankingData } = useGroupRankingQuery(group.id);
-  const { data: chatPreviewData } = useGroupChatPreviewQuery();
+  const { data: rankingData, isLoading: isRankingLoading } =
+    useGroupRankingQuery(group.id);
+  const { data: chatPreviewData, isLoading: isChatLoading } =
+    useGroupChatPreviewQuery();
   const chatPreview = chatPreviewData?.data?.[String(group.id)];
   const lastMessage = chatPreview?.lastMessage;
-
-  const leader = rankingData?.data?.[0];
-  const myRank =
-    rankingData?.data?.find((r) => r.userId === user?.id)?.rank ?? null;
 
   // Derive fixtures from group.fixtures
   const fixtures = Array.isArray((group as any).fixtures)
@@ -192,22 +189,9 @@ export function GroupLobbyActiveScreen({
         />
 
         {/* Ranking Section */}
-        <LobbyActionCard
-          icon="trophy-outline"
-          title={t("lobby.ranking")}
-          subtitle={
-            [
-              myRank != null ? t("lobby.yourRank", { rank: myRank }) : null,
-              leader
-                ? t("lobby.leaderWithPoints", {
-                    name: leader.username ?? `Player #${leader.rank}`,
-                    points: leader.totalPoints,
-                  })
-                : null,
-            ]
-              .filter(Boolean)
-              .join(" · ") || undefined
-          }
+        <LobbyRankingPreview
+          ranking={rankingData?.data}
+          isLoading={isRankingLoading}
           onPress={handleViewRanking}
         />
 
@@ -215,6 +199,7 @@ export function GroupLobbyActiveScreen({
         <LobbyActionCard
           icon="chatbubbles-outline"
           title={t("lobby.chat")}
+          isLoading={isChatLoading}
           badge={chatPreview?.unreadCount}
           subtitle={!lastMessage ? t("lobby.startChatting") : undefined}
           lastMessage={
