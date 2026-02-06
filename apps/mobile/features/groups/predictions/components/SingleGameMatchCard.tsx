@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignSelf: "center",
-    width: SCREEN_WIDTH - 16,
+    width: SCREEN_WIDTH,
     // backgroundColor: "red",
   },
   matchContent: {
