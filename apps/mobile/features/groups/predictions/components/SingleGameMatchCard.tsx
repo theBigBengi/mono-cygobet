@@ -11,7 +11,7 @@ import type { PredictionMode } from "../types";
 import { getOutcomeFromPrediction } from "../utils/utils";
 import { formatKickoffDateTime } from "@/utils/fixture";
 import { useMatchCardState } from "../hooks/useMatchCardState";
-import { LIVE_RESULT_COLOR } from "../utils/constants";
+import { LIVE_RESULT_COLOR, FIXTURE_STATE_MAP } from "../utils/constants";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -170,10 +170,33 @@ export function SingleGameMatchCard({
             </AppText>
           </View>
         </View>
-        {isEditable && fixture.kickoffAt && (
-          <AppText variant="caption" color="secondary" style={styles.dateTime}>
-            {formatKickoffDateTime(fixture.kickoffAt)}
-          </AppText>
+        {(fixture.kickoffAt || fixture.state) && (
+          <View style={styles.dateTimeRow}>
+            {fixture.kickoffAt && (
+              <AppText
+                variant="caption"
+                color="secondary"
+                style={styles.dateTime}
+              >
+                {formatKickoffDateTime(fixture.kickoffAt)}
+              </AppText>
+            )}
+            {fixture.kickoffAt && fixture.state ? (
+              <AppText variant="caption" color="secondary">
+                {" "}
+                •{" "}
+              </AppText>
+            ) : null}
+            {fixture.state && (
+              <AppText
+                variant="caption"
+                color="secondary"
+                style={styles.matchStatus}
+              >
+                {FIXTURE_STATE_MAP[fixture.state] ?? fixture.state}
+              </AppText>
+            )}
+          </View>
         )}
         {isLive && resultOrReasonText && (
           <View style={styles.resultContainer}>
@@ -206,7 +229,7 @@ const styles = StyleSheet.create({
   matchCard: {
     marginHorizontal: 0,
     marginTop: 0,
-    marginBottom: 16,
+    // marginBottom: 16,
     padding: 16,
     borderRadius: 12,
     alignSelf: "center",
@@ -276,9 +299,18 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 34,
   },
+  dateTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 8,
+  },
   dateTime: {
     textAlign: "center",
-    marginTop: 8,
+  },
+  matchStatus: {
+    textAlign: "center",
   },
   resultContainer: {
     alignItems: "center",

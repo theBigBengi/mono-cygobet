@@ -161,13 +161,9 @@ export function ScoresInput({
           {
             borderColor: homeFocused
               ? theme.colors.textSecondary
-              : isSaved
-                ? "rgba(34, 197, 94, 0.4)"
-                : theme.colors.border,
+              : theme.colors.border,
             borderWidth: homeFocused ? 2 : inputStyle.borderWidth,
-            backgroundColor: isSaved
-              ? "rgba(34, 197, 94, 0.03)"
-              : "rgba(15, 23, 42, 0.04)",
+            backgroundColor: "rgba(15, 23, 42, 0.04)",
             color: theme.colors.textPrimary,
             opacity: isEditable || isLive ? 1 : 0.5,
           },
@@ -197,13 +193,9 @@ export function ScoresInput({
           {
             borderColor: awayFocused
               ? theme.colors.textSecondary
-              : isSaved
-                ? "rgba(34, 197, 94, 0.4)"
-                : theme.colors.border,
+              : theme.colors.border,
             borderWidth: awayFocused ? 2 : inputStyle.borderWidth,
-            backgroundColor: isSaved
-              ? "rgba(34, 197, 94, 0.03)"
-              : "rgba(15, 23, 42, 0.04)",
+            backgroundColor: "rgba(15, 23, 42, 0.04)",
             color: theme.colors.textPrimary,
             opacity: isEditable || isLive ? 1 : 0.5,
           },
