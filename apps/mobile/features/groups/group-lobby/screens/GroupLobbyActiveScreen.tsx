@@ -209,7 +209,7 @@ export function GroupLobbyActiveScreen({
 
         {/* Chat Section */}
         <LobbyActionCard
-          icon="chatbubble-outline"
+          icon="chatbubbles-outline"
           title={t("lobby.chat")}
           badge={chatUnreadCount}
           onPress={handleViewChat}
