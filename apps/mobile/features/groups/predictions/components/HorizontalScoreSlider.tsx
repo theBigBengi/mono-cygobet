@@ -17,7 +17,7 @@ import { useTheme } from "@/lib/theme";
 import { getContrastTextColor, isLightColor } from "../utils/color-helpers";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const TRACK_PADDING = 24;
+const TRACK_PADDING = 0;
 const TRACK_WIDTH = SCREEN_WIDTH - TRACK_PADDING * 2;
 const CELL_WIDTH = TRACK_WIDTH / 11;
 const THUMB_SIZE = 52;
@@ -139,6 +139,17 @@ export function HorizontalScoreSlider({
     isDraggingRef.current = val;
   }, []);
 
+  // Keep onValueChange in a ref so the worklet always calls the latest version
+  const onValueChangeRef = React.useRef(onValueChange);
+  onValueChangeRef.current = onValueChange;
+
+  // Stable wrapper that reads from the ref - this is what the worklet will call
+  const callOnValueChange = React.useCallback((val: number | null) => {
+    if (onValueChangeRef.current) {
+      onValueChangeRef.current(val);
+    }
+  }, []);
+
   React.useEffect(() => {
     if (isDraggingRef.current) return;
     isSyncingFromProp.value = 1;
@@ -163,7 +174,7 @@ export function HorizontalScoreSlider({
             : current === 0
               ? null
               : current - 1;
-          if (onValueChange) runOnJS(onValueChange)(numVal);
+          runOnJS(callOnValueChange)(numVal);
         }
       }
       const display = reversed
@@ -179,6 +190,7 @@ export function HorizontalScoreSlider({
 
   const panGesture = Gesture.Pan()
     .onStart(() => {
+      isSyncingFromProp.value = 0; // reset so useAnimatedReaction can call onValueChange
       runOnJS(setIsDragging)(true);
       dragStartX.value = tabX.value;
     })
@@ -187,14 +199,14 @@ export function HorizontalScoreSlider({
       tabX.value = Math.max(0, Math.min(MAX_X, newX));
     })
     .onEnd(() => {
+      // Reset isDragging immediately when finger lifts, not after spring animation.
+      // This allows prop-driven animations (from other slider's auto-pair) to run.
+      runOnJS(setIsDragging)(false);
       const snapped = Math.round(tabX.value / CELL_WIDTH) * CELL_WIDTH;
-      tabX.value = withSpring(
-        Math.max(0, Math.min(MAX_X, snapped)),
-        { damping: 20, stiffness: 200 },
-        (finished) => {
-          if (finished) runOnJS(setIsDragging)(false);
-        }
-      );
+      tabX.value = withSpring(Math.max(0, Math.min(MAX_X, snapped)), {
+        damping: 20,
+        stiffness: 200,
+      });
     });
 
   const thumbStyle = useAnimatedStyle(() => ({

@@ -62,16 +62,6 @@ export function SingleGameMatchCard({
       currentFocusedField: null,
     });
 
-  console.log("DEBUG fixture:", {
-    id: fixture.id,
-    state: fixture.state,
-    isFinished,
-    homeScore90: fixture.homeScore90,
-    awayScore90: fixture.awayScore90,
-    result: fixture.result,
-    gameResultOrTime,
-  });
-
   const resultOrReasonText =
     gameResultOrTime != null
       ? gameResultOrTime.home != null && gameResultOrTime.away != null
