@@ -9,6 +9,14 @@ import { Screen, Button } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useUserStatsQuery, useProfileQuery } from "../../profile.queries";
+import {
+  useGamificationQuery,
+  PowerScoreCard,
+  RankTierBadge,
+  SkillRadarChart,
+  StreakIndicator,
+  SeasonComparisonCard,
+} from "../../gamification";
 import { HeroHeader } from "../components/HeroHeader";
 import { PerformanceCard } from "../components/PerformanceCard";
 import { BadgesCard } from "../components/BadgesCard";
@@ -31,6 +39,8 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
 
   const statsQuery = useUserStatsQuery(userId);
   const profileQuery = useProfileQuery();
+  const gamificationQuery = useGamificationQuery(userId);
+  const gamification = gamificationQuery.data?.data;
 
   if (statsQuery.isLoading) {
     return (
@@ -99,6 +109,18 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
         miss={data.distribution.miss}
       />
       <BadgesCard badges={data.badges} />
+      {gamification && (
+        <>
+          <PowerScoreCard score={gamification.powerScore} />
+          <RankTierBadge
+            tier={gamification.rankTier}
+            progress={gamification.rankProgress}
+          />
+          <SkillRadarChart skills={gamification.skills} />
+          <StreakIndicator streak={gamification.streak} />
+          <SeasonComparisonCard comparison={gamification.seasonComparison} />
+        </>
+      )}
       <GroupStatsCard
         groups={data.groups}
         groupsPlayed={data.overall.groupsPlayed}

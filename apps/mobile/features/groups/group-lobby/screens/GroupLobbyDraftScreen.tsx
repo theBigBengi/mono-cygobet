@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, TextInput } from "react-native";
 import { useRouter } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
 import { Screen, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
@@ -27,10 +28,8 @@ function clampScore(value: number): number {
   return Math.min(MAX_SCORE, Math.max(MIN_SCORE, value));
 }
 
-import { GroupLobbyNameHeader } from "../components/GroupLobbyNameHeader";
-import { GroupLobbyStatusCard } from "../components/GroupLobbyStatusCard";
-import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSection";
 import { PublishGroupButton } from "../components/PublishGroupButton";
+import { GroupLobbyStatusCard } from "../components/GroupLobbyStatusCard";
 import { DraftScoringContent } from "../components/DraftScoringContent";
 import { useGroupLobbyState } from "../hooks/useGroupLobbyState";
 import { useGroupLobbyActions } from "../hooks/useGroupLobbyActions";
@@ -212,41 +211,76 @@ export function GroupLobbyDraftScreen({
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
       >
-        {/* Header Area */}
-        <GroupLobbyStatusCard status={group.status} isCreator={isCreator} />
-        <GroupLobbyNameHeader
-          name={draftName}
-          onChange={setDraftName}
-          editable={isEditable}
-          isCreator={isCreator}
-        />
-        {isCreator && isEditable ? (
-          <TextInput
+        {/* Header Area — one SettingsSection, no section title */}
+        <SettingsSection title="">
+          <View
             style={[
-              styles.descriptionInput,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
-                color: theme.colors.textPrimary,
-              },
+              styles.bannerRow,
+              { borderBottomColor: theme.colors.border },
             ]}
-            value={draftDescription}
-            onChangeText={setDraftDescription}
-            placeholder={t("lobby.descriptionPlaceholder")}
-            placeholderTextColor={theme.colors.textSecondary}
-            multiline
-            numberOfLines={3}
-            maxLength={500}
-          />
-        ) : draftDescription ? (
-          <AppText
-            variant="body"
-            color="secondary"
-            style={styles.descriptionText}
           >
-            {draftDescription}
-          </AppText>
-        ) : null}
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+            >
+              <AppText variant="caption" style={styles.badgeText}>
+                {t("lobby.draftBadge")}
+              </AppText>
+            </View>
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.bannerSubtitle}
+            >
+              {t("lobby.draftGroupDescription")}
+            </AppText>
+          </View>
+          <View
+            style={[styles.nameRow, { borderBottomColor: theme.colors.border }]}
+          >
+            {isCreator && isEditable ? (
+              <TextInput
+                style={[styles.nameInput, { color: theme.colors.textPrimary }]}
+                value={draftName}
+                onChangeText={setDraftName}
+                placeholder={t("lobby.groupNamePlaceholder")}
+                placeholderTextColor={theme.colors.textSecondary}
+              />
+            ) : (
+              <AppText variant="body" style={styles.groupName}>
+                {draftName}
+              </AppText>
+            )}
+          </View>
+          {(isCreator && isEditable) || draftDescription ? (
+            <View style={styles.descriptionRow}>
+              {isCreator && isEditable ? (
+                <TextInput
+                  style={[
+                    styles.descriptionInput,
+                    { color: theme.colors.textPrimary },
+                  ]}
+                  value={draftDescription}
+                  onChangeText={setDraftDescription}
+                  placeholder={t("lobby.descriptionPlaceholder")}
+                  placeholderTextColor={theme.colors.textSecondary}
+                  multiline
+                  numberOfLines={3}
+                  maxLength={500}
+                />
+              ) : (
+                <AppText variant="body" color="secondary">
+                  {draftDescription}
+                </AppText>
+              )}
+            </View>
+          ) : null}
+        </SettingsSection>
 
         {/* GAMES */}
         <SettingsSection title={t("lobby.games")}>
@@ -271,11 +305,6 @@ export function GroupLobbyDraftScreen({
             isLast
           />
         </SettingsSection>
-        <GroupLobbyFixturesSection
-          fixtures={fixtures}
-          groupId={group.id}
-          onViewAll={handleViewAllGames}
-        />
 
         {/* PREDICTION RULES — creator only */}
         {isCreator && (
@@ -427,7 +456,13 @@ export function GroupLobbyDraftScreen({
         <SettingsSection title={t("lobby.info")}>
           <SettingsRow
             type="value"
-            icon="information-circle-outline"
+            iconComponent={
+              <MaterialIcons
+                name="date-range"
+                size={18}
+                color={theme.colors.primaryText}
+              />
+            }
             label={t("lobby.created")}
             value={formatDate(group.createdAt)}
             isLast
@@ -506,18 +541,28 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 100,
   },
+  nameRow: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  nameInput: {
+    fontSize: 16,
+    padding: 0,
+  },
+  groupName: {
+    fontWeight: "500",
+  },
+  descriptionRow: {
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
   descriptionInput: {
     minHeight: 72,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    padding: 0,
     fontSize: 16,
-    marginBottom: 24,
     textAlignVertical: "top",
-  },
-  descriptionText: {
-    marginBottom: 24,
   },
   nudgeWindowContainer: {
     paddingVertical: 12,

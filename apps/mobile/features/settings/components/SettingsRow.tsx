@@ -9,7 +9,10 @@ import { useTheme } from "@/lib/theme";
 type SettingsRowType = "navigation" | "toggle" | "value";
 
 interface SettingsRowBaseProps {
+  /** Ionicons name (used when iconComponent is not set) */
   icon?: keyof typeof Ionicons.glyphMap;
+  /** Custom icon element (e.g. MaterialIcons); when set, takes precedence over icon */
+  iconComponent?: React.ReactNode;
   label: string;
   subtitle?: string;
   isLast?: boolean;
@@ -40,7 +43,9 @@ type SettingsRowProps =
 
 export function SettingsRow(props: SettingsRowProps) {
   const { theme } = useTheme();
-  const { icon, label, subtitle, isLast = false, type } = props;
+  const { icon, iconComponent, label, subtitle, isLast = false, type } = props;
+
+  const showIcon = icon != null || iconComponent != null;
 
   const content = (
     <View
@@ -54,7 +59,7 @@ export function SettingsRow(props: SettingsRowProps) {
         },
       ]}
     >
-      {icon && (
+      {showIcon && (
         <View
           style={[
             styles.iconContainer,
@@ -65,7 +70,14 @@ export function SettingsRow(props: SettingsRowProps) {
             },
           ]}
         >
-          <Ionicons name={icon} size={18} color={theme.colors.primaryText} />
+          {iconComponent ??
+            (icon != null ? (
+              <Ionicons
+                name={icon}
+                size={18}
+                color={theme.colors.primaryText}
+              />
+            ) : null)}
         </View>
       )}
 

@@ -19,6 +19,7 @@ import type {
   RawBestRankRow,
   RawPercentileRow,
   RawBestLeagueRow,
+  RawSeasonStatsRow,
 } from "./types";
 
 export function toNumber(value: string | number | bigint): number {
@@ -402,4 +403,92 @@ export async function findH2HUserStats(
       AND gp.group_id IN (${Prisma.join(groupIds)})
     GROUP BY gp.user_id, gp.group_id
   `;
+}
+
+/** Season stats for gamification: aggregates over group_predictions in a date range (fixture start_ts). */
+export async function findSeasonStats(
+  userId: number,
+  season: "current" | "previous"
+): Promise<{
+  season_name: string;
+  accuracy: number;
+  exact_scores: number;
+  total_predictions: number;
+  points: number;
+} | null> {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const seasonStartMonth = 8; // August
+
+  let startTs: number;
+  let endTs: number;
+  let seasonName: string;
+
+  if (season === "current") {
+    if (now.getMonth() >= seasonStartMonth - 1) {
+      startTs = Math.floor(
+        new Date(currentYear, seasonStartMonth - 1, 1).getTime() / 1000
+      );
+      endTs = Math.floor(
+        new Date(currentYear + 1, seasonStartMonth - 1, 1).getTime() / 1000
+      );
+      seasonName = `${currentYear}/${String(currentYear + 1).slice(-2)}`;
+    } else {
+      startTs = Math.floor(
+        new Date(currentYear - 1, seasonStartMonth - 1, 1).getTime() / 1000
+      );
+      endTs = Math.floor(
+        new Date(currentYear, seasonStartMonth - 1, 1).getTime() / 1000
+      );
+      seasonName = `${currentYear - 1}/${String(currentYear).slice(-2)}`;
+    }
+  } else {
+    if (now.getMonth() >= seasonStartMonth - 1) {
+      startTs = Math.floor(
+        new Date(currentYear - 1, seasonStartMonth - 1, 1).getTime() / 1000
+      );
+      endTs = Math.floor(
+        new Date(currentYear, seasonStartMonth - 1, 1).getTime() / 1000
+      );
+      seasonName = `${currentYear - 1}/${String(currentYear).slice(-2)}`;
+    } else {
+      startTs = Math.floor(
+        new Date(currentYear - 2, seasonStartMonth - 1, 1).getTime() / 1000
+      );
+      endTs = Math.floor(
+        new Date(currentYear - 1, seasonStartMonth - 1, 1).getTime() / 1000
+      );
+      seasonName = `${currentYear - 2}/${String(currentYear - 1).slice(-2)}`;
+    }
+  }
+
+  const rows = await prisma.$queryRaw<RawSeasonStatsRow[]>`
+    SELECT
+      (CASE WHEN COUNT(gp.id) = 0 THEN 0 ELSE ROUND(100.0 * (COUNT(CASE WHEN gp.winning_correct_score = true THEN 1 END) + COUNT(CASE WHEN gp.winning_match_winner = true AND gp.winning_correct_score = false THEN 1 END)) / NULLIF(COUNT(gp.id), 0))::int END) AS accuracy,
+      COUNT(CASE WHEN gp.winning_correct_score = true THEN 1 END)::int AS exact_scores,
+      COUNT(gp.id)::int AS total_predictions,
+      COALESCE(SUM(CAST(gp.points AS INTEGER)), 0)::int AS points
+    FROM group_predictions gp
+    JOIN group_fixtures gf ON gf.id = gp.group_fixture_id AND gf.group_id = gp.group_id
+    JOIN fixtures f ON f.id = gf.fixture_id
+    LEFT JOIN group_members gm ON gm.group_id = gp.group_id AND gm.user_id = gp.user_id AND gm.status = 'joined'::group_members_status
+    WHERE gp.user_id = ${userId}
+      AND gp.settled_at IS NOT NULL
+      AND gm.id IS NOT NULL
+      AND f.start_ts >= ${startTs}
+      AND f.start_ts < ${endTs}
+  `;
+
+  const row = rows[0];
+  if (!row || toNumber(row.total_predictions) === 0) {
+    return null;
+  }
+
+  return {
+    season_name: seasonName,
+    accuracy: toNumber(row.accuracy),
+    exact_scores: toNumber(row.exact_scores),
+    total_predictions: toNumber(row.total_predictions),
+    points: toNumber(row.points),
+  };
 }

@@ -15,13 +15,15 @@ export function SettingsSection({ title, children }: SettingsSectionProps) {
 
   return (
     <View style={styles.container}>
-      <AppText
-        variant="caption"
-        color="secondary"
-        style={[styles.title, { marginBottom: theme.spacing.xs }]}
-      >
-        {title.toUpperCase()}
-      </AppText>
+      {title !== "" && (
+        <AppText
+          variant="caption"
+          color="secondary"
+          style={[styles.title, { marginBottom: theme.spacing.xs }]}
+        >
+          {title.toUpperCase()}
+        </AppText>
+      )}
       <View
         style={[
           styles.content,

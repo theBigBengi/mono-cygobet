@@ -38,7 +38,8 @@ export function PublishGroupButton({
         styles.floatingButtonContainer,
         {
           paddingBottom: Math.max(insets.bottom, theme.spacing.md),
-          padding: theme.spacing.md,
+          paddingHorizontal: theme.spacing.md,
+          paddingTop: theme.spacing.md,
         },
       ]}
       pointerEvents="box-none"
@@ -59,14 +60,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    alignItems: "center",
+    alignItems: "stretch",
     justifyContent: "center",
     pointerEvents: "box-none",
     zIndex: 1000,
   },
   floatingButton: {
-    minWidth: 200,
-    width: "90%",
+    width: "100%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,

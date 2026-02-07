@@ -7,11 +7,13 @@ import {
   getUserStats,
   getHeadToHead,
   getH2HOpponents,
+  getGamificationData,
 } from "../../services/api/user-stats";
 import type {
   ApiUserStatsResponse,
   ApiHeadToHeadResponse,
   ApiH2HOpponentsResponse,
+  ApiGamificationResponse,
 } from "@repo/types";
 import {
   userStatsParamsSchema,
@@ -30,23 +32,27 @@ const userStatsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{
     Params: { id: string };
     Reply: ApiUserStatsResponse;
-  }>("/users/:id/stats", {
-    preHandler: [fastify.userAuth.requireOnboardingComplete],
-    schema: {
-      params: userStatsParamsSchema,
-      response: { 200: userStatsResponseSchema },
+  }>(
+    "/users/:id/stats",
+    {
+      preHandler: [fastify.userAuth.requireOnboardingComplete],
+      schema: {
+        params: userStatsParamsSchema,
+        response: { 200: userStatsResponseSchema },
+      },
     },
-  }, async (req, reply) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid user ID",
-      } as any);
+    async (req, reply) => {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid user ID",
+        } as any);
+      }
+      const result = await getUserStats(id);
+      return reply.send(result);
     }
-    const result = await getUserStats(id);
-    return reply.send(result);
-  });
+  );
 
   /**
    * GET /api/users/:id/head-to-head/:opponentId
@@ -57,29 +63,63 @@ const userStatsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{
     Params: { id: string; opponentId: string };
     Reply: ApiHeadToHeadResponse;
-  }>("/users/:id/head-to-head/:opponentId", {
-    preHandler: [fastify.userAuth.requireOnboardingComplete],
-    schema: {
-      params: headToHeadParamsSchema,
-      response: { 200: headToHeadResponseSchema },
+  }>(
+    "/users/:id/head-to-head/:opponentId",
+    {
+      preHandler: [fastify.userAuth.requireOnboardingComplete],
+      schema: {
+        params: headToHeadParamsSchema,
+        response: { 200: headToHeadResponseSchema },
+      },
     },
-  }, async (req, reply) => {
-    const id = Number(req.params.id);
-    const opponentId = Number(req.params.opponentId);
-    if (
-      !Number.isInteger(id) ||
-      id <= 0 ||
-      !Number.isInteger(opponentId) ||
-      opponentId <= 0
-    ) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid user or opponent ID",
-      } as any);
+    async (req, reply) => {
+      const id = Number(req.params.id);
+      const opponentId = Number(req.params.opponentId);
+      if (
+        !Number.isInteger(id) ||
+        id <= 0 ||
+        !Number.isInteger(opponentId) ||
+        opponentId <= 0
+      ) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid user or opponent ID",
+        } as any);
+      }
+      const result = await getHeadToHead(id, opponentId);
+      return reply.send(result);
     }
-    const result = await getHeadToHead(id, opponentId);
-    return reply.send(result);
-  });
+  );
+
+  /**
+   * GET /api/users/:id/gamification
+   *
+   * - Requires auth + onboarding completion.
+   * - Returns power score, rank tier, skills radar, streak, season comparison.
+   */
+  fastify.get<{
+    Params: { id: string };
+    Reply: ApiGamificationResponse;
+  }>(
+    "/users/:id/gamification",
+    {
+      preHandler: [fastify.userAuth.requireOnboardingComplete],
+      schema: {
+        params: userStatsParamsSchema,
+      },
+    },
+    async (req, reply) => {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid user ID",
+        } as any);
+      }
+      const result = await getGamificationData(id);
+      return reply.send(result);
+    }
+  );
 
   /**
    * GET /api/users/:id/h2h-opponents
@@ -89,22 +129,26 @@ const userStatsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{
     Params: { id: string };
     Reply: ApiH2HOpponentsResponse;
-  }>("/users/:id/h2h-opponents", {
-    preHandler: [fastify.userAuth.requireOnboardingComplete],
-    schema: {
-      params: userStatsParamsSchema,
+  }>(
+    "/users/:id/h2h-opponents",
+    {
+      preHandler: [fastify.userAuth.requireOnboardingComplete],
+      schema: {
+        params: userStatsParamsSchema,
+      },
     },
-  }, async (req, reply) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-      return reply.status(400).send({
-        status: "error",
-        message: "Invalid user ID",
-      } as any);
+    async (req, reply) => {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.status(400).send({
+          status: "error",
+          message: "Invalid user ID",
+        } as any);
+      }
+      const result = await getH2HOpponents(id);
+      return reply.send(result);
     }
-    const result = await getH2HOpponents(id);
-    return reply.send(result);
-  });
+  );
 };
 
 export default userStatsRoutes;

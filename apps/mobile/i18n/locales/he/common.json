@@ -184,6 +184,7 @@
     "finishSetup": "סיים את הגדרת הקבוצה",
     "finishSetupDescription": "הגדר חוקי קבוצה ופרסם כדי להתחיל.",
     "draftBadge": "טיוטה",
+    "draftGroupDescription": "נחשו תוצאות משחקים והתחרו עם חברים. המנחש הטוב ביותר מנצח!",
     "groupDuration": "משך הקבוצה",
     "predictionRules": "חוקי ניחוש",
     "nudge": "תזכורת",
@@ -345,6 +346,22 @@
     "exactShort": "מדויקים",
     "winsShort": "ניצחונות",
     "correctShort": "נכונים"
+  },
+  "gamification": {
+    "powerScore": "ציון כוח",
+    "rank": "דרגה",
+    "nextRank": "דרגה הבאה",
+    "skillRadar": "יכולות",
+    "skillAccuracy": "דיוק",
+    "skillConsistency": "עקביות",
+    "skillVolume": "כמות",
+    "skillExact": "מדויק",
+    "skillTiming": "תזמון",
+    "streak": "רצף",
+    "current": "נוכחי",
+    "best": "שיא",
+    "seasonComparison": "התקדמות עונה",
+    "points": "נקודות"
   },
   "discover": {
     "searchPlaceholder": "חפש לפי שם קבוצה",

@@ -12,7 +12,6 @@ export { GroupLobbyActiveScreen } from "./screens/GroupLobbyActiveScreen";
 export { GroupLobbyEndedScreen } from "./screens/GroupLobbyEndedScreen";
 
 // Components
-export { GroupLobbyNameHeader } from "./components/GroupLobbyNameHeader";
 export { GroupLobbyStatusCard } from "./components/GroupLobbyStatusCard";
 export { GroupLobbyScoringSection } from "./components/GroupLobbyScoringSection";
 export { GroupLobbyMaxMembersSection } from "./components/GroupLobbyMaxMembersSection";

@@ -6,6 +6,7 @@ import type {
   ApiUserStatsResponse,
   ApiHeadToHeadResponse,
   ApiH2HOpponentsResponse,
+  ApiGamificationResponse,
 } from "@repo/types";
 import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
 
@@ -75,6 +76,19 @@ export async function fetchH2HOpponents(
 ): Promise<ApiH2HOpponentsResponse> {
   return apiFetchWithAuthRetry<ApiH2HOpponentsResponse>(
     `/api/users/${userId}/h2h-opponents`,
+    { method: "GET" }
+  );
+}
+
+/**
+ * Fetch gamification data (power score, rank tier, skills, streak, season comparison).
+ * - Protected + onboarding-gated endpoint.
+ */
+export async function fetchGamification(
+  userId: number
+): Promise<ApiGamificationResponse> {
+  return apiFetchWithAuthRetry<ApiGamificationResponse>(
+    `/api/users/${userId}/gamification`,
     { method: "GET" }
   );
 }

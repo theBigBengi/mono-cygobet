@@ -97,3 +97,10 @@ export type RawBestLeagueRow = {
   league_name: string;
   accuracy: string | number | bigint;
 };
+
+export type RawSeasonStatsRow = {
+  accuracy: string | number | bigint;
+  exact_scores: string | number | bigint;
+  total_predictions: string | number | bigint;
+  points: string | number | bigint;
+};

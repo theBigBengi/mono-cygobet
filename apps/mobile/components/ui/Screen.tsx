@@ -11,12 +11,7 @@
 // - This prevents double top offset
 
 import React, { useCallback, useState } from "react";
-import {
-  Platform,
-  RefreshControl,
-  ScrollView,
-  ViewStyle,
-} from "react-native";
+import { Platform, RefreshControl, ScrollView, ViewStyle } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -117,7 +112,8 @@ export function Screen({
           flex: 1,
           backgroundColor: theme.colors.background,
         },
-        contentContainerStyle?.padding === 0 || contentContainerStyle?.padding === undefined
+        contentContainerStyle?.padding === 0 ||
+        contentContainerStyle?.padding === undefined
           ? {}
           : { padding: theme.spacing.md },
         contentContainerStyle?.alignItems === undefined

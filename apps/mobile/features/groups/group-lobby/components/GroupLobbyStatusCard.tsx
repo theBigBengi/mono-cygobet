@@ -1,94 +1,68 @@
+// features/groups/group-lobby/components/GroupLobbyStatusCard.tsx
+// Card shown at top of draft lobby: title, subtitle, DRAFT badge.
+
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
-import { Card, AppText } from "@/components/ui";
+import { useTranslation } from "react-i18next";
+import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import type { ApiGroupStatus } from "@repo/types";
 
 interface GroupLobbyStatusCardProps {
-  /**
-   * Current group status
-   */
-  status: ApiGroupStatus;
-  /**
-   * Whether the current user is the creator
-   */
+  status: string;
   isCreator: boolean;
 }
 
-/**
- * Component for displaying group status badge and message.
- * Handles different status states (draft, active, ended).
- */
-export function GroupLobbyStatusCard({
-  status,
-  isCreator,
-}: GroupLobbyStatusCardProps) {
+export function GroupLobbyStatusCard({ status }: GroupLobbyStatusCardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
 
-  // Only show status card for draft groups
-  if (status !== "draft") {
-    return null;
-  }
-
   return (
-    <Card style={styles.section}>
-      <View style={styles.statusHeader}>
-        <AppText variant="body" style={styles.statusTitle}>
-          {t("lobby.finishSetup")}
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+        },
+      ]}
+    >
+      <View style={[styles.badge, { borderColor: theme.colors.border }]}>
+        <AppText variant="caption" style={styles.badgeText}>
+          {t("lobby.draftBadge")}
         </AppText>
-        <View
-          style={[
-            styles.badge,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
-          <AppText variant="caption" style={styles.badgeText}>
-            {t("lobby.draftBadge")}
-          </AppText>
-        </View>
       </View>
-      <AppText
-        variant="caption"
-        color="secondary"
-        style={styles.statusSubtitle}
-      >
-        {t("lobby.finishSetupDescription")}
+      <AppText variant="subtitle" style={styles.title}>
+        {t("lobby.predictionGroup")}
       </AppText>
-    </Card>
+      <AppText variant="caption" color="secondary" style={styles.subtitle}>
+        {t("lobby.draftGroupDescription")}
+      </AppText>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 16,
-  },
-  statusHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  statusTitle: {
-    fontWeight: "600",
-    flex: 1,
-  },
-  statusSubtitle: {
-    marginTop: 4,
+  card: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
   },
   badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
     alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    marginBottom: 10,
   },
   badgeText: {
     fontWeight: "600",
-    textTransform: "uppercase",
+  },
+  title: {
+    marginBottom: 4,
+  },
+  subtitle: {
+    lineHeight: 20,
   },
 });

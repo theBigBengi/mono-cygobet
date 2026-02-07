@@ -2,9 +2,14 @@
 // Reusable row + bottom sheet: same look as SettingsRowPicker but opens @gorhom/bottom-sheet.
 // Use .Row inside ScrollView and .Sheet outside (same ref) so present() works.
 
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { View, Pressable, StyleSheet } from "react-native";
-import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
+import {
+  BottomSheetModal,
+  BottomSheetView,
+  BottomSheetBackdrop,
+} from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -14,14 +19,13 @@ export interface PickerOption<T> {
   label: string;
 }
 
-const snapPoints = ["40%", "60%"] as const;
-
 // —— Row (use inside ScrollView) ——
 interface RowProps {
   sheetRef: React.RefObject<React.ComponentRef<typeof BottomSheetModal> | null>;
   icon?: keyof typeof Ionicons.glyphMap;
   label: string;
   valueDisplay: string;
+  subtitle?: string;
   isLast?: boolean;
   disabled?: boolean;
 }
@@ -31,6 +35,7 @@ function RowComponent({
   icon,
   label,
   valueDisplay,
+  subtitle,
   isLast = false,
   disabled = false,
 }: RowProps) {
@@ -74,6 +79,11 @@ function RowComponent({
         <AppText variant="body" style={styles.label}>
           {label}
         </AppText>
+        {subtitle != null && subtitle !== "" && (
+          <AppText variant="caption" color="secondary">
+            {subtitle}
+          </AppText>
+        )}
       </View>
       <AppText variant="body" color="secondary">
         {valueDisplay}
@@ -85,6 +95,82 @@ function RowComponent({
         style={{ marginStart: 4 }}
       />
     </Pressable>
+  );
+}
+
+// —— Shared sheet wrapper: [close] [centered title] [spacer] + body ——
+interface SheetWrapperProps {
+  sheetRef: React.RefObject<React.ComponentRef<typeof BottomSheetModal> | null>;
+  title: string;
+  children: React.ReactNode;
+}
+
+function SheetWrapper({ sheetRef, title, children }: SheetWrapperProps) {
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const backgroundStyle = useMemo(
+    () => ({ backgroundColor: theme.colors.background }),
+    [theme.colors.background]
+  );
+
+  const handleIndicatorStyle = useMemo(
+    () => ({ backgroundColor: theme.colors.textSecondary }),
+    [theme.colors.textSecondary]
+  );
+
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
+  const contentPaddingBottom = useMemo(
+    () => Math.max(32, insets.bottom),
+    [insets.bottom]
+  );
+
+  return (
+    <BottomSheetModal
+      ref={sheetRef}
+      enableDynamicSizing
+      enablePanDownToClose
+      backdropComponent={renderBackdrop}
+      backgroundStyle={backgroundStyle}
+      handleIndicatorStyle={handleIndicatorStyle}
+    >
+      <BottomSheetView style={styles.sheetWrap}>
+        <View
+          style={[styles.header, { borderBottomColor: theme.colors.border }]}
+        >
+          <Pressable
+            onPress={() => sheetRef.current?.dismiss()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons
+              name="close"
+              size={28}
+              color={theme.colors.textSecondary}
+            />
+          </Pressable>
+          <AppText variant="subtitle" style={styles.headerTitle}>
+            {title}
+          </AppText>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View
+          style={[styles.sheetContent, { paddingBottom: contentPaddingBottom }]}
+        >
+          {children}
+        </View>
+      </BottomSheetView>
+    </BottomSheetModal>
   );
 }
 
@@ -113,121 +199,70 @@ function SheetComponent<T extends string>(props: SheetProps<T>) {
   const { theme } = useTheme();
   const { sheetRef, title } = props;
 
-  const backgroundStyle = useMemo(
-    () => ({ backgroundColor: theme.colors.background }),
-    [theme.colors.background]
-  );
-
-  const handleIndicatorStyle = useMemo(
-    () => ({ backgroundColor: theme.colors.textSecondary }),
-    [theme.colors.textSecondary]
-  );
-
   if ("options" in props && props.options != null) {
     const { options, value, onValueChange } = props;
     return (
-      <BottomSheetModal
-        ref={sheetRef}
-        snapPoints={snapPoints}
-        enablePanDownToClose
-        backgroundStyle={backgroundStyle}
-        handleIndicatorStyle={handleIndicatorStyle}
-      >
-        <BottomSheetView style={styles.sheetWrap}>
-          <View
-            style={[styles.header, { borderBottomColor: theme.colors.border }]}
-          >
-            <AppText variant="subtitle" style={styles.headerTitle}>
-              {title}
-            </AppText>
+      <SheetWrapper sheetRef={sheetRef} title={title}>
+        <View
+          style={[
+            styles.optionsCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderRadius: theme.radius.md,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          {options.map((option, index) => (
             <Pressable
-              onPress={() => sheetRef.current?.dismiss()}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              key={option.value}
+              onPress={() => {
+                onValueChange(option.value);
+                sheetRef.current?.dismiss();
+              }}
+              style={[
+                styles.optionRow,
+                {
+                  borderBottomWidth: index < options.length - 1 ? 1 : 0,
+                  borderBottomColor: theme.colors.border,
+                  backgroundColor:
+                    option.value === value
+                      ? theme.colors.primary + "15"
+                      : "transparent",
+                },
+              ]}
             >
-              <Ionicons
-                name="close"
-                size={28}
-                color={theme.colors.textSecondary}
-              />
-            </Pressable>
-          </View>
-          <View style={styles.optionsList}>
-            {options.map((option, index) => (
-              <Pressable
-                key={option.value}
-                onPress={() => {
-                  onValueChange(option.value);
-                  sheetRef.current?.dismiss();
+              <AppText
+                variant="body"
+                style={{
+                  fontWeight: option.value === value ? "600" : "400",
+                  color:
+                    option.value === value
+                      ? theme.colors.primary
+                      : theme.colors.textPrimary,
                 }}
-                style={[
-                  styles.optionRow,
-                  {
-                    borderBottomWidth: index < options.length - 1 ? 1 : 0,
-                    borderBottomColor: theme.colors.border,
-                    backgroundColor:
-                      option.value === value
-                        ? theme.colors.primary + "15"
-                        : "transparent",
-                  },
-                ]}
               >
-                <AppText
-                  variant="body"
-                  style={{
-                    fontWeight: option.value === value ? "600" : "400",
-                    color:
-                      option.value === value
-                        ? theme.colors.primary
-                        : theme.colors.textPrimary,
-                  }}
-                >
-                  {option.label}
-                </AppText>
-                {option.value === value && (
-                  <Ionicons
-                    name="checkmark"
-                    size={24}
-                    color={theme.colors.primary}
-                  />
-                )}
-              </Pressable>
-            ))}
-          </View>
-        </BottomSheetView>
-      </BottomSheetModal>
+                {option.label}
+              </AppText>
+              {option.value === value && (
+                <Ionicons
+                  name="checkmark"
+                  size={24}
+                  color={theme.colors.primary}
+                />
+              )}
+            </Pressable>
+          ))}
+        </View>
+      </SheetWrapper>
     );
   }
 
   const { children } = props;
   return (
-    <BottomSheetModal
-      ref={sheetRef}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      backgroundStyle={backgroundStyle}
-      handleIndicatorStyle={handleIndicatorStyle}
-    >
-      <BottomSheetView style={styles.sheetWrap}>
-        <View
-          style={[styles.header, { borderBottomColor: theme.colors.border }]}
-        >
-          <AppText variant="subtitle" style={styles.headerTitle}>
-            {title}
-          </AppText>
-          <Pressable
-            onPress={() => sheetRef.current?.dismiss()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons
-              name="close"
-              size={28}
-              color={theme.colors.textSecondary}
-            />
-          </Pressable>
-        </View>
-        <View style={styles.sheetContent}>{children}</View>
-      </BottomSheetView>
-    </BottomSheetModal>
+    <SheetWrapper sheetRef={sheetRef} title={title}>
+      {children}
+    </SheetWrapper>
   );
 }
 
@@ -267,19 +302,24 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: "600",
+    flex: 1,
+    textAlign: "center",
   },
-  optionsList: {
+  headerSpacer: {
+    width: 28,
+  },
+  sheetContent: {
     padding: 16,
+  },
+  optionsCard: {
+    borderWidth: 1,
+    overflow: "hidden",
   },
   optionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 16,
-    paddingHorizontal: 8,
-  },
-  sheetContent: {
-    padding: 16,
-    paddingBottom: 32,
+    paddingHorizontal: 12,
   },
 });
