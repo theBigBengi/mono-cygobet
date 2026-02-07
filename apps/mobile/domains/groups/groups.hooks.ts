@@ -97,6 +97,7 @@ export function useGroupQuery(
   options?: { includeFixtures?: boolean; staleTime?: number }
 ) {
   const { status, user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Only enable if id is a valid number (not null, not NaN)
   const enabled =
@@ -110,6 +111,16 @@ export function useGroupQuery(
       }),
     enabled,
     ...(options?.staleTime != null && { staleTime: options.staleTime }),
+    placeholderData: () => {
+      const listData = queryClient.getQueryData<ApiGroupsResponse>(
+        groupsKeys.list()
+      );
+      const group = listData?.data?.find((g) => g.id === id);
+      if (group) {
+        return { status: "success", data: group, message: "" };
+      }
+      return undefined;
+    },
     meta: { scope: "user" },
   });
 }
