@@ -151,6 +151,7 @@
     "selectKoRoundMode": "בחר מצב סיבוב נוקאאוט",
     "koRoundDescription": "בחר האם התחזית נעשית לתוצאה אחרי 90 דקות, אחרי הארכה או אחרי בעיטות עונשין.",
     "groupNamePlaceholder": "שם קבוצה",
+    "descriptionPlaceholder": "הוסף תיאור...",
     "selectPredictionMode": "בחר מצב תחזית",
     "predictionModeDescription": "בחר איך החברים עושים תחזיות.",
     "result": "תוצאה",

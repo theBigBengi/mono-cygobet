@@ -40,6 +40,7 @@ export async function updateGroup(
   const {
     creatorId,
     name,
+    description,
     privacy,
     fixtureIds,
     inviteAccess,
@@ -69,6 +70,10 @@ export async function updateGroup(
 
   if (privacy !== undefined) {
     updateData.privacy = privacy;
+  }
+
+  if (description !== undefined) {
+    updateData.description = description;
   }
 
   const hasRulesUpdate =
@@ -130,6 +135,7 @@ export async function publishGroup(
   const {
     creatorId,
     name,
+    description,
     privacy,
     onTheNosePoints,
     correctDifferencePoints,
@@ -186,6 +192,7 @@ export async function publishGroup(
     ...(maxMembers !== undefined && { maxMembers }),
     ...(nudgeEnabled !== undefined && { nudgeEnabled }),
     ...(nudgeWindowMinutes !== undefined && { nudgeWindowMinutes }),
+    ...(description !== undefined && { description }),
   };
 
   // 3. Call repository to perform all updates in a single transaction

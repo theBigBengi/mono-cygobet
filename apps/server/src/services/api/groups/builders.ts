@@ -27,6 +27,7 @@ export type GroupStatus =
 export function buildGroupItem(group: {
   id: number;
   name: string;
+  description?: string | null;
   privacy: string;
   status: GroupStatus;
   creatorId: number;
@@ -36,6 +37,7 @@ export function buildGroupItem(group: {
 }): {
   id: number;
   name: string;
+  description?: string | null;
   privacy: ApiGroupPrivacy;
   status: GroupStatus;
   creatorId: number;
@@ -46,6 +48,7 @@ export function buildGroupItem(group: {
   return {
     id: group.id,
     name: group.name,
+    description: group.description ?? null,
     privacy: group.privacy as ApiGroupPrivacy,
     status: group.status,
     creatorId: group.creatorId,
@@ -68,6 +71,7 @@ export function buildDraftGroupItem(
   group: {
     id: number;
     name: string;
+    description?: string | null;
     privacy: string;
     status: GroupStatus;
     creatorId: number;
@@ -102,6 +106,7 @@ export function buildActiveGroupItem(
   group: {
     id: number;
     name: string;
+    description?: string | null;
     privacy: string;
     status: GroupStatus;
     creatorId: number;

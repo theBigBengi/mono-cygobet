@@ -156,6 +156,7 @@
     "privacy": "Privacy",
     "inviteSharing": "Invite Sharing",
     "groupNamePlaceholder": "Group name",
+    "descriptionPlaceholder": "Add a description...",
     "threeWayDescription": "In \"3-Way Prediction\" mode, predictions are 1-0-2 (1 = home win, 0 = draw, 2 = away win).",
     "game_one": "game",
     "game_other": "games",

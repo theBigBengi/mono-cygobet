@@ -24,9 +24,9 @@ const log = getLogger("groups.create");
 export async function createGroup(
   args: ApiCreateGroupBody & { creatorId: number }
 ): Promise<ApiGroupResponse> {
-
   const {
     name,
+    description,
     creatorId,
     privacy = "private",
     fixtureIds = [],
@@ -55,10 +55,11 @@ export async function createGroup(
       privacy: privacy,
       selectionMode: selMode,
       fixtureIds,
-      teamIds: selMode === SELECTION_MODE.TEAMS ? teamIds ?? [] : [],
-      leagueIds: selMode === SELECTION_MODE.LEAGUES ? leagueIds ?? [] : [],
+      teamIds: selMode === SELECTION_MODE.TEAMS ? (teamIds ?? []) : [],
+      leagueIds: selMode === SELECTION_MODE.LEAGUES ? (leagueIds ?? []) : [],
       now: nowUnixSeconds(),
       ...(inviteAccess !== undefined && { inviteAccess }),
+      description: description ?? null,
     });
 
     const data = buildGroupItem(result);

@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable, Switch } from "react-native";
+import { View, StyleSheet, Pressable, Switch, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -67,15 +67,22 @@ export function GroupLobbyDraftScreen({
   const { t } = useTranslation("common");
   const router = useRouter();
 
-  // Manage local state for draft name, privacy, and invite access
+  // Manage local state for draft name, description, privacy, and invite access
   const {
     draftName,
+    draftDescription,
     draftPrivacy,
     draftInviteAccess,
     setDraftName,
+    setDraftDescription,
     setDraftPrivacy,
     setDraftInviteAccess,
-  } = useGroupLobbyState(group.name, group.privacy, group.inviteAccess);
+  } = useGroupLobbyState(
+    group.name,
+    group.description ?? null,
+    group.privacy,
+    group.inviteAccess
+  );
 
   // Manage local state for prediction mode, initialized from group
   const [predictionMode, setPredictionMode] = useState<PredictionMode>(() =>
@@ -155,6 +162,7 @@ export function GroupLobbyDraftScreen({
   const { handlePublish } = useGroupLobbyActions(
     publishGroupMutation,
     draftName,
+    draftDescription,
     draftPrivacy,
     draftInviteAccess,
     scoringValues,
@@ -189,6 +197,35 @@ export function GroupLobbyDraftScreen({
           editable={isEditable}
           isCreator={isCreator}
         />
+
+        {/* Description (Editable for creator when editable; read-only otherwise) */}
+        {isCreator && isEditable ? (
+          <TextInput
+            style={[
+              styles.descriptionInput,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+                color: theme.colors.textPrimary,
+              },
+            ]}
+            value={draftDescription}
+            onChangeText={setDraftDescription}
+            placeholder={t("lobby.descriptionPlaceholder")}
+            placeholderTextColor={theme.colors.textSecondary}
+            multiline
+            numberOfLines={3}
+            maxLength={500}
+          />
+        ) : draftDescription ? (
+          <AppText
+            variant="body"
+            color="secondary"
+            style={styles.descriptionText}
+          >
+            {draftDescription}
+          </AppText>
+        ) : null}
 
         {/* Section: Games */}
         <AppText variant="subtitle" style={styles.sectionTitle}>
@@ -370,6 +407,19 @@ const styles = StyleSheet.create({
   },
   screenContent: {
     paddingBottom: 100, // Space for floating button
+  },
+  descriptionInput: {
+    minHeight: 72,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 24,
+    textAlignVertical: "top",
+  },
+  descriptionText: {
+    marginBottom: 24,
   },
   sectionTitle: {
     fontWeight: "600",

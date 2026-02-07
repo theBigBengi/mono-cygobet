@@ -12,6 +12,10 @@ export const createGroupBodySchema = {
       type: ["string", "null"],
       minLength: 0, // Allow empty string
     },
+    description: {
+      type: ["string", "null"],
+      maxLength: 500,
+    },
     privacy: {
       type: "string",
       enum: ["private", "public"],
@@ -137,6 +141,7 @@ export const groupItemSchema = {
   properties: {
     id: { type: "number" },
     name: { type: "string" },
+    description: { type: ["string", "null"] },
     privacy: { type: "string", enum: ["private", "public"] },
     status: { type: "string", enum: ["draft", "active", "ended"] },
     creatorId: { type: "number" },
@@ -278,6 +283,10 @@ export const publishGroupBodySchema = {
     name: {
       type: "string",
       minLength: 1,
+    },
+    description: {
+      type: "string",
+      maxLength: 500,
     },
     privacy: {
       type: "string",

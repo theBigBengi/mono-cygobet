@@ -273,6 +273,7 @@ export type ApiInviteAccess = "all" | "admin_only";
  */
 export type ApiCreateGroupBody = {
   name: string;
+  description?: string | null;
   privacy?: ApiGroupPrivacy;
   /** Used when selectionMode is "games". */
   fixtureIds?: number[];
@@ -291,6 +292,7 @@ export type ApiCreateGroupBody = {
  */
 export type ApiUpdateGroupBody = {
   name?: string;
+  description?: string;
   privacy?: ApiGroupPrivacy;
   fixtureIds?: number[];
   inviteAccess?: ApiInviteAccess;
@@ -305,6 +307,7 @@ export type ApiUpdateGroupBody = {
  */
 export type ApiPublishGroupBody = {
   name?: string;
+  description?: string;
   privacy?: ApiGroupPrivacy;
   onTheNosePoints?: number;
   correctDifferencePoints?: number;
@@ -345,6 +348,7 @@ export type ApiInviteCodeResponse = {
 export type ApiGroupItem = {
   id: number;
   name: string;
+  description?: string | null;
   privacy: ApiGroupPrivacy;
   status: ApiGroupStatus;
   creatorId: number;

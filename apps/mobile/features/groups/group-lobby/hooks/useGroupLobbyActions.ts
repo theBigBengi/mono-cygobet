@@ -9,6 +9,7 @@ import type { KORoundMode } from "../components/KORoundModeSelector";
  *
  * @param publishGroupMutation - React Query mutation for publishing a group
  * @param draftName - Current draft name
+ * @param draftDescription - Current draft description
  * @param draftPrivacy - Current draft privacy
  * @param draftInviteAccess - Current draft invite access
  * @param scoringValues - Current scoring values
@@ -25,6 +26,7 @@ export function useGroupLobbyActions(
     unknown,
     {
       name?: string;
+      description?: string;
       privacy?: ApiGroupPrivacy;
       inviteAccess?: ApiInviteAccess;
       onTheNosePoints?: number;
@@ -38,6 +40,7 @@ export function useGroupLobbyActions(
     }
   >,
   draftName: string,
+  draftDescription: string,
   draftPrivacy: ApiGroupPrivacy,
   draftInviteAccess: ApiInviteAccess,
   scoringValues: { onTheNose: number; goalDifference: number; outcome: number },
@@ -73,6 +76,7 @@ export function useGroupLobbyActions(
     // Build body with all values
     const body: {
       name?: string;
+      description?: string;
       privacy?: ApiGroupPrivacy;
       inviteAccess?: ApiInviteAccess;
       onTheNosePoints?: number;
@@ -85,6 +89,7 @@ export function useGroupLobbyActions(
       nudgeWindowMinutes?: number;
     } = {
       name: nextName,
+      description: draftDescription.trim() || undefined,
       privacy: draftPrivacy,
       inviteAccess: draftInviteAccess,
       onTheNosePoints: scoringValues.onTheNose,
@@ -111,6 +116,7 @@ export function useGroupLobbyActions(
     }
   }, [
     draftName,
+    draftDescription,
     draftPrivacy,
     draftInviteAccess,
     scoringValues,

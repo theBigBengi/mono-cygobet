@@ -3,8 +3,20 @@
 
 import { prisma } from "@repo/db";
 import type { Prisma } from "@repo/db";
-import { groupPrivacy, groupPredictionMode, groupKoRoundMode, groupSelectionMode, groupMembersStatus, groupInviteAccess } from "@repo/db";
-import { DEFAULT_MAX_MEMBERS, MEMBER_STATUS, GROUP_STATUS, SELECTION_MODE } from "../constants";
+import {
+  groupPrivacy,
+  groupPredictionMode,
+  groupKoRoundMode,
+  groupSelectionMode,
+  groupMembersStatus,
+  groupInviteAccess,
+} from "@repo/db";
+import {
+  DEFAULT_MAX_MEMBERS,
+  MEMBER_STATUS,
+  GROUP_STATUS,
+  SELECTION_MODE,
+} from "../constants";
 import {
   resolveInitialFixturesInternal,
   attachFixturesToGroupInternal,
@@ -115,14 +127,12 @@ export async function createGroup(
 /**
  * Create a group member.
  */
-export async function createGroupMember(
-  data: {
-    groupId: number;
-    userId: number;
-    role: "owner" | "member";
-    status: "joined";
-  }
-) {
+export async function createGroupMember(data: {
+  groupId: number;
+  userId: number;
+  role: "owner" | "member";
+  status: "joined";
+}) {
   return await prisma.groupMembers.create({
     data,
   });
@@ -140,7 +150,9 @@ async function createGroupRulesInternal(
   inviteAccess?: "all" | "admin_only"
 ): Promise<void> {
   const inviteAccessData =
-    inviteAccess !== undefined ? { inviteAccess: inviteAccess as groupInviteAccess } : {};
+    inviteAccess !== undefined
+      ? { inviteAccess: inviteAccess as groupInviteAccess }
+      : {};
   if (selectionMode === "games") {
     await tx.groupRules.create({
       data: {
@@ -191,9 +203,7 @@ export async function updateGroup(
 /**
  * Find group rules by group ID.
  */
-export async function findGroupRules(
-  groupId: number
-): Promise<{
+export async function findGroupRules(groupId: number): Promise<{
   selectionMode: groupSelectionMode;
   groupTeamsIds: number[];
   inviteAccess?: groupInviteAccess;
@@ -229,7 +239,9 @@ export async function findGroupRules(
  */
 export async function findGroupRulesNudgeBatch(
   groupIds: number[]
-): Promise<Array<{ groupId: number; nudgeEnabled: boolean; nudgeWindowMinutes: number }>> {
+): Promise<
+  Array<{ groupId: number; nudgeEnabled: boolean; nudgeWindowMinutes: number }>
+> {
   if (groupIds.length === 0) return [];
   const rows = await prisma.groupRules.findMany({
     where: { groupId: { in: groupIds } },
@@ -251,6 +263,7 @@ export async function publishGroupInternal(data: {
   groupId: number;
   status: typeof GROUP_STATUS.ACTIVE;
   name?: string;
+  description?: string;
   privacy?: groupPrivacy;
   onTheNosePoints?: number;
   correctDifferencePoints?: number;
@@ -270,6 +283,10 @@ export async function publishGroupInternal(data: {
 
     if (data.name !== undefined) {
       updateData.name = data.name.trim();
+    }
+
+    if (data.description !== undefined) {
+      updateData.description = data.description;
     }
 
     if (data.privacy !== undefined) {
@@ -355,13 +372,9 @@ export async function publishGroupInternal(data: {
           correctDifferencePoints: data.correctDifferencePoints ?? 2,
           outcomePoints: data.outcomePoints ?? 1,
           predictionMode:
-            data.predictionMode ??
-            groupPredictionMode.CorrectScore,
-          koRoundMode:
-            data.koRoundMode ??
-            groupKoRoundMode.FullTime,
-          inviteAccess:
-            data.inviteAccess ?? groupInviteAccess.all,
+            data.predictionMode ?? groupPredictionMode.CorrectScore,
+          koRoundMode: data.koRoundMode ?? groupKoRoundMode.FullTime,
+          inviteAccess: data.inviteAccess ?? groupInviteAccess.all,
           maxMembers: data.maxMembers ?? DEFAULT_MAX_MEMBERS,
           nudgeEnabled: data.nudgeEnabled ?? true,
           nudgeWindowMinutes: data.nudgeWindowMinutes ?? 60,
@@ -395,6 +408,7 @@ export async function createGroupWithMemberAndRules(data: {
   leagueIds: number[];
   now: number;
   inviteAccess?: "all" | "admin_only";
+  description?: string | null;
 }): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Create group
@@ -404,6 +418,9 @@ export async function createGroupWithMemberAndRules(data: {
         creatorId: data.creatorId,
         privacy: data.privacy,
         status: GROUP_STATUS.DRAFT,
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
       },
     });
 
@@ -420,8 +437,9 @@ export async function createGroupWithMemberAndRules(data: {
     // Resolve fixtures and create rules based on selection mode
     const selMode = data.selectionMode;
     const modeLeagues =
-      selMode === SELECTION_MODE.LEAGUES ? data.leagueIds ?? [] : [];
-    const modeTeams = selMode === SELECTION_MODE.TEAMS ? data.teamIds ?? [] : [];
+      selMode === SELECTION_MODE.LEAGUES ? (data.leagueIds ?? []) : [];
+    const modeTeams =
+      selMode === SELECTION_MODE.TEAMS ? (data.teamIds ?? []) : [];
 
     const fixtureIdsToUse = await resolveInitialFixturesInternal(
       tx,
@@ -511,10 +529,7 @@ export async function findGroupMember(groupId: number, userId: number) {
 /**
  * Update a group member record.
  */
-export async function updateGroupMember(
-  id: number,
-  data: { status: string }
-) {
+export async function updateGroupMember(id: number, data: { status: string }) {
   return prisma.groupMembers.update({
     where: { id },
     data: { status: data.status as groupMembersStatus },
@@ -550,7 +565,11 @@ export async function findNudgesByNudgerInGroup(
   nudgerUserId: number,
   fixtureIds?: number[]
 ): Promise<Array<{ targetUserId: number; fixtureId: number }>> {
-  const where: { groupId: number; nudgerUserId: number; fixtureId?: { in: number[] } } = {
+  const where: {
+    groupId: number;
+    nudgerUserId: number;
+    fixtureId?: { in: number[] };
+  } = {
     groupId,
     nudgerUserId,
   };
@@ -561,5 +580,8 @@ export async function findNudgesByNudgerInGroup(
     where,
     select: { targetUserId: true, fixtureId: true },
   });
-  return rows.map((r) => ({ targetUserId: r.targetUserId, fixtureId: r.fixtureId }));
+  return rows.map((r) => ({
+    targetUserId: r.targetUserId,
+    fixtureId: r.fixtureId,
+  }));
 }

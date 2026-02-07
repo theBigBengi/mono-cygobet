@@ -273,6 +273,7 @@ model groups {
   updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
   creatorId     Int             @map("creator_id")
   name          String
+  description   String?         @db.VarChar(500)
   // welcomeMessage       String?         @map("welcome_message")
   // startingAt DateTime     @map("starting_at") @db.Timestamptz(6)
   // endingAt   DateTime     @map("ending_at") @db.Timestamptz(6)

@@ -180,6 +180,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
 
       const result = await createGroup({
         name: body.name,
+        description: body.description,
         privacy: body.privacy,
         fixtureIds: body.fixtureIds,
         selectionMode: body.selectionMode,
@@ -422,6 +423,10 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
               type: "string",
               minLength: 1,
             },
+            description: {
+              type: "string",
+              maxLength: 500,
+            },
             privacy: {
               type: "string",
               enum: ["private", "public"],
@@ -468,6 +473,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
 
       const result = await updateGroup(id, {
         name: body.name,
+        description: body.description,
         privacy: body.privacy,
         fixtureIds: body.fixtureIds,
         inviteAccess: body.inviteAccess,
@@ -526,6 +532,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
 
       const result = await publishGroup(id, {
         name: body.name,
+        description: body.description,
         privacy: body.privacy,
         onTheNosePoints: body.onTheNosePoints,
         correctDifferencePoints: body.correctDifferencePoints,
