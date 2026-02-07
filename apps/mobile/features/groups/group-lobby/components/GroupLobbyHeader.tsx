@@ -12,6 +12,8 @@ interface GroupLobbyHeaderProps {
   name: string;
   memberCount?: number;
   status: ApiGroupStatus;
+  /** When true: no Card, smaller avatar (56), no status line (member count only), paddingBottom 16 */
+  compact?: boolean;
   /** Future: group image URL */
   image?: string | null;
 }
@@ -29,6 +31,7 @@ export function GroupLobbyHeader({
   name,
   memberCount,
   status,
+  compact = false,
   image: _image,
 }: GroupLobbyHeaderProps) {
   const { t } = useTranslation("common");
@@ -50,68 +53,76 @@ export function GroupLobbyHeader({
         ? theme.colors.textSecondary
         : theme.colors.warning;
 
-  return (
-    <Card style={styles.card}>
-      <View style={styles.container}>
-        {/* Avatar */}
-        <View
-          style={[
-            styles.avatar,
-            {
-              backgroundColor: theme.colors.primary,
-            },
-          ]}
-        >
-          <AppText
-            variant="title"
-            style={[styles.initials, { color: theme.colors.primaryText }]}
-          >
-            {initials}
-          </AppText>
-        </View>
-
-        {/* Group Name */}
+  const content = (
+    <View style={[styles.container, compact && styles.containerCompact]}>
+      <View
+        style={[
+          styles.avatar,
+          compact && styles.avatarCompact,
+          { backgroundColor: theme.colors.primary },
+        ]}
+      >
         <AppText
           variant="title"
-          style={styles.name}
-          numberOfLines={2}
-          ellipsizeMode="tail"
+          style={[
+            styles.initials,
+            compact && styles.initialsCompact,
+            { color: theme.colors.primaryText },
+          ]}
         >
-          {name}
+          {initials}
         </AppText>
+      </View>
 
-        {/* Meta Info */}
-        <View style={styles.metaRow}>
-          {memberCount != null && memberCount > 0 && (
-            <>
-              <AppText variant="caption" color="secondary">
-                {t("lobby.memberCount", { count: memberCount })}
-              </AppText>
-              <AppText
-                variant="caption"
-                color="secondary"
-                style={styles.separator}
-              >
-                •
-              </AppText>
-            </>
-          )}
+      <AppText
+        variant="title"
+        style={[styles.name, compact && styles.nameCompact]}
+        numberOfLines={2}
+        ellipsizeMode="tail"
+      >
+        {name}
+      </AppText>
+
+      <View style={styles.metaRow}>
+        {memberCount != null && memberCount > 0 && (
+          <AppText variant="caption" color="secondary">
+            {t("lobby.memberCount", { count: memberCount })}
+          </AppText>
+        )}
+        {!compact && memberCount != null && memberCount > 0 && (
+          <AppText variant="caption" color="secondary" style={styles.separator}>
+            •
+          </AppText>
+        )}
+        {!compact && (
           <AppText variant="caption" style={{ color: statusColor }}>
             {statusLabel}
           </AppText>
-        </View>
+        )}
       </View>
-    </Card>
+    </View>
   );
+
+  if (compact) {
+    return <View style={styles.compactWrap}>{content}</View>;
+  }
+
+  return <Card style={styles.card}>{content}</Card>;
 }
 
 const styles = StyleSheet.create({
   card: {
     marginBottom: 16,
   },
+  compactWrap: {
+    paddingBottom: 16,
+  },
   container: {
     alignItems: "center",
     paddingVertical: 8,
+  },
+  containerCompact: {
+    paddingVertical: 4,
   },
   avatar: {
     width: 72,
@@ -121,14 +132,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
+  avatarCompact: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginBottom: 8,
+  },
   initials: {
     fontWeight: "700",
     fontSize: 28,
+  },
+  initialsCompact: {
+    fontSize: 22,
   },
   name: {
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 4,
+  },
+  nameCompact: {
+    marginBottom: 2,
   },
   metaRow: {
     flexDirection: "row",

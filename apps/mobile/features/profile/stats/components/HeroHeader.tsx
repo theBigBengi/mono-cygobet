@@ -28,15 +28,9 @@ function getInitials(username: string | null): string {
   return username.slice(0, 2).toUpperCase();
 }
 
-function StatColumn({
-  value,
-  label,
-}: {
-  value: string | number;
-  label: string;
-}) {
+function StatBox({ value, label }: { value: string | number; label: string }) {
   return (
-    <View style={styles.statColumn}>
+    <View style={styles.statBox}>
       <AppText style={styles.statValue}>{value}</AppText>
       <AppText style={styles.statLabel}>{label}</AppText>
     </View>
@@ -72,20 +66,14 @@ export function HeroHeader({
 
       <AppText style={styles.username}>{username || "unknown"}</AppText>
 
-      <View style={styles.statsRow}>
-        <StatColumn value={`${accuracy}%`} label={t("profile.accuracy")} />
-        <View style={styles.statDivider} />
-        <StatColumn
+      <View style={styles.statsGrid}>
+        <StatBox value={`${accuracy}%`} label={t("profile.accuracy")} />
+        <StatBox
           value={totalPredictions.toLocaleString()}
           label={t("profile.predictions")}
         />
-        <View style={styles.statDivider} />
-        <StatColumn value={exactPredictions} label={t("profile.exactShort")} />
-        <View style={styles.statDivider} />
-        <StatColumn
-          value={correctPredictions}
-          label={t("profile.correctPredictions")}
-        />
+        <StatBox value={exactPredictions} label={t("profile.exactShort")} />
+        <StatBox value={correctPredictions} label={t("profile.correctShort")} />
       </View>
     </View>
   );
@@ -97,6 +85,7 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     paddingHorizontal: 20,
     alignItems: "center",
+    overflow: "visible",
   },
   editButton: {
     position: "absolute",
@@ -125,29 +114,31 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginBottom: 20,
   },
-  statsRow: {
+  statsGrid: {
     flexDirection: "row",
-    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 12,
     justifyContent: "center",
-    paddingHorizontal: 8,
+    overflow: "visible",
   },
-  statColumn: {
+  statBox: {
+    width: "45%",
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
     alignItems: "center",
-    paddingHorizontal: 12,
+    overflow: "visible",
   },
   statValue: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: "700",
+    lineHeight: 34,
   },
   statLabel: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 12,
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: "rgba(255,255,255,0.25)",
+    marginTop: 4,
   },
 });

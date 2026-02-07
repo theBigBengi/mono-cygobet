@@ -217,7 +217,16 @@
     "winner": "Winner",
     "winnerWithPoints": "{{name}} · {{points}} pts",
     "winnerPoints": "{{points}} pts",
-    "viewAll": "View full ranking"
+    "viewAll": "View full ranking",
+    "tapToPredict": "Tap to predict",
+    "yourRankSection": "YOUR RANK",
+    "viewRanking": "View ranking",
+    "leaderboard": "LEADERBOARD",
+    "you": "You",
+    "stats": "Stats",
+    "vs": "vs",
+    "makePredictions": "Make Predictions",
+    "viewAllGames": "View All Games"
   },
   "groupSettings": {
     "general": "General",
@@ -321,7 +330,8 @@
     "dayStreak": "day streak",
     "level": "Level",
     "exactShort": "exact",
-    "winsShort": "wins"
+    "winsShort": "wins",
+    "correctShort": "correct"
   },
   "discover": {
     "searchPlaceholder": "Search by group name",

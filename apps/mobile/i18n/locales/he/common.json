@@ -217,7 +217,16 @@
     "winner": "מנצח",
     "winnerWithPoints": "{{name}} · {{points}} נק׳",
     "winnerPoints": "{{points}} נק׳",
-    "viewAll": "צפה בדירוג המלא"
+    "viewAll": "צפה בדירוג המלא",
+    "tapToPredict": "הקש לניחוש",
+    "yourRankSection": "הדירוג שלך",
+    "viewRanking": "צפה בדירוג",
+    "leaderboard": "טבלת מובילים",
+    "you": "את/ה",
+    "stats": "סטטיסטיקות",
+    "vs": "נגד",
+    "makePredictions": "בחר תחזיות",
+    "viewAllGames": "צפה בכל המשחקים"
   },
   "groupSettings": {
     "general": "כללי",
@@ -321,7 +330,8 @@
     "dayStreak": "ימים ברצף",
     "level": "רמה",
     "exactShort": "מדויקים",
-    "winsShort": "ניצחונות"
+    "winsShort": "ניצחונות",
+    "correctShort": "נכונים"
   },
   "discover": {
     "searchPlaceholder": "חפש לפי שם קבוצה",

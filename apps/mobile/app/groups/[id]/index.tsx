@@ -153,7 +153,12 @@ export default function GroupLobbyScreen() {
 
   if (group.status === "ended") {
     content = (
-      <LobbyWithHeader status={group.status}>
+      <LobbyWithHeader
+        status={group.status}
+        onSettingsPress={() =>
+          router.push(`/groups/${group.id}/settings` as any)
+        }
+      >
         <GroupLobbyEndedScreen
           group={group}
           onRefresh={handleRefresh}
@@ -179,7 +184,12 @@ export default function GroupLobbyScreen() {
     );
   } else if (group.status === "active") {
     content = (
-      <LobbyWithHeader status={group.status}>
+      <LobbyWithHeader
+        status={group.status}
+        onSettingsPress={() =>
+          router.push(`/groups/${group.id}/settings` as any)
+        }
+      >
         <GroupLobbyActiveScreen
           group={group}
           onRefresh={handleRefresh}

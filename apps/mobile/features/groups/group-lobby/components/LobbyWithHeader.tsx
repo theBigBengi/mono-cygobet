@@ -21,6 +21,8 @@ interface LobbyWithHeaderProps {
   onDeleteGroup?: () => void;
   /** For draft status: whether delete is in progress (disables trash icon) */
   isDeleting?: boolean;
+  /** For active/ended: when provided, shows Settings icon in header */
+  onSettingsPress?: () => void;
 }
 
 /**
@@ -34,6 +36,7 @@ export function LobbyWithHeader({
   status,
   onDeleteGroup,
   isDeleting = false,
+  onSettingsPress,
 }: LobbyWithHeaderProps) {
   const { t } = useTranslation("common");
   const goBack = useGoBack("/(tabs)/groups");
@@ -75,6 +78,19 @@ export function LobbyWithHeader({
             color={
               isDeleting ? theme.colors.textSecondary : theme.colors.danger
             }
+          />
+        </View>
+      </Pressable>
+    ) : isActiveOrEnded && onSettingsPress ? (
+      <Pressable
+        onPress={onSettingsPress}
+        style={({ pressed }) => [pressed && styles.iconPressed]}
+      >
+        <View style={styles.settingsButton}>
+          <Ionicons
+            name="settings-outline"
+            size={22}
+            color={theme.colors.textPrimary}
           />
         </View>
       </Pressable>
