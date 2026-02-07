@@ -226,7 +226,8 @@
     "stats": "Stats",
     "vs": "vs",
     "makePredictions": "Make Predictions",
-    "viewAllGames": "View All Games"
+    "viewAllGames": "View All Games",
+    "nextGameLabel": "NEXT GAME"
   },
   "groupSettings": {
     "general": "General",

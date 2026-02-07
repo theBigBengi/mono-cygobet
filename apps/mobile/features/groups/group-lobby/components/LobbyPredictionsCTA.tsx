@@ -20,6 +20,7 @@ export interface LobbyPredictionsCTAProps {
   totalFixtures: number;
   onPress: () => void;
   nextGame?: LobbyPredictionsCTANextGame | null;
+  isLoading?: boolean;
 }
 
 const LOGO_SIZE = 40;
@@ -29,6 +30,7 @@ export function LobbyPredictionsCTA({
   totalFixtures,
   onPress,
   nextGame,
+  isLoading = false,
 }: LobbyPredictionsCTAProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -40,11 +42,62 @@ export function LobbyPredictionsCTA({
     ? `${formatKickoffDate(nextGame.kickoffAt)} ${formatKickoffTime(nextGame.kickoffAt)}`
     : "";
 
+  if (isLoading) {
+    return (
+      <View style={[styles.wrapper, { backgroundColor: theme.colors.surface }]}>
+        <View style={styles.content}>
+          <View style={styles.teamsRow}>
+            <View
+              style={[
+                styles.skeletonLogo,
+                { backgroundColor: theme.colors.border },
+              ]}
+            />
+            <View
+              style={[
+                styles.skeletonVs,
+                { backgroundColor: theme.colors.border },
+              ]}
+            />
+            <View
+              style={[
+                styles.skeletonLogo,
+                { backgroundColor: theme.colors.border },
+              ]}
+            />
+          </View>
+          <View
+            style={[
+              styles.skeletonText,
+              { backgroundColor: theme.colors.border },
+            ]}
+          />
+          <View
+            style={[styles.track, { backgroundColor: theme.colors.border }]}
+          />
+          <View
+            style={[
+              styles.skeletonButton,
+              { backgroundColor: theme.colors.border },
+            ]}
+          />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.wrapper, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.content}>
         {hasNextGame ? (
           <>
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.sectionLabel}
+            >
+              {t("lobby.nextGameLabel")}
+            </AppText>
             <View style={styles.teamsRow}>
               <View style={styles.teamBlock}>
                 <View
@@ -101,7 +154,11 @@ export function LobbyPredictionsCTA({
           </>
         ) : (
           <View style={styles.titleRow}>
-            <AppText style={styles.emoji}>🎯</AppText>
+            <MaterialIcons
+              name="sports-soccer"
+              size={24}
+              color={theme.colors.primary}
+            />
             <AppText
               variant="body"
               style={[styles.title, { color: theme.colors.textPrimary }]}
@@ -123,9 +180,14 @@ export function LobbyPredictionsCTA({
           />
         </View>
         <View style={styles.progressLabel}>
-          <AppText variant="caption" color="secondary">
-            {predictionsCount}/{totalFixtures}
-          </AppText>
+          <View style={styles.progressRow}>
+            <AppText variant="caption" color="secondary">
+              {predictionsCount}/{totalFixtures}
+            </AppText>
+            <AppText variant="caption" color="secondary">
+              {Math.round(progress * 100)}%
+            </AppText>
+          </View>
         </View>
 
         <Pressable
@@ -189,15 +251,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 12,
   },
+  sectionLabel: {
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    fontWeight: "600",
+    marginBottom: 8,
+    textAlign: "center",
+  },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     marginBottom: 12,
-  },
-  emoji: {
-    fontSize: 24,
   },
   title: {
     fontWeight: "700",
@@ -215,6 +281,11 @@ const styles = StyleSheet.create({
   progressLabel: {
     marginBottom: 12,
   },
+  progressRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   ctaButton: {
     paddingVertical: 12,
     borderRadius: 10,
@@ -226,5 +297,27 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     fontWeight: "700",
+  },
+  skeletonLogo: {
+    width: LOGO_SIZE + 8,
+    height: LOGO_SIZE + 8,
+    borderRadius: (LOGO_SIZE + 8) / 2,
+  },
+  skeletonVs: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+  },
+  skeletonText: {
+    width: 120,
+    height: 14,
+    borderRadius: 4,
+    alignSelf: "center",
+    marginVertical: 8,
+  },
+  skeletonButton: {
+    height: 44,
+    borderRadius: 10,
+    marginTop: 12,
   },
 });

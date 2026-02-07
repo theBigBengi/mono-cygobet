@@ -226,7 +226,8 @@
     "stats": "סטטיסטיקות",
     "vs": "נגד",
     "makePredictions": "בחר תחזיות",
-    "viewAllGames": "צפה בכל המשחקים"
+    "viewAllGames": "צפה בכל המשחקים",
+    "nextGameLabel": "המשחק הבא"
   },
   "groupSettings": {
     "general": "כללי",
