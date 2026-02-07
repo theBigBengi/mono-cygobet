@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth/useAuth";
+import { useAppIsActive } from "@/lib/hooks/useAppIsActive";
 import { isReadyForProtected } from "@/lib/auth/guards";
 import type { ChatMessage, MentionData } from "@/lib/socket";
 import { useGroupSocket } from "@/lib/socket";
@@ -61,6 +62,7 @@ export function useGroupMessagesQuery(groupId: number | null) {
  */
 export function useUnreadCountsQuery() {
   const { status, user } = useAuth();
+  const isActive = useAppIsActive();
 
   const enabled = isReadyForProtected(status, user);
 
@@ -68,7 +70,7 @@ export function useUnreadCountsQuery() {
     queryKey: groupsKeys.unreadCounts(),
     queryFn: () => fetchUnreadCounts(),
     enabled,
-    refetchInterval: 30_000, // Refresh every 30 seconds
+    refetchInterval: isActive ? 30_000 : false, // Pause when in background
     meta: { scope: "user" } as const,
   });
 }
@@ -78,6 +80,7 @@ export function useUnreadCountsQuery() {
  */
 export function useGroupChatPreviewQuery() {
   const { status, user } = useAuth();
+  const isActive = useAppIsActive();
 
   const enabled = isReadyForProtected(status, user);
 
@@ -86,7 +89,7 @@ export function useGroupChatPreviewQuery() {
     queryFn: () => fetchGroupChatPreview(),
     enabled,
     staleTime: 30_000, // 30 seconds
-    refetchInterval: 60_000, // Refetch every minute
+    refetchInterval: isActive ? 60_000 : false, // Pause when in background
     meta: { scope: "user" } as const,
   });
 }

@@ -22,6 +22,7 @@ export default function SingleGameRoute() {
 
   const { data, isLoading, error } = useGroupQuery(groupId, {
     includeFixtures: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes — use cached data from games screen
   });
 
   if (isLoading) {

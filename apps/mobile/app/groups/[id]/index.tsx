@@ -12,11 +12,7 @@ import { useSetAtom } from "jotai";
 import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { BlurView } from "expo-blur";
 import { Screen, AppText } from "@/components/ui";
-import {
-  useGroupQuery,
-  useGroupGamesFiltersQuery,
-  useDeleteGroupMutation,
-} from "@/domains/groups";
+import { useGroupQuery, useDeleteGroupMutation } from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
@@ -51,8 +47,6 @@ export default function GroupLobbyScreen() {
     error,
     refetch: refetchGroup,
   } = useGroupQuery(groupId, { includeFixtures: true });
-
-  useGroupGamesFiltersQuery(groupId);
 
   // Turn off global overlay when screen mounts
   // Delay ensures the screen is painted before overlay disappears

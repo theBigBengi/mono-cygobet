@@ -2,7 +2,7 @@
 // React Query hooks for teams domain.
 // - Feature-agnostic: can be used by any feature that needs teams data.
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ApiTeamsResponse, ApiTeamsQuery } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -20,7 +20,14 @@ import { teamsKeys } from "./teams.keys";
  */
 export function useTeamsQuery(params: ApiTeamsQuery = {}) {
   const { status, user } = useAuth();
-  const { page = 1, perPage = 20, leagueId, includeCountry, search, preset } = params;
+  const {
+    page = 1,
+    perPage = 20,
+    leagueId,
+    includeCountry,
+    search,
+    preset,
+  } = params;
 
   const enabled = isReadyForProtected(status, user);
 
@@ -36,6 +43,8 @@ export function useTeamsQuery(params: ApiTeamsQuery = {}) {
     queryFn: () =>
       fetchTeams({ page, perPage, leagueId, includeCountry, search, preset }),
     enabled,
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours — teams rarely change
+    placeholderData: keepPreviousData,
     meta: { scope: "user" },
   });
 }

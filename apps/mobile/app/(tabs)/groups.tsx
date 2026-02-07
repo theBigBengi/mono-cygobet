@@ -19,11 +19,13 @@ import { useTranslation } from "react-i18next";
 import { Screen, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
-import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { GroupDraftCard } from "@/features/groups/group-list/components/GroupDraftCard";
 import { GroupActiveCard } from "@/features/groups/group-list/components/GroupActiveCard";
-import { useGroupSections, type GroupSection } from "@/features/groups/group-list/hooks";
+import {
+  useGroupSections,
+  type GroupSection,
+} from "@/features/groups/group-list/hooks";
 import type { ApiGroupItem } from "@repo/types";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -66,11 +68,37 @@ export default function GroupsScreen() {
   const groups = data?.data || [];
   const { sections } = useGroupSections(groups);
 
-  // Loading state
+  // Loading state — skeleton
   if (isLoading) {
     return (
       <View style={styles.root}>
-        <QueryLoadingView message={t("groups.loadingGroups")} />
+        <Screen
+          scroll={false}
+          contentContainerStyle={{
+            alignItems: "stretch",
+            flex: 1,
+            padding: 0,
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: theme.spacing.md,
+              paddingTop: theme.spacing.md,
+            }}
+          >
+            {[1, 2, 3].map((i) => (
+              <View
+                key={i}
+                style={{
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: theme.radius.md,
+                  height: 120,
+                  marginBottom: theme.spacing.sm,
+                }}
+              />
+            ))}
+          </View>
+        </Screen>
       </View>
     );
   }
@@ -107,9 +135,14 @@ export default function GroupsScreen() {
               label={t("groupCreation.createGroup")}
               variant="primary"
               onPress={handleCreateGroup}
-              style={[styles.createGroupButton, { marginTop: theme.spacing.lg }]}
+              style={[
+                styles.createGroupButton,
+                { marginTop: theme.spacing.lg },
+              ]}
             />
-            <View style={[styles.secondaryActions, { marginTop: theme.spacing.xl }]}>
+            <View
+              style={[styles.secondaryActions, { marginTop: theme.spacing.xl }]}
+            >
               <Pressable
                 onPress={handleJoinWithCode}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -118,11 +151,19 @@ export default function GroupsScreen() {
                   pressed && styles.secondaryActionPressed,
                 ]}
               >
-                <AppText variant="body" color="secondary" style={styles.secondaryActionText}>
+                <AppText
+                  variant="body"
+                  color="secondary"
+                  style={styles.secondaryActionText}
+                >
                   {t("groups.joinWithCode")}
                 </AppText>
               </Pressable>
-              <AppText variant="body" color="secondary" style={styles.secondaryActionSeparator}>
+              <AppText
+                variant="body"
+                color="secondary"
+                style={styles.secondaryActionSeparator}
+              >
                 ·
               </AppText>
               <Pressable
@@ -133,7 +174,11 @@ export default function GroupsScreen() {
                   pressed && styles.secondaryActionPressed,
                 ]}
               >
-                <AppText variant="body" color="secondary" style={styles.secondaryActionText}>
+                <AppText
+                  variant="body"
+                  color="secondary"
+                  style={styles.secondaryActionText}
+                >
                   {t("groups.browsePublicGroups")}
                 </AppText>
               </Pressable>

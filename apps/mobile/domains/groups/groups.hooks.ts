@@ -94,7 +94,7 @@ export function usePublicGroupsQuery(params: ApiPublicGroupsQuery) {
  */
 export function useGroupQuery(
   id: number | null,
-  options?: { includeFixtures?: boolean }
+  options?: { includeFixtures?: boolean; staleTime?: number }
 ) {
   const { status, user } = useAuth();
 
@@ -109,6 +109,7 @@ export function useGroupQuery(
         include: options?.includeFixtures ? "fixtures" : undefined,
       }),
     enabled,
+    ...(options?.staleTime != null && { staleTime: options.staleTime }),
     meta: { scope: "user" },
   });
 }
@@ -166,18 +167,20 @@ export function useUpdateGroupMutation(groupId: number | null) {
       }
       return updateGroup(groupId, body);
     },
-    onSuccess: () => {
-      // Invalidate group detail, groups list, and fixtures
+    onSuccess: (response) => {
       if (groupId) {
-        queryClient.invalidateQueries({
-          queryKey: groupsKeys.detail(groupId),
-        });
+        // Update detail cache directly with response data
+        queryClient.setQueryData(groupsKeys.detail(groupId), response);
         // Invalidate fixtures query to refetch with updated fixtures
         queryClient.invalidateQueries({
           queryKey: groupsKeys.fixtures(groupId),
         });
+        // Mark list as stale but don't refetch immediately
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.lists(),
+          refetchType: "none",
+        });
       }
-      queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
     },
   });
 }
@@ -197,14 +200,16 @@ export function usePublishGroupMutation(groupId: number | null) {
       }
       return publishGroup(groupId, body);
     },
-    onSuccess: () => {
-      // Invalidate group detail and groups list
+    onSuccess: (response) => {
       if (groupId) {
+        // Update detail cache directly with response data
+        queryClient.setQueryData(groupsKeys.detail(groupId), response);
+        // Mark list as stale but don't refetch immediately
         queryClient.invalidateQueries({
-          queryKey: groupsKeys.detail(groupId),
+          queryKey: groupsKeys.lists(),
+          refetchType: "none",
         });
       }
-      queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
     },
   });
 }

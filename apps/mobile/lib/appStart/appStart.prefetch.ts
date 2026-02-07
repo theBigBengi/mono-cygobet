@@ -6,15 +6,13 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { AuthContextValue } from "@/lib/auth/AuthProvider";
 import type { AppStartError, AppStartStatus } from "./appStart.types";
-import {
-  fetchUpcomingFixtures,
-  fixturesKeys,
-} from "@/domains/fixtures";
+import { fetchUpcomingFixtures, fixturesKeys } from "@/domains/fixtures";
 import { fetchLeagues } from "@/domains/leagues/leagues.api";
 import { leaguesKeys } from "@/domains/leagues/leagues.keys";
 import { fetchTeams } from "@/domains/teams/teams.api";
 import { teamsKeys } from "@/domains/teams/teams.keys";
 import { fetchMyGroups } from "@/domains/groups/groups.api";
+import { fetchUnreadCounts } from "@/domains/groups/groups-chat.api";
 import { groupsKeys } from "@/domains/groups/groups.keys";
 
 /**
@@ -48,7 +46,9 @@ export async function prefetchInitialData(
     // Authenticated: user should be present
     if (!user) {
       // Defensive: user missing despite authenticated state - try to mark ready but log
-      console.log("AppStart: authenticated but user is null (unexpected), marking ready");
+      console.log(
+        "AppStart: authenticated but user is null (unexpected), marking ready"
+      );
       setStatus("ready");
       console.log("AppStart: ready (authenticated but user not present)");
       return;
@@ -63,7 +63,9 @@ export async function prefetchInitialData(
     }
 
     // Onboarding complete: mark ready immediately, prefetch in background
-    console.log("AppStart: marking ready immediately, starting background prefetch");
+    console.log(
+      "AppStart: marking ready immediately, starting background prefetch"
+    );
     setStatus("ready");
     console.log("AppStart: ready (authenticated onboarded)");
 
@@ -73,14 +75,18 @@ export async function prefetchInitialData(
   }
 
   if (status === "onboarding") {
-    console.log("AppStart: onboarding state, skipping prefetch and marking ready");
+    console.log(
+      "AppStart: onboarding state, skipping prefetch and marking ready"
+    );
     setStatus("ready");
     return;
   }
 
   if (status === "degraded") {
     // Degraded: network issues but session may exist. Mark ready and optionally prefetch limited data.
-    console.log("AppStart: degraded state, marking ready without background prefetch");
+    console.log(
+      "AppStart: degraded state, marking ready without background prefetch"
+    );
     setStatus("ready");
     return;
   }
@@ -88,7 +94,9 @@ export async function prefetchInitialData(
   if (status === "idle" || status === "restoring") {
     // Status is still restoring - bootstrap might be retrying or network issue
     // Do not turn this into error automatically, stay in booting state
-    console.log("AppStart: status still restoring/idle, staying in booting state");
+    console.log(
+      "AppStart: status still restoring/idle, staying in booting state"
+    );
     // Don't change status - keep it as "booting" so the effect can retry
     return;
   }
@@ -109,7 +117,7 @@ export async function prefetchInitialData(
  */
 function prefetchInBackground(queryClient: QueryClient): void {
   console.log("AppStart: background prefetch started");
-  
+
   // Prefetch all data in parallel
   Promise.all([
     // Prefetch fixtures (for fixtures mode)
@@ -154,6 +162,17 @@ function prefetchInBackground(queryClient: QueryClient): void {
       })
       .catch((error) => {
         console.log("AppStart: background prefetch groups error", error);
+      }),
+
+    // Prefetch unread counts (for groups tab badge)
+    queryClient
+      .prefetchQuery({
+        queryKey: groupsKeys.unreadCounts(),
+        queryFn: () => fetchUnreadCounts(),
+        meta: { scope: "user" },
+      })
+      .catch((error) => {
+        console.log("AppStart: background prefetch unread counts error", error);
       }),
   ])
     .then(() => {

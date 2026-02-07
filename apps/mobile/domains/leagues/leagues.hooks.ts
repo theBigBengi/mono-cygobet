@@ -2,7 +2,7 @@
 // React Query hooks for leagues domain.
 // - Feature-agnostic: can be used by any feature that needs leagues data.
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ApiLeaguesResponse, ApiLeaguesQuery } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -52,6 +52,8 @@ export function useLeaguesQuery(params: ApiLeaguesQuery = {}) {
         search,
       }),
     enabled,
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours — leagues rarely change
+    placeholderData: keepPreviousData,
     meta: { scope: "user" },
   });
 }
