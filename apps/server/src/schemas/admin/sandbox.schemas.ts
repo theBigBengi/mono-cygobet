@@ -118,3 +118,62 @@ export const sandboxResponseSchema = {
     message: { type: "string" },
   },
 } as const;
+
+// GET /group/:groupId/members
+export const sandboxGroupIdParamsSchema = {
+  type: "object",
+  required: ["groupId"],
+  additionalProperties: false,
+  properties: {
+    groupId: { type: "string", pattern: "^[0-9]+$" },
+  },
+} as const;
+
+export const sandboxMembersResponseSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string" },
+    data: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          userId: { type: "integer" },
+          username: { type: "string" },
+          email: { type: ["string", "null"] },
+          image: { type: ["string", "null"] },
+          role: { type: "string" },
+        },
+      },
+    },
+    message: { type: "string" },
+  },
+} as const;
+
+// POST /send-message
+export const sandboxSendMessageBodySchema = {
+  type: "object",
+  required: ["groupId", "senderId", "body"],
+  additionalProperties: false,
+  properties: {
+    groupId: { type: "integer" },
+    senderId: { type: "integer" },
+    body: { type: "string", minLength: 1, maxLength: 2000 },
+  },
+} as const;
+
+export const sandboxSendMessageResponseSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string" },
+    data: {
+      type: "object",
+      properties: {
+        messageId: { type: "integer" },
+        body: { type: "string" },
+        createdAt: { type: "string" },
+      },
+    },
+    message: { type: "string" },
+  },
+} as const;

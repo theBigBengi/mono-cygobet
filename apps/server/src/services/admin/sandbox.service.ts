@@ -719,6 +719,87 @@ export async function sandboxCleanup() {
   };
 }
 
+// ───── 5b. get group members ─────
+
+export async function sandboxGetGroupMembers(groupId: number) {
+  const group = await prisma.groups.findUnique({
+    where: { id: groupId },
+    select: { name: true },
+  });
+  if (!group || !group.name.startsWith("[SANDBOX]")) {
+    throw new Error("Group not found or is not a sandbox group");
+  }
+
+  const members = await prisma.groupMembers.findMany({
+    where: { groupId },
+    select: { userId: true, role: true },
+  });
+  const userIds = [...new Set(members.map((m) => m.userId))];
+  const users =
+    userIds.length > 0
+      ? await prisma.users.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, username: true, email: true, image: true },
+        })
+      : [];
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  return members.map((m) => {
+    const u = userMap.get(m.userId);
+    return {
+      userId: m.userId,
+      username: u?.username ?? `User ${m.userId}`,
+      email: u?.email ?? null,
+      image: u?.image ?? null,
+      role: m.role,
+    };
+  });
+}
+
+// ───── 5c. send message as member ─────
+
+export async function sandboxSendMessage(args: {
+  groupId: number;
+  senderId: number;
+  body: string;
+}) {
+  const { groupId, senderId, body } = args;
+
+  const group = await prisma.groups.findUnique({
+    where: { id: groupId },
+    select: { name: true, status: true },
+  });
+  if (!group || !group.name.startsWith("[SANDBOX]")) {
+    throw new Error("Group not found or is not a sandbox group");
+  }
+
+  const member = await prisma.groupMembers.findUnique({
+    where: { groupId_userId: { groupId, userId: senderId } },
+  });
+  if (!member) {
+    throw new Error("User is not a member of this group");
+  }
+
+  const trimmed = body.trim();
+  if (!trimmed) throw new Error("Message body cannot be empty");
+  if (trimmed.length > 2000) throw new Error("Max 2000 characters");
+
+  const message = await prisma.groupMessages.create({
+    data: {
+      groupId,
+      senderId,
+      type: "user_message",
+      body: trimmed,
+    },
+  });
+
+  return {
+    messageId: message.id,
+    body: message.body,
+    createdAt: message.createdAt.toISOString(),
+  };
+}
+
 // ───── 6. list ─────
 
 export async function sandboxList() {

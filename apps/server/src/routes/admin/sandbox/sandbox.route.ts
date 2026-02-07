@@ -16,7 +16,9 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply) => {
-      const result = await sandbox.sandboxSetup(req.body as Parameters<typeof sandbox.sandboxSetup>[0]);
+      const result = await sandbox.sandboxSetup(
+        req.body as Parameters<typeof sandbox.sandboxSetup>[0]
+      );
       return reply.send({
         status: "success",
         data: result,
@@ -57,7 +59,10 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply) => {
       const { fixtureId } = req.body as { fixtureId: number };
-      const result = await sandbox.sandboxSimulateKickoff(fixtureId, fastify.io);
+      const result = await sandbox.sandboxSimulateKickoff(
+        fixtureId,
+        fastify.io
+      );
       return reply.send({
         status: "success",
         data: result,
@@ -163,6 +168,47 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
         status: "success",
         data: result,
         message: "All sandbox data cleaned up",
+      });
+    }
+  );
+
+  // GET /admin/sandbox/group/:groupId/members
+  fastify.get(
+    "/group/:groupId/members",
+    {
+      schema: {
+        params: schemas.sandboxGroupIdParamsSchema,
+        response: { 200: schemas.sandboxMembersResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const groupId = Number((req.params as { groupId: string }).groupId);
+      const members = await sandbox.sandboxGetGroupMembers(groupId);
+      return reply.send({
+        status: "success",
+        data: members,
+        message: "Group members",
+      });
+    }
+  );
+
+  // POST /admin/sandbox/send-message
+  fastify.post(
+    "/send-message",
+    {
+      schema: {
+        body: schemas.sandboxSendMessageBodySchema,
+        response: { 200: schemas.sandboxSendMessageResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const result = await sandbox.sandboxSendMessage(
+        req.body as Parameters<typeof sandbox.sandboxSendMessage>[0]
+      );
+      return reply.send({
+        status: "success",
+        data: result,
+        message: "Message sent",
       });
     }
   );

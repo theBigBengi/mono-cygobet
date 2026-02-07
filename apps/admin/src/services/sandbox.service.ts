@@ -83,6 +83,26 @@ export type SandboxAddFixtureResponse = {
   message: string;
 };
 
+export type SandboxMember = {
+  userId: number;
+  username: string;
+  email: string | null;
+  image: string | null;
+  role: string;
+};
+
+export type SandboxGetMembersResponse = {
+  status: string;
+  data: SandboxMember[];
+  message: string;
+};
+
+export type SandboxSendMessageResponse = {
+  status: string;
+  data: { messageId: number; body: string; createdAt: string };
+  message: string;
+};
+
 // ───── Service ─────
 
 export const sandboxService = {
@@ -154,4 +174,16 @@ export const sandboxService = {
 
   cleanup: (): Promise<SandboxCleanupResponse> =>
     apiDelete<SandboxCleanupResponse>("/admin/sandbox/cleanup"),
+
+  getGroupMembers: (groupId: number): Promise<SandboxGetMembersResponse> =>
+    apiGet<SandboxGetMembersResponse>(
+      `/admin/sandbox/group/${groupId}/members`
+    ),
+
+  sendMessage: (args: {
+    groupId: number;
+    senderId: number;
+    body: string;
+  }): Promise<SandboxSendMessageResponse> =>
+    apiPost<SandboxSendMessageResponse>("/admin/sandbox/send-message", args),
 };

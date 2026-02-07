@@ -57,12 +57,15 @@ import {
   Plus,
   Pencil,
   ChevronDown,
+  MessageSquare,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useSandboxList } from "@/hooks/use-sandbox";
 import {
   sandboxService,
   type SandboxFixture,
   type SandboxGroup,
+  type SandboxMember,
 } from "@/services/sandbox.service";
 import { leaguesService } from "@/services/leagues.service";
 import { teamsService } from "@/services/teams.service";
@@ -107,6 +110,23 @@ function getStateBadgeVariant(
   return "outline";
 }
 
+const SAMPLE_MESSAGES_EN = [
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+  "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+  "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+  "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+];
+const SAMPLE_MESSAGES_HE = [
+  "לורם איפסום דולור סיט אמט, קונסקטורר אדיפיסינג אליט. קודס בלבוריס ניסי אונרי אולום קוויס נוסטרוד אקסר ציט.",
+  "אוט אינימ אד מינימ ויניאם, קויס נוסטרוד אקסר ציטיישן אולמקו לבוריס ניסי אוט אליקויפ אקס איאה קומודו קונסקוואט.",
+  "דואיס אוטה אירורה דולור אין ריפרהינדריט אין וולופטאה ולית אסה צילום דולורה יו פוגיאט נולה פרייטור.",
+];
+
+function getRandomSample(lang: "he" | "en"): string {
+  const pool = lang === "en" ? SAMPLE_MESSAGES_EN : SAMPLE_MESSAGES_HE;
+  return pool[Math.floor(Math.random() * pool.length)] ?? pool[0]!;
+}
+
 export default function SandboxPage() {
   const queryClient = useQueryClient();
   const { data: listData, isLoading } = useSandboxList();
@@ -130,6 +150,20 @@ export default function SandboxPage() {
     if (!group) return [];
     return fixtures.filter((f) => group.fixtureIds.includes(f.id));
   }, [fixtures, groups, selectedGroupTab]);
+
+  // View toggle: "fixtures" | "members"
+  const [viewMode, setViewMode] = React.useState<"fixtures" | "members">(
+    "fixtures"
+  );
+  const [sendMessageDialog, setSendMessageDialog] = React.useState<{
+    open: boolean;
+    memberId: number | null;
+    memberName: string;
+  }>({ open: false, memberId: null, memberName: "" });
+  const [messageLang, setMessageLang] = React.useState<"he" | "en">("en");
+  const [messageBody, setMessageBody] = React.useState(() =>
+    getRandomSample("en")
+  );
 
   // Setup form
   const [setupForm, setSetupForm] = React.useState({
@@ -420,6 +454,25 @@ export default function SandboxPage() {
     },
     onError: (error: Error) => {
       toast.error("Cleanup failed", { description: error.message });
+    },
+  });
+
+  const { data: membersData, isLoading: membersLoading } = useQuery({
+    queryKey: ["sandbox", "members", selectedGroupTab],
+    queryFn: () => sandboxService.getGroupMembers(selectedGroupTab!),
+    enabled: selectedGroupTab !== null && viewMode === "members",
+  });
+  const members = membersData?.data ?? [];
+
+  const sendMessageMutation = useMutation({
+    mutationFn: (args: { groupId: number; senderId: number; body: string }) =>
+      sandboxService.sendMessage(args),
+    onSuccess: () => {
+      toast.success("Message sent successfully");
+      setSendMessageDialog({ open: false, memberId: null, memberName: "" });
+    },
+    onError: (error: Error) => {
+      toast.error("Send message failed", { description: error.message });
     },
   });
 
@@ -783,6 +836,24 @@ export default function SandboxPage() {
                     Add Fixture
                   </Button>
                 )}
+                {selectedGroupTab !== null && (
+                  <div className="flex items-center gap-1 rounded-lg border p-1">
+                    <Button
+                      size="sm"
+                      variant={viewMode === "fixtures" ? "secondary" : "ghost"}
+                      onClick={() => setViewMode("fixtures")}
+                    >
+                      Fixtures
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={viewMode === "members" ? "secondary" : "ghost"}
+                      onClick={() => setViewMode("members")}
+                    >
+                      Members
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
             {selectedGroupTab !== null &&
@@ -815,129 +886,191 @@ export default function SandboxPage() {
               <p className="text-muted-foreground">
                 Select a group to view its fixtures.
               </p>
-            ) : filteredFixtures.length === 0 ? (
-              <p className="text-muted-foreground">
-                No fixtures in this group.
-              </p>
+            ) : viewMode === "fixtures" ? (
+              filteredFixtures.length === 0 ? (
+                <p className="text-muted-foreground">
+                  No fixtures in this group.
+                </p>
+              ) : (
+                <div className="min-w-0 overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Match</TableHead>
+                        <TableHead>State</TableHead>
+                        <TableHead>Min</TableHead>
+                        <TableHead>Score</TableHead>
+                        <TableHead>Start</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredFixtures.map((fixture) => {
+                        const action = getFixtureAction(fixture.state);
+                        const matchName =
+                          fixture.homeTeam && fixture.awayTeam
+                            ? `${fixture.homeTeam} vs ${fixture.awayTeam}`
+                            : fixture.name;
+                        const score =
+                          fixture.homeScore90 !== null &&
+                          fixture.awayScore90 !== null
+                            ? `${fixture.homeScore90} - ${fixture.awayScore90}`
+                            : "—";
+                        const isLive = LIVE_STATES.includes(
+                          fixture.state as (typeof LIVE_STATES)[number]
+                        );
+                        const minDisplay = isLive
+                          ? (fixture.liveMinute ?? "—")
+                          : "—";
+                        return (
+                          <TableRow key={fixture.id}>
+                            <TableCell>{fixture.id}</TableCell>
+                            <TableCell>{matchName}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={getStateBadgeVariant(fixture.state)}
+                              >
+                                {fixture.state}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{minDisplay}</TableCell>
+                            <TableCell>{score}</TableCell>
+                            <TableCell>
+                              {fixture.state === "NS" ? (
+                                <Input
+                                  type="datetime-local"
+                                  className="w-[180px]"
+                                  value={tsToDatetimeLocal(fixture.startTs)}
+                                  onChange={(e) => {
+                                    if (!e.target.value) return;
+                                    updateStartTimeMutation.mutate({
+                                      fixtureId: fixture.id,
+                                      startTime: new Date(
+                                        e.target.value
+                                      ).toISOString(),
+                                    });
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-sm text-muted-foreground">
+                                  {new Date(
+                                    fixture.startTs * 1000
+                                  ).toLocaleString()}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {action === "kickoff" && (
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  onClick={() =>
+                                    kickoffMutation.mutate(fixture.id)
+                                  }
+                                  disabled={kickoffMutation.isPending}
+                                >
+                                  <Play className="mr-1 h-3 w-3" />
+                                  Kickoff
+                                </Button>
+                              )}
+                              {action === "full-time" && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => openEditLiveDialog(fixture)}
+                                    className="mr-1"
+                                  >
+                                    <Pencil className="mr-1 h-3 w-3" />
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => openFtDialog(fixture.id)}
+                                  >
+                                    <Flag className="mr-1 h-3 w-3" />
+                                    Full Time
+                                  </Button>
+                                </>
+                              )}
+                              {action === "reset" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    resetMutation.mutate(fixture.id)
+                                  }
+                                  disabled={resetMutation.isPending}
+                                >
+                                  <RotateCcw className="mr-1 h-3 w-3" />
+                                  Reset
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )
+            ) : membersLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : members.length === 0 ? (
+              <p className="text-muted-foreground">No members in this group.</p>
             ) : (
               <div className="min-w-0 overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Match</TableHead>
-                      <TableHead>State</TableHead>
-                      <TableHead>Min</TableHead>
-                      <TableHead>Score</TableHead>
-                      <TableHead>Start</TableHead>
+                      <TableHead>User ID</TableHead>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
                       <TableHead>Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredFixtures.map((fixture) => {
-                      const action = getFixtureAction(fixture.state);
-                      const matchName =
-                        fixture.homeTeam && fixture.awayTeam
-                          ? `${fixture.homeTeam} vs ${fixture.awayTeam}`
-                          : fixture.name;
-                      const score =
-                        fixture.homeScore90 !== null &&
-                        fixture.awayScore90 !== null
-                          ? `${fixture.homeScore90} - ${fixture.awayScore90}`
-                          : "—";
-                      const isLive = LIVE_STATES.includes(
-                        fixture.state as (typeof LIVE_STATES)[number]
-                      );
-                      const minDisplay = isLive
-                        ? (fixture.liveMinute ?? "—")
-                        : "—";
-                      return (
-                        <TableRow key={fixture.id}>
-                          <TableCell>{fixture.id}</TableCell>
-                          <TableCell>{matchName}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={getStateBadgeVariant(fixture.state)}
-                            >
-                              {fixture.state}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{minDisplay}</TableCell>
-                          <TableCell>{score}</TableCell>
-                          <TableCell>
-                            {fixture.state === "NS" ? (
-                              <Input
-                                type="datetime-local"
-                                className="w-[180px]"
-                                value={tsToDatetimeLocal(fixture.startTs)}
-                                onChange={(e) => {
-                                  if (!e.target.value) return;
-                                  updateStartTimeMutation.mutate({
-                                    fixtureId: fixture.id,
-                                    startTime: new Date(
-                                      e.target.value
-                                    ).toISOString(),
-                                  });
-                                }}
-                              />
-                            ) : (
-                              <span className="text-sm text-muted-foreground">
-                                {new Date(
-                                  fixture.startTs * 1000
-                                ).toLocaleString()}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {action === "kickoff" && (
-                              <Button
-                                size="sm"
-                                variant="default"
-                                onClick={() =>
-                                  kickoffMutation.mutate(fixture.id)
-                                }
-                                disabled={kickoffMutation.isPending}
-                              >
-                                <Play className="mr-1 h-3 w-3" />
-                                Kickoff
-                              </Button>
-                            )}
-                            {action === "full-time" && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => openEditLiveDialog(fixture)}
-                                  className="mr-1"
-                                >
-                                  <Pencil className="mr-1 h-3 w-3" />
-                                  Edit
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  onClick={() => openFtDialog(fixture.id)}
-                                >
-                                  <Flag className="mr-1 h-3 w-3" />
-                                  Full Time
-                                </Button>
-                              </>
-                            )}
-                            {action === "reset" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => resetMutation.mutate(fixture.id)}
-                                disabled={resetMutation.isPending}
-                              >
-                                <RotateCcw className="mr-1 h-3 w-3" />
-                                Reset
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {members.map((member: SandboxMember) => (
+                      <TableRow key={member.userId}>
+                        <TableCell>{member.userId}</TableCell>
+                        <TableCell>{member.username}</TableCell>
+                        <TableCell>{member.email ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              member.role === "owner" ? "default" : "secondary"
+                            }
+                          >
+                            {member.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setMessageLang("en");
+                              setMessageBody(getRandomSample("en"));
+                              setSendMessageDialog({
+                                open: true,
+                                memberId: member.userId,
+                                memberName: member.username,
+                              });
+                            }}
+                          >
+                            <MessageSquare className="mr-1 h-3 w-3" />
+                            Send Message
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
@@ -1498,6 +1631,103 @@ export default function SandboxPage() {
               disabled={addFixtureMutation.isPending}
             >
               {addFixtureMutation.isPending ? "Adding..." : "Add Fixture"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Message Dialog */}
+      <Dialog
+        open={sendMessageDialog.open}
+        onOpenChange={(open) => {
+          if (!open)
+            setSendMessageDialog({
+              open: false,
+              memberId: null,
+              memberName: "",
+            });
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Send Message as {sendMessageDialog.memberName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-2">
+              <Label className="shrink-0">Language</Label>
+              <div className="flex items-center gap-1 rounded-lg border p-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={messageLang === "en" ? "secondary" : "ghost"}
+                  onClick={() => {
+                    setMessageLang("en");
+                    setMessageBody(getRandomSample("en"));
+                  }}
+                >
+                  English
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={messageLang === "he" ? "secondary" : "ghost"}
+                  onClick={() => {
+                    setMessageLang("he");
+                    setMessageBody(getRandomSample("he"));
+                  }}
+                >
+                  עברית
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="messageBody">Message</Label>
+              <Textarea
+                id="messageBody"
+                rows={4}
+                value={messageBody}
+                onChange={(e) => setMessageBody(e.target.value)}
+                placeholder={
+                  messageLang === "he" ? "הזן הודעה..." : "Enter message..."
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                This message will appear in the group chat as if sent by{" "}
+                {sendMessageDialog.memberName}.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setSendMessageDialog({
+                  open: false,
+                  memberId: null,
+                  memberName: "",
+                })
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (
+                  selectedGroupTab == null ||
+                  sendMessageDialog.memberId == null
+                )
+                  return;
+                sendMessageMutation.mutate({
+                  groupId: selectedGroupTab,
+                  senderId: sendMessageDialog.memberId,
+                  body: messageBody,
+                });
+              }}
+              disabled={sendMessageMutation.isPending || !messageBody.trim()}
+            >
+              {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
             </Button>
           </DialogFooter>
         </DialogContent>
