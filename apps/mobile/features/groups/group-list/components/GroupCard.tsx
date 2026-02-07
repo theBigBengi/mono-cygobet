@@ -145,7 +145,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
               variant="caption"
               style={{ color: theme.colors.danger, fontWeight: "600" }}
             >
-              {liveCount} LIVE
+              {liveCount} {t("lobby.gamesLive")}
             </AppText>
           </View>
         )}
