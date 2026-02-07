@@ -108,12 +108,7 @@ export function useGroupLobbyActions(
       body.koRoundMode = mapKORoundMode(koRoundMode);
     }
 
-    try {
-      await publishGroupMutation.mutateAsync(body);
-      // After success, original values will refresh via query invalidation
-    } catch {
-      // Error handled by mutation; UI can retry by pressing Publish again
-    }
+    await publishGroupMutation.mutateAsync(body);
   }, [
     draftName,
     draftDescription,

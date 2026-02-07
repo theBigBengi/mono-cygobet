@@ -2,7 +2,7 @@
 // Draft state screen for group lobby.
 // Shows editable name, status card, privacy settings, and publish button.
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Switch, TextInput } from "react-native";
 import { useRouter } from "expo-router";
@@ -51,6 +51,10 @@ interface GroupLobbyDraftScreenProps {
    * Whether the current user is the creator
    */
   isCreator: boolean;
+  /** Called when publish is triggered (e.g. to show overlay) */
+  onPublishStart?: () => void;
+  /** Called when publish fails (e.g. to hide overlay and show error) */
+  onPublishError?: () => void;
 }
 
 /**
@@ -63,6 +67,8 @@ export function GroupLobbyDraftScreen({
   group,
   onRefresh,
   isCreator,
+  onPublishStart,
+  onPublishError,
 }: GroupLobbyDraftScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -170,6 +176,15 @@ export function GroupLobbyDraftScreen({
     koRoundMode,
     maxMembers
   );
+
+  const handlePublishWithOverlay = useCallback(async () => {
+    onPublishStart?.();
+    try {
+      await handlePublish();
+    } catch {
+      onPublishError?.();
+    }
+  }, [handlePublish, onPublishStart, onPublishError]);
 
   // Determine if name/privacy inputs should be editable
   const isEditable =
@@ -391,7 +406,7 @@ export function GroupLobbyDraftScreen({
       {isCreator && (
         <>
           <PublishGroupButton
-            onPress={handlePublish}
+            onPress={handlePublishWithOverlay}
             isPending={publishGroupMutation.isPending}
             disabled={publishGroupMutation.isPending || !draftName.trim()}
           />

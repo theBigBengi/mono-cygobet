@@ -5,7 +5,7 @@
 // - Active status → GroupLobbyActiveScreen
 // - Ended status → GroupLobbyEndedScreen
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSetAtom } from "jotai";
@@ -74,6 +74,7 @@ export default function GroupLobbyScreen() {
   }, [refetchGroup]);
 
   const deleteGroupMutation = useDeleteGroupMutation(groupId ?? 0);
+  const [isPublishing, setIsPublishing] = useState(false);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -109,6 +110,31 @@ export default function GroupLobbyScreen() {
     ]);
   }, [deleteGroupMutation, router]);
 
+  // Dismiss publish overlay once active screen has rendered
+  useEffect(() => {
+    if (!isPublishing) return;
+    if (data?.data?.status === "active") {
+      const timer = setTimeout(() => setIsPublishing(false), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isPublishing, data?.data?.status]);
+
+  // Fallback: force dismiss after 8s (safety net)
+  useEffect(() => {
+    if (!isPublishing) return;
+    const fallback = setTimeout(() => setIsPublishing(false), 8000);
+    return () => clearTimeout(fallback);
+  }, [isPublishing]);
+
+  const handlePublishStart = useCallback(() => {
+    setIsPublishing(true);
+  }, []);
+
+  const handlePublishError = useCallback(() => {
+    setIsPublishing(false);
+    Alert.alert(t("errors.error"), t("groups.publishFailed"));
+  }, [t]);
+
   // Loading state
   if (isLoading) {
     return <QueryLoadingView message={t("groups.loadingPool")} />;
@@ -122,9 +148,11 @@ export default function GroupLobbyScreen() {
   const group = data.data;
   const isCreator = user?.id === group.creatorId;
 
-  // Route to appropriate screen based on status
+  // Build content based on status
+  let content: React.ReactNode;
+
   if (group.status === "ended") {
-    return (
+    content = (
       <LobbyWithHeader
         status={group.status}
         groupName={group.name}
@@ -134,44 +162,24 @@ export default function GroupLobbyScreen() {
         <GroupLobbyEndedScreen group={group} onRefresh={handleRefresh} />
       </LobbyWithHeader>
     );
-  }
-
-  if (group.status === "draft") {
-    const isDark = colorScheme === "dark";
-    return (
-      <View style={styles.draftContainer}>
-        <LobbyWithHeader
-          status={group.status}
-          onDeleteGroup={isCreator ? handleDeleteGroup : undefined}
-          isDeleting={deleteGroupMutation.isPending}
-        >
-          <GroupLobbyDraftScreen
-            group={group}
-            onRefresh={handleRefresh}
-            isCreator={isCreator}
-          />
-        </LobbyWithHeader>
-        {deleteGroupMutation.isPending && (
-          <View style={styles.overlay} pointerEvents="box-none">
-            <BlurView
-              intensity={80}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.overlayContent}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-              <AppText variant="body" style={styles.overlayText}>
-                {t("lobby.deletingGroup")}
-              </AppText>
-            </View>
-          </View>
-        )}
-      </View>
+  } else if (group.status === "draft") {
+    content = (
+      <LobbyWithHeader
+        status={group.status}
+        onDeleteGroup={isCreator ? handleDeleteGroup : undefined}
+        isDeleting={deleteGroupMutation.isPending}
+      >
+        <GroupLobbyDraftScreen
+          group={group}
+          onRefresh={handleRefresh}
+          isCreator={isCreator}
+          onPublishStart={handlePublishStart}
+          onPublishError={handlePublishError}
+        />
+      </LobbyWithHeader>
     );
-  }
-
-  if (group.status === "active") {
-    return (
+  } else if (group.status === "active") {
+    content = (
       <LobbyWithHeader
         status={group.status}
         groupName={group.name}
@@ -185,17 +193,42 @@ export default function GroupLobbyScreen() {
         />
       </LobbyWithHeader>
     );
+  } else {
+    content = (
+      <LobbyWithHeader status={group.status}>
+        <Screen>
+          <AppText variant="body" color="secondary">
+            {t("groups.unknownStatus")}
+          </AppText>
+        </Screen>
+      </LobbyWithHeader>
+    );
   }
 
-  // Fallback for unknown status
+  const isDark = colorScheme === "dark";
+  const showOverlay = isPublishing || deleteGroupMutation.isPending;
+
   return (
-    <LobbyWithHeader status={group.status}>
-      <Screen>
-        <AppText variant="body" color="secondary">
-          {t("groups.unknownStatus")}
-        </AppText>
-      </Screen>
-    </LobbyWithHeader>
+    <View style={styles.draftContainer}>
+      {content}
+      {showOverlay && (
+        <View style={styles.overlay} pointerEvents="box-none">
+          <BlurView
+            intensity={80}
+            tint={isDark ? "dark" : "light"}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.overlayContent}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <AppText variant="body" style={styles.overlayText}>
+              {isPublishing
+                ? t("lobby.publishingGroup")
+                : t("lobby.deletingGroup")}
+            </AppText>
+          </View>
+        </View>
+      )}
+    </View>
   );
 }
 
