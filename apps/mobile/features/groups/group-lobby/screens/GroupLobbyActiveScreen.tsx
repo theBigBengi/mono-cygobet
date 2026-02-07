@@ -3,7 +3,7 @@
 // Shows fixtures and meta information.
 // Group name is displayed in the header instead.
 
-import React, { useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
@@ -23,7 +23,6 @@ import { useGroupActivityStats } from "../hooks/useGroupActivityStats";
 import { formatDate, formatRelativeTime } from "@/utils/date";
 import { LobbyActionCard } from "../components/LobbyActionCard";
 import { LobbyRankingPreview } from "../components/LobbyRankingPreview";
-import { GroupSettingsModal } from "../components/GroupSettingsModal";
 
 interface GroupLobbyActiveScreenProps {
   /**
@@ -55,7 +54,6 @@ export function GroupLobbyActiveScreen({
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
-  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const { data: rankingData, isLoading: isRankingLoading } =
     useGroupRankingQuery(group.id);
   const { data: chatPreviewData, isLoading: isChatLoading } =
@@ -107,7 +105,7 @@ export function GroupLobbyActiveScreen({
   };
 
   const handleOpenSettings = () => {
-    setIsSettingsModalVisible(true);
+    router.push(`/groups/${group.id}/settings` as any);
   };
 
   return (
@@ -261,12 +259,6 @@ export function GroupLobbyActiveScreen({
           onPress={handleOpenSettings}
         />
       </Screen>
-      <GroupSettingsModal
-        visible={isSettingsModalVisible}
-        onClose={() => setIsSettingsModalVisible(false)}
-        group={group}
-        isCreator={isCreator}
-      />
     </View>
   );
 }

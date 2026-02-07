@@ -6,7 +6,7 @@ import { atom } from "jotai";
 
 /**
  * Global blocking overlay atom
- * - true: overlay is visible (blocks entire screen)
+ * - string: overlay is visible with message (blocks entire screen)
  * - false: overlay is hidden
  */
-export const globalBlockingOverlayAtom = atom<boolean>(false);
+export const globalBlockingOverlayAtom = atom<string | false>(false);

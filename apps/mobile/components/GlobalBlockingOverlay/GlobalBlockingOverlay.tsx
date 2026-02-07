@@ -12,23 +12,22 @@ import { AppText } from "@/components/ui";
 
 /**
  * GlobalBlockingOverlay
- * 
+ *
  * Full-screen overlay that blocks all interaction.
- * Positioned absolutely with high zIndex to cover everything including modals.
- * Only visible when globalBlockingOverlayAtom is true.
+ * Uses its own Modal with presentationStyle="overFullScreen" to appear above
+ * pageSheet modals. Mounted at root level so it stays visible during navigation.
+ * Only visible when globalBlockingOverlayAtom holds a message string.
  */
 export function GlobalBlockingOverlay() {
-  const isVisible = useAtomValue(globalBlockingOverlayAtom);
+  const overlayMessage = useAtomValue(globalBlockingOverlayAtom);
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === "dark";
 
-  if (!isVisible) {
-    return null;
-  }
+  if (!overlayMessage) return null;
 
   return (
     <Modal
-      visible={isVisible}
+      visible={!!overlayMessage}
       transparent
       animationType="none"
       statusBarTranslucent
@@ -44,7 +43,7 @@ export function GlobalBlockingOverlay() {
         <View style={styles.content}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <AppText variant="body" color="secondary" style={styles.text}>
-            Creating group...
+            {overlayMessage}
           </AppText>
         </View>
       </View>

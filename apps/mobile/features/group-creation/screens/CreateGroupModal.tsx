@@ -46,7 +46,8 @@ export function CreateGroupModal() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const setOverlay = useSetAtom(globalBlockingOverlayAtom);
-  const isOverlayActive = useAtomValue(globalBlockingOverlayAtom);
+  const overlayMessage = useAtomValue(globalBlockingOverlayAtom);
+  const isOverlayActive = !!overlayMessage;
   const visible = useAtomValue(createGroupModalVisibleAtom);
   const setModalVisible = useSetAtom(createGroupModalVisibleAtom);
   const mode = useAtomValue(currentSelectionModeAtom);
@@ -62,6 +63,13 @@ export function CreateGroupModal() {
     if (!visible) createGroupMutation.reset();
   }, [visible, createGroupMutation]);
 
+  // Close modal when overlay turns off after successful creation (lobby signaled readiness)
+  useEffect(() => {
+    if (createGroupMutation.isSuccess && !isOverlayActive) {
+      setModalVisible(false);
+    }
+  }, [createGroupMutation.isSuccess, isOverlayActive, setModalVisible]);
+
   // Prevent modal close during group creation (when overlay is active)
   const handleRequestClose = () => {
     // Don't allow closing if we're creating or overlay is active
@@ -74,7 +82,7 @@ export function CreateGroupModal() {
 
   const handleCreate = async () => {
     // Turn on global overlay immediately, before any checks or mutations
-    setOverlay(true);
+    setOverlay(t("groupCreation.creating"));
 
     if (mode === "fixtures" && games.length === 0) {
       setOverlay(false);
@@ -111,8 +119,6 @@ export function CreateGroupModal() {
           leagueIds: leagues.map((l) => l.id),
         });
         clearLeagues();
-        setModalVisible(false);
-        // Use replace to remove modal and previous screen from stack (overlay stays on)
         router.replace(`/groups/${result.data.id}` as any);
         return;
       }
@@ -124,8 +130,6 @@ export function CreateGroupModal() {
           teamIds: teams.map((t) => t.id),
         });
         clearTeams();
-        setModalVisible(false);
-        // Use replace to remove modal and previous screen from stack (overlay stays on)
         router.replace(`/groups/${result.data.id}` as any);
       }
     } catch {
@@ -246,7 +250,6 @@ export function CreateGroupModal() {
         </View>
       </View>
 
-      {/* Global overlay inside modal - appears above everything */}
       {isOverlayActive && (
         <View style={styles.globalOverlay} pointerEvents="box-none">
           <BlurView
@@ -261,7 +264,9 @@ export function CreateGroupModal() {
               color="secondary"
               style={styles.globalOverlayText}
             >
-              Creating group...
+              {typeof overlayMessage === "string"
+                ? overlayMessage
+                : t("groupCreation.creating")}
             </AppText>
           </View>
         </View>

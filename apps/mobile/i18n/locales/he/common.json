@@ -217,6 +217,10 @@
     "winnerPoints": "{{points}} נק׳",
     "viewAll": "צפה בדירוג המלא"
   },
+  "groupSettings": {
+    "general": "כללי",
+    "notifications": "התראות"
+  },
   "predictions": {
     "predict": "בחר תחזית",
     "predictions": "תחזיות",

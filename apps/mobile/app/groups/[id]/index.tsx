@@ -48,17 +48,17 @@ export default function GroupLobbyScreen() {
     refetch: refetchGroup,
   } = useGroupQuery(groupId, { includeFixtures: true });
 
-  // Turn off global overlay when screen mounts
-  // Delay ensures the screen is painted before overlay disappears
-  // This prevents white screen flash during navigation transition
+  // Dismiss creation overlay once group data is loaded
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setOverlay(false);
-    }, 1000); // Delay to allow screen to paint and transition to complete
+    if (!data) return;
+    const timer = setTimeout(() => setOverlay(false), 300);
+    return () => clearTimeout(timer);
+  }, [data, setOverlay]);
 
-    return () => {
-      clearTimeout(timer);
-    };
+  // Fallback: force dismiss overlay after 8s (safety net)
+  useEffect(() => {
+    const fallback = setTimeout(() => setOverlay(false), 8000);
+    return () => clearTimeout(fallback);
   }, [setOverlay]);
 
   // Navigate back to groups screen if group not found

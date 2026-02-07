@@ -217,6 +217,10 @@
     "winnerPoints": "{{points}} pts",
     "viewAll": "View full ranking"
   },
+  "groupSettings": {
+    "general": "General",
+    "notifications": "Notifications"
+  },
   "predictions": {
     "predict": "Predict",
     "predictions": "Predictions",

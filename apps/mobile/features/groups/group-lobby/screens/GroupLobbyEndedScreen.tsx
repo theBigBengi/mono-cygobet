@@ -3,7 +3,7 @@
 // Shows group ended banner, ranking, fixtures with final scores, and predictions overview.
 // Read-only; no invite section or prediction editing.
 
-import React, { useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -15,7 +15,6 @@ import { useGroupDuration } from "../hooks/useGroupDuration";
 import type { FixtureItem } from "../types";
 import { formatDate } from "@/utils/date";
 import { LobbyActionCard } from "../components/LobbyActionCard";
-import { GroupSettingsModal } from "../components/GroupSettingsModal";
 
 interface GroupLobbyEndedScreenProps {
   group: ApiGroupItem;
@@ -37,7 +36,6 @@ export function GroupLobbyEndedScreen({
 }: GroupLobbyEndedScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const { data: rankingData } = useGroupRankingQuery(group.id);
   const { data: unreadData } = useUnreadCountsQuery();
   const chatUnreadCount = unreadData?.data?.[String(group.id)] ?? 0;
@@ -66,7 +64,7 @@ export function GroupLobbyEndedScreen({
   };
 
   const handleOpenSettings = () => {
-    setIsSettingsModalVisible(true);
+    router.push(`/groups/${group.id}/settings` as any);
   };
 
   return (
@@ -145,12 +143,6 @@ export function GroupLobbyEndedScreen({
           onPress={handleOpenSettings}
         />
       </Screen>
-      <GroupSettingsModal
-        visible={isSettingsModalVisible}
-        onClose={() => setIsSettingsModalVisible(false)}
-        group={group}
-        isCreator={isCreator}
-      />
     </View>
   );
 }
