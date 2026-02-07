@@ -797,13 +797,15 @@ export type ApiBadgeId =
   | "consistency_king"
   | "early_bird";
 
-/** Badge with earned status and progress (0-100). */
+/** Badge with earned status, progress (0-100), and current/target values. */
 export type ApiBadge = {
   id: ApiBadgeId;
   name: string;
   description: string;
   earned: boolean;
   progress: number;
+  current: number;
+  target: number;
 };
 
 /** Prediction distribution: exact / difference / outcome / miss. */

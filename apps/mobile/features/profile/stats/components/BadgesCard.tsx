@@ -1,18 +1,12 @@
 // features/profile/stats/components/BadgesCard.tsx
-// 2x3 grid of badge items (icon + name + locked/earned state + progress bar).
+// Badge list with current/target, progress bar, and info sheet.
 
 import React, { useRef } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiBadge } from "@repo/types";
-import {
-  Ionicons,
-  FontAwesome5,
-  FontAwesome6,
-  AntDesign,
-  MaterialIcons,
-} from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { BadgesInfoSheet } from "./BadgesInfoSheet";
 
@@ -20,75 +14,48 @@ interface BadgesCardProps {
   badges: ApiBadge[];
 }
 
-const BADGE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  streak_master: "flash",
-  group_champion: "medal",
-  consistency_king: "stats-chart",
-};
-
-function BadgeItem({ badge }: { badge: ApiBadge }) {
+function BadgeRow({ badge }: { badge: ApiBadge }) {
   const { theme } = useTheme();
-  const iconColor = badge.earned
-    ? theme.colors.primary
-    : theme.colors.textSecondary;
-
-  const renderIcon = () => {
-    if (badge.id === "early_bird") {
-      return (
-        <FontAwesome5
-          name="earlybirds"
-          size={24}
-          color={iconColor}
-          style={styles.icon}
-        />
-      );
-    }
-    if (badge.id === "underdog_caller") {
-      return (
-        <FontAwesome6
-          name="shield-dog"
-          size={24}
-          color={iconColor}
-          style={styles.icon}
-        />
-      );
-    }
-    if (badge.id === "sharpshooter") {
-      return (
-        <AntDesign name="aim" size={24} color={iconColor} style={styles.icon} />
-      );
-    }
-    const iconName = BADGE_ICONS[badge.id] ?? "ribbon";
-    return (
-      <Ionicons
-        name={iconName}
-        size={24}
-        color={iconColor}
-        style={styles.icon}
-      />
-    );
-  };
 
   return (
-    <View style={[styles.badgeItem, { padding: theme.spacing.sm }]}>
-      {renderIcon()}
-      <AppText variant="caption" numberOfLines={2} style={styles.name}>
-        {badge.name}
-      </AppText>
-      <View
-        style={[styles.progressBar, { backgroundColor: theme.colors.border }]}
-      >
+    <View style={[styles.badgeRow, { borderBottomColor: theme.colors.border }]}>
+      <View style={styles.badgeHeader}>
+        <AppText variant="body" style={styles.badgeName}>
+          {badge.name}
+        </AppText>
+        {badge.earned ? (
+          <AppText
+            style={[styles.badgeStatus, { color: theme.colors.success }]}
+          >
+            Done ✓
+          </AppText>
+        ) : (
+          <AppText
+            style={[styles.badgeStatus, { color: theme.colors.textSecondary }]}
+          >
+            {badge.current}/{badge.target}
+          </AppText>
+        )}
+      </View>
+      <View style={styles.badgeProgress}>
+        <AppText variant="caption" color="secondary" style={styles.badgeDesc}>
+          {badge.description}
+        </AppText>
         <View
-          style={[
-            styles.progressFill,
-            {
-              width: `${badge.progress}%`,
-              backgroundColor: badge.earned
-                ? theme.colors.primary
-                : theme.colors.textSecondary,
-            },
-          ]}
-        />
+          style={[styles.progressBar, { backgroundColor: theme.colors.border }]}
+        >
+          <View
+            style={[
+              styles.progressFill,
+              {
+                width: `${badge.progress}%`,
+                backgroundColor: badge.earned
+                  ? theme.colors.success
+                  : theme.colors.primary,
+              },
+            ]}
+          />
+        </View>
       </View>
     </View>
   );
@@ -97,6 +64,11 @@ function BadgeItem({ badge }: { badge: ApiBadge }) {
 export function BadgesCard({ badges }: BadgesCardProps) {
   const { theme } = useTheme();
   const sheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+
+  const sortedBadges = [...badges].sort((a, b) => {
+    if (a.earned !== b.earned) return a.earned ? 1 : -1;
+    return b.progress - a.progress;
+  });
 
   return (
     <Card>
@@ -110,11 +82,9 @@ export function BadgesCard({ badges }: BadgesCardProps) {
           />
         </Pressable>
       </View>
-      <View style={styles.grid}>
-        {badges.map((badge) => (
-          <BadgeItem key={badge.id} badge={badge} />
-        ))}
-      </View>
+      {sortedBadges.map((badge) => (
+        <BadgeRow key={badge.id} badge={badge} />
+      ))}
       <BadgesInfoSheet sheetRef={sheetRef} badges={badges} />
     </Card>
   );
@@ -127,31 +97,38 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 12,
   },
-  grid: {
+  badgeRow: {
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  badgeHeader: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    marginHorizontal: -8,
-  },
-  badgeItem: {
-    width: "50%",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
-  },
-  icon: {
     marginBottom: 4,
   },
-  name: {
-    textAlign: "center",
-    marginBottom: 6,
+  badgeName: {
+    fontWeight: "600",
+  },
+  badgeStatus: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  badgeProgress: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  badgeDesc: {
+    flex: 1,
   },
   progressBar: {
-    height: 4,
-    width: "100%",
-    borderRadius: 2,
+    width: 80,
+    height: 6,
+    borderRadius: 3,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    borderRadius: 2,
   },
 });

@@ -53,6 +53,8 @@ function computeSharpshooter(exactScores: number): ApiBadge {
     description: BADGE_DEFINITIONS.sharpshooter.description,
     earned,
     progress: Math.round(progress),
+    current: Math.min(exactScores, threshold),
+    target: threshold,
   };
 }
 
@@ -66,6 +68,8 @@ function computeUnderdogCaller(underdogWins: number): ApiBadge {
     description: BADGE_DEFINITIONS.underdog_caller.description,
     earned,
     progress: Math.round(progress),
+    current: Math.min(underdogWins, threshold),
+    target: threshold,
   };
 }
 
@@ -79,6 +83,8 @@ function computeStreakMaster(maxStreak: number): ApiBadge {
     description: BADGE_DEFINITIONS.streak_master.description,
     earned,
     progress: Math.round(progress),
+    current: Math.min(maxStreak, threshold),
+    target: threshold,
   };
 }
 
@@ -89,6 +95,8 @@ function computeGroupChampion(isGroupChampion: boolean): ApiBadge {
     description: BADGE_DEFINITIONS.group_champion.description,
     earned: isGroupChampion,
     progress: isGroupChampion ? 100 : 0,
+    current: isGroupChampion ? 1 : 0,
+    target: 1,
   };
 }
 
@@ -107,6 +115,8 @@ function computeConsistencyKing(
     description: BADGE_DEFINITIONS.consistency_king.description,
     earned,
     progress: Math.round(progress),
+    current: accuracy,
+    target: threshold,
   };
 }
 
@@ -120,6 +130,8 @@ function computeEarlyBird(earlyCount: number): ApiBadge {
     description: BADGE_DEFINITIONS.early_bird.description,
     earned,
     progress: Math.round(progress),
+    current: Math.min(earlyCount, threshold),
+    target: threshold,
   };
 }
 
