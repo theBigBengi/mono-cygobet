@@ -113,15 +113,21 @@ export default function SandboxPage() {
   const fixtures = listData?.data?.fixtures ?? [];
   const groups = listData?.data?.groups ?? [];
 
-  // Group filter tab: "all" or group id (must be before filteredFixtures useMemo)
-  const [selectedGroupTab, setSelectedGroupTab] = React.useState<
-    number | "all"
-  >("all");
+  // Group filter tab: null until first group is auto-selected (must be before filteredFixtures useMemo)
+  const [selectedGroupTab, setSelectedGroupTab] = React.useState<number | null>(
+    null
+  );
+
+  React.useEffect(() => {
+    if (groups.length > 0 && selectedGroupTab === null) {
+      setSelectedGroupTab(groups[0].id);
+    }
+  }, [groups, selectedGroupTab]);
 
   const filteredFixtures = React.useMemo(() => {
-    if (selectedGroupTab === "all") return fixtures;
+    if (selectedGroupTab === null) return [];
     const group = groups.find((g) => g.id === selectedGroupTab);
-    if (!group) return fixtures;
+    if (!group) return [];
     return fixtures.filter((f) => group.fixtureIds.includes(f.id));
   }, [fixtures, groups, selectedGroupTab]);
 
@@ -724,8 +730,8 @@ export default function SandboxPage() {
               <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                 <CardTitle className="shrink-0">
                   Fixtures (
-                  {selectedGroupTab === "all"
-                    ? fixtures.length
+                  {selectedGroupTab === null
+                    ? 0
                     : (groups.find((g) => g.id === selectedGroupTab)?.fixtureIds
                         .length ?? 0)}
                   )
@@ -733,19 +739,14 @@ export default function SandboxPage() {
                 {groups.length > 0 && (
                   <Select
                     value={
-                      selectedGroupTab === "all"
-                        ? "all"
-                        : String(selectedGroupTab)
+                      selectedGroupTab === null ? "" : String(selectedGroupTab)
                     }
-                    onValueChange={(v) =>
-                      setSelectedGroupTab(v === "all" ? "all" : Number(v))
-                    }
+                    onValueChange={(v) => setSelectedGroupTab(Number(v))}
                   >
                     <SelectTrigger className="w-full min-w-0 sm:w-[200px]">
                       <SelectValue placeholder="Select group" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
                       {groups.map((g: SandboxGroup) => (
                         <SelectItem key={g.id} value={String(g.id)}>
                           {g.name.replace(/^\[SANDBOX\]\s*/, "")}
@@ -754,7 +755,7 @@ export default function SandboxPage() {
                     </SelectContent>
                   </Select>
                 )}
-                {groups.length > 0 && selectedGroupTab !== "all" && (
+                {groups.length > 0 && selectedGroupTab !== null && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -784,7 +785,7 @@ export default function SandboxPage() {
                 )}
               </div>
             </div>
-            {selectedGroupTab !== "all" &&
+            {selectedGroupTab !== null &&
               groups.length > 0 &&
               (() => {
                 const group = groups.find((g) => g.id === selectedGroupTab);
@@ -806,9 +807,17 @@ export default function SandboxPage() {
                   <Skeleton key={i} className="h-10 w-full" />
                 ))}
               </div>
-            ) : fixtures.length === 0 ? (
+            ) : groups.length === 0 ? (
               <p className="text-muted-foreground">
-                No sandbox data. Use Setup to create.
+                No groups yet. Create a group first using the form above.
+              </p>
+            ) : selectedGroupTab === null ? (
+              <p className="text-muted-foreground">
+                Select a group to view its fixtures.
+              </p>
+            ) : filteredFixtures.length === 0 ? (
+              <p className="text-muted-foreground">
+                No fixtures in this group.
               </p>
             ) : (
               <div className="min-w-0 overflow-x-auto">
