@@ -3,7 +3,7 @@
 // Shows group ended banner, ranking, fixtures with final scores, and predictions overview.
 // Read-only; no invite section or prediction editing.
 
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -15,10 +15,12 @@ import { useGroupDuration } from "../hooks/useGroupDuration";
 import type { FixtureItem } from "../types";
 import { formatDate } from "@/utils/date";
 import { LobbyActionCard } from "../components/LobbyActionCard";
+import { GroupSettingsModal } from "../components/GroupSettingsModal";
 
 interface GroupLobbyEndedScreenProps {
   group: ApiGroupItem;
   onRefresh: () => Promise<void>;
+  isCreator: boolean;
 }
 
 /**
@@ -31,9 +33,11 @@ interface GroupLobbyEndedScreenProps {
 export function GroupLobbyEndedScreen({
   group,
   onRefresh,
+  isCreator,
 }: GroupLobbyEndedScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
+  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const { data: rankingData } = useGroupRankingQuery(group.id);
   const { data: unreadData } = useUnreadCountsQuery();
   const chatUnreadCount = unreadData?.data?.[String(group.id)] ?? 0;
@@ -59,6 +63,10 @@ export function GroupLobbyEndedScreen({
 
   const handleViewChat = () => {
     router.push(`/groups/${group.id}/chat` as any);
+  };
+
+  const handleOpenSettings = () => {
+    setIsSettingsModalVisible(true);
   };
 
   return (
@@ -128,7 +136,21 @@ export function GroupLobbyEndedScreen({
           title={t("lobby.predictionsOverview")}
           onPress={handleViewPredictionsOverview}
         />
+
+        {/* Settings Section - LAST BANNER */}
+        <LobbyActionCard
+          icon="settings-outline"
+          title={t("lobby.settings" as Parameters<typeof t>[0])}
+          subtitle={t("lobby.settingsSubtitle" as Parameters<typeof t>[0])}
+          onPress={handleOpenSettings}
+        />
       </Screen>
+      <GroupSettingsModal
+        visible={isSettingsModalVisible}
+        onClose={() => setIsSettingsModalVisible(false)}
+        group={group}
+        isCreator={isCreator}
+      />
     </View>
   );
 }

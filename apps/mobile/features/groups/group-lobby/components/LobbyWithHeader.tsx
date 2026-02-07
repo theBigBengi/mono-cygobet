@@ -2,7 +2,7 @@
 // Wrapper component for group lobby screens with header.
 // Provides consistent header layout with status badge and optional group name.
 
-import React, { useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText } from "@/components/ui";
@@ -10,8 +10,7 @@ import { useGoBack } from "@/hooks/useGoBack";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { GroupGamesHeader } from "@/features/groups/predictions/components/GroupGamesHeader";
-import { GroupSettingsModal } from "./GroupSettingsModal";
-import type { ApiGroupStatus, ApiGroupItem } from "@repo/types";
+import type { ApiGroupStatus } from "@repo/types";
 
 const HEADER_HEIGHT = 64;
 
@@ -19,10 +18,6 @@ interface LobbyWithHeaderProps {
   children: React.ReactNode;
   status: ApiGroupStatus | string;
   groupName?: string;
-  /** For active groups: group data for settings modal (invite access, etc.) */
-  group?: ApiGroupItem;
-  /** For active groups: whether current user is the group creator (shows invite access in settings) */
-  isCreator?: boolean;
   /** For draft status: when provided, shows trash icon instead of "Draft" badge; icon triggers delete */
   onDeleteGroup?: () => void;
   /** For draft status: whether delete is in progress (disables trash icon) */
@@ -39,8 +34,6 @@ export function LobbyWithHeader({
   children,
   status,
   groupName,
-  group,
-  isCreator = false,
   onDeleteGroup,
   isDeleting = false,
 }: LobbyWithHeaderProps) {
@@ -53,8 +46,7 @@ export function LobbyWithHeader({
     active: t("lobby.active"),
     ended: t("lobby.ended"),
   };
-  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-  const isActive = status === "active";
+
   const isActiveOrEnded = status === "active" || status === "ended";
   const isDraft = status === "draft";
 
@@ -63,15 +55,11 @@ export function LobbyWithHeader({
       ? STATUS_LABELS[status as ApiGroupStatus]
       : (status as string);
 
-  const hasBackground = isActive || (isDraft && !onDeleteGroup);
-  const backgroundColor = isActive
-    ? theme.colors.primary
-    : isDraft && !onDeleteGroup
-      ? theme.colors.surface
-      : undefined;
-  const statusTextColor = isActive
-    ? theme.colors.primaryText
-    : isDraft && !onDeleteGroup
+  const hasBackground = !isActiveOrEnded && !onDeleteGroup;
+  const backgroundColor =
+    isDraft && !onDeleteGroup ? theme.colors.surface : undefined;
+  const statusTextColor =
+    isDraft && !onDeleteGroup
       ? theme.colors.textPrimary
       : theme.colors.textSecondary;
 
@@ -87,51 +75,44 @@ export function LobbyWithHeader({
       </AppText>
     ) : undefined;
 
-  const rightContent = isActiveOrEnded ? (
-    <Pressable onPress={() => setIsSettingsModalVisible(true)}>
-      <View style={styles.settingsButton}>
-        <Ionicons
-          name="options-outline"
-          size={20}
-          color={theme.colors.textPrimary}
-        />
-      </View>
-    </Pressable>
-  ) : isDraft && onDeleteGroup ? (
-    <Pressable
-      onPress={onDeleteGroup}
-      disabled={isDeleting}
-      style={({ pressed }) => [pressed && styles.iconPressed]}
-    >
-      <View style={styles.settingsButton}>
-        <Ionicons
-          name="trash-outline"
-          size={20}
-          color={isDeleting ? theme.colors.textSecondary : theme.colors.danger}
-        />
-      </View>
-    </Pressable>
-  ) : (
-    <View
-      style={[
-        styles.statusBadge,
-        hasBackground && {
-          backgroundColor,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-          borderRadius: 12,
-        },
-      ]}
-    >
-      <AppText
-        variant="caption"
-        color="secondary"
-        style={[styles.statusBadgeText, { color: statusTextColor }]}
+  const rightContent =
+    isDraft && onDeleteGroup ? (
+      <Pressable
+        onPress={onDeleteGroup}
+        disabled={isDeleting}
+        style={({ pressed }) => [pressed && styles.iconPressed]}
       >
-        {statusLabel}
-      </AppText>
-    </View>
-  );
+        <View style={styles.settingsButton}>
+          <Ionicons
+            name="trash-outline"
+            size={20}
+            color={
+              isDeleting ? theme.colors.textSecondary : theme.colors.danger
+            }
+          />
+        </View>
+      </Pressable>
+    ) : !isActiveOrEnded ? (
+      <View
+        style={[
+          styles.statusBadge,
+          hasBackground && {
+            backgroundColor,
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            borderRadius: 12,
+          },
+        ]}
+      >
+        <AppText
+          variant="caption"
+          color="secondary"
+          style={[styles.statusBadgeText, { color: statusTextColor }]}
+        >
+          {statusLabel}
+        </AppText>
+      </View>
+    ) : null;
 
   return (
     <View
@@ -151,14 +132,6 @@ export function LobbyWithHeader({
           rightContent={rightContent}
         />
       </View>
-      {isActiveOrEnded && (
-        <GroupSettingsModal
-          visible={isSettingsModalVisible}
-          onClose={() => setIsSettingsModalVisible(false)}
-          group={group}
-          isCreator={isCreator}
-        />
-      )}
     </View>
   );
 }

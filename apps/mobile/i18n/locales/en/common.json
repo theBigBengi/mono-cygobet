@@ -209,6 +209,8 @@
     "invite": "Invite",
     "shareGroupLink": "Share group link",
     "predictionsOverview": "Predictions Overview",
+    "settings": "Settings",
+    "settingsSubtitle": "Members, notifications",
     "groupSettings": "Group Settings",
     "winner": "Winner",
     "winnerWithPoints": "{{name}} · {{points}} pts",

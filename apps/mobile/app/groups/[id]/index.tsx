@@ -153,13 +153,12 @@ export default function GroupLobbyScreen() {
 
   if (group.status === "ended") {
     content = (
-      <LobbyWithHeader
-        status={group.status}
-        groupName={group.name}
-        group={group}
-        isCreator={isCreator}
-      >
-        <GroupLobbyEndedScreen group={group} onRefresh={handleRefresh} />
+      <LobbyWithHeader status={group.status} groupName={group.name}>
+        <GroupLobbyEndedScreen
+          group={group}
+          onRefresh={handleRefresh}
+          isCreator={isCreator}
+        />
       </LobbyWithHeader>
     );
   } else if (group.status === "draft") {
@@ -180,12 +179,7 @@ export default function GroupLobbyScreen() {
     );
   } else if (group.status === "active") {
     content = (
-      <LobbyWithHeader
-        status={group.status}
-        groupName={group.name}
-        group={group}
-        isCreator={isCreator}
-      >
+      <LobbyWithHeader status={group.status} groupName={group.name}>
         <GroupLobbyActiveScreen
           group={group}
           onRefresh={handleRefresh}

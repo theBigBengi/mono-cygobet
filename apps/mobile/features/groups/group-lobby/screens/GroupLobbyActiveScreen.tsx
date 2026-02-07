@@ -3,7 +3,7 @@
 // Shows fixtures and meta information.
 // Group name is displayed in the header instead.
 
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
@@ -23,6 +23,7 @@ import { useGroupActivityStats } from "../hooks/useGroupActivityStats";
 import { formatDate, formatRelativeTime } from "@/utils/date";
 import { LobbyActionCard } from "../components/LobbyActionCard";
 import { LobbyRankingPreview } from "../components/LobbyRankingPreview";
+import { GroupSettingsModal } from "../components/GroupSettingsModal";
 
 interface GroupLobbyActiveScreenProps {
   /**
@@ -54,6 +55,7 @@ export function GroupLobbyActiveScreen({
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
+  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const { data: rankingData, isLoading: isRankingLoading } =
     useGroupRankingQuery(group.id);
   const { data: chatPreviewData, isLoading: isChatLoading } =
@@ -102,6 +104,10 @@ export function GroupLobbyActiveScreen({
 
   const handleViewChat = () => {
     router.push(`/groups/${group.id}/chat` as any);
+  };
+
+  const handleOpenSettings = () => {
+    setIsSettingsModalVisible(true);
   };
 
   return (
@@ -241,16 +247,26 @@ export function GroupLobbyActiveScreen({
         {/* Predictions Overview Section */}
         <LobbyActionCard
           customIcon={
-            <Fontisto
-              name="list-1"
-              size={20}
-              color={theme.colors.primary}
-            />
+            <Fontisto name="list-1" size={20} color={theme.colors.primary} />
           }
           title={t("lobby.predictionsOverview")}
           onPress={handleViewPredictionsOverview}
         />
+
+        {/* Settings Section - LAST BANNER */}
+        <LobbyActionCard
+          icon="settings-outline"
+          title={t("lobby.settings" as Parameters<typeof t>[0])}
+          subtitle={t("lobby.settingsSubtitle" as Parameters<typeof t>[0])}
+          onPress={handleOpenSettings}
+        />
       </Screen>
+      <GroupSettingsModal
+        visible={isSettingsModalVisible}
+        onClose={() => setIsSettingsModalVisible(false)}
+        group={group}
+        isCreator={isCreator}
+      />
     </View>
   );
 }
