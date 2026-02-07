@@ -20,8 +20,7 @@ import { Screen, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { GroupDraftCard } from "@/features/groups/group-list/components/GroupDraftCard";
-import { GroupActiveCard } from "@/features/groups/group-list/components/GroupActiveCard";
+import { GroupCard } from "@/features/groups/group-list/components/GroupCard";
 import {
   useGroupSections,
   type GroupSection,
@@ -203,18 +202,28 @@ export default function GroupsScreen() {
 
   const renderHeader = () => (
     <View style={[styles.actionRow, { paddingBottom: theme.spacing.md }]}>
-      <Button
-        label={t("groups.joinWithCode")}
-        variant="secondary"
+      <Pressable
         onPress={handleJoinWithCode}
-        style={styles.actionButton}
-      />
-      <Button
-        label={t("groups.browsePublic")}
-        variant="secondary"
+        style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
+      >
+        <Ionicons name="link-outline" size={20} color={theme.colors.primary} />
+        <AppText variant="caption" style={{ color: theme.colors.primary }}>
+          {t("groups.joinWithCode")}
+        </AppText>
+      </Pressable>
+      <Pressable
         onPress={handleBrowsePublic}
-        style={styles.actionButton}
-      />
+        style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
+      >
+        <Ionicons
+          name="search-outline"
+          size={20}
+          color={theme.colors.primary}
+        />
+        <AppText variant="caption" style={{ color: theme.colors.primary }}>
+          {t("groups.browsePublic")}
+        </AppText>
+      </Pressable>
     </View>
   );
 
@@ -227,37 +236,40 @@ export default function GroupsScreen() {
       section.key === "ended" && section.originalCount !== undefined
         ? section.originalCount
         : section.data.length;
-    const titleText = `${section.title.toUpperCase()} (${count})`;
-    const isAttention = section.key === "attention";
+    const titleText = `${section.title} (${count})`;
     const isEnded = section.key === "ended";
+    const isAttention = section.key === "attention";
 
     const headerContent = (
       <View
-        style={[
-          styles.sectionHeader,
-          {
-            backgroundColor: theme.colors.background,
-            borderBottomColor: theme.colors.border,
-          },
-        ]}
+        style={[styles.sectionDivider, { marginVertical: theme.spacing.sm }]}
       >
-        <AppText
-          variant="caption"
-          style={[
-            styles.sectionHeaderText,
-            isAttention && { color: theme.colors.primary, fontWeight: "600" },
-          ]}
-        >
-          {titleText}
-        </AppText>
-        {isEnded && (
-          <Ionicons
-            name={endedCollapsed ? "chevron-forward" : "chevron-down"}
-            size={16}
-            color={theme.colors.textSecondary}
-            style={styles.chevron}
-          />
-        )}
+        <View
+          style={[styles.dividerLine, { backgroundColor: theme.colors.border }]}
+        />
+        <View style={styles.dividerCenter}>
+          <AppText
+            variant="caption"
+            color="secondary"
+            style={[
+              styles.dividerText,
+              isAttention && { color: theme.colors.primary, fontWeight: "600" },
+            ]}
+          >
+            {titleText}
+          </AppText>
+          {isEnded && (
+            <Ionicons
+              name={endedCollapsed ? "chevron-forward" : "chevron-down"}
+              size={16}
+              color={theme.colors.textSecondary}
+              style={styles.chevron}
+            />
+          )}
+        </View>
+        <View
+          style={[styles.dividerLine, { backgroundColor: theme.colors.border }]}
+        />
       </View>
     );
 
@@ -275,23 +287,13 @@ export default function GroupsScreen() {
     return headerContent;
   };
 
-  const renderItem = ({ item }: { item: ApiGroupItem }) => {
-    if (item.status === "draft") {
-      return (
-        <GroupDraftCard
-          group={item}
-          onPress={() => handleGroupPress(item.id)}
-        />
-      );
-    }
-    return (
-      <GroupActiveCard
-        group={item}
-        onPress={() => handleGroupPress(item.id)}
-        unreadCount={unreadCounts[String(item.id)] ?? 0}
-      />
-    );
-  };
+  const renderItem = ({ item }: { item: ApiGroupItem }) => (
+    <GroupCard
+      group={item}
+      onPress={() => handleGroupPress(item.id)}
+      unreadCount={unreadCounts[String(item.id)] ?? 0}
+    />
+  );
 
   return (
     <View style={styles.root}>
@@ -373,22 +375,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
   },
-  actionButton: {
+  iconButton: {
     flex: 1,
-  },
-  sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 0,
-    borderBottomWidth: 1,
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  sectionDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerCenter: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  dividerText: {
+    fontWeight: "600",
   },
   sectionHeaderPressable: {
     width: "100%",
-  },
-  sectionHeaderText: {
-    flex: 1,
-    fontWeight: "600",
   },
   chevron: {
     marginStart: 4,
