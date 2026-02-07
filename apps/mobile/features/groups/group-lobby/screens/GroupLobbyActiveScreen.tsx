@@ -7,7 +7,9 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { MaterialIcons, Entypo, Fontisto } from "@expo/vector-icons";
 import { Screen, Card, AppText } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import {
   useGroupRankingQuery,
   useGroupChatPreviewQuery,
@@ -51,6 +53,7 @@ export function GroupLobbyActiveScreen({
 }: GroupLobbyActiveScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
+  const { theme } = useTheme();
   const { data: rankingData, isLoading: isRankingLoading } =
     useGroupRankingQuery(group.id);
   const { data: chatPreviewData, isLoading: isChatLoading } =
@@ -186,6 +189,13 @@ export function GroupLobbyActiveScreen({
           onBannerPress={handleViewGames}
           predictionsCount={predictionsCount}
           totalFixtures={totalFixtures}
+          icon={
+            <MaterialIcons
+              name="batch-prediction"
+              size={24}
+              color={theme.colors.primary}
+            />
+          }
         />
 
         {/* Ranking Section */}
@@ -197,7 +207,9 @@ export function GroupLobbyActiveScreen({
 
         {/* Chat Section */}
         <LobbyActionCard
-          icon="chatbubbles-outline"
+          customIcon={
+            <Entypo name="chat" size={24} color={theme.colors.primary} />
+          }
           title={t("lobby.chat")}
           isLoading={isChatLoading}
           badge={chatPreview?.unreadCount}
@@ -228,7 +240,13 @@ export function GroupLobbyActiveScreen({
 
         {/* Predictions Overview Section */}
         <LobbyActionCard
-          icon="stats-chart-outline"
+          customIcon={
+            <Fontisto
+              name="list-1"
+              size={20}
+              color={theme.colors.primary}
+            />
+          }
           title={t("lobby.predictionsOverview")}
           onPress={handleViewPredictionsOverview}
         />

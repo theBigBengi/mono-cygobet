@@ -4,9 +4,11 @@
 // Pure function - no React, no hooks.
 
 import { lightColors, darkColors, type ColorScheme } from "./colors";
+import { opacity } from "./opacity";
+import { radius } from "./radius";
+import { shadows } from "./shadows";
 import { spacing } from "./spacing";
 import { typography } from "./typography";
-import { radius } from "./radius";
 import type { Theme, ThemeMode } from "./theme.types";
 
 /**
@@ -38,7 +40,8 @@ export function resolveTheme(colorScheme: ColorScheme): Theme {
     spacing,
     typography,
     radius,
+    shadows,
+    opacity,
     colorScheme,
   };
 }
-

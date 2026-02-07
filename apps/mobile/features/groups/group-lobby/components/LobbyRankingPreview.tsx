@@ -4,7 +4,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome6 } from "@expo/vector-icons";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiRankingItem } from "@repo/types";
@@ -97,9 +97,9 @@ export function LobbyRankingPreview({
       >
         {/* Header row: icon + title */}
         <View style={styles.headerRow}>
-          <Ionicons
-            name="trophy-outline"
-            size={24}
+          <FontAwesome6
+            name="ranking-star"
+            size={20}
             color={theme.colors.primary}
             style={styles.icon}
           />

@@ -55,6 +55,10 @@ interface GroupLobbyFixturesSectionProps {
    * Total number of games/fixtures (for progress display when bannerTitle is set).
    */
   totalFixtures?: number;
+  /**
+   * Custom icon element to display before the title.
+   */
+  icon?: React.ReactNode;
 }
 
 /**
@@ -75,6 +79,7 @@ export function GroupLobbyFixturesSection({
   onBannerPress,
   predictionsCount,
   totalFixtures,
+  icon,
 }: GroupLobbyFixturesSectionProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -134,6 +139,7 @@ export function GroupLobbyFixturesSection({
   const headerContent = (
     <>
       <View style={styles.gamesHeaderRow}>
+        {icon && <View style={styles.iconWrapper}>{icon}</View>}
         <AppText variant="body" style={styles.gamesTitle}>
           {titleText}
         </AppText>
@@ -255,6 +261,10 @@ const styles = StyleSheet.create({
   },
   gamesTitle: {
     fontWeight: "600",
+    flex: 1,
+  },
+  iconWrapper: {
+    marginRight: 8,
   },
   viewAllText: {
     marginStart: 8,

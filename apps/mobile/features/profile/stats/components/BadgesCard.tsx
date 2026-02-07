@@ -6,14 +6,13 @@ import { View, StyleSheet } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiBadge } from "@repo/types";
-import { Ionicons, FontAwesome5, FontAwesome6 } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5, FontAwesome6, AntDesign } from "@expo/vector-icons";
 
 interface BadgesCardProps {
   badges: ApiBadge[];
 }
 
 const BADGE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  sharpshooter: "bonfire",
   streak_master: "flash",
   group_champion: "medal",
   consistency_king: "stats-chart",
@@ -40,6 +39,16 @@ function BadgeItem({ badge }: { badge: ApiBadge }) {
       return (
         <FontAwesome6
           name="shield-dog"
+          size={24}
+          color={iconColor}
+          style={styles.icon}
+        />
+      );
+    }
+    if (badge.id === "sharpshooter") {
+      return (
+        <AntDesign
+          name="aim"
           size={24}
           color={iconColor}
           style={styles.icon}

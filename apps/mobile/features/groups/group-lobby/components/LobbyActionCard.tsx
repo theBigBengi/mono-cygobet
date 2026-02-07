@@ -17,7 +17,9 @@ export interface LobbyActionCardLastMessage {
 }
 
 export interface LobbyActionCardProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Ionicons.glyphMap;
+  /** Custom icon element to render instead of Ionicons */
+  customIcon?: React.ReactNode;
   iconColor?: string;
   title: string;
   subtitle?: string;
@@ -31,6 +33,7 @@ export interface LobbyActionCardProps {
 
 export function LobbyActionCard({
   icon,
+  customIcon,
   iconColor,
   title,
   subtitle,
@@ -46,6 +49,16 @@ export function LobbyActionCard({
     return <LobbyCardSkeleton height={80} />;
   }
 
+  const renderIcon = () => {
+    if (customIcon) {
+      return customIcon;
+    }
+    if (icon) {
+      return <Ionicons name={icon} size={24} color={color} style={styles.icon} />;
+    }
+    return null;
+  };
+
   return (
     <Card style={styles.card}>
       <Pressable
@@ -53,7 +66,7 @@ export function LobbyActionCard({
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         style={({ pressed }) => [styles.row, { opacity: pressed ? 0.8 : 1 }]}
       >
-        <Ionicons name={icon} size={24} color={color} style={styles.icon} />
+        {renderIcon()}
         <View style={styles.textBlock}>
           <View style={styles.titleRow}>
             <AppText variant="body" style={[styles.title, { flex: 1 }]}>

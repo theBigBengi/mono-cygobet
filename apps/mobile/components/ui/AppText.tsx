@@ -4,11 +4,25 @@
 // - Maps to theme colors
 
 import React from "react";
-import { Text, TextProps,   } from "react-native";
+import { Text, TextProps } from "react-native";
 import { useTheme } from "@/lib/theme";
 
-type TypographyVariant = "title" | "subtitle" | "body" | "caption";
-type TextColor = "primary" | "secondary" | "danger";
+type TypographyVariant =
+  | "display"
+  | "title"
+  | "headline"
+  | "subtitle"
+  | "body"
+  | "label"
+  | "caption"
+  | "overline";
+type TextColor =
+  | "primary"
+  | "secondary"
+  | "danger"
+  | "onPrimary"
+  | "success"
+  | "warning";
 
 interface AppTextProps extends Omit<TextProps, "style"> {
   variant?: TypographyVariant;
@@ -24,26 +38,20 @@ export function AppText({
 }: AppTextProps) {
   const { theme } = useTheme();
   const variantStyle = theme.typography[variant];
-  const colorValue =
-    color === "primary"
-      ? theme.colors.textPrimary
-      : color === "secondary"
-        ? theme.colors.textSecondary
-        : theme.colors.danger;
+  const colorMap: Record<TextColor, string> = {
+    primary: theme.colors.textPrimary,
+    secondary: theme.colors.textSecondary,
+    danger: theme.colors.danger,
+    onPrimary: theme.colors.primaryText,
+    success: theme.colors.success,
+    warning: theme.colors.warning,
+  };
+  const colorValue = colorMap[color];
 
-  return (
-    <Text
-      style={[
-        {
-          fontSize: variantStyle.fontSize,
-          fontWeight: variantStyle.fontWeight,
-          lineHeight: variantStyle.lineHeight,
-          color: colorValue,
-        },
-        style,
-      ]}
-      {...props}
-    />
-  );
+  const baseStyle = {
+    ...variantStyle,
+    color: colorValue,
+  };
+
+  return <Text style={[baseStyle, style]} {...props} />;
 }
-

@@ -10,6 +10,7 @@ export interface Theme {
   spacing: typeof import("./spacing").spacing;
   typography: typeof import("./typography").typography;
   radius: typeof import("./radius").radius;
+  shadows: typeof import("./shadows").shadows;
+  opacity: typeof import("./opacity").opacity;
   colorScheme: ColorScheme;
 }
-
