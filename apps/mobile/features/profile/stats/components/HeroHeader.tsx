@@ -1,9 +1,8 @@
 // features/profile/stats/components/HeroHeader.tsx
-// Gradient hero section with avatar, username, key stats, level & streak.
+// Clean hero section with avatar, username, and key stats (accuracy, predictions, exact, correct).
 
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -12,11 +11,10 @@ import { useTranslation } from "react-i18next";
 interface HeroHeaderProps {
   username: string | null;
   image: string | null;
-  totalPoints: number;
   accuracy: number;
-  bestRank: number | null;
-  level: number;
-  dailyStreak: number;
+  totalPredictions: number;
+  exactPredictions: number;
+  correctPredictions: number;
   showEditButton?: boolean;
   onEditPress?: () => void;
 }
@@ -30,15 +28,17 @@ function getInitials(username: string | null): string {
   return username.slice(0, 2).toUpperCase();
 }
 
-function StatPill({ value, label }: { value: string | number; label: string }) {
+function StatColumn({
+  value,
+  label,
+}: {
+  value: string | number;
+  label: string;
+}) {
   return (
-    <View style={styles.statPill}>
-      <AppText variant="title" style={styles.statValue}>
-        {value}
-      </AppText>
-      <AppText variant="caption" style={styles.statLabel}>
-        {label}
-      </AppText>
+    <View style={styles.statColumn}>
+      <AppText style={styles.statValue}>{value}</AppText>
+      <AppText style={styles.statLabel}>{label}</AppText>
     </View>
   );
 }
@@ -46,135 +46,93 @@ function StatPill({ value, label }: { value: string | number; label: string }) {
 export function HeroHeader({
   username,
   image,
-  totalPoints,
   accuracy,
-  bestRank,
-  level,
-  dailyStreak,
+  totalPredictions,
+  exactPredictions,
+  correctPredictions,
   showEditButton,
   onEditPress,
 }: HeroHeaderProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
-  const primaryDark = (theme.colors as { primaryDark?: string }).primaryDark;
-  const gradientColors = [
-    theme.colors.primary,
-    primaryDark ?? theme.colors.primary,
-  ];
   const initials = getInitials(username);
+  void image;
 
   return (
-    <LinearGradient
-      colors={gradientColors}
-      style={styles.container}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
+    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
       {showEditButton && (
         <Pressable style={styles.editButton} onPress={onEditPress} hitSlop={10}>
-          <MaterialIcons name="edit" size={20} color="rgba(255,255,255,0.8)" />
+          <MaterialIcons name="edit" size={18} color="rgba(255,255,255,0.7)" />
         </Pressable>
       )}
 
-      <View style={styles.avatarContainer}>
-        <View style={styles.avatar}>
-          <AppText variant="title" style={styles.initials}>
-            {initials}
-          </AppText>
-        </View>
+      <View style={styles.avatar}>
+        <AppText style={styles.initials}>{initials}</AppText>
       </View>
 
-      <AppText variant="title" style={styles.username}>
-        @{username || "unknown"}
-      </AppText>
+      <AppText style={styles.username}>{username || "unknown"}</AppText>
 
       <View style={styles.statsRow}>
-        <StatPill
-          value={totalPoints.toLocaleString()}
-          label={t("predictions.pts")}
+        <StatColumn value={`${accuracy}%`} label={t("profile.accuracy")} />
+        <View style={styles.statDivider} />
+        <StatColumn
+          value={totalPredictions.toLocaleString()}
+          label={t("profile.predictions")}
         />
-        <StatPill value={`${accuracy}%`} label={t("profile.accuracy")} />
-        <StatPill
-          value={bestRank != null ? `#${bestRank}` : "-"}
-          label={t("profile.bestRank")}
+        <View style={styles.statDivider} />
+        <StatColumn value={exactPredictions} label={t("profile.exactShort")} />
+        <View style={styles.statDivider} />
+        <StatColumn
+          value={correctPredictions}
+          label={t("profile.correctPredictions")}
         />
       </View>
-
-      <View style={styles.badgesRow}>
-        {dailyStreak > 0 && (
-          <View style={styles.badge}>
-            <AppText style={styles.badgeText}>
-              🔥 {dailyStreak} {t("profile.dayStreak")}
-            </AppText>
-          </View>
-        )}
-        <View style={styles.badge}>
-          <AppText style={styles.badgeText}>
-            ⭐ {t("profile.level")} {level}
-          </AppText>
-        </View>
-      </View>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 16,
-    paddingBottom: 24,
-    paddingHorizontal: 16,
-    marginHorizontal: -16,
-    marginTop: -16,
-    marginBottom: 16,
+    paddingTop: 24,
+    paddingBottom: 28,
+    paddingHorizontal: 20,
     alignItems: "center",
   },
   editButton: {
     position: "absolute",
     top: 16,
     right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarContainer: {
-    marginBottom: 12,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "rgba(255,255,255,0.4)",
+    marginBottom: 12,
   },
   initials: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "600",
     color: "#fff",
   },
   username: {
     color: "#fff",
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 16,
+    fontSize: 18,
+    fontWeight: "500",
+    marginBottom: 20,
   },
   statsRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
-  },
-  statPill: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
     alignItems: "center",
-    minWidth: 90,
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: 4,
+  },
+  statColumn: {
+    alignItems: "center",
+    minWidth: 56,
   },
   statValue: {
     color: "#fff",
@@ -182,22 +140,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   statLabel: {
-    color: "rgba(255,255,255,0.8)",
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
     marginTop: 2,
   },
-  badgesRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  badge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "500",
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: "rgba(255,255,255,0.35)",
+    marginHorizontal: 8,
   },
 });

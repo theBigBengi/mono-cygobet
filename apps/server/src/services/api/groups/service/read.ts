@@ -29,12 +29,10 @@ const log = getLogger("groups.read");
  * Get all groups the user is a member of (as creator or joined member).
  * Sorted by createdAt DESC.
  * Includes memberCount and nextGame for each group.
- * 
+ *
  * Optimized with batch queries to avoid N+1 problem.
  */
-export async function getMyGroups(
-  userId: number
-): Promise<ApiGroupsResponse> {
+export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
   log.debug({ userId }, "getMyGroups - start");
   // Find all groups where user is either creator or a joined member
   const groups = await repo.findGroupsByUserId(userId);
@@ -57,7 +55,13 @@ export async function getMyGroups(
   ]);
 
   const nudgeByGroupId = new Map(
-    rulesNudge.map((r) => [r.groupId, { nudgeEnabled: r.nudgeEnabled, nudgeWindowMinutes: r.nudgeWindowMinutes }])
+    rulesNudge.map((r) => [
+      r.groupId,
+      {
+        nudgeEnabled: r.nudgeEnabled,
+        nudgeWindowMinutes: r.nudgeWindowMinutes,
+      },
+    ])
   );
 
   // Build group items using batch stats
@@ -83,16 +87,15 @@ export async function getMyGroups(
       const totalFixtures = stats.fixtureCountByGroupId.get(group.id) ?? 0;
       const predictionsCount =
         stats.predictionCountByGroupId.get(group.id) ?? 0;
-      const hasUnpredictedGames =
-        stats.hasUnpredictedGamesByGroupId.has(group.id);
+      const hasUnpredictedGames = stats.hasUnpredictedGamesByGroupId.has(
+        group.id
+      );
       const unpredictedGamesCount =
         stats.unpredictedGamesCountByGroupId.get(group.id) ?? 0;
-      const todayGamesCount =
-        stats.todayGamesCountByGroupId.get(group.id) ?? 0;
+      const todayGamesCount = stats.todayGamesCountByGroupId.get(group.id) ?? 0;
       const todayUnpredictedCount =
         stats.todayUnpredictedCountByGroupId.get(group.id) ?? 0;
-      const liveGamesCount =
-        stats.liveGamesCountByGroupId.get(group.id) ?? 0;
+      const liveGamesCount = stats.liveGamesCountByGroupId.get(group.id) ?? 0;
       const rawNextGame = stats.nextGameByGroupId.get(group.id) ?? null;
       const rawFirstGame = stats.firstGameByGroupId.get(group.id) ?? null;
       const rawLastGame = stats.lastGameByGroupId.get(group.id) ?? null;
@@ -175,6 +178,11 @@ export async function getGroupById(
         : fixturesData;
   }
 
+  if (group.status !== "draft") {
+    const memberCount = await repo.countGroupMembers(id);
+    data.memberCount = memberCount;
+  }
+
   return {
     status: "success",
     data,
@@ -202,7 +210,10 @@ export async function getGroupFixtures(
   const finalData =
     filters != null ? applyGroupFixturesFilter(data, filters) : data;
 
-  log.info({ id, userId, count: finalData.length }, "getGroupFixtures - fetched");
+  log.info(
+    { id, userId, count: finalData.length },
+    "getGroupFixtures - fetched"
+  );
   return {
     status: "success",
     data: finalData,

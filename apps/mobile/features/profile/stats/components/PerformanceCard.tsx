@@ -17,10 +17,10 @@ interface PerformanceCardProps {
 }
 
 const COLORS = {
-  exact: "#34C759",
-  difference: "#007AFF",
-  outcome: "#FFCC00",
-  miss: "#FF3B30",
+  exact: "#22C55E",
+  difference: "#EAB308",
+  outcome: "#F97316",
+  miss: "#EF4444",
 };
 
 export function PerformanceCard({

@@ -10,7 +10,6 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useUserStatsQuery, useProfileQuery } from "../../profile.queries";
 import { HeroHeader } from "../components/HeroHeader";
-import { InsightsCard } from "../components/InsightsCard";
 import { PerformanceCard } from "../components/PerformanceCard";
 import { BadgesCard } from "../components/BadgesCard";
 import { GroupStatsCard } from "../components/GroupStatsCard";
@@ -61,11 +60,6 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
     );
   }
 
-  const level = isOwnProfile ? (profileQuery.data?.profile?.level ?? 1) : 1;
-  const dailyStreak = isOwnProfile
-    ? (profileQuery.data?.profile?.dailyStreak ?? 0)
-    : 0;
-
   const groupsActive = data.groups.filter(
     (g) => g.groupStatus === "active"
   ).length;
@@ -80,21 +74,23 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
 
   const displayUsername = isOwnProfile ? currentUsername : data.user.username;
   const displayImage = isOwnProfile ? currentImage : data.user.image;
+  const correctPredictions =
+    data.distribution.exact +
+    data.distribution.difference +
+    data.distribution.outcome;
 
   return (
     <Screen scroll>
       <HeroHeader
         username={displayUsername}
         image={displayImage}
-        totalPoints={data.overall.totalPoints}
         accuracy={data.overall.accuracy}
-        bestRank={data.overall.bestRank}
-        level={level}
-        dailyStreak={dailyStreak}
+        totalPredictions={data.overall.settledPredictions}
+        exactPredictions={data.overall.exactScores}
+        correctPredictions={correctPredictions}
         showEditButton={isOwnProfile}
-        onEditPress={isOwnProfile ? () => setEditModalVisible(true) : undefined}
+        onEditPress={() => setEditModalVisible(true)}
       />
-      <InsightsCard insights={data.insights} />
       <PerformanceCard
         form={data.form}
         exact={data.distribution.exact}

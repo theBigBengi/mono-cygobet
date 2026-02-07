@@ -319,7 +319,9 @@
     "lastPredictions": "Last {{count}} predictions",
     "bestRank": "Best rank",
     "dayStreak": "day streak",
-    "level": "Level"
+    "level": "Level",
+    "exactShort": "exact",
+    "winsShort": "wins"
   },
   "discover": {
     "searchPlaceholder": "Search by group name",

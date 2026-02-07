@@ -5,22 +5,19 @@
 
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons, Entypo, Fontisto } from "@expo/vector-icons";
-import { Screen, Card, AppText } from "@/components/ui";
+import { Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
   useGroupRankingQuery,
   useGroupChatPreviewQuery,
 } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
-import { useCountdown } from "@/features/groups/predictions/hooks";
 import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSection";
-import { useGroupDuration } from "../hooks/useGroupDuration";
 import type { FixtureItem } from "../types";
-import { useGroupActivityStats } from "../hooks/useGroupActivityStats";
-import { formatDate, formatRelativeTime } from "@/utils/date";
+import { formatRelativeTime } from "@/utils/date";
 import { GroupLobbyHeader } from "../components/GroupLobbyHeader";
 import { LobbyActionCard } from "../components/LobbyActionCard";
 import { LobbyRankingPreview } from "../components/LobbyRankingPreview";
@@ -66,13 +63,6 @@ export function GroupLobbyActiveScreen({
   const fixtures = Array.isArray((group as any).fixtures)
     ? ((group as any).fixtures as FixtureItem[])
     : [];
-
-  // Client-side activity stats from fixtures (getGroupById doesn't return these counts)
-  const activityStats = useGroupActivityStats(fixtures);
-  const duration = useGroupDuration(fixtures);
-  const nextGameCountdownLabel = useCountdown(
-    activityStats.nextGame?.kickoffAt ?? null
-  );
 
   // Progress: use API stats when present, otherwise derive from fixtures (getGroupById doesn't return these)
   const totalFixtures = group.totalFixtures ?? fixtures.length;
@@ -122,76 +112,6 @@ export function GroupLobbyActiveScreen({
           memberCount={group.memberCount}
           status="active"
         />
-
-        {/* Activity summary: LIVE, today, next game countdown, last game */}
-        {(activityStats.liveGamesCount > 0 ||
-          activityStats.todayGamesCount > 0 ||
-          activityStats.nextGame ||
-          duration?.lastGame) && (
-          <Card style={styles.activitySummaryCard}>
-            <View style={styles.activitySummaryContent}>
-              {activityStats.liveGamesCount > 0 && (
-                <Pressable
-                  onPress={handleViewGames}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={styles.activitySummaryRow}
-                >
-                  <View style={styles.liveRow}>
-                    <View style={styles.liveDot} />
-                    <AppText
-                      variant="caption"
-                      style={[styles.liveLabel, { color: "#EF4444" }]}
-                    >
-                      {activityStats.liveGamesCount}{" "}
-                      {t("lobby.game", { count: activityStats.liveGamesCount })}{" "}
-                      {t("lobby.gamesLiveNow")}
-                    </AppText>
-                  </View>
-                </Pressable>
-              )}
-              {activityStats.todayGamesCount > 0 && (
-                <AppText
-                  variant="caption"
-                  color="secondary"
-                  style={styles.activitySummaryRow}
-                >
-                  {activityStats.todayGamesCount}{" "}
-                  {t("lobby.game", { count: activityStats.todayGamesCount })}{" "}
-                  {t("lobby.gamesToday")}
-                  {activityStats.todayUnpredictedCount > 0
-                    ? ` – ${t("lobby.needPredictions", { count: activityStats.todayUnpredictedCount })}`
-                    : ` – ${t("lobby.allPredictionsSet")}`}
-                </AppText>
-              )}
-              {activityStats.nextGame && activityStats.liveGamesCount === 0 && (
-                <AppText
-                  variant="caption"
-                  color="secondary"
-                  style={styles.activitySummaryRow}
-                >
-                  {nextGameCountdownLabel.startsWith("in ")
-                    ? t("lobby.nextGameStarts", {
-                        countdown: nextGameCountdownLabel,
-                      })
-                    : t("lobby.nextGameLabel", {
-                        countdown: nextGameCountdownLabel,
-                      })}
-                </AppText>
-              )}
-              {duration?.lastGame && (
-                <AppText
-                  variant="caption"
-                  color="secondary"
-                  style={styles.activitySummaryRow}
-                >
-                  {t("lobby.endsApproximately", {
-                    date: formatDate(duration.endDate),
-                  })}
-                </AppText>
-              )}
-            </View>
-          </Card>
-        )}
 
         {/* Predictions / Games Section - tap opens games page */}
         <GroupLobbyFixturesSection
@@ -277,28 +197,5 @@ const styles = StyleSheet.create({
   },
   screenContent: {
     paddingBottom: 16,
-  },
-  activitySummaryCard: {
-    marginBottom: 16,
-  },
-  activitySummaryContent: {
-    gap: 6,
-  },
-  activitySummaryRow: {
-    marginBottom: 2,
-  },
-  liveRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#EF4444",
-  },
-  liveLabel: {
-    fontWeight: "600",
   },
 });

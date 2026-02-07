@@ -319,7 +319,9 @@
     "lastPredictions": "{{count}} הניחושים האחרונים",
     "bestRank": "דירוג שיא",
     "dayStreak": "ימים ברצף",
-    "level": "רמה"
+    "level": "רמה",
+    "exactShort": "מדויקים",
+    "winsShort": "ניצחונות"
   },
   "discover": {
     "searchPlaceholder": "חפש לפי שם קבוצה",
