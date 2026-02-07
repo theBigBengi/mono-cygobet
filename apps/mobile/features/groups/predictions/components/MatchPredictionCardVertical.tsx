@@ -74,9 +74,15 @@ export function MatchPredictionCardVertical({
     }
   };
 
-  // Get refs for input fields
-  const homeRef = inputRefs.current[fixtureIdStr]?.home;
-  const awayRef = inputRefs.current[fixtureIdStr]?.away;
+  // Get or create refs for input fields
+  if (!inputRefs.current[fixtureIdStr]) {
+    inputRefs.current[fixtureIdStr] = {
+      home: React.createRef(),
+      away: React.createRef(),
+    };
+  }
+  const homeRef = inputRefs.current[fixtureIdStr].home;
+  const awayRef = inputRefs.current[fixtureIdStr].away;
 
   // Use hook to get all derived state
   const {

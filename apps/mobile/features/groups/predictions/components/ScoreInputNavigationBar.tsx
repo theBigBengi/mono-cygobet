@@ -3,7 +3,7 @@
 // Appears above keyboard to help navigate between input fields.
 
 import React from "react";
-import { View, StyleSheet, Pressable, Keyboard } from "react-native";
+import { View, StyleSheet, Pressable, Keyboard, ActivityIndicator } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +16,7 @@ interface ScoreInputNavigationBarProps {
   canGoNext: boolean;
   keyboardHeight: number;
   onDone?: () => void;
+  isSaving?: boolean;
 }
 
 export function ScoreInputNavigationBar({
@@ -25,6 +26,7 @@ export function ScoreInputNavigationBar({
   canGoNext,
   keyboardHeight,
   onDone,
+  isSaving,
 }: ScoreInputNavigationBarProps) {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === "dark";
@@ -127,7 +129,11 @@ export function ScoreInputNavigationBar({
             ]}
             onPress={handleDone}
           >
-            <Ionicons name="checkmark" size={32} color="#FFFFFF" />
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Ionicons name="checkmark" size={32} color="#FFFFFF" />
+            )}
             {/* <AppText
               variant="caption"
               style={[

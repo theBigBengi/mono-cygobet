@@ -315,14 +315,14 @@ export function GroupGamesScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      {/* Single game view — pre-mounted after interactions, hidden when list is shown. */}
+      {/* Single game view — only mounted when active to avoid ref conflicts. */}
       <View
         style={{
           display: viewMode === "single" ? "flex" : "none",
           flex: 1,
         }}
       >
-        {singleViewReady && (
+        {viewMode === "single" && (
           <SingleGameView
             isVisible={viewMode === "single"}
             groupId={groupId}
@@ -469,6 +469,7 @@ export function GroupGamesScreen({
           canGoNext={canGoNext}
           keyboardHeight={keyboardHeight}
           onDone={handleDone}
+          isSaving={isSaving}
         />
 
         {/* Header floats above list content. */}

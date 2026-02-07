@@ -248,6 +248,11 @@ export function SingleGameView({
   const [currentIndex, setCurrentIndex] = useState(initialIndex ?? 0);
   const flatListRef = useRef<FlatList>(null);
 
+  // Use local refs for SingleGameView to avoid conflicts with list view refs
+  const localInputRefs = useRef<
+    Record<string, { home: React.RefObject<any>; away: React.RefObject<any> }>
+  >({});
+
   // Sync currentIndex state when initialIndex prop changes (FlatList remounts via key).
   useEffect(() => {
     setCurrentIndex(initialIndex ?? 0);
@@ -300,8 +305,15 @@ export function SingleGameView({
       const isAwayFocused =
         currentFocusedField?.fixtureId === fixture.id &&
         currentFocusedField.type === "away";
-      const homeRef = inputRefs.current[fixtureIdStr]?.home;
-      const awayRef = inputRefs.current[fixtureIdStr]?.away;
+      // Create local refs if they don't exist
+      if (!localInputRefs.current[fixtureIdStr]) {
+        localInputRefs.current[fixtureIdStr] = {
+          home: React.createRef(),
+          away: React.createRef(),
+        };
+      }
+      const homeRef = localInputRefs.current[fixtureIdStr].home;
+      const awayRef = localInputRefs.current[fixtureIdStr].away;
 
       return (
         <SingleGamePage
@@ -329,7 +341,6 @@ export function SingleGameView({
       savedPredictions,
       currentFocusedField,
       groupId,
-      inputRefs,
       onFieldFocus,
       onFieldBlur,
       onUpdatePrediction,

@@ -42,7 +42,48 @@ export function useGroupGamePredictions({
   const savePredictionsBatchMutation =
     useSaveGroupPredictionsBatchMutation(groupId);
 
+  const saveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  /**
+   * Ref to call save from debounced callback (saveAllChangedPredictions is defined later).
+   */
+  const saveAllChangedPredictionsRef = React.useRef<
+    () => Promise<{ rejected?: number }>
+  >(() => Promise.resolve({}));
+
+  /**
+   * Debounced save: after 800ms of no input/slider activity, save all changed predictions.
+   */
+  const debouncedSave = React.useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveTimeoutRef.current = null;
+      saveAllChangedPredictionsRef.current();
+    }, 800);
+  }, []);
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  // Refs to access current state in useEffect without adding to deps
+  const predictionsRef = React.useRef<PredictionsByFixtureId>({});
+  const savedSnapshotsRef = React.useRef<PredictionsByFixtureId>({});
+  predictionsRef.current = predictions;
+  savedSnapshotsRef.current = savedPredictionSnapshots;
+
   // Sync local predictions & snapshots whenever fixtures from the server change
+  // BUT preserve local unsaved changes
   React.useEffect(() => {
     if (!fixtures || fixtures.length === 0) {
       setPredictions({});
@@ -51,13 +92,34 @@ export function useGroupGamePredictions({
       return;
     }
 
+    const currentPredictions = predictionsRef.current;
+    const currentSnapshots = savedSnapshotsRef.current;
+
     const nextPredictions: PredictionsByFixtureId = {};
     const nextSaved = new Set<number>();
     const nextSnapshots: PredictionsByFixtureId = {};
 
     fixtures.forEach((fixture) => {
       const fixtureIdStr = String(fixture.id);
-      if (fixture.prediction) {
+      const localPrediction = currentPredictions[fixtureIdStr];
+      const lastSaved = currentSnapshots[fixtureIdStr];
+
+      // Check if there's an unsaved local change
+      const hasUnsavedChange =
+        localPrediction != null &&
+        (localPrediction.home !== lastSaved?.home ||
+          localPrediction.away !== lastSaved?.away);
+
+      if (hasUnsavedChange) {
+        // Keep local unsaved value - don't overwrite with server data
+        nextPredictions[fixtureIdStr] = localPrediction;
+        // Keep existing snapshot (or none if new)
+        if (lastSaved) {
+          nextSnapshots[fixtureIdStr] = lastSaved;
+          nextSaved.add(fixture.id);
+        }
+      } else if (fixture.prediction) {
+        // No local changes - use server value
         const snapshot: GroupPrediction = {
           home: fixture.prediction.home,
           away: fixture.prediction.away,
@@ -66,6 +128,7 @@ export function useGroupGamePredictions({
         nextSnapshots[fixtureIdStr] = snapshot;
         nextSaved.add(fixture.id);
       } else {
+        // No prediction on server and no local changes
         nextPredictions[fixtureIdStr] = { home: null, away: null };
       }
     });
@@ -90,10 +153,6 @@ export function useGroupGamePredictions({
     },
     []
   );
-
-  // Keep predictions in a ref so updatePrediction can stay stable (no deps on predictions).
-  const predictionsRef = React.useRef(predictions);
-  predictionsRef.current = predictions;
 
   const updatePrediction = React.useCallback(
     (
@@ -153,13 +212,16 @@ export function useGroupGamePredictions({
         };
       });
 
+      // Trigger debounced save
+      debouncedSave();
+
       // Auto-advance only after a valid digit input.
       // We delay a bit so RN finishes updating selection/value before focusing the next input.
       if (numValue !== null && onAutoNext) {
         setTimeout(() => onAutoNext(fixtureId, type), 50);
       }
     },
-    []
+    [debouncedSave]
   );
 
   /**
@@ -188,8 +250,9 @@ export function useGroupGamePredictions({
           [fixtureIdStr]: newPrediction,
         };
       });
+      debouncedSave();
     },
-    []
+    [debouncedSave]
   );
 
   /**
@@ -333,6 +396,9 @@ export function useGroupGamePredictions({
       );
     });
   }, [getChangedPredictions, groupId, savePredictionsBatchMutation]);
+
+  // Update ref so debounced callback can call the latest version
+  saveAllChangedPredictionsRef.current = saveAllChangedPredictions;
 
   return {
     predictions,
