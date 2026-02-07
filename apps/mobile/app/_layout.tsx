@@ -35,6 +35,9 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
+import * as SplashScreen from "expo-splash-screen";
+
+SplashScreen.preventAutoHideAsync();
 
 // Log store identity for verification
 console.log("[RootLayout] Jotai store instance:", jotaiStore);

@@ -16,6 +16,7 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { Button } from "@/components/ui";
 import { queryClient } from "@/lib/query/queryClient";
+import * as SplashScreen from "expo-splash-screen";
 
 interface AppStartGateProps {
   children: React.ReactNode;
@@ -53,13 +54,17 @@ export function AppStartGate({ children }: AppStartGateProps) {
 
     // Wait for auth status to stabilize: idle/restoring are in-flight states
     if (auth.status === "idle" || auth.status === "restoring") {
-      console.log("AppStartGate: auth.status is still restoring/idle, waiting...");
+      console.log(
+        "AppStartGate: auth.status is still restoring/idle, waiting..."
+      );
       return;
     }
 
     // If authenticated but user missing - try loading user (defensive)
     if (auth.status === "authenticated" && !auth.user) {
-      console.log("AppStartGate: auth status is authenticated but user missing, loading user");
+      console.log(
+        "AppStartGate: auth status is authenticated but user missing, loading user"
+      );
       auth.loadUser();
       return; // Wait for user to load before prefetch
     }
@@ -68,6 +73,12 @@ export function AppStartGate({ children }: AppStartGateProps) {
     console.log("AppStartGate: auth state stabilized, starting prefetch");
     prefetchInitialData(queryClient, auth, setStatus, setError);
   }, [status, auth.status, auth.user, auth, setStatus, setError]);
+
+  // Hide splash screen when app is ready (or error)
+  useEffect(() => {
+    if (status === "booting") return;
+    SplashScreen.hideAsync();
+  }, [status]);
 
   const handleRetry = () => {
     bootstrapRanRef.current = false;
@@ -85,7 +96,9 @@ export function AppStartGate({ children }: AppStartGateProps) {
       <QueryErrorView
         message={error.message}
         onRetry={handleRetry}
-        extraActions={<Button label={t("common.retry")} onPress={handleRetry} />}
+        extraActions={
+          <Button label={t("common.retry")} onPress={handleRetry} />
+        }
       />
     );
   }
