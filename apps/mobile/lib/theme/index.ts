@@ -9,4 +9,5 @@ export * from "./shadows";
 export * from "./opacity";
 export * from "./theme.types";
 export * from "./theme.resolver";
+export { getPersistedThemeMode, setPersistedThemeMode } from "./theme.storage";
 export { ThemeProvider, useTheme } from "./ThemeProvider";

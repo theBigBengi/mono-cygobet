@@ -2,10 +2,18 @@
 // Theme provider that resolves and exposes theme to the app.
 // Infrastructure only - no business logic, no auth, no persistence.
 
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useColorScheme } from "react-native";
 import type { ReactNode } from "react";
 import { resolveColorScheme, resolveTheme } from "./theme.resolver";
+import { getPersistedThemeMode, setPersistedThemeMode } from "./theme.storage";
 import type { Theme, ThemeMode } from "./theme.types";
 
 interface ThemeContextValue {
@@ -22,9 +30,21 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  // Internal state for theme mode (default: "system")
-  const [mode, setMode] = useState<ThemeMode>("system");
+  const [mode, setModeState] = useState<ThemeMode>("system");
   const systemColorScheme = useColorScheme();
+
+  useEffect(() => {
+    getPersistedThemeMode().then((persisted) => {
+      if (persisted) {
+        setModeState(persisted);
+      }
+    });
+  }, []);
+
+  const setMode = useCallback((nextMode: ThemeMode) => {
+    setModeState(nextMode);
+    setPersistedThemeMode(nextMode);
+  }, []);
 
   const colorScheme = useMemo(
     () => resolveColorScheme(mode, systemColorScheme),
@@ -39,7 +59,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       mode,
       setMode,
     }),
-    [theme, colorScheme, mode]
+    [theme, colorScheme, mode, setMode]
   );
 
   return (

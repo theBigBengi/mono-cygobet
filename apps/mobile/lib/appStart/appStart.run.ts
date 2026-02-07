@@ -4,6 +4,7 @@
 
 import type { AuthContextValue } from "@/lib/auth/AuthProvider";
 import { bootstrapGroupGames } from "@/features/group-creation/selection/games";
+import { initHaptics } from "@/lib/haptics";
 
 /**
  * Run app start: bootstrap auth and group games.
@@ -13,8 +14,8 @@ export async function runAppStart(auth: AuthContextValue): Promise<void> {
   console.log("AppStart: bootstrap start");
 
   // Bootstrap auth (determines auth state: authed/guest, does NOT load user)
-  // Bootstrap group games in parallel (independent of auth)
-  await Promise.all([auth.bootstrap(), bootstrapGroupGames()]);
+  // Bootstrap group games and haptics preference in parallel (independent of auth)
+  await Promise.all([auth.bootstrap(), bootstrapGroupGames(), initHaptics()]);
 
   console.log("AppStart: bootstrap end");
 }

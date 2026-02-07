@@ -33,6 +33,7 @@ import { initializeGlobalErrorHandlers } from "@/lib/errors/globalErrorHandlers"
 import { handleError, getUserFriendlyMessage } from "@/lib/errors";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import * as SplashScreen from "expo-splash-screen";
@@ -172,11 +173,13 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <I18nBootstrap>
             <ThemeProvider>
-              <AuthProvider>
-                <SocketProvider>
-                  <AppContent />
-                </SocketProvider>
-              </AuthProvider>
+              <BottomSheetModalProvider>
+                <AuthProvider>
+                  <SocketProvider>
+                    <AppContent />
+                  </SocketProvider>
+                </AuthProvider>
+              </BottomSheetModalProvider>
             </ThemeProvider>
           </I18nBootstrap>
         </QueryClientProvider>
