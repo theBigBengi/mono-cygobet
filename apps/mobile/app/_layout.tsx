@@ -140,6 +140,10 @@ function AppContent() {
                 name="modal"
                 options={{ presentation: "modal", headerShown: true }}
               />
+              <Stack.Screen
+                name="change-password"
+                options={{ headerShown: false }}
+              />
             </Stack.Protected>
 
             {/* Username selection - accessible when authenticated but missing username */}

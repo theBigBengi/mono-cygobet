@@ -3,7 +3,8 @@
 
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Card, AppText, Row } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 
@@ -12,6 +13,8 @@ interface ProfileHeaderProps {
   image: string | null;
   level?: number;
   dailyStreak?: number;
+  showEditButton?: boolean;
+  onEditPress?: () => void;
 }
 
 function getInitials(username: string | null): string {
@@ -28,6 +31,8 @@ export function ProfileHeader({
   image,
   level = 1,
   dailyStreak = 0,
+  showEditButton = false,
+  onEditPress,
 }: ProfileHeaderProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -49,18 +54,30 @@ export function ProfileHeader({
         >
           <AppText
             variant="title"
-            style={[
-              styles.initials,
-              { color: theme.colors.primaryText },
-            ]}
+            style={[styles.initials, { color: theme.colors.primaryText }]}
           >
             {initials}
           </AppText>
         </View>
         <View style={styles.info}>
-          <AppText variant="title" numberOfLines={1}>
-            {username || t("common.unknown")}
-          </AppText>
+          <View style={styles.usernameRow}>
+            <AppText variant="title" numberOfLines={1} style={styles.username}>
+              {username || t("common.unknown")}
+            </AppText>
+            {showEditButton && onEditPress && (
+              <Pressable
+                onPress={onEditPress}
+                style={styles.editButton}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name="pencil"
+                  size={18}
+                  color={theme.colors.primary}
+                />
+              </Pressable>
+            )}
+          </View>
           <View style={styles.badges}>
             <AppText variant="caption" color="secondary">
               Level {level}
@@ -89,6 +106,17 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
+  },
+  usernameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  username: {
+    flex: 1,
+  },
+  editButton: {
+    padding: 4,
   },
   badges: {
     flexDirection: "row",

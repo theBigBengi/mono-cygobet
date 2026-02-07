@@ -1,5 +1,21 @@
 // src/schemas/user-profile.schemas.ts
 
+export const updateProfileBodySchema = {
+  type: "object",
+  required: [],
+  additionalProperties: false,
+  properties: {
+    username: {
+      type: "string",
+      minLength: 3,
+      maxLength: 50,
+      pattern: "^[\\u0590-\\u05FFa-zA-Z0-9_-]+$",
+    },
+    name: { type: "string", minLength: 1, maxLength: 100 },
+    image: { anyOf: [{ type: "string", format: "uri" }, { type: "null" }] },
+  },
+} as const;
+
 export const userProfileResponseSchema = {
   type: "object",
   required: ["user", "profile"],

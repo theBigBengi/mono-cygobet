@@ -424,6 +424,7 @@
   "settings": {
     "account": "Account",
     "profile": "Profile",
+    "changePassword": "Change Password",
     "appearance": "Appearance",
     "theme": "Theme",
     "themeSystem": "System",
@@ -444,6 +445,32 @@
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy",
     "logoutConfirm": "Are you sure you want to log out?"
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "currentPassword": "Current Password",
+    "currentPasswordPlaceholder": "Enter current password",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter new password",
+    "confirmPassword": "Confirm New Password",
+    "confirmPasswordPlaceholder": "Re-enter new password",
+    "submit": "Change Password",
+    "success": "Success",
+    "successMessage": "Your password has been changed successfully",
+    "failed": "Failed to change password",
+    "fillAllFields": "Please fill in all fields",
+    "passwordsDontMatch": "New passwords don't match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordHint": "Must be at least 8 characters"
+  },
+  "editProfile": {
+    "title": "Edit Profile",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Enter display name (optional)",
+    "save": "Save Changes",
+    "updateFailed": "Failed to update profile"
   },
   "common": {
     "limitedConnectivity": "Limited connectivity — read-only mode",

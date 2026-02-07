@@ -9,6 +9,26 @@ import type {
 } from "@repo/types";
 import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
 
+export interface UpdateProfileInput {
+  username?: string;
+  name?: string;
+  image?: string | null;
+}
+
+/**
+ * Update the current user's profile (username, name, image).
+ * - Protected + onboarding-gated endpoint.
+ * - Returns the updated profile shape.
+ */
+export async function updateProfile(
+  input: UpdateProfileInput
+): Promise<ApiUserProfileResponse> {
+  return apiFetchWithAuthRetry<ApiUserProfileResponse>("/api/users/profile", {
+    method: "PATCH",
+    body: input,
+  });
+}
+
 /**
  * Fetch the current user's profile (user + profile) from the server.
  * - Protected + onboarding-gated endpoint.

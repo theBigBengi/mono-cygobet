@@ -53,4 +53,5 @@ export interface UserMeResponse {
   image: string | null;
   role: string;
   onboardingRequired: boolean;
+  hasPassword: boolean;
 }

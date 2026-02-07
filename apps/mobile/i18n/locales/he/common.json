@@ -421,6 +421,7 @@
   "settings": {
     "account": "חשבון",
     "profile": "פרופיל",
+    "changePassword": "שינוי סיסמה",
     "appearance": "מראה",
     "theme": "ערכת נושא",
     "themeSystem": "מערכת",
@@ -441,6 +442,32 @@
     "termsOfService": "תנאי שימוש",
     "privacyPolicy": "מדיניות פרטיות",
     "logoutConfirm": "האם אתה בטוח שברצונך להתנתק?"
+  },
+  "changePassword": {
+    "title": "שינוי סיסמה",
+    "currentPassword": "סיסמה נוכחית",
+    "currentPasswordPlaceholder": "הזן סיסמה נוכחית",
+    "newPassword": "סיסמה חדשה",
+    "newPasswordPlaceholder": "הזן סיסמה חדשה",
+    "confirmPassword": "אימות סיסמה חדשה",
+    "confirmPasswordPlaceholder": "הזן שוב סיסמה חדשה",
+    "submit": "שנה סיסמה",
+    "success": "הצלחה",
+    "successMessage": "הסיסמה שונתה בהצלחה",
+    "failed": "שינוי הסיסמה נכשל",
+    "fillAllFields": "נא למלא את כל השדות",
+    "passwordsDontMatch": "הסיסמאות החדשות אינן תואמות",
+    "passwordTooShort": "הסיסמה חייבת להכיל לפחות 8 תווים",
+    "passwordHint": "לפחות 8 תווים"
+  },
+  "editProfile": {
+    "title": "עריכת פרופיל",
+    "username": "שם משתמש",
+    "usernamePlaceholder": "הזן שם משתמש",
+    "displayName": "שם תצוגה",
+    "displayNamePlaceholder": "הזן שם תצוגה (אופציונלי)",
+    "save": "שמור שינויים",
+    "updateFailed": "עדכון הפרופיל נכשל"
   },
   "common": {
     "limitedConnectivity": "חיבור מוגבל — מצב קריאה בלבד",

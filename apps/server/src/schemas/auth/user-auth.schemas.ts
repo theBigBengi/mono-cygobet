@@ -115,6 +115,7 @@ export const userMeResponseSchema = {
     "image",
     "role",
     "onboardingRequired",
+    "hasPassword",
   ],
   additionalProperties: false,
   properties: {
@@ -125,6 +126,27 @@ export const userMeResponseSchema = {
     image: { anyOf: [{ type: "string" }, { type: "null" }] },
     role: { type: "string" },
     onboardingRequired: { type: "boolean" },
+    hasPassword: { type: "boolean" },
+  },
+} as const;
+
+export const changePasswordBodySchema = {
+  type: "object",
+  required: ["currentPassword", "newPassword"],
+  additionalProperties: false,
+  properties: {
+    currentPassword: { type: "string", minLength: 1 },
+    newPassword: { type: "string", minLength: 8, maxLength: 200 },
+  },
+} as const;
+
+export const changePasswordResponseSchema = {
+  type: "object",
+  required: ["success", "message"],
+  additionalProperties: false,
+  properties: {
+    success: { type: "boolean" },
+    message: { type: "string" },
   },
 } as const;
 

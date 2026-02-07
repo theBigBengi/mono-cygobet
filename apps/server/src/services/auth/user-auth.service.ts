@@ -18,6 +18,7 @@ import {
   resolveUserRefreshSessionByRawToken,
   rotateUserRefreshSessionTx,
   revokeUserRefreshSessionByRawToken,
+  revokeAllUserRefreshSessionsByUserId,
 } from "../../auth/user-refresh-session";
 import {
   ensureUserProfile,
@@ -127,11 +128,7 @@ export class UserAuthService {
         now
       );
 
-      const accessToken = generateAccessToken(
-        this.fastify,
-        user.id,
-        user.role
-      );
+      const accessToken = generateAccessToken(this.fastify, user.id, user.role);
 
       return {
         user: {
@@ -214,11 +211,7 @@ export class UserAuthService {
         select: { id: true },
       });
 
-      const accessToken = generateAccessToken(
-        this.fastify,
-        user.id,
-        user.role
-      );
+      const accessToken = generateAccessToken(this.fastify, user.id, user.role);
 
       return {
         user: {
@@ -398,11 +391,7 @@ export class UserAuthService {
         now
       );
 
-      const accessToken = generateAccessToken(
-        this.fastify,
-        user.id,
-        user.role
-      );
+      const accessToken = generateAccessToken(this.fastify, user.id, user.role);
 
       return {
         user: {
@@ -417,10 +406,7 @@ export class UserAuthService {
       };
     });
 
-    log.info(
-      { userId: result.user.id },
-      "user google login success"
-    );
+    log.info({ userId: result.user.id }, "user google login success");
 
     return result;
   }
@@ -465,11 +451,7 @@ export class UserAuthService {
       );
 
       // Generate new access token
-      const accessToken = generateAccessToken(
-        this.fastify,
-        user.id,
-        user.role
-      );
+      const accessToken = generateAccessToken(this.fastify, user.id, user.role);
 
       return {
         accessToken,
@@ -495,5 +477,46 @@ export class UserAuthService {
       log.info("user logout (refresh token revoked)");
     }
     // Idempotent: if no token provided, just return success
+  }
+
+  /**
+   * Change password for email/password users. Invalidates all refresh sessions.
+   */
+  async changePassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> {
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { id: true, password: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedError("User not found");
+    }
+
+    if (!user.password) {
+      throw new BadRequestError(
+        "Cannot change password for accounts using social login"
+      );
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isValid) {
+      throw new UnauthorizedError("Current password is incorrect");
+    }
+
+    const hashedPassword = await this.hashPassword(newPassword);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.users.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      });
+      await revokeAllUserRefreshSessionsByUserId(tx, userId);
+    });
+
+    log.info({ userId }, "user password changed");
   }
 }

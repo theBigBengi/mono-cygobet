@@ -82,6 +82,14 @@ export default function SettingsScreen() {
             subtitle={user?.username ? `@${user.username}` : undefined}
             onPress={() => router.push("/(tabs)/profile")}
           />
+          {user?.hasPassword === true && (
+            <SettingsRow
+              type="navigation"
+              icon="key-outline"
+              label={t("settings.changePassword")}
+              onPress={() => router.push("/change-password")}
+            />
+          )}
           <SettingsRow
             type="navigation"
             icon="log-out-outline"

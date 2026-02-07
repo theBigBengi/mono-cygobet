@@ -45,6 +45,7 @@ export type User = {
   image: string | null;
   role: string;
   onboardingRequired: boolean;
+  hasPassword: boolean;
 };
 
 export type AuthStatus =

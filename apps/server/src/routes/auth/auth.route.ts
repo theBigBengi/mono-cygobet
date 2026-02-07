@@ -27,6 +27,8 @@ import {
   userMeResponseSchema,
   userOnboardingCompleteBodySchema,
   userOnboardingCompleteResponseSchema,
+  changePasswordBodySchema,
+  changePasswordResponseSchema,
 } from "../../schemas/auth/user-auth.schemas";
 
 type UserRegisterBody = {
@@ -82,10 +84,20 @@ type UserMeResponse = {
   image: string | null;
   role: string;
   onboardingRequired: boolean;
+  hasPassword: boolean;
 };
 
+type ChangePasswordBody = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+type ChangePasswordResponse = { success: true; message: string };
+
 /** True when client is Expo Web (sends X-Client: web). Native does not send this. */
-function isWebClient(req: { headers: { [key: string]: string | string[] | undefined } }): boolean {
+function isWebClient(req: {
+  headers: { [key: string]: string | string[] | undefined };
+}): boolean {
   const v = req.headers["x-client"];
   return v === "web" || (Array.isArray(v) && v.includes("web"));
 }
@@ -218,7 +230,7 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
       const ctx = req.userAuth;
       if (!ctx) throw new Error("User auth context missing");
 
-      // Fetch user from database to get latest data
+      // Fetch user from database to get latest data (password only for hasPassword flag)
       const user = await prisma.users.findUnique({
         where: { id: ctx.user.id },
         select: {
@@ -228,6 +240,7 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
           name: true,
           image: true,
           role: true,
+          password: true,
         },
       });
 
@@ -244,6 +257,34 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
         image: user.image,
         role: user.role,
         onboardingRequired,
+        hasPassword: !!user.password,
+      });
+    }
+  );
+
+  fastify.post<{
+    Body: ChangePasswordBody;
+    Reply: ChangePasswordResponse;
+  }>(
+    "/change-password",
+    {
+      schema: {
+        body: changePasswordBodySchema,
+        response: { 200: changePasswordResponseSchema },
+      },
+      preHandler: [fastify.userAuth.requireAuth],
+    },
+    async (req, reply): Promise<ChangePasswordResponse> => {
+      const ctx = req.userAuth;
+      if (!ctx) throw new Error("User auth context missing");
+      await service.changePassword(
+        ctx.user.id,
+        req.body.currentPassword,
+        req.body.newPassword
+      );
+      return reply.send({
+        success: true,
+        message: "Password changed successfully",
       });
     }
   );

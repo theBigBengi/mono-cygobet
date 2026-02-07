@@ -56,8 +56,7 @@ export async function refresh(
   refreshToken: string | null
 ): Promise<UserRefreshResponse> {
   const isWeb = Platform.OS === "web";
-  const body =
-    isWeb || !refreshToken ? {} : { refreshToken };
+  const body = isWeb || !refreshToken ? {} : { refreshToken };
   return apiFetch<UserRefreshResponse>("/auth/refresh", {
     method: "POST",
     body,
@@ -117,6 +116,21 @@ export async function completeOnboarding(
       body: { username },
     }
   );
+}
+
+/**
+ * Change password (email/password users only).
+ * - Protected endpoint.
+ * - Throws ApiError with server message on failure (e.g. wrong current password).
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  await apiFetchWithAuthRetry<void>("/auth/change-password", {
+    method: "POST",
+    body: { currentPassword, newPassword },
+  });
 }
 
 /**
