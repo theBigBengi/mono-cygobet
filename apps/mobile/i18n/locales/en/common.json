@@ -293,7 +293,8 @@
     "missingRankingData": "Missing ranking data. Go back and open this profile from the ranking.",
     "predictionBreakdown": "Prediction Breakdown",
     "noSharedGroupsWithOthers": "No shared groups with other players",
-    "compareWith": "Compare with"
+    "compareWith": "Compare with",
+    "badgesInfo": "How to earn badges"
   },
   "discover": {
     "searchPlaceholder": "Search by group name",

@@ -293,7 +293,8 @@
     "missingRankingData": "נתוני דירוג חסרים. חזור ופתח את הפרופיל מהדירוג.",
     "predictionBreakdown": "פירוט תחזיות",
     "noSharedGroupsWithOthers": "אין קבוצות משותפות עם שחקנים אחרים",
-    "compareWith": "השווה עם"
+    "compareWith": "השווה עם",
+    "badgesInfo": "איך להשיג תגים"
   },
   "discover": {
     "searchPlaceholder": "חפש לפי שם קבוצה",

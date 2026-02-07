@@ -1,12 +1,20 @@
 // features/profile/stats/components/BadgesCard.tsx
 // 2x3 grid of badge items (icon + name + locked/earned state + progress bar).
 
-import React from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useRef } from "react";
+import { View, StyleSheet, Pressable } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiBadge } from "@repo/types";
-import { Ionicons, FontAwesome5, FontAwesome6, AntDesign } from "@expo/vector-icons";
+import {
+  Ionicons,
+  FontAwesome5,
+  FontAwesome6,
+  AntDesign,
+  MaterialIcons,
+} from "@expo/vector-icons";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { BadgesInfoSheet } from "./BadgesInfoSheet";
 
 interface BadgesCardProps {
   badges: ApiBadge[];
@@ -47,12 +55,7 @@ function BadgeItem({ badge }: { badge: ApiBadge }) {
     }
     if (badge.id === "sharpshooter") {
       return (
-        <AntDesign
-          name="aim"
-          size={24}
-          color={iconColor}
-          style={styles.icon}
-        />
+        <AntDesign name="aim" size={24} color={iconColor} style={styles.icon} />
       );
     }
     const iconName = BADGE_ICONS[badge.id] ?? "ribbon";
@@ -69,14 +72,12 @@ function BadgeItem({ badge }: { badge: ApiBadge }) {
   return (
     <View style={[styles.badgeItem, { padding: theme.spacing.sm }]}>
       {renderIcon()}
-      <AppText
-        variant="caption"
-        numberOfLines={2}
-        style={styles.name}
-      >
+      <AppText variant="caption" numberOfLines={2} style={styles.name}>
         {badge.name}
       </AppText>
-      <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
+      <View
+        style={[styles.progressBar, { backgroundColor: theme.colors.border }]}
+      >
         <View
           style={[
             styles.progressFill,
@@ -94,22 +95,36 @@ function BadgeItem({ badge }: { badge: ApiBadge }) {
 }
 
 export function BadgesCard({ badges }: BadgesCardProps) {
+  const { theme } = useTheme();
+  const sheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+
   return (
     <Card>
-      <AppText variant="subtitle" style={styles.title}>
-        Badges
-      </AppText>
+      <View style={styles.titleRow}>
+        <AppText variant="subtitle">Badges</AppText>
+        <Pressable onPress={() => sheetRef.current?.present()} hitSlop={10}>
+          <MaterialIcons
+            name="help-outline"
+            size={20}
+            color={theme.colors.textSecondary}
+          />
+        </Pressable>
+      </View>
       <View style={styles.grid}>
         {badges.map((badge) => (
           <BadgeItem key={badge.id} badge={badge} />
         ))}
       </View>
+      <BadgesInfoSheet sheetRef={sheetRef} badges={badges} />
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   grid: {
