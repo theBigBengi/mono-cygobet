@@ -4,7 +4,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { Card, AppText, Row } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 
@@ -38,56 +37,55 @@ export function ProfileHeader({
   const { theme } = useTheme();
   const initials = getInitials(username);
 
-  return (
-    <Card>
-      <Row gap={theme.spacing.md} style={styles.row}>
-        <View
-          style={[
-            styles.avatar,
-            {
-              backgroundColor: theme.colors.primary,
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-            },
-          ]}
+  const canEdit = showEditButton && onEditPress;
+  const content = (
+    <Row gap={theme.spacing.md} style={styles.row}>
+      <View
+        style={[
+          styles.avatar,
+          {
+            backgroundColor: theme.colors.primary,
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+          },
+        ]}
+      >
+        <AppText
+          variant="title"
+          style={[styles.initials, { color: theme.colors.primaryText }]}
         >
-          <AppText
-            variant="title"
-            style={[styles.initials, { color: theme.colors.primaryText }]}
-          >
-            {initials}
+          {initials}
+        </AppText>
+      </View>
+      <View style={styles.info}>
+        <AppText variant="title" numberOfLines={1} style={styles.username}>
+          {username || t("common.unknown")}
+        </AppText>
+        <View style={styles.badges}>
+          <AppText variant="caption" color="secondary">
+            Level {level}
+          </AppText>
+          <AppText variant="caption" color="secondary" style={styles.streak}>
+            {dailyStreak} day streak
           </AppText>
         </View>
-        <View style={styles.info}>
-          <View style={styles.usernameRow}>
-            <AppText variant="title" numberOfLines={1} style={styles.username}>
-              {username || t("common.unknown")}
-            </AppText>
-            {showEditButton && onEditPress && (
-              <Pressable
-                onPress={onEditPress}
-                style={styles.editButton}
-                hitSlop={8}
-              >
-                <Ionicons
-                  name="pencil"
-                  size={18}
-                  color={theme.colors.primary}
-                />
-              </Pressable>
-            )}
-          </View>
-          <View style={styles.badges}>
-            <AppText variant="caption" color="secondary">
-              Level {level}
-            </AppText>
-            <AppText variant="caption" color="secondary" style={styles.streak}>
-              {dailyStreak} day streak
-            </AppText>
-          </View>
-        </View>
-      </Row>
+      </View>
+    </Row>
+  );
+
+  return (
+    <Card>
+      {canEdit ? (
+        <Pressable
+          onPress={onEditPress}
+          style={({ pressed }) => pressed && styles.pressed}
+        >
+          {content}
+        </Pressable>
+      ) : (
+        content
+      )}
     </Card>
   );
 }
@@ -107,16 +105,11 @@ const styles = StyleSheet.create({
   info: {
     flex: 1,
   },
-  usernameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   username: {
     flex: 1,
   },
-  editButton: {
-    padding: 4,
+  pressed: {
+    opacity: 0.7,
   },
   badges: {
     flexDirection: "row",

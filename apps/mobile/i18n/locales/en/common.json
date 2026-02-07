@@ -250,7 +250,8 @@
     "somePredictionsSkippedMessage": "{{count}} prediction(s) were skipped because the match has already started.",
     "saveFailed": "Save Failed",
     "saveFailedMessage": "Could not save your predictions. Please try again.",
-    "noPredictionsFromOtherGroups": "No predictions from other groups."
+    "noPredictionsFromOtherGroups": "No predictions from other groups.",
+    "pts": "pts"
   },
   "countdown": {
     "inHoursMinutes": "in {{hours}}h {{minutes}}m",
@@ -294,7 +295,15 @@
     "predictionBreakdown": "Prediction Breakdown",
     "noSharedGroupsWithOthers": "No shared groups with other players",
     "compareWith": "Compare with",
-    "badgesInfo": "How to earn badges"
+    "badgesInfo": "How to earn badges",
+    "seeAll": "See All",
+    "moreGroups": "+{{count}} more",
+    "allGroups": "All Groups",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterEnded": "Ended",
+    "active": "Active",
+    "ended": "Ended"
   },
   "discover": {
     "searchPlaceholder": "Search by group name",

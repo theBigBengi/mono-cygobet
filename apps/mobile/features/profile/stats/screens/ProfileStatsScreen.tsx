@@ -12,7 +12,6 @@ import { useUserStatsQuery, useProfileQuery } from "../../profile.queries";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { EditProfileModal } from "../../components/EditProfileModal";
 import { PredictionsStatsCard } from "../components/PredictionsStatsCard";
-import { GroupsOverviewCard } from "../components/GroupsOverviewCard";
 import { PredictionDistributionCard } from "../components/PredictionDistributionCard";
 import { RecentFormCard } from "../components/RecentFormCard";
 import { BadgesCard } from "../components/BadgesCard";
@@ -99,11 +98,6 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
         correctPredictions={correctPredictions}
         exactScores={data.overall.exactScores}
       />
-      <GroupsOverviewCard
-        groupsPlayed={data.overall.groupsPlayed}
-        groupsActive={groupsActive}
-        groupsWon={groupsWon}
-      />
       <PredictionDistributionCard
         exact={data.distribution.exact}
         difference={data.distribution.difference}
@@ -112,7 +106,12 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
       />
       <RecentFormCard form={data.form} />
       <BadgesCard badges={data.badges} />
-      <GroupStatsCard groups={data.groups} />
+      <GroupStatsCard
+        groups={data.groups}
+        groupsPlayed={data.overall.groupsPlayed}
+        groupsActive={groupsActive}
+        groupsWon={groupsWon}
+      />
       {isOwnProfile && (
         <View style={[styles.compareButton, { marginTop: theme.spacing.md }]}>
           <Button

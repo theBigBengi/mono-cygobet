@@ -133,6 +133,10 @@ function AppContent() {
                 options={{ headerShown: false }}
               />
               <Stack.Screen
+                name="profile/groups"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="tooltip-demo"
                 options={{ headerShown: false }}
               />
