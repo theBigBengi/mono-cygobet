@@ -178,13 +178,11 @@ export function useUpdateGroupMutation(groupId: number | null) {
       }
       return updateGroup(groupId, body);
     },
-    onSuccess: (response) => {
+    onSuccess: () => {
       if (groupId) {
-        // Update detail cache directly with response data
-        queryClient.setQueryData(groupsKeys.detail(groupId), response);
-        // Invalidate fixtures query to refetch with updated fixtures
+        // Invalidate all detail variants (with/without fixtures) — prefix match
         queryClient.invalidateQueries({
-          queryKey: groupsKeys.fixtures(groupId),
+          queryKey: groupsKeys.detail(groupId),
         });
         // Mark list as stale but don't refetch immediately
         queryClient.invalidateQueries({
@@ -211,10 +209,12 @@ export function usePublishGroupMutation(groupId: number | null) {
       }
       return publishGroup(groupId, body);
     },
-    onSuccess: (response) => {
+    onSuccess: () => {
       if (groupId) {
-        // Update detail cache directly with response data
-        queryClient.setQueryData(groupsKeys.detail(groupId), response);
+        // Invalidate all detail variants (with/without fixtures) — prefix match
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.detail(groupId),
+        });
         // Mark list as stale but don't refetch immediately
         queryClient.invalidateQueries({
           queryKey: groupsKeys.lists(),
