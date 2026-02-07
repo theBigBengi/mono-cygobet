@@ -24,18 +24,18 @@ export type { ParsedPrediction } from "./types";
 
 /**
  * Resolve group name - pure function.
- * Use provided name or generate automatic name from username and draft count.
+ * Use provided name or generate automatic name from username and timestamp.
  */
 export function resolveGroupName(
   name: string | undefined,
   username: string,
-  draftCount: number
+  _draftCount: number
 ): string {
   if (name && typeof name === "string" && name.trim()) {
     return name.trim();
   }
 
-  return `${username} Draft #${draftCount + 1}`;
+  return `[${username}] ${Date.now()}`;
 }
 
 /**
