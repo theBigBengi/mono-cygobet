@@ -33,4 +33,3 @@ export function Card({ children, style, ...props }: CardProps) {
     </View>
   );
 }
-

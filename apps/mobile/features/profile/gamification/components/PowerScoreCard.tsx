@@ -71,10 +71,12 @@ const styles = StyleSheet.create({
     gap: 2,
     flexShrink: 0,
     minWidth: 70,
+    minHeight: 44,
   },
   score: {
     fontSize: 32,
     fontWeight: "700",
+    lineHeight: 40,
   },
   progressBar: {
     height: 12,

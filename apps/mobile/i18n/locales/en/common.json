@@ -182,7 +182,7 @@
     "nextGameLabel": "Next game: {{countdown}}",
     "dateProgress": "Day {{current}} of {{total}}",
     "finishSetup": "Prediction Group",
-    "finishSetupDescription": "Set group rules and publish the group to start.",
+    "finishSetupDescription": "Predict match results and compete with friends. The best predictor wins!",
     "predictionGroup": "Prediction Group",
     "draftBadge": "Draft",
     "draftGroupDescription": "Predict match results and compete with friends. The best predictor wins!",

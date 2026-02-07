@@ -32,10 +32,10 @@ export function GroupLobbyStatusCard({ status }: GroupLobbyStatusCardProps) {
         </AppText>
       </View>
       <AppText variant="subtitle" style={styles.title}>
-        {t("lobby.predictionGroup")}
+        {t("lobby.finishSetup")}
       </AppText>
       <AppText variant="caption" color="secondary" style={styles.subtitle}>
-        {t("lobby.draftGroupDescription")}
+        {t("lobby.finishSetupDescription")}
       </AppText>
     </View>
   );

@@ -211,35 +211,34 @@ export function GroupLobbyDraftScreen({
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
       >
-        {/* Header Area — one SettingsSection, no section title */}
-        <SettingsSection title="">
+        {/* Banner — separate from name/description card */}
+        <View
+          style={[styles.bannerRow, { borderBottomColor: theme.colors.border }]}
+        >
           <View
             style={[
-              styles.bannerRow,
-              { borderBottomColor: theme.colors.border },
+              styles.badge,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+              },
             ]}
           >
-            <View
-              style={[
-                styles.badge,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-            >
-              <AppText variant="caption" style={styles.badgeText}>
-                {t("lobby.draftBadge")}
-              </AppText>
-            </View>
-            <AppText
-              variant="caption"
-              color="secondary"
-              style={styles.bannerSubtitle}
-            >
-              {t("lobby.draftGroupDescription")}
+            <AppText variant="caption" style={styles.badgeText}>
+              {t("lobby.draftBadge")}
             </AppText>
           </View>
+          <AppText
+            variant="caption"
+            color="secondary"
+            style={styles.bannerSubtitle}
+          >
+            {t("lobby.draftGroupDescription")}
+          </AppText>
+        </View>
+
+        {/* Name + description in a card, visually separate from banner */}
+        <SettingsSection title="">
           <View
             style={[styles.nameRow, { borderBottomColor: theme.colors.border }]}
           >
@@ -540,6 +539,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 100,
+  },
+  bannerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    marginBottom: 24,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontWeight: "600",
+  },
+  bannerSubtitle: {
+    flex: 1,
+    lineHeight: 20,
   },
   nameRow: {
     paddingVertical: 12,
