@@ -154,13 +154,13 @@ const styles = StyleSheet.create({
   },
   formRow: {
     flexDirection: "row",
-    gap: 6,
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   formDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   barContainer: {
     height: 12,
@@ -177,12 +177,14 @@ const styles = StyleSheet.create({
   legend: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    justifyContent: "space-between",
+    rowGap: 8,
   },
   legendItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    width: "48%",
   },
   legendDot: {
     width: 8,

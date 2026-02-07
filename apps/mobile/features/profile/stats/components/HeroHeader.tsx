@@ -111,11 +111,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
+    overflow: "visible",
   },
   initials: {
     fontSize: 24,
     fontWeight: "600",
     color: "#fff",
+    lineHeight: 28,
   },
   username: {
     color: "#fff",
@@ -127,12 +129,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    flexWrap: "wrap",
-    gap: 4,
+    paddingHorizontal: 8,
   },
   statColumn: {
     alignItems: "center",
-    minWidth: 56,
+    paddingHorizontal: 12,
   },
   statValue: {
     color: "#fff",
@@ -146,8 +147,7 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    height: 28,
-    backgroundColor: "rgba(255,255,255,0.35)",
-    marginHorizontal: 8,
+    height: 32,
+    backgroundColor: "rgba(255,255,255,0.25)",
   },
 });
