@@ -4,10 +4,10 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { AppText, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { formatDate } from "@/utils";
-import { formatKickoffDate, formatKickoffTime } from "@/utils/fixture";
 import type { ApiGroupItem } from "@repo/types";
 
 interface GroupDraftCardProps {
@@ -19,62 +19,75 @@ export function GroupDraftCard({ group, onPress }: GroupDraftCardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
 
-  const getStatusBadgeColor = () => {
-    return theme.colors.surface;
-  };
-
-  const getStatusTextColor = () => {
-    return theme.colors.textSecondary;
-  };
+  const fixturesCount = Array.isArray((group as any).fixtures)
+    ? (group as any).fixtures.length
+    : 0;
 
   return (
     <Pressable onPress={onPress}>
-      <Card style={styles.groupCard}>
+      <Card
+        style={[
+          styles.groupCard,
+          {
+            borderStyle: "dashed",
+            borderColor: theme.colors.border,
+            borderWidth: 1.5,
+          },
+        ]}
+      >
         <View style={styles.groupHeader}>
-          <AppText variant="body" style={styles.groupName}>
+          <AppText variant="body" style={styles.groupName} numberOfLines={1}>
             {group.name}
           </AppText>
           <View
             style={[
               styles.statusBadge,
               {
-                backgroundColor: getStatusBadgeColor(),
+                backgroundColor: theme.colors.surface,
                 borderColor: theme.colors.border,
               },
             ]}
           >
             <AppText
               variant="caption"
-              style={[styles.statusBadgeText, { color: getStatusTextColor() }]}
+              style={[
+                styles.statusBadgeText,
+                { color: theme.colors.textSecondary },
+              ]}
             >
               {t(`lobby.${group.status}`)}
             </AppText>
           </View>
         </View>
 
-        <View style={styles.groupMeta}>
-          <AppText variant="caption" color="secondary" style={styles.groupDate}>
-            {formatDate(group.createdAt)}
-          </AppText>
-        </View>
-
-        {group.firstGame && (
-          <View
-            style={[
-              styles.groupInfo,
-              {
-                borderTopColor: theme.colors.border,
-              },
-            ]}
-          >
-            <AppText variant="caption" color="secondary" style={styles.infoItem}>
-              {t("lobby.groupStart", {
-              date: formatKickoffDate(group.firstGame.kickoffAt),
-              time: formatKickoffTime(group.firstGame.kickoffAt),
-            })}
+        <View
+          style={[styles.groupMeta, { borderTopColor: theme.colors.border }]}
+        >
+          <View style={styles.metaRow}>
+            <Ionicons
+              name="calendar-outline"
+              size={14}
+              color={theme.colors.textSecondary}
+              style={styles.icon}
+            />
+            <AppText variant="caption" color="secondary">
+              {t("lobby.createdOn", { date: formatDate(group.createdAt) })}
             </AppText>
           </View>
-        )}
+          {fixturesCount > 0 && (
+            <View style={styles.metaRow}>
+              <Ionicons
+                name="game-controller-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+                style={styles.icon}
+              />
+              <AppText variant="caption" color="secondary">
+                {t("lobby.gamesSelectedCount", { count: fixturesCount })}
+              </AppText>
+            </View>
+          )}
+        </View>
       </Card>
     </Pressable>
   );
@@ -88,7 +101,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   groupName: {
     flex: 1,
@@ -106,19 +119,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   groupMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  groupDate: {
-    marginStart: 8,
-  },
-  groupInfo: {
-    marginTop: 8,
-    paddingTop: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
   },
-  infoItem: {
-    marginBottom: 4,
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  icon: {
+    marginEnd: 6,
   },
 });

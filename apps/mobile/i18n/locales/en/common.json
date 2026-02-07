@@ -125,6 +125,8 @@
     "publish": "Publish Group",
     "scoring": "Scoring System",
     "selectedGames": "Selected games",
+    "gamesSelectedCount": "{{count}} games selected",
+    "createdOn": "Created on {{date}}",
     "games": "Games",
     "viewAllGames": "View all games",
     "noUpcomingGames": "No upcoming games",

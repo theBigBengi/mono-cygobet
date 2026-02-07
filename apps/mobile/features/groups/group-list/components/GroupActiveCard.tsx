@@ -4,13 +4,14 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { AppText, Card } from "@/components/ui";
+import { CircularProgress } from "@/components/ui/CircularProgress";
 import { useTheme } from "@/lib/theme";
 import { formatKickoffDate, formatKickoffTime } from "@/utils/fixture";
 import { useCountdown } from "@/features/groups/predictions/hooks";
-import { useEntityTranslation } from "@/lib/i18n";
 import type { ApiGroupItem } from "@repo/types";
-import { GroupDateProgressBar } from "./GroupDateProgressBar";
+import { MemberCountBadge } from "./MemberCountBadge";
 
 interface GroupActiveCardProps {
   group: ApiGroupItem;
@@ -18,15 +19,27 @@ interface GroupActiveCardProps {
   unreadCount?: number;
 }
 
-export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActiveCardProps) {
+export function GroupActiveCard({
+  group,
+  onPress,
+  unreadCount = 0,
+}: GroupActiveCardProps) {
   const { t } = useTranslation("common");
-  const { translateTeam } = useEntityTranslation();
   const { theme } = useTheme();
   const liveGamesCount = group.liveGamesCount ?? 0;
-  const todayGamesCount = group.todayGamesCount ?? 0;
-  const todayUnpredictedCount = group.todayUnpredictedCount ?? 0;
   const unpredictedGamesCount = group.unpredictedGamesCount ?? 0;
+  const predictionsCount = group.predictionsCount ?? 0;
+  const totalFixtures = group.totalFixtures ?? 0;
   const countdownLabel = useCountdown(group.nextGame?.kickoffAt ?? null);
+
+  const progress =
+    totalFixtures > 0 ? Math.min(1, predictionsCount / totalFixtures) : 0;
+  const isNextGameSoon =
+    group.nextGame &&
+    countdownLabel !== "—" &&
+    (countdownLabel.startsWith("in ") ||
+      countdownLabel.startsWith("Today") ||
+      countdownLabel.startsWith("Tomorrow"));
 
   const getStatusBadgeColor = () => {
     switch (group.status) {
@@ -50,24 +63,21 @@ export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActive
     }
   };
 
-  const showInfo =
-    group.memberCount !== undefined ||
-    group.nextGame ||
-    group.lastGame ||
-    group.predictionsCount !== undefined ||
-    liveGamesCount > 0 ||
-    todayGamesCount > 0;
-
-  const isNextGameWithin24h =
-    group.nextGame &&
-    countdownLabel.startsWith("in ") &&
-    countdownLabel !== "—";
+  const getCardStyle = () => {
+    if (group.status === "active") {
+      return { borderColor: theme.colors.primary, borderWidth: 1.5 };
+    }
+    if (group.status === "ended") {
+      return { opacity: 0.85 };
+    }
+    return {};
+  };
 
   return (
     <Pressable onPress={onPress}>
-      <Card style={styles.groupCard}>
+      <Card style={[styles.groupCard, getCardStyle()]}>
         <View style={styles.groupHeader}>
-          <AppText variant="body" style={styles.groupName}>
+          <AppText variant="body" style={styles.groupName} numberOfLines={1}>
             {group.name}
           </AppText>
           {unreadCount > 0 && (
@@ -79,7 +89,10 @@ export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActive
             >
               <AppText
                 variant="caption"
-                style={[styles.unreadBadgeText, { color: theme.colors.primaryText }]}
+                style={[
+                  styles.unreadBadgeText,
+                  { color: theme.colors.primaryText },
+                ]}
               >
                 {unreadCount > 99 ? "99+" : String(unreadCount)}
               </AppText>
@@ -103,125 +116,101 @@ export function GroupActiveCard({ group, onPress, unreadCount = 0 }: GroupActive
           </View>
         </View>
 
-        {showInfo && (
-          <View
-            style={[
-              styles.groupInfo,
-              {
-                borderTopColor: theme.colors.border,
-              },
-            ]}
-          >
-            {liveGamesCount > 0 && (
-              <AppText
-                variant="caption"
-                style={[
-                  styles.infoItem,
-                  styles.liveBadge,
-                  { color: "#EF4444" },
-                ]}
-              >
-                {liveGamesCount} {t("lobby.game", { count: liveGamesCount })} {t("lobby.gamesLive")}
-              </AppText>
+        <View style={[styles.infoRow, { borderTopColor: theme.colors.border }]}>
+          <View style={styles.infoRowFirst}>
+            {group.memberCount !== undefined && group.memberCount > 0 && (
+              <>
+                <MemberCountBadge
+                  count={group.memberCount}
+                  size={20}
+                  maxVisible={3}
+                />
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.infoSpacer}
+                >
+                  {" "}
+                  {group.memberCount}{" "}
+                  {t("lobby.participant", { count: group.memberCount })}
+                </AppText>
+              </>
             )}
-
-            {todayGamesCount > 0 && (
-              <AppText variant="caption" color="secondary" style={styles.infoItem}>
-                {todayGamesCount} {t("lobby.game", { count: todayGamesCount })} {t("lobby.gamesToday")}
-                {todayUnpredictedCount > 0
-                  ? ` – ${t("lobby.needPredictions", { count: todayUnpredictedCount })}`
-                  : ` – ${t("lobby.allPredictionsSet")}`}
-              </AppText>
+            {group.nextGame && (
+              <>
+                {group.memberCount !== undefined && group.memberCount > 0 && (
+                  <AppText variant="caption" color="secondary">
+                    {" "}
+                    ·{" "}
+                  </AppText>
+                )}
+                <Ionicons
+                  name="calendar-outline"
+                  size={14}
+                  color={theme.colors.textSecondary}
+                  style={styles.iconInline}
+                />
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.infoText}
+                >
+                  {isNextGameSoon
+                    ? t("lobby.nextGameLabel", { countdown: countdownLabel })
+                    : ` ${formatKickoffDate(group.nextGame.kickoffAt)} ${formatKickoffTime(group.nextGame.kickoffAt)}`}
+                </AppText>
+              </>
             )}
+          </View>
+        </View>
 
-            {group.memberCount !== undefined && (
-              <AppText variant="caption" color="secondary" style={styles.infoItem}>
-                {group.memberCount}{" "}
-                {t("lobby.participant", { count: group.memberCount })}
-              </AppText>
-            )}
-
-            {group.predictionsCount !== undefined &&
-              group.totalFixtures !== undefined && (
-                <View>
+        {totalFixtures > 0 && (
+          <View style={styles.progressRow}>
+            <CircularProgress
+              progress={progress}
+              size={40}
+              strokeWidth={3}
+              color={
+                group.status === "active"
+                  ? theme.colors.primary
+                  : theme.colors.textSecondary
+              }
+              showLabel
+            />
+            <View style={styles.progressTextWrap}>
+              <AppText variant="caption" color="secondary">
+                {t("lobby.predictionsCount", {
+                  done: predictionsCount,
+                  total: totalFixtures,
+                })}
+                {unpredictedGamesCount > 0 && (
                   <AppText
                     variant="caption"
-                    color="secondary"
-                    style={styles.infoItem}
+                    style={{ color: theme.colors.danger }}
                   >
-                    {t("lobby.predictionsCount", {
-                      done: group.predictionsCount,
-                      total: group.totalFixtures,
+                    {" · "}
+                    {t("lobby.gamesNeedPredictions", {
+                      count: unpredictedGamesCount,
                     })}
-                    {unpredictedGamesCount > 0 &&
-                      ` – ${t("lobby.gamesNeedPredictions", { count: unpredictedGamesCount })}`}
-                    {unpredictedGamesCount === 0 && " ✓"}
                   </AppText>
-                  {group.firstGame &&
-                    group.lastGame &&
-                    group.firstGame.kickoffAt &&
-                    group.lastGame.kickoffAt && (
-                      <GroupDateProgressBar
-                        startDate={group.firstGame.kickoffAt}
-                        endDate={group.lastGame.kickoffAt}
-                      />
-                    )}
-                </View>
-              )}
-
-            {group.nextGame ? (
-              <View style={styles.nextGameRow}>
-                <AppText
-                  variant="caption"
-                  color="secondary"
-                  style={styles.infoItem}
-                >
-                  {t("lobby.nextGame", {
-                    home: translateTeam(
-                      group.nextGame.homeTeam?.name,
-                      t("common.tbd")
-                    ),
-                    away: translateTeam(
-                      group.nextGame.awayTeam?.name,
-                      t("common.tbd")
-                    ),
-                  })}
-                </AppText>
-                <AppText
-                  variant="caption"
-                  color="secondary"
-                  style={styles.nextGameTime}
-                >
-                  {isNextGameWithin24h
-                    ? countdownLabel
-                    : `${formatKickoffDate(group.nextGame.kickoffAt)} ${formatKickoffTime(group.nextGame.kickoffAt)}`}
-                </AppText>
-              </View>
-            ) : (
-              <AppText
-                variant="caption"
-                color="secondary"
-                style={styles.infoItem}
-              >
-                {t("lobby.noUpcomingGames")}
+                )}
               </AppText>
-            )}
+            </View>
+          </View>
+        )}
 
-            {group.lastGame && (
-              <AppText
-                variant="caption"
-                color="secondary"
-                style={styles.infoItem}
-              >
-                {group.status === "ended"
-                  ? t("lobby.endedOn", {
-                      date: formatKickoffDate(group.lastGame.kickoffAt),
-                    })
-                  : t("lobby.endsOn", {
-                      date: formatKickoffDate(group.lastGame.kickoffAt),
-                    })}
-              </AppText>
-            )}
+        {liveGamesCount > 0 && (
+          <View style={styles.liveRow}>
+            <View
+              style={[styles.liveDot, { backgroundColor: theme.colors.danger }]}
+            />
+            <AppText
+              variant="caption"
+              style={[styles.liveText, { color: theme.colors.danger }]}
+            >
+              {liveGamesCount} {t("lobby.game", { count: liveGamesCount })}{" "}
+              {t("lobby.gamesLive")}
+            </AppText>
           </View>
         )}
       </Card>
@@ -237,12 +226,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   groupName: {
     flex: 1,
     fontWeight: "600",
-    marginEnd: 12,
+    marginEnd: 8,
   },
   unreadBadge: {
     minWidth: 20,
@@ -267,25 +256,45 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 10,
   },
-  groupInfo: {
-    marginTop: 8,
-    paddingTop: 8,
+  infoRow: {
+    paddingTop: 10,
     borderTopWidth: 1,
+    marginBottom: 10,
   },
-  infoItem: {
-    marginBottom: 4,
-  },
-  nextGameRow: {
+  infoRowFirst: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 4,
+    flexWrap: "wrap",
   },
-  nextGameTime: {
-    fontSize: 11,
-    marginStart: 8,
+  iconInline: {
+    marginRight: 2,
   },
-  liveBadge: {
+  infoSpacer: {
+    marginLeft: 4,
+  },
+  infoText: {
+    flex: 1,
+  },
+  progressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  progressTextWrap: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  liveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  liveText: {
     fontWeight: "600",
   },
 });

@@ -4,3 +4,4 @@
 export { GroupDraftCard } from "./GroupDraftCard";
 export { GroupActiveCard } from "./GroupActiveCard";
 export { GroupDateProgressBar } from "./GroupDateProgressBar";
+export { MemberCountBadge } from "./MemberCountBadge";

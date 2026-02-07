@@ -131,6 +131,8 @@
     "publish": "פרסם קבוצה",
     "scoring": "מערכת ניקוד",
     "selectedGames": "משחקים נבחרים",
+    "gamesSelectedCount": "{{count}} משחקים נבחרו",
+    "createdOn": "נוצר ב-{{date}}",
     "games": "משחקים",
     "viewAllGames": "הצג את כל המשחקים",
     "noUpcomingGames": "אין משחקים קרובים",
