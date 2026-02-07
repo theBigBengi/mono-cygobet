@@ -122,6 +122,8 @@
     "draft": "טיוטה",
     "active": "פעיל",
     "ended": "הסתיים",
+    "memberCount": "חבר אחד",
+    "memberCount_plural": "{{count}} חברים",
     "groupEnded": "הקבוצה הסתיימה",
     "groupEndedDuration_one": "הקבוצה הסתיימה · נמשכה יום אחד ({{start}} – {{end}})",
     "groupEndedDuration_other": "הקבוצה הסתיימה · נמשכה {{count}} ימים ({{start}} – {{end}})",

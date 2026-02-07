@@ -17,7 +17,6 @@ const HEADER_HEIGHT = 64;
 interface LobbyWithHeaderProps {
   children: React.ReactNode;
   status: ApiGroupStatus | string;
-  groupName?: string;
   /** For draft status: when provided, shows trash icon instead of "Draft" badge; icon triggers delete */
   onDeleteGroup?: () => void;
   /** For draft status: whether delete is in progress (disables trash icon) */
@@ -33,7 +32,6 @@ interface LobbyWithHeaderProps {
 export function LobbyWithHeader({
   children,
   status,
-  groupName,
   onDeleteGroup,
   isDeleting = false,
 }: LobbyWithHeaderProps) {
@@ -62,18 +60,6 @@ export function LobbyWithHeader({
     isDraft && !onDeleteGroup
       ? theme.colors.textPrimary
       : theme.colors.textSecondary;
-
-  const leftContent =
-    isActiveOrEnded && groupName ? (
-      <AppText
-        variant="subtitle"
-        style={[styles.groupNameText, { color: theme.colors.textPrimary }]}
-        numberOfLines={1}
-        ellipsizeMode="tail"
-      >
-        {groupName}
-      </AppText>
-    ) : undefined;
 
   const rightContent =
     isDraft && onDeleteGroup ? (
@@ -128,7 +114,6 @@ export function LobbyWithHeader({
         <GroupGamesHeader
           backOnly
           onBack={goBack}
-          leftContent={leftContent}
           rightContent={rightContent}
         />
       </View>
@@ -152,10 +137,6 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontWeight: "600",
     textTransform: "uppercase",
-  },
-  groupNameText: {
-    fontWeight: "600",
-    maxWidth: 200,
   },
   settingsButton: {
     width: 44,

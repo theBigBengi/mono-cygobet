@@ -153,7 +153,7 @@ export default function GroupLobbyScreen() {
 
   if (group.status === "ended") {
     content = (
-      <LobbyWithHeader status={group.status} groupName={group.name}>
+      <LobbyWithHeader status={group.status}>
         <GroupLobbyEndedScreen
           group={group}
           onRefresh={handleRefresh}
@@ -179,7 +179,7 @@ export default function GroupLobbyScreen() {
     );
   } else if (group.status === "active") {
     content = (
-      <LobbyWithHeader status={group.status} groupName={group.name}>
+      <LobbyWithHeader status={group.status}>
         <GroupLobbyActiveScreen
           group={group}
           onRefresh={handleRefresh}

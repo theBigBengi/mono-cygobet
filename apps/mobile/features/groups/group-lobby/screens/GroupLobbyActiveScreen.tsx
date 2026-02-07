@@ -21,6 +21,7 @@ import { useGroupDuration } from "../hooks/useGroupDuration";
 import type { FixtureItem } from "../types";
 import { useGroupActivityStats } from "../hooks/useGroupActivityStats";
 import { formatDate, formatRelativeTime } from "@/utils/date";
+import { GroupLobbyHeader } from "../components/GroupLobbyHeader";
 import { LobbyActionCard } from "../components/LobbyActionCard";
 import { LobbyRankingPreview } from "../components/LobbyRankingPreview";
 
@@ -115,6 +116,13 @@ export function GroupLobbyActiveScreen({
         onRefresh={onRefresh}
         scroll
       >
+        {/* Group Header */}
+        <GroupLobbyHeader
+          name={group.name}
+          memberCount={group.memberCount}
+          status="active"
+        />
+
         {/* Activity summary: LIVE, today, next game countdown, last game */}
         {(activityStats.liveGamesCount > 0 ||
           activityStats.todayGamesCount > 0 ||

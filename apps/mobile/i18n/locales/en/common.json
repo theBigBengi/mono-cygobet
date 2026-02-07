@@ -120,6 +120,8 @@
     "draft": "Draft",
     "active": "Active",
     "ended": "Ended",
+    "memberCount": "{{count}} member",
+    "memberCount_plural": "{{count}} members",
     "groupEnded": "Group Ended",
     "groupEndedDuration_one": "Group ended · Lasted 1 day ({{start}} – {{end}})",
     "groupEndedDuration_other": "Group ended · Lasted {{count}} days ({{start}} – {{end}})",

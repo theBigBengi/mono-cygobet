@@ -10,6 +10,7 @@ import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
 import { useGroupRankingQuery, useUnreadCountsQuery } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
+import { GroupLobbyHeader } from "../components/GroupLobbyHeader";
 import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSection";
 import { useGroupDuration } from "../hooks/useGroupDuration";
 import type { FixtureItem } from "../types";
@@ -74,6 +75,13 @@ export function GroupLobbyEndedScreen({
         onRefresh={onRefresh}
         scroll
       >
+        {/* Group Header */}
+        <GroupLobbyHeader
+          name={group.name}
+          memberCount={group.memberCount}
+          status="ended"
+        />
+
         {/* Group Ended Banner */}
         <Card style={styles.bannerCard}>
           <AppText variant="body" style={styles.bannerText}>
