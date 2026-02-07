@@ -26,6 +26,10 @@ interface GroupLobbyPrivacySectionProps {
    * Current group status - only show privacy section in draft mode
    */
   status: ApiGroupStatus;
+  /**
+   * When true, render content without Card wrapper and without marginBottom
+   */
+  noCard?: boolean;
 }
 
 /**
@@ -39,6 +43,7 @@ export function GroupLobbyPrivacySection({
   disabled,
   isCreator,
   status,
+  noCard = false,
 }: GroupLobbyPrivacySectionProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -48,40 +53,42 @@ export function GroupLobbyPrivacySection({
     return null;
   }
 
-  return (
-    <Card style={styles.section}>
-      <View style={styles.privacyRow}>
-        <View style={styles.privacyLabelContainer}>
-          <AppText variant="body" style={styles.privacyLabel}>
-            {t("lobby.privacy")}
-          </AppText>
-          <AppText
-            variant="caption"
-            color="secondary"
-            style={styles.privacyHelperText}
-          >
-            {privacy === "private"
-              ? t("lobby.onlyInvitedCanJoin")
-              : t("lobby.anyoneCanJoin")}
-          </AppText>
-        </View>
-        <Switch
-          value={privacy === "public"}
-          onValueChange={(value) => onChange(value ? "public" : "private")}
-          disabled={disabled}
-          trackColor={{
-            false: theme.colors.border,
-            true: theme.colors.primary,
-          }}
-          thumbColor={
-            privacy === "public"
-              ? theme.colors.primaryText
-              : theme.colors.surface
-          }
-        />
+  const content = (
+    <View style={styles.privacyRow}>
+      <View style={styles.privacyLabelContainer}>
+        <AppText variant="body" style={styles.privacyLabel}>
+          {t("lobby.privacy")}
+        </AppText>
+        <AppText
+          variant="caption"
+          color="secondary"
+          style={styles.privacyHelperText}
+        >
+          {privacy === "private"
+            ? t("lobby.onlyInvitedCanJoin")
+            : t("lobby.anyoneCanJoin")}
+        </AppText>
       </View>
-    </Card>
+      <Switch
+        value={privacy === "public"}
+        onValueChange={(value) => onChange(value ? "public" : "private")}
+        disabled={disabled}
+        trackColor={{
+          false: theme.colors.border,
+          true: theme.colors.primary,
+        }}
+        thumbColor={
+          privacy === "public" ? theme.colors.primaryText : theme.colors.surface
+        }
+      />
+    </View>
   );
+
+  if (noCard) {
+    return <View>{content}</View>;
+  }
+
+  return <Card style={styles.section}>{content}</Card>;
 }
 
 const styles = StyleSheet.create({

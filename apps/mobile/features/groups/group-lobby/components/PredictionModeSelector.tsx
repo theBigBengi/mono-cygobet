@@ -25,6 +25,10 @@ interface PredictionModeSelectorProps {
    * Whether the selector is disabled
    */
   disabled?: boolean;
+  /**
+   * When true, render without Card wrapper (e.g. inside a parent Card)
+   */
+  noCard?: boolean;
 }
 
 /**
@@ -35,6 +39,7 @@ export function PredictionModeSelector({
   value,
   onChange,
   disabled = false,
+  noCard = false,
 }: PredictionModeSelectorProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -75,10 +80,16 @@ export function PredictionModeSelector({
             <Ionicons
               name={isSelected ? "checkmark-circle" : "radio-button-off"}
               size={24}
-              color={isSelected ? theme.colors.primary : theme.colors.textSecondary}
+              color={
+                isSelected ? theme.colors.primary : theme.colors.textSecondary
+              }
             />
           </View>
-          <AppText variant="caption" color="secondary" style={styles.optionDescription}>
+          <AppText
+            variant="caption"
+            color="secondary"
+            style={styles.optionDescription}
+          >
             {description}
           </AppText>
         </View>
@@ -86,13 +97,15 @@ export function PredictionModeSelector({
     );
   };
 
-  const selectionLabel = value === "result" ? t("lobby.result") : t("lobby.threeWayPrediction");
+  const selectionLabel =
+    value === "result" ? t("lobby.result") : t("lobby.threeWayPrediction");
 
   return (
     <CollapsibleSection
       title={t("lobby.selectPredictionMode")}
       selectionLabel={selectionLabel}
       description={t("lobby.predictionModeDescription")}
+      noCard={noCard}
     >
       <View style={styles.optionsContainer}>
         <OptionRow

@@ -4,7 +4,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { formatKickoffDate, formatKickoffTime } from "@/utils/fixture";
@@ -20,7 +19,6 @@ export interface LobbyPredictionsCTAProps {
   totalFixtures: number;
   onPress: () => void;
   nextGame?: LobbyPredictionsCTANextGame | null;
-  isLoading?: boolean;
 }
 
 const LOGO_SIZE = 40;
@@ -30,7 +28,6 @@ export function LobbyPredictionsCTA({
   totalFixtures,
   onPress,
   nextGame,
-  isLoading = false,
 }: LobbyPredictionsCTAProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -42,54 +39,10 @@ export function LobbyPredictionsCTA({
     ? `${formatKickoffDate(nextGame.kickoffAt)} ${formatKickoffTime(nextGame.kickoffAt)}`
     : "";
 
-  if (isLoading) {
-    return (
-      <View style={[styles.wrapper, { backgroundColor: theme.colors.surface }]}>
-        <View style={styles.content}>
-          <View style={styles.teamsRow}>
-            <View
-              style={[
-                styles.skeletonLogo,
-                { backgroundColor: theme.colors.border },
-              ]}
-            />
-            <View
-              style={[
-                styles.skeletonVs,
-                { backgroundColor: theme.colors.border },
-              ]}
-            />
-            <View
-              style={[
-                styles.skeletonLogo,
-                { backgroundColor: theme.colors.border },
-              ]}
-            />
-          </View>
-          <View
-            style={[
-              styles.skeletonText,
-              { backgroundColor: theme.colors.border },
-            ]}
-          />
-          <View
-            style={[styles.track, { backgroundColor: theme.colors.border }]}
-          />
-          <View
-            style={[
-              styles.skeletonButton,
-              { backgroundColor: theme.colors.border },
-            ]}
-          />
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.wrapper, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.content}>
-        {hasNextGame ? (
+        {hasNextGame && (
           <>
             <AppText
               variant="caption"
@@ -152,20 +105,6 @@ export function LobbyPredictionsCTA({
               {kickoffLabel}
             </AppText>
           </>
-        ) : (
-          <View style={styles.titleRow}>
-            <MaterialIcons
-              name="sports-soccer"
-              size={24}
-              color={theme.colors.primary}
-            />
-            <AppText
-              variant="body"
-              style={[styles.title, { color: theme.colors.textPrimary }]}
-            >
-              {t("groups.predictions")}
-            </AppText>
-          </View>
         )}
 
         <View style={[styles.track, { backgroundColor: theme.colors.border }]}>
@@ -258,16 +197,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: "center",
   },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  title: {
-    fontWeight: "700",
-  },
   track: {
     height: 6,
     borderRadius: 3,
@@ -297,27 +226,5 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     fontWeight: "700",
-  },
-  skeletonLogo: {
-    width: LOGO_SIZE + 8,
-    height: LOGO_SIZE + 8,
-    borderRadius: (LOGO_SIZE + 8) / 2,
-  },
-  skeletonVs: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-  },
-  skeletonText: {
-    width: 120,
-    height: 14,
-    borderRadius: 4,
-    alignSelf: "center",
-    marginVertical: 8,
-  },
-  skeletonButton: {
-    height: 44,
-    borderRadius: 10,
-    marginTop: 12,
   },
 });

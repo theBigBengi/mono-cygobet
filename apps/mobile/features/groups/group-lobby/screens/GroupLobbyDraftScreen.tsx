@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Switch, TextInput } from "react-native";
 import { useRouter } from "expo-router";
-import { Screen, AppText } from "@/components/ui";
+import { Screen, AppText, Card, Divider } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiGroupItem } from "@repo/types";
 
@@ -174,7 +174,9 @@ export function GroupLobbyDraftScreen({
     scoringValues,
     predictionMode,
     koRoundMode,
-    maxMembers
+    maxMembers,
+    nudgeEnabled,
+    nudgeWindowMinutes
   );
 
   const handlePublishWithOverlay = useCallback(async () => {
@@ -202,18 +204,15 @@ export function GroupLobbyDraftScreen({
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
       >
-        {/* Status Section - Draft Badge */}
+        {/* ── Header Area (flat, no card) ── */}
         <GroupLobbyStatusCard status={group.status} isCreator={isCreator} />
-
-        {/* Header Section - Group Name (Editable) */}
         <GroupLobbyNameHeader
           name={draftName}
           onChange={setDraftName}
           editable={isEditable}
           isCreator={isCreator}
         />
-
-        {/* Description (Editable for creator when editable; read-only otherwise) */}
+        {/* Description */}
         {isCreator && isEditable ? (
           <TextInput
             style={[
@@ -242,7 +241,7 @@ export function GroupLobbyDraftScreen({
           </AppText>
         ) : null}
 
-        {/* Section: Games */}
+        {/* ── Games Section ── */}
         <AppText variant="subtitle" style={styles.sectionTitle}>
           {t("lobby.games")}
         </AppText>
@@ -251,13 +250,8 @@ export function GroupLobbyDraftScreen({
           groupId={group.id}
           onViewAll={handleViewAllGames}
         />
-
-        {/* Section: Group Duration */}
-        <AppText variant="subtitle" style={styles.sectionTitle}>
-          {t("lobby.groupDuration")}
-        </AppText>
         {duration ? (
-          <>
+          <View style={styles.durationBlock}>
             <AppText
               variant="body"
               color="secondary"
@@ -274,143 +268,159 @@ export function GroupLobbyDraftScreen({
                 ? t("lobby.gamesCount", { count: fixtures.length })
                 : `${t("lobby.daysCount", { count: duration.durationDays })} · ${t("lobby.gamesCount", { count: fixtures.length })}`}
             </AppText>
-          </>
+          </View>
         ) : (
           <AppText
             variant="caption"
             color="secondary"
-            style={styles.durationLine}
+            style={styles.durationBlock}
           >
             {t("lobby.addGamesToSeeDuration")}
           </AppText>
         )}
 
-        {/* Section: Prediction rules */}
+        {/* ── Rules Card (creator only) ── */}
         {isCreator && (
           <>
             <AppText variant="subtitle" style={styles.sectionTitle}>
               {t("lobby.predictionRules")}
             </AppText>
-            <PredictionModeSelector
-              value={predictionMode}
-              onChange={setPredictionMode}
-              disabled={!isEditable}
-            />
-            <GroupLobbyScoringSection
-              initialOnTheNose={scoringValues.onTheNose}
-              initialGoalDifference={scoringValues.goalDifference}
-              initialOutcome={scoringValues.outcome}
-              predictionMode={predictionMode}
-              onChange={(values) => setScoringValues(values)}
-              disabled={!isEditable}
-            />
-            <KORoundModeSelector
-              value={koRoundMode}
-              onChange={setKORoundMode}
-              disabled={!isEditable}
-            />
-            <GroupLobbyMaxMembersSection
-              initialMaxMembers={maxMembers}
-              onChange={setMaxMembers}
-              disabled={!isEditable}
-            />
-            <AppText variant="subtitle" style={styles.sectionTitle}>
-              {t("lobby.nudge")}
-            </AppText>
-            <View style={styles.nudgeRow}>
-              <AppText variant="body" style={styles.nudgeLabel}>
-                {t("lobby.nudgeDescription")}
-              </AppText>
-              <Switch
-                value={nudgeEnabled}
-                onValueChange={setNudgeEnabled}
+            <Card style={styles.card}>
+              <PredictionModeSelector
+                value={predictionMode}
+                onChange={setPredictionMode}
                 disabled={!isEditable}
-                trackColor={{
-                  false: theme.colors.border,
-                  true: theme.colors.primary,
-                }}
-                thumbColor={
-                  nudgeEnabled ? theme.colors.primaryText : theme.colors.surface
-                }
+                noCard
               />
-            </View>
-            {nudgeEnabled && (
-              <View style={styles.nudgeWindowRow}>
-                <AppText variant="body" style={styles.nudgeLabel}>
-                  {t("lobby.minutesBeforeKickoff")}
-                </AppText>
-                <View style={styles.nudgeWindowChips}>
-                  {NUDGE_WINDOW_OPTIONS.map((min) => (
-                    <Pressable
-                      key={min}
-                      onPress={() => setNudgeWindowMinutes(min)}
-                      disabled={!isEditable}
-                      style={[
-                        styles.nudgeWindowChip,
-                        {
-                          backgroundColor:
-                            nudgeWindowMinutes === min
-                              ? theme.colors.primary
-                              : theme.colors.surface,
-                          borderColor: theme.colors.border,
-                        },
-                      ]}
-                    >
-                      <AppText
-                        variant="body"
-                        style={{
-                          color:
-                            nudgeWindowMinutes === min
-                              ? theme.colors.primaryText
-                              : theme.colors.textPrimary,
-                        }}
-                      >
-                        {min}
-                      </AppText>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            )}
+              <Divider />
+              <GroupLobbyScoringSection
+                initialOnTheNose={scoringValues.onTheNose}
+                initialGoalDifference={scoringValues.goalDifference}
+                initialOutcome={scoringValues.outcome}
+                predictionMode={predictionMode}
+                onChange={(values) => setScoringValues(values)}
+                disabled={!isEditable}
+                noCard
+              />
+              <Divider />
+              <KORoundModeSelector
+                value={koRoundMode}
+                onChange={setKORoundMode}
+                disabled={!isEditable}
+                noCard
+              />
+              <Divider />
+              <GroupLobbyMaxMembersSection
+                initialMaxMembers={maxMembers}
+                onChange={setMaxMembers}
+                disabled={!isEditable}
+                noCard
+              />
+            </Card>
           </>
         )}
 
-        {/* Section: Privacy & invite */}
-        <AppText variant="subtitle" style={styles.sectionTitle}>
-          {t("lobby.privacyAndInvite")}
-        </AppText>
-        <GroupLobbyPrivacySection
-          privacy={draftPrivacy}
-          onChange={setDraftPrivacy}
-          disabled={!isEditable}
-          isCreator={isCreator}
-          status={group.status}
-        />
-
-        {/* Invite Sharing Section (only when private - public groups don't need invite restriction) */}
-        {draftPrivacy === "private" && (
-          <GroupLobbyInviteAccessSection
-            inviteAccess={draftInviteAccess}
-            onChange={setDraftInviteAccess}
-            disabled={!isEditable}
-            isCreator={isCreator}
-            status={group.status}
-          />
+        {/* ── Settings Card (creator only) ── */}
+        {isCreator && (
+          <>
+            <AppText variant="subtitle" style={styles.sectionTitle}>
+              {t("lobby.settings")}
+            </AppText>
+            <Card style={styles.card}>
+              <View style={styles.nudgeRow}>
+                <AppText variant="body" style={styles.nudgeLabel}>
+                  {t("lobby.nudgeDescription")}
+                </AppText>
+                <Switch
+                  value={nudgeEnabled}
+                  onValueChange={setNudgeEnabled}
+                  disabled={!isEditable}
+                  trackColor={{
+                    false: theme.colors.border,
+                    true: theme.colors.primary,
+                  }}
+                  thumbColor={
+                    nudgeEnabled
+                      ? theme.colors.primaryText
+                      : theme.colors.surface
+                  }
+                />
+              </View>
+              {nudgeEnabled && (
+                <View style={styles.nudgeWindowRow}>
+                  <AppText variant="body" style={styles.nudgeLabel}>
+                    {t("lobby.minutesBeforeKickoff")}
+                  </AppText>
+                  <View style={styles.nudgeWindowChips}>
+                    {NUDGE_WINDOW_OPTIONS.map((min) => (
+                      <Pressable
+                        key={min}
+                        onPress={() => setNudgeWindowMinutes(min)}
+                        disabled={!isEditable}
+                        style={[
+                          styles.nudgeWindowChip,
+                          {
+                            backgroundColor:
+                              nudgeWindowMinutes === min
+                                ? theme.colors.primary
+                                : theme.colors.surface,
+                            borderColor: theme.colors.border,
+                          },
+                        ]}
+                      >
+                        <AppText
+                          variant="body"
+                          style={{
+                            color:
+                              nudgeWindowMinutes === min
+                                ? theme.colors.primaryText
+                                : theme.colors.textPrimary,
+                          }}
+                        >
+                          {min}
+                        </AppText>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              )}
+              <Divider />
+              <GroupLobbyPrivacySection
+                privacy={draftPrivacy}
+                onChange={setDraftPrivacy}
+                disabled={!isEditable}
+                isCreator={isCreator}
+                status={group.status}
+                noCard
+              />
+              {draftPrivacy === "private" && (
+                <>
+                  <Divider />
+                  <GroupLobbyInviteAccessSection
+                    inviteAccess={draftInviteAccess}
+                    onChange={setDraftInviteAccess}
+                    disabled={!isEditable}
+                    isCreator={isCreator}
+                    status={group.status}
+                    noCard
+                  />
+                </>
+              )}
+            </Card>
+          </>
         )}
 
-        {/* Meta Section */}
+        {/* ── Meta Card ── */}
         <GroupLobbyMetaSection createdAt={group.createdAt} />
       </Screen>
 
-      {/* Floating Action Buttons (Only for creators) */}
+      {/* Floating Publish Button */}
       {isCreator && (
-        <>
-          <PublishGroupButton
-            onPress={handlePublishWithOverlay}
-            isPending={publishGroupMutation.isPending}
-            disabled={publishGroupMutation.isPending || !draftName.trim()}
-          />
-        </>
+        <PublishGroupButton
+          onPress={handlePublishWithOverlay}
+          isPending={publishGroupMutation.isPending}
+          disabled={publishGroupMutation.isPending || !draftName.trim()}
+        />
       )}
     </View>
   );
@@ -439,6 +449,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: "600",
     marginTop: 24,
+    marginBottom: 8,
+  },
+  card: {
+    marginBottom: 16,
+  },
+  durationBlock: {
     marginBottom: 8,
   },
   durationLine: {

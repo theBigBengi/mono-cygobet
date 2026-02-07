@@ -25,8 +25,11 @@ interface KORoundModeSelectorProps {
    * Whether the selector is disabled
    */
   disabled?: boolean;
+  /**
+   * When true, render without Card wrapper (e.g. inside a parent Card)
+   */
+  noCard?: boolean;
 }
-
 
 /**
  * Component for selecting KO round mode.
@@ -36,6 +39,7 @@ export function KORoundModeSelector({
   value,
   onChange,
   disabled = false,
+  noCard = false,
 }: KORoundModeSelectorProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -59,6 +63,7 @@ export function KORoundModeSelector({
       title={t("lobby.selectKoRoundMode")}
       selectionLabel={selectionLabel}
       description={t("lobby.koRoundDescription")}
+      noCard={noCard}
     >
       <View style={styles.optionsContainer}>
         {OPTIONS.map(({ mode, titleKey }, index) => {
@@ -84,7 +89,9 @@ export function KORoundModeSelector({
                   name={isSelected ? "checkmark-circle" : "radio-button-off"}
                   size={24}
                   color={
-                    isSelected ? theme.colors.primary : theme.colors.textSecondary
+                    isSelected
+                      ? theme.colors.primary
+                      : theme.colors.textSecondary
                   }
                 />
               </Pressable>

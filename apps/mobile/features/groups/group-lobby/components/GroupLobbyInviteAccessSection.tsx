@@ -26,6 +26,10 @@ interface GroupLobbyInviteAccessSectionProps {
    * Current group status - only show section in draft mode
    */
   status: ApiGroupStatus;
+  /**
+   * When true, render content without Card wrapper and without marginBottom
+   */
+  noCard?: boolean;
 }
 
 /**
@@ -39,6 +43,7 @@ export function GroupLobbyInviteAccessSection({
   disabled,
   isCreator,
   status,
+  noCard = false,
 }: GroupLobbyInviteAccessSectionProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -56,32 +61,34 @@ export function GroupLobbyInviteAccessSection({
   // ON = "all" (open), OFF = "admin_only" (restricted) — same mental model as Privacy toggle
   const switchOn = inviteAccess === "all";
 
-  return (
-    <Card style={styles.section}>
-      <View style={styles.row}>
-        <View style={styles.labelContainer}>
-          <AppText variant="body" style={styles.label}>
-            {t("lobby.inviteSharing")}
-          </AppText>
-          <AppText variant="caption" color="secondary" style={styles.helperText}>
-            {helperText}
-          </AppText>
-        </View>
-        <Switch
-          value={switchOn}
-          onValueChange={(value) => onChange(value ? "all" : "admin_only")}
-          disabled={disabled}
-          trackColor={{
-            false: theme.colors.border,
-            true: theme.colors.primary,
-          }}
-          thumbColor={
-            switchOn ? theme.colors.primaryText : theme.colors.surface
-          }
-        />
+  const content = (
+    <View style={styles.row}>
+      <View style={styles.labelContainer}>
+        <AppText variant="body" style={styles.label}>
+          {t("lobby.inviteSharing")}
+        </AppText>
+        <AppText variant="caption" color="secondary" style={styles.helperText}>
+          {helperText}
+        </AppText>
       </View>
-    </Card>
+      <Switch
+        value={switchOn}
+        onValueChange={(value) => onChange(value ? "all" : "admin_only")}
+        disabled={disabled}
+        trackColor={{
+          false: theme.colors.border,
+          true: theme.colors.primary,
+        }}
+        thumbColor={switchOn ? theme.colors.primaryText : theme.colors.surface}
+      />
+    </View>
   );
+
+  if (noCard) {
+    return <View>{content}</View>;
+  }
+
+  return <Card style={styles.section}>{content}</Card>;
 }
 
 const styles = StyleSheet.create({

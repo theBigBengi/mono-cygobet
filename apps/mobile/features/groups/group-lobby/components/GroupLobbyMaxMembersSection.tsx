@@ -24,6 +24,10 @@ interface GroupLobbyMaxMembersSectionProps {
    * Whether the controls are disabled
    */
   disabled?: boolean;
+  /**
+   * When true, render without Card wrapper (e.g. inside a parent Card)
+   */
+  noCard?: boolean;
 }
 
 const MIN_MEMBERS = 2;
@@ -38,6 +42,7 @@ export function GroupLobbyMaxMembersSection({
   initialMaxMembers = 50,
   onChange,
   disabled = false,
+  noCard = false,
 }: GroupLobbyMaxMembersSectionProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -46,7 +51,10 @@ export function GroupLobbyMaxMembersSection({
   const handleValueChange = (delta: number) => {
     if (disabled) return;
 
-    const newValue = Math.min(MAX_MEMBERS, Math.max(MIN_MEMBERS, maxMembers + delta));
+    const newValue = Math.min(
+      MAX_MEMBERS,
+      Math.max(MIN_MEMBERS, maxMembers + delta)
+    );
     setMaxMembers(newValue);
     onChange?.(newValue);
   };
@@ -66,6 +74,7 @@ export function GroupLobbyMaxMembersSection({
       title={t("lobby.groupSize")}
       selectionLabel={selectionLabel}
       description={description}
+      noCard={noCard}
     >
       <View style={styles.content}>
         {/* Main counter control */}
@@ -82,7 +91,12 @@ export function GroupLobbyMaxMembersSection({
                 {
                   backgroundColor: theme.colors.surface,
                   borderColor: theme.colors.border,
-                  opacity: disabled || maxMembers <= MIN_MEMBERS ? 0.5 : pressed ? 0.7 : 1,
+                  opacity:
+                    disabled || maxMembers <= MIN_MEMBERS
+                      ? 0.5
+                      : pressed
+                        ? 0.7
+                        : 1,
                 },
               ]}
             >
@@ -103,22 +117,27 @@ export function GroupLobbyMaxMembersSection({
                 {
                   backgroundColor: theme.colors.surface,
                   borderColor: theme.colors.border,
-                  opacity: disabled || maxMembers >= MAX_MEMBERS ? 0.5 : pressed ? 0.7 : 1,
+                  opacity:
+                    disabled || maxMembers >= MAX_MEMBERS
+                      ? 0.5
+                      : pressed
+                        ? 0.7
+                        : 1,
                 },
               ]}
             >
-              <Ionicons
-                name="add"
-                size={16}
-                color={theme.colors.textPrimary}
-              />
+              <Ionicons name="add" size={16} color={theme.colors.textPrimary} />
             </Pressable>
           </View>
         </View>
 
         {/* Preset options */}
         <View style={styles.presetsContainer}>
-          <AppText variant="caption" color="secondary" style={styles.presetsLabel}>
+          <AppText
+            variant="caption"
+            color="secondary"
+            style={styles.presetsLabel}
+          >
             Quick select:
           </AppText>
           <View style={styles.presetsRow}>

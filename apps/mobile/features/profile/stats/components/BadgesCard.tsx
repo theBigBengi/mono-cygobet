@@ -6,7 +6,13 @@ import { View, StyleSheet, Pressable } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiBadge } from "@repo/types";
-import { MaterialIcons } from "@expo/vector-icons";
+import {
+  Ionicons,
+  FontAwesome5,
+  FontAwesome6,
+  AntDesign,
+  MaterialIcons,
+} from "@expo/vector-icons";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { BadgesInfoSheet } from "./BadgesInfoSheet";
 
@@ -14,47 +20,94 @@ interface BadgesCardProps {
   badges: ApiBadge[];
 }
 
+function BadgeIcon({
+  badgeId,
+  color,
+  size = 24,
+}: {
+  badgeId: string;
+  color: string;
+  size?: number;
+}) {
+  if (badgeId === "sharpshooter") {
+    return <AntDesign name="aim" size={size} color={color} />;
+  }
+  if (badgeId === "underdog_caller") {
+    return <FontAwesome6 name="shield-dog" size={size} color={color} />;
+  }
+  if (badgeId === "early_bird") {
+    return <FontAwesome5 name="earlybirds" size={size} color={color} />;
+  }
+  const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
+    streak_master: "flash",
+    group_champion: "medal",
+    consistency_king: "stats-chart",
+  };
+  const name = iconMap[badgeId] ?? "ribbon";
+  return <Ionicons name={name} size={size} color={color} />;
+}
+
 function BadgeRow({ badge }: { badge: ApiBadge }) {
   const { theme } = useTheme();
+  const iconColor = badge.earned
+    ? theme.colors.primary
+    : theme.colors.textSecondary;
 
   return (
     <View style={[styles.badgeRow, { borderBottomColor: theme.colors.border }]}>
-      <View style={styles.badgeHeader}>
-        <AppText variant="body" style={styles.badgeName}>
-          {badge.name}
-        </AppText>
-        {badge.earned ? (
-          <AppText
-            style={[styles.badgeStatus, { color: theme.colors.success }]}
-          >
-            Done ✓
-          </AppText>
-        ) : (
-          <AppText
-            style={[styles.badgeStatus, { color: theme.colors.textSecondary }]}
-          >
-            {badge.current}/{badge.target}
-          </AppText>
-        )}
-      </View>
-      <View style={styles.badgeProgress}>
-        <AppText variant="caption" color="secondary" style={styles.badgeDesc}>
-          {badge.description}
-        </AppText>
-        <View
-          style={[styles.progressBar, { backgroundColor: theme.colors.border }]}
-        >
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${badge.progress}%`,
-                backgroundColor: badge.earned
-                  ? theme.colors.success
-                  : theme.colors.primary,
-              },
-            ]}
-          />
+      <View style={styles.badgeRowInner}>
+        <View style={styles.badgeIconWrap}>
+          <BadgeIcon badgeId={badge.id} color={iconColor} />
+        </View>
+        <View style={styles.badgeContent}>
+          <View style={styles.badgeHeader}>
+            <AppText variant="body" style={styles.badgeName}>
+              {badge.name}
+            </AppText>
+            {badge.earned ? (
+              <AppText
+                style={[styles.badgeStatus, { color: theme.colors.success }]}
+              >
+                Done ✓
+              </AppText>
+            ) : (
+              <AppText
+                style={[
+                  styles.badgeStatus,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
+                {badge.current}/{badge.target}
+              </AppText>
+            )}
+          </View>
+          <View style={styles.badgeProgress}>
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.badgeDesc}
+            >
+              {badge.description}
+            </AppText>
+            <View
+              style={[
+                styles.progressBar,
+                { backgroundColor: theme.colors.border },
+              ]}
+            >
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${badge.progress}%`,
+                    backgroundColor: badge.earned
+                      ? theme.colors.success
+                      : theme.colors.primary,
+                  },
+                ]}
+              />
+            </View>
+          </View>
         </View>
       </View>
     </View>
@@ -100,6 +153,17 @@ const styles = StyleSheet.create({
   badgeRow: {
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  badgeRowInner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  badgeIconWrap: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  badgeContent: {
+    flex: 1,
   },
   badgeHeader: {
     flexDirection: "row",

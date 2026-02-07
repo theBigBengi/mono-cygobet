@@ -19,6 +19,8 @@ export interface CollapsibleSectionProps {
   children: React.ReactNode;
   /** Initial expanded state. Default false. */
   defaultExpanded?: boolean;
+  /** When true, render as View instead of Card and skip marginBottom */
+  noCard?: boolean;
 }
 
 export function CollapsibleSection({
@@ -27,12 +29,13 @@ export function CollapsibleSection({
   description,
   children,
   defaultExpanded = false,
+  noCard = false,
 }: CollapsibleSectionProps) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(defaultExpanded);
 
-  return (
-    <Card style={styles.section}>
+  const content = (
+    <>
       <Pressable
         onPress={() => setExpanded((e) => !e)}
         style={({ pressed }) => [
@@ -45,7 +48,11 @@ export function CollapsibleSection({
             {title}
           </AppText>
           {!expanded && (
-            <AppText variant="caption" color="secondary" style={styles.selectionLabel}>
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.selectionLabel}
+            >
               {selectionLabel}
             </AppText>
           )}
@@ -59,21 +66,32 @@ export function CollapsibleSection({
       {expanded && (
         <View style={styles.expandedContent}>
           {description != null && description !== "" && (
-            <AppText variant="caption" color="secondary" style={styles.description}>
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.description}
+            >
               {description}
             </AppText>
           )}
           {children}
         </View>
       )}
-    </Card>
+    </>
   );
+
+  if (noCard) {
+    return <View style={styles.sectionNoCard}>{content}</View>;
+  }
+
+  return <Card style={styles.section}>{content}</Card>;
 }
 
 const styles = StyleSheet.create({
   section: {
     marginBottom: 16,
   },
+  sectionNoCard: {},
   headerRow: {
     flexDirection: "row",
     alignItems: "center",

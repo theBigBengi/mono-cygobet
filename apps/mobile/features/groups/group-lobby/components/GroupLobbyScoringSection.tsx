@@ -42,6 +42,10 @@ interface GroupLobbyScoringSectionProps {
    * Whether the controls are disabled
    */
   disabled?: boolean;
+  /**
+   * When true, render without Card wrapper (e.g. inside a parent Card)
+   */
+  noCard?: boolean;
 }
 
 /**
@@ -55,6 +59,7 @@ export function GroupLobbyScoringSection({
   predictionMode = "result",
   onChange,
   disabled = false,
+  noCard = false,
 }: GroupLobbyScoringSectionProps) {
   const { theme } = useTheme();
   const [onTheNose, setOnTheNose] = useState(initialOnTheNose);
@@ -148,11 +153,7 @@ export function GroupLobbyScoringSection({
               },
             ]}
           >
-            <Ionicons
-              name="add"
-              size={16}
-              color={theme.colors.textPrimary}
-            />
+            <Ionicons name="add" size={16} color={theme.colors.textPrimary} />
           </Pressable>
         </View>
       </View>
@@ -171,6 +172,7 @@ export function GroupLobbyScoringSection({
       title={t("lobby.scoringTitle")}
       selectionLabel={selectionLabel}
       description={description}
+      noCard={noCard}
     >
       <View style={styles.scoresContainer}>
         {!is3way && (
