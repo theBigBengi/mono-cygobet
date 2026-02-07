@@ -6,7 +6,7 @@ import { View, StyleSheet } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiBadge } from "@repo/types";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 
 interface BadgesCardProps {
   badges: ApiBadge[];
@@ -18,24 +18,39 @@ const BADGE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   streak_master: "flash",
   group_champion: "medal",
   consistency_king: "stats-chart",
-  early_bird: "sunny",
 };
 
 function BadgeItem({ badge }: { badge: ApiBadge }) {
   const { theme } = useTheme();
-  const iconName = BADGE_ICONS[badge.id] ?? "ribbon";
   const iconColor = badge.earned
     ? theme.colors.primary
     : theme.colors.textSecondary;
 
-  return (
-    <View style={[styles.badgeItem, { padding: theme.spacing.sm }]}>
+  const renderIcon = () => {
+    if (badge.id === "early_bird") {
+      return (
+        <FontAwesome5
+          name="earlybirds"
+          size={24}
+          color={iconColor}
+          style={styles.icon}
+        />
+      );
+    }
+    const iconName = BADGE_ICONS[badge.id] ?? "ribbon";
+    return (
       <Ionicons
         name={iconName}
         size={24}
         color={iconColor}
         style={styles.icon}
       />
+    );
+  };
+
+  return (
+    <View style={[styles.badgeItem, { padding: theme.spacing.sm }]}>
+      {renderIcon()}
       <AppText
         variant="caption"
         numberOfLines={2}
