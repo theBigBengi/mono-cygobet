@@ -1,6 +1,8 @@
 import React, { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, ScrollView, FlatList } from "react-native";
+import { View, StyleSheet, ScrollView, FlatList, Dimensions } from "react-native";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
 import { isNotStarted } from "@repo/utils";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -126,7 +128,16 @@ export function PredictionsOverviewTable({
     return !isNotStarted(state);
   };
 
-  const totalWidth = TOTAL_COLUMN_WIDTH + fixtures.length * GAME_COLUMN_WIDTH;
+  // Calculate available width for the right section (screen - left column)
+  const availableWidth = SCREEN_WIDTH - LEFT_COLUMN_WIDTH;
+  const minTotalWidth = TOTAL_COLUMN_WIDTH + fixtures.length * GAME_COLUMN_WIDTH;
+
+  // If content is narrower than screen, expand columns to fill
+  const shouldExpand = minTotalWidth < availableWidth && fixtures.length > 0;
+  const actualGameColumnWidth = shouldExpand
+    ? (availableWidth - TOTAL_COLUMN_WIDTH) / fixtures.length
+    : GAME_COLUMN_WIDTH;
+  const totalWidth = TOTAL_COLUMN_WIDTH + fixtures.length * actualGameColumnWidth;
 
   // Render header row - inside horizontal scroll
   const renderHeader = () => {
@@ -135,7 +146,7 @@ export function PredictionsOverviewTable({
         style={[
           styles.matchHeaderRow,
           {
-            width: totalWidth,
+            minWidth: totalWidth,
             height: HEADER_HEIGHT,
             backgroundColor: theme.colors.surface,
             borderBottomWidth: 2,
@@ -165,7 +176,7 @@ export function PredictionsOverviewTable({
             style={[
               styles.gameHeader,
               {
-                width: GAME_COLUMN_WIDTH,
+                width: actualGameColumnWidth,
                 borderRightWidth: 1,
                 borderRightColor: theme.colors.border,
               },
@@ -335,7 +346,7 @@ export function PredictionsOverviewTable({
         style={[
           styles.predictionRow,
           {
-            width: totalWidth,
+            minWidth: totalWidth,
             height: ROW_HEIGHT,
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.border,
@@ -375,7 +386,7 @@ export function PredictionsOverviewTable({
               style={[
                 styles.predictionCell,
                 {
-                  width: GAME_COLUMN_WIDTH,
+                  width: actualGameColumnWidth,
                   borderRightWidth: 1,
                   borderRightColor: theme.colors.border,
                 },
@@ -465,9 +476,9 @@ export function PredictionsOverviewTable({
             horizontal
             showsHorizontalScrollIndicator={true}
             style={styles.horizontalScroll}
-            contentContainerStyle={{ width: totalWidth }}
+            contentContainerStyle={{ flexGrow: 1 }}
           >
-            <View style={{ width: totalWidth }}>
+            <View style={{ flex: 1, minWidth: totalWidth }}>
               {/* Header Row - Inside horizontal scroll */}
               {renderHeader()}
 
