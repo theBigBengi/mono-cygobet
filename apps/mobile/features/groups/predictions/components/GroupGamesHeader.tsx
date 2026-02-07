@@ -5,14 +5,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { HEADER_HEIGHT } from "../utils/constants";
 
-export type GroupGamesViewMode = "list" | "single";
 
 interface GroupGamesHeaderFullProps {
   backOnly?: false;
-  viewMode: GroupGamesViewMode;
   onBack: () => void;
   onFillRandom: () => void;
-  onToggleView: () => void;
 }
 
 interface GroupGamesHeaderBackOnlyProps {
@@ -24,9 +21,7 @@ interface GroupGamesHeaderBackOnlyProps {
   leftContent?: React.ReactNode;
   /** Optional content to show on the right (e.g. group status) */
   rightContent?: React.ReactNode;
-  viewMode?: GroupGamesViewMode;
   onFillRandom?: () => void;
-  onToggleView?: () => void;
 }
 
 export type GroupGamesHeaderProps =
@@ -96,17 +91,6 @@ export function GroupGamesHeader(props: GroupGamesHeaderProps) {
             <View style={[styles.iconButton]}>
               <Ionicons
                 name="dice-outline"
-                size={20}
-                color={theme.colors.textPrimary}
-              />
-            </View>
-          </Pressable>
-          <Pressable onPress={props.onToggleView!}>
-            <View style={[styles.iconButton]}>
-              <Ionicons
-                name={
-                  props.viewMode === "list" ? "albums-outline" : "list-outline"
-                }
                 size={20}
                 color={theme.colors.textPrimary}
               />

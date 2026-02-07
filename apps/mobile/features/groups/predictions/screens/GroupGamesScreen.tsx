@@ -297,17 +297,8 @@ export function GroupGamesScreen({
 
   const header = (
     <GroupGamesHeader
-      viewMode={viewMode}
       onBack={() => router.back()}
       onFillRandom={handleFillRandom}
-      onToggleView={() => {
-        if (viewMode === "list") {
-          setSingleViewInitialIndex(0);
-          setViewMode("single");
-        } else {
-          setViewMode("list");
-        }
-      }}
     />
   );
 
