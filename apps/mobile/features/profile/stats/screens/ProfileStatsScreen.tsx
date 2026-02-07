@@ -10,7 +10,8 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useUserStatsQuery, useProfileQuery } from "../../profile.queries";
 import { ProfileHeader } from "../components/ProfileHeader";
-import { OverallStatsCard } from "../components/OverallStatsCard";
+import { PredictionsStatsCard } from "../components/PredictionsStatsCard";
+import { GroupsOverviewCard } from "../components/GroupsOverviewCard";
 import { PredictionDistributionCard } from "../components/PredictionDistributionCard";
 import { RecentFormCard } from "../components/RecentFormCard";
 import { BadgesCard } from "../components/BadgesCard";
@@ -65,6 +66,17 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
     ? (profileQuery.data?.profile?.dailyStreak ?? 0)
     : 0;
 
+  const correctPredictions =
+    data.distribution.exact +
+    data.distribution.difference +
+    data.distribution.outcome;
+  const groupsActive = data.groups.filter(
+    (g) => g.groupStatus === "active"
+  ).length;
+  const groupsWon = data.groups.filter(
+    (g) => g.rank === 1 && g.groupStatus === "ended"
+  ).length;
+
   return (
     <Screen scroll>
       <ProfileHeader
@@ -73,11 +85,15 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
         level={level}
         dailyStreak={dailyStreak}
       />
-      <OverallStatsCard
-        totalPoints={data.overall.totalPoints}
+      <PredictionsStatsCard
         accuracy={data.overall.accuracy}
+        correctPredictions={correctPredictions}
         exactScores={data.overall.exactScores}
+      />
+      <GroupsOverviewCard
         groupsPlayed={data.overall.groupsPlayed}
+        groupsActive={groupsActive}
+        groupsWon={groupsWon}
       />
       <PredictionDistributionCard
         exact={data.distribution.exact}
