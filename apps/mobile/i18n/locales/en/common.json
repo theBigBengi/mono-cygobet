@@ -311,7 +311,13 @@
     "filterActive": "Active",
     "filterEnded": "Ended",
     "active": "Active",
-    "ended": "Ended"
+    "ended": "Ended",
+    "insights": "Insights",
+    "performance": "Performance",
+    "lastPredictions": "Last {{count}} predictions",
+    "bestRank": "Best rank",
+    "dayStreak": "day streak",
+    "level": "Level"
   },
   "discover": {
     "searchPlaceholder": "Search by group name",

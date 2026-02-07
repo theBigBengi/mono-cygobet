@@ -311,7 +311,13 @@
     "filterActive": "פעילות",
     "filterEnded": "הסתיימו",
     "active": "פעילה",
-    "ended": "הסתיימה"
+    "ended": "הסתיימה",
+    "insights": "תובנות",
+    "performance": "ביצועים",
+    "lastPredictions": "{{count}} הניחושים האחרונים",
+    "bestRank": "דירוג שיא",
+    "dayStreak": "ימים ברצף",
+    "level": "רמה"
   },
   "discover": {
     "searchPlaceholder": "חפש לפי שם קבוצה",

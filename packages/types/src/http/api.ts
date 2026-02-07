@@ -834,6 +834,14 @@ export type ApiUserGroupStat = {
   recentPoints: number[];
 };
 
+/** Insight for profile (streak, ranking, league, etc.). */
+export type ApiInsight = {
+  type: "streak" | "ranking" | "league" | "improvement" | "milestone";
+  icon: string;
+  text: string;
+  textHe: string;
+};
+
 /** Main user stats response data. */
 export type ApiUserStatsData = {
   user: { id: number; username: string | null; image: string | null };
@@ -844,11 +852,21 @@ export type ApiUserStatsData = {
     exactScores: number;
     accuracy: number;
     groupsPlayed: number;
+    bestRank: number | null;
+    currentStreak: number;
+    bestStreak: number;
+    percentile: number;
   };
   distribution: ApiPredictionDistribution;
   form: ApiFormItem[];
   badges: ApiBadge[];
   groups: ApiUserGroupStat[];
+  insights: ApiInsight[];
+  bestLeague: {
+    leagueId: number;
+    leagueName: string;
+    accuracy: number;
+  } | null;
 };
 
 /** Response from GET /api/users/:id/stats. */

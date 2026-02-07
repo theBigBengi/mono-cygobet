@@ -16,6 +16,9 @@ import type {
   RawH2HSharedGroupRow,
   RawH2HUserStatsRow,
   RawPotentialOpponentRow,
+  RawBestRankRow,
+  RawPercentileRow,
+  RawBestLeagueRow,
 } from "./types";
 
 export function toNumber(value: string | number | bigint): number {
@@ -112,7 +115,14 @@ export async function findDistribution(userId: number) {
       AND gp.settled_at IS NOT NULL
       AND (gm.id IS NOT NULL)
   `;
-  return rows[0] ?? { exact_count: 0, difference_count: 0, outcome_count: 0, miss_count: 0 };
+  return (
+    rows[0] ?? {
+      exact_count: 0,
+      difference_count: 0,
+      outcome_count: 0,
+      miss_count: 0,
+    }
+  );
 }
 
 /** Recent form: Last 10 settled predictions ORDER BY settled_at DESC. */
@@ -163,10 +173,130 @@ export async function findStreakData(userId: number) {
       CAST(gp.points AS INTEGER) AS points,
       gp.settled_at
     FROM group_predictions gp
+    LEFT JOIN group_members gm ON gm.group_id = gp.group_id AND gm.user_id = gp.user_id AND gm.status = 'joined'::group_members_status
     WHERE gp.user_id = ${userId}
       AND gp.settled_at IS NOT NULL
+      AND gm.id IS NOT NULL
     ORDER BY gp.settled_at ASC
   `;
+}
+
+/** Best rank: Minimum rank across all groups for this user. */
+export async function findBestRank(userId: number): Promise<number | null> {
+  const rows = await prisma.$queryRaw<RawBestRankRow[]>`
+    WITH ranked AS (
+      SELECT
+        gp.user_id,
+        gp.group_id,
+        RANK() OVER (
+          PARTITION BY gp.group_id
+          ORDER BY COALESCE(SUM(CAST(gp.points AS INTEGER)), 0) DESC,
+                   COUNT(CASE WHEN gp.winning_correct_score = true THEN 1 END) DESC
+        ) AS rank_val
+      FROM group_predictions gp
+      JOIN group_members gm ON gm.group_id = gp.group_id AND gm.user_id = gp.user_id
+      WHERE gm.status = 'joined'::group_members_status
+      GROUP BY gp.user_id, gp.group_id
+    )
+    SELECT MIN(rank_val)::int AS best_rank
+    FROM ranked
+    WHERE user_id = ${userId}
+  `;
+  const val = rows[0]?.best_rank;
+  if (val == null) return null;
+  return toNumber(val);
+}
+
+/** Streak rows ordered by settled_at DESC for current streak (count consecutive scoring from most recent). */
+export async function findStreakDataDesc(userId: number) {
+  return prisma.$queryRaw<RawStreakRow[]>`
+    SELECT
+      CAST(gp.points AS INTEGER) AS points,
+      gp.settled_at
+    FROM group_predictions gp
+    LEFT JOIN group_members gm ON gm.group_id = gp.group_id AND gm.user_id = gp.user_id AND gm.status = 'joined'::group_members_status
+    WHERE gp.user_id = ${userId}
+      AND gp.settled_at IS NOT NULL
+      AND gm.id IS NOT NULL
+    ORDER BY gp.settled_at DESC
+  `;
+}
+
+/** Percentile: top X% (0-100). Higher = better. Based on total points across all groups. */
+export async function findPercentile(userId: number): Promise<number> {
+  const rows = await prisma.$queryRaw<RawPercentileRow[]>`
+    WITH user_totals AS (
+      SELECT
+        gp.user_id,
+        COALESCE(SUM(CAST(gp.points AS INTEGER)), 0) AS total_points
+      FROM group_predictions gp
+      JOIN group_members gm ON gm.group_id = gp.group_id AND gm.user_id = gp.user_id
+      WHERE gm.status = 'joined'::group_members_status
+      GROUP BY gp.user_id
+    ),
+    total_count AS (
+      SELECT COUNT(*)::int AS n FROM user_totals
+    ),
+    user_points AS (
+      SELECT total_points FROM user_totals WHERE user_id = ${userId}
+    ),
+    worse_count AS (
+      SELECT COUNT(*)::int AS n
+      FROM user_totals ut
+      CROSS JOIN user_points up
+      WHERE ut.total_points < up.total_points
+    )
+    SELECT
+      CASE
+        WHEN tc.n = 0 THEN 0
+        ELSE ROUND(100.0 * wc.n / tc.n)::int
+      END AS percentile
+    FROM total_count tc
+    CROSS JOIN (SELECT COALESCE(MAX(n), 0) AS n FROM worse_count) wc
+  `;
+  const val = rows[0]?.percentile;
+  return val != null ? Math.min(100, Math.max(0, toNumber(val))) : 0;
+}
+
+/** Best league by accuracy for this user (settled predictions only). */
+export async function findBestLeague(userId: number): Promise<{
+  leagueId: number;
+  leagueName: string;
+  accuracy: number;
+} | null> {
+  const rows = await prisma.$queryRaw<RawBestLeagueRow[]>`
+    WITH by_league AS (
+      SELECT
+        f.league_id,
+        l.name AS league_name,
+        COUNT(gp.id)::int AS total,
+        COUNT(CASE WHEN gp.winning_correct_score = true OR gp.winning_match_winner = true THEN 1 END)::int AS correct
+      FROM group_predictions gp
+      JOIN group_members gm ON gm.group_id = gp.group_id AND gm.user_id = gp.user_id AND gm.status = 'joined'::group_members_status
+      JOIN group_fixtures gf ON gf.id = gp.group_fixture_id AND gf.group_id = gp.group_id
+      JOIN fixtures f ON f.id = gf.fixture_id
+      LEFT JOIN leagues l ON l.id = f.league_id
+      WHERE gp.user_id = ${userId}
+        AND gp.settled_at IS NOT NULL
+        AND f.league_id IS NOT NULL
+        AND l.id IS NOT NULL
+      GROUP BY f.league_id, l.name
+    )
+    SELECT
+      league_id,
+      league_name,
+      (CASE WHEN total = 0 THEN 0 ELSE ROUND(100.0 * correct / total)::int END) AS accuracy
+    FROM by_league
+    ORDER BY accuracy DESC, total DESC
+    LIMIT 1
+  `;
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    leagueId: row.league_id,
+    leagueName: row.league_name,
+    accuracy: toNumber(row.accuracy),
+  };
 }
 
 /**

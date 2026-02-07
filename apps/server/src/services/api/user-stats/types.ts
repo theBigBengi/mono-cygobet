@@ -83,3 +83,17 @@ export type RawPotentialOpponentRow = {
   user_id: number;
   username: string | null;
 };
+
+export type RawBestRankRow = {
+  best_rank: string | number | bigint;
+};
+
+export type RawPercentileRow = {
+  percentile: string | number | bigint;
+};
+
+export type RawBestLeagueRow = {
+  league_id: number;
+  league_name: string;
+  accuracy: string | number | bigint;
+};

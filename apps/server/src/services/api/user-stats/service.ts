@@ -12,6 +12,7 @@ import type {
 } from "@repo/types";
 import * as repo from "./repository";
 import { computeBadges, computeMaxStreak } from "./badges";
+import { generateInsights } from "./insights";
 
 /**
  * Derive form result from prediction flags and points.
@@ -43,9 +44,13 @@ export async function getUserStats(
     recentForm,
     sparkline,
     streakRows,
+    streakRowsDesc,
     underdogCount,
     earlyCount,
     championGroups,
+    bestRank,
+    percentile,
+    bestLeague,
   ] = await Promise.all([
     repo.findOverallStats(targetUserId),
     repo.findPerGroupStats(targetUserId),
@@ -54,12 +59,25 @@ export async function getUserStats(
     repo.findRecentForm(targetUserId),
     repo.findSparklineData(targetUserId),
     repo.findStreakData(targetUserId),
+    repo.findStreakDataDesc(targetUserId),
     repo.findUnderdogWinsCount(targetUserId),
     repo.findEarlyBirdCount(targetUserId),
     repo.findGroupChampionGroups(targetUserId),
+    repo.findBestRank(targetUserId),
+    repo.findPercentile(targetUserId),
+    repo.findBestLeague(targetUserId),
   ]);
 
   if (!overall) {
+    const emptyBadges = computeBadges({
+      exactScores: 0,
+      underdogWins: 0,
+      maxStreak: 0,
+      isGroupChampion: false,
+      accuracy: 0,
+      settledCount: 0,
+      earlyCount: 0,
+    });
     return {
       status: "success",
       data: {
@@ -75,19 +93,26 @@ export async function getUserStats(
           exactScores: 0,
           accuracy: 0,
           groupsPlayed: 0,
+          bestRank: null,
+          currentStreak: 0,
+          bestStreak: 0,
+          percentile: 0,
         },
         distribution: { exact: 0, difference: 0, outcome: 0, miss: 0 },
         form: [],
-        badges: computeBadges({
-          exactScores: 0,
-          underdogWins: 0,
-          maxStreak: 0,
-          isGroupChampion: false,
-          accuracy: 0,
-          settledCount: 0,
-          earlyCount: 0,
-        }),
+        badges: emptyBadges,
         groups: [],
+        insights: generateInsights({
+          currentStreak: 0,
+          bestStreak: 0,
+          percentile: 0,
+          bestLeague: null,
+          accuracy: 0,
+          exactScores: 0,
+          groupsWon: 0,
+          badges: emptyBadges,
+        }),
+        bestLeague: null,
       },
       message: "User stats fetched successfully",
     };
@@ -99,9 +124,7 @@ export async function getUserStats(
   const correctOutcomeCount = repo.toNumber(overall.correct_outcome_count);
   const accuracy =
     settledCount > 0
-      ? Math.round(
-          ((exactScores + correctOutcomeCount) / settledCount) * 100
-        )
+      ? Math.round(((exactScores + correctOutcomeCount) / settledCount) * 100)
       : 0;
 
   const rankByGroup = new Map(
@@ -118,6 +141,12 @@ export async function getUserStats(
 
   const streakPoints = streakRows.map((r) => repo.toNumber(r.points));
   const maxStreak = computeMaxStreak(streakPoints);
+  const streakPointsDesc = streakRowsDesc.map((r) => repo.toNumber(r.points));
+  let currentStreak = 0;
+  for (const pts of streakPointsDesc) {
+    if (pts > 0) currentStreak++;
+    else break;
+  }
 
   const form: ApiFormItem[] = recentForm.map((row) => ({
     fixtureId: row.fixture_id,
@@ -169,6 +198,10 @@ export async function getUserStats(
     earlyCount,
   });
 
+  const groupsWon = groups.filter(
+    (g) => g.rank === 1 && g.groupStatus === "ended"
+  ).length;
+
   const data: ApiUserStatsData = {
     user: {
       id: overall.user_id,
@@ -182,11 +215,26 @@ export async function getUserStats(
       exactScores,
       accuracy,
       groupsPlayed: perGroup.length,
+      bestRank,
+      currentStreak,
+      bestStreak: maxStreak,
+      percentile,
     },
     distribution: dist,
     form,
     badges,
     groups,
+    insights: generateInsights({
+      currentStreak,
+      bestStreak: maxStreak,
+      percentile,
+      bestLeague,
+      accuracy,
+      exactScores,
+      groupsWon,
+      badges,
+    }),
+    bestLeague,
   };
 
   return {
@@ -215,8 +263,14 @@ export async function getHeadToHead(
       ? await repo.findH2HUserStats(userId, opponentId, groupIds)
       : [];
 
-  const userStatsByGroup = new Map<number, { points: number; exact: number; count: number }>();
-  const opponentStatsByGroup = new Map<number, { points: number; exact: number; count: number }>();
+  const userStatsByGroup = new Map<
+    number,
+    { points: number; exact: number; count: number }
+  >();
+  const opponentStatsByGroup = new Map<
+    number,
+    { points: number; exact: number; count: number }
+  >();
 
   for (const row of statsRows) {
     const pts = repo.toNumber(row.total_points);
@@ -270,8 +324,12 @@ export async function getHeadToHead(
     repo.findRanksPerGroup(userId),
     repo.findRanksPerGroup(opponentId),
   ]);
-  const userRankByGroup = new Map(userRanks.map((r) => [r.group_id, repo.toNumber(r.rank_val)]));
-  const oppRankByGroup = new Map(oppRanks.map((r) => [r.group_id, repo.toNumber(r.rank_val)]));
+  const userRankByGroup = new Map(
+    userRanks.map((r) => [r.group_id, repo.toNumber(r.rank_val)])
+  );
+  const oppRankByGroup = new Map(
+    oppRanks.map((r) => [r.group_id, repo.toNumber(r.rank_val)])
+  );
 
   const rankMap = new Map(
     groupIds.map((gid) => [
@@ -293,7 +351,9 @@ export async function getHeadToHead(
   });
 
   const userSettled = userInfo ? repo.toNumber(userInfo.settled_count) : 0;
-  const opponentSettled = opponentInfo ? repo.toNumber(opponentInfo.settled_count) : 0;
+  const opponentSettled = opponentInfo
+    ? repo.toNumber(opponentInfo.settled_count)
+    : 0;
   const userAccuracy =
     userSettled > 0 && userInfo
       ? Math.round(

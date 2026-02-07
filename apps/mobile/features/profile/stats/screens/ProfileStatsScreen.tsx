@@ -9,13 +9,12 @@ import { Screen, Button } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useUserStatsQuery, useProfileQuery } from "../../profile.queries";
-import { ProfileHeader } from "../components/ProfileHeader";
-import { EditProfileModal } from "../../components/EditProfileModal";
-import { PredictionsStatsCard } from "../components/PredictionsStatsCard";
-import { PredictionDistributionCard } from "../components/PredictionDistributionCard";
-import { RecentFormCard } from "../components/RecentFormCard";
+import { HeroHeader } from "../components/HeroHeader";
+import { InsightsCard } from "../components/InsightsCard";
+import { PerformanceCard } from "../components/PerformanceCard";
 import { BadgesCard } from "../components/BadgesCard";
 import { GroupStatsCard } from "../components/GroupStatsCard";
+import { EditProfileModal } from "../../components/EditProfileModal";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 
@@ -67,10 +66,6 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
     ? (profileQuery.data?.profile?.dailyStreak ?? 0)
     : 0;
 
-  const correctPredictions =
-    data.distribution.exact +
-    data.distribution.difference +
-    data.distribution.outcome;
   const groupsActive = data.groups.filter(
     (g) => g.groupStatus === "active"
   ).length;
@@ -83,28 +78,30 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
   const currentName = profileUser?.name ?? null;
   const currentImage = profileUser?.image ?? data.user.image;
 
+  const displayUsername = isOwnProfile ? currentUsername : data.user.username;
+  const displayImage = isOwnProfile ? currentImage : data.user.image;
+
   return (
     <Screen scroll>
-      <ProfileHeader
-        username={data.user.username}
-        image={data.user.image}
+      <HeroHeader
+        username={displayUsername}
+        image={displayImage}
+        totalPoints={data.overall.totalPoints}
+        accuracy={data.overall.accuracy}
+        bestRank={data.overall.bestRank}
         level={level}
         dailyStreak={dailyStreak}
         showEditButton={isOwnProfile}
         onEditPress={isOwnProfile ? () => setEditModalVisible(true) : undefined}
       />
-      <PredictionsStatsCard
-        accuracy={data.overall.accuracy}
-        correctPredictions={correctPredictions}
-        exactScores={data.overall.exactScores}
-      />
-      <PredictionDistributionCard
+      <InsightsCard insights={data.insights} />
+      <PerformanceCard
+        form={data.form}
         exact={data.distribution.exact}
         difference={data.distribution.difference}
         outcome={data.distribution.outcome}
         miss={data.distribution.miss}
       />
-      <RecentFormCard form={data.form} />
       <BadgesCard badges={data.badges} />
       <GroupStatsCard
         groups={data.groups}
