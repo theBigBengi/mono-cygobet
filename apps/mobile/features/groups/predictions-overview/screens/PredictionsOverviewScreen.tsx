@@ -16,7 +16,7 @@ interface PredictionsOverviewScreenProps {
 
 /**
  * PredictionsOverviewScreen component
- * 
+ *
  * Fetches and displays predictions overview for a group.
  * Shows loading and error states appropriately.
  */
@@ -30,7 +30,9 @@ export function PredictionsOverviewScreen({
   if (isLoading) {
     return (
       <Screen>
-        <QueryLoadingView message={t("predictionsOverview.loadingPredictions")} />
+        <QueryLoadingView
+          message={t("predictionsOverview.loadingPredictions")}
+        />
       </Screen>
     );
   }
@@ -39,7 +41,9 @@ export function PredictionsOverviewScreen({
   if (error || !data) {
     return (
       <Screen>
-        <QueryErrorView message={t("predictionsOverview.failedLoadPredictions")} />
+        <QueryErrorView
+          message={t("predictionsOverview.failedLoadPredictions")}
+        />
       </Screen>
     );
   }
@@ -72,7 +76,7 @@ export function PredictionsOverviewScreen({
 
   return (
     <Screen scroll={false} contentContainerStyle={styles.screenContent}>
-      <PredictionsOverviewTable data={overviewData} />
+      <PredictionsOverviewTable data={overviewData} groupId={groupId} />
     </Screen>
   );
 }

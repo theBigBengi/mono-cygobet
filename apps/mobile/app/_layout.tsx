@@ -83,6 +83,10 @@ function AppContent() {
                 options={{ title: t("groups.groupGames"), headerShown: false }}
               />
               <Stack.Screen
+                name="groups/[id]/fixtures/[fixtureId]"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="groups/[id]/ranking"
                 options={{ headerShown: false }}
               />

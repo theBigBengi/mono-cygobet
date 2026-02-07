@@ -11,6 +11,9 @@ export const FILTER_TABS_HEIGHT = 96;
 /** Base padding for footer (before adding keyboard height) in pixels */
 export const FOOTER_PADDING = 100;
 
+/** Delay (ms) before triggering save after outcome selection, so UI can update first */
+export const SAVE_PENDING_DELAY_MS = 50;
+
 /** Vertical offset when scrolling to match card to position it slightly above center */
 export const SCROLL_OFFSET = 160;
 

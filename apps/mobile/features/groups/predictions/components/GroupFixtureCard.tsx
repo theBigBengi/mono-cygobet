@@ -35,7 +35,8 @@ export type GroupFixtureCardProps = {
   prediction: GroupPrediction;
   inputRefs: React.MutableRefObject<Record<string, InputRefs>>;
   currentFocusedField: FocusedField;
-  savedPredictions: Set<number>;
+  /** When true, this fixture's prediction is saved (no pending change). */
+  isSaved?: boolean;
   matchCardRefs: React.MutableRefObject<
     Record<string, React.RefObject<View | null>>
   >;
@@ -65,7 +66,7 @@ function GroupFixtureCardInner({
   prediction,
   inputRefs,
   currentFocusedField,
-  savedPredictions,
+  isSaved = true,
   matchCardRefs,
   predictionMode,
   groupName,
@@ -155,7 +156,7 @@ function GroupFixtureCardInner({
       prediction={prediction}
       inputRefs={inputRefs}
       currentFocusedField={currentFocusedField}
-      savedPredictions={savedPredictions}
+      isSaved={Boolean(isSaved)}
       cardRef={cardRef}
       onFocus={onFocus}
       onBlur={onBlur}

@@ -4,7 +4,7 @@
  * - GroupFixtureCard: per-fixture card in list (position, share, bound callbacks).
  * - GroupGamesHeader / GroupGamesLastSavedFooter: screen header and save stats.
  * - MatchPredictionCardVertical: presentational card (teams, result, score/outcome inputs).
- * - SingleGameView / SingleGameMatchCard / GameSlider: single-fixture swipe view and game slider.
+ * - SingleGameMatchCard / GameSlider / SingleGameContent: single-fixture view and game slider.
  * - SmartFilterChips: filter by team/round/action.
  * - ScoreInputNavigationBar: prev/next/done for score inputs.
  */
@@ -15,6 +15,6 @@ export { GroupGamesLastSavedFooter } from "./GroupGamesLastSavedFooter";
 export { MatchDraftCard } from "./MatchDraftCard";
 export { MatchPredictionCardVertical } from "./MatchPredictionCardVertical";
 export { SingleGameMatchCard } from "./SingleGameMatchCard";
-export { SingleGameView } from "./SingleGameView";
+export { SingleGameContent } from "./SingleGameContent";
 export { SmartFilterChips } from "./SmartFilterChips";
 export { ScoreInputNavigationBar } from "./ScoreInputNavigationBar";

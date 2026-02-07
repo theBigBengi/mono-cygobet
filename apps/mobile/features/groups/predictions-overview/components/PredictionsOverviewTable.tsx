@@ -1,8 +1,14 @@
 import React, { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, ScrollView, FlatList, Dimensions } from "react-native";
-
-const SCREEN_WIDTH = Dimensions.get("window").width;
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  Dimensions,
+  Pressable,
+} from "react-native";
+import { useRouter } from "expo-router";
 import { isNotStarted } from "@repo/utils";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -10,8 +16,11 @@ import { TeamLogo } from "@/components/ui/TeamLogo";
 import { useAuth } from "@/lib/auth/useAuth";
 import type { ApiPredictionsOverviewData } from "@repo/types";
 
+const SCREEN_WIDTH = Dimensions.get("window").width;
+
 interface PredictionsOverviewTableProps {
   data: ApiPredictionsOverviewData;
+  groupId: number | null;
 }
 
 const LEFT_COLUMN_WIDTH = 120;
@@ -22,10 +31,12 @@ const HEADER_HEIGHT = 110;
 
 export function PredictionsOverviewTable({
   data,
+  groupId,
 }: PredictionsOverviewTableProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { user } = useAuth();
+  const router = useRouter();
   const leftFlatListRef = useRef<FlatList>(null);
   const rightFlatListRef = useRef<FlatList>(null);
   const horizontalScrollRef = useRef<ScrollView>(null);
@@ -130,14 +141,16 @@ export function PredictionsOverviewTable({
 
   // Calculate available width for the right section (screen - left column)
   const availableWidth = SCREEN_WIDTH - LEFT_COLUMN_WIDTH;
-  const minTotalWidth = TOTAL_COLUMN_WIDTH + fixtures.length * GAME_COLUMN_WIDTH;
+  const minTotalWidth =
+    TOTAL_COLUMN_WIDTH + fixtures.length * GAME_COLUMN_WIDTH;
 
   // If content is narrower than screen, expand columns to fill
   const shouldExpand = minTotalWidth < availableWidth && fixtures.length > 0;
   const actualGameColumnWidth = shouldExpand
     ? (availableWidth - TOTAL_COLUMN_WIDTH) / fixtures.length
     : GAME_COLUMN_WIDTH;
-  const totalWidth = TOTAL_COLUMN_WIDTH + fixtures.length * actualGameColumnWidth;
+  const totalWidth =
+    TOTAL_COLUMN_WIDTH + fixtures.length * actualGameColumnWidth;
 
   // Render header row - inside horizontal scroll
   const renderHeader = () => {
@@ -171,7 +184,7 @@ export function PredictionsOverviewTable({
         </View>
         {/* Fixture columns */}
         {fixtures.map((fixture) => (
-          <View
+          <Pressable
             key={fixture.id}
             style={[
               styles.gameHeader,
@@ -181,6 +194,11 @@ export function PredictionsOverviewTable({
                 borderRightColor: theme.colors.border,
               },
             ]}
+            onPress={() => {
+              if (groupId != null) {
+                router.push(`/groups/${groupId}/fixtures/${fixture.id}`);
+              }
+            }}
           >
             {/* Column layout: Home Logo, Home Abbr, Away Abbr, Away Logo, Result */}
             <View style={styles.gameHeaderColumn}>
@@ -290,7 +308,7 @@ export function PredictionsOverviewTable({
                 </AppText>
               )}
             </View>
-          </View>
+          </Pressable>
         ))}
       </View>
     );

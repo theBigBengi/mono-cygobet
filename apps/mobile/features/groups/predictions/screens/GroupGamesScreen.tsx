@@ -1,13 +1,6 @@
 import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Keyboard,
-  Alert,
-  InteractionManager,
-} from "react-native";
+import { View, StyleSheet, ScrollView, Keyboard, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -19,7 +12,7 @@ import {
 import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
 import { useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { usePredictionNavigation } from "../hooks/usePredictionNavigation";
-import { useGroupGamePredictions } from "../hooks/useGroupGamePredictions";
+import { useGroupPredictions } from "../hooks/useGroupPredictions";
 import { useCardFocusSaving } from "../hooks/useCardFocusSaving";
 import { useSmartFilters } from "../hooks/useSmartFilters";
 import { useGroupedFixtures } from "../hooks/useGroupedFixtures";
@@ -27,9 +20,8 @@ import { usePredictionsStats } from "../hooks/usePredictionsStats";
 import type { FixtureItem } from "@/types/common";
 import type { PredictionMode } from "../types";
 import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
-import { SingleGameView } from "../components/SingleGameView";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
-import { FOOTER_PADDING } from "../utils/constants";
+import { FOOTER_PADDING, SAVE_PENDING_DELAY_MS } from "../utils/constants";
 import { calculateContentPaddingTopDefault } from "../utils/utils";
 
 type Props = {
@@ -49,8 +41,8 @@ type Props = {
  * - Normalises fixtures from props and applies filters (teams/rounds/actions).
  * - Groups fixtures by league/date and manages prediction state (local + save).
  * - Wires keyboard height, focus saving, and prev/next field navigation.
- * - Renders either list view (ScrollView + GroupFixtureCard per fixture) or
- *   single-game view (SingleGameView). Handlers are memoized so fixture cards
+ * - Renders list view (ScrollView + GroupFixtureCard per fixture); card press
+ *   navigates to dedicated single-game route. Handlers are memoized so fixture cards
  *   re-render only when their props change.
  */
 export function GroupGamesScreen({
@@ -64,20 +56,6 @@ export function GroupGamesScreen({
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
-  /** Toggle between full list of fixtures and single-fixture swipe view. */
-  const [viewMode, setViewMode] = React.useState<"list" | "single">("list");
-  /** When opening single view from a card press, scroll to this index; 0 when opening via toggle. */
-  const [singleViewInitialIndex, setSingleViewInitialIndex] = React.useState(0);
-  /** Pre-mount SingleGameView after interactions so first tap is instant. */
-  const [singleViewReady, setSingleViewReady] = React.useState(false);
-
-  React.useEffect(() => {
-    const handle = InteractionManager.runAfterInteractions(() => {
-      setSingleViewReady(true);
-    });
-    return () => handle.cancel();
-  }, []);
-
   const mode = selectionMode ?? "games";
 
   /** Normalise fixtures from props; ensure we always have an array. */
@@ -113,19 +91,18 @@ export function GroupGamesScreen({
   /** Fixtures grouped by league + date; LIVE fixtures are separated for layout. */
   const leagueDateGroups = useGroupedFixtures(filteredFixtures);
 
-  /** Local prediction state, save-to-server, and MatchWinner 1/X/2 handling. */
+  /** Shared prediction state (React Query cache), save-to-server, and MatchWinner 1/X/2. */
   const {
-    predictions,
-    savedPredictions,
+    getPrediction,
+    isPredictionSaved,
     updatePrediction,
     updateSliderValue,
     setOutcomePrediction,
     getFillRandomConfirm,
     fillRandomPredictions,
-    saveAllChangedPredictions,
+    saveAllPending,
     isSaving,
-  } = useGroupGamePredictions({
-    fixtures,
+  } = useGroupPredictions({
     groupId,
     predictionMode,
   });
@@ -133,6 +110,7 @@ export function GroupGamesScreen({
   /** Show confirmation if needed, then fill random. Caller shows alerts using t(). */
   const handleFillRandom = useCallback(() => {
     const confirmInfo = getFillRandomConfirm();
+    const fixtureIds = filteredFixtures.map((f) => f.id);
     if (confirmInfo !== null) {
       Alert.alert(
         t("predictions.fillRandom"),
@@ -143,35 +121,24 @@ export function GroupGamesScreen({
           { text: t("groups.cancel"), style: "cancel" },
           {
             text: t("predictions.fill"),
-            onPress: () => fillRandomPredictions(true),
+            onPress: () => fillRandomPredictions(fixtureIds, true),
           },
         ]
       );
     } else {
-      fillRandomPredictions(true);
+      fillRandomPredictions(fixtureIds, true);
     }
-  }, [getFillRandomConfirm, fillRandomPredictions, t]);
+  }, [getFillRandomConfirm, fillRandomPredictions, filteredFixtures, t]);
 
-  /** Save all changed predictions and show alerts on rejected/error using t(). */
+  /** Save all pending predictions; show alert on error. */
   const handleSaveAllChanged = useCallback(() => {
-    saveAllChangedPredictions()
-      .then((result) => {
-        if (result.rejected != null && result.rejected > 0) {
-          Alert.alert(
-            t("predictions.somePredictionsSkipped"),
-            t("predictions.somePredictionsSkippedMessage", {
-              count: result.rejected,
-            })
-          );
-        }
-      })
-      .catch(() => {
-        Alert.alert(
-          t("predictions.saveFailed"),
-          t("predictions.saveFailedMessage")
-        );
-      });
-  }, [saveAllChangedPredictions, t]);
+    saveAllPending().catch(() => {
+      Alert.alert(
+        t("predictions.saveFailed"),
+        t("predictions.saveFailedMessage")
+      );
+    });
+  }, [saveAllPending, t]);
 
   const predictionModeTyped = predictionMode ?? "CorrectScore";
 
@@ -179,18 +146,14 @@ export function GroupGamesScreen({
   const handleSelectOutcome = React.useCallback(
     (fixtureId: number, outcome: "home" | "draw" | "away") => {
       setOutcomePrediction(fixtureId, outcome);
-      setTimeout(() => handleSaveAllChanged(), 50);
+      setTimeout(() => handleSaveAllChanged(), SAVE_PENDING_DELAY_MS);
     },
     [setOutcomePrediction, handleSaveAllChanged]
   );
 
   /** Stats for footer: last saved time, saved count, total count. */
   const { latestUpdatedAt, savedPredictionsCount, totalPredictionsCount } =
-    usePredictionsStats({
-      fixtures,
-      predictions,
-      savedPredictions,
-    });
+    usePredictionsStats({ fixtures: filteredFixtures });
 
   /** Refs for inputs/cards, scroll ref, focus state, prev/next and scroll-to-card. */
   const {
@@ -250,16 +213,15 @@ export function GroupGamesScreen({
     Keyboard.dismiss();
   }, [handleSaveAllChanged]);
 
-  /** Open single view scrolled to the pressed fixture (index in filtered list). */
+  /** Save pending then navigate to dedicated single game screen. */
   const handlePressCard = useCallback(
     (fixtureId: number) => {
-      const index = filteredFixtures.findIndex((f) => f.id === fixtureId);
-      if (index >= 0) {
-        setSingleViewInitialIndex(index);
-        setViewMode("single");
+      if (groupId != null) {
+        saveAllPending();
+        router.push(`/groups/${groupId}/fixtures/${fixtureId}`);
       }
     },
-    [filteredFixtures]
+    [groupId, router, saveAllPending]
   );
 
   /** Update prediction for a field and optionally move focus to next field. */
@@ -295,60 +257,11 @@ export function GroupGamesScreen({
     );
   }
 
-  const header = (
-    <GroupGamesHeader
-      onBack={() => router.back()}
-      onFillRandom={handleFillRandom}
-    />
-  );
-
   return (
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      {/* Single game view — only mounted when active to avoid ref conflicts. */}
-      <View
-        style={{
-          display: viewMode === "single" ? "flex" : "none",
-          flex: 1,
-        }}
-      >
-        {viewMode === "single" && (
-          <SingleGameView
-            isVisible={viewMode === "single"}
-            groupId={groupId}
-            fixtures={filteredFixtures}
-            predictions={predictions}
-            savedPredictions={savedPredictions}
-            inputRefs={inputRefs}
-            currentFocusedField={currentFocusedField}
-            setCurrentFocusedField={setCurrentFocusedField}
-            onUpdatePrediction={updatePrediction}
-            onUpdateSliderValue={updateSliderValue}
-            initialIndex={singleViewInitialIndex}
-            onBack={() => setViewMode("list")}
-            onFieldFocus={(fixtureId, type) => {
-              handleFieldFocus(fixtureId, type);
-            }}
-            onFieldBlur={handleFieldBlur}
-            getNextFieldIndex={getNextFieldIndex}
-            navigateToField={navigateToField}
-            onSaveAllChanged={handleSaveAllChanged}
-            predictionMode={predictionModeTyped}
-            onSelectOutcome={
-              predictionMode === "MatchWinner" ? handleSelectOutcome : undefined
-            }
-          />
-        )}
-      </View>
-
-      {/* List view — always mounted. */}
-      <View
-        style={{
-          display: viewMode === "list" ? "flex" : "none",
-          flex: 1,
-        }}
-      >
+      <View style={{ flex: 1 }}>
         {hasAnyChips && (
           <SmartFilterChips
             actionChips={actionChips}
@@ -414,15 +327,10 @@ export function GroupGamesScreen({
                         fixture={fixture}
                         index={index}
                         totalInGroup={group.fixtures.length}
-                        prediction={
-                          predictions[String(fixture.id)] || {
-                            home: null,
-                            away: null,
-                          }
-                        }
+                        prediction={getPrediction(fixture.id)}
                         inputRefs={inputRefs}
                         currentFocusedField={currentFocusedField}
-                        savedPredictions={savedPredictions}
+                        isSaved={isPredictionSaved(fixture.id)}
                         matchCardRefs={matchCardRefs}
                         predictionMode={predictionModeTyped}
                         groupName={groupName}
@@ -468,7 +376,10 @@ export function GroupGamesScreen({
           style={[styles.headerOverlay, { top: 0 }]}
           pointerEvents="box-none"
         >
-          {header}
+          <GroupGamesHeader
+            onBack={() => router.back()}
+            onFillRandom={handleFillRandom}
+          />
         </View>
       </View>
     </View>

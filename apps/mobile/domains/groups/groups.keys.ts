@@ -20,6 +20,8 @@ export const groupsKeys = {
   fixtures: (id: number) => [...groupsKeys.details(), id, "fixtures"] as const,
   gamesFilters: (id: number) =>
     [...groupsKeys.details(), id, "games-filters"] as const,
+  pendingPredictions: (groupId: number) =>
+    [...groupsKeys.details(), groupId, "pending-predictions"] as const,
   predictionsOverview: (id: number) =>
     [...groupsKeys.details(), id, "predictions-overview"] as const,
   ranking: (id: number) => [...groupsKeys.details(), id, "ranking"] as const,

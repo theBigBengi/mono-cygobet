@@ -15,6 +15,9 @@ type PredictionsByFixtureId = Record<string, GroupPrediction>;
 /**
  * Encapsulates all prediction state and save logic for group games.
  *
+ * @deprecated Use useGroupPredictions instead, which stores state in React Query
+ * cache so GroupGamesScreen and SingleGameScreen stay in sync.
+ *
  * Responsibilities:
  * - initialize predictions from fixtures coming from the server
  * - track which fixtures are \"saved\"

@@ -27,7 +27,8 @@ type Props = {
   inputRefs: React.MutableRefObject<Record<string, InputRefs>>;
   positionInGroup: PositionInGroup;
   currentFocusedField: FocusedField;
-  savedPredictions: Set<number>;
+  /** When true, prediction is persisted (no pending unsaved change). */
+  isSaved?: boolean;
   cardRef?: React.RefObject<View | null> | undefined;
   onFocus: (type: "home" | "away") => void;
   onBlur?: () => void;
@@ -50,7 +51,7 @@ export function MatchPredictionCardVertical({
   inputRefs,
   positionInGroup,
   currentFocusedField,
-  savedPredictions,
+  isSaved: _isSaved,
   cardRef,
   onFocus,
   onBlur,

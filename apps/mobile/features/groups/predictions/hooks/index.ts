@@ -3,7 +3,8 @@
 
 export { useCardFocusSaving } from "./useCardFocusSaving";
 export { useCountdown } from "./useCountdown";
-export { useGroupGamePredictions } from "./useGroupGamePredictions";
+export { useGroupFixture } from "./useGroupFixture";
+export { useGroupPredictions } from "./useGroupPredictions";
 export { useKeyboardHeight } from "./useKeyboardHeight";
 export { usePredictionNavigation } from "./usePredictionNavigation";
 export { useSmartFilters } from "./useSmartFilters";

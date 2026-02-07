@@ -1,13 +1,8 @@
 import { useMemo } from "react";
 import type { FixtureItem } from "@/types/common";
-import type { GroupPrediction } from "@/features/group-creation/selection/games";
-
-type PredictionsByFixtureId = Record<string, GroupPrediction>;
 
 interface UsePredictionsStatsParams {
   fixtures: FixtureItem[];
-  predictions: PredictionsByFixtureId;
-  savedPredictions: Set<number>;
 }
 
 interface UsePredictionsStatsResult {
@@ -17,20 +12,16 @@ interface UsePredictionsStatsResult {
 }
 
 /**
- * Hook to calculate statistics about predictions:
- * - Latest updated timestamp
- * - Count of saved predictions (with both home and away filled)
+ * Hook to calculate statistics about predictions from fixtures (server/cache).
+ * - Latest updated timestamp from fixture.prediction?.updatedAt
+ * - Count of fixtures that have a saved prediction (fixture.prediction with home/away)
  * - Total count of fixtures
  */
 export function usePredictionsStats({
   fixtures,
-  predictions,
-  savedPredictions,
 }: UsePredictionsStatsParams): UsePredictionsStatsResult {
-  // Calculate the latest updatedAt from all predictions
   const latestUpdatedAt = useMemo<Date | null>(() => {
     if (fixtures.length === 0) return null;
-
     let latest: Date | null = null;
     fixtures.forEach((fixture) => {
       if (fixture.prediction?.updatedAt) {
@@ -40,23 +31,17 @@ export function usePredictionsStats({
         }
       }
     });
-
     return latest;
   }, [fixtures]);
 
-  // Calculate saved predictions count (predictions with both home and away filled and saved)
   const savedPredictionsCount = useMemo(() => {
-    return fixtures.filter((fixture) => {
-      const fixtureIdStr = String(fixture.id);
-      const prediction = predictions[fixtureIdStr];
-      return (
-        prediction &&
-        prediction.home !== null &&
-        prediction.away !== null &&
-        savedPredictions.has(fixture.id)
-      );
-    }).length;
-  }, [fixtures, predictions, savedPredictions]);
+    return fixtures.filter(
+      (fixture) =>
+        fixture.prediction != null &&
+        fixture.prediction.home != null &&
+        fixture.prediction.away != null
+    ).length;
+  }, [fixtures]);
 
   const totalPredictionsCount = fixtures.length;
 
