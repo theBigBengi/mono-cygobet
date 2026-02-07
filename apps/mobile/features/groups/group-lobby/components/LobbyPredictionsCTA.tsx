@@ -7,6 +7,7 @@ import { View, StyleSheet, Pressable } from "react-native";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { formatKickoffDate, formatKickoffTime } from "@/utils/fixture";
+import { LobbyCardSkeleton } from "./LobbyCardSkeleton";
 
 export interface LobbyPredictionsCTANextGame {
   homeTeam: { name: string; imagePath: string | null };
@@ -28,6 +29,7 @@ export function LobbyPredictionsCTA({
   totalFixtures,
   onPress,
   nextGame,
+  isLoading = false,
 }: LobbyPredictionsCTAProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -38,6 +40,10 @@ export function LobbyPredictionsCTA({
   const kickoffLabel = hasNextGame
     ? `${formatKickoffDate(nextGame.kickoffAt)} ${formatKickoffTime(nextGame.kickoffAt)}`
     : "";
+
+  if (isLoading) {
+    return <LobbyCardSkeleton height={200} />;
+  }
 
   return (
     <View style={[styles.wrapper, { backgroundColor: theme.colors.surface }]}>

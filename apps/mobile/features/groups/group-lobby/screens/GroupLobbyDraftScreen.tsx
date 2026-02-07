@@ -1,33 +1,37 @@
 // features/groups/group-lobby/screens/GroupLobbyDraftScreen.tsx
 // Draft state screen for group lobby.
-// Shows editable name, status card, privacy settings, and publish button.
+// Shows editable name, status card, settings-style sections, and publish button.
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable, Switch, TextInput } from "react-native";
+import { View, StyleSheet, Pressable, TextInput } from "react-native";
 import { useRouter } from "expo-router";
-import { Screen, AppText, Card, Divider } from "@/components/ui";
+import { Screen, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import {
+  SettingsSection,
+  SettingsRow,
+  SettingsRowBottomSheet,
+} from "@/features/settings";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import type { ApiGroupItem } from "@repo/types";
 
 const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
+const MIN_SCORE = 1;
+const MAX_SCORE = 10;
+
+type PredictionMode = "result" | "3way";
+type KORoundMode = "90min" | "extraTime" | "penalties";
+
+function clampScore(value: number): number {
+  return Math.min(MAX_SCORE, Math.max(MIN_SCORE, value));
+}
+
 import { GroupLobbyNameHeader } from "../components/GroupLobbyNameHeader";
 import { GroupLobbyStatusCard } from "../components/GroupLobbyStatusCard";
-import { GroupLobbyScoringSection } from "../components/GroupLobbyScoringSection";
-import { GroupLobbyMaxMembersSection } from "../components/GroupLobbyMaxMembersSection";
-import {
-  PredictionModeSelector,
-  type PredictionMode,
-} from "../components/PredictionModeSelector";
-import {
-  KORoundModeSelector,
-  type KORoundMode,
-} from "../components/KORoundModeSelector";
 import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSection";
-import { GroupLobbyPrivacySection } from "../components/GroupLobbyPrivacySection";
-import { GroupLobbyInviteAccessSection } from "../components/GroupLobbyInviteAccessSection";
-import { GroupLobbyMetaSection } from "../components/GroupLobbyMetaSection";
 import { PublishGroupButton } from "../components/PublishGroupButton";
+import { DraftScoringContent } from "../components/DraftScoringContent";
 import { useGroupLobbyState } from "../hooks/useGroupLobbyState";
 import { useGroupLobbyActions } from "../hooks/useGroupLobbyActions";
 import { useGroupDuration } from "../hooks/useGroupDuration";
@@ -61,7 +65,7 @@ interface GroupLobbyDraftScreenProps {
  * Group Lobby Draft Screen
  *
  * Screen component for viewing and managing a group in draft status.
- * Shows editable name, status card, privacy settings, and publish button.
+ * Uses SettingsSection / SettingsRow / SettingsRowPicker pattern.
  */
 export function GroupLobbyDraftScreen({
   group,
@@ -72,8 +76,8 @@ export function GroupLobbyDraftScreen({
 }: GroupLobbyDraftScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
+  const { theme } = useTheme();
 
-  // Manage local state for draft name, description, privacy, and invite access
   const {
     draftName,
     draftDescription,
@@ -90,29 +94,23 @@ export function GroupLobbyDraftScreen({
     group.inviteAccess
   );
 
-  // Manage local state for prediction mode, initialized from group
   const [predictionMode, setPredictionMode] = useState<PredictionMode>(() =>
     group.predictionMode === "MatchWinner" ? "3way" : "result"
   );
 
-  // Manage local state for KO round mode, initialized from group
   const [koRoundMode, setKORoundMode] = useState<KORoundMode>(() => {
     if (group.koRoundMode === "ExtraTime") return "extraTime";
     if (group.koRoundMode === "Penalties") return "penalties";
     return "90min";
   });
 
-  // Manage local state for scoring values, initialized from group
   const [scoringValues, setScoringValues] = useState(() => ({
     onTheNose: group.onTheNosePoints ?? 3,
     goalDifference: group.correctDifferencePoints ?? 2,
     outcome: group.outcomePoints ?? 1,
   }));
 
-  // Manage local state for max members, initialized from group
   const [maxMembers, setMaxMembers] = useState(() => group.maxMembers ?? 50);
-
-  // Manage local state for nudge settings, initialized from group
   const [nudgeEnabled, setNudgeEnabled] = useState(
     () => group.nudgeEnabled ?? true
   );
@@ -120,9 +118,6 @@ export function GroupLobbyDraftScreen({
     () => group.nudgeWindowMinutes ?? 60
   );
 
-  const { theme } = useTheme();
-
-  // Sync state when group changes (e.g. after refresh)
   useEffect(() => {
     setPredictionMode(
       group.predictionMode === "MatchWinner" ? "3way" : "result"
@@ -153,18 +148,14 @@ export function GroupLobbyDraftScreen({
     group.nudgeWindowMinutes,
   ]);
 
-  // Local mutations - tied to this group
   const updateGroupMutation = useUpdateGroupMutation(group.id);
   const publishGroupMutation = usePublishGroupMutation(group.id);
 
-  // Derive fixtures from group.fixtures
   const fixtures = Array.isArray((group as any).fixtures)
     ? ((group as any).fixtures as FixtureItem[])
     : [];
-
   const duration = useGroupDuration(fixtures);
 
-  // Handle publish action
   const { handlePublish } = useGroupLobbyActions(
     publishGroupMutation,
     draftName,
@@ -188,14 +179,31 @@ export function GroupLobbyDraftScreen({
     }
   }, [handlePublish, onPublishStart, onPublishError]);
 
-  // Determine if name/privacy inputs should be editable
   const isEditable =
     !publishGroupMutation.isPending && !updateGroupMutation.isPending;
 
-  // Handler for navigating to view all games
   const handleViewAllGames = () => {
     router.push(`/groups/${group.id}/games` as any);
   };
+
+  const predictionSheetRef =
+    useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const scoringSheetRef =
+    useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const koSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const maxMembersSheetRef =
+    useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+
+  const scoringValueDisplay =
+    predictionMode === "result"
+      ? `${clampScore(scoringValues.onTheNose)} · ${clampScore(scoringValues.goalDifference)} · ${clampScore(scoringValues.outcome)}`
+      : `${clampScore(scoringValues.onTheNose)} · ${clampScore(scoringValues.outcome)}`;
+
+  const durationSubtitle = duration
+    ? duration.durationDays === 0
+      ? t("lobby.gamesCount", { count: fixtures.length })
+      : `${t("lobby.daysCount", { count: duration.durationDays })} · ${t("lobby.gamesCount", { count: fixtures.length })}`
+    : undefined;
 
   return (
     <View style={styles.container}>
@@ -204,7 +212,7 @@ export function GroupLobbyDraftScreen({
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
       >
-        {/* ── Header Area (flat, no card) ── */}
+        {/* Header Area */}
         <GroupLobbyStatusCard status={group.status} isCreator={isCreator} />
         <GroupLobbyNameHeader
           name={draftName}
@@ -212,7 +220,6 @@ export function GroupLobbyDraftScreen({
           editable={isEditable}
           isCreator={isCreator}
         />
-        {/* Description */}
         {isCreator && isEditable ? (
           <TextInput
             style={[
@@ -241,180 +248,244 @@ export function GroupLobbyDraftScreen({
           </AppText>
         ) : null}
 
-        {/* ── Games Section ── */}
-        <AppText variant="subtitle" style={styles.sectionTitle}>
-          {t("lobby.games")}
-        </AppText>
+        {/* GAMES */}
+        <SettingsSection title={t("lobby.games")}>
+          <SettingsRow
+            type="value"
+            icon="time-outline"
+            label={t("lobby.groupDuration")}
+            subtitle={durationSubtitle}
+            value={
+              duration
+                ? `${formatDate(duration.startDate)} – ${formatDate(duration.endDate)}`
+                : t("lobby.addGamesToSeeDuration")
+            }
+            isLast={false}
+          />
+          <SettingsRow
+            type="navigation"
+            icon="list-outline"
+            label={t("lobby.viewAllGames")}
+            subtitle={t("lobby.gamesCount", { count: fixtures.length })}
+            onPress={handleViewAllGames}
+            isLast
+          />
+        </SettingsSection>
         <GroupLobbyFixturesSection
           fixtures={fixtures}
           groupId={group.id}
           onViewAll={handleViewAllGames}
         />
-        {duration ? (
-          <View style={styles.durationBlock}>
-            <AppText
-              variant="body"
-              color="secondary"
-              style={styles.durationLine}
-            >
-              {formatDate(duration.startDate)} – {formatDate(duration.endDate)}
-            </AppText>
-            <AppText
-              variant="caption"
-              color="secondary"
-              style={styles.durationLine}
-            >
-              {duration.durationDays === 0
-                ? t("lobby.gamesCount", { count: fixtures.length })
-                : `${t("lobby.daysCount", { count: duration.durationDays })} · ${t("lobby.gamesCount", { count: fixtures.length })}`}
-            </AppText>
-          </View>
-        ) : (
-          <AppText
-            variant="caption"
-            color="secondary"
-            style={styles.durationBlock}
+
+        {/* PREDICTION RULES — creator only */}
+        {isCreator && (
+          <SettingsSection title={t("lobby.predictionRules")}>
+            <SettingsRowBottomSheet.Row
+              sheetRef={predictionSheetRef}
+              icon="dice-outline"
+              label={t("lobby.predictionMode")}
+              valueDisplay={
+                predictionMode === "result"
+                  ? t("lobby.exactResult")
+                  : t("lobby.matchWinner")
+              }
+              disabled={!isEditable}
+            />
+            <SettingsRowBottomSheet.Row
+              sheetRef={scoringSheetRef}
+              icon="trophy-outline"
+              label={t("lobby.scoring")}
+              valueDisplay={scoringValueDisplay}
+              disabled={!isEditable}
+            />
+            <SettingsRowBottomSheet.Row
+              sheetRef={koSheetRef}
+              icon="flag-outline"
+              label={t("lobby.koRoundMode")}
+              valueDisplay={
+                koRoundMode === "90min"
+                  ? t("lobby.90min")
+                  : koRoundMode === "extraTime"
+                    ? t("lobby.extraTime")
+                    : t("lobby.penalties")
+              }
+              disabled={!isEditable}
+            />
+            <SettingsRowBottomSheet.Row
+              sheetRef={maxMembersSheetRef}
+              icon="people-outline"
+              label={t("lobby.maxMembers")}
+              valueDisplay={String(maxMembers)}
+              disabled={!isEditable}
+              isLast
+            />
+          </SettingsSection>
+        )}
+
+        {/* NOTIFICATIONS — creator only */}
+        {isCreator && (
+          <SettingsSection
+            title={t("groupSettings.notifications" as Parameters<typeof t>[0])}
           >
-            {t("lobby.addGamesToSeeDuration")}
-          </AppText>
-        )}
-
-        {/* ── Rules Card (creator only) ── */}
-        {isCreator && (
-          <>
-            <AppText variant="subtitle" style={styles.sectionTitle}>
-              {t("lobby.predictionRules")}
-            </AppText>
-            <Card style={styles.card}>
-              <PredictionModeSelector
-                value={predictionMode}
-                onChange={setPredictionMode}
-                disabled={!isEditable}
-                noCard
-              />
-              <Divider />
-              <GroupLobbyScoringSection
-                initialOnTheNose={scoringValues.onTheNose}
-                initialGoalDifference={scoringValues.goalDifference}
-                initialOutcome={scoringValues.outcome}
-                predictionMode={predictionMode}
-                onChange={(values) => setScoringValues(values)}
-                disabled={!isEditable}
-                noCard
-              />
-              <Divider />
-              <KORoundModeSelector
-                value={koRoundMode}
-                onChange={setKORoundMode}
-                disabled={!isEditable}
-                noCard
-              />
-              <Divider />
-              <GroupLobbyMaxMembersSection
-                initialMaxMembers={maxMembers}
-                onChange={setMaxMembers}
-                disabled={!isEditable}
-                noCard
-              />
-            </Card>
-          </>
-        )}
-
-        {/* ── Settings Card (creator only) ── */}
-        {isCreator && (
-          <>
-            <AppText variant="subtitle" style={styles.sectionTitle}>
-              {t("lobby.settings")}
-            </AppText>
-            <Card style={styles.card}>
-              <View style={styles.nudgeRow}>
-                <AppText variant="body" style={styles.nudgeLabel}>
-                  {t("lobby.nudgeDescription")}
-                </AppText>
-                <Switch
-                  value={nudgeEnabled}
-                  onValueChange={setNudgeEnabled}
-                  disabled={!isEditable}
-                  trackColor={{
-                    false: theme.colors.border,
-                    true: theme.colors.primary,
-                  }}
-                  thumbColor={
-                    nudgeEnabled
-                      ? theme.colors.primaryText
-                      : theme.colors.surface
-                  }
-                />
-              </View>
-              {nudgeEnabled && (
+            <SettingsRow
+              type="toggle"
+              icon="notifications-outline"
+              label={t("lobby.nudge")}
+              subtitle={t("lobby.nudgeDescription")}
+              value={nudgeEnabled}
+              onValueChange={setNudgeEnabled}
+              disabled={!isEditable}
+              isLast={!nudgeEnabled}
+            />
+            {nudgeEnabled && (
+              <View
+                style={[
+                  styles.nudgeWindowContainer,
+                  { paddingHorizontal: theme.spacing.md },
+                ]}
+              >
                 <View style={styles.nudgeWindowRow}>
                   <AppText variant="body" style={styles.nudgeLabel}>
                     {t("lobby.minutesBeforeKickoff")}
                   </AppText>
-                  <View style={styles.nudgeWindowChips}>
-                    {NUDGE_WINDOW_OPTIONS.map((min) => (
-                      <Pressable
-                        key={min}
-                        onPress={() => setNudgeWindowMinutes(min)}
-                        disabled={!isEditable}
-                        style={[
-                          styles.nudgeWindowChip,
-                          {
-                            backgroundColor:
-                              nudgeWindowMinutes === min
-                                ? theme.colors.primary
-                                : theme.colors.surface,
-                            borderColor: theme.colors.border,
-                          },
-                        ]}
-                      >
-                        <AppText
-                          variant="body"
-                          style={{
-                            color:
-                              nudgeWindowMinutes === min
-                                ? theme.colors.primaryText
-                                : theme.colors.textPrimary,
-                          }}
-                        >
-                          {min}
-                        </AppText>
-                      </Pressable>
-                    ))}
-                  </View>
                 </View>
-              )}
-              <Divider />
-              <GroupLobbyPrivacySection
-                privacy={draftPrivacy}
-                onChange={setDraftPrivacy}
-                disabled={!isEditable}
-                isCreator={isCreator}
-                status={group.status}
-                noCard
-              />
-              {draftPrivacy === "private" && (
-                <>
-                  <Divider />
-                  <GroupLobbyInviteAccessSection
-                    inviteAccess={draftInviteAccess}
-                    onChange={setDraftInviteAccess}
-                    disabled={!isEditable}
-                    isCreator={isCreator}
-                    status={group.status}
-                    noCard
-                  />
-                </>
-              )}
-            </Card>
-          </>
+                <View style={styles.nudgeWindowChips}>
+                  {NUDGE_WINDOW_OPTIONS.map((min) => (
+                    <Pressable
+                      key={min}
+                      onPress={() => setNudgeWindowMinutes(min)}
+                      disabled={!isEditable}
+                      style={[
+                        styles.nudgeWindowChip,
+                        {
+                          backgroundColor:
+                            nudgeWindowMinutes === min
+                              ? theme.colors.primary
+                              : theme.colors.surface,
+                          borderColor: theme.colors.border,
+                        },
+                      ]}
+                    >
+                      <AppText
+                        variant="body"
+                        style={{
+                          color:
+                            nudgeWindowMinutes === min
+                              ? theme.colors.primaryText
+                              : theme.colors.textPrimary,
+                        }}
+                      >
+                        {min}
+                      </AppText>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+          </SettingsSection>
         )}
 
-        {/* ── Meta Card ── */}
-        <GroupLobbyMetaSection createdAt={group.createdAt} />
+        {/* PRIVACY — creator only */}
+        {isCreator && (
+          <SettingsSection title={t("lobby.privacyAndInvite")}>
+            <SettingsRow
+              type="toggle"
+              icon="lock-closed-outline"
+              label={t("lobby.private")}
+              subtitle={
+                draftPrivacy === "private"
+                  ? t("lobby.privateDescription")
+                  : t("lobby.publicDescription")
+              }
+              value={draftPrivacy === "private"}
+              onValueChange={(v) => setDraftPrivacy(v ? "private" : "public")}
+              disabled={!isEditable}
+              isLast={draftPrivacy !== "private"}
+            />
+            {draftPrivacy === "private" && (
+              <SettingsRow
+                type="toggle"
+                icon="link-outline"
+                label={t("lobby.inviteSharing")}
+                subtitle={
+                  draftInviteAccess === "all"
+                    ? t("lobby.allMembersCanShare")
+                    : t("lobby.onlyAdminsCanShare")
+                }
+                value={draftInviteAccess === "all"}
+                onValueChange={(v) =>
+                  setDraftInviteAccess(v ? "all" : "admin_only")
+                }
+                disabled={!isEditable}
+                isLast
+              />
+            )}
+          </SettingsSection>
+        )}
+
+        {/* INFO */}
+        <SettingsSection title={t("lobby.info")}>
+          <SettingsRow
+            type="value"
+            icon="information-circle-outline"
+            label={t("lobby.created")}
+            value={formatDate(group.createdAt)}
+            isLast
+          />
+        </SettingsSection>
       </Screen>
 
-      {/* Floating Publish Button */}
+      {isCreator && (
+        <>
+          <SettingsRowBottomSheet.Sheet<PredictionMode>
+            sheetRef={predictionSheetRef}
+            title={t("lobby.predictionMode")}
+            options={[
+              { value: "result", label: t("lobby.exactResult") },
+              { value: "3way", label: t("lobby.matchWinner") },
+            ]}
+            value={predictionMode}
+            onValueChange={setPredictionMode}
+          />
+          <SettingsRowBottomSheet.Sheet
+            sheetRef={scoringSheetRef}
+            title={t("lobby.scoring")}
+            children={
+              <DraftScoringContent
+                values={scoringValues}
+                predictionMode={predictionMode}
+                onChange={setScoringValues}
+                disabled={!isEditable}
+              />
+            }
+          />
+          <SettingsRowBottomSheet.Sheet<KORoundMode>
+            sheetRef={koSheetRef}
+            title={t("lobby.koRoundMode")}
+            options={[
+              { value: "90min", label: t("lobby.90min") },
+              { value: "extraTime", label: t("lobby.extraTime") },
+              { value: "penalties", label: t("lobby.penalties") },
+            ]}
+            value={koRoundMode}
+            onValueChange={setKORoundMode}
+          />
+          <SettingsRowBottomSheet.Sheet
+            sheetRef={maxMembersSheetRef}
+            title={t("lobby.maxMembers")}
+            options={[
+              { value: "10", label: "10" },
+              { value: "20", label: "20" },
+              { value: "30", label: "30" },
+              { value: "50", label: "50" },
+              { value: "100", label: "100" },
+            ]}
+            value={String(maxMembers)}
+            onValueChange={(v) => setMaxMembers(Number(v))}
+          />
+        </>
+      )}
+
       {isCreator && (
         <PublishGroupButton
           onPress={handlePublishWithOverlay}
@@ -431,7 +502,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   screenContent: {
-    paddingBottom: 100, // Space for floating button
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 100,
   },
   descriptionInput: {
     minHeight: 72,
@@ -446,41 +519,23 @@ const styles = StyleSheet.create({
   descriptionText: {
     marginBottom: 24,
   },
-  sectionTitle: {
-    fontWeight: "600",
-    marginTop: 24,
-    marginBottom: 8,
-  },
-  card: {
-    marginBottom: 16,
-  },
-  durationBlock: {
-    marginBottom: 8,
-  },
-  durationLine: {
-    marginBottom: 4,
-  },
-  nudgeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  nudgeLabel: {
-    flex: 1,
-    marginEnd: 16,
+  nudgeWindowContainer: {
+    paddingVertical: 12,
   },
   nudgeWindowRow: {
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  nudgeLabel: {
+    fontWeight: "500",
   },
   nudgeWindowChips: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginTop: 8,
+    paddingBottom: 8,
   },
   nudgeWindowChip: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,

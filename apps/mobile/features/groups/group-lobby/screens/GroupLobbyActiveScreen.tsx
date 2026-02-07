@@ -70,6 +70,7 @@ export function GroupLobbyActiveScreen({
         }
       : null;
 
+  const fixturesLoaded = fixtures.length > 0 || totalFixtures === 0;
   const ranking = rankingData?.data ?? [];
 
   const handleViewGames = () => {
@@ -134,6 +135,7 @@ export function GroupLobbyActiveScreen({
           totalFixtures={totalFixtures}
           onPress={handleViewGames}
           nextGame={nextGameForCTA}
+          isLoading={!fixturesLoaded}
         />
 
         <LobbyQuickActions actions={quickActions} />
