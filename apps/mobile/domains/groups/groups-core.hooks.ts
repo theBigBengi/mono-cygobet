@@ -1,5 +1,5 @@
-// domains/groups/groups.hooks.ts
-// React Query hooks for groups domain.
+// domains/groups/groups-core.hooks.ts
+// React Query hooks for core group operations (CRUD, listing, fixtures).
 // - Feature-agnostic: can be used by any feature that needs groups data.
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,14 +14,6 @@ import type {
   ApiPublicGroupsResponse,
   ApiGroupFixturesResponse,
   ApiGroupGamesFiltersResponse,
-  ApiSaveGroupPredictionsBatchBody,
-  ApiSaveGroupPredictionsBatchResponse,
-  ApiPredictionsOverviewResponse,
-  ApiRankingResponse,
-  ApiGroupMembersResponse,
-  ApiInviteCodeResponse,
-  ApiNudgeBody,
-  ApiNudgeResponse,
   ApiGroupPreviewBody,
   ApiGroupPreviewResponse,
 } from "@repo/types";
@@ -35,21 +27,11 @@ import {
   fetchGroupById,
   updateGroup,
   publishGroup,
+  deleteGroup,
   fetchGroupFixtures,
   fetchGroupGamesFilters,
-  saveGroupPrediction,
-  saveGroupPredictionsBatch,
-  deleteGroup,
-  fetchPredictionsOverview,
-  fetchGroupRanking,
-  fetchGroupMembers,
-  sendNudge,
-  joinGroupByCode,
-  joinPublicGroup,
-  fetchInviteCode,
-  regenerateInviteCode,
   fetchGroupPreview,
-} from "./groups.api";
+} from "./groups-core.api";
 import { groupsKeys } from "./groups.keys";
 
 /**
@@ -246,66 +228,6 @@ export function useGroupFixturesQuery(groupId: number | null) {
 }
 
 /**
- * Hook to save or update a group prediction.
- * - Requires authentication.
- * - Invalidates group fixtures query on success to refetch with updated predictions.
- */
-export function useSaveGroupPredictionMutation(groupId: number | null) {
-  const queryClient = useQueryClient();
-
-  return useMutation<
-    { status: "success"; message: string },
-    ApiError,
-    { fixtureId: number; prediction: { home: number; away: number } }
-  >({
-    mutationFn: ({ fixtureId, prediction }) => {
-      if (!groupId) {
-        throw new Error("Group ID is required");
-      }
-      return saveGroupPrediction(groupId, fixtureId, prediction);
-    },
-    onSuccess: () => {
-      // Invalidate group fixtures to refetch with updated predictions
-      if (groupId) {
-        queryClient.invalidateQueries({
-          queryKey: groupsKeys.fixtures(groupId),
-        });
-      }
-    },
-  });
-}
-
-/**
- * Hook to save or update multiple group predictions in a batch.
- * - Requires authentication.
- * - Invalidates group fixtures query on success to refetch with updated predictions.
- */
-export function useSaveGroupPredictionsBatchMutation(groupId: number | null) {
-  const queryClient = useQueryClient();
-
-  return useMutation<
-    ApiSaveGroupPredictionsBatchResponse,
-    ApiError,
-    ApiSaveGroupPredictionsBatchBody
-  >({
-    mutationFn: (body) => {
-      if (!groupId) {
-        throw new Error("Group ID is required");
-      }
-      return saveGroupPredictionsBatch(groupId, body);
-    },
-    onSuccess: () => {
-      // Invalidate group fixtures to refetch with updated predictions
-      if (groupId) {
-        queryClient.invalidateQueries({
-          queryKey: groupsKeys.fixtures(groupId),
-        });
-      }
-    },
-  });
-}
-
-/**
  * Hook to delete a group.
  * - Requires authentication.
  * - Verifies that the user is the creator.
@@ -377,185 +299,6 @@ export function useDeleteGroupMutation(groupId: number | null) {
         });
       }
       queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
-    },
-  });
-}
-
-/**
- * Hook to fetch predictions overview for a group.
- * - Enabled only when authenticated and onboarding complete and groupId is valid.
- * - Returns predictions overview data with loading/error states.
- */
-export function usePredictionsOverviewQuery(groupId: number | null) {
-  const { status, user } = useAuth();
-
-  const enabled =
-    isReadyForProtected(status, user) &&
-    groupId !== null &&
-    !Number.isNaN(groupId);
-
-  return useQuery<ApiPredictionsOverviewResponse, ApiError>({
-    queryKey: groupsKeys.predictionsOverview(groupId ?? 0),
-    queryFn: () => fetchPredictionsOverview(groupId as number),
-    enabled,
-    meta: { scope: "user" },
-  });
-}
-
-/**
- * Hook to fetch group ranking.
- * - Enabled only when authenticated and onboarding complete and groupId is valid.
- */
-export function useGroupRankingQuery(groupId: number | null) {
-  const { status, user } = useAuth();
-
-  const enabled =
-    isReadyForProtected(status, user) &&
-    groupId != null &&
-    !Number.isNaN(groupId);
-
-  return useQuery<ApiRankingResponse, ApiError>({
-    queryKey: groupsKeys.ranking(groupId ?? 0),
-    queryFn: () => fetchGroupRanking(groupId as number),
-    enabled,
-    meta: { scope: "user" },
-  });
-}
-
-/**
- * Hook to send a nudge to a group member for a fixture.
- * - Requires authentication.
- * - Invalidates ranking query on success.
- */
-export function useNudgeMutation(groupId: number | null) {
-  const queryClient = useQueryClient();
-
-  return useMutation<ApiNudgeResponse, ApiError, ApiNudgeBody>({
-    mutationFn: (body) => {
-      if (!groupId) {
-        throw new Error("Group ID is required");
-      }
-      return sendNudge(groupId, body);
-    },
-    onSuccess: () => {
-      if (groupId) {
-        queryClient.invalidateQueries({
-          queryKey: groupsKeys.ranking(groupId),
-        });
-        queryClient.invalidateQueries({
-          queryKey: groupsKeys.detail(groupId),
-        });
-      }
-    },
-  });
-}
-
-/**
- * Hook to fetch group members.
- * - Enabled only when authenticated and onboarding complete and groupId is valid.
- */
-export function useGroupMembersQuery(groupId: number | null) {
-  const { status, user } = useAuth();
-
-  const enabled =
-    isReadyForProtected(status, user) &&
-    groupId != null &&
-    !Number.isNaN(groupId);
-
-  return useQuery<ApiGroupMembersResponse, ApiError>({
-    queryKey: groupsKeys.members(groupId ?? 0),
-    queryFn: () => fetchGroupMembers(groupId as number),
-    enabled,
-    meta: { scope: "user" },
-  });
-}
-
-/**
- * Hook to fetch invite code for a group (creator only).
- * - Enabled only when authenticated and onboarding complete and groupId is valid.
- */
-export function useInviteCodeQuery(groupId: number | null) {
-  const { status, user } = useAuth();
-
-  const enabled =
-    isReadyForProtected(status, user) &&
-    groupId != null &&
-    !Number.isNaN(groupId);
-
-  return useQuery<ApiInviteCodeResponse, ApiError>({
-    queryKey: groupsKeys.inviteCode(groupId ?? 0),
-    queryFn: () => fetchInviteCode(groupId as number),
-    enabled,
-    meta: { scope: "user" },
-  });
-}
-
-/**
- * Hook to join a group by invite code.
- * - Requires authentication.
- * - Invalidates groups list on success.
- */
-export function useJoinGroupByCodeMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation<ApiGroupResponse, ApiError, string>({
-    mutationFn: (code) => joinGroupByCode(code),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
-    },
-  });
-}
-
-/**
- * Hook to join a public group by ID.
- * - Requires authentication.
- * - Invalidates groups list and group detail on success.
- */
-export function useJoinPublicGroupMutation(groupId: number | null) {
-  const queryClient = useQueryClient();
-
-  return useMutation<ApiGroupResponse, ApiError, void>({
-    mutationFn: () => {
-      if (!groupId) {
-        throw new Error("Group ID is required");
-      }
-      return joinPublicGroup(groupId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
-      if (groupId) {
-        queryClient.invalidateQueries({
-          queryKey: groupsKeys.detail(groupId),
-        });
-      }
-      queryClient.invalidateQueries({
-        queryKey: [...groupsKeys.all, "public"],
-      });
-    },
-  });
-}
-
-/**
- * Hook to regenerate invite code for a group (creator only).
- * - Requires authentication.
- * - Invalidates invite code query on success.
- */
-export function useRegenerateInviteCodeMutation(groupId: number | null) {
-  const queryClient = useQueryClient();
-
-  return useMutation<ApiInviteCodeResponse, ApiError, void>({
-    mutationFn: () => {
-      if (!groupId) {
-        throw new Error("Group ID is required");
-      }
-      return regenerateInviteCode(groupId);
-    },
-    onSuccess: () => {
-      if (groupId) {
-        queryClient.invalidateQueries({
-          queryKey: groupsKeys.inviteCode(groupId),
-        });
-      }
     },
   });
 }

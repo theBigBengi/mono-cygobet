@@ -32,7 +32,7 @@ import {
   useClearSelectedTeamsHook,
 } from "@/features/group-creation/selection/teams";
 import { useCreateGroupMutation } from "@/domains/groups";
-import { publishGroup } from "@/domains/groups/groups.api";
+import { publishGroup } from "@/domains/groups/groups-core.api";
 import {
   CreateGroupModalFixturesView,
   CreateGroupModalLeaguesView,

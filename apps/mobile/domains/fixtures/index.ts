@@ -3,15 +3,11 @@
 
 export {
   useUpcomingFixturesQuery,
-  useDummyFixturesMutation,
+  useMyPredictionsForFixture,
 } from "./fixtures.hooks";
 export { useFixtureDetailQuery } from "./fixture-detail.hooks";
-export {
-  useMyPredictionsForFixture,
-  fetchMyPredictionsForFixture,
-} from "./my-predictions";
 export { fixturesKeys } from "./fixtures.keys";
-export { fetchUpcomingFixtures } from "./fixtures.api";
+export { fetchUpcomingFixtures, fetchMyPredictionsForFixture } from "./fixtures.api";
 export { fetchFixtureDetail } from "./fixture-detail.api";
 export type {
   ApiUpcomingFixturesQuery,

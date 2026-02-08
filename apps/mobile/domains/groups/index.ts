@@ -1,6 +1,7 @@
 // domains/groups/index.ts
 // Public exports for groups domain.
 
+// --- Core (CRUD, listing, fixtures) ---
 export {
   useMyGroupsQuery,
   usePublicGroupsQuery,
@@ -10,26 +11,9 @@ export {
   useUpdateGroupMutation,
   usePublishGroupMutation,
   useGroupFixturesQuery,
-  useSaveGroupPredictionMutation,
-  useSaveGroupPredictionsBatchMutation,
   useDeleteGroupMutation,
-  usePredictionsOverviewQuery,
-  useGroupRankingQuery,
-  useNudgeMutation,
-  useGroupMembersQuery,
-  useInviteCodeQuery,
-  useJoinGroupByCodeMutation,
-  useJoinPublicGroupMutation,
-  useRegenerateInviteCodeMutation,
   useGroupPreviewQuery,
-} from "./groups.hooks";
-export {
-  useGroupMessagesQuery,
-  useUnreadCountsQuery,
-  useGroupChatPreviewQuery,
-  useGroupChat,
-} from "./groups-chat.hooks";
-export { groupsKeys } from "./groups.keys";
+} from "./groups-core.hooks";
 export {
   createGroup,
   fetchMyGroups,
@@ -37,17 +21,54 @@ export {
   fetchGroupById,
   fetchGroupFixtures,
   fetchGroupGamesFilters,
+  fetchGroupPreview,
+} from "./groups-core.api";
+
+// --- Predictions ---
+export {
+  useSaveGroupPredictionMutation,
+  useSaveGroupPredictionsBatchMutation,
+  usePredictionsOverviewQuery,
+} from "./groups-predictions.hooks";
+
+// --- Members & Ranking ---
+export {
+  useGroupRankingQuery,
+  useNudgeMutation,
+  useGroupMembersQuery,
+} from "./groups-members.hooks";
+
+// --- Invite & Join ---
+export {
+  useInviteCodeQuery,
+  useJoinGroupByCodeMutation,
+  useJoinPublicGroupMutation,
+  useRegenerateInviteCodeMutation,
+} from "./groups-invite.hooks";
+export {
   joinGroupByCode,
   joinPublicGroup,
   fetchInviteCode,
   regenerateInviteCode,
-  fetchGroupPreview,
-} from "./groups.api";
+} from "./groups-invite.api";
+
+// --- Chat ---
+export {
+  useGroupMessagesQuery,
+  useUnreadCountsQuery,
+  useGroupChatPreviewQuery,
+  useGroupChat,
+} from "./groups-chat.hooks";
 export {
   fetchGroupMessages,
   fetchUnreadCounts,
   fetchGroupChatPreview,
 } from "./groups-chat.api";
+
+// --- Keys ---
+export { groupsKeys } from "./groups.keys";
+
+// --- Types (re-exported from @repo/types) ---
 export type {
   ApiCreateGroupBody,
   ApiGroupItem,

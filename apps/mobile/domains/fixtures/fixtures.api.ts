@@ -6,6 +6,7 @@
 import type {
   ApiFixturesListResponse,
   ApiUpcomingFixturesQuery,
+  ApiMyPredictionsForFixtureResponse,
 } from "@repo/types";
 import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
 import { buildQuery } from "@/lib/http/queryBuilder";
@@ -43,6 +44,19 @@ export async function fetchUpcomingFixtures(
 
   return apiFetchWithAuthRetry<ApiFixturesListResponse>(
     `/api/fixtures/upcoming${queryString}`,
+    { method: "GET" }
+  );
+}
+
+/**
+ * Fetch current user's predictions for a fixture (all joined groups).
+ * - Requires auth + onboarding complete.
+ */
+export async function fetchMyPredictionsForFixture(
+  fixtureId: number
+): Promise<ApiMyPredictionsForFixtureResponse> {
+  return apiFetchWithAuthRetry<ApiMyPredictionsForFixtureResponse>(
+    `/api/fixtures/${fixtureId}/my-predictions`,
     { method: "GET" }
   );
 }

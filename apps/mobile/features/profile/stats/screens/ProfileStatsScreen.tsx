@@ -9,9 +9,8 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, Button } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { useUserStatsQuery, useProfileQuery } from "../../profile.queries";
+import { useUserStatsQuery, useProfileQuery, useGamificationQuery } from "@/domains/profile";
 import {
-  useGamificationQuery,
   PowerScoreCard,
   RankTierBadge,
   SkillRadarChart,

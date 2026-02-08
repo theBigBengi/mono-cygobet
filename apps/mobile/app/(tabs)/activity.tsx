@@ -13,7 +13,7 @@ import { useTheme } from "@/lib/theme";
 import { useActivityFeedQuery } from "@/domains/activity";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { ActivityCard } from "@/features/activity/components/ActivityCard";
+import { ActivityCard } from "@/features/activity";
 import type { ApiActivityFeedItem } from "@repo/types";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 

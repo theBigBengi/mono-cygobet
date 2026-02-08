@@ -14,6 +14,7 @@ import {
   type SelectionMode,
 } from "../components";
 import { currentSelectionModeAtom } from "../selection/mode.atom";
+import { useTabBarBadgeSync } from "../hooks/useTabBarBadgeSync";
 
 export function CreateGroupScreen() {
   const { theme } = useTheme();
@@ -24,6 +25,9 @@ export function CreateGroupScreen() {
   useEffect(() => {
     setGlobalMode(mode);
   }, [mode, setGlobalMode]);
+
+  // Keep the tab bar badge in sync with selection state
+  useTabBarBadgeSync();
 
   const handleModeChange = (newMode: SelectionMode) => {
     setMode(newMode);

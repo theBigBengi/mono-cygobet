@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { useUpdateProfileMutation } from "../profile.mutations";
+import { useUpdateProfileMutation } from "@/domains/profile";
 
 interface EditProfileModalProps {
   visible: boolean;
