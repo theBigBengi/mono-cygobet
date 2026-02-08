@@ -21,8 +21,10 @@ function getAdminCookieSameSite(): "lax" | "none" | "strict" {
   const v = (process.env.ADMIN_COOKIE_SAMESITE ?? "").trim().toLowerCase();
   if (v === "none") return "none";
   if (v === "strict") return "strict";
-  // Always use "none" for cross-origin admin authentication
-  return "none";
+  if (v === "lax") return "lax";
+  // Default to "lax" — safe against CSRF while allowing normal navigation.
+  // Set ADMIN_COOKIE_SAMESITE=none explicitly for cross-origin admin auth.
+  return "lax";
 }
 
 function getAdminCookieSecure(sameSite: "lax" | "none" | "strict"): boolean {

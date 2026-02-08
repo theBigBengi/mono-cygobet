@@ -63,6 +63,9 @@ const app: FastifyPluginAsync<AppOptions> = async (
     // Register JWT for user auth (access tokens)
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("JWT_SECRET is required in production");
+      }
       log.warn("JWT_SECRET not set - user auth will not work");
     } else {
       await fastify.register(fastifyJwt, {
