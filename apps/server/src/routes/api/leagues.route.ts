@@ -8,6 +8,7 @@ import {
   leaguesQuerystringSchema,
   leaguesResponseSchema,
 } from "../../schemas/api";
+import { BadRequestError } from "../../utils/errors";
 
 const leaguesRoutes: FastifyPluginAsync = async (fastify) => {
   /**
@@ -31,7 +32,7 @@ const leaguesRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply) => {
-      const q = req.query as ApiLeaguesQuery;
+      const q = req.query;
       const page = Math.max(1, Number(q.page ?? 1));
       const perPage = Math.max(1, Math.min(100, Number(q.perPage ?? 20)));
 
@@ -56,10 +57,7 @@ const leaguesRoutes: FastifyPluginAsync = async (fastify) => {
 
       // Validate: preset and search cannot be used together
       if (preset && search) {
-        return reply.status(400).send({
-          status: "error",
-          message: "Cannot use both 'preset' and 'search' parameters together.",
-        } as any);
+        throw new BadRequestError("Cannot use both 'preset' and 'search' parameters together.");
       }
 
       const result = await getLeagues({
