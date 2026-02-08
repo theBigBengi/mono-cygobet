@@ -1,4 +1,5 @@
 import AutoLoad, { AutoloadPluginOptions } from "@fastify/autoload";
+import fastifyCompress from "@fastify/compress";
 import fastifyEnv from "@fastify/env";
 import fastifyCookie from "@fastify/cookie";
 import fastifyCors from "@fastify/cors";
@@ -132,7 +133,9 @@ const app: FastifyPluginAsync<AppOptions> = async (
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Client"],
     });
 
-    // app.ts (after registering core plugins, before routes)
+    // Compress responses (gzip/brotli) — only payloads > 1 KB
+    await fastify.register(fastifyCompress, { threshold: 1024 });
+
     fastify.setReplySerializer((payload) => {
       // Keep strings as-is (Fastify may already give a string)
       if (typeof payload === "string") return payload;
