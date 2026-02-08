@@ -198,9 +198,13 @@ export interface Batch {
   triggeredBy: string | null;
   startedAt: string;
   finishedAt: string | null;
+  /** Duration in milliseconds (optional, may be computed client-side) */
+  durationMs?: number | null;
   itemsTotal: number;
   itemsSuccess: number;
   itemsFailed: number;
+  errorMessage?: string | null;
+  errorStack?: string | null;
   /** Optional context (e.g. season name, league) for display */
   meta?: Record<string, unknown> | null;
 }
