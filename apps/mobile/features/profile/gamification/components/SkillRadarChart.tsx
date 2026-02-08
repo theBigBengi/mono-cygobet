@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   skillsContainer: {
     gap: 12,
