@@ -226,7 +226,7 @@ function ItemsSection({ batch }: { batch: Batch }) {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[120px] sm:w-[140px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -243,7 +243,7 @@ function ItemsSection({ batch }: { batch: Batch }) {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[120px] sm:w-[140px]">
               <SelectValue placeholder="Action" />
             </SelectTrigger>
             <SelectContent>
@@ -256,13 +256,13 @@ function ItemsSection({ batch }: { batch: Batch }) {
           </Select>
         </div>
         <div className="overflow-x-auto border rounded-md">
-          <Table className="min-w-[500px]">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Entity</TableHead>
                 <TableHead>Action</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead className="hidden sm:table-cell">Changes</TableHead>
+                <TableHead className="hidden md:table-cell">Reason</TableHead>
+                <TableHead className="hidden lg:table-cell">Changes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -283,10 +283,10 @@ function ItemsSection({ batch }: { batch: Batch }) {
                     <TableCell className="whitespace-nowrap">
                       <StatusBadge status={getActionLabel(item)} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-xs max-w-[200px] truncate">
+                    <TableCell className="hidden md:table-cell text-muted-foreground text-xs max-w-[200px] truncate">
                       {reason}
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell text-muted-foreground text-xs max-w-[280px] truncate">
+                    <TableCell className="hidden lg:table-cell text-muted-foreground text-xs max-w-[280px] truncate">
                       {changes}
                     </TableCell>
                   </TableRow>
@@ -308,8 +308,11 @@ function ItemsSection({ batch }: { batch: Batch }) {
         {pagination && pagination.totalPages > 1 && (
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              Page {pagination.page} of {pagination.totalPages} (
-              {pagination.totalItems} items)
+              {pagination.page}/{pagination.totalPages}
+              <span className="hidden sm:inline">
+                {" "}
+                ({pagination.totalItems})
+              </span>
             </span>
             <div className="flex gap-2">
               <Button
