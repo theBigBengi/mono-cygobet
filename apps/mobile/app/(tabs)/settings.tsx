@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Constants from "expo-constants";
 
 import { Screen, AppText } from "@/components/ui";
+import { ErrorBoundary, useErrorHandler } from "@/components/ErrorBoundary";
 import { useTheme } from "@/lib/theme";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -22,6 +23,14 @@ import type { Locale } from "@/lib/i18n/i18n.types";
 const APP_VERSION = Constants.expoConfig?.version ?? "1.0.0";
 
 export default function SettingsScreen() {
+  return (
+    <ErrorBoundary feature="settings">
+      <SettingsContent />
+    </ErrorBoundary>
+  );
+}
+
+function SettingsContent() {
   const { t } = useTranslation("common");
   const { theme, mode, setMode } = useTheme();
   const { locale, setLocale } = useI18n();
@@ -29,6 +38,7 @@ export default function SettingsScreen() {
   const { hapticsEnabled, toggleHaptics } = useSettings();
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { handleError } = useErrorHandler();
 
   const themeModeOptions: { value: ThemeMode; label: string }[] = [
     { value: "system", label: t("settings.themeSystem") },
@@ -144,6 +154,23 @@ export default function SettingsScreen() {
             isLast
           />
         </SettingsSection>
+
+        {/* Debug Section - DEV only */}
+        {__DEV__ && (
+          <SettingsSection title="Debug">
+            <SettingsRow
+              type="navigation"
+              icon="bug-outline"
+              label="Test Sentry Error"
+              subtitle="Triggers ErrorBoundary fallback"
+              onPress={() => {
+                const timestamp = new Date().toLocaleTimeString("he-IL");
+                handleError(new Error(`Test Sentry Error from Settings [${timestamp}]`));
+              }}
+              isLast
+            />
+          </SettingsSection>
+        )}
 
         {/* About Section */}
         <SettingsSection title={t("settings.about")}>

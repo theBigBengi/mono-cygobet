@@ -4,6 +4,7 @@
 import React from "react";
 import { Pressable, StyleSheet } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenWithHeader } from "@/components/ui";
@@ -54,6 +55,14 @@ const styles = StyleSheet.create({
 });
 
 export default function GroupRankingRoute() {
+  return (
+    <ErrorBoundary feature="group-ranking">
+      <RankingContent />
+    </ErrorBoundary>
+  );
+}
+
+function RankingContent() {
   const params = useLocalSearchParams<{ id: string }>();
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;

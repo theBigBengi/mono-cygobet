@@ -5,6 +5,7 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { ProfileStatsScreen } from "@/features/profile/stats/screens/ProfileStatsScreen";
 import { useAuth } from "@/lib/auth/useAuth";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function ProfileScreen() {
   const { user } = useAuth();
@@ -14,9 +15,11 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.root}>
-      <ProfileStatsScreen userId={user.id} />
-    </View>
+    <ErrorBoundary feature="profile">
+      <View style={styles.root}>
+        <ProfileStatsScreen userId={user.id} />
+      </View>
+    </ErrorBoundary>
   );
 }
 

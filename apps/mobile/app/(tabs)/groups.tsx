@@ -27,8 +27,17 @@ import {
 } from "@/features/groups/group-list/hooks";
 import type { ApiGroupItem } from "@repo/types";
 import { Ionicons } from "@expo/vector-icons";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function GroupsScreen() {
+  return (
+    <ErrorBoundary feature="groups-list">
+      <GroupsContent />
+    </ErrorBoundary>
+  );
+}
+
+function GroupsContent() {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();

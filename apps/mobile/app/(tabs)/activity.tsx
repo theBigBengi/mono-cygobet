@@ -15,8 +15,17 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { ActivityCard } from "@/features/activity/components/ActivityCard";
 import type { ApiActivityFeedItem } from "@repo/types";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function ActivityTabScreen() {
+  return (
+    <ErrorBoundary feature="activity">
+      <ActivityContent />
+    </ErrorBoundary>
+  );
+}
+
+function ActivityContent() {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -73,7 +82,9 @@ export default function ActivityTabScreen() {
             refreshing={isRefetching}
             onRefresh={handleRefresh}
             tintColor={theme.colors.primary}
-            colors={Platform.OS === "android" ? [theme.colors.primary] : undefined}
+            colors={
+              Platform.OS === "android" ? [theme.colors.primary] : undefined
+            }
           />
         }
         onEndReached={() => {

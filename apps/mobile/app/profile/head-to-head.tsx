@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { HeadToHeadScreen } from "@/features/profile/head-to-head/screens/HeadToHeadScreen";
 import { ScreenWithHeader } from "@/components/ui";
 import { useAuth } from "@/lib/auth/useAuth";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function parseNum(value: string | string[] | undefined): number | null {
   const s = Array.isArray(value) ? value[0] : value;
@@ -16,6 +17,14 @@ function parseNum(value: string | string[] | undefined): number | null {
 }
 
 export default function HeadToHeadRoute() {
+  return (
+    <ErrorBoundary feature="head-to-head">
+      <HeadToHeadContent />
+    </ErrorBoundary>
+  );
+}
+
+function HeadToHeadContent() {
   const params = useLocalSearchParams<{ opponentId?: string }>();
   const { user } = useAuth();
 
@@ -24,11 +33,11 @@ export default function HeadToHeadRoute() {
 
   const { t } = useTranslation("common");
   return (
-    <ScreenWithHeader title={t("profile.headToHead")} fallbackRoute="/(tabs)/profile">
-      <HeadToHeadScreen
-        userId={userId}
-        initialOpponentId={opponentId}
-      />
+    <ScreenWithHeader
+      title={t("profile.headToHead")}
+      fallbackRoute="/(tabs)/profile"
+    >
+      <HeadToHeadScreen userId={userId} initialOpponentId={opponentId} />
     </ScreenWithHeader>
   );
 }

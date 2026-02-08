@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   View,
   TextInput,
@@ -20,6 +21,14 @@ import { useJoinGroupByCodeMutation } from "@/domains/groups";
 import { useTheme } from "@/lib/theme";
 
 export default function GroupJoinRoute() {
+  return (
+    <ErrorBoundary feature="group-join">
+      <GroupJoinContent />
+    </ErrorBoundary>
+  );
+}
+
+function GroupJoinContent() {
   const { t } = useTranslation("common");
   const params = useLocalSearchParams<{ code: string }>();
   const codeFromUrl = typeof params.code === "string" ? params.code.trim() : "";
@@ -52,38 +61,38 @@ export default function GroupJoinRoute() {
       <ScreenWithHeader title={t("groups.joinGroup")}>
         <Screen>
           <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.form}
-        >
-          <View style={[styles.formInner, { padding: theme.spacing.md }]}>
-            <AppText variant="body" color="secondary" style={styles.hint}>
-              Enter the invite code you received
-            </AppText>
-            <TextInput
-              value={enteredCode}
-              onChangeText={setEnteredCode}
-              placeholder={t("groups.inviteCode")}
-              placeholderTextColor={theme.colors.textSecondary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
-                  color: theme.colors.textPrimary,
-                  marginTop: theme.spacing.sm,
-                  marginBottom: theme.spacing.md,
-                },
-              ]}
-            />
-            <Button
-              label={t("groups.joinGroup")}
-              onPress={handleSubmitCode}
-              disabled={!enteredCode.trim()}
-            />
-          </View>
-        </KeyboardAvoidingView>
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.form}
+          >
+            <View style={[styles.formInner, { padding: theme.spacing.md }]}>
+              <AppText variant="body" color="secondary" style={styles.hint}>
+                Enter the invite code you received
+              </AppText>
+              <TextInput
+                value={enteredCode}
+                onChangeText={setEnteredCode}
+                placeholder={t("groups.inviteCode")}
+                placeholderTextColor={theme.colors.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.border,
+                    color: theme.colors.textPrimary,
+                    marginTop: theme.spacing.sm,
+                    marginBottom: theme.spacing.md,
+                  },
+                ]}
+              />
+              <Button
+                label={t("groups.joinGroup")}
+                onPress={handleSubmitCode}
+                disabled={!enteredCode.trim()}
+              />
+            </View>
+          </KeyboardAvoidingView>
         </Screen>
       </ScreenWithHeader>
     );

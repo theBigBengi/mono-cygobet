@@ -1,10 +1,10 @@
 const path = require("path");
-const { getDefaultConfig } = require("expo/metro-config");
+const { getSentryExpoConfig } = require("@sentry/react-native/metro");
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, "../..");
 
-const config = getDefaultConfig(projectRoot);
+const config = getSentryExpoConfig(projectRoot);
 
 // Monorepo: extend watchFolders to include workspace root
 config.watchFolders = [...(config.watchFolders || []), workspaceRoot];

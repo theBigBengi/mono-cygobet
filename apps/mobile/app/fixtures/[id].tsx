@@ -8,8 +8,17 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useFixtureDetailQuery } from "@/domains/fixtures";
 import { MatchDetailScreen } from "@/features/match-detail/screens/MatchDetailScreen";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function FixtureDetailRoute() {
+  return (
+    <ErrorBoundary feature="fixture-detail">
+      <FixtureDetailContent />
+    </ErrorBoundary>
+  );
+}
+
+function FixtureDetailContent() {
   const { t } = useTranslation("common");
   const params = useLocalSearchParams<{ id: string }>();
   const fixtureId =

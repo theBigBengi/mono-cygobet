@@ -10,14 +10,25 @@ import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useGroupQuery } from "@/domains/groups";
 import { GroupGamesScreen } from "@/features/groups/predictions/screens/GroupGamesScreen";
 import { GroupGamesDraftScreen } from "@/features/groups/predictions/screens/GroupGamesDraftScreen";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function GroupGamesRoute() {
+  return (
+    <ErrorBoundary feature="group-games">
+      <GroupGamesContent />
+    </ErrorBoundary>
+  );
+}
+
+function GroupGamesContent() {
   const { t } = useTranslation("common");
   const params = useLocalSearchParams<{ id: string }>();
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
 
-  const { data, isLoading, error } = useGroupQuery(groupId, { includeFixtures: true });
+  const { data, isLoading, error } = useGroupQuery(groupId, {
+    includeFixtures: true,
+  });
 
   // Loading state
   if (isLoading) {

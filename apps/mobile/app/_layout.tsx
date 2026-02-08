@@ -37,8 +37,21 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import * as SplashScreen from "expo-splash-screen";
+import * as Sentry from "@sentry/react-native";
 
 SplashScreen.preventAutoHideAsync();
+
+console.log("[Sentry] DSN:", process.env.EXPO_PUBLIC_SENTRY_DSN ? "Found" : "Missing");
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    environment: __DEV__ ? "development" : "production",
+    sendDefaultPii: true,
+    tracesSampleRate: 0.2,
+    debug: __DEV__,
+  });
+  console.log("[Sentry] Initialized successfully");
+}
 
 // Log store identity for verification
 console.log("[RootLayout] Jotai store instance:", jotaiStore);
@@ -173,7 +186,7 @@ function AppContent() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   // Initialize global error handlers on mount
   useEffect(() => {
     initializeGlobalErrorHandlers();
@@ -199,6 +212,8 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 /**
  * Root-level ErrorBoundary for Expo Router

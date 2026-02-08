@@ -23,6 +23,7 @@ import {
   GroupLobbyEndedScreen,
   LobbyWithHeader,
 } from "@/features/groups/group-lobby";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 /**
  * Group Lobby Screen
@@ -32,6 +33,14 @@ import {
  */
 
 export default function GroupLobbyScreen() {
+  return (
+    <ErrorBoundary feature="group-lobby">
+      <GroupLobbyContent />
+    </ErrorBoundary>
+  );
+}
+
+function GroupLobbyContent() {
   const { t } = useTranslation("common");
   const params = useLocalSearchParams<{ id: string }>();
   const router = useRouter();

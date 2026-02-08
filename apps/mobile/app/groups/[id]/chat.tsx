@@ -6,8 +6,17 @@ import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ScreenWithHeader } from "@/components/ui";
 import { GroupChatScreen } from "@/features/groups/chat";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function GroupChatRoute() {
+  return (
+    <ErrorBoundary feature="group-chat">
+      <GroupChatContent />
+    </ErrorBoundary>
+  );
+}
+
+function GroupChatContent() {
   const params = useLocalSearchParams<{ id: string }>();
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;

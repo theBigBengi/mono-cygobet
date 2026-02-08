@@ -6,8 +6,17 @@ import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ScreenWithHeader } from "@/components/ui";
 import { GroupInviteScreen } from "@/features/groups/invite";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function GroupInviteRoute() {
+  return (
+    <ErrorBoundary feature="group-invite">
+      <InviteContent />
+    </ErrorBoundary>
+  );
+}
+
+function InviteContent() {
   const params = useLocalSearchParams<{ id: string }>();
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
