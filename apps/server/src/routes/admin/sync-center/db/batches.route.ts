@@ -71,6 +71,7 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
           itemsTotal: true,
           itemsSuccess: true,
           itemsFailed: true,
+          meta: true,
         },
       });
 
@@ -87,6 +88,7 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
           itemsTotal: b.itemsTotal,
           itemsSuccess: b.itemsSuccess,
           itemsFailed: b.itemsFailed,
+          meta: b.meta as Record<string, unknown> | null,
         })),
         message: "Batches fetched successfully",
       });
@@ -212,4 +214,3 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
 };
 
 export default adminBatchesRoutes;
-

@@ -1,6 +1,6 @@
 // src/routes/admin/provider/markets.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { adapter } from "../../../../utils/adapter";
+import { adapter, currentProviderLabel } from "../../../../utils/adapter";
 import { AdminProviderMarketsResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 
@@ -29,7 +29,7 @@ const adminMarketsProviderRoutes: FastifyPluginAsync = async (fastify) => {
         status: "success",
         data,
         message: "Markets fetched from provider successfully",
-        provider: "sportmonks",
+        provider: currentProviderLabel,
       });
     }
   );

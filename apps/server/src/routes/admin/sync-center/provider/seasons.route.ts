@@ -1,6 +1,6 @@
 // src/routes/admin/provider/seasons.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { adapter } from "../../../../utils/adapter";
+import { adapter, currentProviderLabel } from "../../../../utils/adapter";
 import { AdminProviderSeasonsResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 import { prisma } from "@repo/db";
@@ -67,7 +67,7 @@ const adminSeasonsProviderRoutes: FastifyPluginAsync = async (fastify) => {
           };
         }),
         message: "Seasons fetched from provider successfully",
-        provider: "sportmonks",
+        provider: currentProviderLabel,
       });
     }
   );

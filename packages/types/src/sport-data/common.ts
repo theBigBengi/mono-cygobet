@@ -69,6 +69,8 @@ export type SeasonDTO = {
   startDate: string; // ISO date string (YYYY-MM-DD)
   endDate: string; // ISO date string (YYYY-MM-DD)
   isCurrent: boolean; // provider flag if available
+  isFinished?: boolean; // provider flag if season has ended
+  isPending?: boolean; // provider flag if season not started yet
   leagueExternalId: number | string; // to resolve FK -> leagues via league_mappings
   leagueName: string;
   countryName: string;

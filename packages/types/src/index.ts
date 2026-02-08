@@ -1,5 +1,6 @@
 export * from "./user";
 export * from "./version";
+export * from "./admin/sync-center.types";
 export * from "./http/admin";
 export * from "./http/api";
 export * from "./http/auth";

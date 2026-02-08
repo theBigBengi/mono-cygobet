@@ -12,6 +12,10 @@ export {
   type AdapterConfig,
 } from "./adapter.factory";
 export {
+  PROVIDER_CONFIG,
+  type SportsDataProvider,
+} from "./config/provider.config";
+export {
   CircuitBreaker,
   type CircuitBreakerState,
   type CircuitBreakerOptions,

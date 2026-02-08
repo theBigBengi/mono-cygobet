@@ -640,6 +640,99 @@ export class SportMonksAdapter implements ISportsDataAdapter {
   }
 
   /**
+   * Fetches all seasons from SportMonks (including finished).
+   * For provider vs DB availability comparison.
+   */
+  async fetchAllSeasons(): Promise<SeasonDTO[]> {
+    this.logger.info("fetchAllSeasons", {});
+    const rows = await this.httpFootball.get<SmSeasonRaw>("seasons", {
+      select: [
+        "id",
+        "league_id",
+        "name",
+        "starting_at",
+        "ending_at",
+        "is_current",
+        "finished",
+        "pending",
+      ],
+      include: [
+        {
+          name: "league",
+          fields: ["id", "name"],
+          include: [{ name: "country", fields: ["id", "name"] }],
+        },
+      ],
+      perPage: this.config.defaultPerPage,
+      paginate: true,
+    });
+
+    const out = rows.map(
+      (s: SmSeasonRaw): SeasonDTO => ({
+        externalId: s.id,
+        leagueExternalId: s.league_id ?? 0,
+        name: s.name ?? "",
+        startDate: s.starting_at ?? "",
+        endDate: s.ending_at ?? "",
+        isCurrent: Boolean(s.is_current),
+        isFinished: Boolean(s.finished),
+        isPending: Boolean(s.pending),
+        leagueName: s.league?.name ?? "",
+        countryName: s.league?.country?.name ?? "",
+      })
+    );
+    this.logger.info("fetchAllSeasons", { count: out.length });
+    return out;
+  }
+
+  /**
+   * Search seasons by name (e.g. "2026/2027" or numeric id string).
+   * Uses GET /v3/football/seasons/search/{name}
+   */
+  async searchSeasons(name: string): Promise<SeasonDTO[]> {
+    this.logger.info("searchSeasons", { name });
+    const encoded = encodeURIComponent(name);
+    const rows = await this.httpFootball.get<SmSeasonRaw>(
+      `seasons/search/${encoded}`,
+      {
+        select: [
+          "id",
+          "league_id",
+          "name",
+          "starting_at",
+          "ending_at",
+          "is_current",
+          "finished",
+        ],
+        include: [
+          {
+            name: "league",
+            fields: ["id", "name"],
+            include: [{ name: "country", fields: ["id", "name"] }],
+          },
+        ],
+        perPage: this.config.defaultPerPage,
+        paginate: true,
+      }
+    );
+
+    const out = rows.map(
+      (s: SmSeasonRaw): SeasonDTO => ({
+        externalId: s.id,
+        leagueExternalId: s.league_id ?? 0,
+        name: s.name ?? "",
+        startDate: s.starting_at ?? "",
+        endDate: s.ending_at ?? "",
+        isCurrent: Boolean(s.is_current),
+        leagueName: s.league?.name ?? "",
+        countryName: s.league?.country?.name ?? "",
+      })
+    );
+    this.logger.info("searchSeasons", { name, count: out.length });
+    return out;
+  }
+
+  /**
    * Fetches all bookmakers from SportMonks API.
    * Uses the /odds/bookmakers endpoint (v3 level, not under /football/ or /core/).
    *
@@ -800,5 +893,53 @@ export class SportMonksAdapter implements ISportsDataAdapter {
         };
       }
     );
+  }
+
+  /**
+   * Fetches all teams for a specific season.
+   * Uses GET /v3/football/teams/seasons/{seasonId}
+   */
+  async fetchTeamsBySeason(seasonExternalId: number): Promise<TeamDTO[]> {
+    this.logger.info("fetchTeamsBySeason", { seasonExternalId });
+    const rows = await this.httpFootball.get<SmTeamRaw>(
+      `teams/seasons/${seasonExternalId}`,
+      {
+        select: [
+          "id",
+          "name",
+          "short_code",
+          "image_path",
+          "country_id",
+          "founded",
+          "type",
+        ],
+        include: [{ name: "country", fields: ["id", "name"] }],
+        perPage: this.config.defaultPerPage,
+        paginate: true,
+      }
+    );
+
+    const teams: TeamDTO[] = [];
+    for (const t of rows) {
+      const name: string = t.name ?? "";
+      const img: string | null = t.image_path ?? null;
+      if (SportMonksAdapter.looksLikePlaceholder(name, img)) continue;
+      const type: string | null =
+        typeof t.type === "string" ? t.type.toLowerCase() : null;
+      teams.push({
+        externalId: t.id,
+        name,
+        shortCode: t.short_code ?? null,
+        imagePath: img,
+        countryExternalId: t.country_id ?? null,
+        founded: Number.isInteger(t.founded) ? t.founded : null,
+        type: type ?? null,
+      });
+    }
+    this.logger.info("fetchTeamsBySeason", {
+      seasonExternalId,
+      count: teams.length,
+    });
+    return teams;
   }
 }

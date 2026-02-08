@@ -201,6 +201,8 @@ export interface Batch {
   itemsTotal: number;
   itemsSuccess: number;
   itemsFailed: number;
+  /** Optional context (e.g. season name, league) for display */
+  meta?: Record<string, unknown> | null;
 }
 
 export interface AdminBatchesListResponse {

@@ -12,6 +12,10 @@ import type {
   AdminSyncSeasonsResponse,
   AdminSyncTeamsResponse,
   AdminSyncBookmakersResponse,
+  AdminAvailabilityResponse,
+  AdminSeedSeasonRequest,
+  AdminSeedSeasonResponse,
+  AdminJobStatusResponse,
 } from "@repo/types";
 
 export interface SyncAllParams {
@@ -39,6 +43,27 @@ export const syncService = {
     );
   },
 
+  async getAvailability(): Promise<AdminAvailabilityResponse> {
+    return apiGet<AdminAvailabilityResponse>(
+      "/admin/sync-center/provider/availability"
+    );
+  },
+
+  async seedSeason(
+    params: AdminSeedSeasonRequest
+  ): Promise<AdminSeedSeasonResponse> {
+    return apiPost<AdminSeedSeasonResponse>(
+      "/admin/sync-center/sync/seed-season",
+      params
+    );
+  },
+
+  async getJobStatus(jobId: string): Promise<AdminJobStatusResponse> {
+    return apiGet<AdminJobStatusResponse>(
+      `/admin/sync-center/jobs/${jobId}/status`
+    );
+  },
+
   async syncAll(
     params: SyncAllParams,
     onStepComplete?: (result: SyncAllResult) => void
@@ -48,7 +73,9 @@ export const syncService = {
 
     // Step 1: Countries
     try {
-      const result = (await countriesService.sync(dryRun)) as AdminSyncCountriesResponse;
+      const result = (await countriesService.sync(
+        dryRun
+      )) as AdminSyncCountriesResponse;
       const countriesResult = {
         step: "Countries",
         status: "success" as const,
@@ -74,7 +101,9 @@ export const syncService = {
 
     // Step 2: Leagues
     try {
-      const result = (await leaguesService.sync(dryRun)) as AdminSyncLeaguesResponse;
+      const result = (await leaguesService.sync(
+        dryRun
+      )) as AdminSyncLeaguesResponse;
       const leaguesResult = {
         step: "Leagues",
         status: "success" as const,
@@ -102,7 +131,9 @@ export const syncService = {
 
     // Step 3: Seasons
     try {
-      const result = (await seasonsService.sync(dryRun)) as AdminSyncSeasonsResponse;
+      const result = (await seasonsService.sync(
+        dryRun
+      )) as AdminSyncSeasonsResponse;
       const seasonsResult = {
         step: "Seasons",
         status: "success" as const,
@@ -128,7 +159,9 @@ export const syncService = {
 
     // Step 4: Teams
     try {
-      const result = (await teamsService.sync(dryRun)) as AdminSyncTeamsResponse;
+      const result = (await teamsService.sync(
+        dryRun
+      )) as AdminSyncTeamsResponse;
       const teamsResult = {
         step: "Teams",
         status: "success" as const,
@@ -201,7 +234,9 @@ export const syncService = {
 
     // Step 6: Bookmakers (optional, doesn't block)
     try {
-      const result = (await bookmakersService.sync(dryRun)) as AdminSyncBookmakersResponse;
+      const result = (await bookmakersService.sync(
+        dryRun
+      )) as AdminSyncBookmakersResponse;
       const bookmakersResult = {
         step: "Bookmakers",
         status: "success" as const,
@@ -229,4 +264,3 @@ export const syncService = {
     return results;
   },
 };
-

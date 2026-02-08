@@ -1,6 +1,6 @@
 // src/routes/admin/provider/odds.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { adapter } from "../../../../utils/adapter";
+import { adapter, currentProviderLabel } from "../../../../utils/adapter";
 import { AdminProviderOddsResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 
@@ -81,7 +81,7 @@ const adminOddsProviderRoutes: FastifyPluginAsync = async (fastify) => {
         status: "success",
         data: odds,
         message: "Odds fetched from provider successfully",
-        provider: "sportmonks",
+        provider: currentProviderLabel,
       });
     }
   );

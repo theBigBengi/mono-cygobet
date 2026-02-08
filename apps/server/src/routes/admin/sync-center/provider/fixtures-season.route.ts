@@ -1,6 +1,6 @@
 // src/routes/admin/provider/fixtures-season.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { adapter } from "../../../../utils/adapter";
+import { adapter, currentProviderLabel } from "../../../../utils/adapter";
 import { AdminProviderFixturesResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 import { prisma } from "@repo/db";
@@ -52,7 +52,7 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
           status: "error",
           data: [],
           message: `Invalid season ID: ${seasonId}`,
-          provider: "sportmonks",
+          provider: currentProviderLabel,
         });
       }
 
@@ -174,7 +174,7 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
           };
         }),
         message: `Fixtures fetched from provider successfully for season ${seasonId}`,
-        provider: "sportmonks",
+        provider: currentProviderLabel,
       });
     }
   );

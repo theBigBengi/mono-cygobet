@@ -9,7 +9,6 @@ import {
   type Row,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { DataTableColumnHeader } from "./data-table-column-header";
 import { StatusBadge } from "./status-badge";
 import {
   Select,
@@ -26,6 +25,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -34,9 +38,136 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  Trophy,
+  Calendar,
+  Users,
+  CalendarDays,
+  Bookmark,
+  Layers,
+  Database,
+} from "lucide-react";
 import type { Batch, BatchItem } from "@repo/types";
 import { useBatchItems } from "@/hooks/use-batches";
+
+function EntityBadge({ name }: { name: string }) {
+  const config: Record<string, { label: string; icon: React.ElementType }> = {
+    "seed-countries": { label: "Countries", icon: Globe },
+    "seed-leagues": { label: "Leagues", icon: Trophy },
+    "seed-seasons": { label: "Seasons", icon: Calendar },
+    "seed-teams": { label: "Teams", icon: Users },
+    "seed-fixtures": { label: "Fixtures", icon: CalendarDays },
+    "seed-bookmakers": { label: "Bookmakers", icon: Bookmark },
+    "seed-season": { label: "Full Season", icon: Layers },
+  };
+
+  const { label, icon: Icon } = config[name] ?? {
+    label: name,
+    icon: Database,
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <span className="text-sm font-medium">{label}</span>
+    </div>
+  );
+}
+
+function ContextCell({ meta }: { meta: Record<string, unknown> | null }) {
+  if (!meta) return <span className="text-muted-foreground">—</span>;
+
+  const season = (meta.season as { name?: string; league?: string } | undefined)
+    ?.name;
+  const league = (meta.season as { name?: string; league?: string } | undefined)
+    ?.league;
+
+  if (season && league) {
+    return (
+      <span className="text-sm text-muted-foreground">
+        {league} · {season}
+      </span>
+    );
+  }
+
+  if (season) {
+    return <span className="text-sm text-muted-foreground">{season}</span>;
+  }
+
+  return <span className="text-muted-foreground">—</span>;
+}
+
+function TimeAgo({ date }: { date: string }) {
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const now = new Date();
+  const then = new Date(date);
+  const diffMs = now.getTime() - then.getTime();
+  const diffMins = Math.round(diffMs / 60000);
+  const diffHours = Math.round(diffMs / 3600000);
+  const diffDays = Math.round(diffMs / 86400000);
+
+  let text: string;
+  if (diffMins < 60) {
+    text = rtf.format(-diffMins, "minute");
+  } else if (diffHours < 24) {
+    text = rtf.format(-diffHours, "hour");
+  } else {
+    text = rtf.format(-diffDays, "day");
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="text-sm text-muted-foreground cursor-help">
+          {text}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{new Date(date).toLocaleString()}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ItemsCell({ total, failed }: { total: number; failed: number }) {
+  if (failed === 0) {
+    return <span className="text-sm">{total}</span>;
+  }
+
+  return (
+    <span className="text-sm">
+      {total} <span className="text-red-600">({failed} failed)</span>
+    </span>
+  );
+}
+
+function DurationCell({
+  started,
+  finished,
+}: {
+  started: Date;
+  finished: Date | null;
+}) {
+  if (!finished) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  const diffMs = finished.getTime() - started.getTime();
+  const seconds = Math.round(diffMs / 1000);
+
+  if (seconds < 60) {
+    return <span className="text-sm text-muted-foreground">{seconds}s</span>;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return (
+    <span className="text-sm text-muted-foreground">
+      {minutes}m {remainingSeconds}s
+    </span>
+  );
+}
 
 interface BatchesTableProps {
   batches: Batch[];
@@ -50,102 +181,56 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
 
   const columns: ColumnDef<Batch>[] = [
     {
-      accessorKey: "id",
-      header: "Batch ID",
-      cell: ({ row }: { row: Row<Batch> }) => (
-        <span className="font-mono text-xs">{row.getValue("id")}</span>
-      ),
-    },
-    {
       accessorKey: "name",
-      header: "Name",
-      cell: ({ row }: { row: Row<Batch> }) => {
+      header: "Entity",
+      cell: ({ row }) => {
         const name = row.getValue("name") as string;
-        return <span className="text-xs sm:text-sm">{name}</span>;
+        return <EntityBadge name={name} />;
       },
     },
     {
-      accessorKey: "version",
-      header: "Version",
-      cell: ({ row }: { row: Row<Batch> }) => {
-        const version = row.getValue("version") as string | null;
-        return (
-          <span className="text-xs font-mono text-muted-foreground">
-            {version || "—"}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "status",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
-      ),
-      cell: ({ row }: { row: Row<Batch> }) => {
-        const status = row.getValue("status") as string;
-        return <StatusBadge status={status} className="text-xs" />;
-      },
-    },
-    {
-      accessorKey: "triggeredBy",
-      header: "Triggered By",
-      cell: ({ row }: { row: Row<Batch> }) => {
-        const triggeredBy = row.getValue("triggeredBy") as string | null;
-        return (
-          <span className="text-xs text-muted-foreground">
-            {triggeredBy || "—"}
-          </span>
-        );
+      accessorKey: "meta",
+      header: "Context",
+      cell: ({ row }) => {
+        const meta = row.original.meta ?? null;
+        return <ContextCell meta={meta} />;
       },
     },
     {
       accessorKey: "startedAt",
-      header: "Started",
-      cell: ({ row }: { row: Row<Batch> }) => {
+      header: "When",
+      cell: ({ row }) => {
         const startedAt = row.getValue("startedAt") as string;
-        return (
-          <span className="text-xs text-muted-foreground">
-            {new Date(startedAt).toLocaleString()}
-          </span>
-        );
+        return <TimeAgo date={startedAt} />;
       },
     },
     {
-      accessorKey: "finishedAt",
-      header: "Finished",
-      cell: ({ row }: { row: Row<Batch> }) => {
-        const finishedAt = row.getValue("finishedAt") as string | null;
-        return (
-          <span className="text-xs text-muted-foreground">
-            {finishedAt ? new Date(finishedAt).toLocaleString() : "—"}
-          </span>
-        );
+      accessorKey: "status",
+      header: "Result",
+      cell: ({ row }) => {
+        const status = row.getValue("status") as string;
+        return <StatusBadge status={status} />;
       },
     },
     {
-      accessorKey: "itemsTotal",
-      header: "Total",
-      cell: ({ row }: { row: Row<Batch> }) => (
-        <span className="text-xs">{row.getValue("itemsTotal")}</span>
-      ),
+      id: "items",
+      header: "Items",
+      cell: ({ row }) => {
+        const total = row.original.itemsTotal;
+        const failed = row.original.itemsFailed;
+        return <ItemsCell total={total} failed={failed} />;
+      },
     },
     {
-      accessorKey: "itemsSuccess",
-      header: "Success",
-      cell: ({ row }: { row: Row<Batch> }) => (
-        <span className="text-xs text-green-600">
-          {row.getValue("itemsSuccess")}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "itemsFailed",
-      header: "Failed",
-      cell: ({ row }: { row: Row<Batch> }) => (
-        <span className="text-xs text-red-600">
-          {row.getValue("itemsFailed")}
-        </span>
-      ),
+      id: "duration",
+      header: "Duration",
+      cell: ({ row }) => {
+        const started = new Date(row.original.startedAt);
+        const finished = row.original.finishedAt
+          ? new Date(row.original.finishedAt)
+          : null;
+        return <DurationCell started={started} finished={finished} />;
+      },
     },
   ];
 
@@ -176,7 +261,10 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
   return (
     <>
       <div className="space-y-4">
-        <div className="rounded-md border overflow-auto" style={{ maxHeight: '600px' }}>
+        <div
+          className="rounded-md border overflow-auto"
+          style={{ maxHeight: "600px" }}
+        >
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -244,7 +332,9 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
               }}
             >
               <SelectTrigger className="h-8 w-[70px]">
-              <SelectValue placeholder={table.getState().pagination.pageSize} />
+                <SelectValue
+                  placeholder={table.getState().pagination.pageSize}
+                />
               </SelectTrigger>
               <SelectContent side="top">
                 {[10, 20, 30, 50, 100].map((pageSize) => (
@@ -280,9 +370,7 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedBatch?.name || "Batch Details"}
-            </DialogTitle>
+            <DialogTitle>{selectedBatch?.name || "Batch Details"}</DialogTitle>
             <DialogDescription>
               {selectedBatch && (
                 <>
@@ -318,11 +406,7 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
       header: "Item Key",
       cell: ({ row }: { row: Row<BatchItem> }) => {
         const itemKey = row.getValue("itemKey") as string | null;
-        return (
-          <span className="text-xs font-mono">
-            {itemKey || "—"}
-          </span>
-        );
+        return <span className="text-xs font-mono">{itemKey || "—"}</span>;
       },
     },
     {
@@ -339,9 +423,7 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
       cell: ({ row }: { row: Row<BatchItem> }) => {
         const errorMessage = row.getValue("errorMessage") as string | null;
         return (
-          <span className="text-xs text-red-600">
-            {errorMessage || "—"}
-          </span>
+          <span className="text-xs text-red-600">{errorMessage || "—"}</span>
         );
       },
     },
@@ -367,7 +449,10 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border overflow-auto" style={{ maxHeight: '600px' }}>
+      <div
+        className="rounded-md border overflow-auto"
+        style={{ maxHeight: "600px" }}
+      >
         <Table>
           <TableHeader>
             {itemTable.getHeaderGroups().map((headerGroup) => (
@@ -455,9 +540,7 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
             variant="outline"
             size="sm"
             onClick={() =>
-              setPage((p) =>
-                Math.min(data?.pagination.totalPages ?? 1, p + 1)
-              )
+              setPage((p) => Math.min(data?.pagination.totalPages ?? 1, p + 1))
             }
             disabled={page >= (data?.pagination.totalPages ?? 0)}
           >
@@ -468,4 +551,3 @@ function BatchItemsDialogContent({ batchId }: { batchId: number }) {
     </div>
   );
 }
-

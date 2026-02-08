@@ -1,6 +1,6 @@
 // src/routes/admin/provider/countries.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { adapter } from "../../../../utils/adapter";
+import { adapter, currentProviderLabel } from "../../../../utils/adapter";
 import { AdminProviderCountriesResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 
@@ -46,7 +46,7 @@ const adminCountriesProviderRoutes: FastifyPluginAsync = async (fastify) => {
         status: "success",
         data,
         message: "Countries fetched from provider successfully",
-        provider: "sportmonks",
+        provider: currentProviderLabel,
       });
     }
   );

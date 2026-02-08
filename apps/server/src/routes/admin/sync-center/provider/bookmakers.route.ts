@@ -1,6 +1,6 @@
 // src/routes/admin/provider/bookmakers.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { adapter } from "../../../../utils/adapter";
+import { adapter, currentProviderLabel } from "../../../../utils/adapter";
 import { AdminProviderBookmakersResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 
@@ -27,7 +27,7 @@ const adminBookmakersProviderRoutes: FastifyPluginAsync = async (fastify) => {
         status: "success",
         data,
         message: "Bookmakers fetched from provider successfully",
-        provider: "sportmonks",
+        provider: currentProviderLabel,
       });
     }
   );

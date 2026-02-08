@@ -1,6 +1,6 @@
 // src/routes/admin/provider/fixtures.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { adapter } from "../../../../utils/adapter";
+import { adapter, currentProviderLabel } from "../../../../utils/adapter";
 import { AdminProviderFixturesResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
 
@@ -87,7 +87,7 @@ const adminFixturesProviderRoutes: FastifyPluginAsync = async (fastify) => {
         status: "success",
         data: fixturesDto,
         message: "Fixtures fetched from provider successfully",
-        provider: "sportmonks",
+        provider: currentProviderLabel,
       };
       cache.set(cacheKey, { data: response, ts: Date.now() });
       return reply.send(response);

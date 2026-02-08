@@ -68,8 +68,14 @@ export interface ISportsDataAdapter {
   fetchLeagueById(id: number): Promise<LeagueDTO | null>;
   fetchSeasons(): Promise<SeasonDTO[]>;
   fetchSeasonById(id: number): Promise<SeasonDTO | null>;
+  /** All seasons from provider (no finished filter). For availability comparison. */
+  fetchAllSeasons?(): Promise<SeasonDTO[]>;
+  /** Search seasons by name (e.g. "2026/2027" or numeric id string). */
+  searchSeasons?(name: string): Promise<SeasonDTO[]>;
   fetchTeams(): Promise<TeamDTO[]>;
   fetchTeamById(id: number): Promise<TeamDTO | null>;
+  /** All teams for a specific season. */
+  fetchTeamsBySeason?(seasonExternalId: number): Promise<TeamDTO[]>;
 
   /** Returns health/stats for observability (circuit breaker state, semaphore depth, etc.) */
   getStats?(): Record<string, unknown>;
