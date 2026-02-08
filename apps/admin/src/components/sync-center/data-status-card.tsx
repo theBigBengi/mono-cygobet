@@ -94,7 +94,7 @@ Last checked: When this page loaded`}
           <div className="flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg mt-2">
             <AlertCircle className="h-5 w-5 text-orange-600" />
             <span className="text-sm">
-              <strong>{summary.seasonsWithFixturesAvailable}</strong> seasons
+              <strong>{summary?.seasonsWithFixturesAvailable}</strong> seasons
               have fixtures available for sync
             </span>
           </div>

@@ -52,12 +52,24 @@ export function StaticDataSection() {
 
   const countriesMutation = createSyncMutation(
     "Countries",
-    countriesService.sync
+    (dryRun) =>
+      countriesService.sync(dryRun) as Promise<{
+        data: { ok: number; fail: number };
+      }>
   );
-  const leaguesMutation = createSyncMutation("Leagues", leaguesService.sync);
+  const leaguesMutation = createSyncMutation(
+    "Leagues",
+    (dryRun) =>
+      leaguesService.sync(dryRun) as Promise<{
+        data: { ok: number; fail: number };
+      }>
+  );
   const bookmakersMutation = createSyncMutation(
     "Bookmakers",
-    bookmakersService.sync
+    (dryRun) =>
+      bookmakersService.sync(dryRun) as Promise<{
+        data: { ok: number; fail: number };
+      }>
   );
 
   return (
