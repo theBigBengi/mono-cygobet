@@ -8,10 +8,10 @@ import { useTranslation } from "react-i18next";
 import { Screen, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth/useAuth";
-import { useUserStatsQuery } from "@/features/profile/profile.queries";
+import { useUserStatsQuery } from "@/domains/profile";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { GroupCompactCard } from "@/features/profile/stats/components/GroupCompactCard";
+import { GroupCompactCard } from "@/features/profile";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { ApiUserGroupStat } from "@repo/types";
 

@@ -7,7 +7,7 @@ import { useLocalSearchParams } from "expo-router";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useFixtureDetailQuery } from "@/domains/fixtures";
-import { MatchDetailScreen } from "@/features/match-detail/screens/MatchDetailScreen";
+import { MatchDetailScreen } from "@/features/match-detail";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function FixtureDetailRoute() {

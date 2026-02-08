@@ -3,7 +3,7 @@
 
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { ProfileStatsScreen } from "@/features/profile/stats/screens/ProfileStatsScreen";
+import { ProfileStatsScreen } from "@/features/profile";
 import { useAuth } from "@/lib/auth/useAuth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
