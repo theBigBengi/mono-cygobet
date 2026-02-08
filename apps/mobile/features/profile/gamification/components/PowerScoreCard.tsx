@@ -3,9 +3,11 @@ import { View, StyleSheet } from "react-native";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
+import { InfoButton } from "./InfoButton";
 
 interface PowerScoreCardProps {
   score: number;
+  onInfoPress?: () => void;
 }
 
 function getScoreColor(score: number): string {
@@ -15,7 +17,7 @@ function getScoreColor(score: number): string {
   return "#EF4444";
 }
 
-export function PowerScoreCard({ score }: PowerScoreCardProps) {
+export function PowerScoreCard({ score, onInfoPress }: PowerScoreCardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const color = getScoreColor(score);
@@ -23,7 +25,10 @@ export function PowerScoreCard({ score }: PowerScoreCardProps) {
   return (
     <Card>
       <View style={styles.header}>
-        <AppText variant="subtitle">{t("gamification.powerScore")}</AppText>
+        <View style={styles.titleRow}>
+          <AppText variant="subtitle">{t("gamification.powerScore")}</AppText>
+          {onInfoPress && <InfoButton onPress={onInfoPress} />}
+        </View>
         <View style={styles.scoreContainer}>
           <AppText style={[styles.score, { color }]}>{score}</AppText>
           <AppText variant="caption" color="secondary">
@@ -64,6 +69,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   scoreContainer: {
     flexDirection: "row",

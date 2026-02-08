@@ -12,3 +12,4 @@ export { TeamLogo } from "./TeamLogo";
 export { ScreenWithHeader } from "./ScreenWithHeader";
 export { Tooltip } from "./Tooltip";
 export { CircularProgress } from "./CircularProgress";
+export { InfoSheet } from "./InfoSheet";

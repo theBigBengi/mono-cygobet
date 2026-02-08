@@ -5,9 +5,11 @@ import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import type { SeasonComparisonData } from "@repo/types";
+import { InfoButton } from "./InfoButton";
 
 interface SeasonComparisonCardProps {
   comparison: SeasonComparisonData;
+  onInfoPress?: () => void;
 }
 
 interface ComparisonRowProps {
@@ -76,6 +78,7 @@ function ComparisonRow({
 
 export function SeasonComparisonCard({
   comparison,
+  onInfoPress,
 }: SeasonComparisonCardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -85,9 +88,12 @@ export function SeasonComparisonCard({
   return (
     <Card>
       <View style={styles.header}>
-        <AppText variant="subtitle">
-          {t("gamification.seasonComparison")}
-        </AppText>
+        <View style={styles.titleRow}>
+          <AppText variant="subtitle">
+            {t("gamification.seasonComparison")}
+          </AppText>
+          {onInfoPress && <InfoButton onPress={onInfoPress} />}
+        </View>
         <AppText variant="caption" color="secondary">
           {currentSeason.name}
           {previousSeason && ` vs ${previousSeason.name}`}
@@ -133,6 +139,12 @@ export function SeasonComparisonCard({
 const styles = StyleSheet.create({
   header: {
     marginBottom: 16,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
   },
   content: {
     gap: 12,

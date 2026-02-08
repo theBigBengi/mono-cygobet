@@ -5,10 +5,12 @@ import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import type { RankTier } from "@repo/types";
+import { InfoButton } from "./InfoButton";
 
 interface RankTierBadgeProps {
   tier: RankTier;
   progress: number;
+  onInfoPress?: () => void;
 }
 
 const TIER_CONFIG: Record<
@@ -22,7 +24,11 @@ const TIER_CONFIG: Record<
   diamond: { color: "#B9F2FF", label: "Diamond", icon: "trophy" },
 };
 
-export function RankTierBadge({ tier, progress }: RankTierBadgeProps) {
+export function RankTierBadge({
+  tier,
+  progress,
+  onInfoPress,
+}: RankTierBadgeProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const config = TIER_CONFIG[tier];
@@ -39,6 +45,7 @@ export function RankTierBadge({ tier, progress }: RankTierBadgeProps) {
             {t("gamification.rank")}
           </AppText>
         </View>
+        {onInfoPress && <InfoButton onPress={onInfoPress} />}
       </View>
 
       {tier !== "diamond" && (

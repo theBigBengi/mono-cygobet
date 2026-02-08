@@ -5,12 +5,14 @@ import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import type { StreakData } from "@repo/types";
+import { InfoButton } from "./InfoButton";
 
 interface StreakIndicatorProps {
   streak: StreakData;
+  onInfoPress?: () => void;
 }
 
-export function StreakIndicator({ streak }: StreakIndicatorProps) {
+export function StreakIndicator({ streak, onInfoPress }: StreakIndicatorProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
 
@@ -20,7 +22,10 @@ export function StreakIndicator({ streak }: StreakIndicatorProps) {
     <Card>
       <View style={styles.header}>
         <AppText variant="subtitle">{t("gamification.streak")}</AppText>
-        {isHot && <Ionicons name="flame" size={20} color="#F97316" />}
+        <View style={styles.headerRight}>
+          {isHot && <Ionicons name="flame" size={20} color="#F97316" />}
+          {onInfoPress && <InfoButton onPress={onInfoPress} />}
+        </View>
       </View>
 
       <View style={styles.statsRow}>
@@ -69,20 +74,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 24,
+    paddingVertical: 4,
   },
   statItem: {
     alignItems: "center",
     minWidth: 60,
     flexShrink: 0,
+    minHeight: 44,
   },
   statValue: {
     fontSize: 32,
     fontWeight: "700",
+    lineHeight: 40,
   },
   divider: {
     width: 1,

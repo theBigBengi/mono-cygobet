@@ -1,10 +1,11 @@
 // features/profile/stats/screens/ProfileStatsScreen.tsx
 // Main stats screen: ScrollView with all cards.
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, Button } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
@@ -16,6 +17,8 @@ import {
   SkillRadarChart,
   StreakIndicator,
   SeasonComparisonCard,
+  GamificationInfoSheet,
+  type GamificationFeatureId,
 } from "../../gamification";
 import { HeroHeader } from "../components/HeroHeader";
 import { PerformanceCard } from "../components/PerformanceCard";
@@ -36,6 +39,15 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
   const { user } = useAuth();
   const isOwnProfile = user?.id === userId;
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const infoSheetRef =
+    useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const [activeFeature, setActiveFeature] =
+    useState<GamificationFeatureId | null>(null);
+
+  const openInfo = (featureId: GamificationFeatureId) => {
+    setActiveFeature(featureId);
+    infoSheetRef.current?.present();
+  };
 
   const statsQuery = useUserStatsQuery(userId);
   const profileQuery = useProfileQuery();
@@ -111,14 +123,31 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
       <BadgesCard badges={data.badges} />
       {gamification && (
         <>
-          <PowerScoreCard score={gamification.powerScore} />
+          <PowerScoreCard
+            score={gamification.powerScore}
+            onInfoPress={() => openInfo("powerScore")}
+          />
           <RankTierBadge
             tier={gamification.rankTier}
             progress={gamification.rankProgress}
+            onInfoPress={() => openInfo("rankTier")}
           />
-          <SkillRadarChart skills={gamification.skills} />
-          <StreakIndicator streak={gamification.streak} />
-          <SeasonComparisonCard comparison={gamification.seasonComparison} />
+          <SkillRadarChart
+            skills={gamification.skills}
+            onInfoPress={() => openInfo("skills")}
+          />
+          <StreakIndicator
+            streak={gamification.streak}
+            onInfoPress={() => openInfo("streak")}
+          />
+          <SeasonComparisonCard
+            comparison={gamification.seasonComparison}
+            onInfoPress={() => openInfo("seasonComparison")}
+          />
+          <GamificationInfoSheet
+            sheetRef={infoSheetRef}
+            featureId={activeFeature}
+          />
         </>
       )}
       <GroupStatsCard

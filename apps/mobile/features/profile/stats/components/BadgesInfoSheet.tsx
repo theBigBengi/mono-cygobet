@@ -2,9 +2,9 @@
 // Bottom sheet modal (@gorhom/bottom-sheet) with badge icons and descriptions.
 // Renders above tabs via BottomSheetModalProvider in root layout.
 
-import React, { useMemo } from "react";
+import React from "react";
 import { View, StyleSheet } from "react-native";
-import { BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import {
   Ionicons,
   FontAwesome5,
@@ -12,6 +12,7 @@ import {
   AntDesign,
 } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
+import { InfoSheet } from "@/components/ui/InfoSheet";
 import { useTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import type { ApiBadge } from "@repo/types";
@@ -41,67 +42,42 @@ function BadgeIcon({ badgeId, color }: { badgeId: string; color: string }) {
 export function BadgesInfoSheet({ sheetRef, badges }: BadgesInfoSheetProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
-  const snapPoints = useMemo(() => ["75%", "95%"], []);
-
-  const backgroundWithShadow = useMemo(
-    () => ({
-      backgroundColor: "#FFFFFF",
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 16,
-    }),
-    []
-  );
 
   return (
-    <BottomSheetModal
-      ref={sheetRef}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      backgroundStyle={backgroundWithShadow}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
-    >
-      <View style={styles.header}>
-        <AppText variant="subtitle">{t("profile.badgesInfo")}</AppText>
-      </View>
-      <BottomSheetScrollView contentContainerStyle={styles.content}>
-        {badges.map((badge) => (
-          <View
-            key={badge.id}
-            style={[styles.row, { borderBottomColor: theme.colors.border }]}
-          >
-            <BadgeIcon
-              badgeId={badge.id}
-              color={
-                badge.earned ? theme.colors.primary : theme.colors.textSecondary
-              }
-            />
-            <View style={styles.rowText}>
-              <AppText variant="body" style={styles.badgeName}>
-                {badge.name}
-              </AppText>
-              <AppText variant="caption" color="secondary">
-                {badge.description}
-              </AppText>
-            </View>
+    <InfoSheet sheetRef={sheetRef} snapPoints={["75%", "95%"]}>
+      <AppText variant="subtitle" style={styles.header}>
+        {t("profile.badgesInfo")}
+      </AppText>
+      {badges.map((badge) => (
+        <View
+          key={badge.id}
+          style={[styles.row, { borderBottomColor: theme.colors.border }]}
+        >
+          <BadgeIcon
+            badgeId={badge.id}
+            color={
+              badge.earned ? theme.colors.primary : theme.colors.textSecondary
+            }
+          />
+          <View style={styles.rowText}>
+            <AppText variant="body" style={styles.badgeName}>
+              {badge.name}
+            </AppText>
+            <AppText variant="caption" color="secondary">
+              {badge.description}
+            </AppText>
           </View>
-        ))}
-      </BottomSheetScrollView>
-    </BottomSheetModal>
+        </View>
+      ))}
+    </InfoSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 16, paddingBottom: 12 },
-  content: { paddingBottom: 32 },
+  header: { marginBottom: 16 },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
     paddingVertical: 16,
     gap: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,

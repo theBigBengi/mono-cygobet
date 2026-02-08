@@ -4,9 +4,11 @@ import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import type { SkillRadarData } from "@repo/types";
+import { InfoButton } from "./InfoButton";
 
 interface SkillRadarChartProps {
   skills: SkillRadarData;
+  onInfoPress?: () => void;
 }
 
 interface SkillBarProps {
@@ -37,7 +39,7 @@ function SkillBar({ label, value, color, backgroundColor }: SkillBarProps) {
   );
 }
 
-export function SkillRadarChart({ skills }: SkillRadarChartProps) {
+export function SkillRadarChart({ skills, onInfoPress }: SkillRadarChartProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
 
@@ -71,9 +73,12 @@ export function SkillRadarChart({ skills }: SkillRadarChartProps) {
 
   return (
     <Card>
-      <AppText variant="subtitle" style={styles.title}>
-        {t("gamification.skillRadar")}
-      </AppText>
+      <View style={styles.titleRow}>
+        <AppText variant="subtitle" style={styles.title}>
+          {t("gamification.skillRadar")}
+        </AppText>
+        {onInfoPress && <InfoButton onPress={onInfoPress} />}
+      </View>
       <View style={styles.skillsContainer}>
         {skillsConfig.map((skill) => (
           <SkillBar
@@ -90,6 +95,12 @@ export function SkillRadarChart({ skills }: SkillRadarChartProps) {
 }
 
 const styles = StyleSheet.create({
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 16,
+  },
   title: {
     marginBottom: 16,
   },

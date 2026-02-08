@@ -363,7 +363,35 @@
     "current": "Current",
     "best": "Best",
     "seasonComparison": "Season Progress",
-    "points": "Points"
+    "points": "Points",
+    "info": {
+      "howCalculated": "How it's calculated:",
+      "powerScore": {
+        "title": "Power Score",
+        "description": "Your overall performance rating combining multiple factors into a single score from 0-100. A higher score indicates better prediction skills.",
+        "calculation": "35% Accuracy + 25% Exact Scores + 15% Volume + 15% Best Rank + 10% Current Streak"
+      },
+      "rankTier": {
+        "title": "Rank Tier",
+        "description": "Your competitive tier based on your Power Score. Climb from Bronze to Diamond by improving your predictions.",
+        "calculation": "Bronze: 0-29 | Silver: 30-49 | Gold: 50-69 | Platinum: 70-84 | Diamond: 85+"
+      },
+      "skills": {
+        "title": "Skills",
+        "description": "A breakdown of your prediction abilities across 5 categories. Each skill is rated 0-100.",
+        "calculation": "Accuracy: correct predictions %. Consistency: prediction variance. Volume: total predictions. Exact: exact score %. Timing: early predictions %."
+      },
+      "streak": {
+        "title": "Streak",
+        "description": "Track your consecutive scoring predictions. A 'hit' means you earned points (exact, difference, or outcome correct).",
+        "calculation": "Current: consecutive predictions with points. Best: your all-time longest streak."
+      },
+      "seasonComparison": {
+        "title": "Season Progress",
+        "description": "Compare your current season performance to last season. Green arrows indicate improvement.",
+        "calculation": "Seasons run August to July. Stats reset each season but history is preserved."
+      }
+    }
   },
   "discover": {
     "searchPlaceholder": "Search by group name",
