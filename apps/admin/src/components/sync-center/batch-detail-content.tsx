@@ -225,7 +225,7 @@ function ItemsSection({ batch }: { batch: Batch }) {
           <Select
             value={statusFilter}
             onValueChange={(v) => {
-              setStatusFilter(v);
+              setStatusFilter(v as StatusFilterValue);
               setPage(1);
             }}
           >
@@ -242,7 +242,7 @@ function ItemsSection({ batch }: { batch: Batch }) {
           <Select
             value={actionFilter}
             onValueChange={(v) => {
-              setActionFilter(v);
+              setActionFilter(v as ActionFilterValue);
               setPage(1);
             }}
           >
