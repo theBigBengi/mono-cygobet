@@ -11,9 +11,8 @@ import { useTheme } from "@/lib/theme";
 import { useGroupQuery, useUpdateGroupMutation } from "@/domains/groups";
 import { useAuth } from "@/lib/auth/useAuth";
 import { SettingsSection, SettingsRow } from "@/features/settings";
+import { NudgeWindowPicker } from "@/features/groups/group-lobby/components/NudgeWindowPicker";
 import type { ApiInviteAccess } from "@repo/types";
-
-const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
 
 export function GroupSettingsScreen() {
   const { t } = useTranslation("common");
@@ -80,7 +79,6 @@ export function GroupSettingsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
         <Pressable
           onPress={() => router.back()}
@@ -100,10 +98,7 @@ export function GroupSettingsScreen() {
       </View>
 
       <Screen scroll contentContainerStyle={styles.content}>
-        {/* General Section */}
-        <SettingsSection
-          title={t("groupSettings.general" as Parameters<typeof t>[0])}
-        >
+        <SettingsSection title={t("groupSettings.general")}>
           <SettingsRow
             type="navigation"
             icon="people-outline"
@@ -130,11 +125,8 @@ export function GroupSettingsScreen() {
           )}
         </SettingsSection>
 
-        {/* Notifications Section - Creator only */}
         {showNudgeSection && (
-          <SettingsSection
-            title={t("groupSettings.notifications" as Parameters<typeof t>[0])}
-          >
+          <SettingsSection title={t("groupSettings.notifications")}>
             <SettingsRow
               type="toggle"
               icon="notifications-outline"
@@ -146,53 +138,11 @@ export function GroupSettingsScreen() {
               isLast={!nudgeEnabled}
             />
             {nudgeEnabled && (
-              <View style={styles.nudgeWindowContainer}>
-                <View
-                  style={[
-                    styles.nudgeWindowRow,
-                    { paddingHorizontal: theme.spacing.md },
-                  ]}
-                >
-                  <AppText variant="body" style={styles.nudgeLabel}>
-                    {t("lobby.minutesBeforeKickoff")}
-                  </AppText>
-                </View>
-                <View
-                  style={[
-                    styles.nudgeWindowChips,
-                    { paddingHorizontal: theme.spacing.md },
-                  ]}
-                >
-                  {NUDGE_WINDOW_OPTIONS.map((min) => (
-                    <Pressable
-                      key={min}
-                      onPress={() => handleNudgeWindowChange(min)}
-                      style={[
-                        styles.nudgeWindowChip,
-                        {
-                          backgroundColor:
-                            nudgeWindowMinutes === min
-                              ? theme.colors.primary
-                              : theme.colors.surface,
-                          borderColor: theme.colors.border,
-                        },
-                      ]}
-                    >
-                      <AppText
-                        variant="body"
-                        style={{
-                          color:
-                            nudgeWindowMinutes === min
-                              ? theme.colors.primaryText
-                              : theme.colors.textPrimary,
-                        }}
-                      >
-                        {min}
-                      </AppText>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
+              <NudgeWindowPicker
+                value={nudgeWindowMinutes}
+                onValueChange={handleNudgeWindowChange}
+                disabled={updateGroupMutation.isPending}
+              />
             )}
           </SettingsSection>
         )}
@@ -229,26 +179,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  nudgeWindowContainer: {
-    paddingVertical: 12,
-  },
-  nudgeWindowRow: {
-    marginBottom: 8,
-  },
-  nudgeLabel: {
-    fontWeight: "500",
-  },
-  nudgeWindowChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    paddingBottom: 8,
-  },
-  nudgeWindowChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
   },
 });

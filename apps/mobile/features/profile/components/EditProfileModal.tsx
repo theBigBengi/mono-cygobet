@@ -1,14 +1,13 @@
 // features/profile/components/EditProfileModal.tsx
 // Modal to edit username and display name.
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Modal,
   View,
   TextInput,
   StyleSheet,
   Pressable,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { useUpdateProfileMutation } from "../profile.mutations";
+import { useEditProfile } from "../hooks/useEditProfile";
 
 interface EditProfileModalProps {
   visible: boolean;
@@ -26,8 +25,6 @@ interface EditProfileModalProps {
   currentName: string | null;
   currentImage: string | null;
 }
-
-const USERNAME_REGEX = /^[\u0590-\u05FFa-zA-Z0-9_-]+$/;
 
 export function EditProfileModal({
   visible,
@@ -38,55 +35,16 @@ export function EditProfileModal({
 }: EditProfileModalProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
-  const mutation = useUpdateProfileMutation();
 
-  const [username, setUsername] = useState(currentUsername ?? "");
-  const [name, setName] = useState(currentName ?? "");
-
-  useEffect(() => {
-    if (visible) {
-      setUsername(currentUsername ?? "");
-      setName(currentName ?? "");
-    }
-  }, [visible, currentUsername, currentName]);
-
-  const handleSave = () => {
-    if (username.length < 3) {
-      Alert.alert(t("errors.error"), t("auth.errorUsernameMin"));
-      return;
-    }
-    if (username.length > 50) {
-      Alert.alert(t("errors.error"), t("auth.errorUsernameMax"));
-      return;
-    }
-    if (!USERNAME_REGEX.test(username)) {
-      Alert.alert(t("errors.error"), t("auth.errorUsernameFormat"));
-      return;
-    }
-
-    const updates: { username?: string; name?: string } = {};
-    if (username !== (currentUsername ?? "")) updates.username = username;
-    if (name !== (currentName ?? "")) updates.name = name || undefined;
-
-    if (Object.keys(updates).length === 0) {
-      onClose();
-      return;
-    }
-
-    mutation.mutate(updates, {
-      onSuccess: () => {
-        onClose();
-      },
-      onError: (error) => {
-        Alert.alert(
-          t("errors.error"),
-          error.message || t("editProfile.updateFailed")
-        );
-      },
-    });
-  };
-
-  const initials = (username || "U").slice(0, 1).toUpperCase();
+  const {
+    username,
+    name,
+    initials,
+    setUsername,
+    setName,
+    handleSave,
+    isSaving,
+  } = useEditProfile({ visible, currentUsername, currentName, onClose });
 
   return (
     <Modal
@@ -113,7 +71,7 @@ export function EditProfileModal({
           <AppText variant="subtitle" style={styles.headerTitle}>
             {t("editProfile.title")}
           </AppText>
-          <View style={{ width: 28 }} />
+          <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView
@@ -126,7 +84,7 @@ export function EditProfileModal({
             >
               <AppText
                 variant="title"
-                style={{ color: theme.colors.primaryText }}
+                style={[styles.avatarText, { color: theme.colors.primaryText }]}
               >
                 {initials}
               </AppText>
@@ -191,11 +149,9 @@ export function EditProfileModal({
           </View>
 
           <Button
-            label={
-              mutation.isPending ? t("common.loading") : t("editProfile.save")
-            }
+            label={isSaving ? t("common.loading") : t("editProfile.save")}
             onPress={handleSave}
-            disabled={mutation.isPending}
+            disabled={isSaving}
             style={{ marginTop: theme.spacing.lg }}
           />
         </ScrollView>
@@ -219,6 +175,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontWeight: "600",
   },
+  headerSpacer: {
+    width: 28,
+  },
   content: {
     flex: 1,
   },
@@ -236,6 +195,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarText: {},
   inputContainer: {
     marginBottom: 16,
   },

@@ -5,6 +5,7 @@ import { View, Pressable, Switch, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { settingsSharedStyles } from "./settingsStyles";
 
 type SettingsRowType = "navigation" | "toggle" | "value";
 
@@ -50,7 +51,7 @@ export function SettingsRow(props: SettingsRowProps) {
   const content = (
     <View
       style={[
-        styles.row,
+        settingsSharedStyles.row,
         {
           paddingVertical: theme.spacing.md,
           paddingHorizontal: theme.spacing.md,
@@ -62,7 +63,7 @@ export function SettingsRow(props: SettingsRowProps) {
       {showIcon && (
         <View
           style={[
-            styles.iconContainer,
+            settingsSharedStyles.iconContainer,
             {
               backgroundColor: theme.colors.primary,
               borderRadius: theme.radius.sm,
@@ -81,8 +82,8 @@ export function SettingsRow(props: SettingsRowProps) {
         </View>
       )}
 
-      <View style={styles.labelContainer}>
-        <AppText variant="body" style={styles.label}>
+      <View style={settingsSharedStyles.labelContainer}>
+        <AppText variant="body" style={settingsSharedStyles.label}>
           {label}
         </AppText>
         {subtitle && (
@@ -158,22 +159,6 @@ export function SettingsRow(props: SettingsRowProps) {
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  iconContainer: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  labelContainer: {
-    flex: 1,
-  },
-  label: {
-    fontWeight: "500",
-  },
   valueContainer: {
     flexDirection: "row",
     alignItems: "center",

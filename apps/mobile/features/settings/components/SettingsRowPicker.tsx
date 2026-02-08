@@ -5,11 +5,8 @@ import { View, Modal, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-
-interface PickerOption<T> {
-  value: T;
-  label: string;
-}
+import type { PickerOption } from "./SettingsRowBottomSheet";
+import { settingsSharedStyles } from "./settingsStyles";
 
 interface SettingsRowPickerProps<T> {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -38,7 +35,7 @@ export function SettingsRowPicker<T extends string>({
       <Pressable
         onPress={() => setModalVisible(true)}
         style={({ pressed }) => [
-          styles.row,
+          settingsSharedStyles.row,
           {
             paddingVertical: theme.spacing.md,
             paddingHorizontal: theme.spacing.md,
@@ -51,7 +48,7 @@ export function SettingsRowPicker<T extends string>({
         {icon && (
           <View
             style={[
-              styles.iconContainer,
+              settingsSharedStyles.iconContainer,
               {
                 backgroundColor: theme.colors.primary,
                 borderRadius: theme.radius.sm,
@@ -62,8 +59,8 @@ export function SettingsRowPicker<T extends string>({
             <Ionicons name={icon} size={18} color={theme.colors.primaryText} />
           </View>
         )}
-        <View style={styles.labelContainer}>
-          <AppText variant="body" style={styles.label}>
+        <View style={settingsSharedStyles.labelContainer}>
+          <AppText variant="body" style={settingsSharedStyles.label}>
             {label}
           </AppText>
         </View>
@@ -156,22 +153,6 @@ export function SettingsRowPicker<T extends string>({
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  iconContainer: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  labelContainer: {
-    flex: 1,
-  },
-  label: {
-    fontWeight: "500",
-  },
   modal: {
     flex: 1,
   },

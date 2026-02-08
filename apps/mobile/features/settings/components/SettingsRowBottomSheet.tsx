@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { settingsSharedStyles } from "./settingsStyles";
 
 export interface PickerOption<T> {
   value: T;
@@ -46,7 +47,7 @@ function RowComponent({
       onPress={() => !disabled && sheetRef.current?.present()}
       disabled={disabled}
       style={({ pressed }) => [
-        styles.row,
+        settingsSharedStyles.row,
         {
           paddingVertical: theme.spacing.md,
           paddingHorizontal: theme.spacing.md,
@@ -64,7 +65,7 @@ function RowComponent({
       {icon != null && (
         <View
           style={[
-            styles.iconContainer,
+            settingsSharedStyles.iconContainer,
             {
               backgroundColor: theme.colors.primary,
               borderRadius: theme.radius.sm,
@@ -75,8 +76,8 @@ function RowComponent({
           <Ionicons name={icon} size={18} color={theme.colors.primaryText} />
         </View>
       )}
-      <View style={styles.labelContainer}>
-        <AppText variant="body" style={styles.label}>
+      <View style={settingsSharedStyles.labelContainer}>
+        <AppText variant="body" style={settingsSharedStyles.label}>
           {label}
         </AppText>
         {subtitle != null && subtitle !== "" && (
@@ -273,22 +274,6 @@ export const SettingsRowBottomSheet = {
 };
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  iconContainer: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  labelContainer: {
-    flex: 1,
-  },
-  label: {
-    fontWeight: "500",
-  },
   sheetWrap: {
     flex: 1,
   },
