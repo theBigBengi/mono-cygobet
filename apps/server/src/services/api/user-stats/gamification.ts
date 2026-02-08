@@ -54,6 +54,7 @@ function calculateRankTier(powerScore: number): {
 } {
   for (let i = 0; i < RANK_THRESHOLDS.length; i++) {
     const current = RANK_THRESHOLDS[i];
+    if (current === undefined) continue;
     if (powerScore >= current.minScore) {
       const nextTier = RANK_THRESHOLDS[i - 1];
       if (!nextTier) {
