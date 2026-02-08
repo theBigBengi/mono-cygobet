@@ -32,12 +32,14 @@ const SocketContext = createContext<SocketContextValue>({
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { status, accessToken } = useAuth();
   const socketRef = useRef<TypedSocket | null>(null);
+  const accessTokenRef = useRef(accessToken);
   const [isConnected, setIsConnected] = useState(false);
 
+  accessTokenRef.current = accessToken;
+
+  // Create/destroy socket based on auth status
   useEffect(() => {
-    // Only connect when authenticated and we have a token
-    if (status !== "authenticated" || !accessToken) {
-      // Disconnect if currently connected
+    if (status !== "authenticated") {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -46,35 +48,26 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // If already connected with same token, skip
-    if (socketRef.current?.connected) {
-      return;
-    }
+    // Socket already exists — kept alive across token refreshes
+    if (socketRef.current) return;
 
-    // Disconnect old socket if exists (e.g. token changed)
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-    }
+    const token = accessTokenRef.current;
+    if (!token) return;
 
     const baseUrl = getApiBaseUrl();
 
     const socket: TypedSocket = io(baseUrl, {
-      auth: { token: accessToken },
+      auth: { token },
       transports: ["websocket", "polling"],
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 10000,
     });
 
-    socket.on("connect", () => {
-      setIsConnected(true);
-    });
-
-    socket.on("disconnect", () => {
-      setIsConnected(false);
-    });
+    socket.on("connect", () => setIsConnected(true));
+    socket.on("disconnect", () => setIsConnected(false));
 
     socketRef.current = socket;
 
@@ -83,7 +76,22 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socketRef.current = null;
       setIsConnected(false);
     };
-  }, [status, accessToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  // Keep socket auth token in sync so reconnects use the latest token
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !accessToken) return;
+
+    socket.auth = { token: accessToken };
+
+    // If socket gave up reconnecting (e.g. all attempts failed with old token),
+    // kick it off again now that we have a fresh token
+    if (!socket.connected && !socket.active) {
+      socket.connect();
+    }
+  }, [accessToken]);
 
   // Reconnect on app resume if disconnected
   useEffect(() => {
