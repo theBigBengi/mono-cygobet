@@ -273,21 +273,24 @@ export async function settlePredictionsForFixtures(
     select: { id: true, creatorId: true },
   });
   const rankingsBefore = new Map<number, Map<number, number>>();
-  for (const g of groupsWithCreator) {
-    try {
-      const ranking = await getGroupRanking(g.id, g.creatorId);
+  const beforeResults = await Promise.allSettled(
+    groupsWithCreator.map((g) => getGroupRanking(g.id, g.creatorId))
+  );
+  groupsWithCreator.forEach((g, i) => {
+    const result = beforeResults[i]!;
+    if (result.status === "fulfilled") {
       const rankMap = new Map<number, number>();
-      for (const item of ranking.data) {
+      for (const item of result.value.data) {
         rankMap.set(item.userId, item.rank);
       }
       rankingsBefore.set(g.id, rankMap);
-    } catch (err) {
+    } else {
       log.warn(
-        { groupId: g.id, err },
+        { groupId: g.id, err: result.reason },
         "Failed to snapshot ranking before settlement"
       );
     }
-  }
+  });
 
   // Step 6: Batch update in transaction
   const now = new Date();
@@ -311,62 +314,67 @@ export async function settlePredictionsForFixtures(
     const groupsEnded = await transitionCompletedGroups(uniqueGroupIds);
 
     // Detect ranking changes and emit ranking_change chat events (top 3 only)
-    for (const g of groupsWithCreator) {
-      try {
-        const before = rankingsBefore.get(g.id);
-        if (!before) continue;
+    const afterResults = await Promise.allSettled(
+      groupsWithCreator.map((g) => getGroupRanking(g.id, g.creatorId))
+    );
+    for (const [i, g] of groupsWithCreator.entries()) {
+      const afterResult = afterResults[i]!;
+      if (afterResult.status === "rejected") {
+        log.warn(
+          { groupId: g.id, err: afterResult.reason },
+          "Failed to fetch ranking after settlement"
+        );
+        continue;
+      }
 
-        const after = await getGroupRanking(g.id, g.creatorId);
+      const before = rankingsBefore.get(g.id);
+      if (!before) continue;
 
-        for (const item of after.data) {
-          const prevRank = before.get(item.userId);
-          if (
-            prevRank !== undefined &&
-            item.rank < prevRank &&
-            item.rank <= 3
-          ) {
-            await emitSystemEvent(
-              g.id,
-              "ranking_change",
-              {
-                userId: item.userId,
-                username: item.username || "Someone",
-                oldPosition: prevRank,
-                newPosition: item.rank,
-              },
-              io
-            );
-          }
-        }
+      const after = afterResult.value;
 
-        // Detect leader change
-        const beforeLeader = [...(before?.entries() ?? [])]
-          .filter(([, rank]) => rank === 1)
-          .map(([userId]) => userId);
-
-        const afterRanking = after.data.filter((item) => item.rank === 1);
-        const newLeader = afterRanking[0];
-
-        // Emit only if: single new leader AND different from before
+      for (const item of after.data) {
+        const prevRank = before.get(item.userId);
         if (
-          afterRanking.length === 1 &&
-          newLeader &&
-          !beforeLeader.includes(newLeader.userId)
+          prevRank !== undefined &&
+          item.rank < prevRank &&
+          item.rank <= 3
         ) {
           await emitSystemEvent(
             g.id,
-            "leader_change",
+            "ranking_change",
             {
-              userId: newLeader.userId,
-              username: newLeader.username || "Someone",
+              userId: item.userId,
+              username: item.username || "Someone",
+              oldPosition: prevRank,
+              newPosition: item.rank,
             },
             io
           );
         }
-      } catch (err) {
-        log.warn(
-          { groupId: g.id, err },
-          "Failed to emit ranking change events after settlement"
+      }
+
+      // Detect leader change
+      const beforeLeader = [...(before?.entries() ?? [])]
+        .filter(([, rank]) => rank === 1)
+        .map(([userId]) => userId);
+
+      const afterRanking = after.data.filter((item) => item.rank === 1);
+      const newLeader = afterRanking[0];
+
+      // Emit only if: single new leader AND different from before
+      if (
+        afterRanking.length === 1 &&
+        newLeader &&
+        !beforeLeader.includes(newLeader.userId)
+      ) {
+        await emitSystemEvent(
+          g.id,
+          "leader_change",
+          {
+            userId: newLeader.userId,
+            username: newLeader.username || "Someone",
+          },
+          io
         );
       }
     }
@@ -395,27 +403,33 @@ export async function settlePredictionsForFixtures(
  */
 async function transitionCompletedGroups(groupIds: number[]): Promise<number> {
   if (!groupIds.length) return 0;
-  let ended = 0;
-  for (const groupId of groupIds) {
-    // Count group fixtures whose matches are not yet terminal
-    const nonTerminalCount = await prisma.groupFixtures.count({
-      where: {
-        groupId,
-        fixtures: {
-          state: {
-            notIn: [...FINISHED_STATES, ...CANCELLED_STATES] as FixtureState[],
-          },
+
+  // Single query: find groups that still have non-terminal fixtures
+  const groupsWithPending = await prisma.groupFixtures.groupBy({
+    by: ["groupId"],
+    where: {
+      groupId: { in: groupIds },
+      fixtures: {
+        state: {
+          notIn: [...FINISHED_STATES, ...CANCELLED_STATES] as FixtureState[],
         },
       },
-    });
-    if (nonTerminalCount === 0) {
-      await prisma.groups.updateMany({
-        where: { id: groupId, status: "active" },
-        data: { status: "ended" },
-      });
-      ended++;
-      log.info({ groupId }, "Group transitioned to ended");
-    }
+    },
+  });
+
+  const pendingGroupIds = new Set(groupsWithPending.map((g) => g.groupId));
+  const completedGroupIds = groupIds.filter((id) => !pendingGroupIds.has(id));
+
+  if (!completedGroupIds.length) return 0;
+
+  const { count: ended } = await prisma.groups.updateMany({
+    where: { id: { in: completedGroupIds }, status: "active" },
+    data: { status: "ended" },
+  });
+
+  for (const groupId of completedGroupIds) {
+    log.info({ groupId }, "Group transitioned to ended");
   }
+
   return ended;
 }
