@@ -87,6 +87,8 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
       const totalFixtures = stats.fixtureCountByGroupId.get(group.id) ?? 0;
       const predictionsCount =
         stats.predictionCountByGroupId.get(group.id) ?? 0;
+      const completedFixturesCount =
+        stats.completedFixturesCountByGroupId.get(group.id) ?? 0;
       const hasUnpredictedGames = stats.hasUnpredictedGamesByGroupId.has(
         group.id
       );
@@ -110,6 +112,7 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
           memberCount,
           totalFixtures,
           predictionsCount,
+          completedFixturesCount,
           hasUnpredictedGames,
           unpredictedGamesCount,
           todayGamesCount,

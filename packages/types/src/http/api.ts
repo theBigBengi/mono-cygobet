@@ -390,6 +390,11 @@ export type ApiGroupItem = {
    */
   totalFixtures?: number;
   /**
+   * Number of completed (FT) fixtures in the group.
+   * Only included for active/ended groups.
+   */
+  completedFixturesCount?: number;
+  /**
    * Whether there are upcoming games that need predictions.
    * Only included for active/ended groups.
    */

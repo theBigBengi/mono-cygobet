@@ -173,6 +173,7 @@
     "participant_one": "participant",
     "participant_other": "participants",
     "predictionsCount": "{{done}}/{{total}} predictions",
+    "gamesProgress": "{{done}}/{{total}} games",
     "gamesNeedPredictions": "{{count}} games need predictions",
     "nextGame": "Next: {{home}} vs {{away}}",
     "groupStart": "Group Start: {{date}} {{time}}",

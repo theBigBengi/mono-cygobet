@@ -173,6 +173,7 @@
     "participant_one": "משתתף",
     "participant_other": "משתתפים",
     "predictionsCount": "{{done}}/{{total}} תחזיות",
+    "gamesProgress": "{{done}}/{{total}} משחקים",
     "gamesNeedPredictions": "{{count}} משחקים דורשים תחזיות",
     "nextGame": "הבא: {{home}} מול {{away}}",
     "groupStart": "תחילת קבוצה: {{date}} {{time}}",

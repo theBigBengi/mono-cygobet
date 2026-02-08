@@ -117,6 +117,7 @@ export function buildActiveGroupItem(
     memberCount: number;
     totalFixtures: number;
     predictionsCount: number;
+    completedFixturesCount: number;
     hasUnpredictedGames: boolean;
     unpredictedGamesCount: number;
     todayGamesCount: number;
@@ -133,6 +134,7 @@ export function buildActiveGroupItem(
   lastGame: ApiFixturesListResponse["data"][0] | null;
   predictionsCount: number;
   totalFixtures: number;
+  completedFixturesCount: number;
   hasUnpredictedGames: boolean;
   unpredictedGamesCount: number;
   todayGamesCount: number;

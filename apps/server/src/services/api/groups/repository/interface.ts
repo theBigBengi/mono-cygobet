@@ -107,9 +107,7 @@ export interface GroupsRepository {
     nudgerUserId: number,
     fixtureIds?: number[]
   ): Promise<Array<{ targetUserId: number; fixtureId: number }>>;
-  findGroupRulesNudgeBatch(
-    groupIds: number[]
-  ): Promise<
+  findGroupRulesNudgeBatch(groupIds: number[]): Promise<
     Array<{
       groupId: number;
       nudgeEnabled: boolean;
@@ -255,6 +253,7 @@ export interface GroupsRepository {
     memberCountByGroupId: Map<number, number>;
     fixtureCountByGroupId: Map<number, number>;
     predictionCountByGroupId: Map<number, number>;
+    completedFixturesCountByGroupId: Map<number, number>;
     hasUnpredictedGamesByGroupId: Set<number>;
     nextGameByGroupId: Map<number, any | null>;
     firstGameByGroupId: Map<number, any | null>;

@@ -34,7 +34,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
   const initials = getInitials(group.name);
   const progress =
     (group.totalFixtures ?? 0) > 0
-      ? (group.predictionsCount ?? 0) / (group.totalFixtures ?? 1)
+      ? (group.completedFixturesCount ?? 0) / (group.totalFixtures ?? 1)
       : 0;
   const liveCount = group.liveGamesCount ?? 0;
   const isDraft = group.status === "draft";
@@ -123,8 +123,8 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
             </View>
             <View style={styles.progressLabels}>
               <AppText variant="caption" color="secondary">
-                {t("lobby.predictionsCount", {
-                  done: group.predictionsCount ?? 0,
+                {t("lobby.gamesProgress", {
+                  done: group.completedFixturesCount ?? 0,
                   total: group.totalFixtures ?? 0,
                 })}
               </AppText>

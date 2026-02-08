@@ -38,6 +38,7 @@ export async function findGroupsStatsBatch(
       memberCountByGroupId: new Map<number, number>(),
       fixtureCountByGroupId: new Map<number, number>(),
       predictionCountByGroupId: new Map<number, number>(),
+      completedFixturesCountByGroupId: new Map<number, number>(),
       hasUnpredictedGamesByGroupId: new Set<number>(),
       nextGameByGroupId: new Map<number, FixtureWithBaseSelect | null>(),
       firstGameByGroupId: new Map<number, FixtureWithBaseSelect | null>(),
@@ -55,6 +56,7 @@ export async function findGroupsStatsBatch(
     memberCountsRaw,
     fixtureCountsRaw,
     predictionCountsRaw,
+    completedFixturesCountsRaw,
     nextGamesRaw,
     firstGamesRaw,
     lastGamesRaw,
@@ -87,7 +89,16 @@ export async function findGroupsStatsBatch(
       },
       _count: { groupId: true },
     }),
-    // Query 4: next games per group
+    // Query 4: completedFixturesCount per group (FT only)
+    prisma.groupFixtures.groupBy({
+      by: ["groupId"],
+      where: {
+        groupId: { in: groupIds },
+        fixtures: { state: "FT" },
+      },
+      _count: { groupId: true },
+    }),
+    // Query 5: next games per group
     prisma.groupFixtures.findMany({
       where: {
         groupId: { in: groupIds },
@@ -105,7 +116,7 @@ export async function findGroupsStatsBatch(
         },
       },
     }),
-    // Query 5: first games for draft groups
+    // Query 6: first games for draft groups
     prisma.groupFixtures.findMany({
       where: { groupId: { in: groupIds } },
       orderBy: {
@@ -120,7 +131,7 @@ export async function findGroupsStatsBatch(
         },
       },
     }),
-    // Query 6: last games per group (latest fixture)
+    // Query 7: last games per group (latest fixture)
     prisma.groupFixtures.findMany({
       where: { groupId: { in: groupIds } },
       orderBy: {
@@ -135,7 +146,7 @@ export async function findGroupsStatsBatch(
         },
       },
     }),
-    // Query 7: unpredictedGamesCount per group (NS games without user prediction); hasUnpredictedGames derived from count > 0
+    // Query 8: unpredictedGamesCount per group (NS games without user prediction); hasUnpredictedGames derived from count > 0
     prisma.groupFixtures.groupBy({
       by: ["groupId"],
       where: {
@@ -149,7 +160,7 @@ export async function findGroupsStatsBatch(
       },
       _count: { groupId: true },
     }),
-    // Query 8: todayGamesCount per group
+    // Query 9: todayGamesCount per group
     prisma.groupFixtures.groupBy({
       by: ["groupId"],
       where: {
@@ -160,7 +171,7 @@ export async function findGroupsStatsBatch(
       },
       _count: { groupId: true },
     }),
-    // Query 9: todayUnpredictedCount per group (today's NS games without prediction)
+    // Query 10: todayUnpredictedCount per group (today's NS games without prediction)
     prisma.groupFixtures.groupBy({
       by: ["groupId"],
       where: {
@@ -177,7 +188,7 @@ export async function findGroupsStatsBatch(
       },
       _count: { groupId: true },
     }),
-    // Query 10: liveGamesCount per group
+    // Query 11: liveGamesCount per group
     prisma.groupFixtures.groupBy({
       by: ["groupId"],
       where: {
@@ -202,6 +213,11 @@ export async function findGroupsStatsBatch(
   const predictionCountByGroupId = new Map<number, number>();
   predictionCountsRaw.forEach((item) =>
     predictionCountByGroupId.set(item.groupId, item._count.groupId)
+  );
+
+  const completedFixturesCountByGroupId = new Map<number, number>();
+  (completedFixturesCountsRaw as GroupByCountItem[]).forEach((item) =>
+    completedFixturesCountByGroupId.set(item.groupId, item._count.groupId)
   );
 
   const hasUnpredictedGamesByGroupId = new Set<number>();
@@ -273,6 +289,7 @@ export async function findGroupsStatsBatch(
     memberCountByGroupId,
     fixtureCountByGroupId,
     predictionCountByGroupId,
+    completedFixturesCountByGroupId,
     hasUnpredictedGamesByGroupId,
     nextGameByGroupId,
     firstGameByGroupId,
