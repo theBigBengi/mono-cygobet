@@ -94,6 +94,15 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
               {t("lobby.participant", { count: group.memberCount ?? 0 })}
               {nextLabel && ` · ${nextLabel}`}
             </AppText>
+            {isDraft && (
+              <AppText
+                variant="caption"
+                color="secondary"
+                style={styles.tapToFinish}
+              >
+                {t("groups.tapToFinish")}
+              </AppText>
+            )}
           </View>
           <Ionicons
             name="chevron-forward"
@@ -178,6 +187,9 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
+  },
+  tapToFinish: {
+    marginTop: 2,
   },
   nameRow: {
     flexDirection: "row",

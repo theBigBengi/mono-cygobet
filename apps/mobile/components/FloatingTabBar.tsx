@@ -44,6 +44,11 @@ export function FloatingTabBar({
     );
   }, [groupsData]);
 
+  const draftCount = useMemo(() => {
+    const groups = groupsData?.data ?? [];
+    return groups.filter((g) => g.status === "draft").length;
+  }, [groupsData]);
+
   // Extract count number from label (e.g., "3 Games" -> 3)
   const countNumber = selectionCount
     ? parseInt(selectionCount.split(" ")[0], 10) || 0
@@ -177,6 +182,12 @@ export function FloatingTabBar({
                   {route.name === "groups" && groupsNeedAttention && (
                     <View style={styles.attentionDot} pointerEvents="none" />
                   )}
+                  {route.name === "groups" && draftCount > 0 && (
+                    <View
+                      style={[styles.attentionDot, styles.draftDot]}
+                      pointerEvents="none"
+                    />
+                  )}
                   {route.name === "groups" && totalUnreadCount > 0 && (
                     <View
                       style={[
@@ -257,6 +268,11 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: "#EF4444",
+  },
+  draftDot: {
+    right: undefined,
+    left: -4,
+    backgroundColor: "#F59E0B",
   },
   unreadCountBadge: {
     position: "absolute",

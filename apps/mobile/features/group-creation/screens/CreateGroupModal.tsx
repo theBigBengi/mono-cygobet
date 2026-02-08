@@ -32,6 +32,7 @@ import {
   useClearSelectedTeamsHook,
 } from "@/features/group-creation/selection/teams";
 import { useCreateGroupMutation } from "@/domains/groups";
+import { publishGroup } from "@/domains/groups/groups.api";
 import {
   CreateGroupModalFixturesView,
   CreateGroupModalLeaguesView,
@@ -80,60 +81,84 @@ export function CreateGroupModal() {
     setModalVisible(false);
   };
 
+  const validateAndGetCreateBody = () => {
+    if (mode === "fixtures" && games.length === 0) return null;
+    if (mode === "leagues" && leagues.length === 0) return null;
+    if (mode === "teams" && teams.length === 0) return null;
+    if (mode === "fixtures") {
+      return {
+        name: "",
+        privacy: "private" as const,
+        selectionMode: "games" as const,
+        fixtureIds: games.map((g) => g.fixtureId),
+      };
+    }
+    if (mode === "leagues") {
+      return {
+        name: "",
+        privacy: "private" as const,
+        selectionMode: "leagues" as const,
+        leagueIds: leagues.map((l) => l.id),
+      };
+    }
+    if (mode === "teams") {
+      return {
+        name: "",
+        privacy: "private" as const,
+        selectionMode: "teams" as const,
+        teamIds: teams.map((t) => t.id),
+      };
+    }
+    return null;
+  };
+
   const handleCreate = async () => {
-    // Turn on global overlay immediately, before any checks or mutations
     setOverlay(t("groupCreation.creating"));
-
-    if (mode === "fixtures" && games.length === 0) {
+    const body = validateAndGetCreateBody();
+    if (!body) {
       setOverlay(false);
       return;
     }
-    if (mode === "leagues" && leagues.length === 0) {
-      setOverlay(false);
-      return;
-    }
-    if (mode === "teams" && teams.length === 0) {
-      setOverlay(false);
-      return;
-    }
-
     try {
-      if (mode === "fixtures") {
-        const result = await createGroupMutation.mutateAsync({
-          name: "",
-          privacy: "private",
-          selectionMode: "games",
-          fixtureIds: games.map((g) => g.fixtureId),
-        });
-        clearGames();
-        setModalVisible(false);
-        // Use replace to remove modal and previous screen from stack (overlay stays on)
-        router.replace(`/groups/${result.data.id}` as any);
-        return;
-      }
-      if (mode === "leagues") {
-        const result = await createGroupMutation.mutateAsync({
-          name: "",
-          privacy: "private",
-          selectionMode: "leagues",
-          leagueIds: leagues.map((l) => l.id),
-        });
-        clearLeagues();
-        router.replace(`/groups/${result.data.id}` as any);
-        return;
-      }
-      if (mode === "teams") {
-        const result = await createGroupMutation.mutateAsync({
-          name: "",
-          privacy: "private",
-          selectionMode: "teams",
-          teamIds: teams.map((t) => t.id),
-        });
-        clearTeams();
-        router.replace(`/groups/${result.data.id}` as any);
-      }
+      const result = await createGroupMutation.mutateAsync(body);
+      if (mode === "fixtures") clearGames();
+      if (mode === "leagues") clearLeagues();
+      if (mode === "teams") clearTeams();
+      setModalVisible(false);
+      router.replace(`/groups/${result.data.id}` as any);
     } catch {
-      // Error handled by mutation; turn off overlay and stay in modal
+      setOverlay(false);
+    }
+  };
+
+  const handleCreateAndPublish = async () => {
+    setOverlay(t("groupCreation.creating"));
+    const body = validateAndGetCreateBody();
+    if (!body) {
+      setOverlay(false);
+      return;
+    }
+    try {
+      const result = await createGroupMutation.mutateAsync(body);
+      if (mode === "fixtures") clearGames();
+      if (mode === "leagues") clearLeagues();
+      if (mode === "teams") clearTeams();
+      await publishGroup(result.data.id, {
+        name: t("lobby.defaultGroupName"),
+        privacy: "private",
+        inviteAccess: "all",
+        onTheNosePoints: 3,
+        correctDifferencePoints: 2,
+        outcomePoints: 1,
+        predictionMode: "CorrectScore",
+        koRoundMode: "FullTime",
+        maxMembers: 50,
+        nudgeEnabled: true,
+        nudgeWindowMinutes: 60,
+      });
+      setModalVisible(false);
+      router.replace(`/groups/${result.data.id}` as any);
+    } catch {
       setOverlay(false);
     }
   };
@@ -241,11 +266,18 @@ export function CreateGroupModal() {
             label={
               isCreating
                 ? t("groupCreation.creating")
-                : t("groupCreation.createGroup")
+                : t("groupCreation.createAndPublish")
             }
-            onPress={handleCreate}
+            onPress={handleCreateAndPublish}
             disabled={isCreating || !canCreate}
             style={styles.createBtn}
+          />
+          <Button
+            label={t("groupCreation.createDraft")}
+            variant="secondary"
+            onPress={handleCreate}
+            disabled={isCreating || !canCreate}
+            style={styles.createDraftBtn}
           />
         </View>
       </View>
@@ -343,6 +375,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  createDraftBtn: {
+    width: "100%",
     borderRadius: 12,
   },
   globalOverlay: {

@@ -48,13 +48,13 @@ export function useGroupLobbyActions(
   koRoundMode?: KORoundMode,
   maxMembers?: number,
   nudgeEnabled: boolean = true,
-  nudgeWindowMinutes: number = 60
+  nudgeWindowMinutes: number = 60,
+  defaultName: string = "Prediction Group"
 ): {
   handlePublish: () => Promise<void>;
 } {
   const handlePublish = useCallback(async () => {
-    const nextName = draftName.trim();
-    if (!nextName) return;
+    const nextName = draftName.trim() || defaultName;
 
     // Map prediction mode from mobile format to server format
     const mapPredictionMode = (mode?: PredictionMode): string | undefined => {
@@ -121,6 +121,7 @@ export function useGroupLobbyActions(
     nudgeEnabled,
     nudgeWindowMinutes,
     publishGroupMutation,
+    defaultName,
   ]);
 
   return {

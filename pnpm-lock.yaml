@@ -315,9 +315,6 @@ importers:
       whatwg-fetch:
         specifier: ^3.6.20
         version: 3.6.20
-      zustand:
-        specifier: ^4.5.0
-        version: 4.5.7(@types/react@19.1.17)(react@19.1.0)
     devDependencies:
       '@types/react':
         specifier: ~19.1.0
@@ -6642,21 +6639,6 @@ packages:
 
   zod@4.3.5:
     resolution: {integrity: sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==}
-
-  zustand@4.5.7:
-    resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}
-    engines: {node: '>=12.7.0'}
-    peerDependencies:
-      '@types/react': '>=16.8'
-      immer: '>=9.0.6'
-      react: '>=16.8'
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      immer:
-        optional: true
-      react:
-        optional: true
 
 snapshots:
 
@@ -13987,10 +13969,3 @@ snapshots:
       zod: 4.3.5
 
   zod@4.3.5: {}
-
-  zustand@4.5.7(@types/react@19.1.17)(react@19.1.0):
-    dependencies:
-      use-sync-external-store: 1.6.0(react@19.1.0)
-    optionalDependencies:
-      '@types/react': 19.1.17
-      react: 19.1.0

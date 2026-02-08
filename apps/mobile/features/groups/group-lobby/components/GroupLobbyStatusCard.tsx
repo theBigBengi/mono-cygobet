@@ -32,7 +32,7 @@ export function GroupLobbyStatusCard({ status }: GroupLobbyStatusCardProps) {
         </AppText>
       </View>
       <AppText variant="subtitle" style={styles.title}>
-        {t("lobby.finishSetup")}
+        {t("lobby.defaultGroupName")}
       </AppText>
       <AppText variant="caption" color="secondary" style={styles.subtitle}>
         {t("lobby.finishSetupDescription")}

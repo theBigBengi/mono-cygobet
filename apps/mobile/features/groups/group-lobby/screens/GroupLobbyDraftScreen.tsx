@@ -29,11 +29,11 @@ function clampScore(value: number): number {
 }
 
 import { PublishGroupButton } from "../components/PublishGroupButton";
-import { GroupLobbyStatusCard } from "../components/GroupLobbyStatusCard";
 import { DraftScoringContent } from "../components/DraftScoringContent";
 import { useGroupLobbyState } from "../hooks/useGroupLobbyState";
 import { useGroupLobbyActions } from "../hooks/useGroupLobbyActions";
 import { useGroupDuration } from "../hooks/useGroupDuration";
+import { useAutoSaveDraft } from "../hooks/useAutoSaveDraft";
 import type { FixtureItem } from "../types";
 import { formatDate } from "@/utils/date";
 import {
@@ -166,7 +166,8 @@ export function GroupLobbyDraftScreen({
     koRoundMode,
     maxMembers,
     nudgeEnabled,
-    nudgeWindowMinutes
+    nudgeWindowMinutes,
+    t("lobby.defaultGroupName")
   );
 
   const handlePublishWithOverlay = useCallback(async () => {
@@ -180,6 +181,19 @@ export function GroupLobbyDraftScreen({
 
   const isEditable =
     !publishGroupMutation.isPending && !updateGroupMutation.isPending;
+
+  useAutoSaveDraft(
+    group.id,
+    {
+      name: draftName,
+      description: draftDescription,
+      privacy: draftPrivacy,
+      inviteAccess: draftInviteAccess,
+      nudgeEnabled,
+      nudgeWindowMinutes,
+    },
+    isEditable && isCreator
+  );
 
   const handleViewAllGames = () => {
     router.push(`/groups/${group.id}/games` as any);
@@ -203,6 +217,18 @@ export function GroupLobbyDraftScreen({
       ? t("lobby.gamesCount", { count: fixtures.length })
       : `${t("lobby.daysCount", { count: duration.durationDays })} · ${t("lobby.gamesCount", { count: fixtures.length })}`
     : undefined;
+
+  const hasGames = fixtures.length > 0;
+  const hasName = draftName.trim().length > 0;
+  const stepsDone = (hasGames ? 1 : 0) + (hasName ? 1 : 0);
+  const progressBannerText =
+    stepsDone === 2
+      ? t("lobby.readyToPublish")
+      : stepsDone === 1
+        ? hasGames
+          ? t("lobby.progressOneStepName")
+          : t("lobby.progressOneStepGames")
+        : t("lobby.progressNoSteps");
 
   return (
     <View style={styles.container}>
@@ -233,7 +259,7 @@ export function GroupLobbyDraftScreen({
             color="secondary"
             style={styles.bannerSubtitle}
           >
-            {t("lobby.draftGroupDescription")}
+            {progressBannerText}
           </AppText>
         </View>
 
@@ -325,7 +351,18 @@ export function GroupLobbyDraftScreen({
               label={t("lobby.scoring")}
               valueDisplay={scoringValueDisplay}
               disabled={!isEditable}
+              isLast
             />
+          </SettingsSection>
+        )}
+
+        {/* ADVANCED — creator only (collapsed by default) */}
+        {isCreator && (
+          <SettingsSection
+            title={t("lobby.advanced")}
+            collapsible
+            defaultExpanded={false}
+          >
             <SettingsRowBottomSheet.Row
               sheetRef={koSheetRef}
               icon="flag-outline"
@@ -345,16 +382,7 @@ export function GroupLobbyDraftScreen({
               label={t("lobby.maxMembers")}
               valueDisplay={String(maxMembers)}
               disabled={!isEditable}
-              isLast
             />
-          </SettingsSection>
-        )}
-
-        {/* NOTIFICATIONS — creator only */}
-        {isCreator && (
-          <SettingsSection
-            title={t("groupSettings.notifications" as Parameters<typeof t>[0])}
-          >
             <SettingsRow
               type="toggle"
               icon="notifications-outline"
@@ -410,12 +438,6 @@ export function GroupLobbyDraftScreen({
                 </View>
               </View>
             )}
-          </SettingsSection>
-        )}
-
-        {/* PRIVACY — creator only */}
-        {isCreator && (
-          <SettingsSection title={t("lobby.privacyAndInvite")}>
             <SettingsRow
               type="toggle"
               icon="lock-closed-outline"
@@ -524,7 +546,7 @@ export function GroupLobbyDraftScreen({
         <PublishGroupButton
           onPress={handlePublishWithOverlay}
           isPending={publishGroupMutation.isPending}
-          disabled={publishGroupMutation.isPending || !draftName.trim()}
+          disabled={publishGroupMutation.isPending}
         />
       )}
     </View>

@@ -114,7 +114,8 @@
     "needsAttention": "דורש תשומת לב",
     "active": "פעיל",
     "drafts": "טיוטות",
-    "ended": "הסתיים"
+    "ended": "הסתיים",
+    "tapToFinish": "לחץ להשלמת ההגדרות"
   },
   "lobby": {
     "onlyInvitedCanJoin": "רק משתמשים שהוזמנו יכולים להצטרף",
@@ -182,16 +183,20 @@
     "nextGameStarts": "המשחק הבא מתחיל {{countdown}}",
     "nextGameLabel": "המשחק הבא: {{countdown}}",
     "dateProgress": "יום {{current}} מתוך {{total}}",
-    "finishSetup": "קבוצת תחזיות",
     "finishSetupDescription": "נחשו תוצאות משחקים והתחרו עם חברים. המנחש הטוב ביותר מנצח!",
+    "defaultGroupName": "קבוצת ניחושים",
     "draftBadge": "טיוטה",
-    "draftGroupDescription": "נחשו תוצאות משחקים והתחרו עם חברים. המנחש הטוב ביותר מנצח!",
+    "readyToPublish": "2/2 — מוכן לפרסום!",
+    "progressOneStepName": "1/2 — הוסף שם לקבוצה לפרסום",
+    "progressOneStepGames": "1/2 — הוסף משחקים לפרסום",
+    "progressNoSteps": "הוסף משחקים ושם לפרסום",
     "groupDuration": "משך הקבוצה",
     "predictionRules": "חוקי ניחוש",
     "nudge": "תזכורת",
     "nudgeDescription": "אפשר לחברים לתזכר אחד את השני למשחקים קרובים",
     "minutesBeforeKickoff": "דקות לפני הבעיטה",
     "privacyAndInvite": "פרטיות והזמנה",
+    "advanced": "מתקדם",
     "addGamesToSeeDuration": "הוסף משחקים כדי לראות משך",
     "predictionMode": "מצב תחזית",
     "exactResult": "תוצאה מדויקת",
@@ -477,6 +482,8 @@
     "selectedTeams": "קבוצות נבחרות",
     "creating": "יוצר...",
     "createGroup": "צור קבוצה",
+    "createAndPublish": "צור ופרסם",
+    "createDraft": "צור טיוטה",
     "failedCreate": "יצירת קבוצה נכשלה"
   },
   "errors": {
