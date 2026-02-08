@@ -5,18 +5,13 @@ import React, { useMemo } from "react";
 import { View, StyleSheet } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
-import { useSetAtom, useAtomValue } from "jotai";
+import { useAtomValue } from "jotai";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { HapticTab } from "./haptic-tab";
 import { AppText } from "./ui";
-import {
-  useHasSelectionForMode,
-  useSelectionLabelForMode,
-} from "@/features/group-creation/hooks/useSelectionState";
 import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
-import { currentSelectionModeAtom } from "@/features/group-creation/selection/mode.atom";
-import { createGroupModalVisibleAtom } from "@/features/group-creation/screens/create-group-modal.atom";
+import { tabBarBadgeAtom } from "@/lib/state/tabBarBadge.atom";
 
 export function FloatingTabBar({
   state,
@@ -25,10 +20,7 @@ export function FloatingTabBar({
 }: BottomTabBarProps) {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === "dark";
-  const currentMode = useAtomValue(currentSelectionModeAtom);
-  const setModalVisible = useSetAtom(createGroupModalVisibleAtom);
-  const hasSelection = useHasSelectionForMode(currentMode);
-  const selectionCount = useSelectionLabelForMode(currentMode);
+  const badge = useAtomValue(tabBarBadgeAtom);
   const { data: groupsData } = useMyGroupsQuery();
   const { data: unreadData } = useUnreadCountsQuery();
 
@@ -49,10 +41,8 @@ export function FloatingTabBar({
     return groups.filter((g) => g.status === "draft").length;
   }, [groupsData]);
 
-  // Extract count number from label (e.g., "3 Games" -> 3)
-  const countNumber = selectionCount
-    ? parseInt(selectionCount.split(" ")[0], 10) || 0
-    : 0;
+  const hasSelection = badge.visible;
+  const countNumber = badge.count;
 
   return (
     <View style={styles.container} pointerEvents="box-none">
@@ -80,9 +70,9 @@ export function FloatingTabBar({
             const onPress = () => {
               // Special handling for home tab when there's a selection
               if (route.name === "home" && hasSelection) {
-                // If we're already on home tab, open the modal
+                // If we're already on home tab, trigger the badge action
                 if (isFocused) {
-                  setModalVisible(true);
+                  badge.onActiveTap?.();
                   return;
                 }
                 // If we're not on home tab, navigate to home first

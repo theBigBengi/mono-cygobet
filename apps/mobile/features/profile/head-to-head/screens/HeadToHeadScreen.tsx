@@ -7,7 +7,7 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { Screen } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { useHeadToHeadQuery, useH2HOpponentsQuery } from "@/features/profile/profile.queries";
+import { useHeadToHeadQuery, useH2HOpponentsQuery } from "@/domains/profile";
 import { OpponentSelector } from "../components/OpponentSelector";
 import { H2HSummaryCard } from "../components/H2HSummaryCard";
 import { SharedGroupRow } from "../components/SharedGroupRow";

@@ -6,7 +6,7 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { useTheme } from "@/lib/theme";
 import { useGoBack } from "@/hooks/useGoBack";
-import { GroupGamesHeader } from "@/features/groups/predictions/components/GroupGamesHeader";
+import { AppHeader } from "./AppHeader";
 
 export interface ScreenWithHeaderProps {
   children: React.ReactNode;
@@ -31,8 +31,7 @@ export function ScreenWithHeader({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <GroupGamesHeader
-        backOnly
+      <AppHeader
         onBack={goBack}
         title={title}
         rightContent={rightContent}

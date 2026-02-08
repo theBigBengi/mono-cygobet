@@ -11,7 +11,7 @@ import { fetchLeagues } from "@/domains/leagues/leagues.api";
 import { leaguesKeys } from "@/domains/leagues/leagues.keys";
 import { fetchTeams } from "@/domains/teams/teams.api";
 import { teamsKeys } from "@/domains/teams/teams.keys";
-import { fetchMyGroups } from "@/domains/groups/groups.api";
+import { fetchMyGroups } from "@/domains/groups/groups-core.api";
 import { fetchUnreadCounts } from "@/domains/groups/groups-chat.api";
 import { groupsKeys } from "@/domains/groups/groups.keys";
 

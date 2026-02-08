@@ -2,16 +2,17 @@
 // React Query hooks for fixtures domain.
 // - Feature-agnostic: can be used by any feature that needs fixtures data.
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type {
   ApiFixturesListResponse,
   ApiUpcomingFixturesQuery,
+  ApiMyPredictionsForFixtureResponse,
 } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
 import { isReadyForProtected } from "@/lib/auth/guards";
 
-import { fetchUpcomingFixtures } from "./fixtures.api";
+import { fetchUpcomingFixtures, fetchMyPredictionsForFixture } from "./fixtures.api";
 import { fixturesKeys } from "./fixtures.keys";
 
 /**
@@ -34,17 +35,19 @@ export function useUpcomingFixturesQuery(
 }
 
 /**
- * Placeholder mutation hook for fixtures.
- * - All fixtures mutations should invalidate fixturesKeys as appropriate.
+ * Hook: current user's predictions for a fixture across all groups.
+ * - Enabled only when authed + onboarding complete and fixtureId is valid.
  */
-export function useDummyFixturesMutation() {
-  const queryClient = useQueryClient();
+export function useMyPredictionsForFixture(fixtureId: number | null) {
+  const { status, user } = useAuth();
 
-  return useMutation({
-    // mutationFn: async (input: YourPayloadType) => { ... },
-    onSuccess: () => {
-      // Example: invalidate both public and protected upcoming feeds
-      queryClient.invalidateQueries({ queryKey: fixturesKeys.all });
-    },
+  const enabled =
+    isReadyForProtected(status, user) && fixtureId != null && fixtureId > 0;
+
+  return useQuery<ApiMyPredictionsForFixtureResponse, ApiError>({
+    queryKey: fixturesKeys.myPredictions(fixtureId ?? 0),
+    queryFn: () => fetchMyPredictionsForFixture(fixtureId!),
+    enabled,
+    meta: { scope: "user" },
   });
 }

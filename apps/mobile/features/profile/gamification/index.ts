@@ -1,2 +1,2 @@
 export * from "./components";
-export * from "./gamification.queries";
+// Query hook moved to @/domains/profile

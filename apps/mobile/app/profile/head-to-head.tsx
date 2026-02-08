@@ -4,7 +4,7 @@
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { HeadToHeadScreen } from "@/features/profile/head-to-head/screens/HeadToHeadScreen";
+import { HeadToHeadScreen } from "@/features/profile";
 import { ScreenWithHeader } from "@/components/ui";
 import { useAuth } from "@/lib/auth/useAuth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";

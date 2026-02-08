@@ -1,4 +1,5 @@
-// Profile feature API module.
+// domains/profile/profile.api.ts
+// Profile domain API module.
 // - Encapsulates the raw HTTP call for fetching the current user's profile.
 // - React Query hooks should depend on this function, not on apiClient directly.
 import type {

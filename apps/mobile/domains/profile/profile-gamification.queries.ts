@@ -3,8 +3,8 @@ import type { ApiGamificationResponse } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
 import { isReadyForProtected } from "@/lib/auth/guards";
-import { fetchGamification } from "../profile.api";
-import { profileKeys } from "../profile.keys";
+import { fetchGamification } from "./profile.api";
+import { profileKeys } from "./profile.keys";
 
 /**
  * useGamificationQuery:
