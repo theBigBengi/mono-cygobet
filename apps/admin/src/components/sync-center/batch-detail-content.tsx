@@ -197,10 +197,13 @@ function SummaryCards({ batch }: { batch: Batch }) {
   );
 }
 
+type StatusFilterValue = "all" | "success" | "failed" | "skipped";
+type ActionFilterValue = "all" | "inserted" | "updated" | "skipped" | "failed";
+
 function ItemsSection({ batch }: { batch: Batch }) {
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [actionFilter, setActionFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("all");
+  const [actionFilter, setActionFilter] = useState<ActionFilterValue>("all");
 
   const { data, isLoading } = useBatchItems(batch.id, {
     page,
