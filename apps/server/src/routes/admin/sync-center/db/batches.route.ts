@@ -41,9 +41,13 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
                     triggeredBy: { type: ["string", "null"] },
                     startedAt: { type: "string" },
                     finishedAt: { type: ["string", "null"] },
+                    durationMs: { type: ["number", "null"] },
                     itemsTotal: { type: "number" },
                     itemsSuccess: { type: "number" },
                     itemsFailed: { type: "number" },
+                    errorMessage: { type: ["string", "null"] },
+                    errorStack: { type: ["string", "null"] },
+                    meta: { type: ["object", "null"] },
                   },
                 },
               },
@@ -68,9 +72,12 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
           triggeredBy: true,
           startedAt: true,
           finishedAt: true,
+          durationMs: true,
           itemsTotal: true,
           itemsSuccess: true,
           itemsFailed: true,
+          errorMessage: true,
+          errorStack: true,
           meta: true,
         },
       });
@@ -85,9 +92,12 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
           triggeredBy: b.triggeredBy,
           startedAt: b.startedAt.toISOString(),
           finishedAt: b.finishedAt?.toISOString() ?? null,
+          durationMs: b.durationMs,
           itemsTotal: b.itemsTotal,
           itemsSuccess: b.itemsSuccess,
           itemsFailed: b.itemsFailed,
+          errorMessage: b.errorMessage,
+          errorStack: b.errorStack,
           meta: b.meta as Record<string, unknown> | null,
         })),
         message: "Batches fetched successfully",
@@ -95,10 +105,15 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
-  // GET /admin/db/batches/:id/items - Get batch items with pagination
+  // GET /admin/db/batches/:id/items - Get batch items with pagination (optional status and action filters)
   fastify.get<{
     Params: { id: string };
-    Querystring: { page?: number; perPage?: number };
+    Querystring: {
+      page?: number;
+      perPage?: number;
+      status?: string;
+      action?: string;
+    };
     Reply: AdminBatchItemsResponse;
   }>(
     "/batches/:id/items",
@@ -116,6 +131,14 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
           properties: {
             page: { type: "number", default: 1 },
             perPage: { type: "number", default: 50 },
+            status: {
+              type: "string",
+              enum: ["failed", "success", "queued", "running", "skipped"],
+            },
+            action: {
+              type: "string",
+              enum: ["inserted", "updated", "skipped", "failed"],
+            },
           },
         },
         response: {
@@ -153,7 +176,7 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply): Promise<AdminBatchItemsResponse> => {
       const { id } = req.params;
-      const { page = 1, perPage = 50 } = req.query;
+      const { page = 1, perPage = 50, status, action } = req.query;
 
       const batchId = Number(id);
       if (isNaN(batchId)) {
@@ -172,10 +195,26 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
 
       const skip = (page - 1) * perPage;
       const take = perPage;
+      const where: {
+        batchId: number;
+        status?: "failed" | "success" | "queued" | "running" | "skipped";
+        meta?: { path: string[]; equals: string };
+      } = {
+        batchId,
+        ...(status && {
+          status: status as
+            | "failed"
+            | "success"
+            | "queued"
+            | "running"
+            | "skipped",
+        }),
+        ...(action ? { meta: { path: ["action"], equals: action } } : {}),
+      };
 
       const [items, totalItems] = await Promise.all([
         prisma.seedItems.findMany({
-          where: { batchId },
+          where,
           orderBy: { id: "asc" },
           skip,
           take,
@@ -188,7 +227,7 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
           },
         }),
         prisma.seedItems.count({
-          where: { batchId },
+          where,
         }),
       ]);
 

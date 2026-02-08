@@ -6,7 +6,6 @@ import {
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type Row,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./status-badge";
@@ -31,13 +30,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   ChevronLeft,
   ChevronRight,
@@ -50,8 +43,8 @@ import {
   Layers,
   Database,
 } from "lucide-react";
-import type { Batch, BatchItem } from "@repo/types";
-import { useBatchItems } from "@/hooks/use-batches";
+import type { Batch } from "@repo/types";
+import { BatchDetailContent } from "@/components/sync-center/batch-detail-content";
 
 function EntityBadge({ name }: { name: string }) {
   const config: Record<string, { label: string; icon: React.ElementType }> = {
@@ -366,188 +359,12 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
         </div>
       </div>
 
-      {/* Batch Items Dialog */}
+      {/* Batch Detail Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{selectedBatch?.name || "Batch Details"}</DialogTitle>
-            <DialogDescription>
-              {selectedBatch && (
-                <>
-                  ID: {selectedBatch.id} · Items: {selectedBatch.itemsTotal}
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedBatch && (
-            <BatchItemsDialogContent batchId={selectedBatch.id} />
-          )}
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto">
+          {selectedBatch && <BatchDetailContent batch={selectedBatch} />}
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-function BatchItemsDialogContent({ batchId }: { batchId: number }) {
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(50);
-  const { data, isLoading } = useBatchItems(batchId, page, perPage);
-
-  const itemColumns: ColumnDef<BatchItem>[] = [
-    {
-      accessorKey: "id",
-      header: "ID",
-      cell: ({ row }: { row: Row<BatchItem> }) => (
-        <span className="font-mono text-xs">{row.getValue("id")}</span>
-      ),
-    },
-    {
-      accessorKey: "itemKey",
-      header: "Item Key",
-      cell: ({ row }: { row: Row<BatchItem> }) => {
-        const itemKey = row.getValue("itemKey") as string | null;
-        return <span className="text-xs font-mono">{itemKey || "—"}</span>;
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }: { row: Row<BatchItem> }) => {
-        const status = row.getValue("status") as string;
-        return <StatusBadge status={status} className="text-xs" />;
-      },
-    },
-    {
-      accessorKey: "errorMessage",
-      header: "Error",
-      cell: ({ row }: { row: Row<BatchItem> }) => {
-        const errorMessage = row.getValue("errorMessage") as string | null;
-        return (
-          <span className="text-xs text-red-600">{errorMessage || "—"}</span>
-        );
-      },
-    },
-  ];
-
-  const itemTable = useReactTable({
-    data: data?.data || [],
-    columns: itemColumns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    manualPagination: true,
-    pageCount: data?.pagination.totalPages ?? 0,
-    initialState: {
-      pagination: {
-        pageSize: perPage,
-      },
-    },
-  });
-
-  if (isLoading) {
-    return <Skeleton className="h-64 w-full" />;
-  }
-
-  return (
-    <div className="space-y-4">
-      <div
-        className="rounded-md border overflow-auto"
-        style={{ maxHeight: "600px" }}
-      >
-        <Table>
-          <TableHeader>
-            {itemTable.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="h-10">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {itemTable.getRowModel().rows?.length ? (
-              itemTable.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={itemColumns.length}
-                  className="h-24 text-center"
-                >
-                  No items found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-muted-foreground">
-            Page {page} of {data?.pagination.totalPages ?? 0} · Total:{" "}
-            {data?.pagination.totalItems ?? 0}
-          </p>
-          <Select
-            value={String(perPage)}
-            onValueChange={(value) => {
-              setPerPage(Number(value));
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="h-8 w-[70px]">
-              <SelectValue placeholder={perPage} />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 50, 100].map((pageSize) => (
-                <SelectItem key={pageSize} value={String(pageSize)}>
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setPage((p) => Math.min(data?.pagination.totalPages ?? 1, p + 1))
-            }
-            disabled={page >= (data?.pagination.totalPages ?? 0)}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
   );
 }

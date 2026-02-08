@@ -22,10 +22,22 @@ export const batchesService = {
     );
   },
 
-  async getBatchItems(batchId: number, page = 1, perPage = 50) {
+  async getBatchItems(
+    batchId: number,
+    page = 1,
+    perPage = 50,
+    options?: {
+      status?: "failed" | "success" | "queued" | "running" | "skipped";
+      action?: string;
+    }
+  ) {
+    const params = new URLSearchParams();
+    params.append("page", String(page));
+    params.append("perPage", String(perPage));
+    if (options?.status) params.append("status", options.status);
+    if (options?.action) params.append("action", options.action);
     return apiGet<AdminBatchItemsResponse>(
-      `/admin/sync-center/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
+      `/admin/sync-center/db/batches/${batchId}/items?${params.toString()}`
     );
   },
 };
-
