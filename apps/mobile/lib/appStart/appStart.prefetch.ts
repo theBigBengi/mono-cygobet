@@ -27,7 +27,7 @@ export async function prefetchInitialData(
   setError: (error: AppStartError | null) => void
 ): Promise<void> {
   const { status, user } = auth;
-  console.log(
+  if (__DEV__) console.log(
     "AppStart: prefetchInitialData - status:",
     status,
     "user:",
@@ -36,9 +36,9 @@ export async function prefetchInitialData(
 
   if (status === "unauthenticated") {
     // Unauthenticated: no prefetch needed, just mark ready for login screen
-    console.log("AppStart: unauthenticated, skipping prefetch");
+    if (__DEV__) console.log("AppStart: unauthenticated, skipping prefetch");
     setStatus("ready");
-    console.log("AppStart: ready (unauthenticated - will show login)");
+    if (__DEV__) console.log("AppStart: ready (unauthenticated - will show login)");
     return;
   }
 
@@ -46,28 +46,28 @@ export async function prefetchInitialData(
     // Authenticated: user should be present
     if (!user) {
       // Defensive: user missing despite authenticated state - try to mark ready but log
-      console.log(
+      if (__DEV__) console.log(
         "AppStart: authenticated but user is null (unexpected), marking ready"
       );
       setStatus("ready");
-      console.log("AppStart: ready (authenticated but user not present)");
+      if (__DEV__) console.log("AppStart: ready (authenticated but user not present)");
       return;
     }
 
     if (user.onboardingRequired) {
       // Onboarding required: skip prefetch, mark ready for onboarding flow
-      console.log("AppStart: onboarding required, skipping prefetch");
+      if (__DEV__) console.log("AppStart: onboarding required, skipping prefetch");
       setStatus("ready");
-      console.log("AppStart: ready (onboarding required)");
+      if (__DEV__) console.log("AppStart: ready (onboarding required)");
       return;
     }
 
     // Onboarding complete: mark ready immediately, prefetch in background
-    console.log(
+    if (__DEV__) console.log(
       "AppStart: marking ready immediately, starting background prefetch"
     );
     setStatus("ready");
-    console.log("AppStart: ready (authenticated onboarded)");
+    if (__DEV__) console.log("AppStart: ready (authenticated onboarded)");
 
     // Prefetch in background (fire-and-forget)
     prefetchInBackground(queryClient);
@@ -75,7 +75,7 @@ export async function prefetchInitialData(
   }
 
   if (status === "onboarding") {
-    console.log(
+    if (__DEV__) console.log(
       "AppStart: onboarding state, skipping prefetch and marking ready"
     );
     setStatus("ready");
@@ -84,7 +84,7 @@ export async function prefetchInitialData(
 
   if (status === "degraded") {
     // Degraded: network issues but session may exist. Mark ready and optionally prefetch limited data.
-    console.log(
+    if (__DEV__) console.log(
       "AppStart: degraded state, marking ready without background prefetch"
     );
     setStatus("ready");
@@ -94,7 +94,7 @@ export async function prefetchInitialData(
   if (status === "idle" || status === "restoring") {
     // Status is still restoring - bootstrap might be retrying or network issue
     // Do not turn this into error automatically, stay in booting state
-    console.log(
+    if (__DEV__) console.log(
       "AppStart: status still restoring/idle, staying in booting state"
     );
     // Don't change status - keep it as "booting" so the effect can retry
@@ -102,7 +102,7 @@ export async function prefetchInitialData(
   }
 
   // Unknown status - should not happen
-  console.log("AppStart: unknown status:", status);
+  if (__DEV__) console.log("AppStart: unknown status:", status);
   setStatus("error");
   setError({
     message: "Unexpected auth state. Please retry.",
@@ -116,7 +116,7 @@ export async function prefetchInitialData(
  * Errors are logged but don't stop the app.
  */
 function prefetchInBackground(queryClient: QueryClient): void {
-  console.log("AppStart: background prefetch started");
+  if (__DEV__) console.log("AppStart: background prefetch started");
 
   // Prefetch all data in parallel
   Promise.all([
@@ -128,7 +128,7 @@ function prefetchInBackground(queryClient: QueryClient): void {
         meta: { scope: "user" },
       })
       .catch((error) => {
-        console.log("AppStart: background prefetch fixtures error", error);
+        if (__DEV__) console.log("AppStart: background prefetch fixtures error", error);
       }),
 
     // Prefetch leagues (for leagues mode)
@@ -139,7 +139,7 @@ function prefetchInBackground(queryClient: QueryClient): void {
         meta: { scope: "user" },
       })
       .catch((error) => {
-        console.log("AppStart: background prefetch leagues error", error);
+        if (__DEV__) console.log("AppStart: background prefetch leagues error", error);
       }),
 
     // Prefetch teams (for teams mode)
@@ -150,7 +150,7 @@ function prefetchInBackground(queryClient: QueryClient): void {
         meta: { scope: "user" },
       })
       .catch((error) => {
-        console.log("AppStart: background prefetch teams error", error);
+        if (__DEV__) console.log("AppStart: background prefetch teams error", error);
       }),
 
     // Prefetch groups (for groups screen)
@@ -161,7 +161,7 @@ function prefetchInBackground(queryClient: QueryClient): void {
         meta: { scope: "user" },
       })
       .catch((error) => {
-        console.log("AppStart: background prefetch groups error", error);
+        if (__DEV__) console.log("AppStart: background prefetch groups error", error);
       }),
 
     // Prefetch unread counts (for groups tab badge)
@@ -172,14 +172,14 @@ function prefetchInBackground(queryClient: QueryClient): void {
         meta: { scope: "user" },
       })
       .catch((error) => {
-        console.log("AppStart: background prefetch unread counts error", error);
+        if (__DEV__) console.log("AppStart: background prefetch unread counts error", error);
       }),
   ])
     .then(() => {
-      console.log("AppStart: background prefetch completed");
+      if (__DEV__) console.log("AppStart: background prefetch completed");
     })
     .catch((error) => {
       // This should not happen as each promise has its own catch
-      console.log("AppStart: unexpected background prefetch error", error);
+      if (__DEV__) console.log("AppStart: unexpected background prefetch error", error);
     });
 }

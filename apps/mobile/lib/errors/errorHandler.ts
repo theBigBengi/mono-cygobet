@@ -1,12 +1,13 @@
 // lib/errors/errorHandler.ts
 // Centralized error handling utility
 import i18n from "i18next";
+import * as Sentry from "@sentry/react-native";
 import { ApiError } from "../http/apiError";
 import { ErrorCategory, ErrorSeverity, ErrorInfo, ErrorHandlerConfig } from "./error.types";
 
 let errorHandlerConfig: ErrorHandlerConfig = {
-  enableLogging: true,
-  enableReporting: false,
+  enableLogging: __DEV__,
+  enableReporting: !__DEV__,
 };
 
 /**
@@ -146,29 +147,35 @@ function logError(errorInfo: ErrorInfo) {
 }
 
 /**
- * Report error to external service (ready for future integration)
+ * Report error to Sentry and optional custom callback
  */
 function reportError(errorInfo: ErrorInfo) {
   if (!errorHandlerConfig.enableReporting) {
     return;
   }
 
-  // Future: Integrate with Sentry, Bugsnag, etc.
-  // Example:
-  // Sentry.captureException(errorInfo.originalError, {
-  //   tags: {
-  //     category: errorInfo.category,
-  //     severity: errorInfo.severity,
-  //   },
-  //   extra: errorInfo.context,
-  // });
+  try {
+    const sentryError =
+      errorInfo.originalError instanceof Error
+        ? errorInfo.originalError
+        : new Error(errorInfo.message);
 
-  // For now, just call the custom callback if provided
+    Sentry.captureException(sentryError, {
+      tags: {
+        category: errorInfo.category,
+        severity: errorInfo.severity,
+      },
+      extra: errorInfo.context,
+    });
+  } catch {
+    // Sentry reporting should never crash the app
+  }
+
   if (errorHandlerConfig.onError) {
     try {
       errorHandlerConfig.onError(errorInfo);
-    } catch (err) {
-      console.error("[ErrorHandler] Error in onError callback:", err);
+    } catch {
+      // Custom callback should never crash the app
     }
   }
 }

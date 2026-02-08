@@ -32,7 +32,7 @@ interface GroupRankingScreenProps {
   groupId: number | null;
 }
 
-function RankingRow({
+const RankingRow = React.memo(function RankingRow({
   item,
   isCurrentUser,
   groupId,
@@ -141,7 +141,7 @@ function RankingRow({
       </Card>
     </Pressable>
   );
-}
+});
 
 /**
  * GroupRankingScreen component

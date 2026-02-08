@@ -41,20 +41,16 @@ import * as Sentry from "@sentry/react-native";
 
 SplashScreen.preventAutoHideAsync();
 
-console.log("[Sentry] DSN:", process.env.EXPO_PUBLIC_SENTRY_DSN ? "Found" : "Missing");
 if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
     environment: __DEV__ ? "development" : "production",
-    sendDefaultPii: true,
-    tracesSampleRate: 0.2,
+    sendDefaultPii: false,
+    tracesSampleRate: __DEV__ ? 1.0 : 0.2,
     debug: __DEV__,
   });
-  console.log("[Sentry] Initialized successfully");
 }
 
-// Log store identity for verification
-console.log("[RootLayout] Jotai store instance:", jotaiStore);
 
 function AppContent() {
   const { t } = useTranslation("common");

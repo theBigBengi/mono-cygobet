@@ -46,12 +46,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // If already connected with same token, skip
-    if (socketRef.current?.connected) {
-      return;
-    }
-
-    // Disconnect old socket if exists (e.g. token changed)
+    // Disconnect old socket if exists (e.g. token changed) so we reconnect with new token
     if (socketRef.current) {
       socketRef.current.disconnect();
     }
@@ -73,6 +68,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     socket.on("disconnect", () => {
+      setIsConnected(false);
+    });
+
+    socket.on("connect_error", (err) => {
+      if (__DEV__) {
+        console.warn("[Socket] Connection error:", err.message);
+      }
       setIsConnected(false);
     });
 

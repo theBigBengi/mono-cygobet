@@ -13,8 +13,9 @@ export function isRTL(locale: Locale): boolean {
 
 /**
  * Apply RTL layout based on locale.
- * RTL takes effect only after user fully restarts the app (kill + reopen).
- * We do NOT call reloadAsync - it causes infinite loop (reloads JS but I18nManager.isRTL stays false).
+ * This only calls I18nManager.forceRTL/allowRTL. The actual restart is
+ * handled by the caller (I18nProvider) which uses Updates.reloadAsync()
+ * in production or shows a restart prompt in dev.
  */
 export function applyRTL(locale: Locale): void {
   const rtl = isRTL(locale);

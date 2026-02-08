@@ -9,9 +9,8 @@ if (Platform.OS !== "web") {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     SecureStore = require("expo-secure-store");
   } catch {
-    // SecureStore not available
-    console.warn(
-      "expo-secure-store not available, falling back to localStorage"
+    console.error(
+      "expo-secure-store not available. Tokens will not be persisted on this device."
     );
   }
 }
@@ -33,13 +32,9 @@ export async function getRefreshToken(): Promise<string | null> {
       // Web: refresh token is in HttpOnly cookie; we never read it here
       return null;
     } else {
-      // Native: use SecureStore
+      // Native: use SecureStore only - no insecure fallback
       if (SecureStore) {
         return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-      }
-      // Fallback to localStorage if SecureStore not available
-      if (typeof window !== "undefined" && window.localStorage) {
-        return window.localStorage.getItem(REFRESH_TOKEN_KEY);
       }
       return null;
     }
@@ -59,17 +54,12 @@ export async function setRefreshToken(token: string): Promise<void> {
       // Web: server sets HttpOnly cookie; do not store in localStorage (XSS-safe)
       return;
     } else {
-      // Native: use SecureStore
+      // Native: use SecureStore only - no insecure fallback
       if (SecureStore) {
         await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
         return;
       }
-      // Fallback to localStorage if SecureStore not available
-      if (typeof window !== "undefined" && window.localStorage) {
-        window.localStorage.setItem(REFRESH_TOKEN_KEY, token);
-        return;
-      }
-      throw new Error("No storage mechanism available");
+      throw new Error("SecureStore not available. Cannot store token securely.");
     }
   } catch (error) {
     console.error("Failed to store refresh token in secure storage:", error);
@@ -94,14 +84,9 @@ export async function clearRefreshToken(): Promise<void> {
       }
       return;
     } else {
-      // Native: use SecureStore
+      // Native: use SecureStore only
       if (SecureStore !== null) {
         await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-        return;
-      }
-      // Fallback to localStorage if SecureStore not available
-      if (typeof window !== "undefined" && window.localStorage) {
-        window.localStorage.removeItem(REFRESH_TOKEN_KEY);
       }
     }
   } catch (error) {

@@ -50,12 +50,6 @@ export function PredictionsOverviewScreen({
 
   const overviewData = data.data;
 
-  // Debug: log data to see what we have
-  console.log("Predictions Overview Data:", {
-    participantsCount: overviewData.participants.length,
-    fixturesCount: overviewData.fixtures.length,
-    totalWidth: overviewData.fixtures.length * 100,
-  });
 
   // Empty state
   if (

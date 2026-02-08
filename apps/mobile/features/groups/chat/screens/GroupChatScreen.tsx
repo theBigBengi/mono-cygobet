@@ -33,7 +33,7 @@ interface GroupChatScreenProps {
   groupId: number | null;
 }
 
-function ChatItem({
+const ChatItem = React.memo(function ChatItem({
   message,
   currentUserId,
 }: {
@@ -49,7 +49,7 @@ function ChatItem({
     );
   }
   return <ChatSystemEvent message={message} />;
-}
+});
 
 export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   const { t } = useTranslation("common");

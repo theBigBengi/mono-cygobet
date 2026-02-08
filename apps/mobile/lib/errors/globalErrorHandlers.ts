@@ -76,7 +76,7 @@ export function initializeGlobalErrorHandlers() {
     }
   }
 
-  console.log("[GlobalErrorHandlers] Initialized global error handlers");
+  if (__DEV__) console.log("[GlobalErrorHandlers] Initialized global error handlers");
 }
 
 /**
@@ -93,7 +93,7 @@ export function cleanupGlobalErrorHandlers() {
   }
 
   isInitialized = false;
-  console.log("[GlobalErrorHandlers] Cleaned up global error handlers");
+  if (__DEV__) console.log("[GlobalErrorHandlers] Cleaned up global error handlers");
 }
 
 /**

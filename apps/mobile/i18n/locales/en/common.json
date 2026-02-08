@@ -66,6 +66,7 @@
     "errorBothFields": "Please enter both email/username and password",
     "errorEmailPassword": "Please enter email and password to register",
     "errorValidEmail": "Please enter a valid email address",
+    "errorPasswordMin": "Password must be at least 8 characters",
     "errorUsernameMin": "Username must be at least 3 characters long",
     "errorUsernameMax": "Username must be at most 50 characters long",
     "errorUsernameFormat": "Username can only contain Hebrew/English letters, numbers, underscores, and hyphens",
@@ -589,6 +590,12 @@
     "starting": "Starting...",
     "tbd": "TBD",
     "noRound": "No round"
+  },
+  "time": {
+    "now": "now",
+    "minutesShort": "{{count}}m",
+    "hoursShort": "{{count}}h",
+    "daysShort": "{{count}}d"
   },
   "fixtures": {
     "loadingGames": "Loading games…",

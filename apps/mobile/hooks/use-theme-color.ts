@@ -1,6 +1,6 @@
 /**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
+ * @deprecated Use `useTheme()` from `@/lib/theme` instead.
+ * This legacy hook bypasses the ThemeProvider and ignores user theme preferences.
  */
 
 import { lightColors, darkColors } from '@/lib/theme/colors';

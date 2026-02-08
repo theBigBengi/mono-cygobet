@@ -11,11 +11,18 @@ import { initHaptics } from "@/lib/haptics";
  * User loading is handled separately in AppStartGate after React state has updated.
  */
 export async function runAppStart(auth: AuthContextValue): Promise<void> {
-  console.log("AppStart: bootstrap start");
+  // Auth bootstrap is critical - must succeed
+  // Group games and haptics are non-critical - failures should not block app start
+  const [, nonCriticalResults] = await Promise.all([
+    auth.bootstrap(),
+    Promise.allSettled([bootstrapGroupGames(), initHaptics()]),
+  ]);
 
-  // Bootstrap auth (determines auth state: authed/guest, does NOT load user)
-  // Bootstrap group games and haptics preference in parallel (independent of auth)
-  await Promise.all([auth.bootstrap(), bootstrapGroupGames(), initHaptics()]);
-
-  console.log("AppStart: bootstrap end");
+  if (__DEV__) {
+    for (const result of nonCriticalResults) {
+      if (result.status === "rejected") {
+        console.warn("AppStart: non-critical bootstrap failed:", result.reason);
+      }
+    }
+  }
 }

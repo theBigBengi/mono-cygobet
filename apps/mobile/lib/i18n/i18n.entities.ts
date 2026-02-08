@@ -7,6 +7,13 @@ import type { i18n as I18nType } from "i18next";
 
 function toEntityKey(name: string): string {
   return name
+    .normalize("NFD")                 // decompose diacritics (é → e + combining accent)
+    .replace(/[\u0300-\u036f]/g, "")  // strip combining diacritical marks
+    .replace(/ø/g, "o")              // handle special Nordic chars
+    .replace(/æ/g, "ae")
+    .replace(/ß/g, "ss")
+    .replace(/ł/g, "l")
+    .replace(/đ/g, "d")
     .toLowerCase()
     .replace(/\s+/g, "_")
     .replace(/[^a-z0-9_]/g, "")

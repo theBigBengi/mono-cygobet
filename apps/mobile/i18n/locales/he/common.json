@@ -66,6 +66,7 @@
     "errorBothFields": "הזן אימייל/שם משתמש וסיסמה",
     "errorEmailPassword": "הזן אימייל וסיסמה להרשמה",
     "errorValidEmail": "הזן כתובת אימייל תקינה",
+    "errorPasswordMin": "הסיסמה חייבת להכיל לפחות 8 תווים",
     "errorUsernameMin": "שם המשתמש חייב להכיל לפחות 3 תווים",
     "errorUsernameMax": "שם המשתמש חייב להכיל לכל היותר 50 תווים",
     "errorUsernameFormat": "שם המשתמש יכול להכיל רק אותיות עברית/אנגלית, מספרים, קווים תחתונים ומקפים",
@@ -586,6 +587,12 @@
     "unknownLeague": "ליגה לא ידועה",
     "tbd": "להתפרסם",
     "noRound": "ללא סיבוב"
+  },
+  "time": {
+    "now": "עכשיו",
+    "minutesShort": "{{count}}ד",
+    "hoursShort": "{{count}}ש",
+    "daysShort": "{{count}}י"
   },
   "fixtures": {
     "loadingGames": "טוען משחקים…",

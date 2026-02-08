@@ -33,7 +33,7 @@ export function AppStartGate({ children }: AppStartGateProps) {
 
   // Debug: log status changes
   useEffect(() => {
-    console.log("AppStartGate: status changed to", status, "error:", error);
+    if (__DEV__) console.log("AppStartGate: status changed to", status, "error:", error);
   }, [status, error]);
 
   // Effect 1: Run bootstrap once on mount
@@ -54,7 +54,7 @@ export function AppStartGate({ children }: AppStartGateProps) {
 
     // Wait for auth status to stabilize: idle/restoring are in-flight states
     if (auth.status === "idle" || auth.status === "restoring") {
-      console.log(
+      if (__DEV__) console.log(
         "AppStartGate: auth.status is still restoring/idle, waiting..."
       );
       return;
@@ -62,7 +62,7 @@ export function AppStartGate({ children }: AppStartGateProps) {
 
     // If authenticated but user missing - try loading user (defensive)
     if (auth.status === "authenticated" && !auth.user) {
-      console.log(
+      if (__DEV__) console.log(
         "AppStartGate: auth status is authenticated but user missing, loading user"
       );
       auth.loadUser();
@@ -70,7 +70,7 @@ export function AppStartGate({ children }: AppStartGateProps) {
     }
 
     // Auth state has stabilized (restored to unauthenticated/authenticated/onboarding/degraded), now prefetch
-    console.log("AppStartGate: auth state stabilized, starting prefetch");
+    if (__DEV__) console.log("AppStartGate: auth state stabilized, starting prefetch");
     prefetchInitialData(queryClient, auth, setStatus, setError);
   }, [status, auth.status, auth.user, auth, setStatus, setError]);
 

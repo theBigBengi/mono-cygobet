@@ -67,12 +67,12 @@ export function formatKickoffTime(iso: string | null | undefined): string {
  * Returns "TBD" if missing/null/undefined.
  */
 export function formatKickoff(iso: string | null | undefined): string {
-  if (!iso) return "TBD";
+  if (!iso) return i18n.t("common.tbd", { ns: "common", defaultValue: "TBD" });
   try {
     const date = new Date(iso);
     return formatKickoffLocale(date, getCurrentLocale());
   } catch {
-    return "TBD";
+    return i18n.t("common.tbd", { ns: "common", defaultValue: "TBD" });
   }
 }
 
@@ -81,7 +81,7 @@ export function formatKickoff(iso: string | null | undefined): string {
  * Returns "TBD" if missing/null/undefined.
  */
 export function formatKickoffDateTime(iso: string | null | undefined): string {
-  if (!iso) return "TBD";
+  if (!iso) return i18n.t("common.tbd", { ns: "common", defaultValue: "TBD" });
   try {
     const date = new Date(iso);
     const locale = getCurrentLocale();
@@ -91,7 +91,7 @@ export function formatKickoffDateTime(iso: string | null | undefined): string {
     const time = formatTime24Locale(date, locale);
     return `${dayDate} · ${time}`;
   } catch {
-    return "TBD";
+    return i18n.t("common.tbd", { ns: "common", defaultValue: "TBD" });
   }
 }
 
@@ -101,10 +101,10 @@ export function formatKickoffDateTime(iso: string | null | undefined): string {
  */
 export function getTeamDisplayName(
   teamName?: string | null,
-  fallback: "Home" | "Away" = "Home"
+  fallback: "home" | "away" = "home"
 ): string {
   if (!teamName || teamName.trim() === "") {
-    return fallback;
+    return i18n.t(`common.${fallback}`, { ns: "common", defaultValue: fallback === "home" ? "Home" : "Away" });
   }
   return teamName;
 }
@@ -117,8 +117,8 @@ export function getTeamsLabel(
   home?: string | null,
   away?: string | null
 ): string {
-  const homeName = getTeamDisplayName(home, "Home");
-  const awayName = getTeamDisplayName(away, "Away");
+  const homeName = getTeamDisplayName(home, "home");
+  const awayName = getTeamDisplayName(away, "away");
   return `${homeName} vs ${awayName}`;
 }
 
@@ -127,7 +127,7 @@ export function getTeamsLabel(
  * Returns "Unknown league" if missing.
  */
 export function getLeagueLabel(leagueName?: string | null): string {
-  return leagueName ?? "Unknown league";
+  return leagueName ?? i18n.t("common.unknownLeague", { ns: "common", defaultValue: "Unknown league" });
 }
 
 /**
@@ -185,7 +185,7 @@ export function groupFixturesByLeagueAndDate(
 
     const date = new Date(fixture.kickoffAt);
     const dateKey = date.toISOString().split("T")[0]; // YYYY-MM-DD
-    const leagueName = fixture.league?.name ?? "Unknown league";
+    const leagueName = fixture.league?.name ?? i18n.t("common.unknownLeague", { ns: "common", defaultValue: "Unknown league" });
 
     // Use league + date + time (HH:MM) as grouping key
     const hours = String(date.getHours()).padStart(2, "0");
@@ -243,7 +243,7 @@ export function groupFixturesByLeagueAndDateOnly(
 
     const date = new Date(fixture.kickoffAt);
     const dateKey = date.toISOString().split("T")[0]; // YYYY-MM-DD
-    const leagueName = fixture.league?.name ?? "Unknown league";
+    const leagueName = fixture.league?.name ?? i18n.t("common.unknownLeague", { ns: "common", defaultValue: "Unknown league" });
 
     // Use league + date only (without time) as grouping key
     const key = `${leagueName}|${dateKey}`;

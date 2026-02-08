@@ -4,17 +4,20 @@
 import { useState } from "react";
 import {
   View,
-  Text,
   TextInput,
   Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
+import { AppText } from "@/components/ui";
 
 export default function SignInScreen() {
   const { t } = useTranslation("common");
@@ -35,13 +38,9 @@ export default function SignInScreen() {
     setIsLoading(true);
     try {
       await login(emailOrUsername.trim(), password);
-      // After successful login, index.tsx will handle redirect
-      // - If user has username: redirects to /(tabs)/home
-      // - If user has no username: redirects to /username
       router.replace("/");
-    } catch (err) {
+    } catch {
       // Error is already set in auth context
-      console.error("Login failed:", err);
     } finally {
       setIsLoading(false);
     }
@@ -49,149 +48,137 @@ export default function SignInScreen() {
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.colors.background,
-        },
-      ]}
+      style={[styles.root, { backgroundColor: theme.colors.background }]}
     >
-      <Text
-        style={[
-          styles.title,
-          {
-            color: theme.colors.textPrimary,
-          },
-        ]}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
       >
-        {t("auth.login")}
-      </Text>
-      <Text
-        style={[
-          styles.subtitle,
-          {
-            color: theme.colors.textSecondary,
-          },
-        ]}
-      >
-        {t("auth.enterCredentials")}
-      </Text>
-
-      <View style={styles.form}>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              borderColor: theme.colors.border,
-              color: theme.colors.textPrimary,
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
-          placeholder={t("auth.emailOrUsername")}
-          placeholderTextColor={theme.colors.textSecondary}
-          value={emailOrUsername}
-          onChangeText={setEmailOrUsername}
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!isLoading}
-        />
-
-        <TextInput
-          style={[
-            styles.input,
-            {
-              borderColor: theme.colors.border,
-              color: theme.colors.textPrimary,
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
-          placeholder={t("auth.password")}
-          placeholderTextColor={theme.colors.textSecondary}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!isLoading}
-        />
-
-        {error && (
-          <Text
-            style={[
-              styles.error,
-              {
-                color: theme.colors.danger,
-              },
-            ]}
-          >
-            {error}
-          </Text>
-        )}
-
-        <Pressable
-          style={[
-            styles.button,
-            {
-              backgroundColor: theme.colors.primary,
-            },
-            isLoading && styles.buttonDisabled,
-          ]}
-          onPress={handleLogin}
-          disabled={isLoading}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>{t("auth.login")}</Text>
-          )}
-        </Pressable>
+          <AppText
+            variant="display"
+            style={styles.title}
+          >
+            {t("auth.login")}
+          </AppText>
+          <AppText
+            variant="body"
+            color="secondary"
+            style={styles.subtitle}
+          >
+            {t("auth.enterCredentials")}
+          </AppText>
 
-        <View style={styles.toggleRow}>
-          <Text
-            style={[
-              styles.toggleText,
-              {
-                color: theme.colors.textSecondary,
-              },
-            ]}
-          >
-            {t("auth.dontHaveAccount")}
-          </Text>
-          <Pressable
-            onPress={() => router.replace("/sign-up")}
-            disabled={isLoading}
-          >
-            <Text
+          <View style={styles.form}>
+            <TextInput
               style={[
-                styles.toggleLink,
+                styles.input,
                 {
-                  color: theme.colors.primary,
+                  borderColor: theme.colors.border,
+                  color: theme.colors.textPrimary,
+                  backgroundColor: theme.colors.surface,
                 },
               ]}
+              placeholder={t("auth.emailOrUsername")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={emailOrUsername}
+              onChangeText={setEmailOrUsername}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isLoading}
+            />
+
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  borderColor: theme.colors.border,
+                  color: theme.colors.textPrimary,
+                  backgroundColor: theme.colors.surface,
+                },
+              ]}
+              placeholder={t("auth.password")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isLoading}
+            />
+
+            {error && (
+              <AppText
+                variant="caption"
+                color="danger"
+                style={styles.error}
+              >
+                {error}
+              </AppText>
+            )}
+
+            <Pressable
+              style={[
+                styles.button,
+                { backgroundColor: theme.colors.primary },
+                isLoading && styles.buttonDisabled,
+              ]}
+              onPress={handleLogin}
+              disabled={isLoading}
             >
-              {t("auth.signUp")}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <AppText variant="body" color="onPrimary" style={styles.buttonText}>
+                  {t("auth.login")}
+                </AppText>
+              )}
+            </Pressable>
+
+            <View style={styles.toggleRow}>
+              <AppText variant="caption" color="secondary">
+                {t("auth.dontHaveAccount")}
+              </AppText>
+              <Pressable
+                onPress={() => router.replace("/sign-up")}
+                disabled={isLoading}
+              >
+                <AppText
+                  variant="caption"
+                  style={{ color: theme.colors.primary, fontWeight: "600" }}
+                >
+                  {t("auth.signUp")}
+                </AppText>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
     padding: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
     marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
-    fontSize: 16,
     marginBottom: 32,
     textAlign: "center",
   },
@@ -206,7 +193,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   error: {
-    fontSize: 14,
     marginBottom: 16,
     textAlign: "center",
   },
@@ -219,8 +205,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 16,
     fontWeight: "600",
   },
   toggleRow: {
@@ -228,13 +212,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 16,
-  },
-  toggleText: {
-    fontSize: 14,
-    marginEnd: 4,
-  },
-  toggleLink: {
-    fontSize: 14,
-    fontWeight: "600",
+    gap: 4,
   },
 });

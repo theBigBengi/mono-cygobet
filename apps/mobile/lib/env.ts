@@ -41,18 +41,16 @@ export function getApiBaseUrl(): string {
         return `http://${host}:4000`;
       }
 
-      // For simulator/emulator, localhost works
-      // For real devices, this will fail - user must set EXPO_PUBLIC_API_BASE_URL
-      const isSimulator =
-        Platform.OS === "ios" &&
-        (Constants.deviceName?.includes("Simulator") ||
-          Constants.executionEnvironment === "storeClient");
+      // For simulator/emulator, use appropriate localhost
+      // Constants.isDevice is false on simulators/emulators
+      const isSimulatorOrEmulator = Constants.isDevice === false;
 
-      const isEmulator =
-        Platform.OS === "android" &&
-        Constants.executionEnvironment === "storeClient";
-
-      if (isSimulator || isEmulator) {
+      if (isSimulatorOrEmulator) {
+        // Android emulator can't reach host via localhost - use 10.0.2.2
+        if (Platform.OS === "android") {
+          return "http://10.0.2.2:4000";
+        }
+        // iOS simulator can use localhost
         return "http://localhost:4000";
       }
 

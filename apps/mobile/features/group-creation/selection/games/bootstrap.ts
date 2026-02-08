@@ -44,8 +44,7 @@ export async function bootstrapGroupGames(): Promise<void> {
 
   // Start bootstrap
   bootstrapPromise = (async () => {
-    console.log("[GroupGames] bootstrapGroupGames executed");
-    console.log("[GroupGames] Store instance:", jotaiStore);
+    if (__DEV__) console.log("[GroupGames] bootstrapGroupGames executed");
 
     try {
       const nowTs = getNowTs();
@@ -81,7 +80,7 @@ export async function bootstrapGroupGames(): Promise<void> {
 
       bootstrapped = true;
     } catch (error) {
-      console.error("[GroupGames] Bootstrap error:", error);
+      if (__DEV__) console.error("[GroupGames] Bootstrap error:", error);
       // On error, clear storage and set empty state (migration cleanup for invalid data)
       try {
         await clearGroupGamesStorage();

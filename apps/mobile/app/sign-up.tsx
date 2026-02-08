@@ -4,18 +4,23 @@
 import { useState } from "react";
 import {
   View,
-  Text,
   TextInput,
   Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
+import { AppText } from "@/components/ui";
 import * as authApi from "@/lib/auth/auth.api";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignUpScreen() {
   const { t } = useTranslation("common");
@@ -23,7 +28,7 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, error, applyAuthResult } = useAuth();
+  const { error, applyAuthResult } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
 
@@ -36,184 +41,170 @@ export default function SignUpScreen() {
       return;
     }
 
-    // Basic email validation
-    if (!trimmedEmail.includes("@")) {
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
       Alert.alert(t("errors.error"), t("auth.errorValidEmail"));
+      return;
+    }
+
+    if (trimmedPassword.length < 8) {
+      Alert.alert(t("errors.error"), t("auth.errorPasswordMin"));
       return;
     }
 
     setIsLoading(true);
     try {
-      // Register the user (username is optional)
       const response = await authApi.register({
         email: trimmedEmail,
         password: trimmedPassword,
         name: null,
       });
 
-      // Treat the register response as the authenticated result.
-      // Apply tokens and user into AuthProvider without calling login().
       await applyAuthResult(response);
-
-      // After successful auth application, index.tsx will handle redirect
-      // - If user has username: redirects to /(tabs)/home
-      // - If user has no username: redirects to /username
       router.replace("/");
-    } catch (err) {
-      console.error("Registration failed:", err);
+    } catch {
       // Error will be set in auth context
     } finally {
       setIsLoading(false);
     }
   };
 
-  const goToSignIn = () => {
-    router.replace("/sign-in");
-  };
-
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.colors.background,
-        },
-      ]}
+      style={[styles.root, { backgroundColor: theme.colors.background }]}
     >
-      <Text
-        style={[
-          styles.title,
-          {
-            color: theme.colors.textPrimary,
-          },
-        ]}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
       >
-        {t("auth.createAccount")}
-      </Text>
-      <Text
-        style={[
-          styles.subtitle,
-          {
-            color: theme.colors.textSecondary,
-          },
-        ]}
-      >
-        {t("auth.signUpToGetStarted")}
-      </Text>
-
-      <View style={styles.form}>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              borderColor: theme.colors.border,
-              color: theme.colors.textPrimary,
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
-          placeholder={t("auth.email")}
-          placeholderTextColor={theme.colors.textSecondary}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          editable={!isLoading}
-        />
-
-        <TextInput
-          style={[
-            styles.input,
-            {
-              borderColor: theme.colors.border,
-              color: theme.colors.textPrimary,
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
-          placeholder={t("auth.password")}
-          placeholderTextColor={theme.colors.textSecondary}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!isLoading}
-        />
-
-        {error && (
-          <Text
-            style={[
-              styles.error,
-              {
-                color: theme.colors.danger,
-              },
-            ]}
-          >
-            {error}
-          </Text>
-        )}
-
-        <Pressable
-          style={[
-            styles.button,
-            {
-              backgroundColor: theme.colors.primary,
-            },
-            isLoading && styles.buttonDisabled,
-          ]}
-          onPress={handleRegister}
-          disabled={isLoading}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>{t("auth.signUp")}</Text>
-          )}
-        </Pressable>
-
-        <View style={styles.toggleRow}>
-          <Text
-            style={[
-              styles.toggleText,
-              {
-                color: theme.colors.textSecondary,
-              },
-            ]}
+          <AppText
+            variant="display"
+            style={styles.title}
           >
-            {t("auth.alreadyHaveAccount")}
-          </Text>
-          <Pressable onPress={goToSignIn} disabled={isLoading}>
-            <Text
+            {t("auth.createAccount")}
+          </AppText>
+          <AppText
+            variant="body"
+            color="secondary"
+            style={styles.subtitle}
+          >
+            {t("auth.signUpToGetStarted")}
+          </AppText>
+
+          <View style={styles.form}>
+            <TextInput
               style={[
-                styles.toggleLink,
+                styles.input,
                 {
-                  color: theme.colors.primary,
+                  borderColor: theme.colors.border,
+                  color: theme.colors.textPrimary,
+                  backgroundColor: theme.colors.surface,
                 },
               ]}
+              placeholder={t("auth.email")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              editable={!isLoading}
+            />
+
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  borderColor: theme.colors.border,
+                  color: theme.colors.textPrimary,
+                  backgroundColor: theme.colors.surface,
+                },
+              ]}
+              placeholder={t("auth.password")}
+              placeholderTextColor={theme.colors.textSecondary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isLoading}
+            />
+            <AppText variant="caption" color="secondary" style={styles.passwordHint}>
+              {t("auth.passwordHint")}
+            </AppText>
+
+            {error && (
+              <AppText
+                variant="caption"
+                color="danger"
+                style={styles.error}
+              >
+                {error}
+              </AppText>
+            )}
+
+            <Pressable
+              style={[
+                styles.button,
+                { backgroundColor: theme.colors.primary },
+                isLoading && styles.buttonDisabled,
+              ]}
+              onPress={handleRegister}
+              disabled={isLoading}
             >
-              {t("auth.signIn")}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <AppText variant="body" color="onPrimary" style={styles.buttonText}>
+                  {t("auth.signUp")}
+                </AppText>
+              )}
+            </Pressable>
+
+            <View style={styles.toggleRow}>
+              <AppText variant="caption" color="secondary">
+                {t("auth.alreadyHaveAccount")}
+              </AppText>
+              <Pressable
+                onPress={() => router.replace("/sign-in")}
+                disabled={isLoading}
+              >
+                <AppText
+                  variant="caption"
+                  style={{ color: theme.colors.primary, fontWeight: "600" }}
+                >
+                  {t("auth.signIn")}
+                </AppText>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
     padding: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
     marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
-    fontSize: 16,
     marginBottom: 32,
     textAlign: "center",
   },
@@ -227,8 +218,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
   },
+  passwordHint: {
+    marginTop: -12,
+    marginBottom: 16,
+    marginStart: 4,
+  },
   error: {
-    fontSize: 14,
     marginBottom: 16,
     textAlign: "center",
   },
@@ -241,8 +236,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 16,
     fontWeight: "600",
   },
   toggleRow: {
@@ -250,13 +243,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 16,
-  },
-  toggleText: {
-    fontSize: 14,
-    marginEnd: 4,
-  },
-  toggleLink: {
-    fontSize: 14,
-    fontWeight: "600",
+    gap: 4,
   },
 });

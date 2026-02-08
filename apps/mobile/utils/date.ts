@@ -34,10 +34,10 @@ export function formatRelativeTime(dateString: string): string {
   const diffHours = Math.floor(diffMs / 3_600_000);
   const diffDays = Math.floor(diffMs / 86_400_000);
 
-  if (diffMinutes < 1) return "now";
-  if (diffMinutes < 60) return `${diffMinutes}m`;
-  if (diffHours < 24) return `${diffHours}h`;
-  if (diffDays < 7) return `${diffDays}d`;
+  if (diffMinutes < 1) return i18n.t("time.now", { ns: "common", defaultValue: "now" });
+  if (diffMinutes < 60) return i18n.t("time.minutesShort", { ns: "common", defaultValue: "{{count}}m", count: diffMinutes });
+  if (diffHours < 24) return i18n.t("time.hoursShort", { ns: "common", defaultValue: "{{count}}h", count: diffHours });
+  if (diffDays < 7) return i18n.t("time.daysShort", { ns: "common", defaultValue: "{{count}}d", count: diffDays });
 
   return date.toLocaleDateString(undefined, {
     month: "short",

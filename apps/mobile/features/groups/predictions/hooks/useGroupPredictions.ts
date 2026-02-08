@@ -293,7 +293,11 @@ export function useGroupPredictions({
         }
       );
     } catch (err) {
-      console.error("Failed to save predictions:", err);
+      if (__DEV__) {
+        console.error("Failed to save predictions:", err);
+      }
+      // Re-throw so callers can handle (e.g. show error UI)
+      throw err;
     }
   }, [groupId, queryClient, saveMutation]);
 

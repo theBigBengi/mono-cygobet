@@ -167,7 +167,7 @@ interface PublicGroupRowProps {
   onJoinSuccess: () => void;
 }
 
-function PublicGroupRow({ group, onJoinSuccess }: PublicGroupRowProps) {
+const PublicGroupRow = React.memo(function PublicGroupRow({ group, onJoinSuccess }: PublicGroupRowProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const joinMutation = useJoinPublicGroupMutation(group.id);
@@ -213,7 +213,7 @@ function PublicGroupRow({ group, onJoinSuccess }: PublicGroupRowProps) {
       </View>
     </Card>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

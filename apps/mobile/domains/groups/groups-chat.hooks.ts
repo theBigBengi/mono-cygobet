@@ -19,6 +19,8 @@ import { groupsKeys } from "./groups.keys";
 import type { ApiError } from "@/lib/http/apiError";
 import type { LastMessageInfo } from "@repo/types";
 
+let messageCounter = 0;
+
 const MESSAGES_PAGE_SIZE = 30;
 const TYPING_INDICATOR_TIMEOUT_MS = 5000;
 
@@ -226,9 +228,10 @@ export function useGroupChat(groupId: number | null) {
     (body: string, mentions?: MentionData[]) => {
       if (!socket || !groupId || !user) return;
 
-      const tempId = `-${Date.now()}`;
+      messageCounter += 1;
+      const tempId = `temp-${Date.now()}-${messageCounter}`;
       const optimisticMessage: ChatMessage = {
-        id: -Date.now(),
+        id: -(Date.now() + messageCounter),
         createdAt: new Date().toISOString(),
         groupId,
         senderId: user.id,

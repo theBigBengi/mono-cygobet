@@ -1,4 +1,5 @@
 import { Share } from "react-native";
+import i18n from "i18next";
 
 /**
  * Open native share sheet with plain text.
@@ -18,7 +19,13 @@ export type RankingShareParams = {
  * Build share text for ranking position.
  */
 export function buildRankingShareText(params: RankingShareParams): string {
-  return `I'm ranked #${params.rank} with ${params.totalPoints} points in "${params.groupName}"! 🏆`;
+  return i18n.t("share.ranking", {
+    ns: "common",
+    rank: params.rank,
+    points: params.totalPoints,
+    group: params.groupName,
+    defaultValue: `I'm ranked #${params.rank} with ${params.totalPoints} points in "${params.groupName}"!`,
+  });
 }
 
 export type PredictionShareParams = {
@@ -33,5 +40,12 @@ export type PredictionShareParams = {
  * Build share text for a settled prediction result.
  */
 export function buildPredictionShareText(params: PredictionShareParams): string {
-  return `${params.fixtureName}\nMy prediction: ${params.prediction}\nResult: ${params.actual}\nPoints earned: ${params.points} ⚽`;
+  return i18n.t("share.prediction", {
+    ns: "common",
+    fixture: params.fixtureName,
+    prediction: params.prediction,
+    actual: params.actual,
+    points: params.points,
+    defaultValue: `${params.fixtureName}\nMy prediction: ${params.prediction}\nResult: ${params.actual}\nPoints earned: ${params.points}`,
+  });
 }

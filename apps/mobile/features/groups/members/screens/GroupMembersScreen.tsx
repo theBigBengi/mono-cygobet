@@ -25,7 +25,7 @@ interface GroupMembersScreenProps {
   groupId: number | null;
 }
 
-function MemberRow({
+const MemberRow = React.memo(function MemberRow({
   item,
   isCurrentUser,
   index,
@@ -88,7 +88,7 @@ function MemberRow({
       </Card>
     </Pressable>
   );
-}
+});
 
 /**
  * GroupMembersScreen component

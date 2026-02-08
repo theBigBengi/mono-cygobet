@@ -67,10 +67,16 @@ export function useSaveGroupPredictionsBatchMutation(groupId: number | null) {
       return saveGroupPredictionsBatch(groupId, body);
     },
     onSuccess: () => {
-      // Invalidate group fixtures to refetch with updated predictions
       if (groupId) {
+        // Invalidate fixtures, ranking, and predictions overview after saving
         queryClient.invalidateQueries({
           queryKey: groupsKeys.fixtures(groupId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.predictionsOverview(groupId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.ranking(groupId),
         });
       }
     },
