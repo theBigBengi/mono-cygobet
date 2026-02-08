@@ -13,162 +13,55 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useSetAtom, useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { BlurView } from "expo-blur";
 import { AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { globalBlockingOverlayAtom } from "@/lib/state/globalOverlay.atom";
-import {
-  useSelectedGroupGames,
-  useClearGroupGamesHook,
-} from "@/features/group-creation/selection/games";
-import {
-  useSelectedLeagues,
-  useClearSelectedLeaguesHook,
-} from "@/features/group-creation/selection/leagues";
-import {
-  useSelectedTeams,
-  useClearSelectedTeamsHook,
-} from "@/features/group-creation/selection/teams";
-import { useCreateGroupMutation } from "@/domains/groups";
-import { publishGroup } from "@/domains/groups/groups.api";
 import {
   CreateGroupModalFixturesView,
   CreateGroupModalLeaguesView,
   CreateGroupModalTeamsView,
 } from "../components/CreateGroupModal";
 import { createGroupModalVisibleAtom } from "./create-group-modal.atom";
-import { currentSelectionModeAtom } from "../selection/mode.atom";
+import { useCreateGroup } from "../hooks/useCreateGroup";
 
 export function CreateGroupModal() {
   const { t } = useTranslation("common");
   const { theme, colorScheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const setOverlay = useSetAtom(globalBlockingOverlayAtom);
   const overlayMessage = useAtomValue(globalBlockingOverlayAtom);
   const isOverlayActive = !!overlayMessage;
   const visible = useAtomValue(createGroupModalVisibleAtom);
   const setModalVisible = useSetAtom(createGroupModalVisibleAtom);
-  const mode = useAtomValue(currentSelectionModeAtom);
-  const { games } = useSelectedGroupGames();
-  const clearGames = useClearGroupGamesHook();
-  const leagues = useSelectedLeagues();
-  const clearLeagues = useClearSelectedLeaguesHook();
-  const teams = useSelectedTeams();
-  const clearTeams = useClearSelectedTeamsHook();
-  const createGroupMutation = useCreateGroupMutation();
+
+  const {
+    mode,
+    canCreate,
+    isCreating,
+    hasError,
+    error,
+    isSuccess,
+    reset,
+    handleCreate,
+    handleCreateAndPublish,
+  } = useCreateGroup();
 
   useEffect(() => {
-    if (!visible) createGroupMutation.reset();
-  }, [visible, createGroupMutation]);
+    if (!visible) reset();
+  }, [visible, reset]);
 
-  // Close modal when overlay turns off after successful creation (lobby signaled readiness)
+  // Close modal when overlay turns off after successful creation
   useEffect(() => {
-    if (createGroupMutation.isSuccess && !isOverlayActive) {
+    if (isSuccess && !isOverlayActive) {
       setModalVisible(false);
     }
-  }, [createGroupMutation.isSuccess, isOverlayActive, setModalVisible]);
+  }, [isSuccess, isOverlayActive, setModalVisible]);
 
-  // Prevent modal close during group creation (when overlay is active)
   const handleRequestClose = () => {
-    // Don't allow closing if we're creating or overlay is active
-    // This prevents GO_BACK error after router.replace
-    if (isCreating || isOverlayActive) {
-      return;
-    }
+    if (isCreating || isOverlayActive) return;
     setModalVisible(false);
   };
-
-  const validateAndGetCreateBody = () => {
-    if (mode === "fixtures" && games.length === 0) return null;
-    if (mode === "leagues" && leagues.length === 0) return null;
-    if (mode === "teams" && teams.length === 0) return null;
-    if (mode === "fixtures") {
-      return {
-        name: "",
-        privacy: "private" as const,
-        selectionMode: "games" as const,
-        fixtureIds: games.map((g) => g.fixtureId),
-      };
-    }
-    if (mode === "leagues") {
-      return {
-        name: "",
-        privacy: "private" as const,
-        selectionMode: "leagues" as const,
-        leagueIds: leagues.map((l) => l.id),
-      };
-    }
-    if (mode === "teams") {
-      return {
-        name: "",
-        privacy: "private" as const,
-        selectionMode: "teams" as const,
-        teamIds: teams.map((t) => t.id),
-      };
-    }
-    return null;
-  };
-
-  const handleCreate = async () => {
-    setOverlay(t("groupCreation.creating"));
-    const body = validateAndGetCreateBody();
-    if (!body) {
-      setOverlay(false);
-      return;
-    }
-    try {
-      const result = await createGroupMutation.mutateAsync(body);
-      if (mode === "fixtures") clearGames();
-      if (mode === "leagues") clearLeagues();
-      if (mode === "teams") clearTeams();
-      setModalVisible(false);
-      router.replace(`/groups/${result.data.id}` as any);
-    } catch {
-      setOverlay(false);
-    }
-  };
-
-  const handleCreateAndPublish = async () => {
-    setOverlay(t("groupCreation.creating"));
-    const body = validateAndGetCreateBody();
-    if (!body) {
-      setOverlay(false);
-      return;
-    }
-    try {
-      const result = await createGroupMutation.mutateAsync(body);
-      if (mode === "fixtures") clearGames();
-      if (mode === "leagues") clearLeagues();
-      if (mode === "teams") clearTeams();
-      await publishGroup(result.data.id, {
-        name: t("lobby.defaultGroupName"),
-        privacy: "private",
-        inviteAccess: "all",
-        onTheNosePoints: 3,
-        correctDifferencePoints: 2,
-        outcomePoints: 1,
-        predictionMode: "CorrectScore",
-        koRoundMode: "FullTime",
-        maxMembers: 50,
-        nudgeEnabled: true,
-        nudgeWindowMinutes: 60,
-      });
-      setModalVisible(false);
-      router.replace(`/groups/${result.data.id}` as any);
-    } catch {
-      setOverlay(false);
-    }
-  };
-
-  const isCreating = createGroupMutation.isPending;
-  const hasError = createGroupMutation.isError;
-  const canCreate =
-    (mode === "fixtures" && games.length > 0) ||
-    (mode === "leagues" && leagues.length > 0) ||
-    (mode === "teams" && teams.length > 0);
 
   const title =
     mode === "fixtures"
@@ -187,13 +80,7 @@ export function CreateGroupModal() {
       statusBarTranslucent={false}
     >
       <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.background,
-            // paddingTop: insets.top,
-          },
-        ]}
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
       >
         <View
           style={[styles.header, { borderBottomColor: theme.colors.border }]}
@@ -226,7 +113,6 @@ export function CreateGroupModal() {
           {mode === "teams" && <CreateGroupModalTeamsView />}
         </ScrollView>
 
-        {/* Show local overlay only if global overlay is not active */}
         {isCreating && !isOverlayActive && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -257,8 +143,7 @@ export function CreateGroupModal() {
               ]}
             >
               <AppText variant="caption" color="danger" style={styles.errorTxt}>
-                {createGroupMutation.error?.message ??
-                  t("groupCreation.failedCreate")}
+                {error?.message ?? t("groupCreation.failedCreate")}
               </AppText>
             </View>
           )}
@@ -310,13 +195,9 @@ export function CreateGroupModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
     overflow: "hidden",
-    // backgroundColor: "red",
   },
   header: {
-    // backgroundColor: "red",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

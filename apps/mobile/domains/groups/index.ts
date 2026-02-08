@@ -35,6 +35,7 @@ export {
   fetchMyGroups,
   fetchPublicGroups,
   fetchGroupById,
+  publishGroup,
   fetchGroupFixtures,
   fetchGroupGamesFilters,
   joinGroupByCode,

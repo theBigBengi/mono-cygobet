@@ -4,9 +4,11 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable, TextInput } from "react-native";
+import { View, StyleSheet, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import type { ApiGroupItem } from "@repo/types";
 import { Screen, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
@@ -14,10 +16,20 @@ import {
   SettingsRow,
   SettingsRowBottomSheet,
 } from "@/features/settings";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import type { ApiGroupItem } from "@repo/types";
+import {
+  usePublishGroupMutation,
+  useUpdateGroupMutation,
+} from "@/domains/groups";
+import { formatDate } from "@/utils/date";
+import { PublishGroupButton } from "../components/PublishGroupButton";
+import { DraftBottomSheets } from "../components/DraftBottomSheets";
+import { NudgeWindowPicker } from "../components/NudgeWindowPicker";
+import { useGroupLobbyState } from "../hooks/useGroupLobbyState";
+import { useGroupLobbyActions } from "../hooks/useGroupLobbyActions";
+import { useGroupDuration } from "../hooks/useGroupDuration";
+import { useAutoSaveDraft } from "../hooks/useAutoSaveDraft";
+import type { FixtureItem } from "../types";
 
-const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
 const MIN_SCORE = 1;
 const MAX_SCORE = 10;
 
@@ -28,44 +40,14 @@ function clampScore(value: number): number {
   return Math.min(MAX_SCORE, Math.max(MIN_SCORE, value));
 }
 
-import { PublishGroupButton } from "../components/PublishGroupButton";
-import { DraftScoringContent } from "../components/DraftScoringContent";
-import { useGroupLobbyState } from "../hooks/useGroupLobbyState";
-import { useGroupLobbyActions } from "../hooks/useGroupLobbyActions";
-import { useGroupDuration } from "../hooks/useGroupDuration";
-import { useAutoSaveDraft } from "../hooks/useAutoSaveDraft";
-import type { FixtureItem } from "../types";
-import { formatDate } from "@/utils/date";
-import {
-  usePublishGroupMutation,
-  useUpdateGroupMutation,
-} from "@/domains/groups";
-
 interface GroupLobbyDraftScreenProps {
-  /**
-   * Group data (includes fixtures when fetched with includeFixtures)
-   */
   group: ApiGroupItem;
-  /**
-   * Callback to refresh all data
-   */
   onRefresh: () => Promise<void>;
-  /**
-   * Whether the current user is the creator
-   */
   isCreator: boolean;
-  /** Called when publish is triggered (e.g. to show overlay) */
   onPublishStart?: () => void;
-  /** Called when publish fails (e.g. to hide overlay and show error) */
   onPublishError?: () => void;
 }
 
-/**
- * Group Lobby Draft Screen
- *
- * Screen component for viewing and managing a group in draft status.
- * Uses SettingsSection / SettingsRow / SettingsRowPicker pattern.
- */
 export function GroupLobbyDraftScreen({
   group,
   onRefresh,
@@ -150,9 +132,7 @@ export function GroupLobbyDraftScreen({
   const updateGroupMutation = useUpdateGroupMutation(group.id);
   const publishGroupMutation = usePublishGroupMutation(group.id);
 
-  const fixtures = Array.isArray((group as any).fixtures)
-    ? ((group as any).fixtures as FixtureItem[])
-    : [];
+  const fixtures: FixtureItem[] = group.fixtures ?? [];
   const duration = useGroupDuration(fixtures);
 
   const { handlePublish } = useGroupLobbyActions(
@@ -237,7 +217,6 @@ export function GroupLobbyDraftScreen({
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
       >
-        {/* Banner — separate from name/description card */}
         <View
           style={[styles.bannerRow, { borderBottomColor: theme.colors.border }]}
         >
@@ -263,7 +242,6 @@ export function GroupLobbyDraftScreen({
           </AppText>
         </View>
 
-        {/* Name + description in a card, visually separate from banner */}
         <SettingsSection title="">
           <View
             style={[styles.nameRow, { borderBottomColor: theme.colors.border }]}
@@ -307,7 +285,6 @@ export function GroupLobbyDraftScreen({
           ) : null}
         </SettingsSection>
 
-        {/* GAMES */}
         <SettingsSection title={t("lobby.games")}>
           <SettingsRow
             type="value"
@@ -331,7 +308,6 @@ export function GroupLobbyDraftScreen({
           />
         </SettingsSection>
 
-        {/* PREDICTION RULES — creator only */}
         {isCreator && (
           <SettingsSection title={t("lobby.predictionRules")}>
             <SettingsRowBottomSheet.Row
@@ -356,7 +332,6 @@ export function GroupLobbyDraftScreen({
           </SettingsSection>
         )}
 
-        {/* ADVANCED — creator only (collapsed by default) */}
         {isCreator && (
           <SettingsSection
             title={t("lobby.advanced")}
@@ -394,49 +369,11 @@ export function GroupLobbyDraftScreen({
               isLast={!nudgeEnabled}
             />
             {nudgeEnabled && (
-              <View
-                style={[
-                  styles.nudgeWindowContainer,
-                  { paddingHorizontal: theme.spacing.md },
-                ]}
-              >
-                <View style={styles.nudgeWindowRow}>
-                  <AppText variant="body" style={styles.nudgeLabel}>
-                    {t("lobby.minutesBeforeKickoff")}
-                  </AppText>
-                </View>
-                <View style={styles.nudgeWindowChips}>
-                  {NUDGE_WINDOW_OPTIONS.map((min) => (
-                    <Pressable
-                      key={min}
-                      onPress={() => setNudgeWindowMinutes(min)}
-                      disabled={!isEditable}
-                      style={[
-                        styles.nudgeWindowChip,
-                        {
-                          backgroundColor:
-                            nudgeWindowMinutes === min
-                              ? theme.colors.primary
-                              : theme.colors.surface,
-                          borderColor: theme.colors.border,
-                        },
-                      ]}
-                    >
-                      <AppText
-                        variant="body"
-                        style={{
-                          color:
-                            nudgeWindowMinutes === min
-                              ? theme.colors.primaryText
-                              : theme.colors.textPrimary,
-                        }}
-                      >
-                        {min}
-                      </AppText>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
+              <NudgeWindowPicker
+                value={nudgeWindowMinutes}
+                onValueChange={setNudgeWindowMinutes}
+                disabled={!isEditable}
+              />
             )}
             <SettingsRow
               type="toggle"
@@ -473,7 +410,6 @@ export function GroupLobbyDraftScreen({
           </SettingsSection>
         )}
 
-        {/* INFO */}
         <SettingsSection title={t("lobby.info")}>
           <SettingsRow
             type="value"
@@ -492,54 +428,21 @@ export function GroupLobbyDraftScreen({
       </Screen>
 
       {isCreator && (
-        <>
-          <SettingsRowBottomSheet.Sheet<PredictionMode>
-            sheetRef={predictionSheetRef}
-            title={t("lobby.predictionMode")}
-            options={[
-              { value: "result", label: t("lobby.exactResult") },
-              { value: "3way", label: t("lobby.matchWinner") },
-            ]}
-            value={predictionMode}
-            onValueChange={setPredictionMode}
-          />
-          <SettingsRowBottomSheet.Sheet
-            sheetRef={scoringSheetRef}
-            title={t("lobby.scoring")}
-            children={
-              <DraftScoringContent
-                values={scoringValues}
-                predictionMode={predictionMode}
-                onChange={setScoringValues}
-                disabled={!isEditable}
-              />
-            }
-          />
-          <SettingsRowBottomSheet.Sheet<KORoundMode>
-            sheetRef={koSheetRef}
-            title={t("lobby.koRoundMode")}
-            options={[
-              { value: "90min", label: t("lobby.90min") },
-              { value: "extraTime", label: t("lobby.extraTime") },
-              { value: "penalties", label: t("lobby.penalties") },
-            ]}
-            value={koRoundMode}
-            onValueChange={setKORoundMode}
-          />
-          <SettingsRowBottomSheet.Sheet
-            sheetRef={maxMembersSheetRef}
-            title={t("lobby.maxMembers")}
-            options={[
-              { value: "10", label: "10" },
-              { value: "20", label: "20" },
-              { value: "30", label: "30" },
-              { value: "50", label: "50" },
-              { value: "100", label: "100" },
-            ]}
-            value={String(maxMembers)}
-            onValueChange={(v) => setMaxMembers(Number(v))}
-          />
-        </>
+        <DraftBottomSheets
+          predictionSheetRef={predictionSheetRef}
+          scoringSheetRef={scoringSheetRef}
+          koSheetRef={koSheetRef}
+          maxMembersSheetRef={maxMembersSheetRef}
+          predictionMode={predictionMode}
+          onPredictionModeChange={setPredictionMode}
+          scoringValues={scoringValues}
+          onScoringChange={setScoringValues}
+          koRoundMode={koRoundMode}
+          onKORoundModeChange={setKORoundMode}
+          maxMembers={maxMembers}
+          onMaxMembersChange={setMaxMembers}
+          isEditable={isEditable}
+        />
       )}
 
       {isCreator && (
@@ -606,26 +509,5 @@ const styles = StyleSheet.create({
     padding: 0,
     fontSize: 16,
     textAlignVertical: "top",
-  },
-  nudgeWindowContainer: {
-    paddingVertical: 12,
-  },
-  nudgeWindowRow: {
-    marginBottom: 8,
-  },
-  nudgeLabel: {
-    fontWeight: "500",
-  },
-  nudgeWindowChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    paddingBottom: 8,
-  },
-  nudgeWindowChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
   },
 });

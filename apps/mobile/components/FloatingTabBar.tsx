@@ -179,15 +179,20 @@ export function FloatingTabBar({
                       />
                     )
                   )}
-                  {route.name === "groups" && groupsNeedAttention && (
-                    <View style={styles.attentionDot} pointerEvents="none" />
-                  )}
-                  {route.name === "groups" && draftCount > 0 && (
-                    <View
-                      style={[styles.attentionDot, styles.draftDot]}
-                      pointerEvents="none"
-                    />
-                  )}
+                  {route.name === "groups" &&
+                    groupsNeedAttention &&
+                    totalUnreadCount === 0 && (
+                      <View style={styles.attentionDot} pointerEvents="none" />
+                    )}
+                  {route.name === "groups" &&
+                    draftCount > 0 &&
+                    !groupsNeedAttention &&
+                    totalUnreadCount === 0 && (
+                      <View
+                        style={[styles.attentionDot, styles.draftDot]}
+                        pointerEvents="none"
+                      />
+                    )}
                   {route.name === "groups" && totalUnreadCount > 0 && (
                     <View
                       style={[
@@ -245,7 +250,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    // paddingVertical: 8,
     paddingHorizontal: 0,
   },
   tab: {

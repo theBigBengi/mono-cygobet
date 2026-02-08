@@ -40,6 +40,11 @@ export function useAutoSaveDraft(
   const valuesRef = useRef(values);
   valuesRef.current = values;
 
+  // Keep a stable ref to the mutation so the debounce effect doesn't
+  // need it in its dependency array (which would reset the timer every render).
+  const mutationRef = useRef(updateGroupMutation);
+  mutationRef.current = updateGroupMutation;
+
   useEffect(() => {
     if (!enabled) return;
 
@@ -50,7 +55,7 @@ export function useAutoSaveDraft(
     timeoutRef.current = setTimeout(() => {
       timeoutRef.current = null;
       const current = valuesRef.current;
-      if (updateGroupMutation.isPending) return;
+      if (mutationRef.current.isPending) return;
       if (lastSavedRef.current && valuesEqual(current, lastSavedRef.current)) {
         return;
       }
@@ -64,7 +69,7 @@ export function useAutoSaveDraft(
         nudgeWindowMinutes: current.nudgeWindowMinutes,
       };
 
-      updateGroupMutation.mutate(body, {
+      mutationRef.current.mutate(body, {
         onSuccess: () => {
           lastSavedRef.current = { ...valuesRef.current };
         },
