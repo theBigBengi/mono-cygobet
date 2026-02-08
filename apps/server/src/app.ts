@@ -74,6 +74,14 @@ const app: FastifyPluginAsync<AppOptions> = async (
     }
 
     // Register CORS
+    // CORS_ORIGINS: comma-separated list of allowed origins (e.g. "https://app.example.com,https://admin.example.com")
+    // CORS_VERCEL_SUFFIX: optional Vercel app suffix for preview deploys (e.g. "mono-cygobet")
+    const extraOrigins = (process.env.CORS_ORIGINS ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const vercelSuffix = (process.env.CORS_VERCEL_SUFFIX ?? "").trim();
+
     fastify.register(fastifyCors, {
       origin: (origin, cb) => {
         // allow non-browser calls (curl / server-to-server)
@@ -81,15 +89,18 @@ const app: FastifyPluginAsync<AppOptions> = async (
 
         const isDev = process.env.NODE_ENV !== "production";
 
-        // allow your known origins + any vercel preview
-        const isAllowedStatic =
-          origin === "http://localhost:3000" ||
-          origin === "http://localhost:5173" ||
-          origin === "https://mono-cygobet-admin.vercel.app" ||
-          (origin.startsWith("https://") && origin.endsWith(".vercel.app"));
+        // Explicit origins from env
+        if (extraOrigins.includes(origin)) {
+          return cb(null, origin);
+        }
 
-        if (isAllowedStatic) {
-          // IMPORTANT: echo the exact origin string
+        // Vercel preview deploys: only matching project suffix, not all *.vercel.app
+        if (
+          vercelSuffix &&
+          origin.startsWith("https://") &&
+          origin.endsWith(".vercel.app") &&
+          origin.includes(vercelSuffix)
+        ) {
           return cb(null, origin);
         }
 
@@ -143,7 +154,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
 
     // Load routes after plugins
     const routesDir = path.join(__dirname, "routes");
-    console.log("Loading routes from:", routesDir);
+    log.debug({ routesDir }, "Loading routes");
     await fastify.register(AutoLoad, {
       dir: routesDir,
       options: opts,
