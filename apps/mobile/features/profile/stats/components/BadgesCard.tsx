@@ -3,6 +3,7 @@
 
 import React, { useRef } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiBadge } from "@repo/types";
@@ -116,8 +117,10 @@ function BadgeRow({ badge }: { badge: ApiBadge }) {
 
 export function BadgesCard({ badges }: BadgesCardProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation("common");
   const sheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
+  const allZero = badges.every((b) => b.progress === 0 && !b.earned);
   const sortedBadges = [...badges].sort((a, b) => {
     if (a.earned !== b.earned) return a.earned ? 1 : -1;
     return b.progress - a.progress;
@@ -135,9 +138,29 @@ export function BadgesCard({ badges }: BadgesCardProps) {
           />
         </Pressable>
       </View>
-      {sortedBadges.map((badge) => (
-        <BadgeRow key={badge.id} badge={badge} />
-      ))}
+      {allZero ? (
+        <>
+          <View style={styles.iconRow}>
+            {badges.map((badge) => (
+              <BadgeIcon
+                key={badge.id}
+                badgeId={badge.id}
+                color={theme.colors.textSecondary}
+                size={20}
+              />
+            ))}
+          </View>
+          <AppText
+            variant="caption"
+            color="secondary"
+            style={styles.badgesPreview}
+          >
+            {t("profile.badgesPreview", { count: badges.length })}
+          </AppText>
+        </>
+      ) : (
+        sortedBadges.map((badge) => <BadgeRow key={badge.id} badge={badge} />)
+      )}
       <BadgesInfoSheet sheetRef={sheetRef} badges={badges} />
     </Card>
   );
@@ -194,5 +217,14 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: "100%",
+  },
+  iconRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 8,
+  },
+  badgesPreview: {
+    textAlign: "center",
   },
 });

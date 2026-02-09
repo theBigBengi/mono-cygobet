@@ -355,7 +355,14 @@
     "level": "רמה",
     "exactShort": "מדויקים",
     "winsShort": "ניצחונות",
-    "correctShort": "נכונים"
+    "correctShort": "נכונים",
+    "welcomeTitle": "!התחל לנחש",
+    "welcomeSubtitle": "הצטרף לקבוצה ונחש תוצאות משחקים כדי לראות את הסטטיסטיקות שלך כאן",
+    "joinGroup": "הצטרף לקבוצה",
+    "browsePublicGroups": "דפדף בקבוצות ציבוריות",
+    "badgesPreview": "{{count}} תגים להשגה — התחל לנחש כדי לפתוח!",
+    "noGroupsSubtitle": "!הצטרף לקבוצה הראשונה שלך כדי להתחרות עם חברים",
+    "browseGroups": "דפדף בקבוצות"
   },
   "gamification": {
     "powerScore": "ציון כוח",

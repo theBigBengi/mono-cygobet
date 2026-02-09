@@ -5,7 +5,7 @@ import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Card, AppText } from "@/components/ui";
+import { Card, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { GroupCompactCard } from "./GroupCompactCard";
 import type { ApiUserGroupStat } from "@repo/types";
@@ -84,9 +84,17 @@ export function GroupStatsCard({
 
       {/* Groups list */}
       {groups.length === 0 ? (
-        <AppText variant="body" color="secondary" style={styles.empty}>
-          {t("groups.noGroupsYet")}
-        </AppText>
+        <View style={styles.emptyContainer}>
+          <AppText variant="body" color="secondary" style={styles.empty}>
+            {t("profile.noGroupsSubtitle")}
+          </AppText>
+          <Button
+            label={t("profile.browseGroups")}
+            variant="secondary"
+            onPress={() => router.push("/groups/discover")}
+            style={styles.browseButton}
+          />
+        </View>
       ) : (
         <View style={styles.list}>
           {visibleGroups.map((group) => (
@@ -142,9 +150,15 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   list: {},
+  emptyContainer: {
+    alignItems: "center",
+    gap: 12,
+  },
   empty: {
     textAlign: "center",
-    paddingVertical: 16,
+  },
+  browseButton: {
+    width: "100%",
   },
   moreButton: {
     alignItems: "center",

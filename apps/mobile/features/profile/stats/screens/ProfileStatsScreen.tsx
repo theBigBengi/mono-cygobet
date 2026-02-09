@@ -9,7 +9,11 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, Button } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { useUserStatsQuery, useProfileQuery, useGamificationQuery } from "@/domains/profile";
+import {
+  useUserStatsQuery,
+  useProfileQuery,
+  useGamificationQuery,
+} from "@/domains/profile";
 import {
   PowerScoreCard,
   RankTierBadge,
@@ -21,6 +25,7 @@ import {
 } from "../../gamification";
 import { HeroHeader } from "../components/HeroHeader";
 import { PerformanceCard } from "../components/PerformanceCard";
+import { WelcomeCard } from "../components/WelcomeCard";
 import { BadgesCard } from "../components/BadgesCard";
 import { GroupStatsCard } from "../components/GroupStatsCard";
 import { EditProfileModal } from "../../components/EditProfileModal";
@@ -100,6 +105,8 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
     data.distribution.difference +
     data.distribution.outcome;
 
+  const isNewUser = data.overall.settledPredictions === 0;
+
   return (
     <Screen scroll>
       <HeroHeader
@@ -112,50 +119,56 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
         showEditButton={isOwnProfile}
         onEditPress={() => setEditModalVisible(true)}
       />
-      <PerformanceCard
-        form={data.form}
-        exact={data.distribution.exact}
-        difference={data.distribution.difference}
-        outcome={data.distribution.outcome}
-        miss={data.distribution.miss}
-      />
-      <BadgesCard badges={data.badges} />
-      {gamification && (
+      {isNewUser ? (
+        <WelcomeCard />
+      ) : (
         <>
-          <PowerScoreCard
-            score={gamification.powerScore}
-            onInfoPress={() => openInfo("powerScore")}
+          <PerformanceCard
+            form={data.form}
+            exact={data.distribution.exact}
+            difference={data.distribution.difference}
+            outcome={data.distribution.outcome}
+            miss={data.distribution.miss}
           />
-          <RankTierBadge
-            tier={gamification.rankTier}
-            progress={gamification.rankProgress}
-            onInfoPress={() => openInfo("rankTier")}
-          />
-          <SkillRadarChart
-            skills={gamification.skills}
-            onInfoPress={() => openInfo("skills")}
-          />
-          <StreakIndicator
-            streak={gamification.streak}
-            onInfoPress={() => openInfo("streak")}
-          />
-          <SeasonComparisonCard
-            comparison={gamification.seasonComparison}
-            onInfoPress={() => openInfo("seasonComparison")}
-          />
-          <GamificationInfoSheet
-            sheetRef={infoSheetRef}
-            featureId={activeFeature}
-          />
+          {gamification && (
+            <>
+              <PowerScoreCard
+                score={gamification.powerScore}
+                onInfoPress={() => openInfo("powerScore")}
+              />
+              <RankTierBadge
+                tier={gamification.rankTier}
+                progress={gamification.rankProgress}
+                onInfoPress={() => openInfo("rankTier")}
+              />
+              <SkillRadarChart
+                skills={gamification.skills}
+                onInfoPress={() => openInfo("skills")}
+              />
+              <StreakIndicator
+                streak={gamification.streak}
+                onInfoPress={() => openInfo("streak")}
+              />
+              <SeasonComparisonCard
+                comparison={gamification.seasonComparison}
+                onInfoPress={() => openInfo("seasonComparison")}
+              />
+              <GamificationInfoSheet
+                sheetRef={infoSheetRef}
+                featureId={activeFeature}
+              />
+            </>
+          )}
         </>
       )}
+      <BadgesCard badges={data.badges} />
       <GroupStatsCard
         groups={data.groups}
         groupsPlayed={data.overall.groupsPlayed}
         groupsActive={groupsActive}
         groupsWon={groupsWon}
       />
-      {isOwnProfile && (
+      {isOwnProfile && !isNewUser && (
         <View style={[styles.compareButton, { marginTop: theme.spacing.md }]}>
           <Button
             label={t("profile.compareWithOthers")}

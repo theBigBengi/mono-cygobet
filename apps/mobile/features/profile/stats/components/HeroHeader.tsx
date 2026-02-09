@@ -67,13 +67,22 @@ export function HeroHeader({
       <AppText style={styles.username}>{username || "unknown"}</AppText>
 
       <View style={styles.statsGrid}>
-        <StatBox value={`${accuracy}%`} label={t("profile.accuracy")} />
         <StatBox
-          value={totalPredictions.toLocaleString()}
+          value={accuracy > 0 ? `${accuracy}%` : "—"}
+          label={t("profile.accuracy")}
+        />
+        <StatBox
+          value={totalPredictions > 0 ? totalPredictions.toLocaleString() : "—"}
           label={t("profile.predictions")}
         />
-        <StatBox value={exactPredictions} label={t("profile.exactShort")} />
-        <StatBox value={correctPredictions} label={t("profile.correctShort")} />
+        <StatBox
+          value={totalPredictions > 0 ? exactPredictions : "—"}
+          label={t("profile.exactShort")}
+        />
+        <StatBox
+          value={totalPredictions > 0 ? correctPredictions : "—"}
+          label={t("profile.correctShort")}
+        />
       </View>
     </View>
   );

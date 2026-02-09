@@ -355,7 +355,14 @@
     "level": "Level",
     "exactShort": "exact",
     "winsShort": "wins",
-    "correctShort": "correct"
+    "correctShort": "correct",
+    "welcomeTitle": "Start predicting!",
+    "welcomeSubtitle": "Join a group and predict match results to see your stats here",
+    "joinGroup": "Join a Group",
+    "browsePublicGroups": "Browse public groups",
+    "badgesPreview": "{{count}} badges to earn — start predicting to unlock!",
+    "noGroupsSubtitle": "Join your first group to start competing with friends!",
+    "browseGroups": "Browse Groups"
   },
   "gamification": {
     "powerScore": "Power Score",
