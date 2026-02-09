@@ -14,8 +14,8 @@ function validatePredictionScores(home: number, away: number): void {
   if (!Number.isInteger(home) || !Number.isInteger(away)) {
     throw new BadRequestError("Prediction scores must be integers");
   }
-  if (home < 0 || home > 99 || away < 0 || away > 99) {
-    throw new BadRequestError("Prediction scores must be between 0 and 99");
+  if (home < 0 || home > 9 || away < 0 || away > 9) {
+    throw new BadRequestError("Prediction scores must be between 0 and 9");
   }
 }
 

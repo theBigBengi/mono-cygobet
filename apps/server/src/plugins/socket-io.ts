@@ -8,6 +8,10 @@ import { getLogger } from "../logger";
 
 const log = getLogger("SocketIO");
 
+function isValidGroupId(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
 export default fp(async function socketIOPlugin(fastify) {
   const corsOrigins = (process.env.CORS_ORIGINS ?? "")
     .split(",")
@@ -65,6 +69,7 @@ export default fp(async function socketIOPlugin(fastify) {
     log.info({ userId }, "Socket connected");
 
     socket.on("group:join", async (groupId) => {
+      if (!isValidGroupId(groupId)) return;
       try {
         await assertGroupMember(groupId, userId);
         await socket.join(`group:${groupId}`);
@@ -77,6 +82,7 @@ export default fp(async function socketIOPlugin(fastify) {
     });
 
     socket.on("group:leave", (groupId) => {
+      if (!isValidGroupId(groupId)) return;
       socket.leave(`group:${groupId}`);
     });
 
@@ -111,6 +117,7 @@ export default fp(async function socketIOPlugin(fastify) {
     });
 
     socket.on("typing:start", (groupId) => {
+      if (!isValidGroupId(groupId)) return;
       socket.to(`group:${groupId}`).emit("typing:start", {
         userId,
         username: socket.data.user.username,
@@ -118,6 +125,7 @@ export default fp(async function socketIOPlugin(fastify) {
     });
 
     socket.on("typing:stop", (groupId) => {
+      if (!isValidGroupId(groupId)) return;
       socket.to(`group:${groupId}`).emit("typing:stop", { userId });
     });
 

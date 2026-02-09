@@ -66,7 +66,35 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
         display: string;
       }>;
     };
-  }>("/groups/:id/messages", async (req) => {
+  }>("/groups/:id/messages", {
+    schema: {
+      params: {
+        type: "object",
+        properties: { id: { type: "string", pattern: "^\\d+$" } },
+        required: ["id"],
+      },
+      body: {
+        type: "object",
+        properties: {
+          body: { type: "string", minLength: 1, maxLength: 2000 },
+          mentions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                type: { type: "string", enum: ["user", "fixture"] },
+                id: { type: "number" },
+                display: { type: "string" },
+              },
+              required: ["type", "id", "display"],
+            },
+          },
+        },
+        required: ["body"],
+        additionalProperties: false,
+      },
+    },
+  }, async (req) => {
     const groupId = parseInt(req.params.id, 10);
     const userId = req.userAuth!.user.id;
     const user = req.userAuth!.user;
@@ -101,7 +129,23 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{
     Params: { id: string };
     Body: { lastReadMessageId: number };
-  }>("/groups/:id/messages/read", async (req) => {
+  }>("/groups/:id/messages/read", {
+    schema: {
+      params: {
+        type: "object",
+        properties: { id: { type: "string", pattern: "^\\d+$" } },
+        required: ["id"],
+      },
+      body: {
+        type: "object",
+        properties: {
+          lastReadMessageId: { type: "number", minimum: 1 },
+        },
+        required: ["lastReadMessageId"],
+        additionalProperties: false,
+      },
+    },
+  }, async (req) => {
     const groupId = parseInt(req.params.id, 10);
     const userId = req.userAuth!.user.id;
     await chatService.markAsRead(groupId, userId, req.body.lastReadMessageId);
