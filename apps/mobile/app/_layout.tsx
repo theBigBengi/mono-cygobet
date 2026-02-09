@@ -52,7 +52,6 @@ if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   });
 }
 
-
 function AppContent() {
   const { t } = useTranslation("common");
   const { colorScheme, theme } = useTheme();
@@ -69,7 +68,8 @@ function AppContent() {
   // Check if user is authenticated AND has username
   const isFullyAuthenticated = isAuthenticated(status) && !!user?.username;
   // Check if user is authenticated but missing username
-  const needsUsername = isAuthenticated(status) && !user?.username;
+  const needsUsername =
+    (isAuthenticated(status) || isOnboarding(status)) && !user?.username;
 
   return (
     <NavigationThemeProvider
