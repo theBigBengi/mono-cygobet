@@ -18,16 +18,28 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
+import { getAuthErrorMessage } from "@/lib/errors/getAuthErrorMessage";
 
 export default function SignInScreen() {
   const { t } = useTranslation("common");
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { login, error } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
+
+  const handleEmailOrUsernameChange = (text: string) => {
+    setEmailOrUsername(text);
+    if (formError) setFormError(null);
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (formError) setFormError(null);
+  };
 
   const handleLogin = async () => {
     if (!emailOrUsername.trim() || !password.trim()) {
@@ -35,21 +47,20 @@ export default function SignInScreen() {
       return;
     }
 
+    setFormError(null);
     setIsLoading(true);
     try {
       await login(emailOrUsername.trim(), password);
       router.replace("/");
-    } catch {
-      // Error is already set in auth context
+    } catch (err) {
+      setFormError(getAuthErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <View
-      style={[styles.root, { backgroundColor: theme.colors.background }]}
-    >
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -59,17 +70,10 @@ export default function SignInScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AppText
-            variant="display"
-            style={styles.title}
-          >
+          <AppText variant="display" style={styles.title}>
             {t("auth.login")}
           </AppText>
-          <AppText
-            variant="body"
-            color="secondary"
-            style={styles.subtitle}
-          >
+          <AppText variant="body" color="secondary" style={styles.subtitle}>
             {t("auth.enterCredentials")}
           </AppText>
 
@@ -86,7 +90,7 @@ export default function SignInScreen() {
               placeholder={t("auth.emailOrUsername")}
               placeholderTextColor={theme.colors.textSecondary}
               value={emailOrUsername}
-              onChangeText={setEmailOrUsername}
+              onChangeText={handleEmailOrUsernameChange}
               autoCapitalize="none"
               autoCorrect={false}
               editable={!isLoading}
@@ -104,20 +108,16 @@ export default function SignInScreen() {
               placeholder={t("auth.password")}
               placeholderTextColor={theme.colors.textSecondary}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={handlePasswordChange}
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
               editable={!isLoading}
             />
 
-            {error && (
-              <AppText
-                variant="caption"
-                color="danger"
-                style={styles.error}
-              >
-                {error}
+            {(formError || error) && (
+              <AppText variant="caption" color="danger" style={styles.error}>
+                {formError || error}
               </AppText>
             )}
 
@@ -133,7 +133,11 @@ export default function SignInScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <AppText variant="body" color="onPrimary" style={styles.buttonText}>
+                <AppText
+                  variant="body"
+                  color="onPrimary"
+                  style={styles.buttonText}
+                >
                   {t("auth.login")}
                 </AppText>
               )}

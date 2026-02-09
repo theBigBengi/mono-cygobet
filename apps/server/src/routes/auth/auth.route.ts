@@ -313,6 +313,45 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send(result);
     }
   );
+
+  fastify.get<{
+    Querystring: { username: string };
+    Reply: { available: boolean };
+  }>(
+    "/username/check",
+    {
+      schema: {
+        querystring: {
+          type: "object",
+          required: ["username"],
+          properties: {
+            username: { type: "string", minLength: 3, maxLength: 50 },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: { available: { type: "boolean" } },
+          },
+        },
+      },
+      preHandler: [fastify.userAuth.requireAuth],
+    },
+    async (req, reply) => {
+      const username = req.query.username.trim();
+      const ctx = req.userAuth;
+      if (!ctx) throw new Error("User auth context missing");
+
+      // Check if username exists (excluding current user)
+      const existing = await prisma.users.findUnique({
+        where: { username },
+        select: { id: true },
+      });
+
+      const available = !existing || existing.id === ctx.user.id;
+      return reply.send({ available });
+    }
+  );
 };
 
 export default userAuthRoutes;

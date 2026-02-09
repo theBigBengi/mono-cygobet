@@ -13,20 +13,28 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
+import { useUsernameAvailability } from "@/lib/auth/useUsernameAvailability";
 import * as authApi from "@/lib/auth/auth.api";
 
 export default function UsernameScreen() {
   const { t } = useTranslation("common");
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const availabilityStatus = useUsernameAvailability(username);
   const { loadUser } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
+
+  const canSubmit =
+    username.trim().length >= 3 &&
+    availabilityStatus === "available" &&
+    !isLoading;
 
   const handleComplete = async () => {
     const trimmedUsername = username.trim();
@@ -65,9 +73,7 @@ export default function UsernameScreen() {
   };
 
   return (
-    <View
-      style={[styles.root, { backgroundColor: theme.colors.background }]}
-    >
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -77,17 +83,10 @@ export default function UsernameScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AppText
-            variant="title"
-            style={styles.title}
-          >
+          <AppText variant="title" style={styles.title}>
             {t("auth.completeProfile")}
           </AppText>
-          <AppText
-            variant="body"
-            color="secondary"
-            style={styles.subtitle}
-          >
+          <AppText variant="body" color="secondary" style={styles.subtitle}>
             {t("auth.chooseUsername")}
           </AppText>
 
@@ -110,11 +109,64 @@ export default function UsernameScreen() {
               editable={!isLoading}
             />
 
-            <AppText
-              variant="caption"
-              color="secondary"
-              style={styles.hint}
-            >
+            {/* Availability indicator */}
+            {username.trim().length >= 3 && (
+              <View style={styles.availabilityRow}>
+                {availabilityStatus === "checking" && (
+                  <>
+                    <ActivityIndicator
+                      size="small"
+                      color={theme.colors.textSecondary}
+                    />
+                    <AppText
+                      variant="caption"
+                      color="secondary"
+                      style={styles.availabilityText}
+                    >
+                      {t("auth.checkingUsername")}
+                    </AppText>
+                  </>
+                )}
+                {availabilityStatus === "available" && (
+                  <>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={16}
+                      color={theme.colors.success}
+                    />
+                    <AppText
+                      variant="caption"
+                      style={[
+                        styles.availabilityText,
+                        { color: theme.colors.success },
+                      ]}
+                    >
+                      {t("auth.usernameAvailable")}
+                    </AppText>
+                  </>
+                )}
+                {availabilityStatus === "taken" && (
+                  <>
+                    <Ionicons
+                      name="close-circle"
+                      size={16}
+                      color={theme.colors.danger}
+                    />
+                    <AppText
+                      variant="caption"
+                      style={[
+                        styles.availabilityText,
+                        { color: theme.colors.danger },
+                      ]}
+                    >
+                      {t("auth.usernameTaken")}
+                    </AppText>
+                  </>
+                )}
+              </View>
+            )}
+
+            <AppText variant="caption" color="secondary" style={styles.hint}>
               {t("auth.usernameHint")}
             </AppText>
 
@@ -122,15 +174,19 @@ export default function UsernameScreen() {
               style={[
                 styles.button,
                 { backgroundColor: theme.colors.primary },
-                isLoading && styles.buttonDisabled,
+                (isLoading || !canSubmit) && styles.buttonDisabled,
               ]}
               onPress={handleComplete}
-              disabled={isLoading}
+              disabled={!canSubmit}
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <AppText variant="body" color="onPrimary" style={styles.buttonText}>
+                <AppText
+                  variant="body"
+                  color="onPrimary"
+                  style={styles.buttonText}
+                >
                   {t("auth.complete")}
                 </AppText>
               )}
@@ -171,6 +227,15 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     marginBottom: 8,
+  },
+  availabilityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  availabilityText: {
+    marginLeft: 6,
   },
   hint: {
     marginBottom: 24,

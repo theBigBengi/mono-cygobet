@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
+import { getAuthErrorMessage } from "@/lib/errors/getAuthErrorMessage";
 import * as authApi from "@/lib/auth/auth.api";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -26,11 +27,22 @@ export default function SignUpScreen() {
   const { t } = useTranslation("common");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { error, applyAuthResult } = useAuth();
+  const { applyAuthResult, error } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (formError) setFormError(null);
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (formError) setFormError(null);
+  };
 
   const handleRegister = async () => {
     const trimmedEmail = email.trim();
@@ -51,6 +63,7 @@ export default function SignUpScreen() {
       return;
     }
 
+    setFormError(null);
     setIsLoading(true);
     try {
       const response = await authApi.register({
@@ -61,17 +74,15 @@ export default function SignUpScreen() {
 
       await applyAuthResult(response);
       router.replace("/");
-    } catch {
-      // Error will be set in auth context
+    } catch (err) {
+      setFormError(getAuthErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <View
-      style={[styles.root, { backgroundColor: theme.colors.background }]}
-    >
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -81,17 +92,10 @@ export default function SignUpScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AppText
-            variant="display"
-            style={styles.title}
-          >
+          <AppText variant="display" style={styles.title}>
             {t("auth.createAccount")}
           </AppText>
-          <AppText
-            variant="body"
-            color="secondary"
-            style={styles.subtitle}
-          >
+          <AppText variant="body" color="secondary" style={styles.subtitle}>
             {t("auth.signUpToGetStarted")}
           </AppText>
 
@@ -108,7 +112,7 @@ export default function SignUpScreen() {
               placeholder={t("auth.email")}
               placeholderTextColor={theme.colors.textSecondary}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={handleEmailChange}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
@@ -127,23 +131,23 @@ export default function SignUpScreen() {
               placeholder={t("auth.password")}
               placeholderTextColor={theme.colors.textSecondary}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={handlePasswordChange}
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
               editable={!isLoading}
             />
-            <AppText variant="caption" color="secondary" style={styles.passwordHint}>
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.passwordHint}
+            >
               {t("auth.passwordHint")}
             </AppText>
 
-            {error && (
-              <AppText
-                variant="caption"
-                color="danger"
-                style={styles.error}
-              >
-                {error}
+            {(formError || error) && (
+              <AppText variant="caption" color="danger" style={styles.error}>
+                {formError || error}
               </AppText>
             )}
 
@@ -159,7 +163,11 @@ export default function SignUpScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <AppText variant="body" color="onPrimary" style={styles.buttonText}>
+                <AppText
+                  variant="body"
+                  color="onPrimary"
+                  style={styles.buttonText}
+                >
                   {t("auth.signUp")}
                 </AppText>
               )}

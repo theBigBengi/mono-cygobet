@@ -72,7 +72,10 @@
     "errorUsernameFormat": "Username can only contain Hebrew/English letters, numbers, underscores, and hyphens",
     "errorOnboardingFailed": "Failed to complete onboarding. Please try again.",
     "usernameHint": "3-50 characters. Hebrew/English letters, numbers, underscores, and hyphens only.",
-    "loginFailed": "Login failed"
+    "loginFailed": "Login failed",
+    "checkingUsername": "Checking availability...",
+    "usernameAvailable": "Username is available",
+    "usernameTaken": "Username is already taken"
   },
   "groups": {
     "noGroupsYet": "No groups yet",
@@ -443,6 +446,9 @@
   "errors": {
     "error": "Error",
     "network": "Network connection error. Please check your internet connection and try again.",
+    "noInternet": "No internet connection. Please check your network.",
+    "tooManyAttempts": "Too many attempts. Please try again later.",
+    "serverError": "Server error. Please try again later.",
     "auth": "Authentication error. Please log in again.",
     "server": "Server error. Please try again later.",
     "somethingWentWrong": "Something went wrong. Please try again.",

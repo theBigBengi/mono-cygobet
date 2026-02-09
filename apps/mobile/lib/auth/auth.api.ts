@@ -102,6 +102,20 @@ export async function logout(
 }
 
 /**
+ * Check if a username is available.
+ * - Protected endpoint (requires auth).
+ * - Used during onboarding to validate username before submission.
+ */
+export async function checkUsernameAvailable(
+  username: string
+): Promise<{ available: boolean }> {
+  return apiFetchWithAuthRetry<{ available: boolean }>(
+    `/auth/username/check?username=${encodeURIComponent(username)}`,
+    { method: "GET" }
+  );
+}
+
+/**
  * Complete onboarding by setting username.
  * - Protected endpoint, onboarding-gated.
  * - After success, client should re-bootstrap auth state to get updated flags.
