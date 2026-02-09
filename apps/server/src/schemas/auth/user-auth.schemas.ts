@@ -167,3 +167,30 @@ export const userOnboardingCompleteResponseSchema = {
     success: { type: "boolean" },
   },
 } as const;
+
+export const googleStartQuerySchema = {
+  type: "object",
+  required: ["redirect_uri"],
+  properties: {
+    redirect_uri: { type: "string", minLength: 1 },
+  },
+} as const;
+
+export const googleCallbackQuerySchema = {
+  type: "object",
+  required: [],
+  properties: {
+    code: { type: "string" },
+    state: { type: "string" },
+    error: { type: "string" },
+  },
+} as const;
+
+export const googleExchangeBodySchema = {
+  type: "object",
+  required: ["otc"],
+  additionalProperties: false,
+  properties: {
+    otc: { type: "string", minLength: 1 },
+  },
+} as const;

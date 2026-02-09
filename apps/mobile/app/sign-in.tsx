@@ -1,7 +1,7 @@
 // app/sign-in.tsx
 // Sign-in screen - always accessible, redirects to home after successful login
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   TextInput,
@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -19,6 +20,12 @@ import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import { getAuthErrorMessage } from "@/lib/errors/getAuthErrorMessage";
+import { useGoogleAuth, type GoogleAuthResult } from "@/lib/auth/useGoogleAuth";
+import * as authApi from "@/lib/auth/auth.api";
+
+// Google logo from official brand guidelines
+const GOOGLE_LOGO_URI =
+  "https://developers.google.com/identity/images/g-logo.png";
 
 export default function SignInScreen() {
   const { t } = useTranslation("common");
@@ -26,10 +33,42 @@ export default function SignInScreen() {
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  const { login, error } = useAuth();
+  const { login, applyAuthResult, error } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
+
+  const handleGoogleSuccess = useCallback(
+    async (googleResult: GoogleAuthResult) => {
+      setIsGoogleLoading(true);
+      setFormError(null);
+      try {
+        // Use different API based on auth flow type
+        const result =
+          googleResult.type === "native"
+            ? await authApi.google(googleResult.idToken)
+            : await authApi.googleExchange(googleResult.otc);
+        await applyAuthResult(result);
+        router.replace("/");
+      } catch (err) {
+        setFormError(getAuthErrorMessage(err));
+      } finally {
+        setIsGoogleLoading(false);
+      }
+    },
+    [applyAuthResult, router]
+  );
+
+  const handleGoogleError = useCallback((err: Error) => {
+    setFormError(err.message);
+    setIsGoogleLoading(false);
+  }, []);
+
+  const { signIn: signInWithGoogle, isReady: isGoogleReady } = useGoogleAuth({
+    onSuccess: handleGoogleSuccess,
+    onError: handleGoogleError,
+  });
 
   const handleEmailOrUsernameChange = (text: string) => {
     setEmailOrUsername(text);
@@ -58,6 +97,8 @@ export default function SignInScreen() {
       setIsLoading(false);
     }
   };
+
+  const isAnyLoading = isLoading || isGoogleLoading;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
@@ -93,7 +134,7 @@ export default function SignInScreen() {
               onChangeText={handleEmailOrUsernameChange}
               autoCapitalize="none"
               autoCorrect={false}
-              editable={!isLoading}
+              editable={!isAnyLoading}
             />
 
             <TextInput
@@ -112,7 +153,7 @@ export default function SignInScreen() {
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
-              editable={!isLoading}
+              editable={!isAnyLoading}
             />
 
             {(formError || error) && (
@@ -125,10 +166,10 @@ export default function SignInScreen() {
               style={[
                 styles.button,
                 { backgroundColor: theme.colors.primary },
-                isLoading && styles.buttonDisabled,
+                isAnyLoading && styles.buttonDisabled,
               ]}
               onPress={handleLogin}
-              disabled={isLoading}
+              disabled={isAnyLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
@@ -143,13 +184,54 @@ export default function SignInScreen() {
               )}
             </Pressable>
 
+            {/* Divider */}
+            <View style={styles.dividerRow}>
+              <View
+                style={[styles.dividerLine, { backgroundColor: theme.colors.border }]}
+              />
+              <AppText variant="caption" color="secondary" style={styles.dividerText}>
+                {t("auth.or")}
+              </AppText>
+              <View
+                style={[styles.dividerLine, { backgroundColor: theme.colors.border }]}
+              />
+            </View>
+
+            {/* Google Sign-In Button */}
+            <Pressable
+              style={[
+                styles.googleButton,
+                {
+                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface,
+                },
+                isAnyLoading && styles.buttonDisabled,
+              ]}
+              onPress={signInWithGoogle}
+              disabled={!isGoogleReady || isAnyLoading}
+            >
+              {isGoogleLoading ? (
+                <ActivityIndicator size="small" color={theme.colors.textPrimary} />
+              ) : (
+                <>
+                  <Image
+                    source={{ uri: GOOGLE_LOGO_URI }}
+                    style={styles.googleLogo}
+                  />
+                  <AppText variant="body" style={styles.googleButtonText}>
+                    {t("auth.continueWithGoogle")}
+                  </AppText>
+                </>
+              )}
+            </Pressable>
+
             <View style={styles.toggleRow}>
               <AppText variant="caption" color="secondary">
                 {t("auth.dontHaveAccount")}
               </AppText>
               <Pressable
                 onPress={() => router.replace("/sign-up")}
-                disabled={isLoading}
+                disabled={isAnyLoading}
               >
                 <AppText
                   variant="caption"
@@ -210,6 +292,34 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontWeight: "600",
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 12,
+  },
+  googleLogo: {
+    width: 20,
+    height: 20,
+  },
+  googleButtonText: {
+    fontWeight: "500",
   },
   toggleRow: {
     flexDirection: "row",

@@ -75,7 +75,10 @@
     "loginFailed": "Login failed",
     "checkingUsername": "Checking availability...",
     "usernameAvailable": "Username is available",
-    "usernameTaken": "Username is already taken"
+    "usernameTaken": "Username is already taken",
+    "or": "or",
+    "continueWithGoogle": "Continue with Google",
+    "passwordHint": "Must be at least 8 characters"
   },
   "groups": {
     "noGroupsYet": "No groups yet",

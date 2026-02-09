@@ -51,7 +51,8 @@
           "organization": "bengi",
           "project": "mono-cygobet"
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true,
