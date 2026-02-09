@@ -17,7 +17,10 @@ const activityRoutes: FastifyPluginAsync = async (fastify) => {
     const userId = req.userAuth!.user.id;
     const before = req.query.before;
     const limitStr = req.query.limit;
-    const limit = limitStr ? parseInt(limitStr, 10) : undefined;
+    const parsed = limitStr ? parseInt(limitStr, 10) : undefined;
+    const limit = parsed && Number.isFinite(parsed) && parsed > 0
+      ? Math.min(parsed, 100)
+      : undefined;
 
     const { items, hasMore } = await getActivityFeed(userId, { before, limit });
     return {

@@ -14,6 +14,59 @@ type UpdateProfileBody = {
   image?: string | null;
 };
 
+async function fetchProfile(userId: number): Promise<ApiUserProfileResponse> {
+  await ensureUserProfile(prisma, userId);
+
+  const [user, profile] = await Promise.all([
+    prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        image: true,
+        role: true,
+      },
+    }),
+    prisma.userProfiles.findUnique({
+      where: { userId },
+      select: {
+        level: true,
+        dailyStreak: true,
+        lastClaimAt: true,
+        favouriteTeamId: true,
+        favouriteLeagueId: true,
+        onboardingDone: true,
+      },
+    }),
+  ]);
+
+  if (!user) throw new Error("User not found");
+  if (!profile) throw new Error("User profile not found");
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      name: user.name,
+      image: user.image,
+      role: user.role,
+    },
+    profile: {
+      level: profile.level,
+      dailyStreak: profile.dailyStreak,
+      lastClaimAt: profile.lastClaimAt
+        ? profile.lastClaimAt.toISOString()
+        : null,
+      favouriteTeamId: profile.favouriteTeamId ?? null,
+      favouriteLeagueId: profile.favouriteLeagueId ?? null,
+      onboardingDone: profile.onboardingDone,
+    },
+  };
+}
+
 const userProfileRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{ Reply: ApiUserProfileResponse }>(
     "/users/profile",
@@ -26,66 +79,7 @@ const userProfileRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply) => {
       const ctx = req.userAuth;
       if (!ctx) throw new Error("User auth context missing");
-
-      const userId = ctx.user.id;
-
-      // Defensive: ensure profile exists
-      await ensureUserProfile(prisma, userId);
-
-      const user = await prisma.users.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          username: true,
-          name: true,
-          image: true,
-          role: true,
-        },
-      });
-
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      const profile = await prisma.userProfiles.findUnique({
-        where: { userId },
-        select: {
-          level: true,
-          dailyStreak: true,
-          lastClaimAt: true,
-          favouriteTeamId: true,
-          favouriteLeagueId: true,
-          onboardingDone: true,
-        },
-      });
-
-      if (!profile) {
-        throw new Error("User profile not found");
-      }
-
-      const response: ApiUserProfileResponse = {
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          name: user.name,
-          image: user.image,
-          role: user.role,
-        },
-        profile: {
-          level: profile.level,
-          dailyStreak: profile.dailyStreak,
-          lastClaimAt: profile.lastClaimAt
-            ? profile.lastClaimAt.toISOString()
-            : null,
-          favouriteTeamId: profile.favouriteTeamId ?? null,
-          favouriteLeagueId: profile.favouriteLeagueId ?? null,
-          onboardingDone: profile.onboardingDone,
-        },
-      };
-
-      return reply.send(response);
+      return reply.send(await fetchProfile(ctx.user.id));
     }
   );
 
@@ -111,52 +105,7 @@ const userProfileRoutes: FastifyPluginAsync = async (fastify) => {
       if (req.body.image !== undefined) data.image = req.body.image;
 
       if (Object.keys(data).length === 0) {
-        // No updates: fetch and return current profile (same as GET)
-        await ensureUserProfile(prisma, ctx.user.id);
-        const user = await prisma.users.findUnique({
-          where: { id: ctx.user.id },
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            name: true,
-            image: true,
-            role: true,
-          },
-        });
-        if (!user) throw new Error("User not found");
-        const profile = await prisma.userProfiles.findUnique({
-          where: { userId: ctx.user.id },
-          select: {
-            level: true,
-            dailyStreak: true,
-            lastClaimAt: true,
-            favouriteTeamId: true,
-            favouriteLeagueId: true,
-            onboardingDone: true,
-          },
-        });
-        if (!profile) throw new Error("User profile not found");
-        return reply.send({
-          user: {
-            id: user.id,
-            email: user.email,
-            username: user.username,
-            name: user.name,
-            image: user.image,
-            role: user.role,
-          },
-          profile: {
-            level: profile.level,
-            dailyStreak: profile.dailyStreak,
-            lastClaimAt: profile.lastClaimAt
-              ? profile.lastClaimAt.toISOString()
-              : null,
-            favouriteTeamId: profile.favouriteTeamId ?? null,
-            favouriteLeagueId: profile.favouriteLeagueId ?? null,
-            onboardingDone: profile.onboardingDone,
-          },
-        });
+        return reply.send(await fetchProfile(ctx.user.id));
       }
 
       const result = await updateProfile(prisma, ctx.user.id, data);

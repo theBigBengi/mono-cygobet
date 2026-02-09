@@ -30,7 +30,7 @@ export type SettlementResult = {
  * After settling, it transitions groups to "ended" when all their fixtures are terminal.
  *
  * Flow:
- * 1. Load FT fixtures
+ * 1. Load finished fixtures (FT, AET, FT_PEN)
  * 2. Find group fixtures
  * 3. Load scoring rules
  * 4. Load unsettled predictions
@@ -54,11 +54,11 @@ export async function settlePredictionsForFixtures(
 
   log.info({ fixtureIds, count: fixtureIds.length }, "Starting settlement");
 
-  // Step 1: Load FT fixtures (including period scores for KO scoring)
+  // Step 1: Load finished fixtures (FT, AET, FT_PEN) including period scores for KO scoring
   const fixtures = await prisma.fixtures.findMany({
     where: {
       id: { in: fixtureIds },
-      state: "FT",
+      state: { in: [...FINISHED_STATES] as FixtureState[] },
     },
     select: {
       id: true,
@@ -74,14 +74,14 @@ export async function settlePredictionsForFixtures(
   });
 
   if (!fixtures.length) {
-    log.debug("No FT fixtures found");
+    log.debug("No finished fixtures found");
     return { settled: 0, skipped: 0, groupsEnded: 0 };
   }
 
   // Build fixture map
   const fixtureMap = new Map(fixtures.map((f) => [f.id, f]));
 
-  log.debug({ fixtureCount: fixtures.length }, "Loaded FT fixtures");
+  log.debug({ fixtureCount: fixtures.length }, "Loaded finished fixtures");
 
   // Step 2: Find group fixtures
   const groupFixtures = await prisma.groupFixtures.findMany({
