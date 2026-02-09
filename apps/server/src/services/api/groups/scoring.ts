@@ -174,7 +174,7 @@ function calculateNormalScore(
 /**
  * Calculates points for a single prediction against a fixture result and group rules.
  *
- * - Only settled when fixture state is FT.
+ * - Only settled when fixture state is finished (FT, AET, FT_PEN).
  * - Score pair is chosen by rules.koRoundMode (FullTime / ExtraTime / Penalties);
  *   when period scores are null (e.g. match decided in 90 min), we fall back to final score.
  * - Penalties mode: only outcome matters; we award outcomePoints if predicted winner matches
