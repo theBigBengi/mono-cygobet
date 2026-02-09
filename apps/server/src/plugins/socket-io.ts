@@ -3,21 +3,34 @@ import fastifySocketIO from "fastify-socket.io";
 import { prisma } from "@repo/db";
 import { verifyAccessToken } from "../auth/user-tokens";
 import { assertGroupMember } from "../services/api/groups/permissions";
+import { sendMessage, markAsRead } from "../services/api/groups/service/chat";
 import { getLogger } from "../logger";
 
 const log = getLogger("SocketIO");
 
 export default fp(async function socketIOPlugin(fastify) {
+  const corsOrigins = (process.env.CORS_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const vercelSuffix = (process.env.CORS_VERCEL_SUFFIX ?? "").trim();
+
   await fastify.register(fastifySocketIO, {
     cors: {
       origin: (origin, cb) => {
         if (!origin) return cb(null, true);
         const isDev = process.env.NODE_ENV !== "production";
         if (isDev) return cb(null, true);
-        const allowed =
-          origin === "https://mono-cygobet-admin.vercel.app" ||
-          (origin.startsWith("https://") && origin.endsWith(".vercel.app"));
-        return cb(null, allowed ? origin : false);
+        if (corsOrigins.includes(origin)) return cb(null, origin);
+        if (
+          vercelSuffix &&
+          origin.startsWith("https://") &&
+          origin.endsWith(".vercel.app") &&
+          origin.includes(vercelSuffix)
+        ) {
+          return cb(null, origin);
+        }
+        return cb(null, false);
       },
       credentials: true,
     },
@@ -69,9 +82,6 @@ export default fp(async function socketIOPlugin(fastify) {
 
     socket.on("message:send", async (data) => {
       try {
-        const { sendMessage } = await import(
-          "../services/api/groups/service/chat"
-        );
         const message = await sendMessage(
           data.groupId,
           userId,
@@ -113,9 +123,6 @@ export default fp(async function socketIOPlugin(fastify) {
 
     socket.on("messages:read", async (data) => {
       try {
-        const { markAsRead } = await import(
-          "../services/api/groups/service/chat"
-        );
         await markAsRead(data.groupId, userId, data.lastReadMessageId);
       } catch (err) {
         log.warn(

@@ -470,6 +470,7 @@ model groupPredictions {
   @@index([groupId], map: "group_predictions_group_idx")
   @@index([userId, groupFixtureId], map: "group_predictions_user_gf_idx")
   @@index([userId], map: "group_predictions_user_idx")
+  @@index([settledAt, groupFixtureId], map: "group_predictions_settled_gf_idx")
   @@map("group_predictions")
 }
 

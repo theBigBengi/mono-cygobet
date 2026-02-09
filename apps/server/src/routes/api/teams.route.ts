@@ -5,6 +5,7 @@ import { FastifyPluginAsync } from "fastify";
 import { getTeams } from "../../services/api/teams";
 import type { ApiTeamsResponse, ApiTeamsQuery } from "@repo/types";
 import { teamsQuerystringSchema, teamsResponseSchema } from "../../schemas/api";
+import { BadRequestError } from "../../utils/errors";
 
 const teamsRoutes: FastifyPluginAsync = async (fastify) => {
   /**
@@ -38,10 +39,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
         q.leagueId !== undefined &&
         (!Number.isInteger(leagueId) || leagueId! <= 0)
       ) {
-        return reply.status(400).send({
-          status: "error",
-          message: "Invalid 'leagueId'. Must be a positive integer.",
-        } as any);
+        throw new BadRequestError("Invalid 'leagueId'. Must be a positive integer.");
       }
 
       // Parse includeCountry: can be boolean or string "true"/"false"
@@ -55,10 +53,7 @@ const teamsRoutes: FastifyPluginAsync = async (fastify) => {
 
       // Validate: preset and search cannot be used together
       if (preset && search) {
-        return reply.status(400).send({
-          status: "error",
-          message: "Cannot use both 'preset' and 'search' parameters together.",
-        } as any);
+        throw new BadRequestError("Cannot use both 'preset' and 'search' parameters together.");
       }
 
       const result = await getTeams({

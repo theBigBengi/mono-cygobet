@@ -1,4 +1,5 @@
 import AutoLoad, { AutoloadPluginOptions } from "@fastify/autoload";
+import fastifyCompress from "@fastify/compress";
 import fastifyEnv from "@fastify/env";
 import fastifyCookie from "@fastify/cookie";
 import fastifyCors from "@fastify/cors";
@@ -63,6 +64,9 @@ const app: FastifyPluginAsync<AppOptions> = async (
     // Register JWT for user auth (access tokens)
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("JWT_SECRET is required in production");
+      }
       log.warn("JWT_SECRET not set - user auth will not work");
     } else {
       await fastify.register(fastifyJwt, {
@@ -71,6 +75,14 @@ const app: FastifyPluginAsync<AppOptions> = async (
     }
 
     // Register CORS
+    // CORS_ORIGINS: comma-separated list of allowed origins (e.g. "https://app.example.com,https://admin.example.com")
+    // CORS_VERCEL_SUFFIX: optional Vercel app suffix for preview deploys (e.g. "mono-cygobet")
+    const extraOrigins = (process.env.CORS_ORIGINS ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const vercelSuffix = (process.env.CORS_VERCEL_SUFFIX ?? "").trim();
+
     fastify.register(fastifyCors, {
       origin: (origin, cb) => {
         // allow non-browser calls (curl / server-to-server)
@@ -78,15 +90,18 @@ const app: FastifyPluginAsync<AppOptions> = async (
 
         const isDev = process.env.NODE_ENV !== "production";
 
-        // allow your known origins + any vercel preview
-        const isAllowedStatic =
-          origin === "http://localhost:3000" ||
-          origin === "http://localhost:5173" ||
-          origin === "https://mono-cygobet-admin.vercel.app" ||
-          (origin.startsWith("https://") && origin.endsWith(".vercel.app"));
+        // Explicit origins from env
+        if (extraOrigins.includes(origin)) {
+          return cb(null, origin);
+        }
 
-        if (isAllowedStatic) {
-          // IMPORTANT: echo the exact origin string
+        // Vercel preview deploys: only matching project suffix, not all *.vercel.app
+        if (
+          vercelSuffix &&
+          origin.startsWith("https://") &&
+          origin.endsWith(".vercel.app") &&
+          origin.includes(vercelSuffix)
+        ) {
           return cb(null, origin);
         }
 
@@ -118,7 +133,9 @@ const app: FastifyPluginAsync<AppOptions> = async (
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Client"],
     });
 
-    // app.ts (after registering core plugins, before routes)
+    // Compress responses (gzip/brotli) — only payloads > 1 KB
+    await fastify.register(fastifyCompress, { threshold: 1024 });
+
     fastify.setReplySerializer((payload) => {
       // Keep strings as-is (Fastify may already give a string)
       if (typeof payload === "string") return payload;
@@ -140,7 +157,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
 
     // Load routes after plugins
     const routesDir = path.join(__dirname, "routes");
-    console.log("Loading routes from:", routesDir);
+    log.debug({ routesDir }, "Loading routes");
     await fastify.register(AutoLoad, {
       dir: routesDir,
       options: opts,
