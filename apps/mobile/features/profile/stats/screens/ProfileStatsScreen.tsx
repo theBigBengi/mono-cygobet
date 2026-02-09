@@ -24,6 +24,7 @@ import {
   type GamificationFeatureId,
 } from "../../gamification";
 import { HeroHeader } from "../components/HeroHeader";
+import { StatsCard } from "../components/StatsCard";
 import { PerformanceCard } from "../components/PerformanceCard";
 import { WelcomeCard } from "../components/WelcomeCard";
 import { BadgesCard } from "../components/BadgesCard";
@@ -112,12 +113,14 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
       <HeroHeader
         username={displayUsername}
         image={displayImage}
+        showEditButton={isOwnProfile}
+        onEditPress={() => setEditModalVisible(true)}
+      />
+      <StatsCard
         accuracy={data.overall.accuracy}
         totalPredictions={data.overall.settledPredictions}
         exactPredictions={data.overall.exactScores}
         correctPredictions={correctPredictions}
-        showEditButton={isOwnProfile}
-        onEditPress={() => setEditModalVisible(true)}
       />
       {isNewUser ? (
         <WelcomeCard />
