@@ -70,15 +70,15 @@ function StatusCard({
       <Card
         className={`cursor-pointer transition-colors hover:bg-muted/50 border-l-4 ${variantStyles[variant]}`}
       >
-        <CardContent className="pt-6">
+        <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6 px-3 sm:px-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">
                 {label}
               </p>
-              <p className="text-2xl font-bold">{count}</p>
+              <p className="text-xl sm:text-2xl font-bold">{count}</p>
             </div>
-            <Icon className="h-8 w-8 text-muted-foreground/50" />
+            <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/50" />
           </div>
         </CardContent>
       </Card>
@@ -102,9 +102,9 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-4">
-      <div className="flex-shrink-0 mb-2 flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">
-          Operational Management Console
+      <div className="flex-shrink-0 mb-2 flex items-center justify-between gap-2 sm:gap-4">
+        <h1 className="text-base sm:text-lg font-semibold truncate">
+          Operational Console
         </h1>
         <Button
           variant="outline"
@@ -164,13 +164,13 @@ export default function DashboardPage() {
 
         {/* Row 2 – Recent Job Failures */}
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Job Failures</CardTitle>
-            <CardDescription>
+          <CardHeader className="px-3 sm:px-6">
+            <CardTitle className="text-sm sm:text-base">Recent Job Failures</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Last 10 failed job runs in the past 24 hours
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             {isLoading ? (
               <Skeleton className="h-48 w-full" />
             ) : !data?.recentFailedJobs?.length ? (
@@ -178,59 +178,61 @@ export default function DashboardPage() {
                 No recent failures
               </p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Job</TableHead>
-                    <TableHead>Error</TableHead>
-                    <TableHead>When</TableHead>
-                    <TableHead className="w-[80px]">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.recentFailedJobs.map((run) => (
-                    <TableRow key={run.id}>
-                      <TableCell className="font-medium">
-                        {run.jobKey}
-                      </TableCell>
-                      <TableCell className="max-w-[320px]">
-                        <span
-                          className="block truncate"
-                          title={run.errorMessage ?? undefined}
-                        >
-                          {run.errorMessage ?? "—"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDistanceToNow(new Date(run.startedAt), {
-                          addSuffix: true,
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/jobs?runId=${run.id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Link>
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto -mx-3 sm:mx-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Job</TableHead>
+                      <TableHead className="hidden sm:table-cell">Error</TableHead>
+                      <TableHead>When</TableHead>
+                      <TableHead className="w-[60px] sm:w-[80px]">Action</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {data.recentFailedJobs.map((run) => (
+                      <TableRow key={run.id}>
+                        <TableCell className="font-medium text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">
+                          {run.jobKey}
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell max-w-[320px]">
+                          <span
+                            className="block truncate"
+                            title={run.errorMessage ?? undefined}
+                          >
+                            {run.errorMessage ?? "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs sm:text-sm whitespace-nowrap">
+                          {formatDistanceToNow(new Date(run.startedAt), {
+                            addSuffix: true,
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to={`/jobs?runId=${run.id}`}>
+                              <Eye className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">View</span>
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Row 3 – Fixtures Needing Attention */}
         <Card>
-          <CardHeader>
-            <CardTitle>Fixtures Needing Attention</CardTitle>
-            <CardDescription>
+          <CardHeader className="px-3 sm:px-6">
+            <CardTitle className="text-sm sm:text-base">Fixtures Needing Attention</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Stuck LIVE, unsettled, or overdue NS
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             {isLoading ? (
               <Skeleton className="h-48 w-full" />
             ) : !data?.fixturesNeedingAttention?.length ? (
@@ -238,43 +240,45 @@ export default function DashboardPage() {
                 No fixtures need attention
               </p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fixture</TableHead>
-                    <TableHead>State</TableHead>
-                    <TableHead>Since</TableHead>
-                    <TableHead>Issue</TableHead>
-                    <TableHead className="w-[80px]">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.fixturesNeedingAttention.map((f) => (
-                    <TableRow key={f.id}>
-                      <TableCell className="font-medium max-w-[200px] truncate">
-                        {f.name}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={f.state} />
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDistanceToNow(new Date(f.updatedAt), {
-                          addSuffix: true,
-                        })}
-                      </TableCell>
-                      <TableCell>{f.issue}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/fixtures/${f.id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Link>
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto -mx-3 sm:mx-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fixture</TableHead>
+                      <TableHead>State</TableHead>
+                      <TableHead className="hidden sm:table-cell">Since</TableHead>
+                      <TableHead className="hidden sm:table-cell">Issue</TableHead>
+                      <TableHead className="w-[60px] sm:w-[80px]">Action</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {data.fixturesNeedingAttention.map((f) => (
+                      <TableRow key={f.id}>
+                        <TableCell className="font-medium max-w-[120px] sm:max-w-[200px] truncate text-xs sm:text-sm">
+                          {f.name}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={f.state} />
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell text-muted-foreground">
+                          {formatDistanceToNow(new Date(f.updatedAt), {
+                            addSuffix: true,
+                          })}
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">{f.issue}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to={`/fixtures/${f.id}`}>
+                              <Eye className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">View</span>
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

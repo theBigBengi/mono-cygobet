@@ -475,7 +475,7 @@ export default function FixturesPage() {
         </PageFilters>
 
         {/* Mode Switch with Mobile Filter Button */}
-        <div className="flex items-center justify-between gap-2 sm:mt-6">
+        <div className="flex items-center justify-between gap-2 mt-3 sm:mt-6">
           <Tabs
             value={viewMode}
             onValueChange={(v) =>
@@ -510,9 +510,9 @@ export default function FixturesPage() {
 
         {/* Sync action bar (Provider view only) */}
         {viewMode === "provider" && (
-          <div className="rounded-lg border bg-muted/30 p-3 mt-2 space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm font-medium">Sync Fixtures</span>
+          <div className="rounded-lg border bg-muted/30 p-2 sm:p-3 mt-2 space-y-2">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <span className="text-xs sm:text-sm font-medium">Sync</span>
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="dry-run-sync"
@@ -523,7 +523,7 @@ export default function FixturesPage() {
                 />
                 <Label
                   htmlFor="dry-run-sync"
-                  className="text-sm cursor-pointer"
+                  className="text-xs sm:text-sm cursor-pointer"
                 >
                   Dry Run
                 </Label>
@@ -531,6 +531,7 @@ export default function FixturesPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="text-xs sm:text-sm h-7 sm:h-9 px-2 sm:px-3"
                 onClick={() => syncFilteredMutation.mutate()}
                 disabled={
                   syncFilteredMutation.isPending ||
@@ -544,6 +545,7 @@ export default function FixturesPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="text-xs sm:text-sm h-7 sm:h-9 px-2 sm:px-3"
                 onClick={() => syncAllMutation.mutate()}
                 disabled={
                   syncFilteredMutation.isPending || syncAllMutation.isPending
@@ -552,7 +554,7 @@ export default function FixturesPage() {
                 {syncAllMutation.isPending ? "Syncing..." : "Sync All"}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               Will sync{" "}
               {providerData?.data != null
                 ? providerData.data.length
@@ -567,7 +569,7 @@ export default function FixturesPage() {
           bothLoaded &&
           (diffStats.missing > 0 || diffStats.mismatch > 0) && (
             <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-2 mt-2 flex flex-wrap items-center gap-2">
-              <span className="text-sm">
+              <span className="text-xs sm:text-sm">
                 {diffStats.missing > 0 && (
                   <button
                     type="button"

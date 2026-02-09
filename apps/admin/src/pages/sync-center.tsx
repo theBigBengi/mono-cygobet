@@ -60,19 +60,19 @@ export default function SyncCenterPage() {
 
           <div className="flex flex-col gap-6 pb-4">
             <DataStatusCard />
-          <SeasonManager />
-          <FixturesSyncCard />
-          <StaticDataSection />
+            <SeasonManager />
+            <FixturesSyncCard />
+            <StaticDataSection />
 
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <CardTitle>Sync History</CardTitle>
                   <CardDescription>Recent sync operations</CardDescription>
                 </div>
                 <Select value={historyFilter} onValueChange={setHistoryFilter}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

@@ -77,17 +77,17 @@ function KpiCard({
 }) {
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6 px-3 sm:px-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-muted-foreground">{label}</p>
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground">{label}</p>
             {isLoading ? (
-              <Skeleton className="h-8 w-16 mt-1" />
+              <Skeleton className="h-6 sm:h-8 w-12 sm:w-16 mt-1" />
             ) : (
-              <p className="text-2xl font-bold">{value}</p>
+              <p className="text-lg sm:text-2xl font-bold">{value}</p>
             )}
           </div>
-          <Icon className="h-8 w-8 text-muted-foreground/50" />
+          <Icon className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground/50" />
         </div>
       </CardContent>
     </Card>
@@ -134,7 +134,7 @@ export default function AnalyticsPage() {
 
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
         {/* KPI Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <KpiCard
             label="DAU"
             value={overview.data?.dau ?? 0}
@@ -180,7 +180,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Row 2: Active Users + Growth */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {/* Active Users Over Time */}
           <Card>
             <CardHeader>
@@ -247,7 +247,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Row 3: Top Features + Top Screens */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {/* Top Features */}
           <Card>
             <CardHeader>
@@ -298,7 +298,7 @@ export default function AnalyticsPage() {
               {topScreens.isLoading ? (
                 <Skeleton className="h-64 w-full" />
               ) : (
-                <Table>
+                <div className="overflow-x-auto"><Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Screen</TableHead>
@@ -319,14 +319,14 @@ export default function AnalyticsPage() {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                </Table></div>
               )}
             </CardContent>
           </Card>
         </div>
 
         {/* Row 4: Usage by Hour + User Journey */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {/* Usage by Hour */}
           <Card>
             <CardHeader>
@@ -395,7 +395,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Row 5: Top Users + Popular Content */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {/* Top Users */}
           <Card>
             <CardHeader>
@@ -449,7 +449,7 @@ export default function AnalyticsPage() {
               {popularContent.isLoading ? (
                 <Skeleton className="h-48 w-full" />
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <h4 className="text-sm font-medium mb-2">Leagues</h4>
                     {(popularContent.data?.leagues ?? []).map((l, i) => (

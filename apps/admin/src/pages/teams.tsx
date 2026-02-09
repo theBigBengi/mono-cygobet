@@ -226,8 +226,8 @@ export default function TeamsPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">Teams</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-3xl font-bold">Teams</h1>
+          <p className="text-sm text-muted-foreground">
             Manage team names, short codes, and brand colors
           </p>
         </div>
@@ -272,7 +272,7 @@ export default function TeamsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 type="file"
                 accept=".csv"
@@ -282,6 +282,7 @@ export default function TeamsPage() {
               <Button
                 onClick={handleFileUpload}
                 disabled={!csvFile || importMutation.isPending}
+                className="w-full sm:w-auto"
               >
                 {importMutation.isPending ? "Importing..." : "Import"}
               </Button>
@@ -356,12 +357,12 @@ export default function TeamsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">Logo</TableHead>
+                      <TableHead className="w-10 sm:w-12">Logo</TableHead>
                       <TableHead>Name</TableHead>
-                      <TableHead className="w-24">Code</TableHead>
-                      <TableHead>Country</TableHead>
-                      <TableHead className="w-32">Colors</TableHead>
-                      <TableHead className="w-20 text-right">Actions</TableHead>
+                      <TableHead className="hidden sm:table-cell w-24">Code</TableHead>
+                      <TableHead className="hidden md:table-cell">Country</TableHead>
+                      <TableHead className="w-24 sm:w-32">Colors</TableHead>
+                      <TableHead className="w-12 sm:w-20 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -372,33 +373,33 @@ export default function TeamsPage() {
                             <img
                               src={team.imagePath}
                               alt=""
-                              className="h-8 w-8 object-contain"
+                              className="h-7 w-7 sm:h-8 sm:w-8 object-contain"
                             />
                           ) : (
-                            <div className="h-8 w-8 rounded bg-muted" />
+                            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded bg-muted" />
                           )}
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">
                           {team.name}
                         </TableCell>
-                        <TableCell className="font-mono text-sm">
+                        <TableCell className="hidden sm:table-cell font-mono text-sm">
                           {team.shortCode || "—"}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="hidden md:table-cell text-muted-foreground">
                           {team.country?.name || "—"}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             {team.primaryColor && (
                               <div
-                                className="w-6 h-6 rounded border border-border"
+                                className="w-5 h-5 sm:w-6 sm:h-6 rounded border border-border"
                                 style={{ backgroundColor: team.primaryColor }}
                                 title={`Primary: ${team.primaryColor}`}
                               />
                             )}
                             {team.secondaryColor && (
                               <div
-                                className="w-6 h-6 rounded border border-border"
+                                className="w-5 h-5 sm:w-6 sm:h-6 rounded border border-border"
                                 style={{
                                   backgroundColor: team.secondaryColor,
                                 }}
@@ -407,7 +408,7 @@ export default function TeamsPage() {
                             )}
                             {team.tertiaryColor && (
                               <div
-                                className="w-6 h-6 rounded border border-border"
+                                className="w-5 h-5 sm:w-6 sm:h-6 rounded border border-border"
                                 style={{
                                   backgroundColor: team.tertiaryColor,
                                 }}
@@ -439,9 +440,9 @@ export default function TeamsPage() {
 
             {/* Pagination - only show when not searching */}
             {!debouncedSearch && totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-muted-foreground">
-                  Page {page} of {totalPages}
+              <div className="flex items-center justify-between mt-4 gap-2">
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  {page}/{totalPages}
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -449,14 +450,17 @@ export default function TeamsPage() {
                     size="sm"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1 || isFetching}
+                    className="h-8 sm:h-9"
                   >
-                    Previous
+                    <span className="hidden sm:inline">Previous</span>
+                    <span className="sm:hidden">Prev</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages || isFetching}
+                    className="h-8 sm:h-9"
                   >
                     Next
                   </Button>
