@@ -240,14 +240,14 @@ export default function UsersPage() {
     <div className="h-full w-full p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-bold">Users</h1>
-            <p className="text-muted-foreground">Manage system users</p>
+            <h1 className="text-xl sm:text-3xl font-bold">Users</h1>
+            <p className="text-sm text-muted-foreground">Manage system users</p>
           </div>
-          <Button onClick={() => setIsCreateSheetOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create User
+          <Button size="sm" className="sm:size-default" onClick={() => setIsCreateSheetOpen(true)}>
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Create User</span>
           </Button>
         </div>
 
@@ -257,7 +257,7 @@ export default function UsersPage() {
             <CardTitle>Filters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex-1">
                 <Label htmlFor="search">Search</Label>
                 <Input
@@ -270,7 +270,7 @@ export default function UsersPage() {
                   }}
                 />
               </div>
-              <div className="w-48">
+              <div className="w-full sm:w-48">
                 <Label htmlFor="role">Role</Label>
                 <Select
                   value={roleFilter}
@@ -318,13 +318,13 @@ export default function UsersPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10"></TableHead>
-                      <TableHead>ID</TableHead>
+                      <TableHead className="hidden lg:table-cell">ID</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Username</TableHead>
+                      <TableHead className="hidden md:table-cell">Name</TableHead>
+                      <TableHead className="hidden lg:table-cell">Username</TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Last Login</TableHead>
+                      <TableHead className="hidden md:table-cell">Created</TableHead>
+                      <TableHead className="hidden lg:table-cell">Last Login</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -344,19 +344,19 @@ export default function UsersPage() {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">
+                        <TableCell className="hidden lg:table-cell font-mono text-xs">
                           {user.id}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            {user.email}
+                          <div className="flex items-center gap-1.5 max-w-[150px] sm:max-w-none">
+                            <span className="truncate text-xs sm:text-sm">{user.email}</span>
                             {user.emailVerifiedAt && (
                               <CheckCircle2 className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>{user.name || "—"}</TableCell>
-                        <TableCell>{user.username || "—"}</TableCell>
+                        <TableCell className="hidden md:table-cell">{user.name || "—"}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{user.username || "—"}</TableCell>
                         <TableCell>
                           <Badge
                             variant={
@@ -366,10 +366,10 @@ export default function UsersPage() {
                             {user.role}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                           {formatDateTime(user.createdAt)}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                           {formatDateTime(user.lastLoginAt)}
                         </TableCell>
                         <TableCell className="text-right">
@@ -390,9 +390,9 @@ export default function UsersPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-muted-foreground">
-                  Page {page + 1} of {totalPages}
+              <div className="flex items-center justify-between mt-4 gap-2">
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  {page + 1}/{totalPages}
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -400,8 +400,10 @@ export default function UsersPage() {
                     size="sm"
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0 || isFetching}
+                    className="h-8 sm:h-9"
                   >
-                    Previous
+                    <span className="hidden sm:inline">Previous</span>
+                    <span className="sm:hidden">Prev</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -410,6 +412,7 @@ export default function UsersPage() {
                       setPage((p) => Math.min(totalPages - 1, p + 1))
                     }
                     disabled={page >= totalPages - 1 || isFetching}
+                    className="h-8 sm:h-9"
                   >
                     Next
                   </Button>

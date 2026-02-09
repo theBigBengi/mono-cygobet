@@ -30,8 +30,8 @@ export function AdminHeader() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="ml-auto flex items-center gap-3">
-        <div className="text-sm text-muted-foreground">
+      <div className="ml-auto flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="hidden sm:block text-sm text-muted-foreground truncate max-w-[150px] lg:max-w-none">
           Hello {me?.name ?? me?.email ?? "Admin"}
         </div>
         <Button variant="outline" size="sm" onClick={() => void logout()}>

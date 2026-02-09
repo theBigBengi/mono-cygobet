@@ -140,15 +140,16 @@ export default function JobDetailPage() {
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      <div className="flex-shrink-0 mb-3 flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">
+      <div className="flex-shrink-0 mb-3 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-semibold truncate">
             {titleCaseWords(jobNameFromKey(job.key))}
           </h1>
-          <p className="text-sm text-muted-foreground font-mono">{job.key}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground font-mono truncate">{job.key}</p>
         </div>
-        <Button variant="outline" onClick={() => navigate("/jobs")}>
-          Back to Jobs
+        <Button variant="outline" size="sm" className="shrink-0" onClick={() => navigate("/jobs")}>
+          <span className="hidden sm:inline">Back to Jobs</span>
+          <span className="sm:hidden">Back</span>
         </Button>
       </div>
 
@@ -177,16 +178,16 @@ export default function JobDetailPage() {
             <CardTitle>Run History</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-auto border-t">
+            <div className="overflow-x-auto border-t">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Status</TableHead>
                     <TableHead>Started</TableHead>
                     <TableHead>Duration</TableHead>
-                    <TableHead>Summary</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Error</TableHead>
+                    <TableHead className="hidden sm:table-cell">Summary</TableHead>
+                    <TableHead className="hidden md:table-cell">Reason</TableHead>
+                    <TableHead className="hidden sm:table-cell">Error</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -205,7 +206,7 @@ export default function JobDetailPage() {
                           <StatusBadge status={r.status} />
                           {r.status === "success" &&
                             getRunReason(r.meta) && (
-                              <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">
+                              <span className="hidden sm:inline text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">
                                 {getRunReason(r.meta)}
                               </span>
                             )}
@@ -217,15 +218,15 @@ export default function JobDetailPage() {
                       <TableCell className="text-xs whitespace-nowrap">
                         {formatDurationMs(r.durationMs)}
                       </TableCell>
-                      <TableCell className="text-xs max-w-[280px] truncate">
+                      <TableCell className="hidden sm:table-cell text-xs max-w-[280px] truncate">
                         {formatRunSummary(r.meta)}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground whitespace-nowrap">
                         {r.status === "success" && getRunReason(r.meta)
                           ? getRunReason(r.meta)
                           : "—"}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                      <TableCell className="hidden sm:table-cell text-xs text-muted-foreground max-w-[200px] truncate">
                         {r.errorMessage
                           ? `${r.errorMessage.slice(0, 80)}${r.errorMessage.length > 80 ? "…" : ""}`
                           : "—"}
@@ -245,9 +246,9 @@ export default function JobDetailPage() {
                 </TableBody>
               </Table>
             </div>
-            <div className="flex items-center justify-between px-4 py-3 border-t">
+            <div className="flex items-center justify-between px-3 sm:px-4 py-3 border-t">
               <div className="text-xs text-muted-foreground">
-                Showing {runs.length} runs
+                {runs.length} runs
               </div>
               <div className="flex gap-2">
                 <Button
