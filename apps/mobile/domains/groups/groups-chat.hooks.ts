@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { analytics } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useAppIsActive } from "@/lib/hooks/useAppIsActive";
 import { isReadyForProtected } from "@/lib/auth/guards";
@@ -278,6 +279,8 @@ export function useGroupChat(groupId: number | null) {
         mentions,
         tempId,
       });
+
+      analytics.track("message_sent", { groupId });
     },
     [socket, groupId, user, queryClient]
   );

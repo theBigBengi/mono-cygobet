@@ -8,6 +8,7 @@ import type {
   ApiPredictionsOverviewResponse,
 } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
+import { analytics } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth/useAuth";
 import { isReadyForProtected } from "@/lib/auth/guards";
 import {
@@ -36,8 +37,8 @@ export function useSaveGroupPredictionMutation(groupId: number | null) {
       }
       return saveGroupPrediction(groupId, fixtureId, prediction);
     },
-    onSuccess: () => {
-      // Invalidate group fixtures to refetch with updated predictions
+    onSuccess: (_data, variables) => {
+      analytics.track("prediction_made", { groupId, fixtureId: variables.fixtureId });
       if (groupId) {
         queryClient.invalidateQueries({
           queryKey: groupsKeys.fixtures(groupId),
@@ -66,9 +67,12 @@ export function useSaveGroupPredictionsBatchMutation(groupId: number | null) {
       }
       return saveGroupPredictionsBatch(groupId, body);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      analytics.track("predictions_batch_saved", {
+        groupId,
+        count: variables.predictions?.length ?? 0,
+      });
       if (groupId) {
-        // Invalidate fixtures, ranking, and predictions overview after saving
         queryClient.invalidateQueries({
           queryKey: groupsKeys.fixtures(groupId),
         });

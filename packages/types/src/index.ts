@@ -7,4 +7,5 @@ export * from "./http/auth";
 export * from "./http/groups";
 export * from "./jobs/meta";
 export * from "./jobs/run";
+export * from "./http/analytics";
 export * from "./sport-data/common";

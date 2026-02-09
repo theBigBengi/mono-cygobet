@@ -7,6 +7,7 @@ import type {
   ApiInviteCodeResponse,
 } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
+import { analytics } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth/useAuth";
 import { isReadyForProtected } from "@/lib/auth/guards";
 import {
@@ -47,7 +48,8 @@ export function useJoinGroupByCodeMutation() {
 
   return useMutation<ApiGroupResponse, ApiError, string>({
     mutationFn: (code) => joinGroupByCode(code),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      analytics.track("group_joined", { groupId: data.data?.id, method: "invite_code" });
       queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
     },
   });
@@ -69,6 +71,7 @@ export function useJoinPublicGroupMutation(groupId: number | null) {
       return joinPublicGroup(groupId);
     },
     onSuccess: () => {
+      analytics.track("group_joined", { groupId, method: "public" });
       queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
       if (groupId) {
         queryClient.invalidateQueries({
