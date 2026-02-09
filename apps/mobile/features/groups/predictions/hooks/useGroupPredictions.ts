@@ -285,7 +285,15 @@ export function useGroupPredictions({
           if (!old) return {};
           const next: PendingPredictions = {};
           Object.entries(old).forEach(([id, pred]) => {
-            if (!savedIds.has(parseInt(id, 10))) {
+            const fixtureId = parseInt(id, 10);
+            const savedPred = currentPending[id];
+            // Only clear if pending value matches what was actually saved (preserve changes made while save was in flight)
+            const shouldClear =
+              savedIds.has(fixtureId) &&
+              savedPred &&
+              pred.home === savedPred.home &&
+              pred.away === savedPred.away;
+            if (!shouldClear) {
               next[id] = pred;
             }
           });
