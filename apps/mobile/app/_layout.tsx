@@ -6,7 +6,7 @@ import {
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
-import { Stack, type ErrorBoundaryProps } from "expo-router";
+import { Stack, type ErrorBoundaryProps, usePathname } from "expo-router";
 import "react-native-reanimated";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -38,6 +38,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import * as SplashScreen from "expo-splash-screen";
 import * as Sentry from "@sentry/react-native";
+import { analytics } from "@/lib/analytics";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -56,6 +57,14 @@ function AppContent() {
   const { t } = useTranslation("common");
   const { colorScheme, theme } = useTheme();
   const { status, user } = useAuth();
+  const pathname = usePathname();
+
+  // Auto-track screen views on navigation
+  useEffect(() => {
+    if (pathname) {
+      analytics.screen(pathname);
+    }
+  }, [pathname]);
 
   // Check if user is authenticated AND has username
   const isFullyAuthenticated = isAuthenticated(status) && !!user?.username;
@@ -183,9 +192,10 @@ function AppContent() {
 }
 
 function RootLayout() {
-  // Initialize global error handlers on mount
+  // Initialize global error handlers and analytics on mount
   useEffect(() => {
     initializeGlobalErrorHandlers();
+    analytics.init();
   }, []);
 
   return (

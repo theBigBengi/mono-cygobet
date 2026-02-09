@@ -25,7 +25,10 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      items: [{ title: "Home", url: "/" }],
+      items: [
+        { title: "Home", url: "/" },
+        { title: "Analytics", url: "/analytics" },
+      ],
     },
     {
       title: "Operations",

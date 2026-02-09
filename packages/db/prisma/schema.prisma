@@ -792,6 +792,25 @@ model seedItems {
   @@map("seed_items")
 }
 
+model analyticsEvents {
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  userId     Int?     @map("user_id")
+  sessionId  String?  @map("session_id") @db.VarChar(64)
+  eventName  String   @map("event_name") @db.VarChar(100)
+  properties Json     @default("{}")
+  screenName String?  @map("screen_name") @db.VarChar(100)
+  durationMs Int?     @map("duration_ms") // time spent on screen (for screen_view_end events)
+  platform   String?  @db.VarChar(20) // ios, android, web
+  appVersion String?  @map("app_version") @db.VarChar(20)
+
+  @@index([userId, createdAt(sort: Desc)], map: "analytics_events_user_created_idx")
+  @@index([eventName, createdAt(sort: Desc)], map: "analytics_events_name_created_idx")
+  @@index([createdAt(sort: Desc)], map: "analytics_events_created_idx")
+  @@index([screenName, createdAt(sort: Desc)], map: "analytics_events_screen_created_idx")
+  @@map("analytics_events")
+}
+
 enum PublicPredictionStatus {
   upcoming
   active

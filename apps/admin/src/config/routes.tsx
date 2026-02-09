@@ -10,6 +10,7 @@ import RunDetailPage from "@/pages/jobs/run-detail";
 import SandboxPage from "@/pages/sandbox";
 import UsersPage from "@/pages/users";
 import TeamsPage from "@/pages/teams";
+import AnalyticsPage from "@/pages/analytics";
 import UserSettingsPage from "@/pages/settings/user";
 import LoginPage from "@/pages/login";
 import { AdminLayout } from "@/components/layout";
@@ -38,6 +39,7 @@ export const routes: RouteObject[] = [
       { path: "/jobs/:jobKey", element: <JobDetailPage /> },
       { path: "/jobs/:jobKey/runs/:runId", element: <RunDetailPage /> },
       { path: "/sandbox", element: <SandboxPage /> },
+      { path: "/analytics", element: <AnalyticsPage /> },
       { path: "/users", element: <UsersPage /> },
       { path: "/settings", element: <UserSettingsPage /> },
       {

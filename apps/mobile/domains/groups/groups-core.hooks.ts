@@ -18,6 +18,7 @@ import type {
   ApiGroupPreviewResponse,
 } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
+import { analytics } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth/useAuth";
 import { isReadyForProtected } from "@/lib/auth/guards";
 import {
@@ -138,8 +139,8 @@ export function useCreateGroupMutation() {
 
   return useMutation<ApiGroupResponse, ApiError, ApiCreateGroupBody>({
     mutationFn: (body) => createGroup(body),
-    onSuccess: () => {
-      // Invalidate groups list to refetch after creation
+    onSuccess: (data) => {
+      analytics.track("group_created", { groupId: data.data?.id });
       queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
     },
   });
@@ -192,12 +193,11 @@ export function usePublishGroupMutation(groupId: number | null) {
       return publishGroup(groupId, body);
     },
     onSuccess: () => {
+      analytics.track("group_published", { groupId });
       if (groupId) {
-        // Invalidate all detail variants (with/without fixtures) — prefix match
         queryClient.invalidateQueries({
           queryKey: groupsKeys.detail(groupId),
         });
-        // Mark list as stale but don't refetch immediately
         queryClient.invalidateQueries({
           queryKey: groupsKeys.lists(),
           refetchType: "none",
@@ -291,7 +291,6 @@ export function useDeleteGroupMutation(groupId: number | null) {
         );
       }
     },
-    // Always refetch after error or success to ensure consistency
     onSettled: () => {
       if (groupId) {
         queryClient.invalidateQueries({
@@ -299,6 +298,9 @@ export function useDeleteGroupMutation(groupId: number | null) {
         });
       }
       queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
+    },
+    onSuccess: () => {
+      analytics.track("group_deleted", { groupId });
     },
   });
 }

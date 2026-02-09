@@ -12,6 +12,7 @@ import {
   setGetAccessTokenCallback,
 } from "../http/apiClient";
 import { ApiError } from "../http/apiError";
+import { analytics } from "../analytics";
 import * as authApi from "./auth.api";
 import * as authStorage from "./auth.storage";
 import { getTokenExpiry } from "./auth.utils";
@@ -227,6 +228,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const userData = await authApi.me();
         setUser(userData);
         setError(null);
+        analytics.identify(userData.id, accessTokenRef.current);
         if (userData.onboardingRequired) {
           setStatus("onboarding");
           if (__DEV__) console.log("Bootstrap: user requires onboarding, status set to onboarding");
@@ -381,6 +383,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       setStatus("unauthenticated");
       setError(null);
+      analytics.reset();
 
       // Clear only user-scoped cached server data on explicit logout.
       // Queries that set meta: { scope: "user" } will be removed.
@@ -423,6 +426,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } as any;
 
         setUser(userData);
+        analytics.identify(userData.id, response.accessToken);
+        analytics.track("user_signed_up");
         // Set explicit onboarding/authenticated state
         if (userData.onboardingRequired) {
           setStatus("onboarding");
@@ -467,6 +472,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           const userData = await authApi.me();
           setUser(userData);
+          analytics.identify(userData.id, accessTokenRef.current);
+          analytics.track("user_logged_in");
           if (userData.onboardingRequired) {
             setStatus("onboarding");
           } else {
