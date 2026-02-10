@@ -405,10 +405,12 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
       const codeVerifier = generateRandomToken(64);
       const codeChallenge = sha256Base64Url(codeVerifier);
 
-      // Callback URL must use localhost or a real domain - Google rejects
-      // private IPs as redirect URIs. For physical device dev, either use a
-      // tunnel (ngrok/cloudflare) and set SERVER_URL, or use native SDK.
-      const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 4000}`;
+      // Derive callback URL from the incoming request so it works on
+      // physical devices (where the client reaches the server via LAN IP,
+      // not localhost). SERVER_URL env var can still override if set.
+      const serverUrl =
+        process.env.SERVER_URL ||
+        `${req.protocol}://${req.hostname}:${process.env.PORT || 4000}`;
       const callbackUri = `${serverUrl}/auth/google/callback`;
 
       // Store in DB (expires in 10 minutes)
@@ -417,6 +419,7 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
           state,
           codeVerifier,
           redirectUri: redirect_uri,
+          callbackUri,
           provider: "google",
           expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
@@ -480,9 +483,11 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       try {
-        // Must match the redirect_uri used in /google/start
-        const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 4000}`;
-        const callbackUri = `${serverUrl}/auth/google/callback`;
+        // Use the callback URL that was stored when the flow started,
+        // so token exchange uses the same redirect_uri as the initial request
+        const callbackUri =
+          oauthState.callbackUri ||
+          `${process.env.SERVER_URL || `http://localhost:${process.env.PORT || 4000}`}/auth/google/callback`;
 
         // Exchange code for tokens (server-side, with client_secret)
         const googleTokens = await exchangeGoogleCode({
