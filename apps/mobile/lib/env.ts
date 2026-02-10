@@ -69,13 +69,6 @@ export function getApiBaseUrl(): string {
 }
 
 /**
- * Returns true when running on a physical device in development.
- */
-function isPhysicalDeviceDev(): boolean {
-  return __DEV__ && Platform.OS !== "web" && Constants.isDevice === true;
-}
-
-/**
  * Get the base URL for OAuth redirect flow (start / callback).
  *
  * On a physical device in dev, Google rejects private IPs as redirect URIs,
@@ -83,12 +76,13 @@ function isPhysicalDeviceDev(): boolean {
  * Since dev and production share the same DB, the OTC exchange still works
  * against the local dev server.
  *
- * Everywhere else (simulator, emulator, production) we use the normal API URL.
+ * Set EXPO_PUBLIC_OAUTH_SERVER_URL only when testing on a physical device.
+ * On emulator/simulator, leave it unset and the normal API URL is used.
  */
 export function getOAuthBaseUrl(): string {
   const prodUrl = process.env.EXPO_PUBLIC_OAUTH_SERVER_URL;
 
-  if (isPhysicalDeviceDev() && prodUrl) {
+  if (__DEV__ && prodUrl) {
     return prodUrl;
   }
 
