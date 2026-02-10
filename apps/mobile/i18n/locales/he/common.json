@@ -268,7 +268,9 @@
     "deleteGroup": "מחיקת קבוצה",
     "deleteGroupDescription": "פעולה זו אינה ניתנת לביטול",
     "deleteGroupConfirm": "האם אתה בטוח שברצונך למחוק את הקבוצה? כל המידע יימחק.",
-    "maxDescriptionError": "התיאור חייב להיות לכל היותר 500 תווים"
+    "maxDescriptionError": "התיאור חייב להיות לכל היותר 500 תווים",
+    "scoringPoints": "נקודות",
+    "invalidPoints": "אנא הזן מספרים חוקיים (0 או יותר)"
   },
   "predictions": {
     "predict": "בחר תחזית",

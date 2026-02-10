@@ -1,4 +1,4 @@
-export { EditNameModal } from "./EditNameModal";
-export { EditDescriptionModal } from "./EditDescriptionModal";
-export { EditRulesSection } from "./EditRulesSection";
+export { EditNameSheet } from "./EditNameSheet";
+export { EditDescriptionSheet } from "./EditDescriptionSheet";
+export { EditRulesSheet } from "./EditRulesSheet";
 export { DangerZoneSection } from "./DangerZoneSection";

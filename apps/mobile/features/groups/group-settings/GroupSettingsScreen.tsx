@@ -1,25 +1,26 @@
 // features/groups/group-settings/GroupSettingsScreen.tsx
 // Screen for group settings with proper design.
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useGroupQuery, useUpdateGroupMutation } from "@/domains/groups";
 import {
-  EditNameModal,
-  EditDescriptionModal,
-  EditRulesSection,
+  EditNameSheet,
+  EditDescriptionSheet,
+  EditRulesSheet,
   DangerZoneSection,
 } from "./components";
 import { useAuth } from "@/lib/auth/useAuth";
 import {
   SettingsSection,
   SettingsRow,
-  SettingsRowPicker,
+  SettingsRowBottomSheet,
 } from "@/features/settings";
 import type { ApiInviteAccess, ApiGroupPrivacy } from "@repo/types";
 
@@ -37,12 +38,19 @@ export function GroupSettingsScreen() {
   const group = groupData?.data;
   const isCreator = group?.creatorId === user?.id;
 
+  // Bottom sheet refs
+  const editNameSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const editDescSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const privacySheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const rulesSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+
+  // Check if rules are locked
+  const hasFirstGameStarted = group?.firstGame != null && group?.firstGame?.state !== "NS";
+
   const [inviteAccess, setInviteAccess] = useState<ApiInviteAccess>("all");
   const [privacy, setPrivacy] = useState<ApiGroupPrivacy>("private");
   const [nudgeEnabled, setNudgeEnabled] = useState(true);
   const [nudgeWindowMinutes, setNudgeWindowMinutes] = useState(60);
-  const [editNameModalVisible, setEditNameModalVisible] = useState(false);
-  const [editDescModalVisible, setEditDescModalVisible] = useState(false);
 
   const updateGroupMutation = useUpdateGroupMutation(groupId);
 
@@ -142,7 +150,7 @@ export function GroupSettingsScreen() {
                 type="navigation"
                 icon="create-outline"
                 label={t("groupSettings.editName" as Parameters<typeof t>[0])}
-                onPress={() => setEditNameModalVisible(true)}
+                onPress={() => editNameSheetRef.current?.present()}
                 isLast={false}
               />
               <SettingsRow
@@ -151,20 +159,16 @@ export function GroupSettingsScreen() {
                 label={t(
                   "groupSettings.editDescription" as Parameters<typeof t>[0]
                 )}
-                onPress={() => setEditDescModalVisible(true)}
+                onPress={() => editDescSheetRef.current?.present()}
                 isLast={false}
               />
-              <SettingsRowPicker<ApiGroupPrivacy>
+              <SettingsRowBottomSheet.Row
+                sheetRef={privacySheetRef}
                 icon="lock-closed-outline"
                 label={t(
                   "groupSettings.changePrivacy" as Parameters<typeof t>[0]
                 )}
-                value={privacy}
-                options={[
-                  { value: "private", label: t("lobby.private") },
-                  { value: "public", label: t("pool.public") },
-                ]}
-                onValueChange={handlePrivacyChange}
+                valueDisplay={privacy === "private" ? t("lobby.private") : t("pool.public")}
                 isLast={!showInviteToggle}
               />
             </>
@@ -188,11 +192,23 @@ export function GroupSettingsScreen() {
         </SettingsSection>
 
         {isCreator && (
-          <EditRulesSection
-            group={group}
-            isCreator={isCreator}
-            updateGroupMutation={updateGroupMutation}
-          />
+          <SettingsSection
+            title={t("groupSettings.editRules" as Parameters<typeof t>[0])}
+          >
+            <SettingsRowBottomSheet.Row
+              sheetRef={rulesSheetRef}
+              icon="trophy-outline"
+              label={t("groupSettings.scoringPoints" as Parameters<typeof t>[0])}
+              valueDisplay={`${group.onTheNosePoints ?? 3} / ${group.correctDifferencePoints ?? 2} / ${group.outcomePoints ?? 1}`}
+              subtitle={
+                hasFirstGameStarted
+                  ? t("groupSettings.rulesLocked" as Parameters<typeof t>[0])
+                  : undefined
+              }
+              disabled={hasFirstGameStarted}
+              isLast
+            />
+          </SettingsSection>
         )}
 
         {/* Notifications Section - Creator only */}
@@ -263,18 +279,35 @@ export function GroupSettingsScreen() {
         )}
         <DangerZoneSection groupId={groupId} isCreator={!!isCreator} />
       </Screen>
-      <EditNameModal
-        visible={editNameModalVisible}
-        onClose={() => setEditNameModalVisible(false)}
+
+      {/* Bottom Sheets - must be outside ScrollView */}
+      <EditNameSheet
+        sheetRef={editNameSheetRef}
         group={group}
         updateGroupMutation={updateGroupMutation}
       />
-      <EditDescriptionModal
-        visible={editDescModalVisible}
-        onClose={() => setEditDescModalVisible(false)}
+      <EditDescriptionSheet
+        sheetRef={editDescSheetRef}
         group={group}
         updateGroupMutation={updateGroupMutation}
       />
+      <SettingsRowBottomSheet.Sheet
+        sheetRef={privacySheetRef}
+        title={t("groupSettings.changePrivacy" as Parameters<typeof t>[0])}
+        options={[
+          { value: "private" as const, label: t("lobby.private") },
+          { value: "public" as const, label: t("pool.public") },
+        ]}
+        value={privacy}
+        onValueChange={handlePrivacyChange}
+      />
+      {!hasFirstGameStarted && (
+        <EditRulesSheet
+          sheetRef={rulesSheetRef}
+          group={group}
+          updateGroupMutation={updateGroupMutation}
+        />
+      )}
     </View>
   );
 }
