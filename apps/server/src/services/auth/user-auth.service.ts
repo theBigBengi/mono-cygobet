@@ -1,6 +1,7 @@
 // src/services/auth/user-auth.service.ts
 import type { FastifyInstance } from "fastify";
 import * as bcrypt from "bcrypt";
+import crypto from "node:crypto";
 import { OAuth2Client } from "google-auth-library";
 import { prisma } from "@repo/db";
 import { getLogger } from "../../logger";
@@ -24,6 +25,96 @@ import {
   ensureUserProfile,
   isOnboardingRequired,
 } from "../../auth/user-onboarding";
+import { generateRandomToken } from "../../utils/crypto";
+
+/**
+ * Compute SHA-256 and return as Base64URL (for PKCE code_challenge).
+ */
+export function sha256Base64Url(input: string): string {
+  return crypto
+    .createHash("sha256")
+    .update(input, "utf8")
+    .digest("base64url");
+}
+
+/**
+ * Allowed redirect URI schemes for OAuth flow.
+ */
+const ALLOWED_REDIRECT_SCHEMES = ["mobile://", "exp://", "http://localhost", "https://"];
+
+export function isAllowedRedirectUri(uri: string): boolean {
+  return ALLOWED_REDIRECT_SCHEMES.some((scheme) => uri.startsWith(scheme));
+}
+
+/**
+ * Build Google OAuth authorization URL with PKCE.
+ */
+export function buildGoogleAuthUrl(params: {
+  clientId: string;
+  redirectUri: string;
+  state: string;
+  codeChallenge: string;
+  scope: string;
+}): string {
+  const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  url.searchParams.set("client_id", params.clientId);
+  url.searchParams.set("redirect_uri", params.redirectUri);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", params.scope);
+  url.searchParams.set("state", params.state);
+  url.searchParams.set("code_challenge", params.codeChallenge);
+  url.searchParams.set("code_challenge_method", "S256");
+  url.searchParams.set("access_type", "offline");
+  url.searchParams.set("prompt", "select_account");
+  return url.toString();
+}
+
+/**
+ * Exchange Google authorization code for tokens (server-side).
+ */
+export async function exchangeGoogleCode(params: {
+  code: string;
+  codeVerifier: string;
+  redirectUri: string;
+}): Promise<{ id_token: string; access_token: string }> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new BadRequestError("Google OAuth is not configured");
+  }
+
+  const tokenUrl = "https://oauth2.googleapis.com/token";
+  const body = new URLSearchParams({
+    code: params.code,
+    client_id: clientId,
+    client_secret: clientSecret,
+    redirect_uri: params.redirectUri,
+    grant_type: "authorization_code",
+    code_verifier: params.codeVerifier,
+  });
+
+  const response = await fetch(tokenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    log.error({ error: errorText }, "Google token exchange failed");
+    throw new UnauthorizedError("Failed to exchange Google authorization code");
+  }
+
+  const tokens = (await response.json()) as {
+    id_token: string;
+    access_token: string;
+  };
+
+  return tokens;
+}
+
+export { generateRandomToken };
 
 export class UserAuthService {
   private googleClient: OAuth2Client | null = null;
@@ -257,9 +348,16 @@ export class UserAuthService {
     };
 
     try {
+      // Accept tokens from Web, iOS, and Android client IDs
+      const validAudiences = [
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_IOS_CLIENT_ID,
+        process.env.GOOGLE_ANDROID_CLIENT_ID,
+      ].filter(Boolean) as string[];
+
       const ticket = await this.googleClient.verifyIdToken({
         idToken: input.idToken,
-        audience: process.env.GOOGLE_CLIENT_ID!,
+        audience: validAudiences,
       });
       googlePayload = ticket.getPayload() as typeof googlePayload;
     } catch (err) {

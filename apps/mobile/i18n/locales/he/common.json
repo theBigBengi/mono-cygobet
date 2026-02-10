@@ -75,7 +75,10 @@
     "loginFailed": "ההתחברות נכשלה",
     "checkingUsername": "בודק זמינות...",
     "usernameAvailable": "שם המשתמש זמין",
-    "usernameTaken": "שם המשתמש תפוס"
+    "usernameTaken": "שם המשתמש תפוס",
+    "or": "או",
+    "continueWithGoogle": "המשך עם Google",
+    "passwordHint": "לפחות 8 תווים"
   },
   "groups": {
     "noGroupsYet": "עדיין אין קבוצות",

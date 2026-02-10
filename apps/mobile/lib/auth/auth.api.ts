@@ -78,12 +78,26 @@ export async function me(): Promise<UserMeResponse> {
 /**
  * Login with Google OAuth (idToken).
  * - Public endpoint.
+ * - Used by native SDK flow.
  * - Mirrors email/password login flow but with Google identity.
  */
 export async function google(idToken: string): Promise<UserGoogleResponse> {
   return apiFetch<UserGoogleResponse>("/auth/google", {
     method: "POST",
     body: { idToken },
+  });
+}
+
+/**
+ * Exchange OTC for tokens (server-side OAuth flow).
+ * - Public endpoint.
+ * - Used by Expo Go / Web / fallback flow.
+ * - OTC is one-time code received after OAuth callback.
+ */
+export async function googleExchange(otc: string): Promise<UserGoogleResponse> {
+  return apiFetch<UserGoogleResponse>("/auth/google/exchange", {
+    method: "POST",
+    body: { otc },
   });
 }
 
