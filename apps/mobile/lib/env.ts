@@ -67,3 +67,30 @@ export function getApiBaseUrl(): string {
   );
   return `http://localhost:${API_PORT}`;
 }
+
+/**
+ * Returns true when running on a physical device in development.
+ */
+function isPhysicalDeviceDev(): boolean {
+  return __DEV__ && Platform.OS !== "web" && Constants.isDevice === true;
+}
+
+/**
+ * Get the base URL for OAuth redirect flow (start / callback).
+ *
+ * On a physical device in dev, Google rejects private IPs as redirect URIs,
+ * so we route the OAuth browser flow through the production server.
+ * Since dev and production share the same DB, the OTC exchange still works
+ * against the local dev server.
+ *
+ * Everywhere else (simulator, emulator, production) we use the normal API URL.
+ */
+export function getOAuthBaseUrl(): string {
+  const prodUrl = process.env.EXPO_PUBLIC_OAUTH_SERVER_URL;
+
+  if (isPhysicalDeviceDev() && prodUrl) {
+    return prodUrl;
+  }
+
+  return getApiBaseUrl();
+}
