@@ -816,13 +816,12 @@ model oauthStates {
   state        String    @unique
   codeVerifier String    @map("code_verifier")
   redirectUri  String    @map("redirect_uri")
-  callbackUri  String?   @map("callback_uri") // server callback URL used at start
   provider     String    // "google"
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
   usedAt       DateTime? @map("used_at") @db.Timestamptz(6)
 
-  // After OAuth success, store hashed OTC here
+  // After OAuth success, store OTC here
   otc          String?   @unique
   otcExpiresAt DateTime? @map("otc_expires_at") @db.Timestamptz(6)
   userId       Int?      @map("user_id")
