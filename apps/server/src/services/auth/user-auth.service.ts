@@ -38,12 +38,25 @@ export function sha256Base64Url(input: string): string {
 }
 
 /**
- * Allowed redirect URI schemes for OAuth flow.
+ * Allowed redirect URI prefixes for OAuth flow.
+ * Only exact scheme + host prefixes are allowed to prevent open redirect attacks.
+ * Add additional allowed origins via OAUTH_ALLOWED_REDIRECT_URIS env var (comma-separated).
  */
-const ALLOWED_REDIRECT_SCHEMES = ["mobile://", "exp://", "http://localhost", "https://"];
+const DEFAULT_ALLOWED_REDIRECT_PREFIXES = [
+  "mobile://",
+  "exp://",
+  "http://localhost",
+  "http://127.0.0.1",
+  "http://10.0.2.2", // Android emulator
+];
 
 export function isAllowedRedirectUri(uri: string): boolean {
-  return ALLOWED_REDIRECT_SCHEMES.some((scheme) => uri.startsWith(scheme));
+  const extraUris = process.env.OAUTH_ALLOWED_REDIRECT_URIS;
+  const allowed = extraUris
+    ? [...DEFAULT_ALLOWED_REDIRECT_PREFIXES, ...extraUris.split(",").map((s) => s.trim())]
+    : DEFAULT_ALLOWED_REDIRECT_PREFIXES;
+
+  return allowed.some((prefix) => uri.startsWith(prefix));
 }
 
 /**
@@ -114,6 +127,19 @@ export async function exchangeGoogleCode(params: {
   return tokens;
 }
 
+/**
+ * Delete expired OAuth states (opportunistic cleanup).
+ * Call this before creating new states to keep the table clean.
+ */
+export async function cleanupExpiredOAuthStates(): Promise<number> {
+  const result = await prisma.oauthStates.deleteMany({
+    where: {
+      expiresAt: { lt: new Date() },
+    },
+  });
+  return result.count;
+}
+
 export { generateRandomToken };
 
 export class UserAuthService {
@@ -124,6 +150,165 @@ export class UserAuthService {
     if (googleClientId) {
       this.googleClient = new OAuth2Client(googleClientId);
     }
+  }
+
+  /**
+   * Verify Google idToken and find-or-create the user WITHOUT creating sessions.
+   * Used by the server-side OAuth callback to get the userId for OTC,
+   * avoiding orphaned refresh sessions.
+   */
+  async findOrCreateUserByGoogle(input: { idToken: string }): Promise<{
+    id: number;
+    email: string;
+    username: string | null;
+    name: string | null;
+    image: string | null;
+    role: string;
+  }> {
+    if (!this.googleClient) {
+      throw new BadRequestError("Google OAuth is not configured");
+    }
+
+    let googlePayload: {
+      sub: string;
+      email: string;
+      name?: string;
+      picture?: string;
+      email_verified?: boolean;
+    };
+
+    try {
+      const validAudiences = [
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_IOS_CLIENT_ID,
+        process.env.GOOGLE_ANDROID_CLIENT_ID,
+      ].filter(Boolean) as string[];
+
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken: input.idToken,
+        audience: validAudiences,
+      });
+      googlePayload = ticket.getPayload() as typeof googlePayload;
+    } catch (err) {
+      throw new UnauthorizedError("Invalid Google ID token");
+    }
+
+    if (!googlePayload || !googlePayload.email) {
+      throw new UnauthorizedError("Invalid Google ID token payload");
+    }
+
+    const providerAccountId = googlePayload.sub;
+    const email = googlePayload.email.toLowerCase().trim();
+    const name = googlePayload.name?.trim() || null;
+    const picture = googlePayload.picture || null;
+
+    const now = new Date();
+
+    const user = await prisma.$transaction(async (tx) => {
+      // Check if account exists (by provider + providerAccountId)
+      const account = await tx.accounts.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider: "google",
+            providerAccountId,
+          },
+        },
+        include: { user: true },
+      });
+
+      if (account) {
+        return account.user;
+      }
+
+      // Check if user exists by email
+      const existingUser = await tx.users.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          name: true,
+          image: true,
+          role: true,
+          emailVerifiedAt: true,
+        },
+      });
+
+      if (existingUser) {
+        if (!existingUser.emailVerifiedAt && googlePayload.email_verified === true) {
+          await tx.users.update({
+            where: { id: existingUser.id },
+            data: { emailVerifiedAt: now },
+            select: { id: true },
+          });
+        }
+
+        await tx.accounts.create({
+          data: {
+            userId: existingUser.id,
+            type: "oauth",
+            provider: "google",
+            providerAccountId,
+          },
+        });
+
+        await ensureUserProfile(tx, existingUser.id);
+        return existingUser;
+      }
+
+      // Create new user
+      const emailVerifiedAt = googlePayload.email_verified === true ? now : null;
+
+      const newUser = await tx.users.create({
+        data: {
+          email,
+          username: null,
+          password: null,
+          name,
+          image: picture,
+          role: USER_ROLE,
+          emailVerifiedAt,
+        },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          name: true,
+          image: true,
+          role: true,
+        },
+      });
+
+      await tx.accounts.create({
+        data: {
+          userId: newUser.id,
+          type: "oauth",
+          provider: "google",
+          providerAccountId,
+        },
+      });
+
+      await ensureUserProfile(tx, newUser.id);
+      return newUser;
+    });
+
+    // Update lastLoginAt
+    await prisma.users.update({
+      where: { id: user.id },
+      data: { lastLoginAt: now },
+      select: { id: true },
+    });
+
+    log.info({ userId: user.id }, "user google find-or-create success");
+
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      name: user.name,
+      image: user.image,
+      role: user.role,
+    };
   }
 
   /**

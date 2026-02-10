@@ -9,6 +9,7 @@ import {
   sha256Base64Url,
   exchangeGoogleCode,
   generateRandomToken,
+  cleanupExpiredOAuthStates,
 } from "../../services/auth/user-auth.service";
 import { UserOnboardingService } from "../../services/auth/user-onboarding.service";
 import { isOnboardingRequired } from "../../auth/user-onboarding";
@@ -396,13 +397,20 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
         throw new BadRequestError("Google OAuth is not configured");
       }
 
+      // Opportunistic cleanup of expired states
+      cleanupExpiredOAuthStates().catch(() => {});
+
       // Generate state + PKCE code_verifier
       const state = generateRandomToken(32);
       const codeVerifier = generateRandomToken(64);
       const codeChallenge = sha256Base64Url(codeVerifier);
 
-      // Determine callback URL based on environment
-      const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 4000}`;
+      // Derive callback URL from the incoming request so it works on
+      // physical devices (where the client reaches the server via LAN IP,
+      // not localhost). SERVER_URL env var can still override if set.
+      const serverUrl =
+        process.env.SERVER_URL ||
+        `${req.protocol}://${req.hostname}:${process.env.PORT || 4000}`;
       const callbackUri = `${serverUrl}/auth/google/callback`;
 
       // Store in DB (expires in 10 minutes)
@@ -411,6 +419,7 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
           state,
           codeVerifier,
           redirectUri: redirect_uri,
+          callbackUri,
           provider: "google",
           expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
@@ -474,9 +483,11 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       try {
-        // Determine callback URL for token exchange
-        const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 4000}`;
-        const callbackUri = `${serverUrl}/auth/google/callback`;
+        // Use the callback URL that was stored when the flow started,
+        // so token exchange uses the same redirect_uri as the initial request
+        const callbackUri =
+          oauthState.callbackUri ||
+          `${process.env.SERVER_URL || `http://localhost:${process.env.PORT || 4000}`}/auth/google/callback`;
 
         // Exchange code for tokens (server-side, with client_secret)
         const googleTokens = await exchangeGoogleCode({
@@ -485,20 +496,21 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
           redirectUri: callbackUri,
         });
 
-        // Validate idToken and get/create user (reuse existing logic)
-        const result = await service.loginWithGoogle({ idToken: googleTokens.id_token });
+        // Validate idToken and find-or-create user (no session created)
+        const user = await service.findOrCreateUserByGoogle({ idToken: googleTokens.id_token });
 
         // Generate OTC
         const otc = generateRandomToken(32);
+        const otcHash = sha256Base64Url(otc);
 
-        // Update state with OTC
+        // Update state with hashed OTC
         await prisma.oauthStates.update({
           where: { id: oauthState.id },
           data: {
             usedAt: new Date(),
-            otc,
+            otc: otcHash,
             otcExpiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
-            userId: result.user.id,
+            userId: user.id,
           },
         });
 
@@ -535,9 +547,12 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply): Promise<UserAuthResponse> => {
       const { otc } = req.body;
 
-      // Lookup OTC
+      // Hash OTC for lookup (stored hashed)
+      const otcHash = sha256Base64Url(otc);
+
+      // Lookup OTC by hash
       const oauthState = await prisma.oauthStates.findUnique({
-        where: { otc },
+        where: { otc: otcHash },
       });
 
       if (!oauthState || !oauthState.otcExpiresAt || oauthState.otcExpiresAt < new Date()) {
