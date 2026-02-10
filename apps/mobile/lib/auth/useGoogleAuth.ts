@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { Platform } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
-import { getOAuthBaseUrl } from "@/lib/env";
+import { getApiBaseUrl } from "@/lib/env";
 
 // Required for web browser redirect to complete properly
 WebBrowser.maybeCompleteAuthSession();
@@ -116,8 +116,8 @@ export function useGoogleAuth({ onSuccess, onError }: UseGoogleAuthOptions) {
   const signInFallback = useCallback(async () => {
     try {
       const redirectUri = Linking.createURL("oauth");
-      const oauthBaseUrl = getOAuthBaseUrl();
-      const authUrl = `${oauthBaseUrl}/auth/google/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
+      const baseUrl = getApiBaseUrl();
+      const authUrl = `${baseUrl}/auth/google/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
 
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
 

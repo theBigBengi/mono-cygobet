@@ -67,37 +67,3 @@ export function getApiBaseUrl(): string {
   );
   return `http://localhost:${API_PORT}`;
 }
-
-/**
- * Get the base URL for the OAuth browser flow (start / callback).
- *
- * Google only accepts `localhost` or real HTTPS domains as redirect URIs.
- * In the OAuth flow the browser must reach the server AND Google must
- * redirect back to it — so only localhost actually works locally
- * (iOS simulator, where browser localhost = host machine).
- *
- * Android emulator (10.0.2.2) and physical devices (LAN IP) both fail
- * because Google rejects those as redirect URIs. For those cases we
- * route through the production server (EXPO_PUBLIC_OAUTH_SERVER_URL).
- * Since dev and production share the same DB the OTC exchange still
- * works against the local dev server.
- *
- * Detection is automatic — no need to toggle env vars:
- *   - API URL is localhost → OAuth works locally (iOS simulator)
- *   - API URL is anything else + prod URL set → use production
- */
-export function getOAuthBaseUrl(): string {
-  if (!__DEV__) return getApiBaseUrl();
-
-  const apiUrl = getApiBaseUrl();
-  const isLocalhost =
-    apiUrl.includes("localhost") || apiUrl.includes("127.0.0.1");
-
-  if (isLocalhost) {
-    return apiUrl;
-  }
-
-  // Non-localhost (Android emulator / physical device) — use production
-  const prodUrl = process.env.EXPO_PUBLIC_OAUTH_SERVER_URL;
-  return prodUrl || apiUrl;
-}
