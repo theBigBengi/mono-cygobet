@@ -14,7 +14,7 @@ import type {
   groupKoRoundMode,
   groupInviteAccess,
 } from "@repo/db";
-import { BadRequestError } from "../../../../utils/errors";
+import { BadRequestError, ForbiddenError } from "../../../../utils/errors";
 import { GROUP_STATUS, NUDGE_WINDOW_MIN, NUDGE_WINDOW_MAX } from "../constants";
 import { buildGroupItem } from "../builders";
 import { assertGroupCreator } from "../permissions";
@@ -46,6 +46,9 @@ export async function updateGroup(
     inviteAccess,
     nudgeEnabled,
     nudgeWindowMinutes,
+    onTheNosePoints,
+    correctDifferencePoints,
+    outcomePoints,
   } = args;
 
   if (
@@ -76,16 +79,40 @@ export async function updateGroup(
     updateData.description = description;
   }
 
+  const hasScoringUpdate =
+    onTheNosePoints !== undefined ||
+    correctDifferencePoints !== undefined ||
+    outcomePoints !== undefined;
+
+  if (hasScoringUpdate) {
+    const firstFixture = await prisma.groupFixtures.findFirst({
+      where: { groupId: id },
+      orderBy: { fixtures: { startTs: "asc" } },
+      select: { fixtures: { select: { state: true } } },
+    });
+    const firstGameState = firstFixture?.fixtures?.state;
+    if (firstGameState && firstGameState !== "NS") {
+      throw new ForbiddenError("Cannot change rules after first game started");
+    }
+  }
+
   const hasRulesUpdate =
     inviteAccess !== undefined ||
     nudgeEnabled !== undefined ||
-    nudgeWindowMinutes !== undefined;
+    nudgeWindowMinutes !== undefined ||
+    hasScoringUpdate;
   const rulesUpdateData: Prisma.groupRulesUpdateInput = {};
   if (inviteAccess !== undefined)
     rulesUpdateData.inviteAccess = inviteAccess as groupInviteAccess;
   if (nudgeEnabled !== undefined) rulesUpdateData.nudgeEnabled = nudgeEnabled;
   if (nudgeWindowMinutes !== undefined)
     rulesUpdateData.nudgeWindowMinutes = nudgeWindowMinutes;
+  if (onTheNosePoints !== undefined)
+    rulesUpdateData.onTheNosePoints = onTheNosePoints;
+  if (correctDifferencePoints !== undefined)
+    rulesUpdateData.correctDifferencePoints = correctDifferencePoints;
+  if (outcomePoints !== undefined)
+    rulesUpdateData.outcomePoints = outcomePoints;
 
   // Update group, groupFixtures, and optionally groupRules in a single transaction
   const group = await prisma.$transaction(async (tx) => {

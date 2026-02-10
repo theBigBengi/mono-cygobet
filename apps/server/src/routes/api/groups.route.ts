@@ -9,6 +9,7 @@ import {
   updateGroup,
   publishGroup,
   deleteGroup,
+  leaveGroup,
 } from "../../services/api/groups";
 import type {
   ApiCreateGroupBody,
@@ -121,6 +122,11 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
             status: { type: "string", enum: ["draft", "active", "ended"] },
             fixtureIds: { type: "array", items: { type: "number" } },
             inviteAccess: { type: "string", enum: ["all", "admin_only"] },
+            nudgeEnabled: { type: "boolean" },
+            nudgeWindowMinutes: { type: "number", minimum: 15, maximum: 1440 },
+            onTheNosePoints: { type: "number", minimum: 0 },
+            correctDifferencePoints: { type: "number", minimum: 0 },
+            outcomePoints: { type: "number", minimum: 0 },
           },
         },
         response: { 200: groupResponseSchema },
@@ -137,9 +143,40 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
         privacy: body.privacy,
         fixtureIds: body.fixtureIds,
         inviteAccess: body.inviteAccess,
+        nudgeEnabled: body.nudgeEnabled,
+        nudgeWindowMinutes: body.nudgeWindowMinutes,
+        onTheNosePoints: body.onTheNosePoints,
+        correctDifferencePoints: body.correctDifferencePoints,
+        outcomePoints: body.outcomePoints,
         creatorId,
       });
 
+      return reply.send(result);
+    }
+  );
+
+  // POST /api/groups/:id/leave — leave a group (members only, not creator)
+  fastify.post<{
+    Params: { id: number };
+    Reply: { success: boolean };
+  }>(
+    "/groups/:id/leave",
+    {
+      schema: {
+        params: getGroupParamsSchema,
+        response: {
+          200: {
+            type: "object",
+            required: ["success"],
+            properties: { success: { type: "boolean" } },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      const id = Number(req.params.id);
+      const userId = req.userAuth!.user.id;
+      const result = await leaveGroup(id, userId);
       return reply.send(result);
     }
   );

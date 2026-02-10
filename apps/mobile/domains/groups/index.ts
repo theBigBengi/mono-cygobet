@@ -36,6 +36,7 @@ export {
   useGroupRankingQuery,
   useNudgeMutation,
   useGroupMembersQuery,
+  useLeaveGroupMutation,
 } from "./groups-members.hooks";
 
 // --- Invite & Join ---

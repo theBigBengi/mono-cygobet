@@ -300,6 +300,12 @@ export type ApiUpdateGroupBody = {
   nudgeEnabled?: boolean;
   /** Minutes before kickoff within which nudge is allowed (15–1440). */
   nudgeWindowMinutes?: number;
+  /** Scoring: points for exact result. Only editable before first game starts. */
+  onTheNosePoints?: number;
+  /** Scoring: points for correct goal difference. Only editable before first game starts. */
+  correctDifferencePoints?: number;
+  /** Scoring: points for correct outcome. Only editable before first game starts. */
+  outcomePoints?: number;
 };
 
 /**
@@ -327,6 +333,11 @@ export type ApiPublishGroupBody = {
  * Response from publishing a group.
  */
 export type ApiPublishGroupResponse = ApiGroupResponse;
+
+/**
+ * Response from POST /api/groups/:id/leave.
+ */
+export type ApiLeaveGroupResponse = { success: boolean };
 
 /**
  * Body for joining a group by invite code.

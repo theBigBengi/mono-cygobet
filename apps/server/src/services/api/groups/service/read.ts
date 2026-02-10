@@ -18,6 +18,8 @@ import {
   formatFixtureFromDb,
   buildGroupItem,
 } from "../builders";
+import { prisma } from "@repo/db";
+import { FIXTURE_SELECT_BASE } from "../../fixtures/selects";
 import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
 import { mapGroupFixturesToApiFixtures } from "../helpers/fixture-mapper";
@@ -169,6 +171,20 @@ export async function getGroupById(
   data.outcomePoints = rules?.outcomePoints ?? 1;
   data.nudgeEnabled = rules?.nudgeEnabled ?? true;
   data.nudgeWindowMinutes = rules?.nudgeWindowMinutes ?? 60;
+
+  if (group.status !== "draft") {
+    const firstGf = await prisma.groupFixtures.findFirst({
+      where: { groupId: id },
+      orderBy: { fixtures: { startTs: "asc" } },
+      select: { fixtures: { select: FIXTURE_SELECT_BASE } },
+    });
+    const rawFirst = firstGf?.fixtures ?? null;
+    data.firstGame = formatFixtureFromDb(
+      rawFirst as Parameters<typeof formatFixtureFromDb>[0],
+      null,
+      null
+    );
+  }
 
   // Include fixtures if requested
   if (includeFixtures) {

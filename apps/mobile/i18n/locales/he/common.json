@@ -254,7 +254,21 @@
   },
   "groupSettings": {
     "general": "כללי",
-    "notifications": "התראות"
+    "notifications": "התראות",
+    "dangerZone": "אזור סכנה",
+    "editName": "עריכת שם",
+    "editDescription": "עריכת תיאור",
+    "editRules": "חוקי ניקוד",
+    "rulesLocked": "החוקים נעולים לאחר תחילת המשחק הראשון",
+    "changePrivacy": "פרטיות",
+    "leaveGroup": "עזיבת קבוצה",
+    "leaveGroupDescription": "תאבד גישה לקבוצה זו",
+    "leaveGroupConfirm": "האם אתה בטוח שברצונך לעזוב את הקבוצה?",
+    "cannotLeaveAsCreator": "יוצר הקבוצה לא יכול לעזוב. העבר בעלות או מחק את הקבוצה.",
+    "deleteGroup": "מחיקת קבוצה",
+    "deleteGroupDescription": "פעולה זו אינה ניתנת לביטול",
+    "deleteGroupConfirm": "האם אתה בטוח שברצונך למחוק את הקבוצה? כל המידע יימחק.",
+    "maxDescriptionError": "התיאור חייב להיות לכל היותר 500 תווים"
   },
   "predictions": {
     "predict": "בחר תחזית",

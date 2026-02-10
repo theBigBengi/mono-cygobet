@@ -10,7 +10,7 @@ export { saveGroupPrediction, saveGroupPredictionsBatch } from "./predictions";
 export { getGroupGamesFilters } from "./filters";
 export { getPredictionsOverview } from "./overview";
 export { getGroupRanking } from "./ranking";
-export { getGroupMembers } from "./members";
+export { getGroupMembers, leaveGroup } from "./members";
 export { sendNudge } from "./nudge";
 export { settlePredictionsForFixtures } from "./settlement";
 export {

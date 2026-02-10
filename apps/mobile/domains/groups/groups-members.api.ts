@@ -6,6 +6,7 @@ import type {
   ApiGroupMembersResponse,
   ApiNudgeBody,
   ApiNudgeResponse,
+  ApiLeaveGroupResponse,
 } from "@repo/types";
 import { apiFetchWithAuthRetry } from "@/lib/http/apiClient";
 
@@ -47,6 +48,20 @@ export async function fetchGroupRanking(
  * - Verifies that the user is a group member.
  * - Returns 201 on success, 409 if already nudged.
  */
+/**
+ * Leave a group.
+ * - Requires authentication.
+ * - User must be a member (not creator).
+ */
+export async function leaveGroup(
+  groupId: number
+): Promise<ApiLeaveGroupResponse> {
+  return apiFetchWithAuthRetry<ApiLeaveGroupResponse>(
+    `/api/groups/${groupId}/leave`,
+    { method: "POST" }
+  );
+}
+
 export async function sendNudge(
   groupId: number,
   body: ApiNudgeBody

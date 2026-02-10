@@ -9,9 +9,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { Screen, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useGroupQuery, useUpdateGroupMutation } from "@/domains/groups";
+import {
+  EditNameModal,
+  EditDescriptionModal,
+  EditRulesSection,
+  DangerZoneSection,
+} from "./components";
 import { useAuth } from "@/lib/auth/useAuth";
-import { SettingsSection, SettingsRow } from "@/features/settings";
-import type { ApiInviteAccess } from "@repo/types";
+import {
+  SettingsSection,
+  SettingsRow,
+  SettingsRowPicker,
+} from "@/features/settings";
+import type { ApiInviteAccess, ApiGroupPrivacy } from "@repo/types";
 
 const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
 
@@ -28,8 +38,11 @@ export function GroupSettingsScreen() {
   const isCreator = group?.creatorId === user?.id;
 
   const [inviteAccess, setInviteAccess] = useState<ApiInviteAccess>("all");
+  const [privacy, setPrivacy] = useState<ApiGroupPrivacy>("private");
   const [nudgeEnabled, setNudgeEnabled] = useState(true);
   const [nudgeWindowMinutes, setNudgeWindowMinutes] = useState(60);
+  const [editNameModalVisible, setEditNameModalVisible] = useState(false);
+  const [editDescModalVisible, setEditDescModalVisible] = useState(false);
 
   const updateGroupMutation = useUpdateGroupMutation(groupId);
 
@@ -38,6 +51,12 @@ export function GroupSettingsScreen() {
       setInviteAccess(group.inviteAccess);
     }
   }, [group?.inviteAccess]);
+
+  useEffect(() => {
+    if (group?.privacy !== undefined) {
+      setPrivacy(group.privacy);
+    }
+  }, [group?.privacy]);
 
   useEffect(() => {
     if (group?.nudgeEnabled !== undefined) {
@@ -61,6 +80,11 @@ export function GroupSettingsScreen() {
   const handleNudgeEnabledChange = (value: boolean) => {
     setNudgeEnabled(value);
     updateGroupMutation.mutate({ nudgeEnabled: value, nudgeWindowMinutes });
+  };
+
+  const handlePrivacyChange = (value: ApiGroupPrivacy) => {
+    setPrivacy(value);
+    updateGroupMutation.mutate({ privacy: value });
   };
 
   const handleNudgeWindowChange = (minutes: number) => {
@@ -110,8 +134,41 @@ export function GroupSettingsScreen() {
             label={t("lobby.members")}
             subtitle={t("lobby.viewGroupMembers")}
             onPress={handleViewMembers}
-            isLast={!showInviteToggle}
+            isLast={!isCreator && !showInviteToggle}
           />
+          {isCreator && (
+            <>
+              <SettingsRow
+                type="navigation"
+                icon="create-outline"
+                label={t("groupSettings.editName" as Parameters<typeof t>[0])}
+                onPress={() => setEditNameModalVisible(true)}
+                isLast={false}
+              />
+              <SettingsRow
+                type="navigation"
+                icon="document-text-outline"
+                label={t(
+                  "groupSettings.editDescription" as Parameters<typeof t>[0]
+                )}
+                onPress={() => setEditDescModalVisible(true)}
+                isLast={false}
+              />
+              <SettingsRowPicker<ApiGroupPrivacy>
+                icon="lock-closed-outline"
+                label={t(
+                  "groupSettings.changePrivacy" as Parameters<typeof t>[0]
+                )}
+                value={privacy}
+                options={[
+                  { value: "private", label: t("lobby.private") },
+                  { value: "public", label: t("pool.public") },
+                ]}
+                onValueChange={handlePrivacyChange}
+                isLast={!showInviteToggle}
+              />
+            </>
+          )}
           {showInviteToggle && (
             <SettingsRow
               type="toggle"
@@ -129,6 +186,14 @@ export function GroupSettingsScreen() {
             />
           )}
         </SettingsSection>
+
+        {isCreator && (
+          <EditRulesSection
+            group={group}
+            isCreator={isCreator}
+            updateGroupMutation={updateGroupMutation}
+          />
+        )}
 
         {/* Notifications Section - Creator only */}
         {showNudgeSection && (
@@ -196,7 +261,20 @@ export function GroupSettingsScreen() {
             )}
           </SettingsSection>
         )}
+        <DangerZoneSection groupId={groupId} isCreator={!!isCreator} />
       </Screen>
+      <EditNameModal
+        visible={editNameModalVisible}
+        onClose={() => setEditNameModalVisible(false)}
+        group={group}
+        updateGroupMutation={updateGroupMutation}
+      />
+      <EditDescriptionModal
+        visible={editDescModalVisible}
+        onClose={() => setEditDescModalVisible(false)}
+        group={group}
+        updateGroupMutation={updateGroupMutation}
+      />
     </View>
   );
 }

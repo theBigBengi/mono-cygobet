@@ -2,11 +2,13 @@
 // React Query hooks for group members, ranking, and nudge.
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import type {
   ApiRankingResponse,
   ApiGroupMembersResponse,
   ApiNudgeBody,
   ApiNudgeResponse,
+  ApiLeaveGroupResponse,
 } from "@repo/types";
 import type { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -15,8 +17,10 @@ import {
   fetchGroupMembers,
   fetchGroupRanking,
   sendNudge,
+  leaveGroup,
 } from "./groups-members.api";
 import { groupsKeys } from "./groups.keys";
+import { analytics } from "@/lib/analytics";
 
 /**
  * Hook to fetch group ranking.
@@ -35,6 +39,31 @@ export function useGroupRankingQuery(groupId: number | null) {
     queryFn: () => fetchGroupRanking(groupId as number),
     enabled,
     meta: { scope: "user" },
+  });
+}
+
+/**
+ * Hook to leave a group.
+ * - Requires authentication.
+ * - User must be a member (not creator).
+ * - Invalidates groups list and navigates to groups tab on success.
+ */
+export function useLeaveGroupMutation(groupId: number | null) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation<ApiLeaveGroupResponse, ApiError, void>({
+    mutationFn: () => {
+      if (!groupId) {
+        throw new Error("Group ID is required");
+      }
+      return leaveGroup(groupId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
+      router.replace("/(tabs)/groups" as any);
+      analytics.track("group_left", { groupId });
+    },
   });
 }
 
