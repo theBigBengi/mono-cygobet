@@ -3,7 +3,7 @@
 // Appears above keyboard to help navigate between input fields.
 
 import React from "react";
-import { View, StyleSheet, Pressable, Keyboard, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, Keyboard, ActivityIndicator, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -39,10 +39,7 @@ export function ScoreInputNavigationBar({
   }
 
   const handleDone = () => {
-    // Haptic feedback when pressing done button
-    if (process.env.EXPO_OS === 'ios') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (onDone) {
       onDone();
     } else {
@@ -50,9 +47,11 @@ export function ScoreInputNavigationBar({
     }
   };
 
+  const bottomOffset = Platform.OS === "android" ? 60 : 10;
+
   return (
     <View
-      style={[styles.container, { bottom: keyboardHeight + 10 }]}
+      style={[styles.container, { bottom: keyboardHeight + bottomOffset }]}
       pointerEvents="box-none"
     >
       <View style={[styles.content, styles.contentClip, {
@@ -61,7 +60,12 @@ export function ScoreInputNavigationBar({
         <BlurView
           intensity={50}
           tint={isDark ? "dark" : "light"}
-          style={StyleSheet.absoluteFill}
+          style={[
+            StyleSheet.absoluteFill,
+            Platform.OS === "android" && {
+              backgroundColor: isDark ? "rgba(30, 30, 30, 0.95)" : "rgba(255, 255, 255, 0.95)",
+            },
+          ]}
           pointerEvents="box-none"
         />
         <View style={styles.row}>

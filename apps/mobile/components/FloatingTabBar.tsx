@@ -2,9 +2,10 @@
 // Custom floating tab bar with blur effect and rounded corners
 
 import React, { useMemo } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Platform } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAtomValue } from "jotai";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,6 +21,8 @@ export function FloatingTabBar({
 }: BottomTabBarProps) {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
+  const bottomOffset = Platform.OS === "android" ? Math.max(insets.bottom, 20) + 10 : 30;
   const badge = useAtomValue(tabBarBadgeAtom);
   const { data: groupsData } = useMyGroupsQuery();
   const { data: unreadData } = useUnreadCountsQuery();
@@ -45,7 +48,7 @@ export function FloatingTabBar({
   const countNumber = badge.count;
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={[styles.container, { bottom: bottomOffset }]} pointerEvents="box-none">
       <View
         style={[
           styles.tabBar,
@@ -59,7 +62,12 @@ export function FloatingTabBar({
         <BlurView
           intensity={80}
           tint={isDark ? "dark" : "light"}
-          style={StyleSheet.absoluteFill}
+          style={[
+            StyleSheet.absoluteFill,
+            Platform.OS === "android" && {
+              backgroundColor: isDark ? "rgba(30, 30, 30, 0.95)" : "rgba(255, 255, 255, 0.95)",
+            },
+          ]}
           pointerEvents="none"
         />
         <View style={styles.content}>
@@ -214,7 +222,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 32,
     right: 32,
-    bottom: 30,
     alignItems: "center",
     zIndex: 1000,
     // Shadow for iOS

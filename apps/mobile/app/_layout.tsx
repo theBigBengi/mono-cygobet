@@ -38,6 +38,8 @@ import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import * as SplashScreen from "expo-splash-screen";
 import * as Sentry from "@sentry/react-native";
+import * as NavigationBar from "expo-navigation-bar";
+import { Platform } from "react-native";
 import { analytics } from "@/lib/analytics";
 
 SplashScreen.preventAutoHideAsync();
@@ -64,6 +66,14 @@ function AppContent() {
       analytics.screen(pathname);
     }
   }, [pathname]);
+
+  // Set Android navigation bar to transparent
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      NavigationBar.setBackgroundColorAsync("transparent");
+      NavigationBar.setButtonStyleAsync(colorScheme === "dark" ? "light" : "dark");
+    }
+  }, [colorScheme]);
 
   // Check if user is authenticated AND has username
   const isFullyAuthenticated = isAuthenticated(status) && !!user?.username;

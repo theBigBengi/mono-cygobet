@@ -3,7 +3,7 @@
 // Used during group creation to block interaction until the group screen is ready.
 
 import React from "react";
-import { View, StyleSheet, ActivityIndicator, Modal } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Modal, Platform } from "react-native";
 import { BlurView } from "expo-blur";
 import { useAtomValue } from "jotai";
 import { globalBlockingOverlayAtom } from "@/lib/state/globalOverlay.atom";
@@ -38,7 +38,12 @@ export function GlobalBlockingOverlay() {
         <BlurView
           intensity={80}
           tint={isDark ? "dark" : "light"}
-          style={StyleSheet.absoluteFill}
+          style={[
+            StyleSheet.absoluteFill,
+            Platform.OS === "android" && {
+              backgroundColor: isDark ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 255, 255, 0.85)",
+            },
+          ]}
         />
         <View style={styles.content}>
           <ActivityIndicator size="large" color={theme.colors.primary} />

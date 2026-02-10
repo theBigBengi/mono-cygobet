@@ -29,9 +29,7 @@ const MAX_Y = 10 * ROW_HEIGHT; // 320
 const valueToY = (value: number) => (9 - value) * ROW_HEIGHT;
 
 function triggerHaptic() {
-  if (process.env.EXPO_OS === "ios") {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 }
 
 export type ScoreSliderProps = {
@@ -240,6 +238,7 @@ const styles = StyleSheet.create({
     width: CONTAINER_WIDTH + TAB_WIDTH,
     justifyContent: "center",
     zIndex: 5,
+    overflow: "visible",
   },
   containerLeft: {
     left: 0,
@@ -252,6 +251,7 @@ const styles = StyleSheet.create({
   trackWrapper: {
     height: TRACK_HEIGHT + ROW_HEIGHT,
     position: "relative",
+    overflow: "visible",
   },
   track: {
     width: CONTAINER_WIDTH,

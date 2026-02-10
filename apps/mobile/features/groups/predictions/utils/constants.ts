@@ -27,8 +27,8 @@ export const INPUT_BACKGROUND_COLOR_DISABLED = "rgba(15, 23, 42, 0.07)";
 
 /** Base input style dimensions and properties */
 export const INPUT_STYLE = {
-  width: 26,
-  height: 26,
+  width: 30,
+  height: 30,
   fontSize: 16,
   borderRadius: 4,
   borderWidth: 1,

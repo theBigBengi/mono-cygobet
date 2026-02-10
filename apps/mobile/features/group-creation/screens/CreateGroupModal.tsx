@@ -10,6 +10,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -287,7 +288,12 @@ export function CreateGroupModal() {
           <BlurView
             intensity={80}
             tint={colorScheme === "dark" ? "dark" : "light"}
-            style={StyleSheet.absoluteFill}
+            style={[
+              StyleSheet.absoluteFill,
+              Platform.OS === "android" && {
+                backgroundColor: colorScheme === "dark" ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 255, 255, 0.85)",
+              },
+            ]}
           />
           <View style={styles.globalOverlayContent}>
             <ActivityIndicator size="large" color={theme.colors.primary} />

@@ -112,7 +112,7 @@ export function ScoresInput({
           : ""
         : text;
       // Haptic feedback when entering prediction
-      if (process.env.EXPO_OS === "ios" && finalText !== "") {
+      if (finalText !== "") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       onChange("home", finalText);
@@ -129,7 +129,7 @@ export function ScoresInput({
           : ""
         : text;
       // Haptic feedback when entering prediction
-      if (process.env.EXPO_OS === "ios" && finalText !== "") {
+      if (finalText !== "") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       onChange("away", finalText);
@@ -166,6 +166,9 @@ export function ScoresInput({
             backgroundColor: "rgba(15, 23, 42, 0.04)",
             color: theme.colors.textPrimary,
             opacity: isEditable || isLive ? 1 : 0.5,
+            padding: 0,
+            textAlignVertical: "center",
+            includeFontPadding: false,
           },
         ]}
         value={toDisplay(prediction.home, isEditable)}
@@ -198,6 +201,9 @@ export function ScoresInput({
             backgroundColor: "rgba(15, 23, 42, 0.04)",
             color: theme.colors.textPrimary,
             opacity: isEditable || isLive ? 1 : 0.5,
+            padding: 0,
+            textAlignVertical: "center",
+            includeFontPadding: false,
           },
         ]}
         value={toDisplay(prediction.away, isEditable)}

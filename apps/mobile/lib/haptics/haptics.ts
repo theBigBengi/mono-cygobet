@@ -20,8 +20,6 @@ export function updateHapticsCache(enabled: boolean): void {
 export async function triggerImpact(
   style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light
 ): Promise<void> {
-  if (Platform.OS !== "ios") return;
-
   const enabled = cachedHapticsEnabled ?? true;
   if (!enabled) return;
 
@@ -29,8 +27,6 @@ export async function triggerImpact(
 }
 
 export async function triggerSelection(): Promise<void> {
-  if (Platform.OS !== "ios") return;
-
   const enabled = cachedHapticsEnabled ?? true;
   if (!enabled) return;
 
@@ -41,8 +37,6 @@ export async function triggerNotification(
   type: Haptics.NotificationFeedbackType = Haptics.NotificationFeedbackType
     .Success
 ): Promise<void> {
-  if (Platform.OS !== "ios") return;
-
   const enabled = cachedHapticsEnabled ?? true;
   if (!enabled) return;
 

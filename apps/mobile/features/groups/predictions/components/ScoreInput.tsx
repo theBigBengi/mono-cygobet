@@ -64,6 +64,9 @@ export function ScoreInput({
             borderWidth: isFocused ? 2 : 0.5,
             backgroundColor: INPUT_BACKGROUND_COLOR,
             color: theme.colors.textPrimary,
+            padding: 0,
+            textAlignVertical: "center",
+            includeFontPadding: false,
           },
         ]}
         value={toDisplay(value)}
@@ -73,10 +76,7 @@ export function ScoreInput({
         textAlign="center"
         onFocus={() => {
           if (isEditable) {
-            // Haptic feedback when focusing on input field
-            if (process.env.EXPO_OS === "ios") {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onFocus();
           }
         }}

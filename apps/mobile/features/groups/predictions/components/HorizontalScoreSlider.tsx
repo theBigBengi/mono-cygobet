@@ -36,9 +36,7 @@ const valueToX = (value: number | null, reversed: boolean) =>
       : (value + 1) * CELL_WIDTH;
 
 function triggerHaptic() {
-  if (process.env.EXPO_OS === "ios") {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 }
 
 export type HorizontalScoreSliderProps = {
@@ -295,6 +293,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     position: "relative",
     justifyContent: "center",
+    overflow: "visible",
   },
   track: {
     flexDirection: "row",

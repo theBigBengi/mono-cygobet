@@ -9,7 +9,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSetAtom } from "jotai";
-import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Alert, ActivityIndicator, Platform } from "react-native";
 import { BlurView } from "expo-blur";
 import { Screen, AppText } from "@/components/ui";
 import { useGroupQuery, useDeleteGroupMutation } from "@/domains/groups";
@@ -229,7 +229,12 @@ function GroupLobbyContent() {
           <BlurView
             intensity={80}
             tint={isDark ? "dark" : "light"}
-            style={StyleSheet.absoluteFill}
+            style={[
+              StyleSheet.absoluteFill,
+              Platform.OS === "android" && {
+                backgroundColor: isDark ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 255, 255, 0.85)",
+              },
+            ]}
           />
           <View style={styles.overlayContent}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
