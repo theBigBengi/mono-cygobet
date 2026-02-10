@@ -5,65 +5,68 @@
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 
-const API_PORT = process.env.EXPO_PUBLIC_API_PORT || "4000";
-
 /**
- * Get the Expo dev-server host IP.
- * When running on a physical device, Expo sets `hostUri` to the machine's
- * LAN IP (e.g. "192.168.1.42:8081"). We strip the port and reuse the IP.
+ * Get the development server IP address
+ * On real devices, we need the machine's IP, not localhost
  */
-function getDevServerHost(): string | null {
-  // Constants.expoConfig?.hostUri is set when the JS bundle is served from
-  // the Expo dev server (both Expo Go and dev-client builds).
-  const hostUri =
-    Constants.expoConfig?.hostUri ?? Constants.manifest2?.extra?.expoGo?.debuggerHost;
-  if (hostUri) {
-    const host = hostUri.split(":")[0];
-    if (host && host !== "localhost" && host !== "127.0.0.1") {
-      return host;
-    }
+function getDevServerIP(): string {
+  // Try to get the IP from Expo constants (works when connected to Expo dev server)
+  const debuggerHost = Constants.expoConfig?.hostUri?.split(":")[0];
+  if (debuggerHost) {
+    return debuggerHost;
   }
-  return null;
+
+  // Fallback: check if we're on a real device
+  // For real devices, you MUST set EXPO_PUBLIC_API_BASE_URL to your machine's IP
+  // Example: EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:4000
+  return "localhost";
 }
 
 export function getApiBaseUrl(): string {
-  // 1. Explicit env var always wins (production + CI + manual override)
   const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-  if (baseUrl) return baseUrl;
 
-  // 2. Production must have the env var
-  if (!__DEV__) {
+  if (!baseUrl) {
+    if (__DEV__) {
+      // In development
+      if (Platform.OS === "web") {
+        // Web: localhost works
+        return "http://localhost:4000";
+      }
+
+      // For native platforms
+      const host = getDevServerIP();
+
+      // If we got a real IP (not localhost), use it
+      if (host && host !== "localhost" && host !== "127.0.0.1") {
+        return `http://${host}:4000`;
+      }
+
+      // For simulator/emulator, use appropriate localhost
+      // Constants.isDevice is false on simulators/emulators
+      const isSimulatorOrEmulator = Constants.isDevice === false;
+
+      if (isSimulatorOrEmulator) {
+        // Android emulator can't reach host via localhost - use 10.0.2.2
+        if (Platform.OS === "android") {
+          return "http://10.0.2.2:4000";
+        }
+        // iOS simulator can use localhost
+        return "http://localhost:4000";
+      }
+
+      // Real device - need IP address
+      console.warn(
+        "⚠️  Running on a real device. Set EXPO_PUBLIC_API_BASE_URL to your machine's IP address.\n" +
+          "Example: EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:4000\n" +
+          "Find your IP with: ifconfig | grep 'inet ' | grep -v 127.0.0.1"
+      );
+      // Still return localhost as fallback, but it won't work on real devices
+      return "http://localhost:4000";
+    }
     throw new Error(
       "EXPO_PUBLIC_API_BASE_URL is required in production. Set it in your .env file."
     );
   }
 
-  // 3. Development: Web can always use localhost
-  if (Platform.OS === "web") {
-    return `http://localhost:${API_PORT}`;
-  }
-
-  // 4. Development native: try to get the dev-server IP (works on both
-  //    physical devices and simulators when Expo dev server is running)
-  const devHost = getDevServerHost();
-  if (devHost) {
-    return `http://${devHost}:${API_PORT}`;
-  }
-
-  // 5. Simulator / emulator fallback (hostUri wasn't available)
-  const isSimulatorOrEmulator = Constants.isDevice === false;
-  if (isSimulatorOrEmulator) {
-    if (Platform.OS === "android") {
-      return `http://10.0.2.2:${API_PORT}`;
-    }
-    return `http://localhost:${API_PORT}`;
-  }
-
-  // 6. Physical device without dev-server IP - warn loudly
-  console.warn(
-    "⚠️  Running on a physical device but could not detect dev-server IP.\n" +
-      "Set EXPO_PUBLIC_API_BASE_URL=http://<your-machine-ip>:" + API_PORT + "\n" +
-      "Find your IP with: ifconfig | grep 'inet ' | grep -v 127.0.0.1"
-  );
-  return `http://localhost:${API_PORT}`;
+  return baseUrl;
 }
