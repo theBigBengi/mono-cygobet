@@ -17,7 +17,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
-import { AppText } from "@/components/ui";
+import { AppText, PasswordInput } from "@/components/ui";
 import { getAuthErrorMessage } from "@/lib/errors/getAuthErrorMessage";
 
 export default function SignInScreen() {
@@ -96,7 +96,7 @@ export default function SignInScreen() {
               editable={!isLoading}
             />
 
-            <TextInput
+            <PasswordInput
               style={[
                 styles.input,
                 {
@@ -109,9 +109,6 @@ export default function SignInScreen() {
               placeholderTextColor={theme.colors.textSecondary}
               value={password}
               onChangeText={handlePasswordChange}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
               editable={!isLoading}
             />
 

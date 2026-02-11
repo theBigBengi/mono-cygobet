@@ -4,7 +4,6 @@
 import React, { useState } from "react";
 import {
   View,
-  TextInput,
   StyleSheet,
   Alert,
   KeyboardAvoidingView,
@@ -15,7 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import { AppText, Button } from "@/components/ui";
+import { AppText, Button, PasswordInput } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useChangePasswordMutation } from "@/lib/auth/auth.mutations";
 
@@ -104,7 +103,7 @@ export default function ChangePasswordScreen() {
             >
               {t("changePassword.currentPassword")}
             </AppText>
-            <TextInput
+            <PasswordInput
               style={[
                 styles.input,
                 {
@@ -115,8 +114,6 @@ export default function ChangePasswordScreen() {
               ]}
               value={currentPassword}
               onChangeText={setCurrentPassword}
-              secureTextEntry
-              autoCapitalize="none"
               placeholder={t("changePassword.currentPasswordPlaceholder")}
               placeholderTextColor={theme.colors.textSecondary}
             />
@@ -130,7 +127,7 @@ export default function ChangePasswordScreen() {
             >
               {t("changePassword.newPassword")}
             </AppText>
-            <TextInput
+            <PasswordInput
               style={[
                 styles.input,
                 {
@@ -141,8 +138,6 @@ export default function ChangePasswordScreen() {
               ]}
               value={newPassword}
               onChangeText={setNewPassword}
-              secureTextEntry
-              autoCapitalize="none"
               placeholder={t("changePassword.newPasswordPlaceholder")}
               placeholderTextColor={theme.colors.textSecondary}
             />
@@ -163,7 +158,7 @@ export default function ChangePasswordScreen() {
             >
               {t("changePassword.confirmPassword")}
             </AppText>
-            <TextInput
+            <PasswordInput
               style={[
                 styles.input,
                 {
@@ -174,8 +169,6 @@ export default function ChangePasswordScreen() {
               ]}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              secureTextEntry
-              autoCapitalize="none"
               placeholder={t("changePassword.confirmPasswordPlaceholder")}
               placeholderTextColor={theme.colors.textSecondary}
             />

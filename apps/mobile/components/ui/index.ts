@@ -13,3 +13,4 @@ export { ScreenWithHeader } from "./ScreenWithHeader";
 export { Tooltip } from "./Tooltip";
 export { CircularProgress } from "./CircularProgress";
 export { InfoSheet } from "./InfoSheet";
+export { PasswordInput } from "./PasswordInput";
