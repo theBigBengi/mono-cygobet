@@ -10,6 +10,7 @@ export type RawOverallRow = {
   settled_count: string | number | bigint;
   correct_score_count: string | number | bigint;
   correct_outcome_count: string | number | bigint;
+  unique_settled_fixtures: string | number | bigint;
 };
 
 export type RawGroupStatRow = {

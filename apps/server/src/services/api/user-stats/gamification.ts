@@ -23,27 +23,28 @@ function calculatePowerScore(
   accuracy: number,
   exactScoreRate: number,
   settledCount: number,
+  uniqueFixtures: number,
   currentStreak: number,
   bestRank: number | null
 ): number {
-  const accuracyWeight = 0.35;
-  const exactWeight = 0.25;
-  const volumeWeight = 0.15;
-  const streakWeight = 0.1;
-  const rankWeight = 0.15;
+  // Confidence: ramps to 1.0 at 20 total predictions
+  const confidence = Math.min(settledCount / 20, 1);
 
-  const accuracyScore = accuracy;
-  const exactScore = Math.min(exactScoreRate * 100, 100);
-  const volumeScore = Math.min((settledCount / 100) * 100, 100); // 100 predictions = max
-  const streakScore = Math.min((currentStreak / 10) * 100, 100); // 10 streak = max
-  const rankScore = bestRank ? Math.max(100 - (bestRank - 1) * 20, 0) : 0; // rank 1 = 100
+  // Components (0-100 scale), skill metrics scaled by confidence
+  const accuracyScore = Math.min(accuracy, 100) * confidence;
+  const exactScore = Math.min(exactScoreRate * 100, 100) * confidence;
+  const volumeScore = Math.min((uniqueFixtures / 50) * 100, 100);
+  const streakScore = Math.min((currentStreak / 10) * 100, 100);
+  const rankScore =
+    (bestRank ? Math.max(100 - (bestRank - 1) * 20, 0) : 0) * confidence;
 
+  // Weighted sum
   const powerScore =
-    accuracyScore * accuracyWeight +
-    exactScore * exactWeight +
-    volumeScore * volumeWeight +
-    streakScore * streakWeight +
-    rankScore * rankWeight;
+    accuracyScore * 0.3 +
+    exactScore * 0.2 +
+    volumeScore * 0.2 +
+    streakScore * 0.1 +
+    rankScore * 0.2;
 
   return Math.round(powerScore);
 }
@@ -119,6 +120,7 @@ export async function getGamificationData(
   }
 
   const settledCount = repo.toNumber(overall.settled_count);
+  const uniqueFixtures = repo.toNumber(overall.unique_settled_fixtures);
   const exactScores = repo.toNumber(overall.correct_score_count);
   const correctOutcomeCount = repo.toNumber(overall.correct_outcome_count);
   const accuracy =
@@ -154,6 +156,7 @@ export async function getGamificationData(
     accuracy,
     exactScoreRate,
     settledCount,
+    uniqueFixtures,
     currentStreak,
     bestRank
   );

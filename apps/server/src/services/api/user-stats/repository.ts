@@ -40,9 +40,11 @@ export async function findOverallStats(userId: number) {
       COUNT(gp.id)::int AS prediction_count,
       COUNT(gp.settled_at)::int AS settled_count,
       COUNT(CASE WHEN gp.winning_correct_score = true THEN 1 END)::int AS correct_score_count,
-      COUNT(CASE WHEN gp.winning_match_winner = true THEN 1 END)::int AS correct_outcome_count
+      COUNT(CASE WHEN gp.winning_match_winner = true AND gp.winning_correct_score = false THEN 1 END)::int AS correct_outcome_count,
+      COUNT(DISTINCT CASE WHEN gp.settled_at IS NOT NULL THEN gf.fixture_id END)::int AS unique_settled_fixtures
     FROM users u
     LEFT JOIN group_predictions gp ON gp.user_id = u.id
+    LEFT JOIN group_fixtures gf ON gf.id = gp.group_fixture_id AND gf.group_id = gp.group_id
     LEFT JOIN group_members gm ON gm.group_id = gp.group_id AND gm.user_id = gp.user_id AND gm.status = 'joined'::group_members_status
     WHERE u.id = ${userId}
       AND (gp.id IS NULL OR gm.id IS NOT NULL)
@@ -62,7 +64,7 @@ export async function findPerGroupStats(userId: number) {
       COUNT(gp.id)::int AS prediction_count,
       COUNT(gp.settled_at)::int AS settled_count,
       COUNT(CASE WHEN gp.winning_correct_score = true THEN 1 END)::int AS correct_score_count,
-      COUNT(CASE WHEN gp.winning_match_winner = true THEN 1 END)::int AS correct_outcome_count
+      COUNT(CASE WHEN gp.winning_match_winner = true AND gp.winning_correct_score = false THEN 1 END)::int AS correct_outcome_count
     FROM group_members gm
     JOIN groups g ON g.id = gm.group_id
     LEFT JOIN group_predictions gp ON gp.group_id = gm.group_id AND gp.user_id = gm.user_id

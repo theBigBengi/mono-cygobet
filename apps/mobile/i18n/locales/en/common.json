@@ -399,8 +399,8 @@
       "howCalculated": "How it's calculated:",
       "powerScore": {
         "title": "Power Score",
-        "description": "Your overall performance rating combining multiple factors into a single score from 0-100. A higher score indicates better prediction skills.",
-        "calculation": "35% Accuracy + 25% Exact Scores + 15% Volume + 15% Best Rank + 10% Current Streak"
+        "description": "Your overall performance rating from 0-100. The score builds up as you make more predictions — new users start low and climb as they prove their skills.",
+        "calculation": "30% Accuracy + 20% Exact Scores + 20% Match Volume + 20% Best Rank + 10% Current Streak. Accuracy, exact rate, and rank scale with experience."
       },
       "rankTier": {
         "title": "Rank Tier",

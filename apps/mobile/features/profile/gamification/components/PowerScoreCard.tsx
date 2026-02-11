@@ -43,7 +43,7 @@ export function PowerScoreCard({ score, onInfoPress }: PowerScoreCardProps) {
         <View
           style={[
             styles.progressFill,
-            { width: `${score}%`, backgroundColor: color },
+            { width: `${Math.min(score, 100)}%`, backgroundColor: color },
           ]}
         />
       </View>
