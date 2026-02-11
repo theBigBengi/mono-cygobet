@@ -2,6 +2,7 @@ import type {
   UpdatePrematchOddsJobMeta,
   UpcomingFixturesJobMeta,
   FinishedFixturesJobMeta,
+  RecoveryOverdueFixturesJobMeta,
 } from "@repo/types";
 
 /**
@@ -92,4 +93,16 @@ export function isFinishedFixturesJobMeta(
     typeof v["maxLiveAgeHours"] === "number" &&
     Number.isFinite(v["maxLiveAgeHours"])
   );
+}
+
+export function isRecoveryOverdueFixturesJobMeta(
+  v: unknown
+): v is RecoveryOverdueFixturesJobMeta {
+  if (!isPlainObject(v)) return false;
+  const { graceMinutes, maxOverdueHours } = v;
+  if (graceMinutes !== undefined && typeof graceMinutes !== "number")
+    return false;
+  if (maxOverdueHours !== undefined && typeof maxOverdueHours !== "number")
+    return false;
+  return true;
 }

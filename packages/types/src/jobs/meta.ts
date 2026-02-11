@@ -17,3 +17,8 @@ export type UpcomingFixturesJobMeta = {
 export type FinishedFixturesJobMeta = {
   maxLiveAgeHours: number;
 };
+
+export type RecoveryOverdueFixturesJobMeta = {
+  graceMinutes?: number;
+  maxOverdueHours?: number;
+};

@@ -20,6 +20,7 @@ import {
   UPDATE_PREMATCH_ODDS_JOB,
   SYNC_GROUP_FIXTURES_JOB,
   PREDICTION_REMINDERS_JOB,
+  RECOVERY_OVERDUE_FIXTURES_JOB,
 } from "./jobs.definitions";
 
 export type RunnableJobDefinition = {
@@ -66,23 +67,28 @@ const RUNNERS: Record<string, Runner> = {
       await import("./update-prematch-odds.job");
     return runUpdatePrematchOddsJob(fastify, opts);
   },
-  [/* cleanup-expired-sessions */ "cleanup-expired-sessions"]: async (fastify, opts) => {
-    const { runCleanupExpiredSessionsJob } = await import(
-      "./cleanup-expired-sessions.job"
-    );
+  [/* cleanup-expired-sessions */ "cleanup-expired-sessions"]: async (
+    fastify,
+    opts
+  ) => {
+    const { runCleanupExpiredSessionsJob } =
+      await import("./cleanup-expired-sessions.job");
     return runCleanupExpiredSessionsJob(fastify, opts);
   },
   [SYNC_GROUP_FIXTURES_JOB.key]: async (fastify, opts) => {
-    const { runSyncGroupFixturesJob } = await import(
-      "./sync-group-fixtures.job"
-    );
+    const { runSyncGroupFixturesJob } =
+      await import("./sync-group-fixtures.job");
     return runSyncGroupFixturesJob(fastify, opts);
   },
   [PREDICTION_REMINDERS_JOB.key]: async (fastify, opts) => {
-    const { runPredictionRemindersJob } = await import(
-      "./prediction-reminders.job"
-    );
+    const { runPredictionRemindersJob } =
+      await import("./prediction-reminders.job");
     return runPredictionRemindersJob(fastify, opts);
+  },
+  [RECOVERY_OVERDUE_FIXTURES_JOB.key]: async (fastify, opts) => {
+    const { runRecoveryOverdueFixturesJob } =
+      await import("./recovery-overdue-fixtures.job");
+    return runRecoveryOverdueFixturesJob(fastify, opts);
   },
 };
 
@@ -139,6 +145,12 @@ export const RUNNABLE_JOBS: RunnableJobDefinition[] = [
     description: PREDICTION_REMINDERS_JOB.description,
     scheduleCron: PREDICTION_REMINDERS_JOB.scheduleCron ?? null,
     run: RUNNERS[PREDICTION_REMINDERS_JOB.key]!,
+  },
+  {
+    key: RECOVERY_OVERDUE_FIXTURES_JOB.key,
+    description: RECOVERY_OVERDUE_FIXTURES_JOB.description,
+    scheduleCron: RECOVERY_OVERDUE_FIXTURES_JOB.scheduleCron ?? null,
+    run: RUNNERS[RECOVERY_OVERDUE_FIXTURES_JOB.key]!,
   },
 ];
 

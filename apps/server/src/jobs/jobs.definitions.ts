@@ -15,7 +15,10 @@
  * - Do NOT overwrite DB values on subsequent runs (admin can edit).
  */
 
-import { UpcomingFixturesJobMeta } from "@repo/types";
+import {
+  UpcomingFixturesJobMeta,
+  RecoveryOverdueFixturesJobMeta,
+} from "@repo/types";
 
 /**
  * JobDefinition
@@ -160,6 +163,25 @@ export const PREDICTION_REMINDERS_JOB = {
 } as const satisfies JobDefinition;
 
 /**
+ * RECOVERY_OVERDUE_FIXTURES_JOB
+ * -----------------------------
+ * Purpose: Recover fixtures stuck in NS state after their start time has passed.
+ * Handles cases where server was down during match or live-fixtures job missed transitions.
+ */
+export const RECOVERY_OVERDUE_FIXTURES_JOB = {
+  key: "recovery-overdue-fixtures",
+  description:
+    "Recover fixtures stuck in NS state after their start time passed",
+  enabled: true,
+  // Every hour at minute 45 (offset from other jobs).
+  scheduleCron: "45 * * * *",
+  meta: {
+    graceMinutes: 30, // Don't fetch fixtures that just started
+    maxOverdueHours: 48, // Don't try to recover very old fixtures
+  } satisfies RecoveryOverdueFixturesJobMeta,
+} as const satisfies JobDefinition;
+
+/**
  * JOB_DEFINITIONS
  * --------------
  * List of all “known jobs” and their default DB config.
@@ -175,6 +197,7 @@ export const JOB_DEFINITIONS = [
   CLEANUP_EXPIRED_SESSIONS_JOB,
   SYNC_GROUP_FIXTURES_JOB,
   PREDICTION_REMINDERS_JOB,
+  RECOVERY_OVERDUE_FIXTURES_JOB,
 ] as const satisfies readonly JobDefinition[];
 
 export type JobKey = (typeof JOB_DEFINITIONS)[number]["key"];
