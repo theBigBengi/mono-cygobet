@@ -1,10 +1,9 @@
 // components/FloatingTabBar.tsx
-// Custom floating tab bar with blur effect and rounded corners
+// Standard docked bottom tab bar with icons and labels
 
 import React, { useMemo } from "react";
-import { View, StyleSheet, Platform } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAtomValue } from "jotai";
 import { useTheme } from "@/lib/theme";
@@ -19,10 +18,8 @@ export function FloatingTabBar({
   descriptors,
   navigation,
 }: BottomTabBarProps) {
-  const { theme, colorScheme } = useTheme();
-  const isDark = colorScheme === "dark";
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const bottomOffset = Platform.OS === "android" ? Math.max(insets.bottom, 20) + 10 : 30;
   const badge = useAtomValue(tabBarBadgeAtom);
   const { data: groupsData } = useMyGroupsQuery();
   const { data: unreadData } = useUnreadCountsQuery();
@@ -48,103 +45,100 @@ export function FloatingTabBar({
   const countNumber = badge.count;
 
   return (
-    <View style={[styles.container, { bottom: bottomOffset }]} pointerEvents="box-none">
-      <View
-        style={[
-          styles.tabBar,
-          {
-            borderRadius: 99,
-            borderColor: theme.colors.border,
-          },
-        ]}
-        pointerEvents="box-none"
-      >
-        <BlurView
-          intensity={80}
-          tint={isDark ? "dark" : "light"}
-          style={[
-            StyleSheet.absoluteFill,
-            Platform.OS === "android" && {
-              backgroundColor: isDark ? "rgba(30, 30, 30, 0.95)" : "rgba(255, 255, 255, 0.95)",
-            },
-          ]}
-          pointerEvents="none"
-        />
-        <View style={styles.content}>
-          {state.routes.map((route, index) => {
-            const { options } = descriptors[route.key];
-            const isFocused = state.index === index;
+    <View
+      style={[
+        styles.container,
+        {
+          borderTopColor: theme.colors.border,
+          backgroundColor: theme.colors.surface,
+          paddingBottom: insets.bottom,
+        },
+      ]}
+      pointerEvents="box-none"
+    >
+      <View style={styles.content} pointerEvents="box-none">
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const isFocused = state.index === index;
 
-            const onPress = () => {
-              // Special handling for home tab when there's a selection
-              if (route.name === "home" && hasSelection) {
-                // If we're already on home tab, trigger the badge action
-                if (isFocused) {
-                  badge.onActiveTap?.();
-                  return;
-                }
-                // If we're not on home tab, navigate to home first
-                // (normal navigation will happen below)
+          const onPress = () => {
+            // Special handling for home tab when there's a selection
+            if (route.name === "home" && hasSelection) {
+              // If we're already on home tab, trigger the badge action
+              if (isFocused) {
+                badge.onActiveTap?.();
+                return;
               }
+              // If we're not on home tab, navigate to home first
+              // (normal navigation will happen below)
+            }
 
-              const event = navigation.emit({
-                type: "tabPress",
-                target: route.key,
-                canPreventDefault: true,
-              });
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
 
-              if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name, route.params);
-              }
-            };
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name, route.params);
+            }
+          };
 
-            const onLongPress = () => {
-              navigation.emit({
-                type: "tabLongPress",
-                target: route.key,
-              });
-            };
+          const onLongPress = () => {
+            navigation.emit({
+              type: "tabLongPress",
+              target: route.key,
+            });
+          };
 
-            const color = isFocused
-              ? theme.colors.primary
-              : theme.colors.textSecondary;
+          const color = isFocused
+            ? theme.colors.primary
+            : theme.colors.textSecondary;
 
-            const iconName =
-              route.name === "home"
-                ? "add"
-                : route.name === "groups"
+          const label =
+            options.tabBarLabel !== undefined
+              ? typeof options.tabBarLabel === "string"
+                ? options.tabBarLabel
+                : (options.title ?? route.name)
+              : (options.title ?? route.name);
+
+          const iconName =
+            route.name === "home"
+              ? "add"
+              : route.name === "groups"
+                ? isFocused
+                  ? "people"
+                  : "people-outline"
+                : route.name === "activity"
                   ? isFocused
-                    ? "people"
-                    : "people-outline"
-                  : route.name === "activity"
+                    ? "flash"
+                    : "flash-outline"
+                  : route.name === "profile"
                     ? isFocused
-                      ? "flash"
-                      : "flash-outline"
-                    : route.name === "profile"
+                      ? "person"
+                      : "person-outline"
+                    : route.name === "settings"
                       ? isFocused
-                        ? "person"
-                        : "person-outline"
-                      : route.name === "settings"
-                        ? isFocused
-                          ? "settings"
-                          : "settings-outline"
-                        : null;
+                        ? "settings"
+                        : "settings-outline"
+                      : null;
 
-            // Special rendering for home tab with selection
-            const showBadge = route.name === "home" && hasSelection;
+          // Special rendering for home tab with selection
+          const showBadge = route.name === "home" && hasSelection;
 
-            return (
-              <HapticTab
-                key={route.key}
-                accessibilityRole="button"
-                accessibilityState={isFocused ? { selected: true } : {}}
-                accessibilityLabel={options.tabBarAccessibilityLabel}
-                onPress={onPress}
-                onLongPress={onLongPress}
-                style={styles.tab}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <View style={styles.tabContent} pointerEvents="box-none">
+          return (
+            <HapticTab
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              accessibilityLabel={options.tabBarAccessibilityLabel}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={styles.tab}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <View style={styles.tabContent} pointerEvents="box-none">
+                <View style={styles.tabIconRow}>
                   {showBadge ? (
                     <View
                       style={[
@@ -168,15 +162,9 @@ export function FloatingTabBar({
                         {countNumber}
                       </AppText>
                     </View>
-                  ) : (
-                    iconName && (
-                      <Ionicons
-                        name={iconName as any}
-                        size={24}
-                        color={color}
-                      />
-                    )
-                  )}
+                  ) : iconName ? (
+                    <Ionicons name={iconName as any} size={24} color={color} />
+                  ) : null}
                   {route.name === "groups" && groupsNeedAttention && (
                     <View style={styles.attentionDot} pointerEvents="none" />
                   )}
@@ -208,10 +196,13 @@ export function FloatingTabBar({
                     </View>
                   )}
                 </View>
-              </HapticTab>
-            );
-          })}
-        </View>
+                <AppText numberOfLines={1} style={[styles.tabLabel, { color }]}>
+                  {label}
+                </AppText>
+              </View>
+            </HapticTab>
+          );
+        })}
       </View>
     </View>
   );
@@ -219,43 +210,35 @@ export function FloatingTabBar({
 
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
-    left: 32,
-    right: 32,
-    alignItems: "center",
-    zIndex: 1000,
-    // Shadow for iOS
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    // Elevation for Android
-    elevation: 10,
-  },
-  tabBar: {
-    overflow: "hidden",
-    borderWidth: 1,
     width: "100%",
-    minHeight: 56,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   content: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    // paddingVertical: 8,
     paddingHorizontal: 0,
+    paddingTop: 8,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 56,
     paddingVertical: 8,
   },
   tabContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  tabIconRow: {
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: "600",
   },
   attentionDot: {
     position: "absolute",
