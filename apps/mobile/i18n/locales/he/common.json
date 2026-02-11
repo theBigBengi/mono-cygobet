@@ -6,6 +6,9 @@
     "profile": "פרופיל",
     "settings": "הגדרות"
   },
+  "dates": {
+    "today": "היום"
+  },
   "activity": {
     "empty": "עדיין אין פעילות",
     "emptySubtitle": "אירועים מהקבוצות שלך יופיעו כאן",

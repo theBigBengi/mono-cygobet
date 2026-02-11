@@ -18,12 +18,11 @@ import {
   useIsGroupGameSelected,
   useToggleGroupGame,
 } from "@/features/group-creation/selection/games";
-import { groupFixturesByLeagueAndDate } from "@/utils/fixture";
-import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
+import { groupFixturesByLeague } from "@/utils/fixture";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
 import { useFixtureFilters } from "@/features/group-creation/filters/useFixtureFilters";
-import { DateChips } from "@/features/group-creation/filters/DateChips";
 import { FilterDrawer } from "@/features/group-creation/filters/FilterDrawer";
+import { DateSlider } from "./DateSlider";
 
 function GameFixtureCardWithSelection({
   fixture,
@@ -61,15 +60,21 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
   const toggleGroupGame = useToggleGroupGame();
   const filters = useFixtureFilters();
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
 
-  const mergedParams = useMemo(
-    () => ({
+  const mergedParams = useMemo(() => {
+    const start = new Date(selectedDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(selectedDate);
+    end.setHours(23, 59, 59, 999);
+    return {
       ...(queryParams ?? {}),
       ...filters.queryParams,
+      from: start.toISOString(),
+      to: end.toISOString(),
       page: 1,
-    }),
-    [queryParams, filters.queryParams]
-  );
+    };
+  }, [queryParams, filters.queryParams, selectedDate]);
 
   const { data, isLoading, error, refetch } =
     useUpcomingFixturesQuery(mergedParams);
@@ -84,9 +89,9 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
     }
   }, [refetch]);
 
-  const leagueDateGroups = useMemo(() => {
+  const leagueGroups = useMemo(() => {
     const fixtures = (data?.data || []) as FixtureItem[];
-    return groupFixturesByLeagueAndDate(fixtures);
+    return groupFixturesByLeague(fixtures);
   }, [data?.data]);
 
   return (
@@ -108,12 +113,10 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         }
       >
         {tabs}
-        {/* <DateChips
-          selected={filters.dateRange}
-          onSelect={filters.setDateRange}
-          activeFilterCount={filters.activeFilterCount}
-          onOpenFilters={() => setDrawerVisible(true)}
-        /> */}
+        <DateSlider
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+        />
         {isLoading && (
           <AppText variant="body" color="secondary" style={styles.message}>
             Loading games…
@@ -126,21 +129,34 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           </AppText>
         )}
 
-        {!isLoading && !error && leagueDateGroups.length === 0 && (
+        {!isLoading && !error && leagueGroups.length === 0 && (
           <AppText variant="body" color="secondary" style={styles.message}>
             {t("fixtures.noUpcomingGames")}
           </AppText>
         )}
 
-        {!isLoading && !error && leagueDateGroups.length > 0 && (
+        {!isLoading && !error && leagueGroups.length > 0 && (
           <>
-            {leagueDateGroups.map((group) => (
-              <LeagueDateGroupSection
-                key={group.key}
-                leagueName={group.leagueName}
-                dateKey={group.dateKey}
-                kickoffIso={group.kickoffIso}
-              >
+            {leagueGroups.map((group) => (
+              <View key={group.key} style={styles.leagueSection}>
+                <View style={styles.leagueHeader}>
+                  <AppText
+                    variant="caption"
+                    color="secondary"
+                    style={styles.leagueName}
+                  >
+                    {group.leagueName}
+                  </AppText>
+                  {group.countryName && (
+                    <AppText
+                      variant="caption"
+                      color="secondary"
+                      style={styles.countryName}
+                    >
+                      {group.countryName}
+                    </AppText>
+                  )}
+                </View>
                 <View style={styles.groupCardContainer}>
                   {group.fixtures.map((fixture, index) => {
                     const isFirst = index === 0;
@@ -164,7 +180,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
                     );
                   })}
                 </View>
-              </LeagueDateGroupSection>
+              </View>
             ))}
           </>
         )}
@@ -196,9 +212,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    // paddingTop: 8,
-    // paddingHorizontal: 8,
-    // paddingBottom: 100,
+    paddingBottom: 100,
+  },
+  leagueSection: {
+    marginTop: 0,
+  },
+  leagueHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  leagueName: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  countryName: {
+    fontSize: 11,
+    marginTop: 2,
   },
   groupCardContainer: {},
 });

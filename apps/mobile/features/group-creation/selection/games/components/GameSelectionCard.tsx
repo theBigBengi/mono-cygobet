@@ -33,24 +33,7 @@ export function GameSelectionCard({
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
 
   // Calculate card radius style based on position in group
-  const cardRadiusStyle =
-    positionInGroup === "single"
-      ? { borderRadius: 16 }
-      : positionInGroup === "top"
-        ? {
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            borderBottomLeftRadius: 0,
-            borderBottomRightRadius: 0,
-          }
-        : positionInGroup === "bottom"
-          ? {
-              borderTopLeftRadius: 0,
-              borderTopRightRadius: 0,
-              borderBottomLeftRadius: 16,
-              borderBottomRightRadius: 16,
-            }
-          : { borderRadius: 0 };
+  const cardRadiusStyle = { borderRadius: 0 };
 
   const cardBorderStyle =
     positionInGroup === "middle" || positionInGroup === "bottom"

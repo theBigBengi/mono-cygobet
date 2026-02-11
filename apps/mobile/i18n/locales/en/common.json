@@ -6,6 +6,9 @@
     "profile": "Profile",
     "settings": "Settings"
   },
+  "dates": {
+    "today": "TODAY"
+  },
   "activity": {
     "empty": "No activity yet",
     "emptySubtitle": "Events from your groups will appear here",
