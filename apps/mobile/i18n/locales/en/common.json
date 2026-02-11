@@ -511,6 +511,8 @@
     "games": "Games",
     "leagues": "Competitions",
     "teams": "Teams",
+    "addAll": "Add all",
+    "removeAll": "Remove all",
     "selectedGames": "Selected Games",
     "selectedLeague": "Selected Competition",
     "selectedTeams": "Selected Teams",

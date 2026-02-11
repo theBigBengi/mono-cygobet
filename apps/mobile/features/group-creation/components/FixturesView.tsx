@@ -8,7 +8,10 @@ import {
   ScrollView,
   RefreshControl,
   Platform,
+  Pressable,
+  ActivityIndicator,
 } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiUpcomingFixturesQuery } from "@repo/types";
@@ -17,6 +20,9 @@ import { GameSelectionCard } from "@/features/group-creation/selection/games";
 import {
   useIsGroupGameSelected,
   useToggleGroupGame,
+  useAddMultipleGroupGames,
+  useRemoveMultipleGroupGames,
+  useAreAllGamesSelected,
 } from "@/features/group-creation/selection/games";
 import { groupFixturesByLeague } from "@/utils/fixture";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
@@ -46,6 +52,56 @@ function GameFixtureCardWithSelection({
       onPress={handlePress}
       positionInGroup={positionInGroup}
     />
+  );
+}
+
+function LeagueAddRemoveButton({ fixtures }: { fixtures: FixtureItem[] }) {
+  const { t } = useTranslation("common");
+  const { theme } = useTheme();
+  const addMultipleGroupGames = useAddMultipleGroupGames();
+  const removeMultipleGroupGames = useRemoveMultipleGroupGames();
+
+  const fixtureIds = useMemo(() => fixtures.map((f) => f.id), [fixtures]);
+  const allSelected = useAreAllGamesSelected(fixtureIds);
+
+  // Don't show button if only one game
+  if (fixtures.length <= 1) {
+    return null;
+  }
+
+  const handlePress = () => {
+    if (allSelected) {
+      removeMultipleGroupGames(fixtureIds);
+    } else {
+      addMultipleGroupGames(
+        fixtures.map((f) => ({ fixtureId: f.id, gameData: f }))
+      );
+    }
+  };
+
+  return (
+    <Pressable
+      onPress={handlePress}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      style={({ pressed }) => [
+        styles.addAllButton,
+        {
+          opacity: pressed ? 0.5 : 1,
+          borderColor: theme.colors.border,
+        },
+      ]}
+    >
+      <MaterialIcons
+        name={allSelected ? "remove" : "add"}
+        size={16}
+        color={theme.colors.textSecondary}
+      />
+      <AppText variant="caption" color="secondary" style={styles.addAllText}>
+        {allSelected
+          ? t("groupCreation.removeAll")
+          : t("groupCreation.addAll")}
+      </AppText>
+    </Pressable>
   );
 }
 
@@ -100,7 +156,10 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
     >
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isLoading && styles.scrollContentLoading,
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -118,9 +177,9 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           onDateChange={setSelectedDate}
         />
         {isLoading && (
-          <AppText variant="body" color="secondary" style={styles.message}>
-            Loading games…
-          </AppText>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
         )}
 
         {error && (
@@ -140,22 +199,25 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
             {leagueGroups.map((group) => (
               <View key={group.key} style={styles.leagueSection}>
                 <View style={styles.leagueHeader}>
-                  <AppText
-                    variant="caption"
-                    color="secondary"
-                    style={styles.leagueName}
-                  >
-                    {group.leagueName}
-                  </AppText>
-                  {group.countryName && (
+                  <View style={styles.leagueInfo}>
                     <AppText
                       variant="caption"
                       color="secondary"
-                      style={styles.countryName}
+                      style={styles.leagueName}
                     >
-                      {group.countryName}
+                      {group.leagueName}
                     </AppText>
-                  )}
+                    {group.countryName && (
+                      <AppText
+                        variant="caption"
+                        color="secondary"
+                        style={styles.countryName}
+                      >
+                        {group.countryName}
+                      </AppText>
+                    )}
+                  </View>
+                  <LeagueAddRemoveButton fixtures={group.fixtures} />
                 </View>
                 <View style={styles.groupCardContainer}>
                   {group.fixtures.map((fixture, index) => {
@@ -208,18 +270,32 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingHorizontal: 16,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingBottom: 100,
   },
+  scrollContentLoading: {
+    flexGrow: 1,
+  },
   leagueSection: {
     marginTop: 0,
   },
   leagueHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 8,
+  },
+  leagueInfo: {
+    flex: 1,
   },
   leagueName: {
     fontSize: 13,
@@ -228,6 +304,18 @@ const styles = StyleSheet.create({
   countryName: {
     fontSize: 11,
     marginTop: 2,
+  },
+  addAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderRadius: 4,
+  },
+  addAllText: {
+    fontSize: 11,
+    marginStart: 2,
   },
   groupCardContainer: {},
 });

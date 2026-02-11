@@ -5,8 +5,9 @@
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Card } from "@/components/ui";
+import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { formatKickoffTime } from "@/utils/fixture";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { TeamRow } from "@/features/groups/predictions/components/TeamRow";
 import { SelectionToggleButton } from "../../../components/SelectionToggleButton";
@@ -54,6 +55,14 @@ export function GameSelectionCard({
         ]}
       >
         <View style={styles.matchContent}>
+          <View style={styles.timeContainer}>
+            <AppText
+              variant="caption"
+              style={[styles.timeText, { color: theme.colors.textSecondary }]}
+            >
+              {formatKickoffTime(fixture.kickoffAt)}
+            </AppText>
+          </View>
           <View style={styles.rowsContainer}>
             <TeamRow
               team={fixture.homeTeam}
@@ -81,13 +90,22 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   matchCard: {
-    // marginHorizontal: 4,
     marginBottom: 0,
     paddingVertical: 8,
   },
   matchContent: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  timeContainer: {
+    justifyContent: "center",
+    alignItems: "flex-start",
+    marginStart: -4,
+    marginEnd: 16,
+  },
+  timeText: {
+    fontSize: 12,
+    fontWeight: "500",
   },
   rowsContainer: {
     flex: 1,

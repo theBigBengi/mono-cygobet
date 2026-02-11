@@ -5,6 +5,9 @@ export { bootstrapGroupGames } from "./bootstrap";
 export {
   useIsGroupGameSelected,
   useToggleGroupGame,
+  useAddMultipleGroupGames,
+  useRemoveMultipleGroupGames,
+  useAreAllGamesSelected,
   useSelectedGroupGames,
   useClearGroupGamesHook,
   useGroupGamesHydrated,

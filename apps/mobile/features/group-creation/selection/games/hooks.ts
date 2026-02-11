@@ -14,6 +14,8 @@ import {
 import {
   toggleGroupGame,
   clearSelectedGroupGames,
+  addMultipleGroupGames,
+  removeMultipleGroupGames,
 } from "./actions";
 import type { FixtureId } from "./types";
 
@@ -41,6 +43,37 @@ export function useIsGroupGameSelected(fixtureId: FixtureId): boolean {
  */
 export function useToggleGroupGame() {
   return toggleGroupGame;
+}
+
+/**
+ * Get add multiple games function
+ * Used for "Add All" functionality
+ */
+export function useAddMultipleGroupGames() {
+  return addMultipleGroupGames;
+}
+
+/**
+ * Get remove multiple games function
+ * Used for "Remove All" functionality
+ */
+export function useRemoveMultipleGroupGames() {
+  return removeMultipleGroupGames;
+}
+
+/**
+ * Check if all games in a list are selected
+ * Used for "Add All" / "Remove All" toggle
+ */
+export function useAreAllGamesSelected(fixtureIds: FixtureId[]): boolean {
+  const state = useAtomValue(selectedGroupGamesAtom);
+  const hydrated = useAtomValue(groupGamesHydratedAtom);
+
+  if (!hydrated || fixtureIds.length === 0) {
+    return false;
+  }
+
+  return fixtureIds.every((id) => !!state.games[String(id)]);
 }
 
 /**
