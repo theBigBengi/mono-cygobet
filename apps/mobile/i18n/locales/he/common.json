@@ -639,5 +639,55 @@
     "selectionSummaryTeams": "קבוצות",
     "selectionSummaryTeamsSelected": "קבוצות נבחרו",
     "selectionSummaryTeamsCount": "{{count}} קבוצות"
+  },
+  "groupInfo": {
+    "title": "חוקי הקבוצה",
+    "general": "מידע כללי",
+    "status": "מצב",
+    "members": "משתתפים",
+    "privacy": "פרטיות",
+    "predictionType": "סוג הניחושים",
+    "predictionMode": "מצב",
+    "selectionMode": "בחירת משחקים",
+    "scoring": "ניקוד",
+    "exactScore": "תוצאה מדויקת",
+    "correctDiff": "הפרש נכון",
+    "correctOutcome": "תוצאה נכונה",
+    "points": "נקודות",
+    "point": "נקודה",
+    "koRounds": "משחקי נוק-אאוט",
+    "countUntil": "נספר עד",
+    "90min": "90 דקות",
+    "extraTime": "הארכה",
+    "penalties": "פנדלים",
+    "explanation": "הסבר",
+    "rules": {
+      "correctScoreMode": "בקבוצה זו מנחשים תוצאה מדויקת.",
+      "matchWinnerMode": "בקבוצה זו מנחשים מי ינצח (1/X/2).",
+      "scoring": "ניחוש מדויק מזכה ב-{{exact}} נקודות, הפרש נכון ב-{{diff}} נקודות, ותוצאה נכונה ב-{{outcome}} נקודה.",
+      "leaguesMode": "המשחקים נבחרים אוטומטית לפי ליגות.",
+      "teamsMode": "המשחקים נבחרים אוטומטית לפי קבוצות.",
+      "gamesMode": "המשחקים נבחרים ידנית.",
+      "koPenalties": "במשחקי נוק-אאוט, התוצאה נספרת כולל פנדלים.",
+      "koExtraTime": "במשחקי נוק-אאוט, התוצאה נספרת כולל הארכה."
+    },
+    "statusValues": {
+      "draft": "טיוטה",
+      "active": "פעילה",
+      "ended": "הסתיימה"
+    },
+    "privacyValues": {
+      "private": "פרטית",
+      "public": "ציבורית"
+    },
+    "selectionValues": {
+      "games": "ידנית",
+      "teams": "לפי קבוצות",
+      "leagues": "לפי ליגות"
+    },
+    "predictionModeLabels": {
+      "CorrectScore": "תוצאה מדויקת",
+      "MatchWinner": "1/X/2"
+    }
   }
 }

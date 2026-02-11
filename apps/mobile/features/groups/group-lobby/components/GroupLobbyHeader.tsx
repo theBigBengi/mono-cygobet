@@ -2,8 +2,9 @@
 // Group header for lobby screen - displays avatar, name, and stats.
 
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiGroupStatus } from "@repo/types";
@@ -16,6 +17,8 @@ interface GroupLobbyHeaderProps {
   compact?: boolean;
   /** Future: group image URL */
   image?: string | null;
+  /** When provided, shows info icon next to name; onPress opens group info sheet */
+  onInfoPress?: () => void;
 }
 
 function getInitials(name: string): string {
@@ -33,6 +36,7 @@ export function GroupLobbyHeader({
   status,
   compact = false,
   image: _image,
+  onInfoPress,
 }: GroupLobbyHeaderProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -74,14 +78,29 @@ export function GroupLobbyHeader({
         </AppText>
       </View>
 
-      <AppText
-        variant="title"
-        style={[styles.name, compact && styles.nameCompact]}
-        numberOfLines={2}
-        ellipsizeMode="tail"
-      >
-        {name}
-      </AppText>
+      <View style={styles.nameRow}>
+        <AppText
+          variant="title"
+          style={[styles.name, compact && styles.nameCompact]}
+          numberOfLines={2}
+          ellipsizeMode="tail"
+        >
+          {name}
+        </AppText>
+        {onInfoPress && (
+          <Pressable
+            onPress={onInfoPress}
+            hitSlop={8}
+            style={({ pressed }) => [pressed && styles.iconPressed]}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={22}
+              color={theme.colors.textSecondary}
+            />
+          </Pressable>
+        )}
+      </View>
 
       <View style={styles.metaRow}>
         {memberCount != null && memberCount > 0 && (
@@ -145,10 +164,19 @@ const styles = StyleSheet.create({
   initialsCompact: {
     fontSize: 22,
   },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginBottom: 4,
+  },
   name: {
     fontWeight: "700",
     textAlign: "center",
-    marginBottom: 4,
+  },
+  iconPressed: {
+    opacity: 0.6,
   },
   nameCompact: {
     marginBottom: 2,

@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, TextInput } from "react-native";
 import { useRouter } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { Screen, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
@@ -34,6 +34,7 @@ import { useGroupLobbyState } from "../hooks/useGroupLobbyState";
 import { useGroupLobbyActions } from "../hooks/useGroupLobbyActions";
 import { useGroupDuration } from "../hooks/useGroupDuration";
 import { useAutoSaveDraft } from "../hooks/useAutoSaveDraft";
+import { GroupInfoSheet } from "../components/GroupInfoSheet";
 import type { FixtureItem } from "../types";
 import { formatDate } from "@/utils/date";
 import {
@@ -58,6 +59,8 @@ interface GroupLobbyDraftScreenProps {
   onPublishStart?: () => void;
   /** Called when publish fails (e.g. to hide overlay and show error) */
   onPublishError?: () => void;
+  /** When true, GroupInfoSheet shows skeleton (e.g. during background refetch) */
+  isLoading?: boolean;
 }
 
 /**
@@ -206,6 +209,8 @@ export function GroupLobbyDraftScreen({
   const koSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const maxMembersSheetRef =
     useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const infoSheetRef =
+    useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
   const scoringValueDisplay =
     predictionMode === "result"
@@ -281,6 +286,17 @@ export function GroupLobbyDraftScreen({
                 {draftName}
               </AppText>
             )}
+            <Pressable
+              onPress={() => infoSheetRef.current?.present()}
+              hitSlop={8}
+              style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+            >
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={theme.colors.textSecondary}
+              />
+            </Pressable>
           </View>
           {(isCreator && isEditable) || draftDescription ? (
             <View style={styles.descriptionRow}>
@@ -491,6 +507,12 @@ export function GroupLobbyDraftScreen({
         </SettingsSection>
       </Screen>
 
+      <GroupInfoSheet
+        group={group}
+        sheetRef={infoSheetRef}
+        isLoading={isLoading}
+      />
+
       {isCreator && (
         <>
           <SettingsRowBottomSheet.Sheet<PredictionMode>
@@ -585,15 +607,19 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
   },
   nameInput: {
+    flex: 1,
     fontSize: 16,
     padding: 0,
   },
   groupName: {
+    flex: 1,
     fontWeight: "500",
   },
   descriptionRow: {

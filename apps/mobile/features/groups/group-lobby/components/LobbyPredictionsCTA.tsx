@@ -20,6 +20,7 @@ export interface LobbyPredictionsCTAProps {
   totalFixtures: number;
   onPress: () => void;
   nextGame?: LobbyPredictionsCTANextGame | null;
+  isLoading?: boolean;
 }
 
 const LOGO_SIZE = 40;

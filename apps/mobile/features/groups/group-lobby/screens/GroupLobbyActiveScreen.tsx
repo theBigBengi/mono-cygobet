@@ -1,8 +1,9 @@
 // features/groups/group-lobby/screens/GroupLobbyActiveScreen.tsx
 // Active state screen for group lobby - Clean & Minimal layout.
 
-import React from "react";
+import React, { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/ui";
@@ -14,6 +15,7 @@ import {
 import type { ApiGroupItem } from "@repo/types";
 import type { FixtureItem } from "../types";
 import { GroupLobbyHeader } from "../components/GroupLobbyHeader";
+import { GroupInfoSheet } from "../components/GroupInfoSheet";
 import { LobbyPredictionsCTA } from "../components/LobbyPredictionsCTA";
 import { LobbyQuickActions } from "../components/LobbyQuickActions";
 import { LobbyLeaderboard } from "../components/LobbyLeaderboard";
@@ -22,15 +24,19 @@ interface GroupLobbyActiveScreenProps {
   group: ApiGroupItem;
   onRefresh: () => Promise<void>;
   isCreator: boolean;
+  isLoading?: boolean;
 }
 
 export function GroupLobbyActiveScreen({
   group,
   onRefresh,
   isCreator,
+  isLoading,
 }: GroupLobbyActiveScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
+  const infoSheetRef =
+    useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const { user } = useAuth();
   const { data: rankingData, isLoading: isRankingLoading } =
     useGroupRankingQuery(group.id);
@@ -128,6 +134,7 @@ export function GroupLobbyActiveScreen({
           memberCount={group.memberCount}
           status="active"
           compact
+          onInfoPress={() => infoSheetRef.current?.present()}
         />
 
         <LobbyPredictionsCTA
@@ -147,6 +154,11 @@ export function GroupLobbyActiveScreen({
           onPress={handleViewRanking}
         />
       </Screen>
+      <GroupInfoSheet
+        group={group}
+        sheetRef={infoSheetRef}
+        isLoading={isLoading}
+      />
     </View>
   );
 }

@@ -9,7 +9,13 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSetAtom } from "jotai";
-import { View, StyleSheet, Alert, ActivityIndicator, Platform } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
 import { BlurView } from "expo-blur";
 import { Screen, AppText } from "@/components/ui";
 import { useGroupQuery, useDeleteGroupMutation } from "@/domains/groups";
@@ -53,6 +59,7 @@ function GroupLobbyContent() {
   const {
     data,
     isLoading,
+    isFetching,
     error,
     refetch: refetchGroup,
   } = useGroupQuery(groupId, { includeFixtures: true });
@@ -172,6 +179,7 @@ function GroupLobbyContent() {
           group={group}
           onRefresh={handleRefresh}
           isCreator={isCreator}
+          isLoading={isFetching}
         />
       </LobbyWithHeader>
     );
@@ -188,6 +196,7 @@ function GroupLobbyContent() {
           isCreator={isCreator}
           onPublishStart={handlePublishStart}
           onPublishError={handlePublishError}
+          isLoading={isFetching}
         />
       </LobbyWithHeader>
     );
@@ -203,6 +212,7 @@ function GroupLobbyContent() {
           group={group}
           onRefresh={handleRefresh}
           isCreator={isCreator}
+          isLoading={isFetching}
         />
       </LobbyWithHeader>
     );
@@ -232,7 +242,9 @@ function GroupLobbyContent() {
             style={[
               StyleSheet.absoluteFill,
               Platform.OS === "android" && {
-                backgroundColor: isDark ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 255, 255, 0.85)",
+                backgroundColor: isDark
+                  ? "rgba(0, 0, 0, 0.85)"
+                  : "rgba(255, 255, 255, 0.85)",
               },
             ]}
           />

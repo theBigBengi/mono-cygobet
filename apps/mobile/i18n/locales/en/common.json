@@ -642,5 +642,55 @@
     "selectionSummaryTeams": "Teams",
     "selectionSummaryTeamsSelected": "Teams selected",
     "selectionSummaryTeamsCount": "{{count}} teams"
+  },
+  "groupInfo": {
+    "title": "Group Rules",
+    "general": "General Info",
+    "status": "Status",
+    "members": "Members",
+    "privacy": "Privacy",
+    "predictionType": "Prediction Type",
+    "predictionMode": "Mode",
+    "selectionMode": "Game Selection",
+    "scoring": "Scoring",
+    "exactScore": "Exact Score",
+    "correctDiff": "Correct Difference",
+    "correctOutcome": "Correct Outcome",
+    "points": "points",
+    "point": "point",
+    "koRounds": "Knockout Rounds",
+    "countUntil": "Count until",
+    "90min": "90 minutes",
+    "extraTime": "Extra time",
+    "penalties": "Penalties",
+    "explanation": "Explanation",
+    "rules": {
+      "correctScoreMode": "In this group you predict exact scores.",
+      "matchWinnerMode": "In this group you predict the winner (1/X/2).",
+      "scoring": "Exact score gives {{exact}} points, correct difference {{diff}} points, and correct outcome {{outcome}} point.",
+      "leaguesMode": "Games are automatically selected by leagues.",
+      "teamsMode": "Games are automatically selected by teams.",
+      "gamesMode": "Games are manually selected.",
+      "koPenalties": "In knockout rounds, the result includes penalties.",
+      "koExtraTime": "In knockout rounds, the result includes extra time."
+    },
+    "statusValues": {
+      "draft": "Draft",
+      "active": "Active",
+      "ended": "Ended"
+    },
+    "privacyValues": {
+      "private": "Private",
+      "public": "Public"
+    },
+    "selectionValues": {
+      "games": "Manual",
+      "teams": "By Teams",
+      "leagues": "By Leagues"
+    },
+    "predictionModeLabels": {
+      "CorrectScore": "Exact Score",
+      "MatchWinner": "1/X/2"
+    }
   }
 }

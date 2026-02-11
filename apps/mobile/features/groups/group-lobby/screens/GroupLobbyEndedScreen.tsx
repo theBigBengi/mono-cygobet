@@ -3,14 +3,16 @@
 // Shows group ended banner, ranking, fixtures with final scores, and predictions overview.
 // Read-only; no invite section or prediction editing.
 
-import React from "react";
+import React, { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
 import { useGroupRankingQuery, useUnreadCountsQuery } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
 import { GroupLobbyHeader } from "../components/GroupLobbyHeader";
+import { GroupInfoSheet } from "../components/GroupInfoSheet";
 import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSection";
 import { useGroupDuration } from "../hooks/useGroupDuration";
 import type { FixtureItem } from "../types";
@@ -21,6 +23,7 @@ interface GroupLobbyEndedScreenProps {
   group: ApiGroupItem;
   onRefresh: () => Promise<void>;
   isCreator: boolean;
+  isLoading?: boolean;
 }
 
 /**
@@ -34,9 +37,12 @@ export function GroupLobbyEndedScreen({
   group,
   onRefresh,
   isCreator,
+  isLoading,
 }: GroupLobbyEndedScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
+  const infoSheetRef =
+    useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const { data: rankingData } = useGroupRankingQuery(group.id);
   const { data: unreadData } = useUnreadCountsQuery();
   const chatUnreadCount = unreadData?.data?.[String(group.id)] ?? 0;
@@ -80,6 +86,7 @@ export function GroupLobbyEndedScreen({
           name={group.name}
           memberCount={group.memberCount}
           status="ended"
+          onInfoPress={() => infoSheetRef.current?.present()}
         />
 
         {/* Group Ended Banner */}
@@ -151,6 +158,11 @@ export function GroupLobbyEndedScreen({
           onPress={handleOpenSettings}
         />
       </Screen>
+      <GroupInfoSheet
+        group={group}
+        sheetRef={infoSheetRef}
+        isLoading={isLoading}
+      />
     </View>
   );
 }
