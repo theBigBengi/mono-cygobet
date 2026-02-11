@@ -1,7 +1,6 @@
 // features/group-creation/components/SelectionModeTabs.tsx
 // 3-way mode selector for group creation: Upcoming games | Leagues | Teams.
-// Pill-shaped tabs (like reference): unselected = white + primary border + primary text; selected = primary fill + white text.
-// Layout: full-width row, equal-width pills, fixed height bar.
+// Text tabs with underline indicator: selected = primary text + underline; unselected = secondary text.
 
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -36,14 +35,7 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
               onPress={() => onChange(m.value)}
               style={({ pressed }) => [
                 styles.tab,
-                {
-                  backgroundColor: isSelected
-                    ? theme.colors.primary
-                    : theme.colors.background,
-                  borderColor: theme.colors.primary,
-                  borderWidth: 1.5,
-                  opacity: pressed ? 0.7 : 1,
-                },
+                { opacity: pressed ? 0.7 : 1 },
               ]}
             >
               <AppText
@@ -52,14 +44,22 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
                   styles.tabText,
                   {
                     color: isSelected
-                      ? theme.colors.primaryText
-                      : theme.colors.primary,
-                    fontWeight: "500",
+                      ? theme.colors.primary
+                      : theme.colors.textSecondary,
+                    fontWeight: isSelected ? "600" : "400",
                   },
                 ]}
               >
                 {t(m.labelKey as any)}
               </AppText>
+              {isSelected && (
+                <View
+                  style={[
+                    styles.underline,
+                    { backgroundColor: theme.colors.primary },
+                  ]}
+                />
+              )}
             </Pressable>
           );
         })}
@@ -71,29 +71,32 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
 const styles = StyleSheet.create({
   wrapper: {
     width: "100%",
-    // paddingHorizontal: 12,
-    paddingVertical: 6,
-    minHeight: 40,
+    paddingVertical: 8,
+    minHeight: 44,
     justifyContent: "center",
   },
   content: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 6,
+    justifyContent: "center",
+    gap: 48,
   },
   tab: {
-    // flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 34,
-    paddingVertical: 6,
-    paddingHorizontal: 22,
-    borderRadius: 999,
-    minWidth: "30%",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 15,
     letterSpacing: 0.2,
+  },
+  underline: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 2.5,
+    borderRadius: 2,
   },
 });
