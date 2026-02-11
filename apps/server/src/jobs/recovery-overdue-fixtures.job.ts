@@ -214,6 +214,7 @@ export async function runRecoveryOverdueFixturesJob(
           signal: opts.signal,
           batchId,
           jobRunId,
+          bypassStateValidation: true,
         });
 
         const updated = result.updated;
