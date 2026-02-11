@@ -1,5 +1,12 @@
 import React from "react";
-import { View, StyleSheet, Alert, Platform, Linking } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  Platform,
+  Linking,
+  Pressable,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,6 +23,8 @@ import {
   SettingsRow,
   SettingsRowPicker,
 } from "@/features/settings";
+
+import { Ionicons } from "@expo/vector-icons";
 
 import type { ThemeMode } from "@/lib/theme/theme.types";
 import type { Locale } from "@/lib/i18n/i18n.types";
@@ -91,6 +100,7 @@ function SettingsContent() {
             label={t("settings.profile")}
             subtitle={user?.username ? `@${user.username}` : undefined}
             onPress={() => router.push("/(tabs)/profile")}
+            isLast={user?.hasPassword !== true}
           />
           {user?.hasPassword === true && (
             <SettingsRow
@@ -98,15 +108,9 @@ function SettingsContent() {
               icon="key-outline"
               label={t("settings.changePassword")}
               onPress={() => router.push("/change-password")}
+              isLast
             />
           )}
-          <SettingsRow
-            type="navigation"
-            icon="log-out-outline"
-            label={t("profile.logout")}
-            onPress={handleLogout}
-            isLast
-          />
         </SettingsSection>
 
         {/* Appearance Section */}
@@ -165,7 +169,9 @@ function SettingsContent() {
               subtitle="Triggers ErrorBoundary fallback"
               onPress={() => {
                 const timestamp = new Date().toLocaleTimeString("he-IL");
-                handleError(new Error(`Test Sentry Error from Settings [${timestamp}]`));
+                handleError(
+                  new Error(`Test Sentry Error from Settings [${timestamp}]`)
+                );
               }}
               isLast
             />
@@ -194,6 +200,20 @@ function SettingsContent() {
             isLast
           />
         </SettingsSection>
+
+        <Pressable
+          onPress={handleLogout}
+          style={[styles.logoutButton, { marginTop: theme.spacing.lg }]}
+        >
+          <Ionicons
+            name="log-out-outline"
+            size={20}
+            color={theme.colors.danger}
+          />
+          <AppText style={{ color: theme.colors.danger, fontWeight: "600" }}>
+            {t("profile.logout")}
+          </AppText>
+        </Pressable>
       </Screen>
     </View>
   );
@@ -206,5 +226,12 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingBottom: 40,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 16,
   },
 });
