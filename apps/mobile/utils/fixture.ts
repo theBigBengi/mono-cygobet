@@ -165,6 +165,7 @@ export function formatKickoffTime24(iso: string | null | undefined): string {
 export type LeagueDateGroup = {
   key: string;
   leagueName: string;
+  countryName: string | null;
   dateKey: string; // YYYY-MM-DD
   kickoffIso: string | null;
   fixtures: FixtureItem[];
@@ -197,6 +198,7 @@ export function groupFixturesByLeagueAndDate(
       grouped[key] = {
         key,
         leagueName,
+        countryName: fixture.country?.name ?? null,
         dateKey,
         kickoffIso: fixture.kickoffAt,
         fixtures: [],
@@ -252,6 +254,7 @@ export function groupFixturesByLeagueAndDateOnly(
       grouped[key] = {
         key,
         leagueName,
+        countryName: fixture.country?.name ?? null,
         dateKey,
         kickoffIso: fixture.kickoffAt, // Use first fixture's kickoff time for sorting
         fixtures: [],

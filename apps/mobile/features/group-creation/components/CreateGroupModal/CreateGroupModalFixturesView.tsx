@@ -5,14 +5,12 @@ import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
 import {
   useSelectedGroupGames,
   useToggleGroupGame,
   SelectedGameCard,
 } from "@/features/group-creation/selection/games";
-import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
-import { groupFixturesByLeagueAndDate, formatMonthDay } from "@/utils/fixture";
+import { groupFixturesByLeague, formatMonthDay } from "@/utils/fixture";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
 import { SelectionSummaryCard } from "@/features/group-creation/components/SelectionSummaryCard";
 
@@ -21,16 +19,15 @@ interface GroupedGame {
   game: FixtureItem;
 }
 
-function groupGroupedGamesByLeagueAndDate(games: GroupedGame[]): {
+function groupGamesByLeague(games: GroupedGame[]): {
   key: string;
   leagueName: string;
-  dateKey: string;
-  kickoffIso: string | null;
+  countryName: string | null;
   fixtures: GroupedGame[];
 }[] {
   const fixtures = games.map((g) => g.game);
-  const leagueDateGroups = groupFixturesByLeagueAndDate(fixtures);
-  return leagueDateGroups.map((group) => {
+  const leagueGroups = groupFixturesByLeague(fixtures);
+  return leagueGroups.map((group) => {
     const groupedFixtures: GroupedGame[] = group.fixtures
       .map((fixture) => {
         const g = games.find((x) => x.game.id === fixture.id);
@@ -40,8 +37,7 @@ function groupGroupedGamesByLeagueAndDate(games: GroupedGame[]): {
     return {
       key: group.key,
       leagueName: group.leagueName,
-      dateKey: group.dateKey,
-      kickoffIso: group.kickoffIso,
+      countryName: group.countryName,
       fixtures: groupedFixtures,
     };
   });
@@ -49,12 +45,11 @@ function groupGroupedGamesByLeagueAndDate(games: GroupedGame[]): {
 
 export function CreateGroupModalFixturesView() {
   const { t } = useTranslation("common");
-  const { theme } = useTheme();
   const { games } = useSelectedGroupGames();
   const toggleGame = useToggleGroupGame();
 
   const groupedGames = useMemo(
-    () => groupGroupedGamesByLeagueAndDate(games),
+    () => groupGamesByLeague(games),
     [games]
   );
 
@@ -109,12 +104,25 @@ export function CreateGroupModalFixturesView() {
     <>
       <SelectionSummaryCard items={summaryItems} />
       {groupedGames.map((group) => (
-        <LeagueDateGroupSection
-          key={group.key}
-          leagueName={group.leagueName}
-          dateKey={group.dateKey}
-          kickoffIso={group.kickoffIso}
-        >
+        <View key={group.key} style={styles.leagueSection}>
+          <View style={styles.leagueHeader}>
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.leagueName}
+            >
+              {group.leagueName}
+            </AppText>
+            {group.countryName && (
+              <AppText
+                variant="caption"
+                color="secondary"
+                style={styles.countryName}
+              >
+                {group.countryName}
+              </AppText>
+            )}
+          </View>
           <View style={styles.groupCards}>
             {group.fixtures.map(({ fixtureId, game }, i) => {
               const n = group.fixtures.length;
@@ -136,7 +144,7 @@ export function CreateGroupModalFixturesView() {
               );
             })}
           </View>
-        </LeagueDateGroupSection>
+        </View>
       ))}
     </>
   );
@@ -148,7 +156,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 48,
   },
+  leagueSection: {
+    marginTop: 0,
+    marginHorizontal: -16,
+  },
+  leagueHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  leagueName: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  countryName: {
+    fontSize: 11,
+    marginTop: 2,
+  },
   groupCards: {
-    marginTop: 4,
+    marginTop: 0,
   },
 });

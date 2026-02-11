@@ -1,23 +1,24 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { AppText } from "@/components/ui";
-import { formatDateHeader, formatKickoffTime24 } from "@/utils/fixture";
+import { formatDateHeader } from "@/utils/fixture";
 
 type Props = {
   leagueName: string;
+  countryName?: string | null;
   dateKey: string;
-  kickoffIso: string | null;
+  kickoffIso?: string | null;
   children: React.ReactNode;
 };
 
 /**
- * Shared wrapper for "League + Date/Time" header sections.
+ * Shared wrapper for "League + Date" header sections.
  * Used across screens that group fixtures by league/date.
  */
 export function LeagueDateGroupSection({
   leagueName,
+  countryName,
   dateKey,
-  kickoffIso,
   children,
 }: Props) {
   return (
@@ -31,11 +32,18 @@ export function LeagueDateGroupSection({
           >
             {leagueName}
           </AppText>
+          {countryName && (
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.countryName}
+            >
+              {countryName}
+            </AppText>
+          )}
         </View>
         <AppText variant="caption" color="secondary" style={styles.headerText}>
-          {kickoffIso
-            ? formatDateHeader(dateKey, formatKickoffTime24(kickoffIso))
-            : formatDateHeader(dateKey)}
+          {formatDateHeader(dateKey)}
         </AppText>
       </View>
       {children}
@@ -59,6 +67,10 @@ const styles = StyleSheet.create({
   leagueName: {
     fontSize: 12,
     fontWeight: "400",
+  },
+  countryName: {
+    fontSize: 11,
+    marginTop: 2,
   },
   headerText: {
     fontSize: 12,

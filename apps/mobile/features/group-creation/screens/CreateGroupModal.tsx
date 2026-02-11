@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 120,
+    paddingBottom: 200,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

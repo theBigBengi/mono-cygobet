@@ -5,12 +5,13 @@
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Card } from "@/components/ui";
+import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { TeamRow } from "@/features/groups/predictions/components/TeamRow";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
+import { formatKickoffTime, formatKickoffDate } from "@/utils/fixture";
 
 interface SelectedGameCardProps {
   fixture: FixtureItem;
@@ -30,25 +31,8 @@ export function SelectedGameCard({
   const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
 
-  // Same radius/border logic as GameSelectionCard
-  const cardRadiusStyle =
-    positionInGroup === "single"
-      ? { borderRadius: 16 }
-      : positionInGroup === "top"
-        ? {
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            borderBottomLeftRadius: 0,
-            borderBottomRightRadius: 0,
-          }
-        : positionInGroup === "bottom"
-          ? {
-              borderTopLeftRadius: 0,
-              borderTopRightRadius: 0,
-              borderBottomLeftRadius: 16,
-              borderBottomRightRadius: 16,
-            }
-          : { borderRadius: 0 };
+  // No border radius
+  const cardRadiusStyle = { borderRadius: 0 };
 
   const cardBorderStyle =
     positionInGroup === "middle" || positionInGroup === "bottom"
@@ -65,6 +49,20 @@ export function SelectedGameCard({
       ]}
     >
       <View style={styles.matchContent}>
+        <View style={styles.timeContainer}>
+          <AppText
+            variant="caption"
+            style={[styles.dateText, { color: theme.colors.textSecondary }]}
+          >
+            {formatKickoffDate(fixture.kickoffAt)}
+          </AppText>
+          <AppText
+            variant="caption"
+            style={[styles.timeText, { color: theme.colors.textSecondary }]}
+          >
+            {formatKickoffTime(fixture.kickoffAt)}
+          </AppText>
+        </View>
         <View style={styles.rowsContainer}>
           <TeamRow
             team={fixture.homeTeam}
@@ -100,13 +98,26 @@ export function SelectedGameCard({
 
 const styles = StyleSheet.create({
   matchCard: {
-    marginHorizontal: 4,
+    marginHorizontal: 0,
     marginBottom: 0,
     paddingVertical: 8,
   },
   matchContent: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  timeContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginStart: -4,
+    marginEnd: 16,
+  },
+  dateText: {
+    fontSize: 11,
+  },
+  timeText: {
+    fontSize: 12,
+    fontWeight: "500",
   },
   rowsContainer: {
     flex: 1,
