@@ -17,6 +17,7 @@ const DEEP_LINK_BASE = "mobile://groups/join";
 
 interface GroupInviteScreenProps {
   groupId: number | null;
+  isCreator?: boolean;
 }
 
 /**
@@ -25,7 +26,10 @@ interface GroupInviteScreenProps {
  * Fetches and displays the group invite code. Share Invite uses Share.share()
  * with code + deep link. Regenerate Code triggers regeneration and refetches.
  */
-export function GroupInviteScreen({ groupId }: GroupInviteScreenProps) {
+export function GroupInviteScreen({
+  groupId,
+  isCreator,
+}: GroupInviteScreenProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const { data, isLoading, error, refetch } = useInviteCodeQuery(groupId);
@@ -96,13 +100,15 @@ export function GroupInviteScreen({ groupId }: GroupInviteScreenProps) {
           onPress={handleShare}
           style={[styles.button, { marginTop: theme.spacing.md }]}
         />
-        <Button
-          label={t("invite.regenerateCode")}
-          variant="secondary"
-          disabled={isRegenerating}
-          onPress={handleRegenerate}
-          style={[styles.button, { marginTop: theme.spacing.sm }]}
-        />
+        {isCreator && (
+          <Button
+            label={t("invite.regenerateCode")}
+            variant="secondary"
+            disabled={isRegenerating}
+            onPress={handleRegenerate}
+            style={[styles.button, { marginTop: theme.spacing.sm }]}
+          />
+        )}
       </View>
     </Screen>
   );

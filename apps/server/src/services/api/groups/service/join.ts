@@ -113,8 +113,8 @@ export async function getInviteCode(
 
   let inviteCode = group.inviteCode;
 
-  // Auto-generate if creator and no code exists
-  if (!inviteCode && group.creatorId === userId) {
+  // Auto-generate if no code exists (user already passed authorization checks above)
+  if (!inviteCode) {
     inviteCode = generateCode();
     await repo.updateGroup(groupId, { inviteCode });
   }
