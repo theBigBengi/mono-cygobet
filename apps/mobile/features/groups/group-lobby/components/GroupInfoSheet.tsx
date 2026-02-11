@@ -264,9 +264,16 @@ export function GroupInfoSheet({
               icon="document-text-outline"
               title={t("groupInfo.explanation")}
             >
-              <AppText variant="body" color="secondary">
-                {explanation}
-              </AppText>
+              {explanation ? (
+                <AppText variant="body" color="secondary">
+                  {explanation}
+                </AppText>
+              ) : (
+                <View style={styles.explanationSkeleton}>
+                  <View style={[styles.skeletonRow, { backgroundColor: theme.colors.border }]} />
+                  <View style={[styles.skeletonRow, { backgroundColor: theme.colors.border, width: "60%" }]} />
+                </View>
+              )}
             </InfoSection>
           </>
         )}
@@ -328,5 +335,8 @@ const styles = StyleSheet.create({
     width: "80%",
     borderRadius: 4,
     marginBottom: 8,
+  },
+  explanationSkeleton: {
+    gap: 8,
   },
 });
