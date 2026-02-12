@@ -122,7 +122,13 @@
     "active": "פעיל",
     "drafts": "טיוטות",
     "ended": "הסתיים",
-    "tapToFinish": "לחץ להשלמת ההגדרות"
+    "tapToFinish": "לחץ להשלמת ההגדרות",
+    "filterAll": "הכל",
+    "filterAttention": "דורש תשומת לב",
+    "filterActive": "פעיל",
+    "filterDrafts": "טיוטות",
+    "filterEnded": "הסתיימו",
+    "noGroupsInFilter": "אין קבוצות בקטגוריה זו"
   },
   "lobby": {
     "onlyInvitedCanJoin": "רק משתמשים שהוזמנו יכולים להצטרף",

@@ -122,7 +122,13 @@
     "active": "Active",
     "drafts": "Drafts",
     "ended": "Ended",
-    "tapToFinish": "Tap to finish setup"
+    "tapToFinish": "Tap to finish setup",
+    "filterAll": "All",
+    "filterAttention": "Attention",
+    "filterActive": "Active",
+    "filterDrafts": "Drafts",
+    "filterEnded": "Ended",
+    "noGroupsInFilter": "No groups in this category"
   },
   "lobby": {
     "draft": "Draft",

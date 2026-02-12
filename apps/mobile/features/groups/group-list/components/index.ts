@@ -2,3 +2,4 @@
 // Exports for group list card components.
 
 export { GroupCard } from "./GroupCard";
+export { GroupFilterTabs, type GroupFilterType } from "./GroupFilterTabs";

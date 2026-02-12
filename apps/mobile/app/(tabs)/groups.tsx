@@ -1,6 +1,6 @@
 // app/(tabs)/groups.tsx
 // Groups tab - main screen
-// - Shows list of user's groups in sections: attention, active, drafts, ended.
+// - Shows list of user's groups with filter tabs: All, Attention, Active, Drafts, Ended.
 // - Empty state when no groups exist.
 // - Navigates to group details on press.
 
@@ -8,7 +8,7 @@ import React, { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
-  SectionList,
+  FlatList,
   Pressable,
   RefreshControl,
   Platform,
@@ -20,11 +20,11 @@ import { Screen, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { GroupCard } from "@/features/groups/group-list/components/GroupCard";
 import {
-  useGroupSections,
-  type GroupSection,
-} from "@/features/groups/group-list/hooks";
+  GroupCard,
+  GroupFilterTabs,
+} from "@/features/groups/group-list/components";
+import { useGroupFilter } from "@/features/groups/group-list/hooks";
 import type { ApiGroupItem } from "@repo/types";
 import { Ionicons } from "@expo/vector-icons";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -45,7 +45,6 @@ function GroupsContent() {
   const { data, isLoading, error, refetch } = useMyGroupsQuery();
   const { data: unreadData, refetch: refetchUnread } = useUnreadCountsQuery();
   const unreadCounts = unreadData?.data ?? {};
-  const [endedCollapsed, setEndedCollapsed] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = useCallback(async () => {
@@ -74,7 +73,8 @@ function GroupsContent() {
   };
 
   const groups = data?.data || [];
-  const { sections } = useGroupSections(groups);
+  const { selectedFilter, setSelectedFilter, filteredGroups, counts } =
+    useGroupFilter(groups);
 
   // Loading state — skeleton
   if (isLoading) {
@@ -197,104 +197,47 @@ function GroupsContent() {
     );
   }
 
-  const displaySections: (GroupSection & { originalCount?: number })[] =
-    sections.map((s) => {
-      if (s.key === "ended" && endedCollapsed) {
-        return { ...s, data: [], originalCount: s.data.length };
-      }
-      return s;
-    });
-
   const tabBarHeight = 60 + insets.bottom;
   const tabBarMarginBottom = theme.spacing.sm;
   const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
 
   const renderHeader = () => (
-    <View style={[styles.actionRow, { paddingBottom: theme.spacing.md }]}>
-      <Pressable
-        onPress={handleJoinWithCode}
-        style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
-      >
-        <Ionicons name="link-outline" size={20} color={theme.colors.primary} />
-        <AppText variant="caption" style={{ color: theme.colors.primary }}>
-          {t("groups.joinWithCode")}
-        </AppText>
-      </Pressable>
-      <Pressable
-        onPress={handleBrowsePublic}
-        style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
-      >
-        <Ionicons
-          name="search-outline"
-          size={20}
-          color={theme.colors.primary}
-        />
-        <AppText variant="caption" style={{ color: theme.colors.primary }}>
-          {t("groups.browsePublic")}
-        </AppText>
-      </Pressable>
+    <View>
+      <View style={[styles.actionRow, { paddingBottom: theme.spacing.md }]}>
+        <Pressable
+          onPress={handleJoinWithCode}
+          style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
+        >
+          <Ionicons
+            name="link-outline"
+            size={20}
+            color={theme.colors.primary}
+          />
+          <AppText variant="caption" style={{ color: theme.colors.primary }}>
+            {t("groups.joinWithCode")}
+          </AppText>
+        </Pressable>
+        <Pressable
+          onPress={handleBrowsePublic}
+          style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
+        >
+          <Ionicons
+            name="search-outline"
+            size={20}
+            color={theme.colors.primary}
+          />
+          <AppText variant="caption" style={{ color: theme.colors.primary }}>
+            {t("groups.browsePublic")}
+          </AppText>
+        </Pressable>
+      </View>
+      <GroupFilterTabs
+        selectedFilter={selectedFilter}
+        onFilterChange={setSelectedFilter}
+        counts={counts}
+      />
     </View>
   );
-
-  const renderSectionHeader = ({
-    section,
-  }: {
-    section: GroupSection & { originalCount?: number };
-  }) => {
-    const count =
-      section.key === "ended" && section.originalCount !== undefined
-        ? section.originalCount
-        : section.data.length;
-    const titleText = `${section.title} (${count})`;
-    const isEnded = section.key === "ended";
-    const isAttention = section.key === "attention";
-
-    const headerContent = (
-      <View
-        style={[styles.sectionDivider, { marginVertical: theme.spacing.sm }]}
-      >
-        <View
-          style={[styles.dividerLine, { backgroundColor: theme.colors.border }]}
-        />
-        <View style={styles.dividerCenter}>
-          <AppText
-            variant="caption"
-            color="secondary"
-            style={[
-              styles.dividerText,
-              isAttention && { color: theme.colors.primary, fontWeight: "600" },
-            ]}
-          >
-            {titleText}
-          </AppText>
-          {isEnded && (
-            <Ionicons
-              name={endedCollapsed ? "chevron-forward" : "chevron-down"}
-              size={16}
-              color={theme.colors.textSecondary}
-              style={styles.chevron}
-            />
-          )}
-        </View>
-        <View
-          style={[styles.dividerLine, { backgroundColor: theme.colors.border }]}
-        />
-      </View>
-    );
-
-    if (isEnded) {
-      return (
-        <Pressable
-          onPress={() => setEndedCollapsed((c) => !c)}
-          style={styles.sectionHeaderPressable}
-        >
-          {headerContent}
-        </Pressable>
-      );
-    }
-
-    return headerContent;
-  };
 
   const renderItem = ({ item }: { item: ApiGroupItem }) => (
     <GroupCard
@@ -310,14 +253,19 @@ function GroupsContent() {
         scroll={false}
         contentContainerStyle={{ alignItems: "stretch", flex: 1, padding: 0 }}
       >
-        <SectionList<ApiGroupItem, GroupSection & { originalCount?: number }>
-          style={styles.sectionList}
-          sections={displaySections}
+        <FlatList
+          style={styles.list}
+          data={filteredGroups}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          renderSectionHeader={renderSectionHeader}
           ListHeaderComponent={renderHeader}
-          stickySectionHeadersEnabled={false}
+          ListEmptyComponent={
+            <View style={styles.emptyFilter}>
+              <AppText variant="body" color="secondary">
+                {t("groups.noGroupsInFilter")}
+              </AppText>
+            </View>
+          }
           contentContainerStyle={{
             paddingBottom: totalTabBarSpace + theme.spacing.md,
             paddingHorizontal: theme.spacing.md,
@@ -342,8 +290,12 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  sectionList: {
+  list: {
     flex: 1,
+  },
+  emptyFilter: {
+    paddingVertical: 24,
+    alignItems: "center",
   },
   emptyContainer: {
     flex: 1,
@@ -392,27 +344,5 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 8,
-  },
-  sectionDivider: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerCenter: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-  },
-  dividerText: {
-    fontWeight: "600",
-  },
-  sectionHeaderPressable: {
-    width: "100%",
-  },
-  chevron: {
-    marginStart: 4,
   },
 });

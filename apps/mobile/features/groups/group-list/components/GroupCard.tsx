@@ -38,7 +38,6 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
       : 0;
   const liveCount = group.liveGamesCount ?? 0;
   const isDraft = group.status === "draft";
-  const isEnded = group.status === "ended";
 
   const kickoffAt =
     group.nextGame?.kickoffAt ?? group.firstGame?.kickoffAt ?? null;
@@ -57,7 +56,6 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
             borderColor: theme.colors.border,
             opacity: 0.8,
           },
-          isEnded && { opacity: 0.6 },
         ]}
       >
         {/* Row 1: Avatar + Info */}
