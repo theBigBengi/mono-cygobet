@@ -531,7 +531,23 @@
     "failedCreate": "Failed to create group",
     "tryDifferentSearch": "Try a different search term.",
     "noPopularTeamsDisplay": "There are no popular teams to display.",
-    "noPopularLeaguesDisplay": "There are no popular competitions to display."
+    "noPopularLeaguesDisplay": "There are no popular competitions to display.",
+    "info": {
+      "title": "Create a Group",
+      "intro": "Choose how you want to create your prediction group. Each method offers a different way to select the games for your competition.",
+      "games": {
+        "title": "Games",
+        "description": "Pick specific upcoming matches one by one. Perfect when you want to compete on particular games you care about."
+      },
+      "leagues": {
+        "title": "Competitions",
+        "description": "Select an entire league or competition. All current and upcoming games from that competition will be included automatically."
+      },
+      "teams": {
+        "title": "Teams",
+        "description": "Follow specific teams. All their upcoming matches will be added to your group, regardless of the competition."
+      }
+    }
   },
   "ranking": {
     "loadingRanking": "Loading ranking...",

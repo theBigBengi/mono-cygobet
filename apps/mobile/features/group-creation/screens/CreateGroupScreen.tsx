@@ -1,12 +1,14 @@
 // features/group-creation/screens/CreateGroupScreen.tsx
 // Main screen for creating a new group - mode selector (Upcoming games | Leagues | Teams) + conditional view.
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, StyleSheet } from "react-native";
 import { useSetAtom } from "jotai";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useTheme } from "@/lib/theme";
 import {
   SelectionModeTabs,
+  SelectionModeInfoSheet,
   FixturesView,
   LeaguesView,
   TeamsView,
@@ -20,6 +22,7 @@ export function CreateGroupScreen() {
   const { theme } = useTheme();
   const [mode, setMode] = useState<SelectionMode>("fixtures");
   const setGlobalMode = useSetAtom(currentSelectionModeAtom);
+  const infoSheetRef = useRef<BottomSheetModal>(null);
 
   // Sync local mode state with global atom
   useEffect(() => {
@@ -33,6 +36,10 @@ export function CreateGroupScreen() {
     setMode(newMode);
   };
 
+  const handleInfoPress = useCallback(() => {
+    infoSheetRef.current?.present();
+  }, []);
+
   return (
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -41,26 +48,39 @@ export function CreateGroupScreen() {
         {mode === "fixtures" && (
           <FixturesView
             tabs={
-              <SelectionModeTabs value={mode} onChange={handleModeChange} />
+              <SelectionModeTabs
+                value={mode}
+                onChange={handleModeChange}
+                onInfoPress={handleInfoPress}
+              />
             }
           />
         )}
         {mode === "leagues" && (
           <LeaguesView
             tabs={
-              <SelectionModeTabs value={mode} onChange={handleModeChange} />
+              <SelectionModeTabs
+                value={mode}
+                onChange={handleModeChange}
+                onInfoPress={handleInfoPress}
+              />
             }
           />
         )}
         {mode === "teams" && (
           <TeamsView
             tabs={
-              <SelectionModeTabs value={mode} onChange={handleModeChange} />
+              <SelectionModeTabs
+                value={mode}
+                onChange={handleModeChange}
+                onInfoPress={handleInfoPress}
+              />
             }
           />
         )}
       </View>
       <CreateGroupModal />
+      <SelectionModeInfoSheet sheetRef={infoSheetRef} />
     </View>
   );
 }
