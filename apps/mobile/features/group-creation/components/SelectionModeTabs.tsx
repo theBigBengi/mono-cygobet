@@ -5,6 +5,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, Pressable, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 
@@ -13,9 +14,10 @@ export type SelectionMode = "fixtures" | "leagues" | "teams";
 interface SelectionModeTabsProps {
   value: SelectionMode;
   onChange: (mode: SelectionMode) => void;
+  onInfoPress?: () => void;
 }
 
-export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
+export function SelectionModeTabs({ value, onChange, onInfoPress }: SelectionModeTabsProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const MODES: { value: SelectionMode; labelKey: string }[] = [
@@ -26,7 +28,7 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.content}>
+      <View style={styles.tabsRow}>
         {MODES.map((m) => {
           const isSelected = value === m.value;
           return (
@@ -59,6 +61,19 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
           );
         })}
       </View>
+      <Pressable
+        onPress={onInfoPress}
+        style={({ pressed }) => [
+          styles.infoButton,
+          { opacity: pressed ? 0.5 : 1 },
+        ]}
+      >
+        <Ionicons
+          name="information-circle-outline"
+          size={24}
+          color={theme.colors.textSecondary}
+        />
+      </Pressable>
     </View>
   );
 }
@@ -66,26 +81,32 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
 const styles = StyleSheet.create({
   wrapper: {
     width: "100%",
-    paddingVertical: 8,
-    minHeight: 44,
-    justifyContent: "center",
-  },
-  content: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 20,
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    paddingStart: 8,
+    paddingEnd: 12,
+    minHeight: 44,
+  },
+  tabsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   tab: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 9,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
   },
   tabText: {
-    fontSize: 13,
-    letterSpacing: 0.3,
+    fontSize: 12,
+    letterSpacing: 0.2,
     textTransform: "uppercase",
+  },
+  infoButton: {
+    padding: 4,
   },
 });
