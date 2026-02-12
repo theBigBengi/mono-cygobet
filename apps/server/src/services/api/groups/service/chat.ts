@@ -128,6 +128,7 @@ export async function getUnreadCounts(
       ON gmr.group_id = gm.group_id AND gmr.user_id = ${userId}
     WHERE gm.group_id IN (${Prisma.join(groupIds)})
       AND gm.id > COALESCE(gmr.last_read_message_id, 0)
+      AND gm.type = 'user_message'
     GROUP BY gm.group_id
   `;
 
