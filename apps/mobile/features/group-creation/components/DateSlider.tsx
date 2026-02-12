@@ -1,7 +1,7 @@
 // features/group-creation/components/DateSlider.tsx
 // Horizontal date strip: today + N days, selectable with underline.
 
-import React, { useMemo } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   View,
@@ -91,21 +91,32 @@ export function DateSlider({
     );
   };
 
-  const initialIndex = useMemo(() => {
+  const listRef = useRef<FlatList<Date>>(null);
+
+  const selectedIndex = useMemo(() => {
     const i = dates.findIndex((d) => isSameDay(d, selectedDate));
     return i >= 0 ? i : 0;
   }, [dates, selectedDate]);
 
+  useEffect(() => {
+    listRef.current?.scrollToIndex({
+      index: selectedIndex,
+      animated: true,
+      viewPosition: 0.5,
+    });
+  }, [selectedIndex]);
+
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { borderColor: theme.colors.border }]}>
       <FlatList
+        ref={listRef}
         data={dates}
         keyExtractor={(date) => date.toISOString()}
         renderItem={renderItem}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        initialScrollIndex={initialIndex}
+        initialScrollIndex={selectedIndex}
         getItemLayout={(_, index) => ({
           length: ITEM_TOTAL_WIDTH,
           offset: ITEM_TOTAL_WIDTH * index,
@@ -118,8 +129,9 @@ export function DateSlider({
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingVertical: 8,
     minHeight: 56,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
   },
   listContent: {
     paddingHorizontal: 8,
