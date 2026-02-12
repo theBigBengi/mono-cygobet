@@ -205,6 +205,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   listContainer: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 0,
   },
 });

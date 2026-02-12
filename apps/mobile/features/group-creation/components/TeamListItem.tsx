@@ -56,7 +56,8 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   card: {
-    marginBottom: 8,
+    borderRadius: 0,
+    marginBottom: -1,
   },
   row: {
     flexDirection: "row",
