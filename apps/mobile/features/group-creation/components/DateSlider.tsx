@@ -129,7 +129,7 @@ export function DateSlider({
 
 const styles = StyleSheet.create({
   wrapper: {
-    minHeight: 56,
+    minHeight: 50,
     borderTopWidth: 1,
     borderBottomWidth: 1,
   },
