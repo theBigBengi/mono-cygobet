@@ -35,7 +35,12 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
               onPress={() => onChange(m.value)}
               style={({ pressed }) => [
                 styles.tab,
-                { opacity: pressed ? 0.7 : 1 },
+                {
+                  backgroundColor: isSelected
+                    ? theme.colors.primary
+                    : theme.colors.border,
+                  opacity: pressed ? 0.7 : 1,
+                },
               ]}
             >
               <AppText
@@ -43,23 +48,13 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
                 style={[
                   styles.tabText,
                   {
-                    color: isSelected
-                      ? theme.colors.primary
-                      : theme.colors.textSecondary,
-                    fontWeight: isSelected ? "600" : "400",
+                    color: isSelected ? "#fff" : theme.colors.textSecondary,
+                    fontWeight: isSelected ? "600" : "500",
                   },
                 ]}
               >
                 {t(m.labelKey as any)}
               </AppText>
-              {isSelected && (
-                <View
-                  style={[
-                    styles.underline,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                />
-              )}
             </Pressable>
           );
         })}
@@ -79,24 +74,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 48,
+    gap: 8,
   },
   tab: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingHorizontal: 16,
+    borderRadius: 10,
   },
   tabText: {
-    fontSize: 15,
-    letterSpacing: 0.2,
-  },
-  underline: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2.5,
-    borderRadius: 2,
+    fontSize: 14,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
   },
 });

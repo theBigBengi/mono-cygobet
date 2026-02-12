@@ -104,7 +104,7 @@ export function TeamsView({ tabs }: TeamsViewProps) {
               {
                 backgroundColor: searchFocused
                   ? `${theme.colors.primary}15`
-                  : theme.colors.cardBackground,
+                  : theme.colors.background,
                 borderColor: searchFocused
                   ? theme.colors.primary
                   : theme.colors.border,
