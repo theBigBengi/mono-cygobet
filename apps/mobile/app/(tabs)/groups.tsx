@@ -26,7 +26,6 @@ import {
 } from "@/features/groups/group-list/components";
 import { useGroupFilter } from "@/features/groups/group-list/hooks";
 import type { ApiGroupItem } from "@repo/types";
-import { Ionicons } from "@expo/vector-icons";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function GroupsScreen() {
@@ -202,41 +201,13 @@ function GroupsContent() {
   const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
 
   const renderHeader = () => (
-    <View>
-      <View style={[styles.actionRow, { paddingBottom: theme.spacing.md }]}>
-        <Pressable
-          onPress={handleJoinWithCode}
-          style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
-        >
-          <Ionicons
-            name="link-outline"
-            size={20}
-            color={theme.colors.primary}
-          />
-          <AppText variant="caption" style={{ color: theme.colors.primary }}>
-            {t("groups.joinWithCode")}
-          </AppText>
-        </Pressable>
-        <Pressable
-          onPress={handleBrowsePublic}
-          style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
-        >
-          <Ionicons
-            name="search-outline"
-            size={20}
-            color={theme.colors.primary}
-          />
-          <AppText variant="caption" style={{ color: theme.colors.primary }}>
-            {t("groups.browsePublic")}
-          </AppText>
-        </Pressable>
-      </View>
-      <GroupFilterTabs
-        selectedFilter={selectedFilter}
-        onFilterChange={setSelectedFilter}
-        counts={counts}
-      />
-    </View>
+    <GroupFilterTabs
+      selectedFilter={selectedFilter}
+      onFilterChange={setSelectedFilter}
+      counts={counts}
+      onAddPress={handleJoinWithCode}
+      onPublicPress={handleBrowsePublic}
+    />
   );
 
   const renderItem = ({ item }: { item: ApiGroupItem }) => (
@@ -331,18 +302,5 @@ const styles = StyleSheet.create({
   },
   secondaryActionSeparator: {
     opacity: 0.6,
-  },
-  actionRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  iconButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 8,
   },
 });

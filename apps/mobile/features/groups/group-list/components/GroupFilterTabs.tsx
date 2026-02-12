@@ -4,6 +4,7 @@
 import React from "react";
 import { View, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 
@@ -24,6 +25,8 @@ interface GroupFilterTabsProps {
     drafts: number;
     ended: number;
   };
+  onAddPress?: () => void;
+  onPublicPress?: () => void;
 }
 
 const FILTERS: { key: GroupFilterType; labelKey: string }[] = [
@@ -37,6 +40,8 @@ export function GroupFilterTabs({
   selectedFilter,
   onFilterChange,
   counts,
+  onAddPress,
+  onPublicPress,
 }: GroupFilterTabsProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -96,17 +101,59 @@ export function GroupFilterTabs({
             </Pressable>
           );
         })}
+
+        {/* Public tab - navigates to discover screen */}
+        <Pressable
+          onPress={onPublicPress}
+          style={({ pressed }) => [
+            styles.tab,
+            {
+              backgroundColor: theme.colors.border,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <AppText
+            variant="body"
+            style={[
+              styles.tabText,
+              {
+                color: theme.colors.textSecondary,
+                fontWeight: "500",
+              },
+            ]}
+          >
+            {t("groups.filterPublic")}
+          </AppText>
+        </Pressable>
       </ScrollView>
+
+      {/* Fixed Add Button */}
+      <Pressable
+        onPress={onAddPress}
+        style={({ pressed }) => [
+          styles.addButton,
+          {
+            backgroundColor: theme.colors.primary,
+            opacity: pressed ? 0.7 : 1,
+          },
+        ]}
+      >
+        <Ionicons name="enter-outline" size={18} color="#fff" />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   scrollContent: {
-    paddingHorizontal: 8,
+    paddingStart: 8,
+    paddingEnd: 40,
     gap: 8,
   },
   tab: {
@@ -128,5 +175,14 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  addButton: {
+    position: "absolute",
+    end: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
