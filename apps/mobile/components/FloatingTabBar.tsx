@@ -10,7 +10,7 @@ import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { HapticTab } from "./haptic-tab";
 import { AppText } from "./ui";
-import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
+import { useUnreadCountsQuery } from "@/domains/groups";
 import { tabBarBadgeAtom } from "@/lib/state/tabBarBadge.atom";
 
 export function FloatingTabBar({
@@ -21,25 +21,12 @@ export function FloatingTabBar({
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const badge = useAtomValue(tabBarBadgeAtom);
-  const { data: groupsData } = useMyGroupsQuery();
   const { data: unreadData } = useUnreadCountsQuery();
 
   const totalUnreadCount = useMemo(() => {
     const counts = unreadData?.data ?? {};
     return Object.values(counts).reduce((sum, c) => sum + c, 0);
   }, [unreadData]);
-
-  const groupsNeedAttention = useMemo(() => {
-    const groups = groupsData?.data ?? [];
-    return groups.some(
-      (g) => (g.liveGamesCount ?? 0) > 0 || (g.todayUnpredictedCount ?? 0) > 0
-    );
-  }, [groupsData]);
-
-  const draftCount = useMemo(() => {
-    const groups = groupsData?.data ?? [];
-    return groups.filter((g) => g.status === "draft").length;
-  }, [groupsData]);
 
   const hasSelection = badge.visible;
   const countNumber = badge.count;
@@ -163,15 +150,6 @@ export function FloatingTabBar({
                       color={showBadge ? "transparent" : color}
                     />
                   )}
-                  {route.name === "groups" && groupsNeedAttention && (
-                    <View style={styles.attentionDot} pointerEvents="none" />
-                  )}
-                  {route.name === "groups" && draftCount > 0 && (
-                    <View
-                      style={[styles.attentionDot, styles.draftDot]}
-                      pointerEvents="none"
-                    />
-                  )}
                   {route.name === "groups" && totalUnreadCount > 0 && (
                     <View
                       style={[
@@ -230,20 +208,6 @@ const styles = StyleSheet.create({
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
-  },
-  attentionDot: {
-    position: "absolute",
-    top: -2,
-    right: -4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#EF4444",
-  },
-  draftDot: {
-    right: undefined,
-    left: -4,
-    backgroundColor: "#F59E0B",
   },
   unreadCountBadge: {
     position: "absolute",
