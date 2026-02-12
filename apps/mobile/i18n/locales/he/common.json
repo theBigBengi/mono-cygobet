@@ -656,6 +656,7 @@
     "loadingGames": "טוען משחקים…",
     "errorLoadingGames": "שגיאה בטעינת משחקים: {{message}}",
     "noUpcomingGames": "לא נמצאו משחקים קרובים",
+    "noGamesForDate": "אין משחקים בתאריך זה",
     "noGamesSelected": "לא נבחרו משחקים",
     "noTeamsSelected": "לא נבחרו קבוצות",
     "noLeagueSelected": "לא נבחרה ליגה",

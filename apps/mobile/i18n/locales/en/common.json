@@ -659,6 +659,7 @@
     "loadingGames": "Loading games…",
     "errorLoadingGames": "Error loading games: {{message}}",
     "noUpcomingGames": "No upcoming games found",
+    "noGamesForDate": "No games scheduled for this date",
     "noGamesSelected": "No games selected",
     "noTeamsSelected": "No teams selected",
     "noLeagueSelected": "No competition selected",

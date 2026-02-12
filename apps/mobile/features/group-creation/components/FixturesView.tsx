@@ -158,7 +158,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          isLoading && styles.scrollContentLoading,
+          (isLoading || leagueGroups.length === 0) && styles.scrollContentLoading,
         ]}
         refreshControl={
           <RefreshControl
@@ -178,7 +178,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         />
         {isLoading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="small" color={theme.colors.textSecondary} />
           </View>
         )}
 
@@ -189,9 +189,11 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         )}
 
         {!isLoading && !error && leagueGroups.length === 0 && (
-          <AppText variant="body" color="secondary" style={styles.message}>
-            {t("fixtures.noUpcomingGames")}
-          </AppText>
+          <View style={styles.emptyContainer}>
+            <AppText variant="body" color="secondary" style={styles.emptyText}>
+              {t("fixtures.noGamesForDate")}
+            </AppText>
+          </View>
         )}
 
         {!isLoading && !error && leagueGroups.length > 0 && (
@@ -274,6 +276,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    textAlign: "center",
   },
   scrollView: {
     flex: 1,

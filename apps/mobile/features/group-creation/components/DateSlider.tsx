@@ -1,7 +1,7 @@
 // features/group-creation/components/DateSlider.tsx
 // Horizontal date strip: today + N days, selectable with underline.
 
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   View,
@@ -92,6 +92,7 @@ export function DateSlider({
   };
 
   const listRef = useRef<FlatList<Date>>(null);
+  const isFirstRender = useRef(true);
 
   const selectedIndex = useMemo(() => {
     const i = dates.findIndex((d) => isSameDay(d, selectedDate));
@@ -99,10 +100,17 @@ export function DateSlider({
   }, [dates, selectedDate]);
 
   useEffect(() => {
+    // Skip scroll on first render - initialScrollIndex handles it
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    // For first item, align to start; otherwise center
+    const viewPosition = selectedIndex === 0 ? 0 : 0.5;
     listRef.current?.scrollToIndex({
       index: selectedIndex,
       animated: true,
-      viewPosition: 0.5,
+      viewPosition,
     });
   }, [selectedIndex]);
 
