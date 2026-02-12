@@ -13,6 +13,7 @@ import {
   RefreshControl,
   Platform,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -205,7 +206,6 @@ function GroupsContent() {
       selectedFilter={selectedFilter}
       onFilterChange={setSelectedFilter}
       counts={counts}
-      onAddPress={handleJoinWithCode}
       onPublicPress={handleBrowsePublic}
     />
   );
@@ -224,6 +224,27 @@ function GroupsContent() {
         scroll={false}
         contentContainerStyle={{ alignItems: "stretch", flex: 1, padding: 0 }}
       >
+        <View
+          style={[
+            styles.header,
+            { paddingHorizontal: theme.spacing.md },
+          ]}
+        >
+          <AppText variant="title" style={styles.headerTitle}>
+            {t("groups.title")}
+          </AppText>
+          <Pressable
+            onPress={handleJoinWithCode}
+            style={({ pressed }) => [
+              styles.joinButton,
+              {
+                opacity: pressed ? 0.5 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="enter-outline" size={26} color={theme.colors.textPrimary} />
+          </Pressable>
+        </View>
         <FlatList
           style={styles.list}
           data={filteredGroups}
@@ -239,7 +260,6 @@ function GroupsContent() {
           }
           contentContainerStyle={{
             paddingBottom: totalTabBarSpace + theme.spacing.md,
-            paddingHorizontal: theme.spacing.md,
           }}
           refreshControl={
             <RefreshControl
@@ -260,6 +280,18 @@ function GroupsContent() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+  },
+  headerTitle: {
+    fontWeight: "700",
+  },
+  joinButton: {
+    padding: 4,
   },
   list: {
     flex: 1,

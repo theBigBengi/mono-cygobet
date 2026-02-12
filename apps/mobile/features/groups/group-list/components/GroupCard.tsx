@@ -49,7 +49,11 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
       <View
         style={[
           styles.card,
-          { backgroundColor: theme.colors.surface },
+          {
+            backgroundColor: theme.colors.surface,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.colors.border,
+          },
           isDraft && {
             borderWidth: 1.5,
             borderStyle: "dashed",
@@ -163,9 +167,9 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: 0,
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 0,
   },
   topRow: {
     flexDirection: "row",

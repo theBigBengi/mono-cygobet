@@ -139,7 +139,7 @@ export function FloatingTabBar({
             >
               <View style={styles.tabContent} pointerEvents="box-none">
                 <View style={styles.tabIconRow}>
-                  {showBadge ? (
+                  {showBadge && (
                     <View
                       style={[
                         styles.badge,
@@ -149,22 +149,20 @@ export function FloatingTabBar({
                       ]}
                       pointerEvents="none"
                     >
-                      <AppText
-                        variant="body"
-                        style={[
-                          styles.badgeText,
-                          {
-                            color: theme.colors.primaryText,
-                            fontWeight: "600",
-                          },
-                        ]}
-                      >
-                        {countNumber}
-                      </AppText>
+                      <Ionicons
+                        name="checkmark"
+                        size={26}
+                        color={theme.colors.primaryText}
+                      />
                     </View>
-                  ) : iconName ? (
-                    <Ionicons name={iconName as any} size={24} color={color} />
-                  ) : null}
+                  )}
+                  {iconName && (
+                    <Ionicons
+                      name={iconName as any}
+                      size={route.name === "home" ? 32 : 24}
+                      color={showBadge ? "transparent" : color}
+                    />
+                  )}
                   {route.name === "groups" && groupsNeedAttention && (
                     <View style={styles.attentionDot} pointerEvents="none" />
                   )}
@@ -196,9 +194,6 @@ export function FloatingTabBar({
                     </View>
                   )}
                 </View>
-                <AppText numberOfLines={1} style={[styles.tabLabel, { color }]}>
-                  {label}
-                </AppText>
               </View>
             </HapticTab>
           );
@@ -216,29 +211,25 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 0,
+    justifyContent: "center",
+    paddingHorizontal: 24,
     paddingTop: 8,
+    gap: 8,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   tabContent: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
   },
   tabIconRow: {
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: "600",
   },
   attentionDot: {
     position: "absolute",
@@ -270,13 +261,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   badge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    position: "absolute",
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: "center",
     justifyContent: "center",
-  },
-  badgeText: {
-    fontSize: 16,
   },
 });

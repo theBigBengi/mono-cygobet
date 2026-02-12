@@ -81,6 +81,7 @@
     "usernameTaken": "שם המשתמש תפוס"
   },
   "groups": {
+    "title": "קבוצות",
     "noGroupsYet": "עדיין אין קבוצות",
     "noGroupsSubtitle": "אין לך קבוצות עדיין",
     "members": "{{count}} חברים",

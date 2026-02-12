@@ -119,7 +119,7 @@ export function DateSlider({
         initialScrollIndex={selectedIndex}
         getItemLayout={(_, index) => ({
           length: ITEM_TOTAL_WIDTH,
-          offset: ITEM_TOTAL_WIDTH * index,
+          offset: ITEM_TOTAL_WIDTH * index + 8,
           index,
         })}
       />

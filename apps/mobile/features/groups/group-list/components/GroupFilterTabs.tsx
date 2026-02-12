@@ -4,7 +4,6 @@
 import React from "react";
 import { View, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 
@@ -25,7 +24,6 @@ interface GroupFilterTabsProps {
     drafts: number;
     ended: number;
   };
-  onAddPress?: () => void;
   onPublicPress?: () => void;
 }
 
@@ -40,7 +38,6 @@ export function GroupFilterTabs({
   selectedFilter,
   onFilterChange,
   counts,
-  onAddPress,
   onPublicPress,
 }: GroupFilterTabsProps) {
   const { t } = useTranslation("common");
@@ -127,33 +124,16 @@ export function GroupFilterTabs({
           </AppText>
         </Pressable>
       </ScrollView>
-
-      {/* Fixed Add Button */}
-      <Pressable
-        onPress={onAddPress}
-        style={({ pressed }) => [
-          styles.addButton,
-          {
-            backgroundColor: theme.colors.primary,
-            opacity: pressed ? 0.7 : 1,
-          },
-        ]}
-      >
-        <Ionicons name="enter-outline" size={18} color="#fff" />
-      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
     marginBottom: 8,
   },
   scrollContent: {
-    paddingStart: 8,
-    paddingEnd: 40,
+    paddingHorizontal: 8,
     gap: 8,
   },
   tab: {
@@ -175,14 +155,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-  },
-  addButton: {
-    position: "absolute",
-    end: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
   },
 });

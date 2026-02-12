@@ -81,6 +81,7 @@
     "usernameTaken": "Username is already taken"
   },
   "groups": {
+    "title": "Groups",
     "noGroupsYet": "No groups yet",
     "noGroupsSubtitle": "You don't have any groups yet",
     "members": "{{count}} members",
