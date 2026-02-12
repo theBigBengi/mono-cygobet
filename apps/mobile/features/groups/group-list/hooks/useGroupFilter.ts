@@ -1,7 +1,7 @@
 // features/groups/group-list/hooks/useGroupFilter.ts
 // Hook to manage filter state and categorize/sort/filter groups for the tabbed list.
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { ApiGroupItem } from "@repo/types";
 
 export type GroupFilterType =
@@ -10,6 +10,13 @@ export type GroupFilterType =
   | "active"
   | "drafts"
   | "ended";
+
+const FILTER_PRIORITY: Exclude<GroupFilterType, "all">[] = [
+  "attention",
+  "active",
+  "drafts",
+  "ended",
+];
 
 interface GroupFilterResult {
   selectedFilter: GroupFilterType;
@@ -96,6 +103,16 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
 
     return { filteredGroups: filtered, counts };
   }, [groups, selectedFilter]);
+
+  // Auto-select first non-empty filter on initial load
+  useEffect(() => {
+    if (selectedFilter === "attention" && counts.attention === 0) {
+      const firstNonEmpty = FILTER_PRIORITY.find((f) => counts[f] > 0);
+      if (firstNonEmpty) {
+        setSelectedFilter(firstNonEmpty);
+      }
+    }
+  }, [counts, selectedFilter]);
 
   return {
     selectedFilter,
