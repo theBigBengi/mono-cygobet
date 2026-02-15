@@ -10,6 +10,7 @@ import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useGroupQuery } from "@/domains/groups";
 import { GroupGamesScreen } from "@/features/groups/predictions/screens/GroupGamesScreen";
 import { GroupGamesDraftScreen } from "@/features/groups/predictions/screens/GroupGamesDraftScreen";
+import type { PredictionMode } from "@/features/groups/predictions/types";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function GroupGamesRoute() {
@@ -63,7 +64,7 @@ function GroupGamesContent() {
     <GroupGamesScreen
       groupId={groupId}
       fixtures={fixtures}
-      predictionMode={group.predictionMode}
+      predictionMode={group.predictionMode as PredictionMode | undefined}
       groupName={group.name}
       selectionMode={group.selectionMode}
       groupTeamsIds={group.groupTeamsIds}
