@@ -49,6 +49,7 @@ export async function getGroupGamesFilters(
                 id: fixtures.league.country.id,
                 name: fixtures.league.country.name,
                 imagePath: fixtures.league.country.imagePath,
+                iso2: fixtures.league.country.iso2 ?? null,
               }
             : null,
         });

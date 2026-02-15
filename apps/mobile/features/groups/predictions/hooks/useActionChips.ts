@@ -98,7 +98,14 @@ function getPredictUrgency(
   return "normal";
 }
 
-export function useActionChips(fixtures: FixtureItem[]) {
+type SelectionMode = "games" | "teams" | "leagues";
+
+interface UseActionChipsParams {
+  fixtures: FixtureItem[];
+  mode?: SelectionMode;
+}
+
+export function useActionChips({ fixtures, mode = "games" }: UseActionChipsParams) {
   const [selectedAction, setSelectedAction] = useState<string>("all");
   const userHasChangedSelection = useRef(false);
   const hasAutoSelectedRef = useRef(false);
@@ -115,9 +122,39 @@ export function useActionChips(fixtures: FixtureItem[]) {
     if (total === 0) return [] as ActionChip[];
 
     const liveCount = fixtures.filter((f) => isLive(f.state)).length;
+    const resultsCount = fixtures.filter((f) => isFinished(f.state)).length;
+
+    // Simplified chips for leagues/teams mode: All, Live (if any), Results
+    if (mode === "leagues" || mode === "teams") {
+      const chips: ActionChip[] = [];
+
+      // Always show All
+      chips.push({ id: "all", label: `All (${total})`, count: total });
+
+      // Show Live if there are live games
+      if (liveCount > 0) {
+        chips.push({
+          id: "live",
+          label: `Live (${liveCount})`,
+          count: liveCount,
+        });
+      }
+
+      // Show Results if there are finished games (and not all are finished)
+      if (resultsCount > 0 && resultsCount < total) {
+        chips.push({
+          id: "results",
+          label: `Results (${resultsCount})`,
+          count: resultsCount,
+        });
+      }
+
+      return chips;
+    }
+
+    // Full chips logic for games/teams mode
     const toPredictFixtures = fixtures.filter(isToPredict);
     const toPredictCount = toPredictFixtures.length;
-    const resultsCount = fixtures.filter((f) => isFinished(f.state)).length;
     const todayCount = fixtures.filter(
       (f) => classifyFixtureTime(f.kickoffAt, buckets) === "today"
     ).length;
@@ -192,14 +229,8 @@ export function useActionChips(fixtures: FixtureItem[]) {
     }
 
     const chips: ActionChip[] = [];
-    const otherChipCount =
-      (liveCount > 0 ? 1 : 0) +
-      (toPredictCount > 0 && toPredictCount < total ? 1 : 0) +
-      (showSmartTime && smartTimeId ? 1 : 0) +
-      (resultsCount > 0 && resultsCount < total ? 1 : 0);
-    if (otherChipCount > 0) {
-      chips.push({ id: "all", label: `All (${total})`, count: total });
-    }
+    // Always show All as the first chip
+    chips.push({ id: "all", label: `All (${total})`, count: total });
     if (liveCount > 0) {
       chips.push({
         id: "live",
@@ -239,7 +270,7 @@ export function useActionChips(fixtures: FixtureItem[]) {
       });
     }
     return chips.slice(0, 5);
-  }, [fixtures, buckets]);
+  }, [fixtures, buckets, mode]);
 
   return {
     actionChips,

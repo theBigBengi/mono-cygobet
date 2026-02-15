@@ -123,6 +123,8 @@ export function buildActiveGroupItem(
     todayGamesCount: number;
     todayUnpredictedCount: number;
     liveGamesCount: number;
+    missedPredictionsCount: number;
+    userRank?: number;
   },
   nextGame: ApiFixturesListResponse["data"][0] | null,
   firstGame: ApiFixturesListResponse["data"][0] | null,
@@ -140,6 +142,8 @@ export function buildActiveGroupItem(
   todayGamesCount: number;
   todayUnpredictedCount: number;
   liveGamesCount: number;
+  missedPredictionsCount: number;
+  userRank?: number;
 } {
   return {
     ...buildGroupItem(group),
@@ -174,6 +178,7 @@ export function formatFixtureFromDb(
         id: fixture.league.country.id,
         name: fixture.league.country.name,
         imagePath: fixture.league.country.imagePath,
+        iso2: fixture.league.country.iso2 ?? null,
       }
     : null;
 

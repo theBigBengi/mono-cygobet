@@ -21,6 +21,7 @@ export const TEAM_SELECT_WITH_COUNTRY = {
       id: true,
       name: true,
       imagePath: true,
+      iso2: true,
     },
   },
 } as const satisfies Prisma.teamsSelect;

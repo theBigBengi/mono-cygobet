@@ -7,7 +7,8 @@
     "settings": "הגדרות"
   },
   "dates": {
-    "today": "היום"
+    "today": "היום",
+    "tomorrow": "מחר"
   },
   "activity": {
     "empty": "עדיין אין פעילות",
@@ -82,6 +83,7 @@
   },
   "groups": {
     "title": "קבוצות",
+    "nextGame": "משחק הבא",
     "noGroupsYet": "עדיין אין קבוצות",
     "noGroupsSubtitle": "אין לך קבוצות עדיין",
     "members": "{{count}} חברים",
@@ -130,7 +132,29 @@
     "filterDrafts": "טיוטות",
     "filterEnded": "הסתיימו",
     "filterPublic": "ציבורי",
-    "noGroupsInFilter": "אין קבוצות בקטגוריה זו"
+    "noGroupsInFilter": "אין קבוצות בקטגוריה זו",
+    "mode": {
+      "games": "משחקים",
+      "teams": "קבוצות",
+      "leagues": "ליגות"
+    },
+    "info": {
+      "title": "מסך הקבוצות",
+      "description": "מסך זה מציג את כל הקבוצות שלך. כל כרטיס קבוצה מציג מידע על הקבוצה, המשחק הבא ונתונים סטטיסטיים בשורת הסטטוס בתחתית.",
+      "statusBarTitle": "אייקונים בשורת הסטטוס",
+      "members": "חברים",
+      "membersDesc": "מספר החברים בקבוצה",
+      "rank": "הדירוג שלך",
+      "rankDesc": "המיקום הנוכחי שלך בטבלת הקבוצה",
+      "predictions": "תחזיות",
+      "predictionsDesc": "מספר התחזיות שעשית מתוך סה״כ המשחקים",
+      "predictionsGreen": "ירוק — כל התחזיות בוצעו",
+      "predictionsOrange": "כתום — חסרות תחזיות",
+      "predictionsRed": "אדום — משחק מתחיל היום ללא תחזית",
+      "completion": "משחקים",
+      "completionDesc": "מספר המשחקים שהסתיימו מתוך סה״כ המשחקים",
+      "completionPrimary": "כחול — משחקים חיים כרגע"
+    }
   },
   "lobby": {
     "onlyInvitedCanJoin": "רק משתמשים שהוזמנו יכולים להצטרף",
@@ -154,6 +178,8 @@
     "createdOn": "נוצר ב-{{date}}",
     "games": "משחקים",
     "viewAllGames": "הצג את כל המשחקים",
+    "predictions": "תחזיות",
+    "finished": "הסתיים",
     "noUpcomingGames": "אין משחקים קרובים",
     "endedOn": "הסתיים {{date}}",
     "endsOn": "מסתיים {{date}}",
@@ -256,12 +282,18 @@
     "yourRankSection": "הדירוג שלך",
     "viewRanking": "צפה בדירוג",
     "leaderboard": "טבלת מובילים",
+    "predictions": "תחזיות",
     "you": "את/ה",
     "stats": "סטטיסטיקות",
     "vs": "נגד",
     "makePredictions": "בחר תחזיות",
     "viewAllGames": "צפה בכל המשחקים",
-    "nextGameLabel": "המשחק הבא"
+    "nextGameLabel": "המשחק הבא",
+    "prediction": "ניחוש",
+    "noPrediction": "אין ניחוש",
+    "myPrediction": "הניחוש שלי",
+    "addPrediction": "הוסף ניחוש",
+    "pts": "נק׳"
   },
   "groupSettings": {
     "general": "כללי",
@@ -321,7 +353,11 @@
     "saveFailed": "השמירה נכשלה",
     "saveFailedMessage": "לא ניתן לשמור את התחזיות. נסה שוב.",
     "noPredictionsFromOtherGroups": "אין ניחושים מקבוצות אחרות.",
-    "pts": "נק׳"
+    "pts": "נק׳",
+    "allTeams": "כל הקבוצות",
+    "allCompetitions": "כל התחרויות",
+    "selectTeam": "בחר קבוצה",
+    "selectCompetition": "בחר תחרות"
   },
   "countdown": {
     "inHoursMinutes": "בעוד {{hours}} שעות {{minutes}} דקות",
@@ -476,7 +512,8 @@
     "failedLoadRanking": "טעינת דירוג נכשלה",
     "statsLine": "{{exact}} מדויקים / {{predictions}} תחזיות",
     "pts": "נק׳",
-    "empty": "עדיין אין חברים בדירוג"
+    "empty": "עדיין אין חברים בדירוג",
+    "winner": "מנצח הקבוצה"
   },
   "invite": {
     "groupInvite": "הזמנת קבוצה",

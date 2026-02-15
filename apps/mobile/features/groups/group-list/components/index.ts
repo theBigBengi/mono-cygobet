@@ -3,3 +3,4 @@
 
 export { GroupCard } from "./GroupCard";
 export { GroupFilterTabs, type GroupFilterType } from "./GroupFilterTabs";
+export { GroupsInfoSheet } from "./GroupsInfoSheet";

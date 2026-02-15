@@ -24,6 +24,7 @@ export const FIXTURE_SELECT_BASE = {
           id: true,
           name: true,
           imagePath: true,
+          iso2: true,
         },
       },
     },

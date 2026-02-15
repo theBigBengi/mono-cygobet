@@ -3,11 +3,12 @@
 
 import React, { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen } from "@/components/ui";
 import { useAuth } from "@/lib/auth/useAuth";
+import { useGoBack } from "@/hooks/useGoBack";
 import {
   useGroupRankingQuery,
   useGroupChatPreviewQuery,
@@ -15,10 +16,12 @@ import {
 import type { ApiGroupItem } from "@repo/types";
 import type { FixtureItem } from "../types";
 import { GroupLobbyHeader } from "../components/GroupLobbyHeader";
-import { GroupInfoSheet } from "../components/GroupInfoSheet";
+import { GroupTimelineBar } from "../components/GroupTimelineBar";
 import { LobbyPredictionsCTA } from "../components/LobbyPredictionsCTA";
 import { LobbyQuickActions } from "../components/LobbyQuickActions";
 import { LobbyLeaderboard } from "../components/LobbyLeaderboard";
+import { GroupInfoSheet } from "../components/GroupInfoSheet";
+import { useGroupDuration } from "../hooks/useGroupDuration";
 
 interface GroupLobbyActiveScreenProps {
   group: ApiGroupItem;
@@ -35,9 +38,9 @@ export function GroupLobbyActiveScreen({
 }: GroupLobbyActiveScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const infoSheetRef =
-    useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const { user } = useAuth();
+  const goBack = useGoBack("/(tabs)/groups");
+  const infoSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const { data: rankingData, isLoading: isRankingLoading } =
     useGroupRankingQuery(group.id);
   const { data: chatPreviewData } = useGroupChatPreviewQuery();
@@ -53,34 +56,28 @@ export function GroupLobbyActiveScreen({
     fixtures.filter((f) => f.prediction != null && f.prediction !== undefined)
       .length;
 
-  const now = new Date();
-  const nextGame =
-    fixtures.find(
-      (f) =>
-        f.prediction == null && new Date(f.kickoffAt).getTime() > now.getTime()
-    ) ??
-    fixtures.find((f) => new Date(f.kickoffAt).getTime() > now.getTime()) ??
-    null;
-  const nextGameForCTA =
-    nextGame && nextGame.homeTeam && nextGame.awayTeam
-      ? {
-          homeTeam: {
-            name: nextGame.homeTeam.name,
-            imagePath: nextGame.homeTeam.imagePath ?? null,
-          },
-          awayTeam: {
-            name: nextGame.awayTeam.name,
-            imagePath: nextGame.awayTeam.imagePath ?? null,
-          },
-          kickoffAt: nextGame.kickoffAt,
-        }
-      : null;
-
   const fixturesLoaded = fixtures.length > 0 || totalFixtures === 0;
+  const now = new Date();
   const ranking = rankingData?.data ?? [];
 
-  const handleViewGames = () => {
-    router.push(`/groups/${group.id}/games` as any);
+  // Timeline progress calculation
+  const duration = useGroupDuration(fixtures);
+  const timelineProgress = React.useMemo(() => {
+    if (!duration) return 0;
+    const startTime = new Date(duration.startDate).getTime();
+    const endTime = new Date(duration.endDate).getTime();
+    const nowTime = now.getTime();
+    if (endTime <= startTime) return 1;
+    return (nowTime - startTime) / (endTime - startTime);
+  }, [duration, now]);
+
+  const handleViewGames = (fixtureId?: number) => {
+    const index = fixtureId ? fixtures.findIndex(f => f.id === fixtureId) : -1;
+    if (index >= 0) {
+      router.push(`/groups/${group.id}/games?scrollIndex=${index}` as any);
+    } else {
+      router.push(`/groups/${group.id}/games` as any);
+    }
   };
 
   const handleViewRanking = () => {
@@ -133,19 +130,30 @@ export function GroupLobbyActiveScreen({
           name={group.name}
           memberCount={group.memberCount}
           status="active"
+          privacy={group.privacy}
           compact
+          onBack={goBack}
           onInfoPress={() => infoSheetRef.current?.present()}
         />
+
+        {duration && (
+          <GroupTimelineBar
+            startDate={duration.startDate}
+            endDate={duration.endDate}
+            progress={timelineProgress}
+          />
+        )}
 
         <LobbyPredictionsCTA
           predictionsCount={predictionsCount}
           totalFixtures={totalFixtures}
           onPress={handleViewGames}
-          nextGame={nextGameForCTA}
+          fixtures={fixtures}
           isLoading={!fixturesLoaded}
+          winnerName={ranking[0]?.username}
+          winnerPoints={ranking[0]?.totalPoints}
+          onWinnerPress={handleViewRanking}
         />
-
-        <LobbyQuickActions actions={quickActions} />
 
         <LobbyLeaderboard
           ranking={ranking}
@@ -153,6 +161,8 @@ export function GroupLobbyActiveScreen({
           isLoading={isRankingLoading}
           onPress={handleViewRanking}
         />
+
+        <LobbyQuickActions actions={quickActions} />
       </Screen>
       <GroupInfoSheet
         group={group}

@@ -4,7 +4,7 @@
 // - Empty state when no groups exist.
 // - Navigates to group details on press.
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -14,6 +14,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -24,6 +25,7 @@ import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import {
   GroupCard,
   GroupFilterTabs,
+  GroupsInfoSheet,
 } from "@/features/groups/group-list/components";
 import { useGroupFilter } from "@/features/groups/group-list/hooks";
 import type { ApiGroupItem } from "@repo/types";
@@ -46,6 +48,11 @@ function GroupsContent() {
   const { data: unreadData, refetch: refetchUnread } = useUnreadCountsQuery();
   const unreadCounts = unreadData?.data ?? {};
   const [refreshing, setRefreshing] = useState(false);
+  const infoSheetRef = useRef<BottomSheetModal>(null);
+
+  const handleOpenInfo = useCallback(() => {
+    infoSheetRef.current?.present();
+  }, []);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -201,14 +208,6 @@ function GroupsContent() {
   const tabBarMarginBottom = theme.spacing.sm;
   const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
 
-  const renderHeader = () => (
-    <GroupFilterTabs
-      selectedFilter={selectedFilter}
-      onFilterChange={setSelectedFilter}
-      counts={counts}
-      onPublicPress={handleBrowsePublic}
-    />
-  );
 
   const renderItem = ({ item }: { item: ApiGroupItem }) => (
     <GroupCard
@@ -234,23 +233,31 @@ function GroupsContent() {
             {t("groups.title")}
           </AppText>
           <Pressable
-            onPress={handleJoinWithCode}
+            onPress={handleOpenInfo}
             style={({ pressed }) => [
-              styles.joinButton,
-              {
-                opacity: pressed ? 0.5 : 1,
-              },
+              styles.infoButton,
+              { opacity: pressed ? 0.5 : 1 },
             ]}
           >
-            <Ionicons name="enter-outline" size={26} color={theme.colors.textPrimary} />
+            <Ionicons
+              name="information-circle-outline"
+              size={26}
+              color={theme.colors.textSecondary}
+            />
           </Pressable>
         </View>
+        <GroupFilterTabs
+          selectedFilter={selectedFilter}
+          onFilterChange={setSelectedFilter}
+          counts={counts}
+          onPublicPress={handleBrowsePublic}
+          onJoinPress={handleJoinWithCode}
+        />
         <FlatList
           style={styles.list}
           data={filteredGroups}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          ListHeaderComponent={renderHeader}
           ListEmptyComponent={
             <View style={styles.emptyFilter}>
               <AppText variant="body" color="secondary">
@@ -273,6 +280,7 @@ function GroupsContent() {
           }
         />
       </Screen>
+      <GroupsInfoSheet sheetRef={infoSheetRef} />
     </View>
   );
 }
@@ -286,11 +294,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(128, 128, 128, 0.3)",
   },
   headerTitle: {
     fontWeight: "700",
   },
-  joinButton: {
+  infoButton: {
     padding: 4,
   },
   list: {

@@ -25,6 +25,11 @@ interface TeamLogoProps {
    */
   size?: number;
   /**
+   * Whether to apply rounded corners.
+   * Default: true
+   */
+  rounded?: boolean;
+  /**
    * Additional style for the logo container.
    */
   style?: ViewStyle | ImageStyle;
@@ -40,10 +45,11 @@ export function TeamLogo({
   imagePath,
   teamName,
   size = 32,
+  rounded = true,
   style,
 }: TeamLogoProps) {
   const { theme } = useTheme();
-  const borderRadius = size / 2;
+  const borderRadius = rounded ? size / 2 : 0;
 
   if (imagePath) {
     return (

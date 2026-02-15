@@ -54,6 +54,7 @@ export function buildLeagueItem(
       id: league.country.id,
       name: league.country.name,
       imagePath: league.country.imagePath ?? null,
+      iso2: league.country.iso2 ?? null,
     };
   }
 

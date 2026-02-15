@@ -358,6 +358,64 @@ export function groupFixturesByLeague(fixtures: FixtureItem[]): LeagueGroup[] {
   });
 }
 
+/**
+ * Group fixtures by date only (without league).
+ * Returns sorted array of groups, each containing fixtures with same date.
+ * Used for leagues mode where fixtures are already filtered by round.
+ */
+export type DateGroup = {
+  key: string;
+  dateKey: string; // YYYY-MM-DD
+  kickoffIso: string | null;
+  fixtures: FixtureItem[];
+};
+
+export function groupFixturesByDate(fixtures: FixtureItem[]): DateGroup[] {
+  const grouped: Record<string, DateGroup> = {};
+
+  if (!fixtures || !Array.isArray(fixtures)) {
+    return [];
+  }
+
+  fixtures.forEach((fixture) => {
+    if (!fixture.kickoffAt) return;
+
+    const date = new Date(fixture.kickoffAt);
+    const dateKey = date.toISOString().split("T")[0]; // YYYY-MM-DD
+    const key = dateKey;
+
+    if (!grouped[key]) {
+      grouped[key] = {
+        key,
+        dateKey,
+        kickoffIso: fixture.kickoffAt,
+        fixtures: [],
+      };
+    }
+
+    grouped[key].fixtures.push(fixture);
+  });
+
+  // Sort fixtures within each group by kickoff time
+  Object.values(grouped).forEach((group) => {
+    group.fixtures.sort((a, b) => {
+      if (!a.kickoffAt || !b.kickoffAt) return 0;
+      return new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime();
+    });
+    // Update kickoffIso to earliest fixture
+    if (group.fixtures.length > 0 && group.fixtures[0].kickoffAt) {
+      group.kickoffIso = group.fixtures[0].kickoffAt;
+    }
+  });
+
+  // Sort groups chronologically
+  return Object.values(grouped).sort((a, b) => {
+    const timeA = a.kickoffIso ? new Date(a.kickoffIso).getTime() : 0;
+    const timeB = b.kickoffIso ? new Date(b.kickoffIso).getTime() : 0;
+    return timeA - timeB;
+  });
+}
+
 export function groupFixturesByRound(fixtures: FixtureItem[]): RoundGroup[] {
   const grouped: Record<string, RoundGroup> = {};
 

@@ -11,7 +11,7 @@ import type { PredictionMode } from "../types";
 import { getOutcomeFromPrediction } from "../utils/utils";
 import { formatKickoffDateTime } from "@/utils/fixture";
 import { useMatchCardState } from "../hooks/useMatchCardState";
-import { LIVE_RESULT_COLOR, FIXTURE_STATE_MAP } from "../utils/constants";
+import { LIVE_RESULT_COLOR } from "../utils/constants";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -81,6 +81,17 @@ export function SingleGameMatchCard({
             </AppText>
           </View>
         )}
+        {fixture.kickoffAt && (
+          <View style={styles.dateTimeRow}>
+            <AppText
+              variant="caption"
+              color="secondary"
+              style={styles.dateTime}
+            >
+              {formatKickoffDateTime(fixture.kickoffAt)}
+            </AppText>
+          </View>
+        )}
         <View style={styles.matchContent}>
           {/* Home Team - Logo above Name */}
           <View style={styles.teamSection}>
@@ -127,7 +138,7 @@ export function SingleGameMatchCard({
               <AppText style={styles.resultScoreText}>
                 {gameResultOrTime?.home ?? "0"}
               </AppText>
-              <AppText style={styles.resultScoreSeparator}>:</AppText>
+              <AppText style={styles.resultScoreSeparator}>-</AppText>
               <AppText style={styles.resultScoreText}>
                 {gameResultOrTime?.away ?? "0"}
               </AppText>
@@ -137,7 +148,7 @@ export function SingleGameMatchCard({
               <AppText style={styles.resultScoreText}>
                 {gameResultOrTime?.home ?? "-"}
               </AppText>
-              <AppText style={styles.resultScoreSeparator}>:</AppText>
+              <AppText style={styles.resultScoreSeparator}>-</AppText>
               <AppText style={styles.resultScoreText}>
                 {gameResultOrTime?.away ?? "-"}
               </AppText>
@@ -160,34 +171,6 @@ export function SingleGameMatchCard({
             </AppText>
           </View>
         </View>
-        {(fixture.kickoffAt || fixture.state) && (
-          <View style={styles.dateTimeRow}>
-            {fixture.kickoffAt && (
-              <AppText
-                variant="caption"
-                color="secondary"
-                style={styles.dateTime}
-              >
-                {formatKickoffDateTime(fixture.kickoffAt)}
-              </AppText>
-            )}
-            {fixture.kickoffAt && fixture.state ? (
-              <AppText variant="caption" color="secondary">
-                {" "}
-                •{" "}
-              </AppText>
-            ) : null}
-            {fixture.state && (
-              <AppText
-                variant="caption"
-                color="secondary"
-                style={styles.matchStatus}
-              >
-                {FIXTURE_STATE_MAP[fixture.state] ?? fixture.state}
-              </AppText>
-            )}
-          </View>
-        )}
         {isLive && resultOrReasonText && (
           <View style={styles.resultContainer}>
             <AppText
@@ -214,21 +197,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    marginBottom: 12,
+    marginBottom: 2,
   },
   matchCard: {
     marginHorizontal: 0,
     marginTop: 0,
     // marginBottom: 16,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 0,
     alignSelf: "center",
     width: SCREEN_WIDTH,
     // backgroundColor: "red",
   },
   matchContent: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 4,
   },
@@ -267,6 +250,7 @@ const styles = StyleSheet.create({
     writingDirection: "ltr",
     paddingHorizontal: 4,
     flexShrink: 0,
+    paddingTop: 6,
   },
   resultScore: {
     flexDirection: "row",
@@ -275,31 +259,29 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 4,
     paddingVertical: 4,
+    paddingTop: 12,
     flexShrink: 0,
     minWidth: 80,
     minHeight: 40,
   },
   resultScoreText: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "700",
-    lineHeight: 34,
+    lineHeight: 38,
   },
   resultScoreSeparator: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "700",
-    lineHeight: 34,
+    lineHeight: 38,
   },
   dateTimeRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginTop: 8,
+    marginBottom: 2,
   },
   dateTime: {
-    textAlign: "center",
-  },
-  matchStatus: {
     textAlign: "center",
   },
   resultContainer: {

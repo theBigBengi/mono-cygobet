@@ -2,14 +2,16 @@ import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView, Keyboard, Alert } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
   ScoreInputNavigationBar,
   SmartFilterChips,
   GroupFixtureCard,
+  FixtureGroupSection,
+  VerticalTimelineWrapper,
 } from "../components";
-import { LeagueDateGroupSection } from "@/components/Fixtures/LeagueDateGroupSection";
 import { useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { usePredictionNavigation } from "../hooks/usePredictionNavigation";
 import { useGroupPredictions } from "../hooks/useGroupPredictions";
@@ -19,10 +21,10 @@ import { useGroupedFixtures } from "../hooks/useGroupedFixtures";
 import { usePredictionsStats } from "../hooks/usePredictionsStats";
 import type { FixtureItem } from "@/types/common";
 import type { PredictionMode } from "../types";
+import { isFinished as isFinishedState, isCancelled as isCancelledState } from "@repo/utils";
 import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
-import { FOOTER_PADDING, SAVE_PENDING_DELAY_MS } from "../utils/constants";
-import { calculateContentPaddingTopDefault } from "../utils/utils";
+import { HEADER_HEIGHT, FOOTER_PADDING, SAVE_PENDING_DELAY_MS, SCROLL_OFFSET } from "../utils/constants";
 
 type Props = {
   groupId: number | null;
@@ -32,6 +34,8 @@ type Props = {
   groupName?: string;
   selectionMode?: "games" | "teams" | "leagues";
   groupTeamsIds?: number[];
+  /** Index to scroll to on mount */
+  scrollToIndex?: number;
 };
 
 /**
@@ -52,11 +56,15 @@ export function GroupGamesScreen({
   groupName,
   selectionMode,
   groupTeamsIds,
+  scrollToIndex,
 }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
   const mode = selectionMode ?? "games";
+
+  // State for highlighted fixture (temporary highlight when scrolling to it)
+  const [highlightedIndex, setHighlightedIndex] = React.useState<number | null>(null);
 
   /** Normalise fixtures from props; ensure we always have an array. */
   const fixtures = useMemo(() => {
@@ -76,6 +84,7 @@ export function GroupGamesScreen({
     selectAction,
     structuralFilter,
     selectTeam,
+    selectCompetition,
     selectRound,
     navigateRound,
     filteredFixtures,
@@ -88,8 +97,15 @@ export function GroupGamesScreen({
     onNavigateToLeaderboard: navigateToLeaderboard,
   });
 
-  /** Fixtures grouped by league + date; LIVE fixtures are separated for layout. */
-  const leagueDateGroups = useGroupedFixtures(filteredFixtures);
+  /** Fixtures grouped based on selection mode; LIVE fixtures are separated. */
+  /** In leagues mode with round filter active, skip grouping (flat list) */
+  const skipGrouping = mode === "leagues" && selectedAction === "round";
+  const fixtureGroups = useGroupedFixtures({
+    fixtures: filteredFixtures,
+    mode,
+    skipGrouping,
+    groupTeamsIds,
+  });
 
   /** Shared prediction state (React Query cache), save-to-server, and MatchWinner 1/X/2. */
   const {
@@ -169,7 +185,7 @@ export function GroupGamesScreen({
     getNextFieldIndex,
     navigateToField,
     scrollToMatchCard,
-  } = usePredictionNavigation(leagueDateGroups);
+  } = usePredictionNavigation(fixtureGroups);
 
   const keyboardHeight = useKeyboardHeight();
 
@@ -206,6 +222,22 @@ export function GroupGamesScreen({
       }
     });
   }, [fixtures, inputRefs, matchCardRefs]);
+
+  /** Scroll to specific index and highlight it temporarily. */
+  React.useEffect(() => {
+    if (scrollToIndex == null || scrollToIndex < 0) return;
+
+    const CARD_HEIGHT = 120; // Approximate card height
+    const scrollY = Math.max(0, scrollToIndex * CARD_HEIGHT - SCROLL_OFFSET);
+
+    const timer = setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: scrollY, animated: true });
+      setHighlightedIndex(scrollToIndex);
+      setTimeout(() => setHighlightedIndex(null), 3000);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [scrollToIndex]);
 
   /** Save all changed predictions then dismiss keyboard (Done button). */
   const handleDone = useCallback(() => {
@@ -262,24 +294,13 @@ export function GroupGamesScreen({
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <View style={{ flex: 1 }}>
-        {hasAnyChips && (
-          <SmartFilterChips
-            actionChips={actionChips}
-            selectedAction={selectedAction}
-            onSelectAction={selectAction}
-            structuralFilter={structuralFilter}
-            onSelectTeam={selectTeam}
-            onSelectRound={selectRound}
-            onNavigateRound={navigateRound}
-          />
-        )}
         <ScrollView
           ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={[
             styles.contentContainer,
             {
-              paddingTop: calculateContentPaddingTopDefault(hasAnyChips),
+              paddingTop: HEADER_HEIGHT,
               paddingBottom: FOOTER_PADDING + keyboardHeight,
             },
           ]}
@@ -311,52 +332,125 @@ export function GroupGamesScreen({
             </View>
           ) : (
             <>
-              {/* One section per league/date; each section has a list of fixture cards. */}
-              {leagueDateGroups.map((group) => (
-                <LeagueDateGroupSection
-                  key={group.key}
-                  leagueName={group.leagueName}
-                  dateKey={group.dateKey}
-                  kickoffIso={null}
-                >
-                  <View style={styles.groupCardContainer}>
-                    {/* Per-fixture card: position, share, and bound callbacks live in GroupFixtureCard. */}
-                    {group.fixtures.map((fixture, index) => (
-                      <GroupFixtureCard
-                        key={fixture.id}
-                        fixture={fixture}
-                        index={index}
-                        totalInGroup={group.fixtures.length}
-                        prediction={getPrediction(fixture.id)}
-                        inputRefs={inputRefs}
-                        currentFocusedField={currentFocusedField}
-                        isSaved={isPredictionSaved(fixture.id)}
-                        matchCardRefs={matchCardRefs}
-                        predictionMode={predictionModeTyped}
-                        groupName={groupName}
-                        onFieldFocus={handleFieldFocus}
-                        onFieldBlur={handleFieldBlur}
-                        onCardChange={handleCardChange}
-                        onAutoNext={handleAutoNext}
-                        onSelectOutcome={
-                          predictionMode === "MatchWinner"
-                            ? handleSelectOutcome
-                            : undefined
-                        }
-                        onScrollToCard={scrollToMatchCard}
-                        onPressCard={handlePressCard}
-                      />
+              {/* One section per group (date for leagues mode, league for others). */}
+              {(() => {
+                const totalFixtures = fixtureGroups.reduce((acc, g) => acc + g.fixtures.length, 0);
+                const showEndDot = selectedAction === "all"; // Only in "ALL" tab
+                // Flatten all fixtures to check next fixture's state
+                const allFixtures = fixtureGroups.flatMap((g) => g.fixtures);
+                // Helper to check if a fixture is finished
+                const isFixtureFinished = (f: FixtureItem) =>
+                  isFinishedState(f.state) || isCancelledState(f.state);
+                let globalIndex = 0;
+                return (
+                  <>
+                    {fixtureGroups.map((group) => (
+                      <FixtureGroupSection key={group.key} group={group}>
+                        <View style={styles.groupCardContainer}>
+                          {group.fixtures.map((fixture, index) => {
+                            const currentGlobalIndex = globalIndex;
+                            globalIndex++;
+                            // Check if next fixture is also finished
+                            const nextFixture = allFixtures[currentGlobalIndex + 1];
+                            const isNextFinished = nextFixture ? isFixtureFinished(nextFixture) : false;
+                            return (
+                              <VerticalTimelineWrapper
+                                key={fixture.id}
+                                fixture={fixture}
+                                isFirst={currentGlobalIndex === 0}
+                                isLast={!showEndDot && currentGlobalIndex === totalFixtures - 1}
+                                isNextFinished={isNextFinished}
+                                isHighlighted={highlightedIndex === currentGlobalIndex}
+                              >
+                                <GroupFixtureCard
+                                  fixture={fixture}
+                                  index={index}
+                                  totalInGroup={group.fixtures.length}
+                                  prediction={getPrediction(fixture.id)}
+                                  inputRefs={inputRefs}
+                                  currentFocusedField={currentFocusedField}
+                                  isSaved={isPredictionSaved(fixture.id)}
+                                  matchCardRefs={matchCardRefs}
+                                  predictionMode={predictionModeTyped}
+                                  groupName={groupName}
+                                  onFieldFocus={handleFieldFocus}
+                                  onFieldBlur={handleFieldBlur}
+                                  onCardChange={handleCardChange}
+                                  onAutoNext={handleAutoNext}
+                                  onSelectOutcome={
+                                    predictionMode === "MatchWinner"
+                                      ? handleSelectOutcome
+                                      : undefined
+                                  }
+                                  onScrollToCard={scrollToMatchCard}
+                                  onPressCard={handlePressCard}
+                                />
+                              </VerticalTimelineWrapper>
+                            );
+                          })}
+                        </View>
+                      </FixtureGroupSection>
                     ))}
-                  </View>
-                </LeagueDateGroupSection>
-              ))}
+                    {showEndDot && totalFixtures > 0 && (
+                      <>
+                        {/* Winner header - same style as date headers */}
+                        <View style={styles.winnerHeader}>
+                          <AppText
+                            style={[
+                              styles.winnerHeaderText,
+                              { color: theme.colors.warning },
+                            ]}
+                          >
+                            {t("ranking.winner")}
+                          </AppText>
+                        </View>
+                        <View style={styles.timelineEndDot}>
+                          <View style={styles.endDotColumn}>
+                            {/* Line - absolute positioned to match timeline */}
+                            <View
+                              style={[
+                                styles.endDotLineAbsolute,
+                                { backgroundColor: theme.colors.border },
+                              ]}
+                            />
+                            {/* Dot */}
+                            <View
+                              style={[
+                                styles.endDot,
+                                {
+                                  backgroundColor: theme.colors.background,
+                                  borderColor: theme.colors.textSecondary,
+                                },
+                              ]}
+                            >
+                              <Ionicons
+                                name="trophy-outline"
+                                size={14}
+                                color={theme.colors.textSecondary}
+                              />
+                            </View>
+                          </View>
+                          {/* Winner banner */}
+                          <View style={styles.winnerBannerContainer}>
+                            <View
+                              style={[
+                                styles.winnerBanner,
+                                {
+                                  backgroundColor: theme.colors.surface,
+                                  borderWidth: 1,
+                                  borderColor: theme.colors.border,
+                                  opacity: 0.6,
+                                },
+                              ]}
+                            />
+                          </View>
+                        </View>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
 
-              <GroupGamesLastSavedFooter
-                latestUpdatedAt={latestUpdatedAt}
-                isSaving={isSaving}
-                savedCount={savedPredictionsCount}
-                totalCount={totalPredictionsCount}
-              />
             </>
           )}
         </ScrollView>
@@ -376,10 +470,20 @@ export function GroupGamesScreen({
           style={[styles.headerOverlay, { top: 0 }]}
           pointerEvents="box-none"
         >
-          <GroupGamesHeader
-            onBack={() => router.back()}
-            onFillRandom={handleFillRandom}
-          />
+          <GroupGamesHeader onBack={() => router.back()}>
+            {hasAnyChips && (
+              <SmartFilterChips
+                actionChips={actionChips}
+                selectedAction={selectedAction}
+                onSelectAction={selectAction}
+                structuralFilter={structuralFilter}
+                onSelectTeam={selectTeam}
+                onSelectCompetition={selectCompetition}
+                onSelectRound={selectRound}
+                onNavigateRound={navigateRound}
+              />
+            )}
+          </GroupGamesHeader>
         </View>
       </View>
     </View>
@@ -390,7 +494,7 @@ export function GroupGamesScreen({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
-  contentContainer: { paddingHorizontal: 6, paddingVertical: 16 },
+  contentContainer: { paddingHorizontal: 0, paddingVertical: 16 },
   headerOverlay: {
     position: "absolute",
     left: 0,
@@ -398,7 +502,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   groupCardContainer: {
-    marginBottom: 12,
+    marginBottom: 0,
+    paddingLeft: 12,
+    paddingRight: 16,
   },
   emptyContainer: {
     flex: 1,
@@ -417,5 +523,64 @@ const styles = StyleSheet.create({
   },
   emptyStateSuggestion: {
     fontWeight: "600",
+  },
+  winnerHeader: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 32,
+    paddingBottom: 8,
+  },
+  winnerHeaderText: {
+    fontSize: 16,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    textAlign: "center",
+  },
+  timelineEndDot: {
+    flexDirection: "row",
+    paddingLeft: 12, // Match groupCardContainer paddingLeft
+    paddingRight: 16, // Match groupCardContainer paddingRight
+    marginTop: -40, // Overlap with previous card's line extension
+  },
+  endDotColumn: {
+    width: 56, // Match TIMELINE_WIDTH
+    alignItems: "flex-end",
+    paddingLeft: 2,
+    paddingRight: 6, // Match timeline paddingRight
+    paddingTop: 60, // Space for line after header
+  },
+  endDotLineAbsolute: {
+    position: "absolute",
+    width: 2,
+    top: -40, // Start from overlap point
+    height: 112, // To reach dot center
+    right: 6 + 8 - 1, // Match timeline: 13px from right
+  },
+  endDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: -4, // Shift dot so its center aligns with the timeline line
+  },
+  winnerBannerContainer: {
+    flex: 1,
+    paddingTop: 52, // Center banner on dot
+  },
+  winnerBanner: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    minHeight: 44,
+    marginRight: 24, // Account for chevron space in cards
+  },
+  winnerBannerText: {
+    fontSize: 16,
+    fontWeight: "300",
   },
 });

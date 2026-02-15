@@ -126,7 +126,7 @@ export async function getUpcomingFixtures(
           id: true,
           name: true,
           imagePath: true,
-          country: { select: { id: true, name: true, imagePath: true } },
+          country: { select: { id: true, name: true, imagePath: true, iso2: true } },
         },
       },
       homeTeam: includeTeams
@@ -170,6 +170,7 @@ export async function getUpcomingFixtures(
             id: r.league.country.id,
             name: r.league.country.name,
             imagePath: r.league.country.imagePath,
+            iso2: r.league.country.iso2 ?? null,
           }
         : null
       : undefined;

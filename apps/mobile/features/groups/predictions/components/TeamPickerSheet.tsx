@@ -1,5 +1,5 @@
-// components/RoundPickerSheet.tsx
-// Bottom sheet with scrollable list of rounds and status indicators.
+// components/TeamPickerSheet.tsx
+// Bottom sheet with scrollable list of teams for filtering.
 
 import React, { useCallback, useMemo } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
@@ -10,44 +10,26 @@ import {
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import { MaterialIcons } from "@expo/vector-icons";
-import { AppText } from "@/components/ui";
+import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
-import type { RoundInfo, RoundStatus } from "../hooks/useSmartFilters";
+import type { TeamChip } from "../hooks/useSmartFilters";
 
-interface RoundPickerSheetProps {
+interface TeamPickerSheetProps {
   sheetRef: React.RefObject<React.ComponentRef<typeof BottomSheetModal>>;
-  rounds: RoundInfo[];
-  selectedRound: string;
-  onSelectRound: (round: string) => void;
+  teams: TeamChip[];
+  selectedTeamId: number | null;
+  onSelectTeam: (teamId: number | null) => void;
 }
 
-function statusIcon(
-  status: RoundStatus
-): "lens" | "schedule" | "check-circle" | "radio-button-unchecked" {
-  switch (status) {
-    case "live":
-      return "lens";
-    case "unpredicted":
-      return "schedule";
-    case "settled":
-      return "check-circle";
-    case "upcoming":
-    default:
-      return "radio-button-unchecked";
-  }
-}
-
-export function RoundPickerSheet({
+export function TeamPickerSheet({
   sheetRef,
-  rounds,
-  selectedRound,
-  onSelectRound,
-}: RoundPickerSheetProps) {
+  teams,
+  selectedTeamId,
+  onSelectTeam,
+}: TeamPickerSheetProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
-
-  const snapPoints = useMemo(() => ["60%", "85%"], []);
 
   const backgroundStyle = useMemo(
     () => ({
@@ -76,48 +58,26 @@ export function RoundPickerSheet({
   );
 
   const handleSelect = useCallback(
-    (round: string) => {
-      onSelectRound(round);
+    (teamId: number | null) => {
+      onSelectTeam(teamId);
       sheetRef.current?.dismiss();
     },
-    [onSelectRound, sheetRef]
-  );
-
-  const statusLabel = useCallback(
-    (status: RoundStatus): string => {
-      switch (status) {
-        case "live":
-          return t("predictions.roundStatus.live", { defaultValue: "Live" });
-        case "unpredicted":
-          return t("predictions.roundStatus.unpredicted", {
-            defaultValue: "To predict",
-          });
-        case "settled":
-          return t("predictions.roundStatus.settled", {
-            defaultValue: "Finished",
-          });
-        case "upcoming":
-        default:
-          return t("predictions.roundStatus.upcoming", {
-            defaultValue: "Upcoming",
-          });
-      }
-    },
-    [t]
+    [onSelectTeam, sheetRef]
   );
 
   return (
     <BottomSheetModal
       ref={sheetRef}
-      snapPoints={snapPoints}
+      enableDynamicSizing
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       backgroundStyle={backgroundStyle}
       handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+      maxDynamicContentSize={500}
     >
       <View style={styles.header}>
         <AppText variant="subtitle" style={styles.headerTitle}>
-          {t("predictions.selectRound", { defaultValue: "Select Round" })}
+          {t("predictions.selectTeam", { defaultValue: "Select Team" })}
         </AppText>
       </View>
 
@@ -125,13 +85,66 @@ export function RoundPickerSheet({
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={true}
       >
-        {rounds.map((r) => {
-          const isSelected = r.round === selectedRound;
-          const iconName = statusIcon(r.status);
+        {/* All teams option */}
+        <Pressable
+          onPress={() => handleSelect(null)}
+          style={({ pressed }) => [
+            styles.row,
+            {
+              backgroundColor:
+                selectedTeamId === null
+                  ? theme.colors.cardBackground
+                  : "transparent",
+              borderLeftColor:
+                selectedTeamId === null
+                  ? theme.colors.primary
+                  : "transparent",
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.allTeamsIcon,
+              { backgroundColor: theme.colors.border },
+            ]}
+          >
+            <MaterialIcons
+              name="groups"
+              size={20}
+              color={theme.colors.textSecondary}
+            />
+          </View>
+          <View style={styles.rowText}>
+            <AppText
+              variant="body"
+              style={[
+                styles.teamName,
+                selectedTeamId === null && {
+                  fontWeight: "600",
+                  color: theme.colors.primary,
+                },
+              ]}
+            >
+              {t("predictions.allTeams", { defaultValue: "All Teams" })}
+            </AppText>
+          </View>
+          {selectedTeamId === null && (
+            <MaterialIcons
+              name="check"
+              size={24}
+              color={theme.colors.primary}
+            />
+          )}
+        </Pressable>
+
+        {/* Individual teams */}
+        {teams.map((team) => {
+          const isSelected = team.id === selectedTeamId;
           return (
             <Pressable
-              key={r.round}
-              onPress={() => handleSelect(r.round)}
+              key={team.id}
+              onPress={() => handleSelect(team.id)}
               style={({ pressed }) => [
                 styles.row,
                 {
@@ -145,39 +158,23 @@ export function RoundPickerSheet({
                 },
               ]}
             >
-              <MaterialIcons
-                name={iconName as "check-circle"}
-                size={20}
-                color={
-                  r.status === "live"
-                    ? "#EF4444"
-                    : r.status === "unpredicted"
-                      ? theme.colors.primary
-                      : theme.colors.textSecondary
-                }
+              <TeamLogo
+                imagePath={team.imagePath}
+                teamName={team.name}
+                size={32}
               />
               <View style={styles.rowText}>
                 <AppText
                   variant="body"
                   style={[
-                    styles.roundLabel,
+                    styles.teamName,
                     isSelected && {
                       fontWeight: "600",
                       color: theme.colors.primary,
                     },
                   ]}
                 >
-                  {t("predictions.roundNumber", {
-                    number: r.round,
-                    defaultValue: `Round ${r.round}`,
-                  })}
-                </AppText>
-                <AppText variant="caption" color="secondary">
-                  {statusLabel(r.status)} · {r.count}{" "}
-                  {t("predictions.fixtures", {
-                    count: r.count,
-                    defaultValue: r.count === 1 ? "game" : "games",
-                  })}
+                  {team.name}
                 </AppText>
               </View>
               {isSelected && (
@@ -212,14 +209,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     gap: 12,
     borderLeftWidth: 4,
   },
   rowText: {
     flex: 1,
   },
-  roundLabel: {
-    marginBottom: 2,
+  teamName: {
+    marginBottom: 0,
+  },
+  allTeamsIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

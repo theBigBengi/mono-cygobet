@@ -2,48 +2,24 @@ import React from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { AppText } from "@/components/ui";
 import { HEADER_HEIGHT } from "../utils/constants";
 
-
-interface GroupGamesHeaderFullProps {
-  backOnly?: false;
+interface GroupGamesHeaderProps {
   onBack: () => void;
-  onFillRandom: () => void;
-}
-
-interface GroupGamesHeaderBackOnlyProps {
-  backOnly: true;
-  onBack: () => void;
-  /** Optional title shown next to back button when no leftContent */
-  title?: string;
-  /** Optional content to show on the left (after back button, e.g. group name) */
-  leftContent?: React.ReactNode;
-  /** Optional content to show on the right (e.g. group status) */
+  /** Optional content to show after back button (e.g., filter tabs) */
+  children?: React.ReactNode;
+  /** When true, only show back button without children content area */
+  backOnly?: boolean;
+  /** Optional content to show on the right side of the header */
   rightContent?: React.ReactNode;
-  onFillRandom?: () => void;
 }
-
-export type GroupGamesHeaderProps =
-  | GroupGamesHeaderFullProps
-  | GroupGamesHeaderBackOnlyProps;
 
 /**
- * Shared header for Group Games / Group Lobby screens.
- * Back (left). When not backOnly: Dice + View toggle (right).
- * All buttons are round with blur background.
- * Gradient: transparent at bottom -> solid at top (theme-aware).
+ * Header for Group Games screen.
+ * Back button on the left, optional content (tabs) fills the rest.
  */
-export function GroupGamesHeader(props: GroupGamesHeaderProps) {
-  const { onBack, backOnly } = props;
-  const title = backOnly && "title" in props ? props.title : undefined;
-  const leftContent =
-    backOnly && "leftContent" in props ? props.leftContent : undefined;
-  const rightContent =
-    backOnly && "rightContent" in props ? props.rightContent : undefined;
+export function GroupGamesHeader({ onBack, children, backOnly, rightContent }: GroupGamesHeaderProps) {
   const { theme } = useTheme();
-
-  const showTitle = backOnly && title && !leftContent;
 
   return (
     <View
@@ -54,52 +30,23 @@ export function GroupGamesHeader(props: GroupGamesHeaderProps) {
       ]}
       pointerEvents="box-none"
     >
-      <View style={styles.leftRow}>
-        <Pressable onPress={onBack}>
-          <View
-            style={[
-              styles.iconButton,
-              styles.iconButtonClip,
-              { borderWidth: 0, backgroundColor: theme.colors.background },
-            ]}
-          >
-            <View style={styles.iconButtonInner}>
-              <Ionicons
-                name="chevron-back"
-                size={20}
-                color={theme.colors.textPrimary}
-              />
-            </View>
-          </View>
-        </Pressable>
-        {leftContent ? (
-          leftContent
-        ) : showTitle ? (
-          <AppText
-            variant="subtitle"
-            style={[styles.titleText, { color: theme.colors.textPrimary }]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {title}
-          </AppText>
-        ) : null}
-      </View>
-      {!backOnly ? (
-        <View style={styles.rightRow}>
-          <Pressable onPress={props.onFillRandom!}>
-            <View style={[styles.iconButton]}>
-              <Ionicons
-                name="dice-outline"
-                size={20}
-                color={theme.colors.textPrimary}
-              />
-            </View>
-          </Pressable>
+      <Pressable onPress={onBack} style={styles.backButton}>
+        <View
+          style={[
+            styles.iconButton,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={20}
+            color={theme.colors.textPrimary}
+          />
         </View>
-      ) : rightContent ? (
-        <View style={styles.rightRow}>{rightContent}</View>
-      ) : null}
+      </Pressable>
+      {!backOnly && children && <View style={styles.content}>{children}</View>}
+      {backOnly && <View style={styles.spacer} />}
+      {rightContent && <View style={styles.rightContent}>{rightContent}</View>}
     </View>
   );
 }
@@ -108,9 +55,12 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    paddingHorizontal: 8,
+    paddingEnd: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(128, 128, 128, 0.3)",
+  },
+  backButton: {
+    paddingHorizontal: 4,
   },
   iconButton: {
     width: 44,
@@ -119,27 +69,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  iconButtonClip: {
-    overflow: "hidden",
-  },
-  iconButtonInner: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  leftRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  content: {
     flex: 1,
   },
-  titleText: {
+  spacer: {
     flex: 1,
   },
-  rightRow: {
+  rightContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
   },
 });

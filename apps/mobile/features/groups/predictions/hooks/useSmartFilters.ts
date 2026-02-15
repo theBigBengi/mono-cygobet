@@ -2,10 +2,8 @@
 // Thin orchestrator: composes useActionChips, useStructuralFilter, useFilteredFixtures.
 // Preserves auto-selection and recovery effects. Same public API as before.
 
-import { useEffect } from "react";
-import { isLive, isFinished } from "@repo/utils";
+import { useEffect, useCallback } from "react";
 import type { FixtureItem } from "@/types/common";
-import { classifyFixtureTime, isToPredict } from "./useActionChips";
 import { useActionChips } from "./useActionChips";
 import { useStructuralFilter } from "./useStructuralFilter";
 import { useFilteredFixtures } from "./useFilteredFixtures";
@@ -14,6 +12,7 @@ export type { ActionChip } from "./useActionChips";
 export type { EmptyStateInfo } from "./useFilteredFixtures";
 export type {
   TeamChip,
+  CompetitionChip,
   RoundInfo,
   RoundStatus,
   StructuralFilter,
@@ -39,74 +38,55 @@ export function useSmartFilters({
     selectedAction,
     selectAction,
     setSelectedAction,
-    buckets,
-    hasAutoSelectedRef,
-    userHasChangedSelection,
-  } = useActionChips(fixtures);
+  } = useActionChips({ fixtures, mode });
 
   const {
     structuralFilter,
     selectTeam,
+    selectCompetition,
     selectRound,
     navigateRound,
     setSelectedRound,
     setSelectedTeamId,
   } = useStructuralFilter({ fixtures, mode, groupTeamsIds });
 
+  // Track if round filter is active (selectedAction is "round")
+  const isRoundFilterActive = mode === "leagues" && selectedAction === "round";
+
+  // Wrapped selectAction
+  const handleSelectAction = useCallback(
+    (actionId: string) => {
+      selectAction(actionId);
+    },
+    [selectAction]
+  );
+
+  // Handle selecting a round - activates round filter mode
+  const handleSelectRound = useCallback(
+    (round: string) => {
+      selectRound(round);
+      // Set action to "round" to indicate round filtering is active
+      if (mode === "leagues") {
+        selectAction("round");
+      }
+    },
+    [selectRound, selectAction, mode]
+  );
+
+  // Determine effective structural filter - null if NOT in round mode for leagues
+  const effectiveStructuralFilter =
+    mode === "leagues" && !isRoundFilterActive ? null : structuralFilter;
+
   const { filteredFixtures, emptyState, hasAnyChips } = useFilteredFixtures({
     fixtures,
     selectedAction,
-    structuralFilter,
+    structuralFilter: effectiveStructuralFilter,
     actionChips,
-    selectAction,
+    selectAction: handleSelectAction,
     onNavigateToLeaderboard,
   });
 
-  useEffect(() => {
-    if (
-      fixtures.length === 0 ||
-      userHasChangedSelection.current ||
-      hasAutoSelectedRef.current
-    )
-      return;
-    hasAutoSelectedRef.current = true;
-    const liveCount = fixtures.filter((f) => isLive(f.state)).length;
-    const toPredictCount = fixtures.filter(isToPredict).length;
-    const toPredictTodayCount = fixtures.filter(
-      (f) =>
-        isToPredict(f) && classifyFixtureTime(f.kickoffAt, buckets) === "today"
-    ).length;
-    const todayCount = fixtures.filter(
-      (f) => classifyFixtureTime(f.kickoffAt, buckets) === "today"
-    ).length;
-    const total = fixtures.length;
-
-    if (liveCount > 0) {
-      setSelectedAction("live");
-      return;
-    }
-    if (toPredictCount > 0 && toPredictTodayCount > 0) {
-      setSelectedAction("predict");
-      if (mode === "leagues") {
-        const roundWithToday = fixtures
-          .filter((f) => classifyFixtureTime(f.kickoffAt, buckets) === "today")
-          .map((f) => f.round)
-          .filter(Boolean)[0];
-        if (roundWithToday) setSelectedRound(roundWithToday);
-      }
-      return;
-    }
-    if (toPredictCount > 0 && toPredictCount < total) {
-      setSelectedAction("predict");
-      return;
-    }
-    if (todayCount > 0 && todayCount < total) {
-      setSelectedAction("time:today");
-      return;
-    }
-    setSelectedAction("all");
-  }, [fixtures, mode, buckets, setSelectedAction, setSelectedRound]);
-
+  // Recovery effect: if current filter results in empty list, fall back to "all"
   useEffect(() => {
     if (filteredFixtures.length > 0 || fixtures.length === 0) return;
     if (selectedAction === "all") {
@@ -114,33 +94,13 @@ export function useSmartFilters({
       setSelectedTeamId(null);
       return;
     }
-    const liveCount = fixtures.filter((f) => isLive(f.state)).length;
-    const toPredictCount = fixtures.filter(isToPredict).length;
-    const resultsCount = fixtures.filter((f) => isFinished(f.state)).length;
-    const todayCount = fixtures.filter(
-      (f) => classifyFixtureTime(f.kickoffAt, buckets) === "today"
-    ).length;
-    const todayChipId = actionChips.find((c) => c.id === "time:today")?.id;
-
-    if (liveCount > 0) {
-      setSelectedAction("live");
-    } else if (resultsCount > 0) {
-      setSelectedAction("results");
-    } else if (toPredictCount > 0 && toPredictCount < fixtures.length) {
-      setSelectedAction("predict");
-    } else if (todayCount > 0 && todayCount < fixtures.length && todayChipId) {
-      setSelectedAction(todayChipId);
-    } else {
-      setSelectedRound(null);
-      setSelectedTeamId(null);
-      setSelectedAction("all");
-    }
+    // Current filter has no results, fall back to "all"
+    setSelectedRound(null);
+    setSelectedTeamId(null);
+    setSelectedAction("all");
   }, [
     filteredFixtures.length,
     fixtures.length,
-    fixtures,
-    actionChips,
-    buckets,
     selectedAction,
     setSelectedAction,
     setSelectedRound,
@@ -150,10 +110,11 @@ export function useSmartFilters({
   return {
     actionChips,
     selectedAction,
-    selectAction,
+    selectAction: handleSelectAction,
     structuralFilter,
     selectTeam,
-    selectRound,
+    selectCompetition,
+    selectRound: handleSelectRound,
     navigateRound,
     filteredFixtures,
     hasAnyChips,

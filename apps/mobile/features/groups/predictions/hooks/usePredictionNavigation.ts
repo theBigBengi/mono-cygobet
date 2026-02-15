@@ -2,11 +2,14 @@ import { useMemo, useRef, useState } from "react";
 import type { ScrollView, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { canPredict } from "@repo/utils";
-import type { LeagueDateGroup } from "@/utils/fixture";
+import type { FixtureItem } from "@/types/common";
 import type { FocusedField } from "../types";
 import { SCROLL_OFFSET } from "../utils/constants";
 
 type Field = { fixtureId: number; type: "home" | "away" };
+
+/** Generic group type - only requires fixtures array */
+type FixtureGroup = { fixtures: FixtureItem[] };
 
 /**
  * Handles:
@@ -15,7 +18,7 @@ type Field = { fixtureId: number; type: "home" | "away" };
  * - next/previous navigation
  * - scrolling the list to keep the active fixture visible
  */
-export function usePredictionNavigation(leagueDateGroups: LeagueDateGroup[]) {
+export function usePredictionNavigation(groups: FixtureGroup[]) {
   const [currentFocusedField, setCurrentFocusedField] =
     useState<FocusedField>(null);
 
@@ -39,7 +42,7 @@ export function usePredictionNavigation(leagueDateGroups: LeagueDateGroup[]) {
 
   const allInputFields: Field[] = useMemo(() => {
     const fields: Field[] = [];
-    leagueDateGroups.forEach((group) => {
+    groups.forEach((group) => {
       group.fixtures.forEach((fixture) => {
         // Only include editable fixtures (not started)
         if (canPredict(fixture.state, fixture.startTs)) {
@@ -49,7 +52,7 @@ export function usePredictionNavigation(leagueDateGroups: LeagueDateGroup[]) {
       });
     });
     return fields;
-  }, [leagueDateGroups]);
+  }, [groups]);
 
   const getCurrentFieldIndex = () => {
     if (!currentFocusedField) return -1;

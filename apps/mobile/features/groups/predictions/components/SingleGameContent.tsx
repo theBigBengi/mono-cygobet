@@ -132,27 +132,29 @@ export const SingleGameContent = React.memo(function SingleGameContent({
         />
         {activeTab === "predict" && (
           <>
-            <HorizontalScoreSlider
-              side="home"
-              value={prediction.home}
-              onValueChange={(val) => handleSliderChange("home", val)}
-              teamImagePath={fixture.homeTeam?.imagePath}
-              teamName={fixture.homeTeam?.name}
-              thumbColor={fixture.homeTeam?.firstKitColor ?? "#22C55E"}
-            />
-            <HorizontalScoreSlider
-              side="away"
-              value={prediction.away}
-              onValueChange={(val) => handleSliderChange("away", val)}
-              teamImagePath={fixture.awayTeam?.imagePath}
-              teamName={fixture.awayTeam?.name}
-              thumbColor={getAwaySliderColor(
-                fixture.homeTeam?.firstKitColor,
-                fixture.awayTeam?.secondKitColor,
-                fixture.awayTeam?.thirdKitColor,
-                "#3B82F6"
-              )}
-            />
+            <View style={styles.slidersContainer}>
+              <HorizontalScoreSlider
+                side="home"
+                value={prediction.home}
+                onValueChange={(val) => handleSliderChange("home", val)}
+                teamImagePath={fixture.homeTeam?.imagePath}
+                teamName={fixture.homeTeam?.name}
+                thumbColor={fixture.homeTeam?.firstKitColor ?? "#22C55E"}
+              />
+              <HorizontalScoreSlider
+                side="away"
+                value={prediction.away}
+                onValueChange={(val) => handleSliderChange("away", val)}
+                teamImagePath={fixture.awayTeam?.imagePath}
+                teamName={fixture.awayTeam?.name}
+                thumbColor={getAwaySliderColor(
+                  fixture.homeTeam?.firstKitColor,
+                  fixture.awayTeam?.secondKitColor,
+                  fixture.awayTeam?.thirdKitColor,
+                  "#3B82F6"
+                )}
+              />
+            </View>
             <MyPredictionsList
               fixtureId={fixture.id}
               currentGroupId={groupId}
@@ -183,6 +185,10 @@ const styles = StyleSheet.create({
   },
   gameScrollContent: {
     paddingBottom: 24,
+    flexGrow: 1,
+  },
+  slidersContainer: {
+    paddingVertical: 16,
   },
   placeholderContainer: {
     padding: 16,

@@ -32,17 +32,26 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
   const { theme } = useTheme();
 
   const initials = getInitials(group.name);
-  const progress =
-    (group.totalFixtures ?? 0) > 0
-      ? (group.completedFixturesCount ?? 0) / (group.totalFixtures ?? 1)
-      : 0;
   const liveCount = group.liveGamesCount ?? 0;
   const isDraft = group.status === "draft";
 
-  const kickoffAt =
-    group.nextGame?.kickoffAt ?? group.firstGame?.kickoffAt ?? null;
-  const countdownLabel = useCountdown(kickoffAt);
-  const nextLabel = countdownLabel !== "—" ? countdownLabel : null;
+  // Status bar data
+  const memberCount = group.memberCount ?? 0;
+  const totalFixtures = group.totalFixtures ?? 0;
+  const completedGames = group.completedFixturesCount ?? 0;
+  const completionPercent = totalFixtures > 0 ? Math.round((completedGames / totalFixtures) * 100) : 0;
+  const predictionsCount = group.predictionsCount ?? 0;
+  const predictionsPercent = totalFixtures > 0 ? Math.round((predictionsCount / totalFixtures) * 100) : 0;
+  const userRank = group.userRank;
+
+  const nextGameKickoff = group.nextGame?.kickoffAt ?? null;
+  const countdown = useCountdown(nextGameKickoff);
+
+  // Check if next game is today and has no prediction
+  const isNextGameToday = nextGameKickoff
+    ? new Date(nextGameKickoff).toDateString() === new Date().toDateString()
+    : false;
+  const isUrgentPrediction = isNextGameToday && !group.nextGame?.prediction;
 
   return (
     <Pressable onPress={onPress}>
@@ -63,7 +72,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
         ]}
       >
         {/* Row 1: Avatar + Info */}
-        <View style={styles.topRow}>
+        <View style={[styles.topRow, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border, paddingBottom: 10 }]}>
           <View
             style={[styles.avatar, { backgroundColor: theme.colors.primary }]}
           >
@@ -74,27 +83,13 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
             </AppText>
           </View>
           <View style={styles.info}>
-            <View style={styles.nameRow}>
-              <AppText variant="body" style={styles.name} numberOfLines={1}>
-                {group.name}
-              </AppText>
-              {unreadCount > 0 && (
-                <View
-                  style={[
-                    styles.badge,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                >
-                  <AppText style={styles.badgeText}>
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </AppText>
-                </View>
-              )}
-            </View>
+            <AppText variant="body" style={styles.name} numberOfLines={1}>
+              {group.name}
+            </AppText>
             <AppText variant="caption" color="secondary">
-              {group.memberCount ?? 0}{" "}
-              {t("lobby.participant", { count: group.memberCount ?? 0 })}
-              {nextLabel && ` · ${nextLabel}`}
+              {group.privacy === "public"
+                ? t("groups.filterPublic")
+                : t("lobby.private")}
             </AppText>
             {isDraft && (
               <AppText
@@ -113,51 +108,105 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
           />
         </View>
 
-        {/* Row 2: Progress (only for active/ended) */}
-        {!isDraft && (group.totalFixtures ?? 0) > 0 && (
-          <View style={styles.progressSection}>
-            <View
-              style={[styles.track, { backgroundColor: theme.colors.border }]}
-            >
-              <View
-                style={[
-                  styles.fill,
-                  {
-                    width: `${progress * 100}%`,
-                    backgroundColor:
-                      progress === 1
-                        ? theme.colors.success
-                        : theme.colors.primary,
-                  },
-                ]}
-              />
+        {/* Next game */}
+        {!isDraft && group.nextGame && (
+          <View style={styles.nextGameRow}>
+            <View style={styles.nextGameInfo}>
+              <AppText style={[styles.nextGameLabel, { color: theme.colors.textSecondary }]}>
+                {t("groups.nextGame")} · {countdown}
+              </AppText>
+              <AppText style={[styles.nextGameText, { color: theme.colors.text }]}>
+                {group.nextGame.homeTeam?.name ?? "?"} - {group.nextGame.awayTeam?.name ?? "?"}
+              </AppText>
+              {group.nextGame.league?.name && (
+                <AppText style={[styles.nextGameLeague, { color: theme.colors.textSecondary }]}>
+                  {group.nextGame.league.name}{group.nextGame.country?.iso2 ? ` (${group.nextGame.country.iso2})` : ""}
+                </AppText>
+              )}
             </View>
-            <View style={styles.progressLabels}>
-              <AppText variant="caption" color="secondary">
-                {t("lobby.gamesProgress", {
-                  done: group.completedFixturesCount ?? 0,
-                  total: group.totalFixtures ?? 0,
-                })}
-              </AppText>
-              <AppText variant="caption" color="secondary">
-                {Math.round(progress * 100)}%
-              </AppText>
+            <View style={styles.predictionContainer}>
+              {group.nextGame.prediction && (
+                <AppText style={[styles.predictionText, { color: theme.colors.text }]}>
+                  {group.nextGame.prediction.home}-{group.nextGame.prediction.away}
+                </AppText>
+              )}
+              <View style={[styles.predictionStatus, { backgroundColor: group.nextGame.prediction ? theme.colors.success : (isUrgentPrediction ? theme.colors.danger : theme.colors.warning) }]}>
+                <Ionicons
+                  name={group.nextGame.prediction ? "checkmark" : "alert"}
+                  size={12}
+                  color="#fff"
+                />
+              </View>
             </View>
           </View>
         )}
 
-        {/* Row 3: Live badge */}
-        {liveCount > 0 && (
-          <View style={styles.liveRow}>
-            <View
-              style={[styles.liveDot, { backgroundColor: theme.colors.danger }]}
-            />
-            <AppText
-              variant="caption"
-              style={{ color: theme.colors.danger, fontWeight: "600" }}
-            >
-              {liveCount} {t("lobby.gamesLive")}
-            </AppText>
+        {/* Status bar */}
+        {!isDraft && (
+          <View style={styles.statusBar}>
+            {/* Members */}
+            <View style={styles.statusItem}>
+              <Ionicons
+                name="people-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+              <AppText style={[styles.statusText, { color: theme.colors.textSecondary }]}>
+                {memberCount}
+              </AppText>
+            </View>
+
+            {/* Messages - only show if there are unread */}
+            {unreadCount > 0 && (
+              <View style={styles.statusItem}>
+                <Ionicons
+                  name="chatbubble"
+                  size={14}
+                  color={theme.colors.primary}
+                />
+                <AppText style={[styles.statusText, { color: theme.colors.primary }]}>
+                  +{unreadCount > 99 ? "99" : unreadCount}
+                </AppText>
+              </View>
+            )}
+
+            {/* Ranking */}
+            {userRank != null && (
+              <View style={styles.statusItem}>
+                <Ionicons
+                  name="trophy-outline"
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
+                <AppText style={[styles.statusText, { color: theme.colors.textSecondary }]}>
+                  #{userRank}
+                </AppText>
+              </View>
+            )}
+
+            {/* Predictions */}
+            <View style={styles.statusItem}>
+              <Ionicons
+                name={predictionsCount === totalFixtures ? "checkmark-circle" : (predictionsCount < totalFixtures ? "alert-circle" : "checkmark-circle-outline")}
+                size={14}
+                color={predictionsCount === totalFixtures ? theme.colors.success : (isUrgentPrediction ? theme.colors.danger : (predictionsCount < totalFixtures ? theme.colors.warning : theme.colors.textSecondary))}
+              />
+              <AppText style={[styles.statusText, { color: predictionsCount === totalFixtures ? theme.colors.success : (isUrgentPrediction ? theme.colors.danger : (predictionsCount < totalFixtures ? theme.colors.warning : theme.colors.textSecondary)) }]}>
+                {predictionsCount}/{totalFixtures} ({predictionsPercent}%)
+              </AppText>
+            </View>
+
+            {/* Completion or Start Date */}
+            <View style={styles.statusItem}>
+              <Ionicons
+                name={liveCount > 0 ? "football" : "football-outline"}
+                size={14}
+                color={liveCount > 0 ? theme.colors.primary : theme.colors.textSecondary}
+              />
+              <AppText style={[styles.statusText, { color: liveCount > 0 ? theme.colors.primary : theme.colors.textSecondary }]}>
+                {`${completedGames}/${totalFixtures} (${completionPercent}%)`}
+              </AppText>
+            </View>
           </View>
         )}
       </View>
@@ -169,7 +218,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 0,
     padding: 12,
-    marginBottom: 0,
+    marginBottom: 8,
   },
   topRow: {
     flexDirection: "row",
@@ -179,7 +228,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -193,53 +242,62 @@ const styles = StyleSheet.create({
   tapToFinish: {
     marginTop: 2,
   },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   name: {
     fontWeight: "600",
+  },
+  nextGameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  nextGameInfo: {
     flex: 1,
   },
-  badge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 5,
+  nextGameLabel: {
+    fontSize: 11,
   },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#fff",
+  nextGameText: {
+    fontSize: 13,
+    fontWeight: "500",
+    marginTop: 2,
   },
-  progressSection: {
-    marginTop: 12,
+  nextGameLeague: {
+    fontSize: 11,
+    marginTop: 2,
   },
-  track: {
-    height: 4,
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  fill: {
-    height: "100%",
-  },
-  progressLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 4,
-  },
-  liveRow: {
+  predictionContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 10,
   },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  predictionText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  predictionStatus: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(128, 128, 128, 0.2)",
+  },
+  statusItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "500",
   },
 });

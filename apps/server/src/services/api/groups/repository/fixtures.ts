@@ -125,6 +125,7 @@ export async function findGroupFixturesForFilters(groupId: number) {
                   id: true,
                   name: true,
                   imagePath: true,
+                  iso2: true,
                 },
               },
               seasons: {

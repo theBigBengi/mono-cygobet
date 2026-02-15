@@ -150,14 +150,15 @@ export function SingleGameScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <GroupGamesHeader backOnly onBack={() => router.back()} />
-      {allFixtures.length > 1 && (
-        <GameSlider
-          fixtures={allFixtures}
-          currentIndex={currentFixtureIndex >= 0 ? currentFixtureIndex : 0}
-          onSelectGame={handleSelectGame}
-        />
-      )}
+      <GroupGamesHeader onBack={() => router.back()}>
+        {allFixtures.length > 1 && (
+          <GameSlider
+            fixtures={allFixtures}
+            currentIndex={currentFixtureIndex >= 0 ? currentFixtureIndex : 0}
+            onSelectGame={handleSelectGame}
+          />
+        )}
+      </GroupGamesHeader>
       <View style={styles.content}>
         <SingleGameContent
           fixture={currentFixture}

@@ -31,6 +31,7 @@ export { GroupLobbyMetaSection } from "./components/GroupLobbyMetaSection";
 export { PublishGroupButton } from "./components/PublishGroupButton";
 export { DeleteGroupButton } from "./components/DeleteGroupButton";
 export { LobbyWithHeader } from "./components/LobbyWithHeader";
+export { GroupInfoSheet } from "./components/GroupInfoSheet";
 
 // Hooks
 export { useGroupLobbyState } from "./hooks/useGroupLobbyState";

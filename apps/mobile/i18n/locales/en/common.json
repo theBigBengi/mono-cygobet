@@ -7,7 +7,8 @@
     "settings": "Settings"
   },
   "dates": {
-    "today": "TODAY"
+    "today": "Today",
+    "tomorrow": "Tomorrow"
   },
   "activity": {
     "empty": "No activity yet",
@@ -82,6 +83,7 @@
   },
   "groups": {
     "title": "Groups",
+    "nextGame": "Next game",
     "noGroupsYet": "No groups yet",
     "noGroupsSubtitle": "You don't have any groups yet",
     "members": "{{count}} members",
@@ -130,7 +132,29 @@
     "filterDrafts": "Drafts",
     "filterEnded": "Ended",
     "filterPublic": "Public",
-    "noGroupsInFilter": "No groups in this category"
+    "noGroupsInFilter": "No groups in this category",
+    "mode": {
+      "games": "Games",
+      "teams": "Teams",
+      "leagues": "Leagues"
+    },
+    "info": {
+      "title": "Groups Screen",
+      "description": "This screen displays all your groups. Each group card shows information about the group, the next upcoming game, and key statistics in the status bar at the bottom.",
+      "statusBarTitle": "Status Bar Icons",
+      "members": "Members",
+      "membersDesc": "Number of members in the group",
+      "rank": "Your Rank",
+      "rankDesc": "Your current position in the group leaderboard",
+      "predictions": "Predictions",
+      "predictionsDesc": "Number of predictions you've made out of total games",
+      "predictionsGreen": "Green — All predictions made",
+      "predictionsOrange": "Orange — Missing predictions",
+      "predictionsRed": "Red — Game starting today without prediction",
+      "completion": "Games",
+      "completionDesc": "Number of completed games out of total games",
+      "completionPrimary": "Blue — Live games in progress"
+    }
   },
   "lobby": {
     "draft": "Draft",
@@ -148,6 +172,8 @@
     "createdOn": "Created on {{date}}",
     "games": "Games",
     "viewAllGames": "View all games",
+    "predictions": "Predictions",
+    "finished": "Finished",
     "noUpcomingGames": "No upcoming games",
     "endedOn": "Ended {{date}}",
     "endsOn": "Ends {{date}}",
@@ -256,12 +282,18 @@
     "yourRankSection": "YOUR RANK",
     "viewRanking": "View ranking",
     "leaderboard": "LEADERBOARD",
+    "predictions": "PREDICTIONS",
     "you": "You",
     "stats": "Stats",
     "vs": "vs",
     "makePredictions": "Make Predictions",
     "viewAllGames": "View All Games",
-    "nextGameLabel": "NEXT GAME"
+    "nextGameLabel": "NEXT GAME",
+    "prediction": "Prediction",
+    "noPrediction": "No prediction",
+    "myPrediction": "My prediction",
+    "addPrediction": "Add prediction",
+    "pts": "pts"
   },
   "groupSettings": {
     "general": "General",
@@ -321,7 +353,11 @@
     "saveFailed": "Save Failed",
     "saveFailedMessage": "Could not save your predictions. Please try again.",
     "noPredictionsFromOtherGroups": "No predictions from other groups.",
-    "pts": "pts"
+    "pts": "pts",
+    "allTeams": "All Teams",
+    "allCompetitions": "All Competitions",
+    "selectTeam": "Select Team",
+    "selectCompetition": "Select Competition"
   },
   "countdown": {
     "inHoursMinutes": "in {{hours}}h {{minutes}}m",
@@ -554,7 +590,8 @@
     "failedLoadRanking": "Failed to load ranking",
     "statsLine": "{{exact}} exact / {{predictions}} predictions",
     "pts": "pts",
-    "empty": "No members in ranking yet"
+    "empty": "No members in ranking yet",
+    "winner": "Group Winner"
   },
   "predictionsOverview": {
     "loadingPredictions": "Loading predictions overview...",

@@ -45,22 +45,22 @@ export function LobbyQuickActions({ actions }: LobbyQuickActionsProps) {
   const { theme } = useTheme();
 
   return (
-    <View style={styles.grid}>
+    <View style={[styles.list, { backgroundColor: theme.colors.surface }]}>
       {actions.map((action, index) => (
         <Pressable
           key={index}
           onPress={action.onPress}
           style={({ pressed }) => [
-            styles.cell,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
+            styles.row,
+            index < actions.length - 1 && {
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              borderBottomColor: theme.colors.border,
             },
             pressed && styles.pressed,
           ]}
         >
           <View style={styles.iconWrap}>
-            {renderIcon(action.icon, theme, 24)}
+            {renderIcon(action.icon, theme, 20)}
             {action.badge != null && action.badge > 0 && (
               <View
                 style={[styles.badge, { backgroundColor: theme.colors.danger }]}
@@ -76,13 +76,16 @@ export function LobbyQuickActions({ actions }: LobbyQuickActionsProps) {
             )}
           </View>
           <AppText
-            variant="caption"
-            color="secondary"
-            style={styles.label}
-            numberOfLines={1}
+            variant="body"
+            style={[styles.label, { color: theme.colors.textPrimary }]}
           >
             {action.label}
           </AppText>
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={theme.colors.textSecondary}
+          />
         </Pressable>
       ))}
     </View>
@@ -90,31 +93,31 @@ export function LobbyQuickActions({ actions }: LobbyQuickActionsProps) {
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
+  list: {
+    marginVertical: 16,
   },
-  cell: {
-    flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
+  row: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   pressed: {
-    opacity: 0.8,
+    opacity: 0.6,
   },
   iconWrap: {
     position: "relative",
-    marginBottom: 6,
+    width: 28,
+  },
+  label: {
+    flex: 1,
+    fontWeight: "500",
+    marginLeft: 12,
   },
   badge: {
     position: "absolute",
     top: -6,
-    right: -10,
+    right: -4,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -126,8 +129,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 11,
-  },
-  label: {
-    fontWeight: "600",
   },
 });

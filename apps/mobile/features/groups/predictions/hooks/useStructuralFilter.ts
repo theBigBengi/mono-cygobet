@@ -11,6 +11,13 @@ export type TeamChip = {
   imagePath: string | null;
 };
 
+export type CompetitionChip = {
+  id: number;
+  name: string;
+  imagePath: string | null;
+  countryName: string | null;
+};
+
 export type RoundStatus = "live" | "unpredicted" | "settled" | "upcoming";
 
 export type RoundInfo = {
@@ -24,6 +31,8 @@ export type StructuralFilter =
       type: "teams";
       teams: TeamChip[];
       selectedTeamId: number | null;
+      competitions: CompetitionChip[];
+      selectedCompetitionId: number | null;
     }
   | {
       type: "rounds";
@@ -56,10 +65,17 @@ export function useStructuralFilter({
   groupTeamsIds,
 }: UseStructuralFilterParams) {
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState<
+    number | null
+  >(null);
   const [selectedRound, setSelectedRound] = useState<string | null>(null);
 
   const selectTeam = useCallback((id: number | null) => {
     setSelectedTeamId(id);
+  }, []);
+
+  const selectCompetition = useCallback((id: number | null) => {
+    setSelectedCompetitionId(id);
   }, []);
 
   const selectRound = useCallback((round: string) => {
@@ -70,6 +86,7 @@ export function useStructuralFilter({
     if (fixtures.length === 0) return null;
 
     if (mode === "teams") {
+      // Extract teams
       const teamMap = new Map<number, TeamChip>();
       for (const f of fixtures) {
         if (f.homeTeam) {
@@ -91,11 +108,31 @@ export function useStructuralFilter({
       const teams = Array.from(teamMap.values())
         .filter((t) => allowedIds.size === 0 || allowedIds.has(t.id))
         .sort((a, b) => a.name.localeCompare(b.name));
-      if (teams.length > 1) {
+
+      // Extract competitions (leagues)
+      const competitionMap = new Map<number, CompetitionChip>();
+      for (const f of fixtures) {
+        if (f.league) {
+          competitionMap.set(f.league.id, {
+            id: f.league.id,
+            name: f.league.name,
+            imagePath: f.league.imagePath ?? null,
+            countryName: f.country?.name ?? null,
+          });
+        }
+      }
+      const competitions = Array.from(competitionMap.values()).sort((a, b) =>
+        a.name.localeCompare(b.name)
+      );
+
+      // Return teams filter if we have teams or competitions
+      if (teams.length > 0 || competitions.length > 0) {
         return {
           type: "teams",
           teams,
           selectedTeamId: selectedTeamId,
+          competitions,
+          selectedCompetitionId: selectedCompetitionId,
         };
       }
       return null;
@@ -137,7 +174,7 @@ export function useStructuralFilter({
     }
 
     return null;
-  }, [fixtures, mode, groupTeamsIds, selectedTeamId, selectedRound]);
+  }, [fixtures, mode, groupTeamsIds, selectedTeamId, selectedCompetitionId, selectedRound]);
 
   const navigateRound = useCallback(
     (direction: "prev" | "next") => {
@@ -157,9 +194,11 @@ export function useStructuralFilter({
   return {
     structuralFilter,
     selectTeam,
+    selectCompetition,
     selectRound,
     navigateRound,
     setSelectedRound,
     setSelectedTeamId,
+    setSelectedCompetitionId,
   };
 }

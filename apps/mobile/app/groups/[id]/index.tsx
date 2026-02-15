@@ -17,6 +17,7 @@ import {
   Platform,
 } from "react-native";
 import { BlurView } from "expo-blur";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, AppText } from "@/components/ui";
 import { useGroupQuery, useDeleteGroupMutation } from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
@@ -28,6 +29,7 @@ import {
   GroupLobbyActiveScreen,
   GroupLobbyEndedScreen,
   LobbyWithHeader,
+  GroupInfoSheet,
 } from "@/features/groups/group-lobby";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -92,6 +94,11 @@ function GroupLobbyContent() {
   const deleteGroupMutation = useDeleteGroupMutation(groupId ?? 0);
   const [isPublishing, setIsPublishing] = useState(false);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const infoSheetRef = useRef<BottomSheetModal>(null);
+
+  const handleOpenInfo = useCallback(() => {
+    infoSheetRef.current?.present();
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -174,6 +181,7 @@ function GroupLobbyContent() {
         onSettingsPress={() =>
           router.push(`/groups/${group.id}/settings` as any)
         }
+        onInfoPress={handleOpenInfo}
       >
         <GroupLobbyEndedScreen
           group={group}
@@ -207,6 +215,7 @@ function GroupLobbyContent() {
         onSettingsPress={() =>
           router.push(`/groups/${group.id}/settings` as any)
         }
+        onInfoPress={handleOpenInfo}
       >
         <GroupLobbyActiveScreen
           group={group}
@@ -258,6 +267,11 @@ function GroupLobbyContent() {
           </View>
         </View>
       )}
+      <GroupInfoSheet
+        group={group}
+        sheetRef={infoSheetRef}
+        isLoading={isFetching}
+      />
     </View>
   );
 }

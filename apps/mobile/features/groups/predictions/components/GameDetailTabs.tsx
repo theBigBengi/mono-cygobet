@@ -18,8 +18,7 @@ type Props = {
 
 /**
  * Horizontal row of pill-shaped tab buttons for game detail view.
- * Active tab: primary background + white text.
- * Inactive: surface background + secondary text.
+ * Matches SmartFilterChips design from other screens.
  */
 export function GameDetailTabs({ tabs, activeTab, onSelectTab }: Props) {
   const { theme } = useTheme();
@@ -27,28 +26,34 @@ export function GameDetailTabs({ tabs, activeTab, onSelectTab }: Props) {
   if (tabs.length === 0) return null;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderBottomColor: theme.colors.border }]}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         return (
           <Pressable
             key={tab.id}
             onPress={() => onSelectTab(tab.id)}
-            style={[
+            style={({ pressed }) => [
               styles.tab,
+              pressed && styles.tabPressed,
               {
                 backgroundColor: isActive
                   ? theme.colors.primary
-                  : theme.colors.surface,
+                  : theme.colors.border,
               },
             ]}
           >
             <AppText
               variant="caption"
-              style={{
-                color: isActive ? "#fff" : theme.colors.textSecondary,
-                fontWeight: isActive ? "600" : "500",
-              }}
+              style={[
+                styles.tabText,
+                {
+                  color: isActive
+                    ? theme.colors.primaryText
+                    : theme.colors.textSecondary,
+                },
+                isActive && styles.tabTextActive,
+              ]}
             >
               {tab.label}
             </AppText>
@@ -62,14 +67,27 @@ export function GameDetailTabs({ tabs, activeTab, onSelectTab }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    // paddingHorizontal: 16,
-    paddingVertical: 8,
-    // marginBottom: 8,
+    paddingTop: 4,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
   },
   tab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  tabPressed: {
+    opacity: 0.7,
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: "500",
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
+  },
+  tabTextActive: {
+    fontWeight: "600",
   },
 });

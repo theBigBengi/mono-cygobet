@@ -95,6 +95,7 @@ export async function getFixtureDetail(
         id: fixture.league.country.id,
         name: fixture.league.country.name,
         imagePath: fixture.league.country.imagePath ?? null,
+        iso2: fixture.league.country.iso2 ?? null,
       }
     : null;
 

@@ -76,6 +76,7 @@ export type ApiUpcomingFixturesResponse = {
       id: number;
       name: string;
       imagePath: string | null;
+      iso2: string | null;
     } | null;
     homeTeam?: {
       id: number;
@@ -210,6 +211,7 @@ export type ApiCountryItem = {
   id: number;
   name: string;
   imagePath: string | null;
+  iso2: string | null;
 };
 
 /**
@@ -426,6 +428,10 @@ export type ApiGroupItem = {
    * Games currently in LIVE state. Only for active/ended groups.
    */
   liveGamesCount?: number;
+  /**
+   * Number of FT games the user did not predict (missed). Only for active/ended groups.
+   */
+  missedPredictionsCount?: number;
   /** Who can access the invite link. */
   inviteAccess?: ApiInviteAccess;
   /** Maximum number of members allowed in the group. */
@@ -449,6 +455,8 @@ export type ApiGroupItem = {
   nudgeEnabled?: boolean;
   /** Nudge window in minutes before kickoff. */
   nudgeWindowMinutes?: number;
+  /** Current user's rank in the group (1-based). Only for active/ended groups. */
+  userRank?: number;
 };
 
 /**
@@ -775,7 +783,7 @@ export type ApiFixtureDetailData = {
     thirdKitColor?: string | null;
   };
   league: { id: number; name: string; imagePath: string | null } | null;
-  country: { id: number; name: string; imagePath: string | null } | null;
+  country: { id: number; name: string; imagePath: string | null; iso2: string | null } | null;
   predictions: ApiFixtureDetailPrediction[];
 };
 

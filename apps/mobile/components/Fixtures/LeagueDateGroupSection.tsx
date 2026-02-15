@@ -6,7 +6,7 @@ import { formatDateHeader } from "@/utils/fixture";
 type Props = {
   leagueName: string;
   countryName?: string | null;
-  dateKey: string;
+  dateKey?: string | null;
   kickoffIso?: string | null;
   children: React.ReactNode;
 };
@@ -42,9 +42,11 @@ export function LeagueDateGroupSection({
             </AppText>
           )}
         </View>
-        <AppText variant="caption" color="secondary" style={styles.headerText}>
-          {formatDateHeader(dateKey)}
-        </AppText>
+        {dateKey && (
+          <AppText variant="caption" color="secondary" style={styles.headerText}>
+            {formatDateHeader(dateKey)}
+          </AppText>
+        )}
       </View>
       {children}
     </View>
@@ -52,13 +54,15 @@ export function LeagueDateGroupSection({
 }
 
 const styles = StyleSheet.create({
-  section: {},
+  section: {
+    marginBottom: 8,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    // paddingHorizontal: 4,
-    // paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: "transparent",
   },
   headerLeft: {

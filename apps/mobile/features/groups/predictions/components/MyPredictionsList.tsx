@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import { useMyPredictionsForFixture } from "@/domains/fixtures";
@@ -32,26 +33,30 @@ export function MyPredictionsList({ fixtureId, currentGroupId }: Props) {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="small" color={theme.colors.primary} />
+      <View style={[styles.container, styles.loadingContainer, { borderTopWidth: 0 }]}>
+        <ActivityIndicator size="small" color={theme.colors.textSecondary} />
       </View>
     );
   }
   if (list.length === 0 && currentGroupId == null) return null;
 
   return (
-    <View style={[styles.container, { borderTopColor: theme.colors.border }]}>
-      <AppText
-        variant="caption"
-        color="secondary"
-        style={[styles.header, { color: theme.colors.textSecondary }]}
-      >
-        Your predictions for this game
-      </AppText>
+    <View style={[styles.container, { borderTopColor: theme.colors.border, flex: 1 }]}>
       {list.length === 0 ? (
-        <AppText variant="body" color="secondary" style={styles.emptyText}>
-          {t("predictions.noPredictionsFromOtherGroups")}
-        </AppText>
+        <View style={styles.emptyContainer}>
+          <Ionicons
+            name="football-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+            style={styles.emptyIcon}
+          />
+          <AppText variant="body" color="secondary" style={styles.emptyText}>
+            {t("predictions.noPredictionsFromOtherGroups")}
+          </AppText>
+          <AppText variant="caption" color="secondary" style={styles.emptySubtext}>
+            {t("predictions.noPredictionsSubtitle", { defaultValue: "Your predictions from other groups for this game will appear here" })}
+          </AppText>
+        </View>
       ) : (
         list.map((item: ApiMyPredictionForFixtureItem) => (
           <View
@@ -88,13 +93,21 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     alignItems: "center",
   },
-  header: {
-    marginBottom: 8,
-    paddingHorizontal: 4,
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyIcon: {
+    marginBottom: 12,
   },
   emptyText: {
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    textAlign: "center",
+    paddingHorizontal: 32,
   },
   row: {
     flexDirection: "row",

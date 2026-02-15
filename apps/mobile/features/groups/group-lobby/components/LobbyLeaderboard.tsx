@@ -10,8 +10,8 @@ import { useTheme } from "@/lib/theme";
 import type { ApiRankingItem } from "@repo/types";
 import { LobbyCardSkeleton } from "./LobbyCardSkeleton";
 
-const MEDALS = ["🥇", "🥈", "🥉"] as const;
 const TOP_COUNT = 3;
+const RANK_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"] as const; // Gold, Silver, Bronze
 
 export interface LobbyLeaderboardProps {
   ranking: ApiRankingItem[] | undefined;
@@ -94,14 +94,15 @@ export function LobbyLeaderboard({
         ]}
       >
         {showMedal ? (
-          <AppText style={styles.medal}>{MEDALS[index] ?? ""}</AppText>
+          <View style={[styles.rankCircle, { backgroundColor: RANK_COLORS[index] }]}>
+            <AppText style={styles.rankCircleText}>{index + 1}</AppText>
+          </View>
         ) : (
-          <AppText
-            variant="caption"
-            style={[styles.rankNum, { color: theme.colors.textSecondary }]}
-          >
-            #{item.rank}
-          </AppText>
+          <View style={[styles.rankCircle, { backgroundColor: theme.colors.border }]}>
+            <AppText style={[styles.rankCircleText, { color: theme.colors.textSecondary }]}>
+              {item.rank}
+            </AppText>
+          </View>
         )}
         <AppText
           variant="body"
@@ -163,18 +164,23 @@ export function LobbyLeaderboard({
           </>
         )}
 
-        {/* View ranking link */}
+        {/* Ranking link */}
         <View style={[styles.viewRow, { borderTopColor: theme.colors.border }]}>
+          <Ionicons
+            name="trophy"
+            size={20}
+            color={theme.colors.primary}
+          />
           <AppText
-            variant="caption"
-            style={[styles.viewLink, { color: theme.colors.primary }]}
+            variant="body"
+            style={[styles.viewLink, { color: theme.colors.textPrimary }]}
           >
-            {t("lobby.viewRanking")}
+            {t("lobby.ranking")}
           </AppText>
           <Ionicons
             name="chevron-forward"
-            size={16}
-            color={theme.colors.primary}
+            size={18}
+            color={theme.colors.textSecondary}
           />
         </View>
       </Pressable>
@@ -190,10 +196,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    marginBottom: 8,
+    paddingVertical: 8,
   },
   card: {
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
     overflow: "hidden",
   },
@@ -210,15 +216,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 8,
   },
-  medal: {
-    fontSize: 20,
-    width: 28,
-    textAlign: "center",
+  rankCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  rankNum: {
-    width: 28,
-    fontWeight: "600",
-    textAlign: "center",
+  rankCircleText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fff",
   },
   name: {
     flex: 1,
@@ -240,12 +248,13 @@ const styles = StyleSheet.create({
   viewRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    paddingVertical: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
   },
   viewLink: {
-    fontWeight: "600",
+    flex: 1,
+    fontWeight: "500",
+    marginLeft: 12,
   },
 });

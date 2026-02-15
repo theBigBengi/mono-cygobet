@@ -23,6 +23,8 @@ interface LobbyWithHeaderProps {
   isDeleting?: boolean;
   /** For active/ended: when provided, shows Settings icon in header */
   onSettingsPress?: () => void;
+  /** For active/ended: when provided, shows Info icon in header */
+  onInfoPress?: () => void;
 }
 
 /**
@@ -37,6 +39,7 @@ export function LobbyWithHeader({
   onDeleteGroup,
   isDeleting = false,
   onSettingsPress,
+  onInfoPress,
 }: LobbyWithHeaderProps) {
   const { t } = useTranslation("common");
   const goBack = useGoBack("/(tabs)/groups");
@@ -81,19 +84,37 @@ export function LobbyWithHeader({
           />
         </View>
       </Pressable>
-    ) : isActiveOrEnded && onSettingsPress ? (
-      <Pressable
-        onPress={onSettingsPress}
-        style={({ pressed }) => [pressed && styles.iconPressed]}
-      >
-        <View style={styles.settingsButton}>
-          <Ionicons
-            name="settings-outline"
-            size={22}
-            color={theme.colors.textPrimary}
-          />
-        </View>
-      </Pressable>
+    ) : isActiveOrEnded ? (
+      <View style={styles.headerIcons}>
+        {onInfoPress && (
+          <Pressable
+            onPress={onInfoPress}
+            style={({ pressed }) => [pressed && styles.iconPressed]}
+          >
+            <View style={styles.settingsButton}>
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={theme.colors.textPrimary}
+              />
+            </View>
+          </Pressable>
+        )}
+        {onSettingsPress && (
+          <Pressable
+            onPress={onSettingsPress}
+            style={({ pressed }) => [pressed && styles.iconPressed]}
+          >
+            <View style={styles.settingsButton}>
+              <Ionicons
+                name="settings-outline"
+                size={22}
+                color={theme.colors.textPrimary}
+              />
+            </View>
+          </Pressable>
+        )}
+      </View>
     ) : !isActiveOrEnded ? (
       <View
         style={[
@@ -159,6 +180,10 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 99,
     justifyContent: "center",
+    alignItems: "center",
+  },
+  headerIcons: {
+    flexDirection: "row",
     alignItems: "center",
   },
   iconPressed: {

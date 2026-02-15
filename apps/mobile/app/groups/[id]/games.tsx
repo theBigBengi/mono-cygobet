@@ -22,9 +22,13 @@ export default function GroupGamesRoute() {
 
 function GroupGamesContent() {
   const { t } = useTranslation("common");
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; scrollIndex?: string }>();
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
+  const scrollIndex =
+    params.scrollIndex && !isNaN(Number(params.scrollIndex))
+      ? Number(params.scrollIndex)
+      : undefined;
 
   const { data, isLoading, error } = useGroupQuery(groupId, {
     includeFixtures: true,
@@ -63,6 +67,7 @@ function GroupGamesContent() {
       groupName={group.name}
       selectionMode={group.selectionMode}
       groupTeamsIds={group.groupTeamsIds}
+      scrollToIndex={scrollIndex}
     />
   );
 }

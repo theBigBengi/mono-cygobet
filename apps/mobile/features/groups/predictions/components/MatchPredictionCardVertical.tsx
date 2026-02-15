@@ -14,7 +14,6 @@ import { ScoreInput } from "./ScoreInput";
 import { OutcomePicker } from "./OutcomePicker";
 import { TeamRow } from "./TeamRow";
 import { ResultDisplay } from "./ResultDisplay";
-import { PointsTimeDisplay } from "./PointsTimeDisplay";
 
 type InputRefs = {
   home: React.RefObject<TextInput | null>;
@@ -109,7 +108,7 @@ export function MatchPredictionCardVertical({
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
 
   return (
-    <View ref={cardRef}>
+    <View ref={cardRef} style={styles.outerContainer}>
       <Card
         style={[
           styles.matchCard,
@@ -144,14 +143,6 @@ export function MatchPredictionCardVertical({
                 isWinner={isAwayWinner}
               />
             </View>
-            {onPressCardProp != null && (
-              <Text
-                style={[styles.chevron, { color: theme.colors.textSecondary }]}
-                allowFontScaling={false}
-              >
-                ›
-              </Text>
-            )}
           </Pressable>
 
           {/* Result - displayed vertically in the middle (only when game started or finished) */}
@@ -202,25 +193,40 @@ export function MatchPredictionCardVertical({
             )}
           </View>
 
-          {/* Time/Points - displayed once on the right */}
-          <PointsTimeDisplay
-            isEditable={isEditable}
-            isLive={isLive}
-            isFinished={isFinished}
-            time={gameResultOrTime?.time || null}
-            points={points}
-          />
         </View>
       </Card>
+      {/* Chevron outside the card */}
+      {onPressCardProp != null && (
+        <Pressable onPress={onPressCard} style={styles.chevronContainer}>
+          <Text
+            style={[styles.chevron, { color: theme.colors.textSecondary }]}
+            allowFontScaling={false}
+          >
+            ›
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   matchCard: {
-    marginHorizontal: 4,
+    flex: 1,
+    marginHorizontal: 0,
     marginBottom: 0,
     padding: 8,
+    borderRadius: 0,
+  },
+  chevronContainer: {
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   matchContent: {
     flexDirection: "row",
@@ -239,8 +245,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chevron: {
-    fontSize: 12,
-    opacity: 0.4,
+    fontSize: 18,
+    opacity: 0.6,
   },
   predictionsContainer: {
     flexDirection: "column",

@@ -11,18 +11,20 @@ import { useTheme } from "@/lib/theme";
 interface InfoSheetProps {
   sheetRef: React.RefObject<React.ComponentRef<typeof BottomSheetModal>>;
   snapPoints?: string[];
+  enableDynamicSizing?: boolean;
   children: ReactNode;
 }
 
 export function InfoSheet({
   sheetRef,
   snapPoints: customSnapPoints,
+  enableDynamicSizing = false,
   children,
 }: InfoSheetProps) {
   const { theme } = useTheme();
   const snapPoints = useMemo(
-    () => customSnapPoints ?? ["50%"],
-    [customSnapPoints]
+    () => (enableDynamicSizing ? undefined : (customSnapPoints ?? ["50%"])),
+    [customSnapPoints, enableDynamicSizing]
   );
 
   const backgroundStyle = useMemo(
@@ -55,6 +57,7 @@ export function InfoSheet({
     <BottomSheetModal
       ref={sheetRef}
       snapPoints={snapPoints}
+      enableDynamicSizing={enableDynamicSizing}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       backgroundStyle={backgroundStyle}

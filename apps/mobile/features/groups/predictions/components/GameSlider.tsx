@@ -18,15 +18,39 @@ const SLIDER_ITEM_WIDTH = 110;
 const SLIDER_ITEM_MARGIN = 8;
 const SLIDER_ITEM_TOTAL = SLIDER_ITEM_WIDTH + SLIDER_ITEM_MARGIN;
 const LOGO_SIZE = 16;
+/** Width of the back button area in the header */
+const BACK_BUTTON_WIDTH = 52;
 
-/** Padding so first/last item can be centered on screen. */
-const HORIZONTAL_PADDING = (SCREEN_WIDTH - SLIDER_ITEM_WIDTH) / 2;
+/**
+ * Padding to center items on the TRUE screen center (not container center).
+ * Left padding is reduced because the back button already adds offset.
+ */
+function getHorizontalPadding(leftOffset: number): { left: number; right: number } {
+  const screenCenter = SCREEN_WIDTH / 2;
+  const itemHalfWidth = SLIDER_ITEM_WIDTH / 2;
+  // Left padding: distance from container start to where first item should start
+  // to have its center at screen center
+  const leftPadding = screenCenter - leftOffset - itemHalfWidth;
+  // Right padding: distance from last item end to container end
+  // to allow last item's center to be at screen center
+  const rightPadding = screenCenter - itemHalfWidth;
+  return {
+    left: Math.max(0, leftPadding),
+    right: Math.max(0, rightPadding),
+  };
+}
 
-/** Offset to center the item at the given index on screen. */
-function getOffsetForIndex(index: number): number {
-  const itemCenter =
-    HORIZONTAL_PADDING + index * SLIDER_ITEM_TOTAL + SLIDER_ITEM_WIDTH / 2;
-  return Math.max(0, itemCenter - SCREEN_WIDTH / 2);
+/** Offset to center the item at the given index on TRUE screen center. */
+function getOffsetForIndex(index: number, leftOffset: number): number {
+  const padding = getHorizontalPadding(leftOffset);
+  const containerWidth = SCREEN_WIDTH - leftOffset;
+  // Item center position within the scrollable content
+  const itemCenter = padding.left + index * SLIDER_ITEM_TOTAL + SLIDER_ITEM_WIDTH / 2;
+  // We want this item center to appear at the screen center
+  // Screen center relative to container = containerWidth / 2
+  // But we want TRUE screen center, which is (SCREEN_WIDTH / 2 - leftOffset) from container start
+  const targetPosition = SCREEN_WIDTH / 2 - leftOffset;
+  return Math.max(0, itemCenter - targetPosition);
 }
 
 function getTeamAbbr(teamName: string): string {
@@ -46,12 +70,15 @@ export type GameSliderProps = {
   fixtures: FixtureItem[];
   currentIndex: number;
   onSelectGame: (index: number) => void;
+  /** Left offset to account for (e.g., back button width) */
+  leftOffset?: number;
 };
 
 export function GameSlider({
   fixtures,
   currentIndex,
   onSelectGame,
+  leftOffset = BACK_BUTTON_WIDTH,
 }: GameSliderProps) {
   const { theme } = useTheme();
   const { t } = useTranslation("common");
@@ -61,6 +88,8 @@ export function GameSlider({
   const [isReady, setIsReady] = useState(false);
   const opacity = useRef(new Animated.Value(0)).current;
 
+  const padding = getHorizontalPadding(leftOffset);
+
   // Initial scroll (hidden) + fade in
   useEffect(() => {
     if (isReady) return;
@@ -68,7 +97,7 @@ export function GameSlider({
 
     const timer = setTimeout(() => {
       flatListRef.current?.scrollToOffset({
-        offset: getOffsetForIndex(currentIndex),
+        offset: getOffsetForIndex(currentIndex, leftOffset),
         animated: false,
       });
 
@@ -83,7 +112,7 @@ export function GameSlider({
     }, 50);
 
     return () => clearTimeout(timer);
-  }, [fixtures.length, isReady]);
+  }, [fixtures.length, isReady, leftOffset]);
 
   // Animated scroll when index changes (after initial ready)
   useEffect(() => {
@@ -99,10 +128,10 @@ export function GameSlider({
       return;
 
     flatListRef.current?.scrollToOffset({
-      offset: getOffsetForIndex(currentIndex),
+      offset: getOffsetForIndex(currentIndex, leftOffset),
       animated: true,
     });
-  }, [currentIndex, isReady, fixtures.length]);
+  }, [currentIndex, isReady, fixtures.length, leftOffset]);
 
   const renderItem = useCallback(
     ({ item: fixture, index }: { item: FixtureItem; index: number }) => {
@@ -194,10 +223,10 @@ export function GameSlider({
         extraData={currentIndex}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING }}
+        contentContainerStyle={{ paddingLeft: padding.left, paddingRight: padding.right }}
         getItemLayout={(_, index) => ({
           length: SLIDER_ITEM_TOTAL,
-          offset: HORIZONTAL_PADDING + SLIDER_ITEM_TOTAL * index,
+          offset: padding.left + SLIDER_ITEM_TOTAL * index,
           index,
         })}
         windowSize={5}

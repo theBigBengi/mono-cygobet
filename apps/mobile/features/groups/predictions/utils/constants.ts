@@ -5,8 +5,8 @@
 /** Height of the header overlay in pixels */
 export const HEADER_HEIGHT = 64;
 
-/** Height of filter chips when visible (accommodates 2 rows with flexWrap) in pixels */
-export const FILTER_TABS_HEIGHT = 96;
+/** Height of filter chips when visible in pixels */
+export const FILTER_TABS_HEIGHT = 44;
 
 /** Base padding for footer (before adding keyboard height) in pixels */
 export const FOOTER_PADDING = 100;

@@ -97,14 +97,19 @@ export function useFilteredFixtures({
     let afterAction = applyActionFilter(fixtures, selectedAction);
 
     if (structuralFilter) {
-      if (
-        structuralFilter.type === "teams" &&
-        structuralFilter.selectedTeamId != null
-      ) {
-        const tid = structuralFilter.selectedTeamId;
-        afterAction = afterAction.filter(
-          (f) => f.homeTeam?.id === tid || f.awayTeam?.id === tid
-        );
+      if (structuralFilter.type === "teams") {
+        // Filter by selected team
+        if (structuralFilter.selectedTeamId != null) {
+          const tid = structuralFilter.selectedTeamId;
+          afterAction = afterAction.filter(
+            (f) => f.homeTeam?.id === tid || f.awayTeam?.id === tid
+          );
+        }
+        // Filter by selected competition
+        if (structuralFilter.selectedCompetitionId != null) {
+          const cid = structuralFilter.selectedCompetitionId;
+          afterAction = afterAction.filter((f) => f.league?.id === cid);
+        }
       } else if (structuralFilter.type === "rounds") {
         const r = structuralFilter.selectedRound;
         afterAction = afterAction.filter((f) => f.round === r);
@@ -117,7 +122,7 @@ export function useFilteredFixtures({
         new Date(b.kickoffAt ?? 0).getTime()
     );
 
-    const hasAnyChips = actionChips.length > 0;
+    const hasAnyChips = actionChips.length > 0 || structuralFilter != null;
 
     let emptyState: EmptyStateInfo | null = null;
     if (filteredFixtures.length === 0 && total > 0) {

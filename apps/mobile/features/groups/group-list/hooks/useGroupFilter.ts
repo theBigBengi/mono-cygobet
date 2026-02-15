@@ -6,13 +6,11 @@ import type { ApiGroupItem } from "@repo/types";
 
 export type GroupFilterType =
   | "all"
-  | "attention"
   | "active"
   | "drafts"
   | "ended";
 
 const FILTER_PRIORITY: Exclude<GroupFilterType, "all">[] = [
-  "attention",
   "active",
   "drafts",
   "ended",
@@ -24,33 +22,31 @@ interface GroupFilterResult {
   filteredGroups: ApiGroupItem[];
   counts: {
     all: number;
-    attention: number;
     active: number;
     drafts: number;
     ended: number;
   };
 }
 
-function categorizeGroup(
-  group: ApiGroupItem
-): "attention" | "active" | "drafts" | "ended" {
-  if (group.status === "draft") return "drafts";
-  if (group.status === "ended") return "ended";
-
-  // Active group - check if needs attention
+function needsAttention(group: ApiGroupItem): boolean {
   const hasLive = (group.liveGamesCount ?? 0) > 0;
   const hasUnpredicted = (group.todayUnpredictedCount ?? 0) > 0;
+  return hasLive || hasUnpredicted;
+}
 
-  if (hasLive || hasUnpredicted) return "attention";
+function categorizeGroup(
+  group: ApiGroupItem
+): "active" | "drafts" | "ended" {
+  if (group.status === "draft") return "drafts";
+  if (group.status === "ended") return "ended";
   return "active";
 }
 
 export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
-  const [selectedFilter, setSelectedFilter] = useState<GroupFilterType>("attention");
+  const [selectedFilter, setSelectedFilter] = useState<GroupFilterType>("active");
 
   const { filteredGroups, counts } = useMemo(() => {
     const categorized = {
-      attention: [] as ApiGroupItem[],
       active: [] as ApiGroupItem[],
       drafts: [] as ApiGroupItem[],
       ended: [] as ApiGroupItem[],
@@ -61,8 +57,26 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
       categorized[category].push(group);
     }
 
-    // Sort active by nextGame.kickoffAt ASC, nulls last
+    // Sort active: groups needing attention first (live > unpredicted), then by nextGame.kickoffAt
     categorized.active.sort((a, b) => {
+      const attentionA = needsAttention(a);
+      const attentionB = needsAttention(b);
+
+      // Attention groups come first
+      if (attentionA && !attentionB) return -1;
+      if (!attentionA && attentionB) return 1;
+
+      // Within attention groups: live first, then by unpredicted count
+      if (attentionA && attentionB) {
+        const liveA = a.liveGamesCount ?? 0;
+        const liveB = b.liveGamesCount ?? 0;
+        if (liveA !== liveB) return liveB - liveA;
+        const unpredA = a.todayUnpredictedCount ?? 0;
+        const unpredB = b.todayUnpredictedCount ?? 0;
+        if (unpredA !== unpredB) return unpredB - unpredA;
+      }
+
+      // Then sort by nextGame.kickoffAt ASC, nulls last
       const ka = a.nextGame?.kickoffAt ?? null;
       const kb = b.nextGame?.kickoffAt ?? null;
       if (ka === null && kb === null) return 0;
@@ -71,19 +85,8 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
       return ka.localeCompare(kb);
     });
 
-    // Sort attention: live first, then by unpredicted count
-    categorized.attention.sort((a, b) => {
-      const liveA = a.liveGamesCount ?? 0;
-      const liveB = b.liveGamesCount ?? 0;
-      if (liveA !== liveB) return liveB - liveA;
-      const unpredA = a.todayUnpredictedCount ?? 0;
-      const unpredB = b.todayUnpredictedCount ?? 0;
-      return unpredB - unpredA;
-    });
-
     const counts = {
       all: groups.length,
-      attention: categorized.attention.length,
       active: categorized.active.length,
       drafts: categorized.drafts.length,
       ended: categorized.ended.length,
@@ -92,7 +95,6 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
     let filtered: ApiGroupItem[];
     if (selectedFilter === "all") {
       filtered = [
-        ...categorized.attention,
         ...categorized.active,
         ...categorized.drafts,
         ...categorized.ended,
@@ -106,7 +108,7 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
 
   // Auto-select first non-empty filter on initial load
   useEffect(() => {
-    if (selectedFilter === "attention" && counts.attention === 0) {
+    if (selectedFilter === "active" && counts.active === 0) {
       const firstNonEmpty = FILTER_PRIORITY.find((f) => counts[f] > 0);
       if (firstNonEmpty) {
         setSelectedFilter(firstNonEmpty);

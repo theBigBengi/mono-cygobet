@@ -28,6 +28,7 @@ export function buildTeamItem(
       id: team.countries.id,
       name: team.countries.name,
       imagePath: team.countries.imagePath ?? null,
+      iso2: team.countries.iso2 ?? null,
     };
   }
 

@@ -7,18 +7,21 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import type { ApiGroupStatus } from "@repo/types";
+import type { ApiGroupStatus, ApiGroupPrivacy } from "@repo/types";
 
 interface GroupLobbyHeaderProps {
   name: string;
   memberCount?: number;
   status: ApiGroupStatus;
+  privacy?: ApiGroupPrivacy;
   /** When true: no Card, smaller avatar (56), no status line (member count only), paddingBottom 16 */
   compact?: boolean;
   /** Future: group image URL */
   image?: string | null;
   /** When provided, shows info icon next to name; onPress opens group info sheet */
   onInfoPress?: () => void;
+  /** When provided, shows back button on the left of the avatar */
+  onBack?: () => void;
 }
 
 function getInitials(name: string): string {
@@ -34,9 +37,11 @@ export function GroupLobbyHeader({
   name,
   memberCount,
   status,
+  privacy,
   compact = false,
   image: _image,
   onInfoPress,
+  onBack,
 }: GroupLobbyHeaderProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -57,8 +62,28 @@ export function GroupLobbyHeader({
         ? theme.colors.textSecondary
         : theme.colors.warning;
 
+  const privacyLabel = privacy === "public"
+    ? t("groupInfo.privacyValues.public")
+    : t("groupInfo.privacyValues.private");
+
   const content = (
     <View style={[styles.container, compact && styles.containerCompact]}>
+      {/* {onBack && (
+        <Pressable
+          onPress={onBack}
+          style={({ pressed }) => [
+            styles.backButton,
+            compact && styles.backButtonCompact,
+            pressed && styles.backButtonPressed,
+          ]}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={theme.colors.textPrimary}
+          />
+        </Pressable>
+      )} */}
       <View
         style={[
           styles.avatar,
@@ -78,39 +103,36 @@ export function GroupLobbyHeader({
         </AppText>
       </View>
 
-      <View style={styles.nameRow}>
-        <AppText
-          variant="title"
-          style={[styles.name, compact && styles.nameCompact]}
-          numberOfLines={2}
-          ellipsizeMode="tail"
-        >
-          {name}
-        </AppText>
-        {onInfoPress && (
-          <Pressable
-            onPress={onInfoPress}
-            hitSlop={8}
-            style={({ pressed }) => [pressed && styles.iconPressed]}
+      <View style={styles.textContainer}>
+        <View style={[styles.nameRow, compact && styles.nameRowCompact]}>
+          <AppText
+            variant="title"
+            style={styles.name}
+            numberOfLines={2}
+            ellipsizeMode="tail"
           >
-            <Ionicons
-              name="information-circle-outline"
-              size={22}
-              color={theme.colors.textSecondary}
-            />
-          </Pressable>
-        )}
-      </View>
-
-      <View style={styles.metaRow}>
-        {memberCount != null && memberCount > 0 && (
-          <AppText variant="caption" color="secondary">
-            {t("lobby.memberCount", { count: memberCount })}
+            {name}
           </AppText>
-        )}
-        {!compact && memberCount != null && memberCount > 0 && (
-          <AppText variant="caption" color="secondary" style={styles.separator}>
-            •
+          {/* {onInfoPress && (
+            <Pressable
+              onPress={onInfoPress}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.infoButton,
+                pressed && { opacity: 0.6 },
+              ]}
+            >
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color={theme.colors.textSecondary}
+              />
+            </Pressable>
+          )} */}
+        </View>
+        {(privacy || memberCount != null) && (
+          <AppText variant="caption" color="secondary">
+            {privacy ? privacyLabel : ""}{privacy && memberCount != null ? " · " : ""}{memberCount != null ? t("groups.members", { count: memberCount }) : ""}
           </AppText>
         )}
         {!compact && (
@@ -134,59 +156,67 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   compactWrap: {
-    paddingBottom: 16,
+    paddingBottom: 4,
   },
   container: {
-    alignItems: "center",
-    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingTop: 16,
+    paddingBottom: 4,
+    paddingHorizontal: 16,
   },
   containerCompact: {
-    paddingVertical: 4,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  backButton: {
+    height: 80,
+    justifyContent: "center",
+    paddingRight: 8,
+  },
+  backButtonCompact: {
+    height: 64,
+  },
+  backButtonPressed: {
+    opacity: 0.6,
+  },
+  textContainer: {
+    flex: 1,
+    marginLeft: 12,
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 80,
+    height: 80,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 12,
   },
   avatarCompact: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    marginBottom: 8,
+    width: 64,
+    height: 64,
+    borderRadius: 12,
   },
   initials: {
     fontWeight: "700",
-    fontSize: 28,
+    fontSize: 32,
   },
   initialsCompact: {
-    fontSize: 22,
+    fontSize: 26,
   },
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 6,
     marginBottom: 4,
   },
-  name: {
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  iconPressed: {
-    opacity: 0.6,
-  },
-  nameCompact: {
+  nameRowCompact: {
     marginBottom: 2,
   },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  name: {
+    fontWeight: "700",
+    fontSize: 18,
+    flexShrink: 1,
   },
-  separator: {
-    marginHorizontal: 6,
-  },
+  nameCompact: {},
+  infoButton: {},
 });

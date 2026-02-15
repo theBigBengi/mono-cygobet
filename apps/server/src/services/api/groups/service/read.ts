@@ -100,11 +100,30 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
       const todayUnpredictedCount =
         stats.todayUnpredictedCountByGroupId.get(group.id) ?? 0;
       const liveGamesCount = stats.liveGamesCountByGroupId.get(group.id) ?? 0;
+      const missedPredictionsCount =
+        stats.missedPredictionsCountByGroupId.get(group.id) ?? 0;
+      const userRank = stats.userRankByGroupId.get(group.id);
       const rawNextGame = stats.nextGameByGroupId.get(group.id) ?? null;
       const rawFirstGame = stats.firstGameByGroupId.get(group.id) ?? null;
       const rawLastGame = stats.lastGameByGroupId.get(group.id) ?? null;
-      // Service layer decides: no prediction, no result for next/first/last game
-      const nextGame = formatFixtureFromDb(rawNextGame, null, null);
+
+      // Get user's prediction for the next game
+      const nextGamePrediction = rawNextGame
+        ? stats.userPredictionsByGroupFixture.get(`${group.id}_${rawNextGame.id}`)
+        : null;
+      const parsedNextGamePrediction = nextGamePrediction
+        ? {
+            home: nextGamePrediction.home,
+            away: nextGamePrediction.away,
+            updatedAt: nextGamePrediction.updatedAt.toISOString(),
+            placedAt: nextGamePrediction.placedAt.toISOString(),
+            settled: nextGamePrediction.settled,
+            points: nextGamePrediction.points ? parseInt(nextGamePrediction.points, 10) : null,
+          }
+        : null;
+
+      // Service layer decides: include prediction for next game, no result
+      const nextGame = formatFixtureFromDb(rawNextGame, parsedNextGamePrediction, null);
       const firstGame = formatFixtureFromDb(rawFirstGame, null, null);
       const lastGame = formatFixtureFromDb(rawLastGame, null, null);
 
@@ -120,6 +139,8 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
           todayGamesCount,
           todayUnpredictedCount,
           liveGamesCount,
+          missedPredictionsCount,
+          userRank,
         },
         nextGame,
         firstGame,

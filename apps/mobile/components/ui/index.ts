@@ -14,3 +14,7 @@ export { Tooltip } from "./Tooltip";
 export { CircularProgress } from "./CircularProgress";
 export { InfoSheet } from "./InfoSheet";
 export { PasswordInput } from "./PasswordInput";
+export { SegmentedProgressBar } from "./SegmentedProgressBar";
+export { ProgressDots } from "./ProgressDots";
+export { GamesTimeline } from "./GamesTimeline";
+export type { TimelineGame } from "./GamesTimeline";

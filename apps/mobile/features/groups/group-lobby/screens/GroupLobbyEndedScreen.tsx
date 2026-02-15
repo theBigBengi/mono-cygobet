@@ -9,6 +9,7 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
+import { useGoBack } from "@/hooks/useGoBack";
 import { useGroupRankingQuery, useUnreadCountsQuery } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
 import { GroupLobbyHeader } from "../components/GroupLobbyHeader";
@@ -41,6 +42,7 @@ export function GroupLobbyEndedScreen({
 }: GroupLobbyEndedScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
+  const goBack = useGoBack("/(tabs)/groups");
   const infoSheetRef =
     useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const { data: rankingData } = useGroupRankingQuery(group.id);
@@ -86,6 +88,9 @@ export function GroupLobbyEndedScreen({
           name={group.name}
           memberCount={group.memberCount}
           status="ended"
+          privacy={group.privacy}
+          compact
+          onBack={goBack}
           onInfoPress={() => infoSheetRef.current?.present()}
         />
 
