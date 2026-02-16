@@ -42,6 +42,8 @@ type Props = {
   onPressCard?: () => void;
   /** Hide the league info row (when it's rendered elsewhere). Default: true */
   showLeagueInfo?: boolean;
+  /** Sequential match number (1-based) for display */
+  matchNumber?: number;
 };
 
 /**
@@ -64,6 +66,7 @@ export function MatchPredictionCardVertical({
   onSelectOutcome,
   onPressCard: onPressCardProp,
   showLeagueInfo = true,
+  matchNumber,
 }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -120,8 +123,6 @@ export function MatchPredictionCardVertical({
   // Colors
   const successColor = "#10B981"; // green
   const missedColor = "#EF4444"; // red
-  const neutralColor = theme.colors.textSecondary + "80";
-  const liveColor = "#EF4444"; // red for live
 
   // Prediction success based on points (for finished games)
   const predictionSuccess = isFinished ? hasPoints : undefined;
@@ -159,54 +160,13 @@ export function MatchPredictionCardVertical({
         </View>
       )}
 
-      {/* Card row: status + card + points */}
+      {/* Card row: match number + card + points */}
       <View style={styles.cardRow}>
-        {/* Left side: progression indicator */}
+        {/* Left side: match number */}
         <View style={styles.statusContainer}>
-          {isFinished && !isCancelled ? (
-            // Finished: checkmark or X
-            <View
-              style={[
-                styles.statusIcon,
-                { backgroundColor: hasPoints ? successColor : missedColor },
-              ]}
-            >
-              <Ionicons
-                name={hasPoints ? "checkmark-sharp" : "close-sharp"}
-                size={16}
-                color="#FFFFFF"
-              />
-            </View>
-          ) : isLive ? (
-            // Live: pulsing dot with LIVE text
-            <View style={styles.liveContainer}>
-              <View style={[styles.liveDot, { backgroundColor: liveColor }]} />
-              <Text style={[styles.liveText, { color: liveColor }]}>LIVE</Text>
-            </View>
-          ) : hasPrediction ? (
-            // Future with prediction: filled circle with checkmark
-            <View
-              style={[
-                styles.statusIcon,
-                { backgroundColor: neutralColor },
-              ]}
-            >
-              <Ionicons
-                name="help"
-                size={16}
-                color="#FFFFFF"
-              />
-            </View>
-          ) : (
-            // Future without prediction: empty circle
-            <View
-              style={[
-                styles.progressDot,
-                styles.progressDotEmpty,
-                { borderColor: neutralColor },
-              ]}
-            />
-          )}
+          <Text style={[styles.matchNumber, { color: theme.colors.textSecondary }]}>
+            {matchNumber ?? ""}
+          </Text>
         </View>
         <View
           style={[
@@ -366,36 +326,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  statusIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  progressDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  progressDotEmpty: {
-    backgroundColor: "transparent",
-    borderWidth: 2,
-  },
-  liveContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  liveDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginBottom: 2,
-  },
-  liveText: {
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+  matchNumber: {
+    fontSize: 14,
+    fontWeight: "600",
+    opacity: 0.7,
   },
   rightSpacer: {
     width: 48,

@@ -93,6 +93,7 @@ export function ScoreInput({
           </AppText>
           <TextInput
             ref={inputRef}
+            value=""
             editable={isEditable}
             style={styles.hiddenInput}
             onChangeText={handleChange}

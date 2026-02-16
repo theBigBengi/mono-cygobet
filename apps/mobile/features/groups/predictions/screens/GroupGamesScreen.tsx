@@ -172,6 +172,18 @@ export function GroupGamesScreen({
     return map;
   }, [filteredFixtures, isPredictionSaved]);
 
+  /** Memoized map of global match numbers (1-based). */
+  const matchNumbersMap = useMemo(() => {
+    const map: Record<number, number> = {};
+    let globalIndex = 1;
+    fixtureGroups.forEach((group) => {
+      group.fixtures.forEach((fixture) => {
+        map[fixture.id] = globalIndex++;
+      });
+    });
+    return map;
+  }, [fixtureGroups]);
+
   /** For MatchWinner mode: set 1/X/2 and trigger a save shortly after. */
   const handleSelectOutcome = React.useCallback(
     (fixtureId: number, outcome: "home" | "draw" | "away") => {
@@ -408,6 +420,7 @@ export function GroupGamesScreen({
                         matchCardRefs={matchCardRefs}
                         predictionMode={predictionModeTyped}
                         groupName={groupName}
+                        matchNumber={matchNumbersMap[fixture.id]}
                         onFieldFocus={handleFieldFocus}
                         onFieldBlur={handleFieldBlur}
                         onCardChange={handleCardChange}

@@ -42,6 +42,8 @@ export type GroupFixtureCardProps = {
   >;
   predictionMode: PredictionMode;
   groupName?: string;
+  /** Global match number (1-based) */
+  matchNumber?: number;
   onFieldFocus: (fixtureId: number, type: "home" | "away") => void;
   onFieldBlur: (fixtureId: number) => void;
   onCardChange: (
@@ -70,6 +72,7 @@ function GroupFixtureCardInner({
   matchCardRefs,
   predictionMode,
   groupName,
+  matchNumber,
   onFieldFocus,
   onFieldBlur,
   onCardChange,
@@ -157,6 +160,7 @@ function GroupFixtureCardInner({
       currentFocusedField={currentFocusedField}
       isSaved={Boolean(isSaved)}
       cardRef={cardRef}
+      matchNumber={matchNumber}
       onFocus={onFocus}
       onBlur={onBlur}
       onChange={onChange}
