@@ -110,13 +110,12 @@ function GroupFixtureCardInner({
     );
   }, [canShare, fixture, groupName, predictionMode]);
 
-  /** Bind fixture.id so parent gets (fixtureId, type); also scroll card into view. */
+  /** Bind fixture.id so parent gets (fixtureId, type). Scroll handled by useEffect in parent. */
   const onFocus = useCallback(
     (type: "home" | "away") => {
       onFieldFocus(fixture.id, type);
-      onScrollToCard(fixture.id);
     },
-    [fixture.id, onFieldFocus, onScrollToCard]
+    [fixture.id, onFieldFocus]
   );
 
   /** Notify parent which fixture lost focus (for saving/focus state). */
@@ -169,5 +168,38 @@ function GroupFixtureCardInner({
   );
 }
 
-/** Memoized so list items re-render only when their fixture/prediction/focus/callbacks change. */
-export const GroupFixtureCard = React.memo(GroupFixtureCardInner);
+/** Custom comparison to prevent re-renders when focus changes to unrelated fixture. */
+function arePropsEqual(
+  prevProps: GroupFixtureCardProps,
+  nextProps: GroupFixtureCardProps
+): boolean {
+  // Check if focus state is relevant to this fixture
+  const prevFocused = prevProps.currentFocusedField?.fixtureId === prevProps.fixture.id;
+  const nextFocused = nextProps.currentFocusedField?.fixtureId === nextProps.fixture.id;
+
+  // If focus relevance changed for this card, need to re-render
+  if (prevFocused !== nextFocused) return false;
+
+  // If this card is focused, check if the focus type changed (home/away)
+  if (nextFocused && prevProps.currentFocusedField?.type !== nextProps.currentFocusedField?.type) {
+    return false;
+  }
+
+  // Check other props that should trigger re-render
+  if (prevProps.fixture !== nextProps.fixture) return false;
+
+  // Shallow compare prediction object
+  if (prevProps.prediction?.home !== nextProps.prediction?.home) return false;
+  if (prevProps.prediction?.away !== nextProps.prediction?.away) return false;
+
+  if (prevProps.isSaved !== nextProps.isSaved) return false;
+  if (prevProps.index !== nextProps.index) return false;
+  if (prevProps.totalInGroup !== nextProps.totalInGroup) return false;
+  if (prevProps.predictionMode !== nextProps.predictionMode) return false;
+
+  // Callbacks and refs are stable (from useCallback/useRef), no need to compare
+  return true;
+}
+
+/** Memoized with custom comparison to prevent unnecessary re-renders. */
+export const GroupFixtureCard = React.memo(GroupFixtureCardInner, arePropsEqual);

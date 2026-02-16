@@ -154,6 +154,24 @@ export function GroupGamesScreen({
 
   const predictionModeTyped = predictionMode ?? "CorrectScore";
 
+  /** Memoized map of predictions to avoid creating new objects on each render. */
+  const predictionsMap = useMemo(() => {
+    const map: Record<number, ReturnType<typeof getPrediction>> = {};
+    filteredFixtures.forEach((fixture) => {
+      map[fixture.id] = getPrediction(fixture.id);
+    });
+    return map;
+  }, [filteredFixtures, getPrediction]);
+
+  /** Memoized map of saved states. */
+  const savedStatesMap = useMemo(() => {
+    const map: Record<number, boolean> = {};
+    filteredFixtures.forEach((fixture) => {
+      map[fixture.id] = isPredictionSaved(fixture.id);
+    });
+    return map;
+  }, [filteredFixtures, isPredictionSaved]);
+
   /** For MatchWinner mode: set 1/X/2 and trigger a save shortly after. */
   const handleSelectOutcome = React.useCallback(
     (fixtureId: number, outcome: "home" | "draw" | "away") => {
@@ -215,18 +233,24 @@ export function GroupGamesScreen({
     };
   }, [handleSaveAllChanged]);
 
-  /** Scroll to focused card only when fixture changes (not when switching home/away). */
+  /** Scroll to focused card when fixture changes or keyboard appears. */
   const lastScrolledFixtureRef = React.useRef<number | null>(null);
+  const lastKeyboardHeightRef = React.useRef<number>(0);
   React.useEffect(() => {
     if (currentFocusedField) {
       const fixtureId = currentFocusedField.fixtureId;
-      // Only scroll if we switched to a different fixture
-      if (lastScrolledFixtureRef.current !== fixtureId) {
+      const fixtureChanged = lastScrolledFixtureRef.current !== fixtureId;
+      const keyboardJustAppeared = lastKeyboardHeightRef.current === 0 && keyboardHeight > 0;
+
+      // Scroll if fixture changed OR keyboard just appeared
+      if (fixtureChanged || keyboardJustAppeared) {
         lastScrolledFixtureRef.current = fixtureId;
         scrollToMatchCard(fixtureId, keyboardHeight);
       }
+      lastKeyboardHeightRef.current = keyboardHeight;
     } else {
       lastScrolledFixtureRef.current = null;
+      lastKeyboardHeightRef.current = 0;
     }
   }, [currentFocusedField, keyboardHeight, scrollToMatchCard]);
 
@@ -377,10 +401,10 @@ export function GroupGamesScreen({
                         fixture={fixture}
                         index={index}
                         totalInGroup={group.fixtures.length}
-                        prediction={getPrediction(fixture.id)}
+                        prediction={predictionsMap[fixture.id]}
                         inputRefs={inputRefs}
                         currentFocusedField={currentFocusedField}
-                        isSaved={isPredictionSaved(fixture.id)}
+                        isSaved={savedStatesMap[fixture.id]}
                         matchCardRefs={matchCardRefs}
                         predictionMode={predictionModeTyped}
                         groupName={groupName}
