@@ -41,26 +41,32 @@ export function ScoreInput({
   const { theme } = useTheme();
 
   const handleChange = (text: string) => {
-    if (isEditable) {
-      onChange(text);
-      if (text !== "" && onAutoNext) {
-        onAutoNext();
-      }
+    if (!isEditable || !text) return;
+
+    // Clear the hidden input immediately
+    if (inputRef.current) {
+      inputRef.current.clear();
+    }
+
+    // Pass the single digit to parent
+    onChange(text);
+
+    if (onAutoNext) {
+      onAutoNext();
     }
   };
 
   // Editable input (before game)
   if (isEditable) {
     const hasValue = value !== null && value !== undefined;
+    const displayText = toDisplay(value) || (isFocused ? "" : "–");
 
     return (
       <View style={[
         styles.inputWrapper,
         isFocused && styles.inputWrapperFocused,
       ]}>
-        <TextInput
-          ref={inputRef}
-          editable={isEditable}
+        <View
           style={[
             styles.input,
             {
@@ -71,24 +77,39 @@ export function ScoreInput({
                   ? "#94A3B8"
                   : theme.colors.border,
               borderWidth: isFocused ? 2 : 1,
-              color: theme.colors.textPrimary,
+              justifyContent: "center",
+              alignItems: "center",
             },
           ]}
-          value={toDisplay(value)}
-          onChangeText={handleChange}
-          keyboardType="number-pad"
-          maxLength={2}
-          textAlign="center"
-          onFocus={() => {
-            if (isEditable) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onFocus();
-            }
-          }}
-          onBlur={onBlur}
-          placeholder={isFocused ? "" : "–"}
-          placeholderTextColor={theme.colors.textSecondary + "80"}
-        />
+        >
+          <AppText
+            style={{
+              fontSize: 18,
+              fontWeight: "700",
+              color: hasValue ? theme.colors.textPrimary : theme.colors.textSecondary + "80",
+            }}
+          >
+            {displayText}
+          </AppText>
+          <TextInput
+            ref={inputRef}
+            editable={isEditable}
+            style={styles.hiddenInput}
+            onChangeText={handleChange}
+            keyboardType="number-pad"
+            maxLength={1}
+            caretHidden
+            contextMenuHidden
+            selectTextOnFocus={false}
+            onFocus={() => {
+              if (isEditable) {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onFocus();
+              }
+            }}
+            onBlur={onBlur}
+          />
+        </View>
       </View>
     );
   }
@@ -168,5 +189,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
+  },
+  hiddenInput: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    color: "transparent",
+    backgroundColor: "transparent",
   },
 });
