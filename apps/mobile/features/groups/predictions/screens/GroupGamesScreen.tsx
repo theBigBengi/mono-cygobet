@@ -172,13 +172,17 @@ export function GroupGamesScreen({
     return map;
   }, [filteredFixtures, isPredictionSaved]);
 
-  /** Memoized map of global match numbers (1-based). */
+  /** Memoized map of global match numbers in "x/y" format. */
   const matchNumbersMap = useMemo(() => {
-    const map: Record<number, number> = {};
+    const map: Record<number, string> = {};
     let globalIndex = 1;
+    let totalCount = 0;
+    fixtureGroups.forEach((group) => {
+      totalCount += group.fixtures.length;
+    });
     fixtureGroups.forEach((group) => {
       group.fixtures.forEach((fixture) => {
-        map[fixture.id] = globalIndex++;
+        map[fixture.id] = `${globalIndex++}/${totalCount}`;
       });
     });
     return map;
@@ -284,6 +288,8 @@ export function GroupGamesScreen({
 
   // Track if initial scroll was done
   const initialScrollDone = React.useRef(false);
+  // Track highlighted fixture for visual feedback after scroll
+  const [highlightedFixtureId, setHighlightedFixtureId] = React.useState<number | null>(null);
 
   // Simple scroll to fixture by index (only once on mount)
   React.useEffect(() => {
@@ -307,6 +313,10 @@ export function GroupGamesScreen({
         y: scrollY,
         animated: true,
       });
+      // Highlight the card after scroll
+      setHighlightedFixtureId(scrollToFixtureId);
+      // Remove highlight after 2 seconds
+      setTimeout(() => setHighlightedFixtureId(null), 2000);
     }, 100);
   }, [scrollToFixtureId, fixtureGroups, scrollViewRef]);
 
@@ -417,6 +427,7 @@ export function GroupGamesScreen({
                         inputRefs={inputRefs}
                         currentFocusedField={currentFocusedField}
                         isSaved={savedStatesMap[fixture.id]}
+                        isHighlighted={highlightedFixtureId === fixture.id}
                         matchCardRefs={matchCardRefs}
                         predictionMode={predictionModeTyped}
                         groupName={groupName}

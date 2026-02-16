@@ -1,10 +1,11 @@
 // features/groups/group-lobby/components/GroupLobbyHeader.tsx
-// Group header for lobby screen - displays avatar, name, and stats.
+// Game HUD style header for lobby screen.
 
 import React from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiGroupStatus, ApiGroupPrivacy } from "@repo/types";
@@ -14,7 +15,7 @@ interface GroupLobbyHeaderProps {
   memberCount?: number;
   status: ApiGroupStatus;
   privacy?: ApiGroupPrivacy;
-  /** When true: no Card, smaller avatar (56), no status line (member count only), paddingBottom 16 */
+  /** When true: HUD style */
   compact?: boolean;
   /** Future: group image URL */
   image?: string | null;
@@ -40,8 +41,8 @@ export function GroupLobbyHeader({
   privacy,
   compact = false,
   image: _image,
-  onInfoPress,
-  onBack,
+  onInfoPress: _onInfoPress,
+  onBack: _onBack,
 }: GroupLobbyHeaderProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -62,127 +63,186 @@ export function GroupLobbyHeader({
         ? theme.colors.textSecondary
         : theme.colors.warning;
 
-  const privacyLabel = privacy === "public"
-    ? t("groupInfo.privacyValues.public")
-    : t("groupInfo.privacyValues.private");
+  // HUD Style (compact mode)
+  if (compact) {
+    return (
+      <View style={styles.hudContainer}>
+        <LinearGradient
+          colors={[theme.colors.primary + "12", "transparent"]}
+          style={styles.hudGradient}
+        />
 
-  const content = (
-    <View style={[styles.container, compact && styles.containerCompact]}>
-      {/* {onBack && (
-        <Pressable
-          onPress={onBack}
-          style={({ pressed }) => [
-            styles.backButton,
-            compact && styles.backButtonCompact,
-            pressed && styles.backButtonPressed,
-          ]}
-        >
-          <Ionicons
-            name="chevron-back"
-            size={24}
-            color={theme.colors.textPrimary}
-          />
-        </Pressable>
-      )} */}
-      <View
-        style={[
-          styles.avatar,
-          compact && styles.avatarCompact,
-          { backgroundColor: theme.colors.primary },
-        ]}
-      >
-        <AppText
-          variant="title"
-          style={[
-            styles.initials,
-            compact && styles.initialsCompact,
-            { color: theme.colors.primaryText },
-          ]}
-        >
-          {initials}
-        </AppText>
-      </View>
-
-      <View style={styles.textContainer}>
-        <View style={[styles.nameRow, compact && styles.nameRowCompact]}>
-          <AppText
-            variant="title"
-            style={styles.name}
-            numberOfLines={2}
-            ellipsizeMode="tail"
-          >
-            {name}
-          </AppText>
-          {/* {onInfoPress && (
-            <Pressable
-              onPress={onInfoPress}
-              hitSlop={8}
-              style={({ pressed }) => [
-                styles.infoButton,
-                pressed && { opacity: 0.6 },
+        {/* Main Content */}
+        <View style={styles.hudContent}>
+          {/* Shield/Badge with Avatar */}
+          <View style={styles.shieldContainer}>
+            <View
+              style={[
+                styles.shield,
+                {
+                  backgroundColor: theme.colors.primary,
+                  shadowColor: theme.colors.primary,
+                },
               ]}
             >
-              <Ionicons
-                name="information-circle-outline"
-                size={20}
-                color={theme.colors.textSecondary}
-              />
-            </Pressable>
-          )} */}
+              <Text style={[styles.shieldInitials, { color: theme.colors.primaryText }]}>
+                {initials}
+              </Text>
+            </View>
+          </View>
+
+          {/* Name */}
+          <Text
+            style={[styles.hudName, { color: theme.colors.textPrimary }]}
+            numberOfLines={2}
+          >
+            {name}
+          </Text>
+
+          {/* Stats Row */}
+          <View style={styles.hudStats}>
+            {/* Status */}
+            <View style={[styles.hudStatPill, { backgroundColor: statusColor + "15", borderColor: statusColor + "30" }]}>
+              <View style={[styles.hudStatusDot, { backgroundColor: statusColor }]} />
+              <Text style={[styles.hudStatText, { color: statusColor }]}>
+                {statusLabel}
+              </Text>
+            </View>
+
+            <Text style={[styles.hudDivider, { color: theme.colors.border }]}>•</Text>
+
+            {/* Members */}
+            {memberCount != null && (
+              <>
+                <Ionicons name="people" size={14} color={theme.colors.textSecondary} />
+                <Text style={[styles.hudStatValue, { color: theme.colors.textSecondary }]}>
+                  {memberCount}
+                </Text>
+              </>
+            )}
+
+            {privacy && (
+              <>
+                <Text style={[styles.hudDivider, { color: theme.colors.border }]}>•</Text>
+                <Ionicons
+                  name={privacy === "public" ? "globe-outline" : "lock-closed-outline"}
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
+              </>
+            )}
+          </View>
         </View>
-        {(privacy || memberCount != null) && (
-          <AppText variant="caption" color="secondary">
-            {privacy ? privacyLabel : ""}{privacy && memberCount != null ? " · " : ""}{memberCount != null ? t("groups.members", { count: memberCount }) : ""}
+      </View>
+    );
+  }
+
+  // Original non-compact style
+  return (
+    <Card style={styles.card}>
+      <View style={styles.container}>
+        <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
+          <AppText variant="title" style={[styles.initials, { color: theme.colors.primaryText }]}>
+            {initials}
           </AppText>
-        )}
-        {!compact && (
+        </View>
+        <View style={styles.textContainer}>
+          <AppText variant="title" style={styles.name} numberOfLines={2}>
+            {name}
+          </AppText>
+          <AppText variant="caption" color="secondary">
+            {memberCount != null ? t("groups.members", { count: memberCount }) : ""}
+          </AppText>
           <AppText variant="caption" style={{ color: statusColor }}>
             {statusLabel}
           </AppText>
-        )}
+        </View>
       </View>
-    </View>
+    </Card>
   );
-
-  if (compact) {
-    return <View style={styles.compactWrap}>{content}</View>;
-  }
-
-  return <Card style={styles.card}>{content}</Card>;
 }
 
 const styles = StyleSheet.create({
+  // HUD Styles
+  hudContainer: {
+    paddingTop: 20,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    position: "relative",
+    overflow: "hidden",
+  },
+  hudGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+  },
+  hudContent: {
+    alignItems: "center",
+  },
+  shieldContainer: {
+    marginBottom: 12,
+  },
+  shield: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  shieldInitials: {
+    fontWeight: "800",
+    fontSize: 24,
+  },
+  hudName: {
+    fontSize: 22,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  hudStats: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  hudStatPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  hudStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  hudStatText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  hudStatValue: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  hudDivider: {
+    fontSize: 10,
+  },
+  // Original Styles
   card: {
     marginBottom: 16,
-  },
-  compactWrap: {
-    paddingBottom: 4,
   },
   container: {
     flexDirection: "row",
     alignItems: "flex-start",
-    paddingTop: 16,
-    paddingBottom: 4,
-    paddingHorizontal: 16,
-  },
-  containerCompact: {
-    paddingTop: 16,
-    paddingBottom: 4,
-  },
-  backButton: {
-    height: 80,
-    justifyContent: "center",
-    paddingRight: 8,
-  },
-  backButtonCompact: {
-    height: 64,
-  },
-  backButtonPressed: {
-    opacity: 0.6,
-  },
-  textContainer: {
-    flex: 1,
-    marginLeft: 12,
+    padding: 16,
   },
   avatar: {
     width: 80,
@@ -191,32 +251,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarCompact: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
-  },
   initials: {
     fontWeight: "700",
     fontSize: 32,
   },
-  initialsCompact: {
-    fontSize: 26,
-  },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
-  },
-  nameRowCompact: {
-    marginBottom: 2,
+  textContainer: {
+    flex: 1,
+    marginLeft: 12,
   },
   name: {
     fontWeight: "700",
     fontSize: 18,
-    flexShrink: 1,
+    marginBottom: 4,
   },
-  nameCompact: {},
-  infoButton: {},
 });

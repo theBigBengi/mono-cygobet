@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet, TextInput, Pressable, Text } from "react-native";
+import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { formatKickoffTime, formatKickoffDate } from "@/utils/fixture";
 import { useTranslation } from "react-i18next";
@@ -30,6 +31,8 @@ type Props = {
   currentFocusedField: FocusedField;
   /** When true, prediction is persisted (no pending unsaved change). */
   isSaved?: boolean;
+  /** When true, card is highlighted (e.g., after scroll navigation). */
+  isHighlighted?: boolean;
   cardRef?: React.RefObject<View | null> | undefined;
   onFocus: (type: "home" | "away") => void;
   onBlur?: () => void;
@@ -42,8 +45,8 @@ type Props = {
   onPressCard?: () => void;
   /** Hide the league info row (when it's rendered elsewhere). Default: true */
   showLeagueInfo?: boolean;
-  /** Sequential match number (1-based) for display */
-  matchNumber?: number;
+  /** Sequential match number for display (e.g., "1/12") */
+  matchNumber?: string;
 };
 
 /**
@@ -57,6 +60,7 @@ export function MatchPredictionCardVertical({
   positionInGroup,
   currentFocusedField,
   isSaved: _isSaved,
+  isHighlighted = false,
   cardRef,
   onFocus,
   onBlur,
@@ -73,6 +77,7 @@ export function MatchPredictionCardVertical({
   const { translateTeam } = useEntityTranslation();
   const { theme } = useTheme();
   const fixtureIdStr = String(fixture.id);
+  const [isCardPressed, setIsCardPressed] = React.useState(false);
 
   const onPressCard = () => {
     if (onPressCardProp) {
@@ -165,44 +170,50 @@ export function MatchPredictionCardVertical({
         {/* Left side: match number */}
         <View style={styles.statusContainer}>
           <Text style={[styles.matchNumber, { color: theme.colors.textSecondary }]}>
-            {matchNumber ?? ""}
+            {matchNumber || ""}
           </Text>
         </View>
         <View
           style={[
             styles.cardShadowWrapper,
-            isFinished && !isCancelled && {
+            isFinished && !isCancelled && !isCardPressed && {
               shadowColor: hasPoints ? successColor : missedColor,
               shadowOpacity: 0.2,
             },
+            isCardPressed && styles.cardShadowWrapperPressed,
           ]}
         >
           <Card
             style={[
               styles.matchCard,
-              { backgroundColor: theme.colors.cardBackground },
+              { backgroundColor: isHighlighted ? theme.colors.primary + "15" : theme.colors.cardBackground },
               isFinished && !isCancelled && {
                 borderWidth: 1,
                 borderColor: (hasPoints ? successColor : missedColor) + "30",
               },
             ]}
           >
-          <View style={styles.matchContent}>
+          <Pressable
+            onPress={onPressCard}
+            onPressIn={() => {
+              setIsCardPressed(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            onPressOut={() => setIsCardPressed(false)}
+            style={[
+              styles.matchContent,
+              isCancelled && { opacity: 0.6 },
+            ]}
+          >
             {/* Home Row: logo + name + result + input */}
             <View style={styles.teamRow}>
-              <Pressable
-                onPress={onPressCard}
-                style={({ pressed }) => [
-                  styles.teamPressable,
-                  { opacity: pressed ? 0.7 : isCancelled ? 0.6 : 1 },
-                ]}
-              >
+              <View style={styles.teamPressable}>
                 <TeamRow
                   team={fixture.homeTeam}
                   teamName={homeTeamName}
                   isWinner={isHomeWinner}
                 />
-              </Pressable>
+              </View>
               <ResultDisplay
                 result={gameResultOrTime}
                 isLive={isLive}
@@ -231,19 +242,13 @@ export function MatchPredictionCardVertical({
 
             {/* Away Row: logo + name + result + input */}
             <View style={styles.teamRow}>
-              <Pressable
-                onPress={onPressCard}
-                style={({ pressed }) => [
-                  styles.teamPressable,
-                  { opacity: pressed ? 0.7 : isCancelled ? 0.6 : 1 },
-                ]}
-              >
+              <View style={styles.teamPressable}>
                 <TeamRow
                   team={fixture.awayTeam}
                   teamName={awayTeamName}
                   isWinner={isAwayWinner}
                 />
-              </Pressable>
+              </View>
               <ResultDisplay
                 result={gameResultOrTime}
                 isLive={isLive}
@@ -278,7 +283,7 @@ export function MatchPredictionCardVertical({
                 onSelect={onSelectOutcome}
               />
             )}
-          </View>
+          </Pressable>
         </Card>
         </View>
         {/* Right side: points for finished games, empty otherwise */}
@@ -327,7 +332,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   matchNumber: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "600",
     opacity: 0.7,
   },
@@ -379,6 +384,14 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     // Shadow for Android
     elevation: 5,
+  },
+  cardShadowWrapperPressed: {
+    shadowColor: "transparent",
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
+    transform: [{ scale: 0.98 }],
   },
   matchCard: {
     marginHorizontal: 0,

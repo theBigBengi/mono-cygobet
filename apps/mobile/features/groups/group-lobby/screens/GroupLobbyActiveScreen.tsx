@@ -72,9 +72,8 @@ export function GroupLobbyActiveScreen({
   }, [duration, now]);
 
   const handleViewGames = (fixtureId?: number) => {
-    const index = fixtureId ? fixtures.findIndex(f => f.id === fixtureId) : -1;
-    if (index >= 0) {
-      router.push(`/groups/${group.id}/games?scrollIndex=${index}` as any);
+    if (fixtureId != null) {
+      router.push(`/groups/${group.id}/games?scrollToFixtureId=${fixtureId}` as any);
     } else {
       router.push(`/groups/${group.id}/games` as any);
     }
@@ -144,6 +143,8 @@ export function GroupLobbyActiveScreen({
           />
         )}
 
+        <LobbyQuickActions actions={quickActions} />
+
         <LobbyPredictionsCTA
           predictionsCount={predictionsCount}
           totalFixtures={totalFixtures}
@@ -161,8 +162,6 @@ export function GroupLobbyActiveScreen({
           isLoading={isRankingLoading}
           onPress={handleViewRanking}
         />
-
-        <LobbyQuickActions actions={quickActions} />
       </Screen>
       <GroupInfoSheet
         group={group}

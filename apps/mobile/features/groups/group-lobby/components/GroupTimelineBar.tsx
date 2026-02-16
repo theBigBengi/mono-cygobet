@@ -112,9 +112,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingTop: 4,
-    paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(128, 128, 128, 0.3)",
+    paddingBottom: 20,
   },
   barContainer: {
     flexDirection: "row",

@@ -37,13 +37,15 @@ export type GroupFixtureCardProps = {
   currentFocusedField: FocusedField;
   /** When true, this fixture's prediction is saved (no pending change). */
   isSaved?: boolean;
+  /** When true, card is highlighted (e.g., after scroll navigation). */
+  isHighlighted?: boolean;
   matchCardRefs: React.MutableRefObject<
     Record<string, React.RefObject<View | null>>
   >;
   predictionMode: PredictionMode;
   groupName?: string;
-  /** Global match number (1-based) */
-  matchNumber?: number;
+  /** Global match number for display (e.g., "1/12") */
+  matchNumber?: string;
   onFieldFocus: (fixtureId: number, type: "home" | "away") => void;
   onFieldBlur: (fixtureId: number) => void;
   onCardChange: (
@@ -69,6 +71,7 @@ function GroupFixtureCardInner({
   inputRefs,
   currentFocusedField,
   isSaved = true,
+  isHighlighted = false,
   matchCardRefs,
   predictionMode,
   groupName,
@@ -159,6 +162,7 @@ function GroupFixtureCardInner({
       inputRefs={inputRefs}
       currentFocusedField={currentFocusedField}
       isSaved={Boolean(isSaved)}
+      isHighlighted={isHighlighted}
       cardRef={cardRef}
       matchNumber={matchNumber}
       onFocus={onFocus}
@@ -197,6 +201,7 @@ function arePropsEqual(
   if (prevProps.prediction?.away !== nextProps.prediction?.away) return false;
 
   if (prevProps.isSaved !== nextProps.isSaved) return false;
+  if (prevProps.isHighlighted !== nextProps.isHighlighted) return false;
   if (prevProps.index !== nextProps.index) return false;
   if (prevProps.totalInGroup !== nextProps.totalInGroup) return false;
   if (prevProps.predictionMode !== nextProps.predictionMode) return false;
