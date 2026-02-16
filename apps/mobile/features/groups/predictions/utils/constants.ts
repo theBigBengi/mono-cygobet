@@ -27,16 +27,16 @@ export const INPUT_BACKGROUND_COLOR_DISABLED = "rgba(15, 23, 42, 0.07)";
 
 /** Base input style dimensions and properties */
 export const INPUT_STYLE = {
-  width: 30,
-  height: 30,
-  fontSize: 16,
-  borderRadius: 4,
+  width: 36,
+  height: 36,
+  fontSize: 17,
+  borderRadius: 8,
   borderWidth: 1,
   fontWeight: "600" as const,
 } as const;
 
 /** Card border radius value */
-export const CARD_BORDER_RADIUS = 8;
+export const CARD_BORDER_RADIUS = 12;
 
 /** Live result text color */
 export const LIVE_RESULT_COLOR = "#EF4444";

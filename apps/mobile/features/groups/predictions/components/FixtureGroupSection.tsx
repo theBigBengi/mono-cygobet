@@ -28,79 +28,9 @@ export function FixtureGroupSection({
   const { t } = useTranslation("common");
   const { theme } = useTheme();
 
-  // Determine header content based on group type
+  // No headers - all info now shown in cards
   const renderHeader = () => {
-    // LIVE group
-    if (group.isLive) {
-      return (
-        <View style={styles.header}>
-          <View
-            style={[styles.liveBadge, { backgroundColor: theme.colors.error }]}
-          >
-            <AppText
-              variant="caption"
-              style={[styles.liveText, { color: theme.colors.primaryText }]}
-            >
-              {t("predictions.live", { defaultValue: "LIVE" })}
-            </AppText>
-          </View>
-        </View>
-      );
-    }
-
-    // Date header (first level in hierarchy)
-    if (group.level === "date") {
-      return (
-        <View style={styles.dateHeader}>
-          <AppText
-            variant="subtitle"
-            style={[styles.dateText, { color: theme.colors.textPrimary }]}
-          >
-            {group.dateLabel}
-          </AppText>
-        </View>
-      );
-    }
-
-    // Round-based group (leagues mode only - no level set, has round)
-    if (group.round && !group.level) {
-      return (
-        <View style={styles.header}>
-          <AppText
-            variant="caption"
-            color="secondary"
-            style={styles.roundText}
-          >
-            {t("predictions.roundNumber", {
-              number: group.round,
-              defaultValue: `Round ${group.round}`,
-            })}
-          </AppText>
-        </View>
-      );
-    }
-
-    // No header for flat list (empty label, no round)
-    if (!group.label) {
-      return null;
-    }
-
-    // League-based group (teams/games mode - level: "league")
-    // Show: League · Country · Round (if available)
-    return (
-      <View style={styles.header}>
-        <AppText
-          variant="caption"
-          color="secondary"
-          style={styles.leagueName}
-          numberOfLines={1}
-        >
-          {group.label}
-          {group.secondaryLabel && ` · ${group.secondaryLabel}`}
-          {group.round && ` · ${t("predictions.roundNumber", { number: group.round, defaultValue: `Round ${group.round}` })}`}
-        </AppText>
-      </View>
-    );
+    return null;
   };
 
   return (

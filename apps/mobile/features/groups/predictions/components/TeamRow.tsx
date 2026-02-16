@@ -16,7 +16,7 @@ export function TeamRow({ team, teamName, isWinner }: TeamRowProps) {
   return (
     <View style={styles.teamRow}>
       <View style={styles.teamSection}>
-        <TeamLogo imagePath={team?.imagePath} teamName={teamName} size={24} />
+        <TeamLogo imagePath={team?.imagePath} teamName={teamName} size={32} rounded={false} />
         <AppText
           variant="body"
           style={[styles.teamName, isWinner && styles.winnerTeamName]}
@@ -43,11 +43,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     minWidth: 0,
+    height: 36,
   },
   teamName: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: "400",
+    fontSize: 14,
+    fontWeight: "500",
     minWidth: 0,
   },
   winnerTeamName: {

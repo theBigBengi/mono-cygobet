@@ -1,5 +1,7 @@
 import React from "react";
 import { View, StyleSheet, TextInput, Pressable, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { formatKickoffTime, formatKickoffDate } from "@/utils/fixture";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { Card } from "@/components/ui";
@@ -38,6 +40,8 @@ type Props = {
   onSelectOutcome?: (outcome: "home" | "draw" | "away") => void;
   /** If provided, called on card press instead of router.push to fixture detail. */
   onPressCard?: () => void;
+  /** Hide the league info row (when it's rendered elsewhere). Default: true */
+  showLeagueInfo?: boolean;
 };
 
 /**
@@ -59,6 +63,7 @@ export function MatchPredictionCardVertical({
   predictionMode = "CorrectScore",
   onSelectOutcome,
   onPressCard: onPressCardProp,
+  showLeagueInfo = true,
 }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -107,64 +112,147 @@ export function MatchPredictionCardVertical({
   const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
 
+  // Game status for side displays
+  const fixturePoints = fixture.prediction?.points ?? 0;
+  const hasPoints = fixturePoints > 0;
+  const hasPrediction = prediction.home !== null && prediction.away !== null;
+
+  // Colors
+  const successColor = "#10B981"; // green
+  const missedColor = "#EF4444"; // red
+  const neutralColor = theme.colors.textSecondary + "80";
+  const liveColor = "#EF4444"; // red for live
+
+  // Prediction success based on points (for finished games)
+  const predictionSuccess = isFinished ? hasPoints : undefined;
+
   return (
-    <View ref={cardRef} style={styles.outerContainer}>
-      <Card
-        style={[
-          styles.matchCard,
-          cardRadiusStyle,
-          cardBorderStyle,
-          { backgroundColor: theme.colors.cardBackground },
-        ]}
-      >
-        <View style={styles.matchContent}>
-          {/* Only teams area (logos + names) navigates to fixture detail; checkbox/time do not */}
-          <Pressable
-            onPress={onPressCard}
-            style={({ pressed }) => [
-              styles.rowsWrapper,
-              {
-                opacity: pressed ? 0.7 : isCancelled ? 0.6 : 1,
+    <View ref={cardRef} style={styles.outerWrapper}>
+      {/* League info row - centered like the card */}
+      {showLeagueInfo && (
+        <View style={styles.leagueInfoWrapper}>
+          {/* Left spacer to match side width */}
+          <View style={styles.leftSpacer} />
+          <View style={styles.leagueInfoRow}>
+            <View style={styles.leagueInfoLeft}>
+              <Text
+                style={[styles.leagueText, { color: theme.colors.textSecondary }]}
+                numberOfLines={1}
+              >
+                {fixture.league?.name}
+              </Text>
+              {fixture.round && (
+                <>
+                  <Text style={[styles.separator, { color: theme.colors.textSecondary }]}>•</Text>
+                  <Text style={[styles.leagueText, { color: theme.colors.textSecondary }]}>
+                    R{fixture.round}
+                  </Text>
+                </>
+              )}
+            </View>
+            <Text style={[styles.leagueText, { color: theme.colors.textSecondary }]}>
+              {formatKickoffDate(fixture.kickoffAt)} {formatKickoffTime(fixture.kickoffAt)}
+            </Text>
+          </View>
+          {/* Right spacer to match side width */}
+          <View style={styles.chevronSpacer} />
+        </View>
+      )}
+
+      {/* Card row: status + card + points */}
+      <View style={styles.cardRow}>
+        {/* Left side: progression indicator */}
+        <View style={styles.statusContainer}>
+          {isFinished && !isCancelled ? (
+            // Finished: checkmark or X
+            <View
+              style={[
+                styles.statusIcon,
+                { backgroundColor: hasPoints ? successColor : missedColor },
+              ]}
+            >
+              <Ionicons
+                name={hasPoints ? "checkmark-sharp" : "close-sharp"}
+                size={16}
+                color="#FFFFFF"
+              />
+            </View>
+          ) : isLive ? (
+            // Live: pulsing dot with LIVE text
+            <View style={styles.liveContainer}>
+              <View style={[styles.liveDot, { backgroundColor: liveColor }]} />
+              <Text style={[styles.liveText, { color: liveColor }]}>LIVE</Text>
+            </View>
+          ) : hasPrediction ? (
+            // Future with prediction: filled circle with checkmark
+            <View
+              style={[
+                styles.statusIcon,
+                { backgroundColor: neutralColor },
+              ]}
+            >
+              <Ionicons
+                name="help"
+                size={16}
+                color="#FFFFFF"
+              />
+            </View>
+          ) : (
+            // Future without prediction: empty circle
+            <View
+              style={[
+                styles.progressDot,
+                styles.progressDotEmpty,
+                { borderColor: neutralColor },
+              ]}
+            />
+          )}
+        </View>
+        <View
+          style={[
+            styles.cardShadowWrapper,
+            isFinished && !isCancelled && {
+              shadowColor: hasPoints ? successColor : missedColor,
+              shadowOpacity: 0.2,
+            },
+          ]}
+        >
+          <Card
+            style={[
+              styles.matchCard,
+              { backgroundColor: theme.colors.cardBackground },
+              isFinished && !isCancelled && {
+                borderWidth: 1,
+                borderColor: (hasPoints ? successColor : missedColor) + "30",
               },
             ]}
           >
-            <View style={styles.rowsContainer}>
-              {/* Home Team Row */}
-              <TeamRow
-                team={fixture.homeTeam}
-                teamName={homeTeamName}
-                isWinner={isHomeWinner}
+          <View style={styles.matchContent}>
+            {/* Home Row: logo + name + result + input */}
+            <View style={styles.teamRow}>
+              <Pressable
+                onPress={onPressCard}
+                style={({ pressed }) => [
+                  styles.teamPressable,
+                  { opacity: pressed ? 0.7 : isCancelled ? 0.6 : 1 },
+                ]}
+              >
+                <TeamRow
+                  team={fixture.homeTeam}
+                  teamName={homeTeamName}
+                  isWinner={isHomeWinner}
+                />
+              </Pressable>
+              <ResultDisplay
+                result={gameResultOrTime}
+                isLive={isLive}
+                isFinished={isFinished}
+                isCancelled={isCancelled}
+                isHomeWinner={isHomeWinner}
+                isAwayWinner={isAwayWinner}
+                type="home"
               />
-
-              {/* Away Team Row */}
-              <TeamRow
-                team={fixture.awayTeam}
-                teamName={awayTeamName}
-                isWinner={isAwayWinner}
-              />
-            </View>
-          </Pressable>
-
-          {/* Result - displayed vertically in the middle (only when game started or finished) */}
-          <ResultDisplay
-            result={gameResultOrTime}
-            isLive={isLive}
-            isFinished={isFinished}
-            isCancelled={isCancelled}
-            isHomeWinner={isHomeWinner}
-            isAwayWinner={isAwayWinner}
-          />
-
-          {/* Prediction Inputs - displayed vertically on the right */}
-          <View style={styles.predictionsContainer}>
-            {predictionMode === "MatchWinner" && onSelectOutcome ? (
-              <OutcomePicker
-                selectedOutcome={getOutcomeFromPrediction(prediction)}
-                isEditable={isEditable}
-                onSelect={onSelectOutcome}
-              />
-            ) : (
-              <>
+              {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
                 <ScoreInput
                   type="home"
                   value={prediction.home}
@@ -176,7 +264,36 @@ export function MatchPredictionCardVertical({
                   onFocus={() => onFocus("home")}
                   onBlur={onBlur}
                   onAutoNext={onAutoNext ? () => onAutoNext("home") : undefined}
+                  isCorrect={predictionSuccess}
                 />
+              )}
+            </View>
+
+            {/* Away Row: logo + name + result + input */}
+            <View style={styles.teamRow}>
+              <Pressable
+                onPress={onPressCard}
+                style={({ pressed }) => [
+                  styles.teamPressable,
+                  { opacity: pressed ? 0.7 : isCancelled ? 0.6 : 1 },
+                ]}
+              >
+                <TeamRow
+                  team={fixture.awayTeam}
+                  teamName={awayTeamName}
+                  isWinner={isAwayWinner}
+                />
+              </Pressable>
+              <ResultDisplay
+                result={gameResultOrTime}
+                isLive={isLive}
+                isFinished={isFinished}
+                isCancelled={isCancelled}
+                isHomeWinner={isHomeWinner}
+                isAwayWinner={isAwayWinner}
+                type="away"
+              />
+              {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
                 <ScoreInput
                   type="away"
                   value={prediction.away}
@@ -188,71 +305,174 @@ export function MatchPredictionCardVertical({
                   onFocus={() => onFocus("away")}
                   onBlur={onBlur}
                   onAutoNext={onAutoNext ? () => onAutoNext("away") : undefined}
+                  isCorrect={predictionSuccess}
                 />
-              </>
+              )}
+            </View>
+
+            {/* OutcomePicker for MatchWinner mode */}
+            {predictionMode === "MatchWinner" && onSelectOutcome && (
+              <OutcomePicker
+                selectedOutcome={getOutcomeFromPrediction(prediction)}
+                isEditable={isEditable}
+                onSelect={onSelectOutcome}
+              />
             )}
           </View>
-
+        </Card>
         </View>
-      </Card>
-      {/* Chevron outside the card */}
-      {onPressCardProp != null && (
-        <Pressable onPress={onPressCard} style={styles.chevronContainer}>
-          <Text
-            style={[styles.chevron, { color: theme.colors.textSecondary }]}
-            allowFontScaling={false}
-          >
-            ›
-          </Text>
-        </Pressable>
-      )}
+        {/* Right side: points for finished games, empty otherwise */}
+        {isFinished && !isCancelled ? (
+          <Pressable onPress={onPressCard} style={styles.pointsContainer}>
+            <Text style={[styles.pointsNumber, { color: hasPoints ? successColor : missedColor }]}>
+              {hasPoints ? `+${fixturePoints}` : "0"}
+            </Text>
+            <Text style={[styles.pointsLabel, { color: theme.colors.textSecondary }]}>
+              pts
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={styles.rightSpacer} />
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {
+  outerWrapper: {
+    flexDirection: "column",
+    marginBottom: 20,
+  },
+  leagueInfoWrapper: {
+    flexDirection: "row",
+    marginBottom: 4,
+  },
+  leagueInfoRow: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+  },
+  leftSpacer: {
+    width: 48,
+  },
+  chevronSpacer: {
+    width: 48,
+  },
+  statusContainer: {
+    width: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  progressDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  progressDotEmpty: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+  },
+  liveContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  liveDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginBottom: 2,
+  },
+  liveText: {
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  rightSpacer: {
+    width: 48,
+  },
+  pointsContainer: {
+    width: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pointsNumber: {
+    fontSize: 24,
+    fontWeight: "800",
+  },
+  pointsLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    opacity: 0.8,
+  },
+  leagueInfoLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  leagueText: {
+    fontSize: 11,
+    fontWeight: "500",
+    opacity: 0.7,
+  },
+  separator: {
+    fontSize: 11,
+    opacity: 0.4,
+  },
+  cardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  cardShadowWrapper: {
+    flex: 1,
+    borderRadius: 10,
+    // Shadow for iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    // Shadow for Android
+    elevation: 5,
   },
   matchCard: {
-    flex: 1,
     marginHorizontal: 0,
     marginBottom: 0,
-    padding: 8,
-    borderRadius: 0,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 0,
   },
   chevronContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 12,
+    width: 48,
     justifyContent: "center",
     alignItems: "center",
+    alignSelf: "center",
   },
   matchContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  rowsWrapper: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  rowsContainer: {
-    flex: 1,
     flexDirection: "column",
-    gap: 6,
+    gap: 8,
+  },
+  teamRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  teamPressable: {
+    flex: 1,
   },
   chevron: {
-    fontSize: 18,
-    opacity: 0.6,
-  },
-  predictionsContainer: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    gap: 6,
-    flexShrink: 0,
+    fontSize: 20,
+    opacity: 0.5,
   },
 });

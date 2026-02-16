@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { isLive } from "@repo/utils";
 import { groupFixturesByRound } from "@/utils/fixture";
 import type { RoundGroup } from "@/utils/fixture";
 import type { FixtureItem } from "@/types/common";
@@ -44,7 +43,7 @@ interface UseGroupedFixturesParams {
  * Hook to group fixtures based on selection mode.
  * - leagues mode: Groups by date only (league/country not shown in header)
  * - teams/games mode: Groups by league (current behavior)
- * LIVE fixtures are always separated to a special group at the beginning.
+ * LIVE fixtures stay in their original position (not moved to top).
  */
 export function useGroupedFixtures({
   fixtures,
@@ -52,21 +51,6 @@ export function useGroupedFixtures({
   skipGrouping = false,
   groupTeamsIds,
 }: UseGroupedFixturesParams): FixtureGroup[] {
-  // Separate LIVE fixtures from others
-  const { liveFixtures, otherFixtures } = useMemo(() => {
-    const live: FixtureItem[] = [];
-    const other: FixtureItem[] = [];
-
-    fixtures.forEach((fixture) => {
-      if (isLive(fixture.state)) {
-        live.push(fixture);
-      } else {
-        other.push(fixture);
-      }
-    });
-
-    return { liveFixtures: live, otherFixtures: other };
-  }, [fixtures]);
 
   // Group fixtures based on mode
   const groups = useMemo((): FixtureGroup[] => {
@@ -88,22 +72,11 @@ export function useGroupedFixtures({
         return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
       };
 
-      const sortedFixtures = [...otherFixtures].sort((a, b) => {
-        // 1. Sort by date (day)
-        const dateA = getDateKey(a.kickoffAt);
-        const dateB = getDateKey(b.kickoffAt);
-        if (dateA !== dateB) return dateA.localeCompare(dateB);
-
-        // 2. Sort by round
-        const roundA = a.round ?? "";
-        const roundB = b.round ?? "";
-        if (roundA !== roundB) return roundA.localeCompare(roundB, undefined, { numeric: true });
-
-        // 3. Sort by exact time
-        return (
-          new Date(a.kickoffAt ?? 0).getTime() -
-          new Date(b.kickoffAt ?? 0).getTime()
-        );
+      const sortedFixtures = [...fixtures].sort((a, b) => {
+        // Sort by exact kickoff time (chronological order)
+        const timeA = new Date(a.kickoffAt ?? 0).getTime();
+        const timeB = new Date(b.kickoffAt ?? 0).getTime();
+        return timeA - timeB;
       });
 
       // Build groups: Date headers + Round groups
@@ -174,33 +147,23 @@ export function useGroupedFixtures({
         return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
       };
 
-      const sortedFixtures = [...otherFixtures].sort((a, b) => {
-        // 1. Sort by date (day)
-        const dateA = getDateKey(a.kickoffAt);
-        const dateB = getDateKey(b.kickoffAt);
-        if (dateA !== dateB) return dateA.localeCompare(dateB);
+      const sortedFixtures = [...fixtures].sort((a, b) => {
+        // 1. Sort by exact kickoff time (chronological order)
+        const timeA = new Date(a.kickoffAt ?? 0).getTime();
+        const timeB = new Date(b.kickoffAt ?? 0).getTime();
+        if (timeA !== timeB) return timeA - timeB;
 
-        // 2. Sort by league name
+        // 2. Sort by league name (for same-time games)
         const leagueA = a.league?.name ?? "";
         const leagueB = b.league?.name ?? "";
-        if (leagueA !== leagueB) return leagueA.localeCompare(leagueB);
-
-        // 3. Sort by round
-        const roundA = a.round ?? "";
-        const roundB = b.round ?? "";
-        if (roundA !== roundB) return roundA.localeCompare(roundB, undefined, { numeric: true });
-
-        // 4. Sort by exact time
-        return (
-          new Date(a.kickoffAt ?? 0).getTime() -
-          new Date(b.kickoffAt ?? 0).getTime()
-        );
+        return leagueA.localeCompare(leagueB);
       });
 
       // Build groups: Date headers + League/Round groups
       let currentDateKey: string | null = null;
       let currentLeagueRoundKey: string | null = null;
       let currentGroup: FixtureGroup | null = null;
+      let groupCounter = 0;
 
       for (const fixture of sortedFixtures) {
         const dateKey = getDateKey(fixture.kickoffAt);
@@ -234,8 +197,9 @@ export function useGroupedFixtures({
             result.push(currentGroup);
           }
           currentLeagueRoundKey = leagueRoundKey;
+          groupCounter++;
           currentGroup = {
-            key: `league-${leagueRoundKey}`,
+            key: `league-${leagueRoundKey}-${groupCounter}`,
             label: fixture.league?.name ?? "",
             secondaryLabel: fixture.country?.name ?? null,
             round: round || undefined,
@@ -255,18 +219,8 @@ export function useGroupedFixtures({
       }
     }
 
-    // Add LIVE group at the beginning if there are live fixtures
-    if (liveFixtures.length > 0) {
-      result.unshift({
-        key: "live",
-        label: "Live",
-        isLive: true,
-        fixtures: liveFixtures,
-      });
-    }
-
     return result;
-  }, [otherFixtures, liveFixtures, mode, skipGrouping]);
+  }, [fixtures, mode, skipGrouping]);
 
   return groups;
 }

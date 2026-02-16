@@ -3,11 +3,6 @@ import { View, TextInput, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import {
-  INPUT_STYLE,
-  INPUT_BACKGROUND_COLOR,
-  INPUT_BACKGROUND_COLOR_DISABLED,
-} from "../utils/constants";
 import { toDisplay } from "../utils/fixture-helpers";
 
 type ScoreInputProps = {
@@ -21,11 +16,14 @@ type ScoreInputProps = {
   onFocus: () => void;
   onBlur?: () => void;
   onAutoNext?: () => void;
+  /** Whether the prediction for this field was correct (for finished games) */
+  isCorrect?: boolean;
 };
 
 /**
  * Reusable score input component for home/away predictions
  * Handles both editable (TextInput) and read-only (View) modes
+ * Game-like styling with visual feedback
  */
 export function ScoreInput({
   type,
@@ -38,6 +36,7 @@ export function ScoreInput({
   onFocus,
   onBlur,
   onAutoNext,
+  isCorrect,
 }: ScoreInputProps) {
   const { theme } = useTheme();
 
@@ -50,61 +49,86 @@ export function ScoreInput({
     }
   };
 
+  // Editable input (before game)
   if (isEditable) {
+    const hasValue = value !== null && value !== undefined;
+
     return (
-      <TextInput
-        ref={inputRef}
-        editable={isEditable}
-        style={[
-          INPUT_STYLE,
-          {
-            borderColor: isFocused
-              ? theme.colors.textSecondary
-              : theme.colors.textSecondary,
-            borderWidth: isFocused ? 2 : 0.5,
-            backgroundColor: INPUT_BACKGROUND_COLOR,
-            color: theme.colors.textPrimary,
-            padding: 0,
-            textAlignVertical: "center",
-            includeFontPadding: false,
-          },
-        ]}
-        value={toDisplay(value)}
-        onChangeText={handleChange}
-        keyboardType="number-pad"
-        maxLength={2}
-        textAlign="center"
-        onFocus={() => {
-          if (isEditable) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onFocus();
-          }
-        }}
-        onBlur={onBlur}
-        placeholder=""
-        placeholderTextColor={theme.colors.textSecondary}
-      />
+      <View style={[
+        styles.inputWrapper,
+        isFocused && styles.inputWrapperFocused,
+      ]}>
+        <TextInput
+          ref={inputRef}
+          editable={isEditable}
+          style={[
+            styles.input,
+            {
+              backgroundColor: hasValue ? "#F1F5F9" : theme.colors.surface,
+              borderColor: isFocused
+                ? theme.colors.textPrimary
+                : hasValue
+                  ? "#94A3B8"
+                  : theme.colors.border,
+              borderWidth: isFocused ? 2 : 1,
+              color: theme.colors.textPrimary,
+            },
+          ]}
+          value={toDisplay(value)}
+          onChangeText={handleChange}
+          keyboardType="number-pad"
+          maxLength={2}
+          textAlign="center"
+          onFocus={() => {
+            if (isEditable) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onFocus();
+            }
+          }}
+          onBlur={onBlur}
+          placeholder={isFocused ? "" : "–"}
+          placeholderTextColor={theme.colors.textSecondary + "80"}
+        />
+      </View>
     );
   }
+
+  // Finished game - show result with correct/incorrect styling
+  const bgColor = isCorrect === true
+    ? "#10B981" + "20" // green tint
+    : isCorrect === false
+      ? "#EF4444" + "15" // red tint
+      : theme.colors.surface;
+
+  const borderColor = isCorrect === true
+    ? "#10B981" + "60"
+    : isCorrect === false
+      ? "#EF4444" + "40"
+      : theme.colors.border;
+
+  const textColor = isCorrect === true
+    ? "#10B981"
+    : isCorrect === false
+      ? "#EF4444"
+      : theme.colors.textSecondary;
 
   return (
     <View
       style={[
-        INPUT_STYLE,
+        styles.finishedInput,
         {
-          borderWidth: 0,
-          backgroundColor: INPUT_BACKGROUND_COLOR_DISABLED,
-          justifyContent: "center",
-          alignItems: "center",
+          backgroundColor: bgColor,
+          borderColor: borderColor,
+          borderWidth: 1,
         },
       ]}
     >
       <AppText
         variant="body"
         style={{
-          fontSize: 16,
-          fontWeight: "600",
-          color: theme.colors.textSecondary,
+          fontSize: 18,
+          fontWeight: "700",
+          color: textColor,
         }}
       >
         {toDisplay(value, !isEditable)}
@@ -112,3 +136,37 @@ export function ScoreInput({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  inputWrapper: {
+    borderRadius: 10,
+    // Subtle shadow for depth
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  inputWrapperFocused: {
+    // Glow effect when focused
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  input: {
+    width: 40,
+    height: 40,
+    fontSize: 18,
+    fontWeight: "700",
+    borderRadius: 10,
+    textAlignVertical: "center",
+    includeFontPadding: false,
+  },
+  finishedInput: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

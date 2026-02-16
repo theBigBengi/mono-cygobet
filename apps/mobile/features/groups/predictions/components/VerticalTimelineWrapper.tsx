@@ -45,6 +45,8 @@ const DOT_SIZE = 16;
 const LINE_WIDTH = 2;
 const LINE_EXTENSION = 40;
 const TIMELINE_WIDTH = 56;
+const CHEVRON_WIDTH = 32;
+const PROGRESS_LINE_COLOR = "#9CA3AF";
 
 export function VerticalTimelineWrapper({
   fixture,
@@ -145,7 +147,7 @@ export function VerticalTimelineWrapper({
             style={[
               styles.lineAbsolute,
               {
-                backgroundColor: theme.colors.primary,
+                backgroundColor: PROGRESS_LINE_COLOR,
                 top: -LINE_EXTENSION,
                 bottom: "50%",
               },
@@ -158,7 +160,7 @@ export function VerticalTimelineWrapper({
             style={[
               styles.lineAbsolute,
               {
-                backgroundColor: theme.colors.primary,
+                backgroundColor: PROGRESS_LINE_COLOR,
                 top: "50%",
                 bottom: -LINE_EXTENSION,
               },

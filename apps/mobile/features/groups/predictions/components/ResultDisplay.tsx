@@ -11,10 +11,12 @@ type ResultDisplayProps = {
   isCancelled: boolean;
   isHomeWinner: boolean;
   isAwayWinner: boolean;
+  /** When provided, shows only the score for this team type */
+  type?: "home" | "away";
 };
 
 /**
- * Displays game result scores vertically, or status text for cancelled games
+ * Displays game result scores, or status text for cancelled games
  */
 export function ResultDisplay({
   result,
@@ -23,6 +25,7 @@ export function ResultDisplay({
   isCancelled,
   isHomeWinner,
   isAwayWinner,
+  type,
 }: ResultDisplayProps) {
   if (!result || (!isLive && !isFinished && !isCancelled)) {
     return null;
@@ -30,6 +33,16 @@ export function ResultDisplay({
 
   // Cancelled games: show status text (e.g. "Postponed", "Cancelled")
   if (isCancelled) {
+    // For single type, show dash
+    if (type) {
+      return (
+        <View style={styles.timeResultBadge}>
+          <AppText variant="caption" color="secondary" style={styles.resultText}>
+            -
+          </AppText>
+        </View>
+      );
+    }
     return (
       <View style={styles.timeResultContainer}>
         <AppText
@@ -63,6 +76,42 @@ export function ResultDisplay({
         : "secondary"
       : "secondary";
 
+  // Single score display for home or away
+  if (type === "home") {
+    return (
+      <View style={styles.timeResultBadge}>
+        <AppText
+          variant="caption"
+          style={[
+            styles.resultText,
+            isLive && styles.liveResultText,
+            isHomeWinner && styles.winnerResultText,
+          ]}
+        >
+          {result.home ?? "-"}
+        </AppText>
+      </View>
+    );
+  }
+
+  if (type === "away") {
+    return (
+      <View style={styles.timeResultBadge}>
+        <AppText
+          variant="caption"
+          style={[
+            styles.resultText,
+            isLive && styles.liveResultText,
+            isAwayWinner && styles.winnerResultText,
+          ]}
+        >
+          {result.away ?? "-"}
+        </AppText>
+      </View>
+    );
+  }
+
+  // Both scores (original vertical layout)
   return (
     <View style={styles.timeResultContainer}>
       <View style={styles.timeResultColumn}>
@@ -108,21 +157,22 @@ const styles = StyleSheet.create({
     writingDirection: "ltr",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 8,
   },
   timeResultBadge: {
-    width: 24,
-    height: 24,
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
   },
   resultText: {
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: "400",
+    lineHeight: 36,
+    textAlignVertical: "center",
   },
   liveResultText: {
     color: LIVE_RESULT_COLOR,
-    fontWeight: "700",
   },
   winnerResultText: {
     fontWeight: "700",
