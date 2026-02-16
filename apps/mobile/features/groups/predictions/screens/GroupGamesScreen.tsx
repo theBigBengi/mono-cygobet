@@ -17,7 +17,7 @@ import { useCardFocusSaving } from "../hooks/useCardFocusSaving";
 import { useSmartFilters } from "../hooks/useSmartFilters";
 import { useGroupedFixtures } from "../hooks/useGroupedFixtures";
 import { usePredictionsStats } from "../hooks/usePredictionsStats";
-import type { PredictionMode } from "../types";
+import type { PredictionMode, FixtureItem } from "../types";
 import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { HEADER_HEIGHT, FOOTER_PADDING, SAVE_PENDING_DELAY_MS, SCROLL_OFFSET } from "../utils/constants";
@@ -191,6 +191,18 @@ export function GroupGamesScreen({
     setCurrentFocusedField,
   });
 
+  /** Get focused team info for navigation bar. */
+  const focusedTeamInfo = useMemo(() => {
+    if (!currentFocusedField) return null;
+    const fixture = fixtures.find(f => f.id === currentFocusedField.fixtureId);
+    if (!fixture) return null;
+    const team = currentFocusedField.type === "home" ? fixture.homeTeam : fixture.awayTeam;
+    return {
+      name: team?.name ?? "",
+      logo: team?.imagePath ?? null,
+    };
+  }, [currentFocusedField, fixtures]);
+
   /** Save pending predictions when keyboard hides (tap outside or system dismiss). */
   React.useEffect(() => {
     const keyboardDidHideListener = Keyboard.addListener(
@@ -202,6 +214,21 @@ export function GroupGamesScreen({
       keyboardDidHideListener.remove();
     };
   }, [handleSaveAllChanged]);
+
+  /** Scroll to focused card only when fixture changes (not when switching home/away). */
+  const lastScrolledFixtureRef = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    if (currentFocusedField) {
+      const fixtureId = currentFocusedField.fixtureId;
+      // Only scroll if we switched to a different fixture
+      if (lastScrolledFixtureRef.current !== fixtureId) {
+        lastScrolledFixtureRef.current = fixtureId;
+        scrollToMatchCard(fixtureId, keyboardHeight);
+      }
+    } else {
+      lastScrolledFixtureRef.current = null;
+    }
+  }, [currentFocusedField, keyboardHeight, scrollToMatchCard]);
 
   /** Create input/card refs for each fixture so cards can focus and scroll. */
   React.useEffect(() => {
@@ -386,6 +413,8 @@ export function GroupGamesScreen({
           keyboardHeight={keyboardHeight}
           onDone={handleDone}
           isSaving={isSaving}
+          teamName={focusedTeamInfo?.name}
+          teamLogo={focusedTeamInfo?.logo}
         />
 
         {/* Header floats above list content. */}

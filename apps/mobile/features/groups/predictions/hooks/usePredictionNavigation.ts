@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useCallback } from "react";
 import type { ScrollView, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { canPredict } from "@repo/utils";
@@ -63,17 +63,21 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
     );
   };
 
-  const scrollToMatchCard = (fixtureId: number) => {
+  const scrollToMatchCard = useCallback((fixtureId: number, keyboardHeight: number = 0) => {
     const fixtureIdStr = String(fixtureId);
     const cardRef = matchCardRefs.current[fixtureIdStr];
 
     if (cardRef?.current && scrollViewRef.current) {
       cardRef.current?.measureLayout(
         scrollViewRef.current as any,
-        (x, y) => {
+        (x, y, width, height) => {
+          // When keyboard is shown, position card higher on screen (closer to top)
+          // by using a smaller offset (scrolling more)
+          const offset = keyboardHeight > 0 ? 80 : SCROLL_OFFSET;
+          const scrollY = Math.max(0, y - offset);
+
           scrollViewRef.current?.scrollTo({
-            // small offset so הכרטיס מופיע קצת מעל האמצע אבל בלי קפיצה מאוחרת
-            y: Math.max(0, y - SCROLL_OFFSET),
+            y: scrollY,
             animated: true,
           });
         },
@@ -82,7 +86,7 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
         }
       );
     }
-  };
+  }, []);
 
   const navigateToField = (index: number) => {
     if (index < 0 || index >= allInputFields.length) return;
@@ -94,7 +98,8 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
     if (ref?.current) {
       ref.current.focus();
       setCurrentFocusedField(field);
-      scrollToMatchCard(field.fixtureId);
+      // Don't scroll here - let the useEffect in GroupGamesScreen handle it
+      // to avoid duplicate scroll calls
     }
   };
 

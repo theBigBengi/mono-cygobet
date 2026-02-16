@@ -7,7 +7,7 @@ import { View, StyleSheet, Pressable, Keyboard, ActivityIndicator, Platform } fr
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { AppText } from "@/components/ui";
 
 interface ScoreInputNavigationBarProps {
   onPrevious: () => void;
@@ -17,6 +17,8 @@ interface ScoreInputNavigationBarProps {
   keyboardHeight: number;
   onDone?: () => void;
   isSaving?: boolean;
+  teamName?: string;
+  teamLogo?: string | null;
 }
 
 export function ScoreInputNavigationBar({
@@ -27,11 +29,11 @@ export function ScoreInputNavigationBar({
   keyboardHeight,
   onDone,
   isSaving,
+  teamName,
+  teamLogo,
 }: ScoreInputNavigationBarProps) {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === "dark";
-  const keyColor = theme.colors.keyboardKey;
-  const keyColorDisabled = theme.colors.keyboardKey + "80";
 
   // Don't show if keyboard is not visible
   if (keyboardHeight === 0) {
@@ -47,111 +49,75 @@ export function ScoreInputNavigationBar({
     }
   };
 
+  
   const bottomOffset = Platform.OS === "android" ? 60 : 10;
+  const bgColor = isDark ? "rgba(30, 30, 30, 0.98)" : "rgba(255, 255, 255, 0.98)";
 
   return (
     <View
       style={[styles.container, { bottom: keyboardHeight + bottomOffset }]}
       pointerEvents="box-none"
     >
-      <View style={[styles.content, styles.contentClip, {
-        borderColor: theme.colors.border,
-      }]} pointerEvents="box-none">
-        <BlurView
-          intensity={50}
-          tint={isDark ? "dark" : "light"}
-          style={[
-            StyleSheet.absoluteFill,
-            Platform.OS === "android" && {
-              backgroundColor: isDark ? "rgba(30, 30, 30, 0.95)" : "rgba(255, 255, 255, 0.95)",
-            },
-          ]}
-          pointerEvents="box-none"
-        />
-        <View style={styles.row}>
-        {/* Left section: Navigation arrows — iOS keyboard key color */}
+      <View style={[styles.content, { backgroundColor: bgColor }]}>
+        {/* Left section: Navigation arrows */}
         <View style={styles.leftSection}>
           <Pressable
             style={[
               styles.navButton,
+              { backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" },
               !canGoPrevious && styles.buttonDisabled,
-              {
-                borderColor: theme.colors.border,
-                backgroundColor: canGoPrevious ? keyColor : keyColorDisabled,
-              },
             ]}
             onPress={canGoPrevious ? onPrevious : undefined}
             disabled={!canGoPrevious}
           >
             <Ionicons
               name="chevron-up"
-              size={32}
-              
-              color={
-                canGoPrevious
-                  ? theme.colors.textPrimary
-                  : theme.colors.textSecondary
-              }
+              size={24}
+              color={canGoPrevious ? theme.colors.textPrimary : theme.colors.textSecondary}
             />
           </Pressable>
 
           <Pressable
             style={[
               styles.navButton,
+              { backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" },
               !canGoNext && styles.buttonDisabled,
-              {
-                borderColor: theme.colors.border,
-                backgroundColor: canGoNext ? keyColor : keyColorDisabled,
-              },
             ]}
             onPress={canGoNext ? onNext : undefined}
             disabled={!canGoNext}
           >
             <Ionicons
               name="chevron-down"
-              size={32}
-              color={
-                canGoNext
-                  ? theme.colors.textPrimary
-                  : theme.colors.textSecondary
-              }
+              size={24}
+              color={canGoNext ? theme.colors.textPrimary : theme.colors.textSecondary}
             />
           </Pressable>
         </View>
 
-        {/* Middle section: Empty spacer */}
-        <View style={styles.middleSection} />
+        {/* Middle section: Team name */}
+        <View style={styles.middleSection}>
+          {teamName && (
+            <AppText
+              variant="body"
+              style={styles.teamName}
+              numberOfLines={1}
+            >
+              {teamName}
+            </AppText>
+          )}
+        </View>
 
         {/* Right section: Done button */}
-        <View style={styles.rightSection}>
-          <Pressable
-            style={[
-              styles.doneButton,
-              {
-                backgroundColor: theme.colors.primary,
-              },
-            ]}
-            onPress={handleDone}
-          >
-            {isSaving ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Ionicons name="checkmark" size={32} color="#FFFFFF" />
-            )}
-            {/* <AppText
-              variant="caption"
-              style={[
-                styles.buttonText,
-                {
-                  color: "#FFFFFF",
-                },
-              ]}
-            >
-              Done
-            </AppText> */}
-          </Pressable>
-        </View>
-        </View>
+        <Pressable
+          style={[styles.doneButton, { backgroundColor: theme.colors.primary }]}
+          onPress={handleDone}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Ionicons name="checkmark" size={24} color="#FFFFFF" />
+          )}
+        </Pressable>
       </View>
     </View>
   );
@@ -160,73 +126,54 @@ export function ScoreInputNavigationBar({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    left: 4,
-    right: 4,
+    left: 8,
+    right: 8,
     zIndex: 1000,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   content: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-    borderWidth: 1,
-    borderRadius: 99,
-  },
-  contentClip: {
-    overflow: "hidden",
-  },
-  row: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 16,
+    gap: 8,
   },
   leftSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 4,
   },
   middleSection: {
     flex: 1,
-  },
-  rightSection: {
-    // Right section for done button
-  },
-  navButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
-    borderRadius: 99,
-    minWidth: 44,
-    height: 44,
-    borderWidth: 1,
+    marginLeft: 8,
   },
-  doneButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    // paddingVertical: 8,
-    // paddingHorizontal: 16,
-    borderRadius: 99,
-    gap: 6,
-    minWidth: 44,
-    height: 44,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
+  teamName: {
+    fontSize: 14,
     fontWeight: "600",
   },
-  separator: {
-    width: 1,
-    height: 24,
-    backgroundColor: "rgba(0, 0, 0, 0.1)",
+  navButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    width: 40,
+    height: 40,
+  },
+  doneButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    width: 40,
+    height: 40,
+  },
+  buttonDisabled: {
+    opacity: 0.4,
   },
 });
