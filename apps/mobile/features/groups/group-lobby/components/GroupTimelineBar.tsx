@@ -140,11 +140,11 @@ const styles = StyleSheet.create({
   },
   currentDot: {
     position: "absolute",
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    marginLeft: -11,
-    top: -9,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginLeft: -6,
+    top: -4,
   },
   trophyContainer: {
     width: 22,
