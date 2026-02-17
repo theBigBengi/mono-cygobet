@@ -94,7 +94,7 @@ export default fp(async (fastify) => {
     // We assume jobs are seeded and always exist; missing row is a deployment/config error.
     const db = await prisma.jobs.findUnique({
       where: { key: jobKey },
-      select: { scheduleCron: true },
+      select: { scheduleCron: true, enabled: true },
     });
 
     if (!db) {
@@ -102,6 +102,9 @@ export default fp(async (fastify) => {
         `Missing jobs row for '${jobKey}'. Seed jobs defaults into DB before starting the scheduler.`
       );
     }
+
+    // Don't schedule if job is disabled
+    if (!db.enabled) return null;
 
     return db.scheduleCron ?? null;
   }

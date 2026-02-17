@@ -362,9 +362,9 @@ export class AdminJobsConfigService {
       throw e;
     }
 
-    // Apply schedule changes immediately (per-process). Without this, cron changes
+    // Apply schedule changes immediately (per-process). Without this, cron/enabled changes
     // only take effect after an API restart.
-    if (patch.scheduleCron !== undefined) {
+    if (patch.scheduleCron !== undefined || patch.enabled !== undefined) {
       try {
         await this.fastify.jobsScheduler?.rescheduleJob(updated.key);
       } catch (e) {
