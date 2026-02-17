@@ -276,6 +276,7 @@ Filter to see only what you need.`}
           {isLoading ? (
             <Skeleton className="h-64 w-full" />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -501,6 +502,7 @@ From: ${provider} /schedules/seasons/{id} endpoint`}
                 </div>
               </div>
             )}
+            </>
           )}
         </CardContent>
       </Card>
