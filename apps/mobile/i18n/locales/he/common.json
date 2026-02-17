@@ -95,6 +95,7 @@
     "chatShort": "צ׳אט",
     "freePick": "בחירה חופשית",
     "member": "חבר",
+    "admin": "מנהל",
     "groupGames": "משחקי קבוצה",
     "predictionsOverview": "סקירת תחזיות",
     "invite": "הזמנה",
@@ -530,7 +531,12 @@
     "loadingInviteCode": "טוען קוד הזמנה...",
     "failedLoadInviteCode": "טעינת קוד הזמנה נכשלה",
     "shareInvite": "שתף הזמנה",
-    "regenerateCode": "צור קוד מחדש"
+    "regenerateCode": "צור קוד מחדש",
+    "inviteFriends": "הזמן חברים",
+    "shareCodeDescription": "שתף את הקוד הזה עם חברים כדי שיוכלו להצטרף לקבוצה שלך",
+    "copied": "הועתק!",
+    "tapToCopy": "לחץ להעתקה",
+    "joinMessage": "הצטרף לקבוצה שלי ב-Cygobet!"
   },
   "members": {
     "loadingMembers": "טוען חברים...",

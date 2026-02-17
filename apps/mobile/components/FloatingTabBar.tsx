@@ -1,14 +1,14 @@
 // components/FloatingTabBar.tsx
-// Standard docked bottom tab bar with icons and labels
+// Game-like floating bottom tab bar with 3D effects
 
 import React, { useMemo } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAtomValue } from "jotai";
+import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { HapticTab } from "./haptic-tab";
 import { AppText } from "./ui";
 import { useUnreadCountsQuery } from "@/domains/groups";
 import { tabBarBadgeAtom } from "@/lib/state/tabBarBadge.atom";
@@ -31,149 +31,145 @@ export function FloatingTabBar({
   const hasSelection = badge.visible;
   const countNumber = badge.count;
 
+  const handlePress = (route: typeof state.routes[0], isFocused: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Special handling for home tab when there's a selection
+    if (route.name === "home" && hasSelection) {
+      if (isFocused) {
+        badge.onActiveTap?.();
+        return;
+      }
+    }
+
+    const event = navigation.emit({
+      type: "tabPress",
+      target: route.key,
+      canPreventDefault: true,
+    });
+
+    if (!isFocused && !event.defaultPrevented) {
+      navigation.navigate(route.name, route.params);
+    }
+  };
+
   return (
     <View
       style={[
-        styles.container,
-        {
-          borderTopColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
-          paddingBottom: insets.bottom,
-        },
+        styles.outerContainer,
+        { bottom: Math.max(insets.bottom, 12) },
       ]}
       pointerEvents="box-none"
     >
-      <View style={styles.content} pointerEvents="box-none">
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            borderBottomColor: theme.colors.textSecondary + "40",
+            shadowColor: "#000",
+          },
+        ]}
+      >
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
-
-          const onPress = () => {
-            // Special handling for home tab when there's a selection
-            if (route.name === "home" && hasSelection) {
-              // If we're already on home tab, trigger the badge action
-              if (isFocused) {
-                badge.onActiveTap?.();
-                return;
-              }
-              // If we're not on home tab, navigate to home first
-              // (normal navigation will happen below)
-            }
-
-            const event = navigation.emit({
-              type: "tabPress",
-              target: route.key,
-              canPreventDefault: true,
-            });
-
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params);
-            }
-          };
-
-          const onLongPress = () => {
-            navigation.emit({
-              type: "tabLongPress",
-              target: route.key,
-            });
-          };
-
-          const color = isFocused
-            ? theme.colors.primary
-            : theme.colors.textSecondary;
-
-          const label =
-            options.tabBarLabel !== undefined
-              ? typeof options.tabBarLabel === "string"
-                ? options.tabBarLabel
-                : (options.title ?? route.name)
-              : (options.title ?? route.name);
+          const isHomeTab = route.name === "home";
+          const showBadge = isHomeTab && hasSelection;
 
           const iconName =
             route.name === "home"
               ? "add"
               : route.name === "groups"
-                ? isFocused
-                  ? "people"
-                  : "people-outline"
+                ? "people"
                 : route.name === "activity"
-                  ? isFocused
-                    ? "flash"
-                    : "flash-outline"
+                  ? "flash"
                   : route.name === "profile"
-                    ? isFocused
-                      ? "person"
-                      : "person-outline"
+                    ? "person"
                     : route.name === "settings"
-                      ? isFocused
-                        ? "settings"
-                        : "settings-outline"
+                      ? "settings-outline"
                       : null;
 
-          // Special rendering for home tab with selection
-          const showBadge = route.name === "home" && hasSelection;
-
           return (
-            <HapticTab
+            <Pressable
               key={route.key}
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
               accessibilityLabel={options.tabBarAccessibilityLabel}
-              onPress={onPress}
-              onLongPress={onLongPress}
-              style={styles.tab}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              onPress={() => handlePress(route, isFocused)}
+              style={({ pressed }) => [
+                styles.tab,
+                isHomeTab && styles.homeTab,
+                isHomeTab && {
+                  backgroundColor: showBadge
+                    ? theme.colors.success
+                    : theme.colors.primary,
+                  borderColor: showBadge
+                    ? theme.colors.success
+                    : theme.colors.primary,
+                  shadowColor: showBadge
+                    ? theme.colors.success
+                    : theme.colors.primary,
+                  shadowOpacity: pressed ? 0 : 0.4,
+                  transform: [{ scale: pressed ? 0.92 : 1 }],
+                },
+                !isHomeTab && {
+                  backgroundColor: isFocused
+                    ? theme.colors.primary + "15"
+                    : "transparent",
+                  transform: [{ scale: pressed ? 0.9 : 1 }],
+                },
+              ]}
             >
-              <View style={styles.tabContent} pointerEvents="box-none">
-                <View style={styles.tabIconRow}>
-                  {showBadge && (
-                    <View
-                      style={[
-                        styles.badge,
-                        {
-                          backgroundColor: theme.colors.primary,
-                        },
-                      ]}
-                      pointerEvents="none"
-                    >
-                      <Ionicons
-                        name="checkmark"
-                        size={26}
-                        color={theme.colors.primaryText}
-                      />
-                    </View>
-                  )}
-                  {iconName && (
-                    <Ionicons
-                      name={iconName as any}
-                      size={route.name === "home" ? 32 : 24}
-                      color={showBadge ? "transparent" : color}
-                    />
-                  )}
-                  {route.name === "groups" && totalUnreadCount > 0 && (
-                    <View
-                      style={[
-                        styles.unreadCountBadge,
-                        { backgroundColor: theme.colors.primary },
-                      ]}
-                      pointerEvents="none"
-                    >
-                      <AppText
-                        variant="caption"
-                        style={[
-                          styles.unreadCountText,
-                          { color: theme.colors.primaryText },
-                        ]}
-                      >
-                        {totalUnreadCount > 99
-                          ? "99+"
-                          : String(totalUnreadCount)}
-                      </AppText>
-                    </View>
-                  )}
-                </View>
+              <View
+                style={[
+                  styles.iconCircle,
+                  !isHomeTab && isFocused && {
+                    backgroundColor: theme.colors.primary,
+                  },
+                ]}
+              >
+                {showBadge ? (
+                  <Ionicons
+                    name="checkmark"
+                    size={28}
+                    color="#fff"
+                  />
+                ) : (
+                  <Ionicons
+                    name={iconName as any}
+                    size={isHomeTab ? 28 : 22}
+                    color={
+                      isHomeTab
+                        ? "#fff"
+                        : isFocused
+                          ? "#fff"
+                          : theme.colors.textSecondary
+                    }
+                  />
+                )}
               </View>
-            </HapticTab>
+              {route.name === "groups" && totalUnreadCount > 0 && (
+                <View
+                  style={[
+                    styles.unreadCountBadge,
+                    { backgroundColor: theme.colors.primary },
+                  ]}
+                  pointerEvents="none"
+                >
+                  <AppText
+                    variant="caption"
+                    style={[
+                      styles.unreadCountText,
+                      { color: theme.colors.primaryText },
+                    ]}
+                  >
+                    {totalUnreadCount > 99 ? "99+" : String(totalUnreadCount)}
+                  </AppText>
+                </View>
+              )}
+            </Pressable>
           );
         })}
       </View>
@@ -182,37 +178,56 @@ export function FloatingTabBar({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    borderTopWidth: StyleSheet.hairlineWidth,
+  outerContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
   },
-  content: {
+  container: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingTop: 8,
-    gap: 8,
+    justifyContent: "space-evenly",
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   tab: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 14,
   },
-  tabContent: {
-    alignItems: "center",
-    justifyContent: "center",
+  homeTab: {
+    width: 52,
+    height: 52,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+    elevation: 6,
   },
-  tabIconRow: {
-    position: "relative",
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
   unreadCountBadge: {
     position: "absolute",
-    top: -6,
-    right: -14,
+    top: 0,
+    right: 0,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -223,13 +238,5 @@ const styles = StyleSheet.create({
   unreadCountText: {
     fontSize: 10,
     fontWeight: "700",
-  },
-  badge: {
-    position: "absolute",
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });

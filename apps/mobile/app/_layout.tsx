@@ -32,6 +32,7 @@ import { DegradedBanner } from "@/components/DegradedBanner";
 import { initializeGlobalErrorHandlers } from "@/lib/errors/globalErrorHandlers";
 import { handleError, getUserFriendlyMessage } from "@/lib/errors";
 import { View, Text, StyleSheet, Pressable } from "react-native";
+// Note: SafeAreaView import kept for ErrorBoundary, but root layout now uses View for transparency
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
@@ -81,19 +82,24 @@ function AppContent() {
   const needsUsername =
     (isAuthenticated(status) || isOnboarding(status)) && !user?.username;
 
+  // Create custom theme with transparent background to allow screens to control their own backgrounds
+  const navigationTheme = {
+    ...(colorScheme === "dark" ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(colorScheme === "dark" ? DarkTheme : DefaultTheme).colors,
+      background: "transparent",
+    },
+  };
+
   return (
-    <NavigationThemeProvider
-      value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-    >
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: theme.colors.background }}
-        edges={["top"]}
-      >
+    <NavigationThemeProvider value={navigationTheme}>
+      <View style={{ flex: 1 }}>
         <AppStartGate>
           <DegradedBanner />
           <Stack
             screenOptions={{
               headerShown: true,
+              contentStyle: { backgroundColor: "transparent" },
             }}
           >
             {/* Index route - redirects based on auth status */}
@@ -108,7 +114,10 @@ function AppContent() {
               />
               <Stack.Screen
                 name="groups/[id]/index"
-                options={{ headerShown: false }}
+                options={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: "transparent" },
+                }}
               />
               <Stack.Screen
                 name="groups/[id]/games"
@@ -196,7 +205,7 @@ function AppContent() {
         </AppStartGate>
 
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-      </SafeAreaView>
+      </View>
     </NavigationThemeProvider>
   );
 }

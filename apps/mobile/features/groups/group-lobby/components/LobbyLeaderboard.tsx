@@ -16,7 +16,7 @@ import { useTheme } from "@/lib/theme";
 import type { ApiRankingItem } from "@repo/types";
 
 const RANK_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"] as const; // Gold, Silver, Bronze
-const PODIUM_HEIGHTS = [100, 120, 90] as const; // 2nd, 1st, 3rd place heights
+const PODIUM_HEIGHTS = [120, 145, 110] as const; // 2nd, 1st, 3rd place heights
 
 export interface LobbyLeaderboardProps {
   ranking: ApiRankingItem[] | undefined;
@@ -254,18 +254,6 @@ export function LobbyLeaderboard({
           },
         ]}
       >
-        {/* Member count badge */}
-        {memberCount != null && memberCount > 0 && (
-          <View style={styles.memberCountRow}>
-            <View style={[styles.memberCountBadge, { backgroundColor: theme.colors.primary + "15" }]}>
-              <Ionicons name="people" size={12} color={theme.colors.primary} />
-              <Text style={[styles.memberCountText, { color: theme.colors.primary }]}>
-                {memberCount}
-              </Text>
-            </View>
-          </View>
-        )}
-
         {/* Podium */}
         <View style={styles.podiumRow}>
           {podiumOrder.map((item, index) => renderPodiumCard(item, index))}

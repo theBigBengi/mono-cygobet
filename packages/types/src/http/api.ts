@@ -365,6 +365,10 @@ export type ApiGroupItem = {
   privacy: ApiGroupPrivacy;
   status: ApiGroupStatus;
   creatorId: number;
+  /**
+   * The current user's role in this group.
+   */
+  userRole?: "owner" | "admin" | "member";
   createdAt: string;
   updatedAt: string;
   /**
@@ -446,8 +450,8 @@ export type ApiGroupItem = {
   selectionMode?: "games" | "teams" | "leagues";
   /** Team IDs the group follows (teams mode). Used to filter team avatar chips. */
   groupTeamsIds?: number[];
-  /** Team info for teams mode - includes name and shortCode */
-  groupTeams?: Array<{ id: number; name: string; shortCode: string | null }>;
+  /** Team info for teams mode - includes name, shortCode and image */
+  groupTeams?: Array<{ id: number; name: string; shortCode: string | null; imagePath: string | null }>;
   /** KO round mode: "FullTime" | "ExtraTime" | "Penalties" - TODO: koRoundMode not yet used in scoring */
   koRoundMode?: string;
   onTheNosePoints?: number;

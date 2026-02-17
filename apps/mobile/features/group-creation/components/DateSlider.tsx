@@ -1,18 +1,19 @@
 // features/group-creation/components/DateSlider.tsx
-// Horizontal date strip: today + N days, selectable with underline.
+// Horizontal date strip with game-like styling.
 
-import React, { useRef, useEffect, useMemo, useState } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   View,
   FlatList,
   Pressable,
   StyleSheet,
+  Text,
   type ListRenderItemInfo,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { format, addDays, isToday, isSameDay } from "date-fns";
 import { useTheme } from "@/lib/theme";
-import { AppText } from "@/components/ui";
 
 export interface DateSliderProps {
   selectedDate: Date;
@@ -21,8 +22,8 @@ export interface DateSliderProps {
   daysCount?: number;
 }
 
-const ITEM_WIDTH = 56;
-const ITEM_MARGIN = 4; // marginHorizontal: 2 per side
+const ITEM_WIDTH = 52;
+const ITEM_MARGIN = 8;
 const ITEM_TOTAL_WIDTH = ITEM_WIDTH + ITEM_MARGIN;
 const DAYS_DEFAULT = 14;
 
@@ -40,53 +41,61 @@ export function DateSlider({
     return Array.from({ length: daysCount }, (_, i) => addDays(start, i));
   }, [daysCount]);
 
+  const handleDatePress = (date: Date) => {
+    if (!isSameDay(date, selectedDate)) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onDateChange(date);
+  };
+
   const renderItem = ({ item: date }: ListRenderItemInfo<Date>) => {
     const isSelected = isSameDay(date, selectedDate);
     const dayLabel = isToday(date)
       ? t("dates.today")
       : format(date, "EEE").toUpperCase();
-    const dateLabel = format(date, "dd.MM.");
+    const dateLabel = format(date, "dd");
 
     return (
       <Pressable
-        onPress={() => onDateChange(date)}
-        style={({ pressed }) => [styles.item, { opacity: pressed ? 0.7 : 1 }]}
+        onPress={() => handleDatePress(date)}
+        style={({ pressed }) => [
+          styles.item,
+          {
+            backgroundColor: isSelected
+              ? theme.colors.primary
+              : theme.colors.surface,
+            borderColor: isSelected
+              ? theme.colors.primary
+              : theme.colors.border,
+            borderBottomColor: isSelected
+              ? theme.colors.primary
+              : theme.colors.textSecondary + "40",
+            shadowColor: "#000",
+            shadowOpacity: pressed ? 0 : isSelected ? 0.25 : 0.1,
+            transform: [{ scale: pressed ? 0.95 : 1 }],
+          },
+        ]}
       >
-        <AppText
-          variant="label"
+        <Text
           style={[
             styles.dayText,
             {
-              color: isSelected
-                ? theme.colors.primary
-                : theme.colors.textSecondary,
-              fontWeight: isSelected ? "600" : "400",
+              color: isSelected ? "#fff" : theme.colors.textSecondary,
             },
           ]}
         >
           {dayLabel}
-        </AppText>
-        <AppText
-          variant="caption"
+        </Text>
+        <Text
           style={[
             styles.dateText,
             {
-              color: isSelected
-                ? theme.colors.primary
-                : theme.colors.textSecondary,
+              color: isSelected ? "#fff" : theme.colors.textPrimary,
             },
           ]}
         >
           {dateLabel}
-        </AppText>
-        {isSelected && (
-          <View
-            style={[
-              styles.underline,
-              { backgroundColor: theme.colors.primary },
-            ]}
-          />
-        )}
+        </Text>
       </Pressable>
     );
   };
@@ -100,12 +109,10 @@ export function DateSlider({
   }, [dates, selectedDate]);
 
   useEffect(() => {
-    // Skip scroll on first render - initialScrollIndex handles it
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    // For first item, align to start; otherwise center
     const viewPosition = selectedIndex === 0 ? 0 : 0.5;
     listRef.current?.scrollToIndex({
       index: selectedIndex,
@@ -115,7 +122,7 @@ export function DateSlider({
   }, [selectedIndex]);
 
   return (
-    <View style={[styles.wrapper, { borderColor: theme.colors.border }]}>
+    <View style={styles.wrapper}>
       <FlatList
         ref={listRef}
         data={dates}
@@ -127,7 +134,7 @@ export function DateSlider({
         initialScrollIndex={selectedIndex}
         getItemLayout={(_, index) => ({
           length: ITEM_TOTAL_WIDTH,
-          offset: ITEM_TOTAL_WIDTH * index + 8,
+          offset: ITEM_TOTAL_WIDTH * index + 12,
           index,
         })}
       />
@@ -137,36 +144,33 @@ export function DateSlider({
 
 const styles = StyleSheet.create({
   wrapper: {
-    minHeight: 50,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
+    paddingVertical: 10,
   },
   listContent: {
-    paddingHorizontal: 8,
-    alignItems: "flex-end",
+    paddingHorizontal: 12,
   },
   item: {
     width: ITEM_WIDTH,
-    marginHorizontal: 2,
+    marginRight: ITEM_MARGIN,
     alignItems: "center",
-    justifyContent: "flex-end",
-    paddingVertical: 6,
-    paddingHorizontal: 4,
+    justifyContent: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 2,
   },
   dayText: {
-    fontSize: 12,
-    letterSpacing: 0.2,
+    fontSize: 10,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+    marginBottom: 2,
   },
   dateText: {
-    marginTop: 2,
-    fontSize: 11,
-  },
-  underline: {
-    position: "absolute",
-    bottom: 0,
-    left: 8,
-    right: 8,
-    height: 2.5,
-    borderRadius: 2,
+    fontSize: 18,
+    fontWeight: "700",
   },
 });

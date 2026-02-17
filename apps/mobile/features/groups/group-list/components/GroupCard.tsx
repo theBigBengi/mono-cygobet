@@ -4,7 +4,7 @@
 
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable, Text } from "react-native";
+import { View, StyleSheet, Pressable, Text, Image, ScrollView } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
@@ -67,7 +67,11 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
 
   const handlePressIn = () => {
     setIsPressed(true);
+  };
+
+  const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress();
   };
 
   const handlePressOut = () => {
@@ -77,7 +81,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
   return (
     <View style={styles.container}>
       <Pressable
-        onPress={onPress}
+        onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
       >
@@ -108,7 +112,11 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                   styles.avatar,
                   {
                     backgroundColor: theme.colors.primary,
-                    shadowColor: theme.colors.primary,
+                    shadowColor: "#000",
+                    borderWidth: 2,
+                    borderColor: group.userRole === "owner"
+                      ? "#FFD700"
+                      : theme.colors.border,
                   },
                 ]}
               >
@@ -126,33 +134,66 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                 </Text>
                 {/* League mode badge */}
                 {group.selectionMode === "leagues" && group.nextGame?.league && (
-                  <View style={[styles.modeBadge, { backgroundColor: theme.colors.primary + "12", borderColor: theme.colors.primary + "30" }]}>
-                    <View style={[styles.modeIcon, { backgroundColor: theme.colors.primary }]}>
-                      <Ionicons name="trophy-outline" size={10} color={theme.colors.primaryText} />
-                    </View>
-                    <Text style={[styles.modeText, { color: theme.colors.primary }]} numberOfLines={1}>
+                  <View style={[styles.modeBadge, { backgroundColor: theme.colors.textSecondary + "15", borderColor: theme.colors.textSecondary + "30" }]}>
+                    {group.nextGame.league.imagePath ? (
+                      <View style={[styles.modeIcon, { backgroundColor: theme.colors.surface }]}>
+                        <Image
+                          source={{ uri: group.nextGame.league.imagePath }}
+                          style={styles.leagueLogo}
+                        />
+                      </View>
+                    ) : (
+                      <View style={[styles.modeIcon, { backgroundColor: theme.colors.surface }]}>
+                        <Ionicons name="trophy-outline" size={10} color={theme.colors.textSecondary} />
+                      </View>
+                    )}
+                    <Text style={[styles.modeText, { color: theme.colors.textSecondary }]} numberOfLines={1}>
                       {group.nextGame.league.name}
                     </Text>
                   </View>
                 )}
-                {/* Teams mode badge */}
+                {/* Teams mode badges */}
                 {group.selectionMode === "teams" && group.groupTeams && group.groupTeams.length > 0 && (
-                  <View style={[styles.modeBadge, { backgroundColor: theme.colors.primary + "12", borderColor: theme.colors.primary + "30" }]}>
-                    <View style={[styles.modeIcon, { backgroundColor: theme.colors.primary }]}>
-                      <Ionicons name="shirt-outline" size={10} color={theme.colors.primaryText} />
-                    </View>
-                    <Text style={[styles.modeText, { color: theme.colors.primary }]} numberOfLines={1}>
-                      {group.groupTeams.map((t) => t.shortCode ?? t.name.slice(0, 3).toUpperCase()).join(", ")}
-                    </Text>
-                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.teamBadgesScroll}
+                    contentContainerStyle={styles.teamBadgesRow}
+                    nestedScrollEnabled
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    {group.groupTeams.map((team) => (
+                      <Pressable
+                        key={team.id}
+                        onPress={() => {}}
+                        style={[styles.teamBadge, { backgroundColor: theme.colors.textSecondary + "15", borderColor: theme.colors.textSecondary + "30" }]}
+                      >
+                        {team.imagePath ? (
+                          <View style={[styles.teamLogoContainer, { backgroundColor: theme.colors.surface }]}>
+                            <Image
+                              source={{ uri: team.imagePath }}
+                              style={styles.teamLogo}
+                            />
+                          </View>
+                        ) : (
+                          <View style={[styles.teamLogoContainer, { backgroundColor: theme.colors.surface }]}>
+                            <Ionicons name="football-outline" size={10} color={theme.colors.textSecondary} />
+                          </View>
+                        )}
+                        <Text style={[styles.teamBadgeText, { color: theme.colors.textSecondary }]}>
+                          {team.shortCode ?? team.name.slice(0, 3).toUpperCase()}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
                 )}
                 {/* Games mode badge */}
                 {group.selectionMode === "games" && totalFixtures > 0 && (
-                  <View style={[styles.modeBadge, { backgroundColor: theme.colors.primary + "12", borderColor: theme.colors.primary + "30" }]}>
-                    <View style={[styles.modeIcon, { backgroundColor: theme.colors.primary }]}>
-                      <Ionicons name="grid-outline" size={10} color={theme.colors.primaryText} />
+                  <View style={[styles.modeBadge, { backgroundColor: theme.colors.textSecondary + "15", borderColor: theme.colors.textSecondary + "30" }]}>
+                    <View style={[styles.modeIcon, { backgroundColor: theme.colors.surface }]}>
+                      <Ionicons name="grid-outline" size={10} color={theme.colors.textSecondary} />
                     </View>
-                    <Text style={[styles.modeText, { color: theme.colors.primary }]}>
+                    <Text style={[styles.modeText, { color: theme.colors.textSecondary }]}>
                       {t("groups.freePick")}
                     </Text>
                   </View>
@@ -265,26 +306,20 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
 
             {/* Stats HUD (for active/ended groups) */}
             {!isDraft && (
-              <View style={styles.statsHud}>
+              <View style={[styles.statsHud, { borderTopColor: theme.colors.border }]}>
                 {/* Members */}
                 <View style={[styles.hudCell, { backgroundColor: theme.colors.surface }]}>
-                  <Ionicons name="people" size={16} color={theme.colors.primary} />
+                  <Ionicons name="people" size={16} color={theme.colors.textSecondary} />
                   <Text style={[styles.hudValue, { color: theme.colors.textPrimary }]}>
                     {memberCount}
-                  </Text>
-                  <Text style={[styles.hudLabel, { color: theme.colors.textSecondary }]}>
-                    {t("groups.membersShort")}
                   </Text>
                 </View>
 
                 {/* Rank */}
                 <View style={[styles.hudCell, { backgroundColor: theme.colors.surface }]}>
-                  <Ionicons name="trophy" size={16} color="#FFD700" />
+                  <Ionicons name="trophy" size={16} color={theme.colors.textSecondary} />
                   <Text style={[styles.hudValue, { color: theme.colors.textPrimary }]}>
                     {userRank != null ? `#${userRank}` : "—"}
-                  </Text>
-                  <Text style={[styles.hudLabel, { color: theme.colors.textSecondary }]}>
-                    {t("groups.rankShort")}
                   </Text>
                 </View>
 
@@ -326,9 +361,6 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                   >
                     {predictionsCount}/{totalFixtures}
                   </Text>
-                  <Text style={[styles.hudLabel, { color: theme.colors.textSecondary }]}>
-                    {t("groups.predictionsShort")}
-                  </Text>
                 </View>
 
                 {/* Games */}
@@ -353,9 +385,6 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                   >
                     {completedGames}/{totalFixtures}
                   </Text>
-                  <Text style={[styles.hudLabel, { color: theme.colors.textSecondary }]}>
-                    {t("groups.gamesShort")}
-                  </Text>
                 </View>
 
                 {/* Chat */}
@@ -369,9 +398,6 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                     <Ionicons name="chatbubble" size={16} color={theme.colors.primary} />
                     <Text style={[styles.hudValue, { color: theme.colors.primary }]}>
                       {unreadCount > 99 ? "99+" : unreadCount}
-                    </Text>
-                    <Text style={[styles.hudLabel, { color: theme.colors.textSecondary }]}>
-                      {t("groups.chatShort")}
                     </Text>
                   </View>
                 )}
@@ -429,7 +455,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 14,
     borderWidth: 1,
-    padding: 14,
+    paddingTop: 14,
+    paddingHorizontal: 14,
+    paddingBottom: 0,
     overflow: "hidden",
   },
   cardDraft: {
@@ -485,11 +513,51 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
   },
+  teamBadgesScroll: {
+    marginTop: 4,
+    marginHorizontal: -4,
+  },
+  teamBadgesRow: {
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: 4,
+  },
+  teamBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  teamLogoContainer: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  teamLogo: {
+    width: 14,
+    height: 14,
+  },
+  leagueLogo: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  teamBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
   nextGameRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginTop: 14,
+    marginHorizontal: -14,
+    paddingHorizontal: 14,
     paddingTop: 14,
     paddingBottom: 2,
     borderTopWidth: 1,
@@ -535,6 +603,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     marginTop: 12,
+    marginHorizontal: -14,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 10,
+    borderTopWidth: 1,
   },
   hudCell: {
     flex: 1,
@@ -560,6 +633,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 12,
     paddingTop: 12,
+    paddingBottom: 14,
     borderTopWidth: 1,
   },
   draftHintText: {

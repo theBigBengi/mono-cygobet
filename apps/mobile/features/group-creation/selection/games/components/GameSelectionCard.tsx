@@ -1,15 +1,14 @@
 // features/group-creation/selection/games/components/GameSelectionCard.tsx
-// Vertical game selection card component for group games selection.
-// Shows teams vertically with logos on the left, selection toggle on the right.
+// Game-like selection card with shadow, 3D effect, and haptic feedback.
 
 import React from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, Text } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
-import { Card, AppText } from "@/components/ui";
+import { TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { formatKickoffTime } from "@/utils/fixture";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
-import { TeamRow } from "@/features/groups/predictions/components/TeamRow";
 import { SelectionToggleButton } from "../../../components/SelectionToggleButton";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
 
@@ -33,83 +32,155 @@ export function GameSelectionCard({
   const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
 
-  // Calculate card radius style based on position in group
-  const cardRadiusStyle = { borderRadius: 0 };
+  const handlePress = () => {
+    if (!isSelected) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onPress?.();
+  };
 
-  const cardBorderStyle =
-    positionInGroup === "middle" || positionInGroup === "bottom"
-      ? { borderTopWidth: 0 }
-      : {};
+  // Calculate border radius based on position
+  const getBorderRadius = () => {
+    switch (positionInGroup) {
+      case "top":
+        return { borderTopLeftRadius: 14, borderTopRightRadius: 14 };
+      case "bottom":
+        return { borderBottomLeftRadius: 14, borderBottomRightRadius: 14 };
+      case "single":
+        return { borderRadius: 14 };
+      default:
+        return {};
+    }
+  };
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.wrapper, { opacity: pressed ? 0.8 : 1 }]}
-    >
-      <Card
-        style={[
-          styles.matchCard,
-          cardRadiusStyle,
-          cardBorderStyle,
-          { backgroundColor: theme.colors.cardBackground },
+    <View style={styles.wrapper}>
+      <Pressable
+        onPress={handlePress}
+        style={({ pressed }) => [
+          styles.card,
+          getBorderRadius(),
+          positionInGroup !== "single" && positionInGroup !== "top" && styles.cardConnected,
+          {
+            backgroundColor: isSelected
+              ? theme.colors.primary + "08"
+              : theme.colors.surface,
+            borderColor: isSelected
+              ? theme.colors.primary + "40"
+              : theme.colors.border,
+            shadowColor: "#000",
+            shadowOpacity: pressed ? 0 : isSelected ? 0.15 : 0.06,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+          },
         ]}
       >
-        <View style={styles.matchContent}>
-          <View style={styles.timeContainer}>
-            <AppText
-              variant="caption"
-              style={[styles.timeText, { color: theme.colors.textSecondary }]}
-            >
-              {formatKickoffTime(fixture.kickoffAt)}
-            </AppText>
-          </View>
-          <View style={styles.rowsContainer}>
-            <TeamRow
-              team={fixture.homeTeam}
-              teamName={homeTeamName}
-              isWinner={false}
-            />
-            <TeamRow
-              team={fixture.awayTeam}
-              teamName={awayTeamName}
-              isWinner={false}
-            />
-          </View>
-          <SelectionToggleButton
-            isSelected={isSelected}
-            onPress={onPress ?? (() => {})}
-          />
+        {/* Time */}
+        <View style={styles.timeContainer}>
+          <Text style={[styles.timeText, { color: theme.colors.textSecondary }]}>
+            {formatKickoffTime(fixture.kickoffAt)}
+          </Text>
         </View>
-      </Card>
-    </Pressable>
+
+        {/* Teams */}
+        <View style={styles.teamsContainer}>
+          {/* Home Team */}
+          <View style={styles.teamRow}>
+            <View style={styles.logoContainer}>
+              <TeamLogo
+                imagePath={fixture.homeTeam?.imagePath}
+                teamName={homeTeamName}
+                size={28}
+              />
+            </View>
+            <Text
+              style={[
+                styles.teamName,
+                { color: isSelected ? theme.colors.primary : theme.colors.textPrimary },
+              ]}
+              numberOfLines={1}
+            >
+              {homeTeamName}
+            </Text>
+          </View>
+
+          {/* Away Team */}
+          <View style={styles.teamRow}>
+            <View style={styles.logoContainer}>
+              <TeamLogo
+                imagePath={fixture.awayTeam?.imagePath}
+                teamName={awayTeamName}
+                size={28}
+              />
+            </View>
+            <Text
+              style={[
+                styles.teamName,
+                { color: isSelected ? theme.colors.primary : theme.colors.textPrimary },
+              ]}
+              numberOfLines={1}
+            >
+              {awayTeamName}
+            </Text>
+          </View>
+        </View>
+
+        {/* Toggle Button */}
+        <SelectionToggleButton
+          isSelected={isSelected}
+          onPress={handlePress}
+        />
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 0,
+    paddingHorizontal: 12,
   },
-  matchCard: {
-    marginBottom: 0,
-    paddingVertical: 8,
-  },
-  matchContent: {
+  card: {
     flexDirection: "row",
     alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  cardConnected: {
+    borderTopWidth: 0,
+    marginTop: -1,
   },
   timeContainer: {
-    justifyContent: "center",
-    alignItems: "flex-start",
-    marginStart: -4,
-    marginEnd: 16,
+    width: 44,
+    alignItems: "center",
   },
   timeText: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
   },
-  rowsContainer: {
+  teamsContainer: {
     flex: 1,
-    flexDirection: "column",
     gap: 6,
+    marginHorizontal: 8,
+  },
+  teamRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  logoContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0,0,0,0.03)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  teamName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "500",
   },
 });

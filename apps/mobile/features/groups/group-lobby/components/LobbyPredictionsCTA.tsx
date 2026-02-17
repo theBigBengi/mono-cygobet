@@ -40,12 +40,11 @@ const MISSED_COLOR = "#EF4444";
 const LIVE_COLOR = "#EF4444";
 
 
-const MAX_VISIBLE_SEGMENTS = 20;
-const SEGMENT_WIDTH = 10;
-const SEGMENT_GAP = 3;
+const MINI_CARD_WIDTH = 52;
+const MINI_CARD_GAP = 8;
 
-/** Progress bar slider component - chronological segments */
-function ProgressSlider({
+/** Mini cards slider - shows team logos for each fixture */
+function FixtureSlider({
   fixtures,
   selectedIndex,
   isTrophySelected,
@@ -61,16 +60,12 @@ function ProgressSlider({
   const scrollViewRef = useRef<ScrollView>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
-  const DOT_SIZE = 14;
-  const DOT_SIZE_SELECTED = 20;
-  const GAP = 6;
-  const TRACK_HEIGHT = 3;
-
-  // Auto-scroll to center selected segment
+  // Auto-scroll to center selected card
   useEffect(() => {
     if (scrollViewRef.current && containerWidth > 0) {
-      const scrollX = selectedIndex * (DOT_SIZE + GAP);
-      scrollViewRef.current.scrollTo({ x: scrollX, animated: true });
+      const cardTotalWidth = MINI_CARD_WIDTH + MINI_CARD_GAP;
+      const scrollX = selectedIndex * cardTotalWidth - (containerWidth / 2) + (MINI_CARD_WIDTH / 2);
+      scrollViewRef.current.scrollTo({ x: Math.max(0, scrollX), animated: true });
     }
   }, [selectedIndex, containerWidth]);
 
@@ -78,106 +73,94 @@ function ProgressSlider({
     setContainerWidth(event.nativeEvent.layout.width);
   };
 
-  const sidePadding = containerWidth > 0 ? (containerWidth / 2) - (DOT_SIZE / 2) : 100;
-
-  // Find index of last finished fixture for progress track
-  const lastFinishedIndex = fixtures.reduce((lastIdx, fixture, idx) => {
-    return isFinishedState(fixture.state) ? idx : lastIdx;
-  }, -1);
-
-  // Track calculations - from center of first dot to center of last dot
-  const fullTrackWidth = fixtures.length > 1 ? (fixtures.length - 1) * (DOT_SIZE + GAP) : 0;
-  const progressWidth = lastFinishedIndex > 0 ? lastFinishedIndex * (DOT_SIZE + GAP) : 0;
-
-  // Track positioning - centered vertically on the dots, starting at center of first dot
-  const trackTop = (DOT_SIZE - TRACK_HEIGHT) / 2;
-  const trackLeft = DOT_SIZE / 2;
-
-  const renderSegment = (fixture: FixtureItem, index: number) => {
+  const renderMiniCard = (fixture: FixtureItem, index: number) => {
     const isSelected = index === selectedIndex && !isTrophySelected;
     const finished = isFinishedState(fixture.state);
     const cancelled = isCancelledState(fixture.state);
+    const live = isLiveState(fixture.state);
     const prediction = fixture.prediction;
-    const hasPoints = (prediction?.points ?? 0) > 0;
+    const points = prediction?.points ?? 0;
+    const hasPoints = points > 0;
     const hasPrediction = prediction?.home != null && prediction?.away != null;
 
-    let backgroundColor: string;
+    // Determine accent color based on state
+    let accentColor = theme.colors.border;
+    let bgTint = "transparent";
+
     if (cancelled) {
-      backgroundColor = theme.colors.border;
+      accentColor = theme.colors.border;
     } else if (finished) {
-      backgroundColor = hasPoints ? SUCCESS_COLOR : MISSED_COLOR;
+      accentColor = hasPoints ? SUCCESS_COLOR : MISSED_COLOR;
+      bgTint = hasPoints ? SUCCESS_COLOR + "15" : MISSED_COLOR + "10";
+    } else if (live) {
+      accentColor = LIVE_COLOR;
+      bgTint = LIVE_COLOR + "10";
     } else if (hasPrediction) {
-      backgroundColor = theme.colors.textSecondary;
-    } else {
-      backgroundColor = theme.colors.border;
+      accentColor = theme.colors.textSecondary;
+      bgTint = theme.colors.textSecondary + "10";
     }
 
-    // Selected dot is larger - we need to offset it to keep centers aligned
-    const sizeOffset = isSelected ? (DOT_SIZE_SELECTED - DOT_SIZE) / 2 : 0;
+    // Points display text
+    let pointsText = "–";
+    if (finished && !cancelled) {
+      pointsText = hasPoints ? `+${points}` : "0";
+    } else if (hasPrediction) {
+      pointsText = "✓";
+    }
 
     return (
       <Pressable
         key={index}
         onPress={() => onSelectIndex(index)}
-        hitSlop={8}
         style={({ pressed }) => [
-          styles.progressDot,
-          isSelected && styles.progressDotSelected,
+          styles.miniCard,
           {
-            backgroundColor,
-            marginTop: -sizeOffset,
-            marginBottom: -sizeOffset,
+            backgroundColor: bgTint,
+            borderColor: isSelected ? accentColor : theme.colors.border,
+            borderWidth: isSelected ? 2 : 1,
+          },
+          isSelected && {
+            shadowColor: accentColor,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+            elevation: 4,
           },
           pressed && { opacity: 0.7 },
         ]}
-      />
+      >
+        {/* Game number */}
+        <Text style={[styles.miniCardNumber, { color: theme.colors.textSecondary }]}>
+          {index + 1}
+        </Text>
+        {/* Two team logos */}
+        <View style={styles.miniCardLogos}>
+          <TeamLogo
+            imagePath={fixture.homeTeam?.imagePath}
+            teamName={fixture.homeTeam?.name ?? ""}
+            size={18}
+            rounded={false}
+          />
+          <TeamLogo
+            imagePath={fixture.awayTeam?.imagePath}
+            teamName={fixture.awayTeam?.name ?? ""}
+            size={18}
+            rounded={false}
+          />
+        </View>
+      </Pressable>
     );
   };
 
   return (
-    <View style={styles.progressWrapper} onLayout={handleLayout}>
+    <View style={styles.sliderWrapper} onLayout={handleLayout}>
       <ScrollView
         ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.sliderContent}
       >
-        <View style={{ paddingHorizontal: sidePadding }}>
-          {/* Single container with relative positioning */}
-          <View style={{ position: "relative" }}>
-            {/* Background track - absolute, behind dots */}
-            {fullTrackWidth > 0 && (
-              <View
-                style={{
-                  position: "absolute",
-                  top: trackTop,
-                  left: trackLeft,
-                  width: fullTrackWidth,
-                  height: TRACK_HEIGHT,
-                  backgroundColor: theme.colors.border,
-                  borderRadius: TRACK_HEIGHT / 2,
-                }}
-              />
-            )}
-            {/* Progress track - absolute, behind dots */}
-            {progressWidth > 0 && (
-              <View
-                style={{
-                  position: "absolute",
-                  top: trackTop,
-                  left: trackLeft,
-                  width: progressWidth,
-                  height: TRACK_HEIGHT,
-                  backgroundColor: theme.colors.primary,
-                  borderRadius: TRACK_HEIGHT / 2,
-                }}
-              />
-            )}
-            {/* Dots row - this is the layout source */}
-            <View style={styles.segmentsRow}>
-              {fixtures.map((fixture, index) => renderSegment(fixture, index))}
-            </View>
-          </View>
-        </View>
+        {fixtures.map((fixture, index) => renderMiniCard(fixture, index))}
       </ScrollView>
     </View>
   );
@@ -335,30 +318,20 @@ export function LobbyPredictionsCTA({
             },
           ]}
         >
-          {/* Skeleton Slider - dots with track */}
+          {/* Skeleton Mini Cards */}
           <View style={styles.skeletonSliderWrapper}>
-            <View style={styles.skeletonDotsRow}>
-              {/* Track line */}
-              <Animated.View
-                style={[
-                  styles.skeletonTrackLine,
-                  { backgroundColor: theme.colors.border },
-                  skeletonAnimatedStyle,
-                ]}
-              />
-              {/* Dots */}
-              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sliderContent}>
+              {[0, 1, 2, 3, 4].map((i) => (
                 <Animated.View
                   key={i}
                   style={[
-                    styles.skeletonDot,
-                    i === 3 && styles.skeletonDotSelected,
+                    styles.skeletonMiniCard,
                     { backgroundColor: theme.colors.border },
                     skeletonAnimatedStyle,
                   ]}
                 />
               ))}
-            </View>
+            </ScrollView>
           </View>
 
           {/* Skeleton Card */}
@@ -484,16 +457,14 @@ export function LobbyPredictionsCTA({
           },
         ]}
       >
-        {/* Slider */}
-        <View style={styles.sliderRowTop}>
-          <ProgressSlider
-            fixtures={fixtures}
-            selectedIndex={selectedIndex}
-            isTrophySelected={isTrophySelected}
-            theme={theme}
-            onSelectIndex={setSelectedIndex}
-          />
-        </View>
+        {/* Fixture Slider */}
+        <FixtureSlider
+          fixtures={fixtures}
+          selectedIndex={selectedIndex}
+          isTrophySelected={isTrophySelected}
+          theme={theme}
+          onSelectIndex={setSelectedIndex}
+        />
 
       {/* Card Row */}
       <View style={styles.cardRow}>
@@ -743,7 +714,7 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingTop: 12,
     paddingBottom: 16,
     borderRadius: 16,
     borderWidth: 1,
@@ -816,8 +787,34 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     opacity: 0.8,
   },
-  sliderRowTop: {
+  sliderWrapper: {
     marginBottom: 12,
+  },
+  sliderContent: {
+    paddingHorizontal: 8,
+    gap: MINI_CARD_GAP,
+  },
+  miniCard: {
+    width: MINI_CARD_WIDTH,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  miniCardNumber: {
+    fontSize: 9,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  miniCardLogos: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  miniCardPoints: {
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 4,
   },
   sliderRow: {
     flexDirection: "row",
@@ -914,65 +911,17 @@ const styles = StyleSheet.create({
   trophyTextContainer: {
     flex: 1,
   },
-  progressWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    paddingVertical: 12,
-    overflow: "visible",
-  },
-  segmentsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  progressDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: "#fff",
-    elevation: 3,
-  },
-  progressDotSelected: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 3,
-  },
   pressed: {
     opacity: 0.8,
   },
   // Skeleton styles
   skeletonSliderWrapper: {
     marginBottom: 12,
-    paddingVertical: 12,
-    alignItems: "center",
   },
-  skeletonDotsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    position: "relative",
-  },
-  skeletonTrackLine: {
-    position: "absolute",
-    left: 7,
-    right: 7,
-    height: 3,
-    borderRadius: 1.5,
-  },
-  skeletonDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  skeletonDotSelected: {
-    width: 20,
-    height: 20,
+  skeletonMiniCard: {
+    width: MINI_CARD_WIDTH,
+    height: 50,
     borderRadius: 10,
-    borderWidth: 3,
   },
   skeletonLeagueRow: {
     width: "60%",

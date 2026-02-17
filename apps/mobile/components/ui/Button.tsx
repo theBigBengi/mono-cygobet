@@ -1,11 +1,12 @@
 // components/ui/Button.tsx
-// Consistent button component.
-// - Uses Pressable
+// Game-like button component with 3D effects.
+// - Uses Pressable with haptic feedback
 // - Supports primary, secondary, danger variants
-// - Consistent padding, radius, alignment
+// - 3D border effect and shadow
 
 import React from "react";
-import { Pressable, PressableProps } from "react-native";
+import { Pressable, PressableProps, StyleSheet } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "./AppText";
 
@@ -23,9 +24,17 @@ export function Button({
   variant = "primary",
   disabled = false,
   style,
+  onPress,
   ...pressableProps
 }: ButtonProps) {
   const { theme } = useTheme();
+
+  const handlePress = (e: any) => {
+    if (!disabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    onPress?.(e);
+  };
 
   // Determine background color based on variant and disabled state
   const getBackgroundColor = () => {
@@ -41,15 +50,48 @@ export function Button({
     return theme.colors.danger;
   };
 
-  // Determine border style based on variant and disabled state
-  const getBorderStyle = () => {
-    if (disabled || variant === "secondary") {
-      return {
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-      };
+  // Determine border color based on variant
+  const getBorderColor = () => {
+    if (disabled) {
+      return theme.colors.border;
     }
-    return {};
+    if (variant === "primary") {
+      return "transparent";
+    }
+    if (variant === "secondary") {
+      return theme.colors.border;
+    }
+    return "transparent";
+  };
+
+  // Determine bottom border color (darker for 3D effect)
+  const getBottomBorderColor = () => {
+    if (disabled) {
+      return theme.colors.textSecondary + "40";
+    }
+    if (variant === "primary") {
+      // Dark overlay for 3D effect
+      return "rgba(0,0,0,0.25)";
+    }
+    if (variant === "secondary") {
+      return theme.colors.textSecondary + "50";
+    }
+    // danger
+    return "rgba(0,0,0,0.25)";
+  };
+
+  // Determine shadow color
+  const getShadowColor = () => {
+    if (disabled) {
+      return "#000";
+    }
+    if (variant === "primary") {
+      return theme.colors.primary;
+    }
+    if (variant === "danger") {
+      return theme.colors.danger;
+    }
+    return "#000";
   };
 
   // Determine text color based on variant and disabled state
@@ -66,16 +108,26 @@ export function Button({
   return (
     <Pressable
       style={(pressableState) => {
+        const pressed = pressableState.pressed && !disabled;
         const baseStyle = {
           paddingVertical: theme.spacing.sm,
           paddingHorizontal: theme.spacing.lg,
-          borderRadius: theme.radius.sm,
+          borderRadius: 14,
           alignItems: "center" as const,
           justifyContent: "center" as const,
-          minHeight: 44,
+          minHeight: 48,
           backgroundColor: getBackgroundColor(),
-          ...getBorderStyle(),
-          ...(pressableState.pressed && !disabled && { opacity: 0.8 }),
+          borderWidth: 1,
+          borderBottomWidth: pressed ? 1 : 3,
+          borderColor: getBorderColor(),
+          borderBottomColor: getBottomBorderColor(),
+          shadowColor: getShadowColor(),
+          shadowOffset: { width: 0, height: pressed ? 1 : 3 },
+          shadowOpacity: disabled ? 0 : pressed ? 0.1 : 0.25,
+          shadowRadius: pressed ? 2 : 4,
+          elevation: disabled ? 0 : pressed ? 2 : 4,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
+          marginTop: pressed ? 2 : 0,
         };
 
         const customStyle =
@@ -83,14 +135,16 @@ export function Button({
         return [baseStyle, customStyle].filter(Boolean);
       }}
       disabled={disabled}
+      onPress={handlePress}
       {...pressableProps}
     >
       <AppText
         variant="body"
         style={[
           {
-            fontWeight: "600",
+            fontWeight: "700",
             color: getTextColor(),
+            letterSpacing: 0.3,
           },
         ]}
       >

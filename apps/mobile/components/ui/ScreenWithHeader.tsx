@@ -4,6 +4,7 @@
 
 import React from "react";
 import { View, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/lib/theme";
 import { useGoBack } from "@/hooks/useGoBack";
 import { AppHeader } from "./AppHeader";
@@ -25,11 +26,15 @@ export function ScreenWithHeader({
   fallbackRoute = "/(tabs)/groups",
 }: ScreenWithHeaderProps) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const goBack = useGoBack(fallbackRoute);
 
   return (
     <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={[
+        styles.container,
+        { backgroundColor: theme.colors.background, paddingTop: insets.top },
+      ]}
     >
       <AppHeader
         onBack={goBack}

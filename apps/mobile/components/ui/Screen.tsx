@@ -1,14 +1,14 @@
 // components/ui/Screen.tsx
 // Consistent screen layout wrapper.
-// - Uses SafeAreaView (excluding top edge - top safe area is handled globally)
+// - Uses SafeAreaView with configurable edges
 // - Applies consistent padding and background
 // - Optional scroll support
 // - Optional pull-to-refresh when scroll + onRefresh provided
 //
 // SAFE AREA POLICY:
-// - Top edge is excluded because top safe area is handled globally
-// - Only bottom/left/right edges apply safe area padding
-// - This prevents double top offset
+// - By default includes top edge for safe area padding
+// - Use safeAreaEdges prop to customize which edges to apply
+// - Use extendIntoStatusBar={true} as shorthand to exclude top edge
 
 import React, { useCallback, useState } from "react";
 import { Platform, RefreshControl, ScrollView, ViewStyle, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
@@ -22,6 +22,8 @@ import { useTheme } from "@/lib/theme";
 // This matches the height defined in app-shell/tabs/tabs.constants.ts
 const TAB_BAR_HEIGHT = 56;
 
+type SafeAreaEdge = "top" | "bottom" | "left" | "right";
+
 interface ScreenProps {
   children: React.ReactNode;
   scroll?: boolean;
@@ -30,6 +32,17 @@ interface ScreenProps {
   onRefresh?: () => void | Promise<void>;
   /** Optional. Called on scroll with the scroll event. */
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  /**
+   * When true, content can extend into the status bar area.
+   * Useful for screens with gradient headers that should cover the status bar.
+   * Shorthand for safeAreaEdges={["left", "right"]}
+   */
+  extendIntoStatusBar?: boolean;
+  /**
+   * Custom safe area edges to apply. Defaults to ["top", "left", "right"].
+   * Overrides extendIntoStatusBar if both are provided.
+   */
+  safeAreaEdges?: SafeAreaEdge[];
 }
 
 export function Screen({
@@ -38,6 +51,8 @@ export function Screen({
   contentContainerStyle,
   onRefresh,
   onScroll,
+  extendIntoStatusBar = false,
+  safeAreaEdges: customEdges,
 }: ScreenProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -53,13 +68,14 @@ export function Screen({
     }
   }, [onRefresh]);
 
-  // Exclude top edge - top safe area is handled globally
-  // Exclude bottom edge - bottom safe area is handled globally
-  // Only apply safe area to left/right edges
-  const safeAreaEdges: ("top" | "bottom" | "left" | "right")[] = [
-    "left",
-    "right",
-  ];
+  // Determine safe area edges:
+  // - If customEdges provided, use those
+  // - If extendIntoStatusBar, exclude top edge
+  // - Default: include top, left, right (bottom handled by tab bar padding)
+  const safeAreaEdges: SafeAreaEdge[] = customEdges
+    ?? (extendIntoStatusBar
+      ? ["left", "right"]
+      : ["top", "left", "right"]);
 
   // Calculate bottom padding to account for floating tab bar (when tabs are visible)
   // This ensures content doesn't get hidden behind the tabs
@@ -80,13 +96,17 @@ export function Screen({
       />
     ) : undefined;
 
+  // When extendIntoStatusBar is true, add paddingTop to content so it doesn't go under status bar
+  // But the background can still extend into the status bar area
+  const topContentPadding = extendIntoStatusBar ? insets.top : 0;
+
   if (scroll) {
     return (
       <SafeAreaView
         edges={safeAreaEdges}
         style={{
           flex: 1,
-          backgroundColor: theme.colors.background,
+          backgroundColor: extendIntoStatusBar ? "transparent" : theme.colors.background,
         }}
       >
         <ScrollView
@@ -94,7 +114,7 @@ export function Screen({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             {
-              // padding: theme.spacing.md,
+              paddingTop: topContentPadding,
               paddingBottom: defaultBottomPadding + theme.spacing.md,
             },
             contentContainerStyle,

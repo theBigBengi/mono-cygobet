@@ -95,6 +95,7 @@
     "chatShort": "Chat",
     "freePick": "Free Pick",
     "member": "Member",
+    "admin": "Admin",
     "groupGames": "Group Games",
     "predictionsOverview": "Predictions Overview",
     "invite": "Invite",
@@ -514,7 +515,12 @@
     "loadingInviteCode": "Loading invite code...",
     "failedLoadInviteCode": "Failed to load invite code",
     "shareInvite": "Share Invite",
-    "regenerateCode": "Regenerate Code"
+    "regenerateCode": "Regenerate Code",
+    "inviteFriends": "Invite Friends",
+    "shareCodeDescription": "Share this code with friends to let them join your group",
+    "copied": "Copied!",
+    "tapToCopy": "Tap to copy",
+    "joinMessage": "Join my group on Cygobet!"
   },
   "members": {
     "loadingMembers": "Loading members...",

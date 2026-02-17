@@ -187,7 +187,7 @@ const RankingRow = React.memo(function RankingRow({
                   styles.avatar,
                   {
                     backgroundColor: theme.colors.primary,
-                    shadowColor: theme.colors.primary,
+                    shadowColor: "#000",
                   },
                 ]}
               >

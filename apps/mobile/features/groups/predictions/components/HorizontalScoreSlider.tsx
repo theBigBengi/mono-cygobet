@@ -14,7 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
-import { getContrastTextColor, isLightColor } from "../utils/color-helpers";
+import { getContrastTextColor } from "../utils/color-helpers";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const TRACK_PADDING = 0;
@@ -213,7 +213,6 @@ export function HorizontalScoreSlider({
 
   const tabColor = thumbColor ?? (side === "home" ? "#22C55E" : "#3B82F6");
   const textColor = getContrastTextColor(tabColor);
-  const needsBorder = isLightColor(tabColor);
   const secondaryColor = theme.colors.textSecondary;
 
   return (
@@ -264,7 +263,6 @@ export function HorizontalScoreSlider({
             thumbStyle,
             {
               backgroundColor: tabColor,
-              borderColor: needsBorder ? "#ddd" : "white",
             },
           ]}
         >
@@ -294,6 +292,11 @@ const styles = StyleSheet.create({
     position: "relative",
     justifyContent: "center",
     overflow: "visible",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   track: {
     flexDirection: "row",
@@ -315,15 +318,22 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: THUMB_SIZE,
     height: THUMB_SIZE,
-    borderRadius: THUMB_SIZE / 2,
-    borderWidth: 3,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     top: (TRACK_HEIGHT - THUMB_SIZE) / 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
   thumbValue: {
     color: "white",
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
+    textShadowColor: "rgba(0,0,0,0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });

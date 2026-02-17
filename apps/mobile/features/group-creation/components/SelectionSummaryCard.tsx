@@ -1,5 +1,5 @@
 // features/group-creation/components/SelectionSummaryCard.tsx
-// Compact summary card showing key selection info (date range, counts, etc.).
+// Game-like summary card showing key selection info (date range, counts, etc.).
 
 import React, { useEffect } from "react";
 import { View, StyleSheet } from "react-native";
@@ -9,7 +9,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { AppText, Card } from "@/components/ui";
+import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -66,7 +66,16 @@ export function SelectionSummaryCard({
   if (loading) {
     const count = Math.max(1, skeletonCount);
     return (
-      <Card style={styles.card}>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            borderBottomColor: theme.colors.textSecondary + "40",
+          },
+        ]}
+      >
         <View style={styles.row}>
           {Array.from({ length: count }, (_, i) => i).map((i) => (
             <React.Fragment key={i}>
@@ -86,7 +95,7 @@ export function SelectionSummaryCard({
             </React.Fragment>
           ))}
         </View>
-      </Card>
+      </View>
     );
   }
 
@@ -95,7 +104,16 @@ export function SelectionSummaryCard({
   }
 
   return (
-    <Card style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+          borderBottomColor: theme.colors.textSecondary + "40",
+        },
+      ]}
+    >
       <View style={styles.row}>
         {items.map((item, index) => (
           <React.Fragment key={index}>
@@ -108,15 +126,22 @@ export function SelectionSummaryCard({
               />
             )}
             <View style={styles.item}>
-              <MaterialIcons
-                name={
-                  item.icon as React.ComponentProps<
-                    typeof MaterialIcons
-                  >["name"]
-                }
-                size={20}
-                color={theme.colors.textSecondary}
-              />
+              <View
+                style={[
+                  styles.iconCircle,
+                  { backgroundColor: theme.colors.primary + "15" },
+                ]}
+              >
+                <MaterialIcons
+                  name={
+                    item.icon as React.ComponentProps<
+                      typeof MaterialIcons
+                    >["name"]
+                  }
+                  size={18}
+                  color={theme.colors.primary}
+                />
+              </View>
               <AppText variant="body" style={styles.value}>
                 {item.value}
               </AppText>
@@ -127,13 +152,22 @@ export function SelectionSummaryCard({
           </React.Fragment>
         ))}
       </View>
-    </Card>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: 8,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   row: {
     flexDirection: "row",
@@ -145,10 +179,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
+  iconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
   value: {
-    fontSize: 13,
-    fontWeight: "600",
-    lineHeight: 22,
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 20,
   },
   divider: {
     width: 1,

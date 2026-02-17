@@ -6,6 +6,7 @@ import { View, StyleSheet, Pressable, ScrollView } from "react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { RoundPickerSheet } from "./RoundPickerSheet";
@@ -54,6 +55,7 @@ export function SmartFilterChips({
 
   // Handle round pill press: select round if not active, open picker if active
   const handleRoundPillPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (isRoundFilterActive) {
       roundPickerRef.current?.present();
     } else if (roundsFilter) {
@@ -63,13 +65,21 @@ export function SmartFilterChips({
 
   // Handle team pill press - always open picker
   const handleTeamPillPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     teamPickerRef.current?.present();
   }, []);
 
   // Handle competition pill press - always open picker
   const handleCompetitionPillPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     competitionPickerRef.current?.present();
   }, []);
+
+  // Handle action chip press
+  const handleActionPress = useCallback((id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onSelectAction(id);
+  }, [onSelectAction]);
 
   const isLiveChip = (id: string) => id === "live";
   const isPredictChip = (id: string) => id === "predict";
@@ -106,48 +116,47 @@ export function SmartFilterChips({
           <Pressable
             onPress={handleTeamPillPress}
             style={({ pressed }) => [
-              styles.chipWrap,
-              pressed && styles.chipPressed,
+              styles.chip,
+              {
+                backgroundColor: teamPillActive
+                  ? theme.colors.primary
+                  : theme.colors.surface,
+                borderColor: teamPillActive
+                  ? theme.colors.primary
+                  : theme.colors.border,
+                borderBottomColor: teamPillActive
+                  ? "rgba(0,0,0,0.2)"
+                  : theme.colors.textSecondary + "40",
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+              },
             ]}
           >
-            <View
+            <AppText
+              variant="caption"
               style={[
-                styles.chip,
-                teamPillActive && styles.pillActive,
+                styles.chipText,
+                teamPillActive && styles.chipTextActive,
                 {
-                  backgroundColor: teamPillActive
-                    ? theme.colors.primary
-                    : theme.colors.border,
+                  color: teamPillActive
+                    ? theme.colors.primaryText
+                    : theme.colors.textSecondary,
                 },
               ]}
+              numberOfLines={1}
             >
-              <AppText
-                variant="caption"
-                style={[
-                  styles.chipText,
-                  teamPillActive && styles.chipTextActive,
-                  {
-                    color: teamPillActive
-                      ? theme.colors.primaryText
-                      : theme.colors.textSecondary,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {selectedTeam?.name ??
-                  t("predictions.allTeams", { defaultValue: "All Teams" })}
-              </AppText>
-              <Ionicons
-                name="chevron-down"
-                size={12}
-                color={
-                  teamPillActive
-                    ? theme.colors.primaryText
-                    : theme.colors.textSecondary
-                }
-                style={styles.pillChevron}
-              />
-            </View>
+              {selectedTeam?.name ??
+                t("predictions.allTeams", { defaultValue: "All Teams" })}
+            </AppText>
+            <Ionicons
+              name="chevron-down"
+              size={12}
+              color={
+                teamPillActive
+                  ? theme.colors.primaryText
+                  : theme.colors.textSecondary
+              }
+              style={styles.pillChevron}
+            />
           </Pressable>
         )}
 
@@ -156,50 +165,49 @@ export function SmartFilterChips({
           <Pressable
             onPress={handleCompetitionPillPress}
             style={({ pressed }) => [
-              styles.chipWrap,
-              pressed && styles.chipPressed,
+              styles.chip,
+              {
+                backgroundColor: competitionPillActive
+                  ? theme.colors.primary
+                  : theme.colors.surface,
+                borderColor: competitionPillActive
+                  ? theme.colors.primary
+                  : theme.colors.border,
+                borderBottomColor: competitionPillActive
+                  ? "rgba(0,0,0,0.2)"
+                  : theme.colors.textSecondary + "40",
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+              },
             ]}
           >
-            <View
+            <AppText
+              variant="caption"
               style={[
-                styles.chip,
-                competitionPillActive && styles.pillActive,
+                styles.chipText,
+                competitionPillActive && styles.chipTextActive,
                 {
-                  backgroundColor: competitionPillActive
-                    ? theme.colors.primary
-                    : theme.colors.border,
+                  color: competitionPillActive
+                    ? theme.colors.primaryText
+                    : theme.colors.textSecondary,
                 },
               ]}
+              numberOfLines={1}
             >
-              <AppText
-                variant="caption"
-                style={[
-                  styles.chipText,
-                  competitionPillActive && styles.chipTextActive,
-                  {
-                    color: competitionPillActive
-                      ? theme.colors.primaryText
-                      : theme.colors.textSecondary,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {selectedCompetition?.name ??
-                  t("predictions.allCompetitions", {
-                    defaultValue: "All Competitions",
-                  })}
-              </AppText>
-              <Ionicons
-                name="chevron-down"
-                size={12}
-                color={
-                  competitionPillActive
-                    ? theme.colors.primaryText
-                    : theme.colors.textSecondary
-                }
-                style={styles.pillChevron}
-              />
-            </View>
+              {selectedCompetition?.name ??
+                t("predictions.allCompetitions", {
+                  defaultValue: "All Competitions",
+                })}
+            </AppText>
+            <Ionicons
+              name="chevron-down"
+              size={12}
+              color={
+                competitionPillActive
+                  ? theme.colors.primaryText
+                  : theme.colors.textSecondary
+              }
+              style={styles.pillChevron}
+            />
           </Pressable>
         )}
 
@@ -216,59 +224,70 @@ export function SmartFilterChips({
           const warning = predict && chip.urgency === "warning";
 
           // Determine colors based on state
-          let bgColor = theme.colors.border;
+          let bgColor = theme.colors.surface;
+          let borderColor = theme.colors.border;
           let textColor = theme.colors.textSecondary;
+          let bottomBorderColor = theme.colors.textSecondary + "40";
           if (isActive) {
             if (live || urgent) {
               bgColor = RED;
+              borderColor = RED;
               textColor = "#fff";
+              bottomBorderColor = "rgba(0,0,0,0.2)";
             } else if (predict && !urgent) {
               bgColor = AMBER;
+              borderColor = AMBER;
               textColor = "#fff";
+              bottomBorderColor = "rgba(0,0,0,0.2)";
             } else {
               bgColor = theme.colors.primary;
+              borderColor = theme.colors.primary;
               textColor = theme.colors.primaryText;
+              bottomBorderColor = "rgba(0,0,0,0.2)";
             }
           }
 
           return (
             <Pressable
               key={chip.id}
-              onPress={() => onSelectAction(chip.id)}
+              onPress={() => handleActionPress(chip.id)}
               style={({ pressed }) => [
-                styles.chipWrap,
-                pressed && styles.chipPressed,
+                styles.chip,
+                {
+                  backgroundColor: bgColor,
+                  borderColor: borderColor,
+                  borderBottomColor: bottomBorderColor,
+                  transform: [{ scale: pressed ? 0.95 : 1 }],
+                },
               ]}
             >
-              <View style={[styles.chip, { backgroundColor: bgColor }]}>
-                {live && (
-                  <View
-                    style={[
-                      styles.dot,
-                      { backgroundColor: isActive ? "#fff" : RED },
-                    ]}
-                  />
-                )}
-                {warning && isActive && (
-                  <MaterialIcons
-                    name="warning"
-                    size={12}
-                    color="#fff"
-                    style={styles.chipIcon}
-                  />
-                )}
-                <AppText
-                  variant="caption"
+              {live && (
+                <View
                   style={[
-                    styles.chipText,
-                    { color: textColor },
-                    isActive && styles.chipTextActive,
+                    styles.dot,
+                    { backgroundColor: isActive ? "#fff" : RED },
                   ]}
-                  numberOfLines={1}
-                >
-                  {chip.label}
-                </AppText>
-              </View>
+                />
+              )}
+              {warning && isActive && (
+                <MaterialIcons
+                  name="warning"
+                  size={12}
+                  color="#fff"
+                  style={styles.chipIcon}
+                />
+              )}
+              <AppText
+                variant="caption"
+                style={[
+                  styles.chipText,
+                  { color: textColor },
+                  isActive && styles.chipTextActive,
+                ]}
+                numberOfLines={1}
+              >
+                {chip.label}
+              </AppText>
             </Pressable>
           );
         })}
@@ -278,48 +297,47 @@ export function SmartFilterChips({
           <Pressable
             onPress={handleRoundPillPress}
             style={({ pressed }) => [
-              styles.chipWrap,
-              pressed && styles.chipPressed,
+              styles.chip,
+              {
+                backgroundColor: isRoundFilterActive
+                  ? theme.colors.primary
+                  : theme.colors.surface,
+                borderColor: isRoundFilterActive
+                  ? theme.colors.primary
+                  : theme.colors.border,
+                borderBottomColor: isRoundFilterActive
+                  ? "rgba(0,0,0,0.2)"
+                  : theme.colors.textSecondary + "40",
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+              },
             ]}
           >
-            <View
+            <AppText
+              variant="caption"
               style={[
-                styles.chip,
-                isRoundFilterActive && styles.pillActive,
+                styles.chipText,
+                isRoundFilterActive && styles.chipTextActive,
                 {
-                  backgroundColor: isRoundFilterActive
-                    ? theme.colors.primary
-                    : theme.colors.border,
+                  color: isRoundFilterActive
+                    ? theme.colors.primaryText
+                    : theme.colors.textSecondary,
                 },
               ]}
+              numberOfLines={1}
             >
-              <AppText
-                variant="caption"
-                style={[
-                  styles.chipText,
-                  isRoundFilterActive && styles.chipTextActive,
-                  {
-                    color: isRoundFilterActive
-                      ? theme.colors.primaryText
-                      : theme.colors.textSecondary,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {t("predictions.roundNumber", {
-                  number: roundsFilter.selectedRound,
-                  defaultValue: `Round ${roundsFilter.selectedRound}`,
-                })}
-              </AppText>
-              {isRoundFilterActive && (
-                <Ionicons
-                  name="chevron-down"
-                  size={12}
-                  color={theme.colors.primaryText}
-                  style={styles.pillChevron}
-                />
-              )}
-            </View>
+              {t("predictions.roundNumber", {
+                number: roundsFilter.selectedRound,
+                defaultValue: `Round ${roundsFilter.selectedRound}`,
+              })}
+            </AppText>
+            {isRoundFilterActive && (
+              <Ionicons
+                name="chevron-down"
+                size={12}
+                color={theme.colors.primaryText}
+                style={styles.pillChevron}
+              />
+            )}
           </Pressable>
         )}
       </ScrollView>
@@ -370,36 +388,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  chipWrap: {
-    borderRadius: 8,
-  },
-  chipPressed: {
-    opacity: 0.7,
-  },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  pillActive: {
-    paddingEnd: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderBottomWidth: 3,
   },
   pillChevron: {
-    marginStart: 2,
+    marginStart: 4,
   },
   chipIcon: {
     marginRight: 4,
   },
   chipText: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
     letterSpacing: 0.2,
     textTransform: "uppercase",
   },
   chipTextActive: {
-    fontWeight: "600",
+    fontWeight: "700",
   },
   dot: {
     width: 6,

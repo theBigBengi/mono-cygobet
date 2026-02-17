@@ -8,6 +8,7 @@ import {
   Animated,
 } from "react-native";
 import { useTranslation } from "react-i18next";
+import * as Haptics from "expo-haptics";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
@@ -143,17 +144,22 @@ export function GameSlider({
 
       return (
         <Pressable
-          onPress={() => onSelectGame(index)}
-          style={[
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onSelectGame(index);
+          }}
+          style={({ pressed }) => [
             styles.item,
             {
               backgroundColor: isActive
                 ? `${theme.colors.primary}18`
                 : theme.colors.surface,
+              borderWidth: 1,
               borderColor: isActive
                 ? theme.colors.primary
                 : theme.colors.border,
-              borderWidth: isActive ? 1.5 : 1,
+              shadowOpacity: pressed ? 0 : isActive ? 0.15 : 0.08,
+              transform: [{ scale: pressed ? 0.95 : 1 }],
             },
           ]}
         >
@@ -250,6 +256,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     flexDirection: "column",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   teamsRow: {
     flexDirection: "row",

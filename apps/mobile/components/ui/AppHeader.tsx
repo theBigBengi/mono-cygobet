@@ -3,6 +3,7 @@
 
 import React from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "./AppText";
@@ -34,27 +35,38 @@ export function AppHeader({
       style={[
         styles.container,
         Platform.OS === "android" && { elevation: 0 },
-        { backgroundColor: theme.colors.background, height: HEADER_HEIGHT },
+        {
+          backgroundColor: theme.colors.surface,
+          height: HEADER_HEIGHT,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.colors.border,
+        },
       ]}
       pointerEvents="box-none"
     >
       <View style={styles.leftRow}>
-        <Pressable onPress={onBack}>
-          <View
-            style={[
-              styles.iconButton,
-              styles.iconButtonClip,
-              { borderWidth: 0, backgroundColor: theme.colors.background },
-            ]}
-          >
-            <View style={styles.iconButtonInner}>
-              <Ionicons
-                name="chevron-back"
-                size={20}
-                color={theme.colors.textPrimary}
-              />
-            </View>
-          </View>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onBack();
+          }}
+          style={({ pressed }) => [
+            styles.backButton,
+            {
+              backgroundColor: theme.colors.background,
+              borderColor: theme.colors.border,
+              borderBottomColor: pressed
+                ? theme.colors.border
+                : theme.colors.textSecondary + "40",
+              transform: [{ scale: pressed ? 0.95 : 1 }],
+            },
+          ]}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={20}
+            color={theme.colors.textPrimary}
+          />
         </Pressable>
         {leftContent ? (
           leftContent
@@ -82,31 +94,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 99,
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderBottomWidth: 3,
     justifyContent: "center",
     alignItems: "center",
-  },
-  iconButtonClip: {
-    overflow: "hidden",
-  },
-  iconButtonInner: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
   },
   leftRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
     flex: 1,
   },
   titleText: {
     flex: 1,
+    fontWeight: "600",
   },
   rightRow: {
     flexDirection: "row",

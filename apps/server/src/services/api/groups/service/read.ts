@@ -65,13 +65,13 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
   });
 
   // Fetch team info if needed
-  const teamInfoMap = new Map<number, { id: number; name: string; shortCode: string | null }>();
+  const teamInfoMap = new Map<number, { id: number; name: string; shortCode: string | null; imagePath: string | null }>();
   if (allTeamIds.size > 0) {
     const teams = await prisma.teams.findMany({
       where: { id: { in: Array.from(allTeamIds) } },
-      select: { id: true, name: true, shortCode: true },
+      select: { id: true, name: true, shortCode: true, imagePath: true },
     });
-    teams.forEach((t) => teamInfoMap.set(t.id, { id: t.id, name: t.name, shortCode: t.shortCode }));
+    teams.forEach((t) => teamInfoMap.set(t.id, { id: t.id, name: t.name, shortCode: t.shortCode, imagePath: t.imagePath }));
   }
 
   const rulesByGroupId = new Map(
@@ -95,6 +95,8 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
   // Format fixtures in one place (service layer) before passing to builders
   const data: ApiGroupItem[] = groups.map((group) => {
     const isDraft = group.status === GROUP_STATUS.DRAFT;
+    // Determine user's role: creator is owner, otherwise member
+    const userRole: "owner" | "member" = group.creatorId === userId ? "owner" : "member";
 
     if (isDraft) {
       const rawFirstGame = stats.firstGameByGroupId.get(group.id) ?? null;
@@ -103,6 +105,7 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
       const firstGame = formatFixtureFromDb(rawFirstGame, null, null);
       const lastGame = formatFixtureFromDb(rawLastGame, null, null);
       const draftItem = buildDraftGroupItem(group, firstGame, lastGame);
+      draftItem.userRole = userRole;
       const rules = rulesByGroupId.get(group.id);
       if (rules) {
         draftItem.nudgeEnabled = rules.nudgeEnabled;
@@ -175,6 +178,7 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
         firstGame,
         lastGame
       );
+      activeItem.userRole = userRole;
       const rules = rulesByGroupId.get(group.id);
       if (rules) {
         activeItem.nudgeEnabled = rules.nudgeEnabled;
@@ -212,6 +216,8 @@ export async function getGroupById(
   const { group } = await assertGroupMember(id, userId);
 
   const data: ApiGroupItem = buildGroupItem(group);
+  // Determine user's role: creator is owner, otherwise member
+  data.userRole = group.creatorId === userId ? "owner" : "member";
 
   const rules = await repo.findGroupRules(id);
   data.inviteAccess = rules?.inviteAccess ?? "all";

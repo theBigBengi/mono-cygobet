@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { HEADER_HEIGHT } from "../utils/constants";
@@ -20,13 +21,18 @@ interface GroupGamesHeaderProps {
  */
 export function GroupGamesHeader({ onBack, children, backOnly, rightContent }: GroupGamesHeaderProps) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
       style={[
         styles.container,
         Platform.OS === "android" && { elevation: 0 },
-        { backgroundColor: theme.colors.background, height: HEADER_HEIGHT },
+        {
+          backgroundColor: theme.colors.background,
+          paddingTop: insets.top,
+          height: HEADER_HEIGHT + insets.top,
+        },
       ]}
       pointerEvents="box-none"
     >

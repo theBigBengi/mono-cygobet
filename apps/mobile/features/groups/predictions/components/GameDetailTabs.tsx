@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
+import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 
@@ -18,28 +19,35 @@ type Props = {
 
 /**
  * Horizontal row of pill-shaped tab buttons for game detail view.
- * Matches SmartFilterChips design from other screens.
+ * Game-like 3D design with haptics.
  */
 export function GameDetailTabs({ tabs, activeTab, onSelectTab }: Props) {
   const { theme } = useTheme();
 
   if (tabs.length === 0) return null;
 
+  const handleTabPress = (tabId: TabId) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onSelectTab(tabId);
+  };
+
   return (
-    <View style={[styles.container, { borderBottomColor: theme.colors.border }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         return (
           <Pressable
             key={tab.id}
-            onPress={() => onSelectTab(tab.id)}
+            onPress={() => handleTabPress(tab.id)}
             style={({ pressed }) => [
               styles.tab,
-              pressed && styles.tabPressed,
               {
                 backgroundColor: isActive
                   ? theme.colors.primary
-                  : theme.colors.border,
+                  : theme.colors.surface,
+                shadowColor: "#000",
+                shadowOpacity: pressed ? 0 : isActive ? 0.3 : 0.1,
+                transform: [{ scale: pressed ? 0.95 : 1 }],
               },
             ]}
           >
@@ -69,25 +77,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingTop: 4,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
   },
   tab: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  tabPressed: {
-    opacity: 0.7,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
+    elevation: 3,
   },
   tabText: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
     letterSpacing: 0.2,
     textTransform: "uppercase",
   },
   tabTextActive: {
-    fontWeight: "600",
+    fontWeight: "700",
   },
 });

@@ -144,7 +144,7 @@ export function LobbyWithHeader({
     <View
       style={[
         styles.lobbyContainer,
-        { backgroundColor: theme.colors.background },
+        { backgroundColor: hideOverlayHeader ? "transparent" : theme.colors.background },
       ]}
     >
       <View style={[styles.lobbyContent, !hideOverlayHeader && { paddingTop: HEADER_HEIGHT }]}>

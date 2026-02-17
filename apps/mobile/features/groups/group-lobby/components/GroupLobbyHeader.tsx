@@ -73,10 +73,6 @@ export function GroupLobbyHeader({
   if (compact) {
     return (
       <View style={styles.hudContainer}>
-        <LinearGradient
-          colors={[theme.colors.primary + "15", theme.colors.primary + "08", "transparent"]}
-          style={styles.hudGradient}
-        />
 
         {/* Back Button - Positioned absolutely */}
         {!hideNavButtons && onBack && (
@@ -132,7 +128,7 @@ export function GroupLobbyHeader({
                 styles.shield,
                 {
                   backgroundColor: theme.colors.primary,
-                  shadowColor: theme.colors.primary,
+                  shadowColor: "#000",
                 },
               ]}
             >

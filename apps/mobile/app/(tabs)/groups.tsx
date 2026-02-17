@@ -4,20 +4,21 @@
 // - Empty state when no groups exist.
 // - Navigates to group details on press.
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import {
   View,
   StyleSheet,
-  FlatList,
   Pressable,
   RefreshControl,
   Platform,
+  FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
+import * as Haptics from "expo-haptics";
 import { Screen, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
@@ -51,6 +52,7 @@ function GroupsContent() {
   const infoSheetRef = useRef<BottomSheetModal>(null);
 
   const handleOpenInfo = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     infoSheetRef.current?.present();
   }, []);
 
@@ -83,6 +85,21 @@ function GroupsContent() {
   const { selectedFilter, setSelectedFilter, filteredGroups, counts } =
     useGroupFilter(groups);
 
+  // Build list data: header, tabs, then groups
+  type ListItem =
+    | { type: "header" }
+    | { type: "tabs" }
+    | { type: "group"; data: ApiGroupItem };
+
+  const listData = useMemo<ListItem[]>(() => {
+    const items: ListItem[] = [
+      { type: "header" },
+      { type: "tabs" },
+    ];
+    filteredGroups.forEach((g) => items.push({ type: "group", data: g }));
+    return items;
+  }, [filteredGroups]);
+
   // Loading state — skeleton
   if (isLoading) {
     return (
@@ -96,8 +113,9 @@ function GroupsContent() {
           }}
         >
           {/* Header skeleton */}
-          <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
-            <View style={{ width: 100, height: 24, backgroundColor: theme.colors.surface, borderRadius: 6 }} />
+          <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+            <View style={{ width: 100, height: 28, backgroundColor: theme.colors.surface, borderRadius: 8 }} />
+            <View style={{ width: 36, height: 36, backgroundColor: theme.colors.surface, borderRadius: 12 }} />
           </View>
 
           {/* Filter tabs skeleton */}
@@ -232,14 +250,103 @@ function GroupsContent() {
   const tabBarMarginBottom = theme.spacing.sm;
   const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
 
+  const renderListItem = ({ item }: { item: ListItem }) => {
+    if (item.type === "header") {
+      return (
+        <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+          <View style={styles.headerTop}>
+            <AppText variant="title" style={styles.headerTitle}>
+              {t("groups.title")}
+            </AppText>
+            <Pressable
+              onPress={handleOpenInfo}
+              style={({ pressed }) => [
+                styles.infoButton,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  borderBottomColor: pressed
+                    ? theme.colors.border
+                    : theme.colors.textSecondary + "40",
+                  transform: [{ scale: pressed ? 0.9 : 1 }],
+                },
+              ]}
+            >
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color={theme.colors.textSecondary}
+              />
+            </Pressable>
+          </View>
+          <View style={styles.headerLinks}>
+            <Pressable
+              onPress={handleBrowsePublic}
+              style={({ pressed }) => [
+                styles.headerLink,
+                pressed && styles.headerLinkPressed,
+              ]}
+            >
+              <Ionicons
+                name="globe-outline"
+                size={14}
+                color={theme.colors.primary}
+              />
+              <AppText style={[styles.headerLinkText, { color: theme.colors.primary }]}>
+                {t("groups.browsePublic")}
+              </AppText>
+            </Pressable>
+            <AppText style={[styles.headerLinkDot, { color: theme.colors.textSecondary }]}>
+              •
+            </AppText>
+            <Pressable
+              onPress={handleJoinWithCode}
+              style={({ pressed }) => [
+                styles.headerLink,
+                pressed && styles.headerLinkPressed,
+              ]}
+            >
+              <Ionicons
+                name="enter-outline"
+                size={14}
+                color={theme.colors.primary}
+              />
+              <AppText style={[styles.headerLinkText, { color: theme.colors.primary }]}>
+                {t("groups.joinWithCode")}
+              </AppText>
+            </Pressable>
+          </View>
+        </View>
+      );
+    }
 
-  const renderItem = ({ item }: { item: ApiGroupItem }) => (
-    <GroupCard
-      group={item}
-      onPress={() => handleGroupPress(item.id)}
-      unreadCount={unreadCounts[String(item.id)] ?? 0}
-    />
-  );
+    if (item.type === "tabs") {
+      return (
+        <View style={{ backgroundColor: theme.colors.background }}>
+          <GroupFilterTabs
+            selectedFilter={selectedFilter}
+            onFilterChange={setSelectedFilter}
+            counts={counts}
+          />
+        </View>
+      );
+    }
+
+    // Group card
+    return (
+      <GroupCard
+        group={item.data}
+        onPress={() => handleGroupPress(item.data.id)}
+        unreadCount={unreadCounts[String(item.data.id)] ?? 0}
+      />
+    );
+  };
+
+  const getItemKey = (item: ListItem, index: number) => {
+    if (item.type === "header") return "header";
+    if (item.type === "tabs") return "tabs";
+    return String(item.data.id);
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
@@ -247,62 +354,26 @@ function GroupsContent() {
         scroll={false}
         contentContainerStyle={{ alignItems: "stretch", flex: 1, padding: 0 }}
       >
-        {/* Header */}
-        <View
-          style={[
-            styles.header,
-            {
-              backgroundColor: theme.colors.background,
-              borderBottomColor: theme.colors.border,
-            },
-          ]}
-        >
-          <AppText variant="title" style={styles.headerTitle}>
-            {t("groups.title")}
-          </AppText>
-          <Pressable
-            onPress={handleOpenInfo}
-            style={({ pressed }) => [
-              styles.infoButton,
-              { opacity: pressed ? 0.5 : 1 },
-            ]}
-          >
-            <Ionicons
-              name="information-circle-outline"
-              size={26}
-              color={theme.colors.textSecondary}
-            />
-          </Pressable>
-        </View>
-
-        {/* Filter Tabs */}
-        <GroupFilterTabs
-          selectedFilter={selectedFilter}
-          onFilterChange={setSelectedFilter}
-          counts={counts}
-          onPublicPress={handleBrowsePublic}
-          onJoinPress={handleJoinWithCode}
-        />
-
-        {/* Groups List */}
         <FlatList
           style={styles.list}
-          data={filteredGroups}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderItem}
-          ListHeaderComponent={<View style={{ height: 12 }} />}
-          ListEmptyComponent={
-            <View style={styles.emptyFilter}>
-              <Ionicons
-                name="folder-open-outline"
-                size={48}
-                color={theme.colors.textSecondary}
-                style={{ marginBottom: 12, opacity: 0.5 }}
-              />
-              <AppText variant="body" color="secondary">
-                {t("groups.noGroupsInFilter")}
-              </AppText>
-            </View>
+          data={listData}
+          keyExtractor={getItemKey}
+          renderItem={renderListItem}
+          stickyHeaderIndices={[1]}
+          ListFooterComponent={
+            filteredGroups.length === 0 ? (
+              <View style={styles.emptyFilter}>
+                <Ionicons
+                  name="folder-open-outline"
+                  size={48}
+                  color={theme.colors.textSecondary}
+                  style={{ marginBottom: 12, opacity: 0.5 }}
+                />
+                <AppText variant="body" color="secondary">
+                  {t("groups.noGroupsInFilter")}
+                </AppText>
+              </View>
+            ) : null
           }
           contentContainerStyle={{
             paddingBottom: totalTabBarSpace + theme.spacing.md,
@@ -329,18 +400,55 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    paddingTop: 12,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
+  },
+  headerTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
   },
   headerTitle: {
-    fontWeight: "700",
+    fontWeight: "800",
+    fontSize: 24,
   },
   infoButton: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  headerLinks: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+    gap: 6,
+  },
+  headerLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 4,
+  },
+  headerLinkPressed: {
+    opacity: 0.6,
+  },
+  headerLinkText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  headerLinkDot: {
+    fontSize: 10,
+    opacity: 0.5,
   },
   list: {
     flex: 1,

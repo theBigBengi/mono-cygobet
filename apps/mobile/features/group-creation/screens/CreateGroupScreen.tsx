@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useSetAtom } from "jotai";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useTheme } from "@/lib/theme";
@@ -41,8 +42,9 @@ export function CreateGroupScreen() {
   }, []);
 
   return (
-    <View
+    <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
+      edges={["top", "left", "right"]}
     >
       <View style={styles.content}>
         {mode === "fixtures" && (
@@ -81,7 +83,7 @@ export function CreateGroupScreen() {
       </View>
       <CreateGroupModal />
       <SelectionModeInfoSheet sheetRef={infoSheetRef} />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -1,5 +1,5 @@
 // features/group-creation/screens/CreateGroupModal.tsx
-// Modal to create group from selection. Supports games, leagues, teams.
+// Game-like modal to create group from selection. Supports games, leagues, teams.
 
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,10 +13,11 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSetAtom, useAtomValue } from "jotai";
 import { BlurView } from "expo-blur";
+import * as Haptics from "expo-haptics";
 import { AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { globalBlockingOverlayAtom } from "@/lib/state/globalOverlay.atom";
@@ -197,17 +198,36 @@ export function CreateGroupModal() {
         ]}
       >
         <View
-          style={[styles.header, { borderBottomColor: theme.colors.border }]}
+          style={[
+            styles.header,
+            {
+              backgroundColor: theme.colors.surface,
+              borderBottomColor: theme.colors.textSecondary + "40",
+            },
+          ]}
         >
           <Pressable
-            onPress={handleRequestClose}
-            style={styles.headerBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              handleRequestClose();
+            }}
+            style={({ pressed }) => [
+              styles.closeBtn,
+              {
+                backgroundColor: theme.colors.background,
+                borderColor: theme.colors.border,
+                borderBottomColor: pressed
+                  ? theme.colors.border
+                  : theme.colors.textSecondary + "40",
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+              },
+            ]}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             disabled={isCreating}
           >
-            <MaterialIcons
+            <Ionicons
               name="close"
-              size={32}
+              size={20}
               color={theme.colors.textSecondary}
             />
           </Pressable>
@@ -243,9 +263,10 @@ export function CreateGroupModal() {
             {
               paddingBottom: Math.max(insets.bottom, theme.spacing.md),
               paddingHorizontal: theme.spacing.md,
+              backgroundColor: theme.colors.background,
+              borderTopColor: theme.colors.border,
             },
           ]}
-          pointerEvents="box-none"
         >
           {hasError && (
             <View
@@ -319,25 +340,32 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
     overflow: "hidden",
-    // backgroundColor: "red",
   },
   header: {
-    // backgroundColor: "red",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: 3,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerBtn: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitle: {
-    fontWeight: "600",
+    fontWeight: "700",
   },
   scroll: {
     flex: 1,
@@ -363,30 +391,27 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: "center",
     zIndex: 1000,
+    borderTopWidth: 1,
+    paddingTop: 16,
   },
   errorBox: {
     marginBottom: 12,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
+    borderBottomWidth: 3,
     width: "100%",
   },
   errorTxt: {
     textAlign: "center",
+    fontWeight: "600",
   },
   createBtn: {
     width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    borderRadius: 12,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   createDraftBtn: {
     width: "100%",
-    borderRadius: 12,
   },
   globalOverlay: {
     ...StyleSheet.absoluteFillObject,

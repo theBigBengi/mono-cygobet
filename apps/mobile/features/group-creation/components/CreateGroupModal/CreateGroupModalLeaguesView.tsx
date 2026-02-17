@@ -1,16 +1,17 @@
 // features/group-creation/screens/CreateGroupModalLeaguesView.tsx
-// View for displaying selected leagues in create group modal.
+// Game-like view for displaying selected leagues in create group modal.
 
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
-import { AppText, Card, TeamLogo } from "@/components/ui";
+import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
   useSelectedLeagues,
   useToggleLeague,
 } from "@/features/group-creation/selection/leagues";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { SelectionSummaryCard } from "@/features/group-creation/components/SelectionSummaryCard";
 import { useGroupPreviewQuery } from "@/domains/groups";
 import { formatMonthDay } from "@/utils/fixture";
@@ -67,6 +68,11 @@ export function CreateGroupModalLeaguesView() {
     );
   }
 
+  const handleRemove = (league: typeof leagues[0]) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    toggleLeague(league);
+  };
+
   return (
     <>
       <SelectionSummaryCard
@@ -75,38 +81,50 @@ export function CreateGroupModalLeaguesView() {
         skeletonCount={2}
       />
       {leagues.map((l) => (
-        <Card
+        <View
           key={l.id}
           style={[
             styles.listCard,
-            { backgroundColor: theme.colors.cardBackground },
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+              borderBottomColor: theme.colors.textSecondary + "40",
+            },
           ]}
         >
           <View style={styles.row}>
-            <TeamLogo
-              imagePath={l.imagePath}
-              teamName={l.name}
-              size={28}
-              style={styles.logo}
-            />
-            <AppText variant="body" style={styles.flex1}>
+            <View style={styles.logoContainer}>
+              <TeamLogo
+                imagePath={l.imagePath}
+                teamName={l.name}
+                size={32}
+              />
+            </View>
+            <AppText variant="body" style={styles.name}>
               {l.name}
             </AppText>
             <Pressable
-              onPress={() => toggleLeague(l)}
+              onPress={() => handleRemove(l)}
               style={({ pressed }) => [
                 styles.removeBtn,
-                { opacity: pressed ? 0.7 : 1 },
+                {
+                  backgroundColor: theme.colors.danger + "15",
+                  borderColor: theme.colors.danger + "40",
+                  borderBottomColor: pressed
+                    ? theme.colors.danger + "40"
+                    : theme.colors.danger + "60",
+                  transform: [{ scale: pressed ? 0.9 : 1 }],
+                },
               ]}
             >
-              <MaterialIcons
+              <Ionicons
                 name="close"
-                size={20}
+                size={18}
                 color={theme.colors.danger}
               />
             </Pressable>
           </View>
-        </Card>
+        </View>
       ))}
     </>
   );
@@ -119,19 +137,41 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
   },
   listCard: {
-    marginBottom: 8,
+    marginBottom: 10,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
   },
-  logo: {
-    marginRight: 10,
+  logoContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.03)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
-  flex1: {
+  name: {
     flex: 1,
+    fontWeight: "600",
   },
   removeBtn: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderBottomWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

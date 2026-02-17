@@ -4,6 +4,7 @@
 import React, { useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen } from "@/components/ui";
@@ -44,6 +45,7 @@ export function GroupLobbyActiveScreen({
   const { t } = useTranslation("common");
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const infoSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
   const handleScroll = useCallback(
@@ -136,7 +138,11 @@ export function GroupLobbyActiveScreen({
         onRefresh={onRefresh}
         onScroll={handleScroll}
         scroll
+        extendIntoStatusBar
       >
+        {/* Spacer: pushes content below sticky header (status bar + some padding) */}
+        <View style={{ height: insets.top + 24 }} />
+
         <GroupLobbyHeader
           name={group.name}
           memberCount={group.memberCount}

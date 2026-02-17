@@ -91,6 +91,7 @@ export function TeamsView({ tabs }: TeamsViewProps) {
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <Screen
         scroll
+        safeAreaEdges={[]}
         onRefresh={async () => {
           await refetch();
         }}
@@ -103,31 +104,43 @@ export function TeamsView({ tabs }: TeamsViewProps) {
               styles.searchInputContainer,
               {
                 backgroundColor: searchFocused
-                  ? `${theme.colors.primary}15`
-                  : theme.colors.background,
+                  ? theme.colors.primary
+                  : theme.colors.surface,
                 borderColor: searchFocused
                   ? theme.colors.primary
                   : theme.colors.border,
+                borderBottomColor: searchFocused
+                  ? theme.colors.primary
+                  : theme.colors.textSecondary + "40",
+                shadowColor: "#000",
+                shadowOpacity: searchFocused ? 0.25 : 0.1,
               },
             ]}
           >
-            <MaterialIcons
-              name="search"
-              size={20}
-              color={
-                searchFocused
-                  ? theme.colors.primary
-                  : theme.colors.textSecondary
-              }
-              style={styles.searchIcon}
-            />
+            <View
+              style={[
+                styles.searchIconContainer,
+                {
+                  backgroundColor: searchFocused
+                    ? "rgba(255,255,255,0.25)"
+                    : theme.colors.textSecondary + "15",
+                },
+              ]}
+            >
+              <MaterialIcons
+                name="search"
+                size={16}
+                color={searchFocused ? "#fff" : theme.colors.textSecondary}
+              />
+            </View>
             <TextInput
-              style={[styles.searchInput, { color: theme.colors.textPrimary }]}
+              style={[
+                styles.searchInput,
+                { color: searchFocused ? "#fff" : theme.colors.textPrimary },
+              ]}
               placeholder={t("groupCreation.searchTeamsPlaceholder")}
               placeholderTextColor={
-                searchFocused
-                  ? `${theme.colors.primary}99`
-                  : theme.colors.textSecondary
+                searchFocused ? "rgba(255,255,255,0.7)" : theme.colors.textSecondary
               }
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -145,8 +158,8 @@ export function TeamsView({ tabs }: TeamsViewProps) {
               >
                 <MaterialIcons
                   name="close"
-                  size={20}
-                  color={theme.colors.textPrimary}
+                  size={18}
+                  color={searchFocused ? "#fff" : theme.colors.textSecondary}
                 />
               </Pressable>
             )}
@@ -165,24 +178,33 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     marginBottom: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   searchInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1.5,
+    borderWidth: 1,
+    borderBottomWidth: 3,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    minHeight: 48,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 3,
   },
-  searchIcon: {
-    marginEnd: 8,
+  searchIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginEnd: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: "600",
     padding: 0,
     minHeight: 24,
     maxHeight: 24,

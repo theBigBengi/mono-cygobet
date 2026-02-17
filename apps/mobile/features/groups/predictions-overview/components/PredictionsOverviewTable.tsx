@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { isNotStarted } from "@repo/utils";
+import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { TeamLogo } from "@/components/ui/TeamLogo";
@@ -162,8 +163,8 @@ export function PredictionsOverviewTable({
             minWidth: totalWidth,
             height: HEADER_HEIGHT,
             backgroundColor: theme.colors.surface,
-            borderBottomWidth: 2,
-            borderBottomColor: theme.colors.border,
+            borderBottomWidth: 3,
+            borderBottomColor: theme.colors.textSecondary + "40",
           },
         ]}
       >
@@ -171,14 +172,16 @@ export function PredictionsOverviewTable({
         <View
           style={[
             styles.gameHeader,
+            styles.totalPointsHeader,
             {
               width: TOTAL_COLUMN_WIDTH,
               borderRightWidth: 1,
               borderRightColor: theme.colors.border,
+              backgroundColor: theme.colors.primary + "10",
             },
           ]}
         >
-          <AppText variant="caption" style={{ fontWeight: "600" }}>
+          <AppText variant="caption" style={{ fontWeight: "700", color: theme.colors.primary }}>
             Pts
           </AppText>
         </View>
@@ -186,15 +189,18 @@ export function PredictionsOverviewTable({
         {fixtures.map((fixture) => (
           <Pressable
             key={fixture.id}
-            style={[
+            style={({ pressed }) => [
               styles.gameHeader,
               {
                 width: actualGameColumnWidth,
                 borderRightWidth: 1,
                 borderRightColor: theme.colors.border,
+                backgroundColor: pressed ? theme.colors.primary + "10" : "transparent",
+                transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
             onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               if (groupId != null) {
                 router.push(`/groups/${groupId}/fixtures/${fixture.id}`);
               }
@@ -330,12 +336,22 @@ export function PredictionsOverviewTable({
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.border,
             backgroundColor: isCurrentUser
-              ? theme.colors.primary + "14"
+              ? theme.colors.primary + "18"
               : theme.colors.surface,
+          },
+          isCurrentUser && {
+            borderLeftWidth: 3,
+            borderLeftColor: theme.colors.primary,
           },
         ]}
       >
-        <AppText variant="body" style={styles.participantNumber}>
+        <AppText
+          variant="body"
+          style={[
+            styles.participantNumber,
+            isCurrentUser && { color: theme.colors.primary, fontWeight: "700" },
+          ]}
+        >
           {participant.number}
         </AppText>
         <AppText
@@ -369,7 +385,7 @@ export function PredictionsOverviewTable({
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.border,
             backgroundColor: isCurrentUser
-              ? theme.colors.primary + "14"
+              ? theme.colors.primary + "18"
               : theme.colors.background,
           },
         ]}
@@ -382,10 +398,17 @@ export function PredictionsOverviewTable({
               width: TOTAL_COLUMN_WIDTH,
               borderRightWidth: 1,
               borderRightColor: theme.colors.border,
+              backgroundColor: theme.colors.primary + "08",
             },
           ]}
         >
-          <AppText variant="caption" style={{ fontWeight: "700" }}>
+          <AppText
+            variant="caption"
+            style={{
+              fontWeight: "700",
+              color: isCurrentUser ? theme.colors.primary : theme.colors.textPrimary,
+            }}
+          >
             {participant.totalPoints}
           </AppText>
         </View>
@@ -460,12 +483,12 @@ export function PredictionsOverviewTable({
               {
                 height: HEADER_HEIGHT,
                 backgroundColor: theme.colors.surface,
-                borderBottomWidth: 2,
-                borderBottomColor: theme.colors.border,
+                borderBottomWidth: 3,
+                borderBottomColor: theme.colors.textSecondary + "40",
               },
             ]}
           >
-            <AppText variant="body" style={styles.headerText}>
+            <AppText variant="body" style={[styles.headerText, { color: theme.colors.textSecondary }]}>
               #
             </AppText>
           </View>
@@ -535,7 +558,13 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   leftColumnFixed: {
-    // Fixed width column
+    // Fixed width column with shadow for depth
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 10,
   },
   leftHeader: {
     justifyContent: "center",
@@ -576,6 +605,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 4,
     paddingHorizontal: 4,
+  },
+  totalPointsHeader: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   gameHeaderColumn: {
     flexDirection: "column",

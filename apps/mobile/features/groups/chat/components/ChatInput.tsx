@@ -14,7 +14,8 @@ import {
   TextInputSelectionChangeEventData,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import type { MentionData } from "@/lib/socket";
@@ -175,6 +176,7 @@ export function ChatInput({
 
   const handleAtPress = useCallback(() => {
     if (readOnly) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const value = textRef.current;
     const cursor = lastCursorRef.current;
     const next = value.slice(0, cursor) + "@" + value.slice(cursor);
@@ -189,6 +191,7 @@ export function ChatInput({
     const trimmed = text.trim();
     if (!trimmed || readOnly) return;
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const activeMentions = mentions.filter((m) =>
       trimmed.includes(`@${m.display}`)
     );
@@ -246,7 +249,7 @@ export function ChatInput({
         style={[
           styles.container,
           {
-            backgroundColor: theme.colors.background,
+            backgroundColor: theme.colors.surface,
             borderTopColor: theme.colors.border,
             paddingBottom: isKeyboardVisible ? 0 : Math.max(12, insets.bottom),
           },
@@ -257,13 +260,16 @@ export function ChatInput({
           style={({ pressed }) => [
             styles.atButton,
             {
-              backgroundColor: theme.colors.surface,
+              backgroundColor: theme.colors.background,
               borderColor: theme.colors.border,
-              opacity: pressed ? 0.8 : 1,
+              borderBottomColor: pressed
+                ? theme.colors.border
+                : theme.colors.textSecondary + "40",
+              transform: [{ scale: pressed ? 0.95 : 1 }],
             },
           ]}
         >
-          <AppText variant="body" style={{ fontWeight: "600" }}>
+          <AppText variant="body" style={{ fontWeight: "700", color: theme.colors.primary }}>
             @
           </AppText>
         </Pressable>
@@ -271,7 +277,7 @@ export function ChatInput({
           style={[
             styles.input,
             {
-              backgroundColor: theme.colors.surface,
+              backgroundColor: theme.colors.background,
               color: theme.colors.textPrimary,
               borderColor: theme.colors.border,
             },
@@ -294,14 +300,20 @@ export function ChatInput({
             {
               backgroundColor: canSend
                 ? theme.colors.primary
-                : theme.colors.surface,
-              opacity: pressed && canSend ? 0.8 : 1,
+                : theme.colors.background,
+              borderColor: canSend
+                ? theme.colors.primary
+                : theme.colors.border,
+              borderBottomColor: canSend
+                ? (pressed ? theme.colors.primary : "rgba(0,0,0,0.25)")
+                : theme.colors.textSecondary + "40",
+              transform: [{ scale: pressed && canSend ? 0.95 : 1 }],
             },
           ]}
         >
-          <MaterialIcons
+          <Ionicons
             name="send"
-            size={22}
+            size={20}
             color={
               canSend ? theme.colors.primaryText : theme.colors.textSecondary
             }
@@ -317,14 +329,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     padding: 12,
-    gap: 8,
+    gap: 10,
     borderTopWidth: 1,
   },
   atButton: {
-    width: 44,
+    width: 40,
     height: 40,
-    borderRadius: 22,
+    borderRadius: 12,
     borderWidth: 1,
+    borderBottomWidth: 3,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -332,16 +345,18 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 40,
     maxHeight: 100,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: Platform.OS === "ios" ? 10 : 8,
     fontSize: 16,
   },
   sendButton: {
-    width: 44,
+    width: 40,
     height: 40,
-    borderRadius: 22,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderBottomWidth: 3,
     justifyContent: "center",
     alignItems: "center",
   },

@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView, Keyboard, Alert } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -60,6 +61,7 @@ export function GroupGamesScreen({
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const mode = selectionMode ?? "games";
 
   /** Normalise fixtures from props; ensure we always have an array. */
@@ -381,7 +383,7 @@ export function GroupGamesScreen({
           contentContainerStyle={[
             styles.contentContainer,
             {
-              paddingTop: HEADER_HEIGHT,
+              paddingTop: HEADER_HEIGHT + insets.top,
               paddingBottom: FOOTER_PADDING + keyboardHeight,
             },
           ]}

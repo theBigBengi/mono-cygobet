@@ -94,8 +94,17 @@ export function ChatMessageBubble({
     styles.bubble,
     {
       backgroundColor: bubbleBg,
-      borderBottomRightRadius: isCurrentUser ? 4 : 16,
-      borderBottomLeftRadius: isCurrentUser ? 16 : 4,
+      borderBottomRightRadius: isCurrentUser ? 4 : 14,
+      borderBottomLeftRadius: isCurrentUser ? 14 : 4,
+      borderWidth: isCurrentUser ? 0 : 1,
+      borderColor: theme.colors.border,
+      borderBottomWidth: isCurrentUser ? 0 : 2,
+      borderBottomColor: isCurrentUser ? undefined : theme.colors.textSecondary + "30",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isCurrentUser ? 0.2 : 0.05,
+      shadowRadius: 2,
+      elevation: 1,
     },
   ];
 
@@ -211,7 +220,7 @@ const styles = StyleSheet.create({
     maxWidth: "80%",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 14,
   },
   senderName: {
     marginBottom: 4,

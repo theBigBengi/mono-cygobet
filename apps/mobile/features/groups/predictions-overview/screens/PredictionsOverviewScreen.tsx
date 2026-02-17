@@ -3,10 +3,9 @@
 
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet } from "react-native";
-import { Screen, AppText } from "@/components/ui";
-import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
-import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { AppText } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import { usePredictionsOverviewQuery } from "@/domains/groups";
 import { PredictionsOverviewTable } from "../components/PredictionsOverviewTable";
 
@@ -24,32 +23,33 @@ export function PredictionsOverviewScreen({
   groupId,
 }: PredictionsOverviewScreenProps) {
   const { t } = useTranslation("common");
+  const { theme } = useTheme();
   const { data, isLoading, error } = usePredictionsOverviewQuery(groupId);
 
   // Loading state
   if (isLoading) {
     return (
-      <Screen>
-        <QueryLoadingView
-          message={t("predictionsOverview.loadingPredictions")}
-        />
-      </Screen>
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <AppText variant="body" color="secondary" style={styles.loadingText}>
+          {t("predictionsOverview.loadingPredictions")}
+        </AppText>
+      </View>
     );
   }
 
   // Error state
   if (error || !data) {
     return (
-      <Screen>
-        <QueryErrorView
-          message={t("predictionsOverview.failedLoadPredictions")}
-        />
-      </Screen>
+      <View style={styles.centerContainer}>
+        <AppText variant="body" color="danger">
+          {t("predictionsOverview.failedLoadPredictions")}
+        </AppText>
+      </View>
     );
   }
 
   const overviewData = data.data;
-
 
   // Empty state
   if (
@@ -57,29 +57,35 @@ export function PredictionsOverviewScreen({
     overviewData.fixtures.length === 0
   ) {
     return (
-      <Screen>
+      <View style={styles.centerContainer}>
         <AppText variant="body" color="secondary">
           {t("predictionsOverview.noDataAvailable", {
             participants: overviewData.participants.length,
             fixtures: overviewData.fixtures.length,
           })}
         </AppText>
-      </Screen>
+      </View>
     );
   }
 
   return (
-    <Screen scroll={false} contentContainerStyle={styles.screenContent}>
+    <View style={styles.container}>
       <PredictionsOverviewTable data={overviewData} groupId={groupId} />
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screenContent: {
+  container: {
     flex: 1,
-    padding: 0,
-    alignItems: "stretch",
-    justifyContent: "flex-start",
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 12,
   },
 });

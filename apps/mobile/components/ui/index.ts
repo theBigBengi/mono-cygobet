@@ -18,3 +18,7 @@ export { SegmentedProgressBar } from "./SegmentedProgressBar";
 export { ProgressDots } from "./ProgressDots";
 export { GamesTimeline } from "./GamesTimeline";
 export type { TimelineGame } from "./GamesTimeline";
+export { StickyHeaderScreen } from "./StickyHeaderScreen";
+export type { StickyHeaderAction, StickyHeaderScreenProps } from "./StickyHeaderScreen";
+export { AnimatedStickyHeader } from "./AnimatedStickyHeader";
+export type { AnimatedStickyHeaderProps, HeaderAction } from "./AnimatedStickyHeader";

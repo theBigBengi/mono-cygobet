@@ -1,11 +1,12 @@
 // features/groups/group-list/components/GroupFilterTabs.tsx
-// Horizontal filter tabs for the groups list: Active, Drafts, Ended.
-// Styled to match the lobby design patterns.
+// Game-like horizontal filter tabs for the groups list.
+// 3D effects, haptics, and press animations.
 
 import React from "react";
 import { View, ScrollView, Pressable, StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 
 export type GroupFilterType =
@@ -23,8 +24,6 @@ interface GroupFilterTabsProps {
     drafts: number;
     ended: number;
   };
-  onPublicPress?: () => void;
-  onJoinPress?: () => void;
 }
 
 const FILTERS: { key: GroupFilterType; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -37,11 +36,14 @@ export function GroupFilterTabs({
   selectedFilter,
   onFilterChange,
   counts,
-  onPublicPress,
-  onJoinPress,
 }: GroupFilterTabsProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+
+  const handleFilterPress = (filter: GroupFilterType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onFilterChange(filter);
+  };
 
   return (
     <View
@@ -49,17 +51,13 @@ export function GroupFilterTabs({
         styles.container,
         {
           backgroundColor: theme.colors.background,
-          borderBottomColor: theme.colors.border,
         },
       ]}
     >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          onJoinPress && { paddingRight: 56 },
-        ]}
+        contentContainerStyle={styles.scrollContent}
       >
         {FILTERS.map((filter) => {
           const count = counts[filter.key];
@@ -71,7 +69,7 @@ export function GroupFilterTabs({
           return (
             <Pressable
               key={filter.key}
-              onPress={() => onFilterChange(filter.key)}
+              onPress={() => handleFilterPress(filter.key)}
               style={({ pressed }) => [
                 styles.tab,
                 {
@@ -81,15 +79,31 @@ export function GroupFilterTabs({
                   borderColor: isSelected
                     ? theme.colors.primary
                     : theme.colors.border,
+                  borderBottomColor: isSelected
+                    ? "rgba(0,0,0,0.2)"
+                    : theme.colors.textSecondary + "40",
+                  shadowColor: "#000",
+                  shadowOpacity: pressed ? 0 : isSelected ? 0.3 : 0.1,
+                  transform: [{ scale: pressed ? 0.95 : 1 }],
                 },
-                pressed && styles.tabPressed,
               ]}
             >
-              <Ionicons
-                name={filter.icon}
-                size={14}
-                color={isSelected ? "#fff" : theme.colors.textSecondary}
-              />
+              <View
+                style={[
+                  styles.iconCircle,
+                  {
+                    backgroundColor: isSelected
+                      ? "rgba(255,255,255,0.25)"
+                      : theme.colors.textSecondary + "15",
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={filter.icon}
+                  size={12}
+                  color={isSelected ? "#fff" : theme.colors.textSecondary}
+                />
+              </View>
               <Text
                 style={[
                   styles.tabText,
@@ -124,62 +138,7 @@ export function GroupFilterTabs({
             </Pressable>
           );
         })}
-
-        {/* Public tab - navigates to discover screen */}
-        <Pressable
-          onPress={onPublicPress}
-          style={({ pressed }) => [
-            styles.tab,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
-            },
-            pressed && styles.tabPressed,
-          ]}
-        >
-          <Ionicons
-            name="globe-outline"
-            size={14}
-            color={theme.colors.textSecondary}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              { color: theme.colors.textSecondary },
-            ]}
-          >
-            {t("groups.filterPublic")}
-          </Text>
-        </Pressable>
       </ScrollView>
-
-      {/* Fixed join button on the right */}
-      {onJoinPress && (
-        <View
-          style={[
-            styles.joinButtonContainer,
-            { backgroundColor: theme.colors.background },
-          ]}
-        >
-          <Pressable
-            onPress={onJoinPress}
-            style={({ pressed }) => [
-              styles.joinButton,
-              {
-                backgroundColor: theme.colors.primary + "15",
-                borderColor: theme.colors.primary + "40",
-              },
-              pressed && styles.tabPressed,
-            ]}
-          >
-            <Ionicons
-              name="enter-outline"
-              size={18}
-              color={theme.colors.primary}
-            />
-          </Pressable>
-        </View>
-      )}
     </View>
   );
 }
@@ -189,10 +148,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
-    borderBottomWidth: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     gap: 8,
   },
   tab: {
@@ -200,17 +158,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingLeft: 8,
+    borderRadius: 12,
     borderWidth: 1,
+    borderBottomWidth: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 3,
   },
-  tabPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.98 }],
+  iconCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
   },
   tabText: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
   },
   countBadge: {
     minWidth: 20,
@@ -223,22 +190,5 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 11,
     fontWeight: "700",
-  },
-  joinButtonContainer: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    paddingLeft: 8,
-    paddingRight: 16,
-    justifyContent: "center",
-  },
-  joinButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
