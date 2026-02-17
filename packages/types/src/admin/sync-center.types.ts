@@ -48,7 +48,8 @@ export interface AdminSeedSeasonRequest {
   seasonExternalId: number;
   includeTeams?: boolean;
   includeFixtures?: boolean;
-  dryRun?: boolean;
+  /** Seed only future fixtures (default: true) */
+  futureOnly?: boolean;
 }
 
 export interface AdminSeedSeasonResponse {
@@ -56,6 +57,36 @@ export interface AdminSeedSeasonResponse {
   data: {
     jobId: string;
     message: string;
+  };
+}
+
+export interface AdminSeedSeasonPreviewRequest {
+  seasonExternalId: number;
+}
+
+export interface AdminSeedSeasonPreviewResponse {
+  status: "ok";
+  data: {
+    season: {
+      externalId: number;
+      name: string;
+      exists: boolean;
+    };
+    league: {
+      externalId: number;
+      name: string;
+      exists: boolean;
+    };
+    country: {
+      externalId: number;
+      name: string;
+      exists: boolean;
+    };
+    counts: {
+      teams: number;
+      fixtures: number;
+      fixturesFuture: number;
+    };
   };
 }
 

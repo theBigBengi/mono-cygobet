@@ -7,6 +7,7 @@ import {
   chunk,
   safeBigInt,
   normalizeDate,
+  computeChanges,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
 import { getLogger } from "../../logger";
@@ -91,6 +92,7 @@ export async function seedSeasons(
         RunStatus.skipped,
         undefined,
         {
+          entityType: "season",
           name: season.name,
           reason: "duplicate",
         }
@@ -124,6 +126,23 @@ export async function seedSeasons(
     );
   }
 
+  // Pre-fetch which seasons already exist (with all tracked fields for change detection)
+  const allExternalIds = uniqueSeasons.map((s) => safeBigInt(s.externalId));
+  const existingRows = await prisma.seasons.findMany({
+    where: { externalId: { in: allExternalIds } },
+    select: {
+      externalId: true,
+      name: true,
+      startDate: true,
+      endDate: true,
+      isCurrent: true,
+    },
+  });
+  const existingByExtId = new Map(
+    existingRows.map((r) => [String(r.externalId), r])
+  );
+  const existingSet = new Set(existingRows.map((r) => String(r.externalId)));
+
   let ok = 0;
   let fail = 0;
 
@@ -132,6 +151,7 @@ export async function seedSeasons(
       // Process all seasons in the chunk in parallel
       const chunkResults = await Promise.allSettled(
         group.map(async (season) => {
+          const action = existingSet.has(String(season.externalId)) ? "updated" : "inserted";
           try {
             if (!season.name) {
               throw new Error(
@@ -149,16 +169,18 @@ export async function seedSeasons(
             const startDate = normalizeDate(season.startDate);
             const endDate = normalizeDate(season.endDate);
 
+            const updatePayload = {
+              name: season.name,
+              startDate,
+              endDate,
+              isCurrent: season.isCurrent,
+              leagueId,
+              updatedAt: new Date(),
+            };
+
             await prisma.seasons.upsert({
               where: { externalId: safeBigInt(season.externalId) },
-              update: {
-                name: season.name,
-                startDate,
-                endDate,
-                isCurrent: season.isCurrent,
-                leagueId,
-                updatedAt: new Date(),
-              },
+              update: updatePayload,
               create: {
                 externalId: safeBigInt(season.externalId),
                 name: season.name,
@@ -169,18 +191,27 @@ export async function seedSeasons(
               },
             });
 
+            // Compute changes for update tracking
+            const existing = existingByExtId.get(String(season.externalId));
+            const changes = action === "updated"
+              ? computeChanges(existing, updatePayload, ["name", "startDate", "endDate", "isCurrent"])
+              : null;
+
             await trackSeedItem(
               batchId!,
               String(season.externalId),
               RunStatus.success,
               undefined,
               {
+                entityType: "season",
                 name: season.name,
                 externalId: season.externalId,
+                action,
+                ...(changes && { changes }),
               }
             );
 
-            return { success: true, season };
+            return { success: true, season, action };
           } catch (e: unknown) {
             const errorMessage = e instanceof Error ? e.message : String(e);
             const errorCode =
@@ -194,10 +225,12 @@ export async function seedSeasons(
               RunStatus.failed,
               errorMessage.slice(0, 500),
               {
+                entityType: "season",
                 name: season.name,
                 externalId: season.externalId,
                 errorCode,
                 errorMessage: errorMessage.slice(0, 200),
+                action,
               }
             );
 
@@ -206,7 +239,7 @@ export async function seedSeasons(
               "Season failed"
             );
 
-            return { success: false, season, error: errorMessage };
+            return { success: false, season, error: errorMessage, action };
           }
         })
       );

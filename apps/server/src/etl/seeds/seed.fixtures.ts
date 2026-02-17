@@ -6,6 +6,7 @@ import {
   finishSeedBatch,
   chunk,
   safeBigInt,
+  computeChanges,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
 import {
@@ -117,6 +118,7 @@ export async function seedFixtures(
         RunStatus.skipped,
         undefined,
         {
+          entityType: "fixture",
           name: fixture.name,
           reason: "duplicate",
           action: "skip",
@@ -208,11 +210,25 @@ export async function seedFixtures(
 
   try {
     for (const group of chunk(uniqueFixtures, CHUNK_SIZE)) {
-      // Pre-fetch which fixtures already exist (externalId + state for validation).
+      // Pre-fetch which fixtures already exist (with all tracked fields for change detection).
       const groupExternalIds = group.map((f) => safeBigInt(f.externalId));
       const existingRows = await prisma.fixtures.findMany({
         where: { externalId: { in: groupExternalIds } },
-        select: { externalId: true, state: true },
+        select: {
+          externalId: true,
+          state: true,
+          name: true,
+          startIso: true,
+          result: true,
+          homeScore90: true,
+          awayScore90: true,
+          homeScoreET: true,
+          awayScoreET: true,
+          penHome: true,
+          penAway: true,
+          stage: true,
+          round: true,
+        },
       });
       const existingByExtId = new Map(
         existingRows.map((r) => [String(r.externalId), r])
@@ -226,7 +242,7 @@ export async function seedFixtures(
         group.map(async (fixture) => {
           try {
             const extIdKey = String(safeBigInt(fixture.externalId));
-            const action = existingSet.has(extIdKey) ? "update" : "insert";
+            const action = existingSet.has(extIdKey) ? "updated" : "inserted";
 
             if (!fixture.name) {
               throw new Error(
@@ -262,6 +278,7 @@ export async function seedFixtures(
                 RunStatus.skipped,
                 undefined,
                 {
+                  entityType: "fixture",
                   name: fixture.name,
                   externalId: fixture.externalId,
                   reason: "invalid-state-transition",
@@ -341,22 +358,33 @@ export async function seedFixtures(
               create: createPayload,
             });
 
+            // Compute changes for update tracking
+            const changes = action === "updated"
+              ? computeChanges(existing, updatePayload, [
+                  "state", "result", "homeScore90", "awayScore90",
+                  "homeScoreET", "awayScoreET", "penHome", "penAway",
+                  "stage", "round",
+                ])
+              : null;
+
             await trackSeedItem(
               batchId!,
               String(fixture.externalId),
               RunStatus.success,
               undefined,
               {
+                entityType: "fixture",
                 name: fixture.name,
                 externalId: fixture.externalId,
                 action,
+                ...(changes && { changes }),
               }
             );
 
             return { success: true, fixture, action };
           } catch (e: unknown) {
             const extIdKey = String(safeBigInt(fixture.externalId));
-            const action = existingSet.has(extIdKey) ? "update" : "insert";
+            const action = existingSet.has(extIdKey) ? "updated" : "inserted";
             const errorCode = getErrorCode(e);
             const errorMessage = getErrorMessage(e);
 
@@ -366,6 +394,7 @@ export async function seedFixtures(
               RunStatus.failed,
               errorMessage.slice(0, 500),
               {
+                entityType: "fixture",
                 name: fixture.name,
                 externalId: fixture.externalId,
                 errorCode,
@@ -389,8 +418,8 @@ export async function seedFixtures(
         if (result.status === "fulfilled") {
           if (result.value.success) {
             ok++;
-            if (result.value.action === "insert") inserted++;
-            else if (result.value.action === "update") updated++;
+            if (result.value.action === "inserted") inserted++;
+            else if (result.value.action === "updated") updated++;
           } else if ("skipped" in result.value && result.value.skipped) {
             skipped++;
           } else {

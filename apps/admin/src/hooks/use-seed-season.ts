@@ -17,6 +17,7 @@ export function useSeedSeason() {
     teams?: { ok: number; fail: number; total: number };
     fixtures?: { ok: number; fail: number; total: number };
   } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const attemptsRef = useRef(0);
 
@@ -29,7 +30,7 @@ export function useSeedSeason() {
       toast.info("Seeding started...");
     },
     onError: (error: Error) => {
-      toast.error("Failed to start seeding", { description: error.message });
+      setErrorMessage(error.message);
       setJobStatus("failed");
     },
   });
@@ -47,6 +48,7 @@ export function useSeedSeason() {
           "Job is taking longer than expected. Check Sync History for status."
         );
         queryClient.invalidateQueries({ queryKey: ["sync-center"] });
+        queryClient.invalidateQueries({ queryKey: ["batches"] });
         return;
       }
 
@@ -60,13 +62,12 @@ export function useSeedSeason() {
           setJobResult(status.data.result ?? null);
           toast.success("Season seeded successfully!");
           queryClient.invalidateQueries({ queryKey: ["sync-center"] });
+          queryClient.invalidateQueries({ queryKey: ["batches"] });
         } else if (status.data.state === "failed") {
           if (pollRef.current) clearInterval(pollRef.current);
           pollRef.current = null;
           setJobStatus("failed");
-          toast.error("Seeding failed", {
-            description: status.data.error ?? "Unknown error",
-          });
+          setErrorMessage(status.data.error ?? "Unknown error");
         }
       } catch (error) {
         console.error("Failed to poll job status", error);
@@ -82,15 +83,16 @@ export function useSeedSeason() {
 
   const seedSeason = (
     seasonExternalId: number,
-    options?: { dryRun?: boolean }
+    options?: { futureOnly?: boolean }
   ) => {
     setJobStatus("idle");
     setJobResult(null);
+    setErrorMessage(null);
     mutation.mutate({
       seasonExternalId,
       includeTeams: true,
       includeFixtures: true,
-      dryRun: options?.dryRun ?? false,
+      futureOnly: options?.futureOnly ?? true,
     });
   };
 
@@ -98,6 +100,7 @@ export function useSeedSeason() {
     setJobId(null);
     setJobStatus("idle");
     setJobResult(null);
+    setErrorMessage(null);
   };
 
   return {
@@ -106,5 +109,6 @@ export function useSeedSeason() {
     isLoading: mutation.isPending || jobStatus === "pending",
     jobStatus,
     jobResult,
+    errorMessage,
   };
 }

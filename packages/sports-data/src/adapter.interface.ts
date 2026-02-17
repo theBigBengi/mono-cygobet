@@ -11,6 +11,7 @@ import type {
   MarketDTO,
   OddsDTO,
   SeasonDTO,
+  SeasonPreviewDTO,
   TeamDTO,
 } from "@repo/types/sport-data/common";
 
@@ -79,4 +80,11 @@ export interface ISportsDataAdapter {
 
   /** Returns health/stats for observability (circuit breaker state, semaphore depth, etc.) */
   getStats?(): Record<string, unknown>;
+
+  /**
+   * Fetches season preview data for seeding dialog.
+   * Optimized to fetch season + league + country + teams count + fixtures count
+   * in a single API call where possible.
+   */
+  fetchSeasonPreview?(seasonExternalId: number): Promise<SeasonPreviewDTO | null>;
 }

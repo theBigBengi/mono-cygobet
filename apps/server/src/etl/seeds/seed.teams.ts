@@ -8,6 +8,7 @@ import {
   safeBigInt,
   normShortCode,
   validateFounded,
+  computeChanges,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
 import { getLogger } from "../../logger";
@@ -92,6 +93,7 @@ export async function seedTeams(
         RunStatus.skipped,
         undefined,
         {
+          entityType: "team",
           name: team.name,
           reason: "duplicate",
         }
@@ -128,11 +130,30 @@ export async function seedTeams(
   let ok = 0;
   let fail = 0;
 
+  // Pre-fetch which teams already exist (with all tracked fields for change detection)
+  const allExternalIds = uniqueTeams.map((t) => safeBigInt(t.externalId));
+  const existingRows = await prisma.teams.findMany({
+    where: { externalId: { in: allExternalIds } },
+    select: {
+      externalId: true,
+      name: true,
+      shortCode: true,
+      imagePath: true,
+      founded: true,
+      type: true,
+    },
+  });
+  const existingByExtId = new Map(
+    existingRows.map((r) => [String(r.externalId), r])
+  );
+  const existingSet = new Set(existingRows.map((r) => String(r.externalId)));
+
   try {
     for (const group of chunk(uniqueTeams, CHUNK_SIZE)) {
       // Process all teams in the chunk in parallel
       const chunkResults = await Promise.allSettled(
         group.map(async (team) => {
+          const action = existingSet.has(String(team.externalId)) ? "updated" : "inserted";
           try {
             if (!team.name) {
               throw new Error(
@@ -148,17 +169,19 @@ export async function seedTeams(
             const shortCode = normShortCode(team.shortCode);
             const founded = validateFounded(team.founded);
 
+            const updatePayload = {
+              name: team.name,
+              shortCode: shortCode ?? null,
+              imagePath: team.imagePath ?? null,
+              founded: founded ?? null,
+              type: team.type ?? null,
+              countryId: countryId ?? null,
+              updatedAt: new Date(),
+            };
+
             await prisma.teams.upsert({
               where: { externalId: safeBigInt(team.externalId) },
-              update: {
-                name: team.name,
-                shortCode: shortCode ?? null,
-                imagePath: team.imagePath ?? null,
-                founded: founded ?? null,
-                type: team.type ?? null,
-                countryId: countryId ?? null,
-                updatedAt: new Date(),
-              },
+              update: updatePayload,
               create: {
                 externalId: safeBigInt(team.externalId),
                 name: team.name,
@@ -170,18 +193,27 @@ export async function seedTeams(
               },
             });
 
+            // Compute changes for update tracking
+            const existing = existingByExtId.get(String(team.externalId));
+            const changes = action === "updated"
+              ? computeChanges(existing, updatePayload, ["name", "shortCode", "imagePath", "founded", "type"])
+              : null;
+
             await trackSeedItem(
               batchId!,
               String(team.externalId),
               RunStatus.success,
               undefined,
               {
+                entityType: "team",
                 name: team.name,
                 externalId: team.externalId,
+                action,
+                ...(changes && { changes }),
               }
             );
 
-            return { success: true, team };
+            return { success: true, team, action };
           } catch (e: unknown) {
             const errorMessage = e instanceof Error ? e.message : String(e);
             const errorCode =
@@ -195,10 +227,12 @@ export async function seedTeams(
               RunStatus.failed,
               errorMessage.slice(0, 500),
               {
+                entityType: "team",
                 name: team.name,
                 externalId: team.externalId,
                 errorCode,
                 errorMessage: errorMessage.slice(0, 200),
+                action,
               }
             );
 
@@ -207,7 +241,7 @@ export async function seedTeams(
               "Team failed"
             );
 
-            return { success: false, team, error: errorMessage };
+            return { success: false, team, error: errorMessage, action };
           }
         })
       );

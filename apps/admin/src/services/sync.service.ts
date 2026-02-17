@@ -15,6 +15,7 @@ import type {
   AdminAvailabilityResponse,
   AdminSeedSeasonRequest,
   AdminSeedSeasonResponse,
+  AdminSeedSeasonPreviewResponse,
   AdminJobStatusResponse,
 } from "@repo/types";
 
@@ -43,9 +44,16 @@ export const syncService = {
     );
   },
 
-  async getAvailability(): Promise<AdminAvailabilityResponse> {
+  async getAvailability(opts?: {
+    includeHistorical?: boolean;
+  }): Promise<AdminAvailabilityResponse> {
+    const params = new URLSearchParams();
+    if (opts?.includeHistorical) {
+      params.set("includeHistorical", "true");
+    }
+    const query = params.toString();
     return apiGet<AdminAvailabilityResponse>(
-      "/admin/sync-center/provider/availability"
+      `/admin/sync-center/provider/availability${query ? `?${query}` : ""}`
     );
   },
 
@@ -61,6 +69,14 @@ export const syncService = {
   async getJobStatus(jobId: string): Promise<AdminJobStatusResponse> {
     return apiGet<AdminJobStatusResponse>(
       `/admin/sync-center/jobs/${jobId}/status`
+    );
+  },
+
+  async getSeedSeasonPreview(
+    seasonExternalId: number
+  ): Promise<AdminSeedSeasonPreviewResponse> {
+    return apiGet<AdminSeedSeasonPreviewResponse>(
+      `/admin/sync-center/sync/seed-season/preview?seasonExternalId=${seasonExternalId}`
     );
   },
 

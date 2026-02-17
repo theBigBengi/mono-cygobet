@@ -6,6 +6,7 @@ import {
   finishSeedBatch,
   chunk,
   safeBigInt,
+  computeChanges,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
 import { getLogger } from "../../logger";
@@ -100,6 +101,7 @@ export async function seedBookmakers(
         RunStatus.skipped,
         undefined,
         {
+          entityType: "bookmaker",
           name: bookmaker.name,
           reason: "duplicate",
         }
@@ -108,6 +110,20 @@ export async function seedBookmakers(
     await Promise.allSettled(duplicatePromises);
   }
 
+  // Pre-fetch which bookmakers already exist (with all tracked fields for change detection)
+  const allExternalIds = uniqueBookmakers.map((b) => safeBigInt(b.externalId));
+  const existingRows = await prisma.bookmakers.findMany({
+    where: { externalId: { in: allExternalIds } },
+    select: {
+      externalId: true,
+      name: true,
+    },
+  });
+  const existingByExtId = new Map(
+    existingRows.map((r) => [String(r.externalId), r])
+  );
+  const existingSet = new Set(existingRows.map((r) => String(r.externalId)));
+
   let ok = 0;
   let fail = 0;
 
@@ -115,18 +131,27 @@ export async function seedBookmakers(
     for (const group of chunk(uniqueBookmakers, CHUNK_SIZE)) {
       const chunkResults = await Promise.allSettled(
         group.map(async (bookmaker) => {
+          const action = existingSet.has(String(bookmaker.externalId)) ? "updated" : "inserted";
           try {
+            const updatePayload = {
+              name: bookmaker.name,
+              updatedAt: new Date(),
+            };
+
             await prisma.bookmakers.upsert({
               where: { externalId: safeBigInt(bookmaker.externalId) },
-              update: {
-                name: bookmaker.name,
-                updatedAt: new Date(),
-              },
+              update: updatePayload,
               create: {
                 name: bookmaker.name,
                 externalId: safeBigInt(bookmaker.externalId),
               },
             });
+
+            // Compute changes for update tracking
+            const existing = existingByExtId.get(String(bookmaker.externalId));
+            const changes = action === "updated"
+              ? computeChanges(existing, updatePayload, ["name"])
+              : null;
 
             await trackSeedItem(
               batchId!,
@@ -134,12 +159,15 @@ export async function seedBookmakers(
               RunStatus.success,
               undefined,
               {
+                entityType: "bookmaker",
                 name: bookmaker.name,
                 externalId: bookmaker.externalId,
+                action,
+                ...(changes && { changes }),
               }
             );
 
-            return { success: true, bookmaker };
+            return { success: true, bookmaker, action };
           } catch (error: unknown) {
             const errorMessage = (error instanceof Error ? error.message : String(error)).slice(0, 500);
             const errorCode =
@@ -153,10 +181,12 @@ export async function seedBookmakers(
               RunStatus.failed,
               `[${errorCode}] ${errorMessage}`,
               {
+                entityType: "bookmaker",
                 name: bookmaker.name,
                 externalId: bookmaker.externalId,
                 errorCode,
                 errorMessage: errorMessage.slice(0, 200),
+                action,
               }
             );
 
@@ -165,7 +195,7 @@ export async function seedBookmakers(
               "Bookmaker failed"
             );
 
-            return { success: false, bookmaker, error: errorMessage };
+            return { success: false, bookmaker, error: errorMessage, action };
           }
         })
       );

@@ -330,3 +330,53 @@ export function formatSeedError(
   const errorMessage = error?.message || String(error);
   return `${itemName} (ID: ${externalId}) - ${errorMessage}`;
 }
+
+/**
+ * Computes the diff between old and new values for tracking changes.
+ * Only includes fields that actually changed.
+ * @param oldValues - The existing record values (or null if inserting)
+ * @param newValues - The new values being written
+ * @param fieldsToTrack - Array of field names to compare
+ * @returns Object with changed fields in format { field: "oldValue → newValue" }
+ */
+export function computeChanges(
+  oldValues: Record<string, unknown> | null | undefined,
+  newValues: Record<string, unknown>,
+  fieldsToTrack: string[]
+): Record<string, string> | null {
+  if (!oldValues) {
+    // Insert case - no changes to track
+    return null;
+  }
+
+  const changes: Record<string, string> = {};
+
+  for (const field of fieldsToTrack) {
+    const oldVal = oldValues[field];
+    const newVal = newValues[field];
+
+    // Skip if both are null/undefined
+    if (oldVal == null && newVal == null) continue;
+
+    // Compare values (handle dates, bigints, etc.)
+    const oldStr = formatValue(oldVal);
+    const newStr = formatValue(newVal);
+
+    if (oldStr !== newStr) {
+      changes[field] = `${oldStr} → ${newStr}`;
+    }
+  }
+
+  return Object.keys(changes).length > 0 ? changes : null;
+}
+
+/**
+ * Formats a value for display in change tracking
+ */
+function formatValue(val: unknown): string {
+  if (val == null) return "—";
+  if (val instanceof Date) return val.toISOString();
+  if (typeof val === "bigint") return String(val);
+  if (typeof val === "object") return JSON.stringify(val);
+  return String(val);
+}

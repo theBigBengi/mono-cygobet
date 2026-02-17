@@ -18,6 +18,7 @@ import type {
   FixtureState,
   LeagueDTO,
   SeasonDTO,
+  SeasonPreviewDTO,
   TeamDTO,
 } from "@repo/types/sport-data/common";
 import type {
@@ -202,7 +203,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
 
     const out: FixtureDTO[] = [];
     for (const r of rows) {
-      const fixtures = r.fixtures ?? [];
+      const fixtures = (r.fixtures ?? []) as FixtureSportmonks[];
       for (const f of fixtures) {
         const fixture = buildFixtures(f);
         if (fixture) {
@@ -941,5 +942,86 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       count: teams.length,
     });
     return teams;
+  }
+
+  /**
+   * Fetches season preview data in a single optimized API call.
+   * Uses includes to get league, country, teams, and fixtures counts.
+   */
+  async fetchSeasonPreview(
+    seasonExternalId: number
+  ): Promise<SeasonPreviewDTO | null> {
+    const startMs = performance.now();
+    this.logger.info("fetchSeasonPreview", { seasonExternalId });
+
+    try {
+      const rows = await this.httpFootball.get<SmSeasonRaw>(
+        `seasons/${seasonExternalId}`,
+        {
+          select: ["id", "name", "league_id"],
+          include: [
+            {
+              name: "league",
+              fields: ["id", "name", "country_id"],
+              include: [{ name: "country", fields: ["id", "name"] }],
+            },
+            { name: "teams", fields: ["id"] },
+            { name: "fixtures", fields: ["id", "starting_at"] },
+          ],
+          paginate: false,
+        }
+      );
+
+      if (!rows || rows.length === 0) {
+        this.logger.info("fetchSeasonPreview", { count: 0 });
+        return null;
+      }
+
+      const season = rows[0]!;
+      const league = season.league;
+      const country = league?.country;
+
+      const fixtures = Array.isArray(season.fixtures) ? season.fixtures : [];
+      const now = new Date();
+      const futureFixtures = fixtures.filter((f) => {
+        if (!f.starting_at) return false;
+        return new Date(f.starting_at) > now;
+      });
+
+      const result: SeasonPreviewDTO = {
+        season: {
+          externalId: season.id,
+          name: season.name ?? "",
+        },
+        league: {
+          externalId: league?.id ?? 0,
+          name: league?.name ?? "Unknown",
+        },
+        country: {
+          externalId: country?.id ?? 0,
+          name: country?.name ?? "Unknown",
+        },
+        teamsCount: Array.isArray(season.teams) ? season.teams.length : 0,
+        fixturesCount: fixtures.length,
+        fixturesCountFuture: futureFixtures.length,
+      };
+
+      this.logger.info("fetchSeasonPreview", {
+        seasonExternalId,
+        teamsCount: result.teamsCount,
+        fixturesCount: result.fixturesCount,
+        fixturesCountFuture: result.fixturesCountFuture,
+        durationMs: Math.round(performance.now() - startMs),
+      });
+
+      return result;
+    } catch (error) {
+      const code = error instanceof SportsDataError ? error.code : undefined;
+      this.logger.error("fetchSeasonPreview", { code });
+      if (error instanceof SportsDataError && error.statusCode === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 }

@@ -7,6 +7,7 @@ import {
   chunk,
   safeBigInt,
   normIso,
+  computeChanges,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
 import { getLogger } from "../../logger";
@@ -91,6 +92,7 @@ export async function seedCountries(
         RunStatus.skipped,
         undefined,
         {
+          entityType: "country",
           name: country.name,
           reason: "duplicate",
         }
@@ -98,6 +100,23 @@ export async function seedCountries(
     );
     await Promise.allSettled(duplicatePromises);
   }
+
+  // Pre-fetch which countries already exist (with all tracked fields for change detection)
+  const allExternalIds = uniqueCountries.map((c) => safeBigInt(c.externalId));
+  const existingRows = await prisma.countries.findMany({
+    where: { externalId: { in: allExternalIds } },
+    select: {
+      externalId: true,
+      name: true,
+      imagePath: true,
+      iso2: true,
+      iso3: true,
+    },
+  });
+  const existingByExtId = new Map(
+    existingRows.map((r) => [String(r.externalId), r])
+  );
+  const existingSet = new Set(existingRows.map((r) => String(r.externalId)));
 
   let ok = 0;
   let fail = 0;
@@ -107,6 +126,7 @@ export async function seedCountries(
       // Process all countries in the chunk in parallel
       const chunkResults = await Promise.allSettled(
         group.map(async (country) => {
+          const action = existingSet.has(String(country.externalId)) ? "updated" : "inserted";
           try {
             if (!country.name) {
               throw new Error(
@@ -117,15 +137,17 @@ export async function seedCountries(
             const iso2 = normIso(country.iso2, 2);
             const iso3 = normIso(country.iso3, 3);
 
+            const updatePayload = {
+              name: country.name,
+              imagePath: country.imagePath ?? null,
+              iso2: iso2 ?? null,
+              iso3: iso3 ?? null,
+              updatedAt: new Date(),
+            };
+
             await prisma.countries.upsert({
               where: { externalId: safeBigInt(country.externalId) },
-              update: {
-                name: country.name,
-                imagePath: country.imagePath ?? null,
-                iso2: iso2 ?? null,
-                iso3: iso3 ?? null,
-                updatedAt: new Date(),
-              },
+              update: updatePayload,
               create: {
                 externalId: safeBigInt(country.externalId),
                 name: country.name,
@@ -135,18 +157,27 @@ export async function seedCountries(
               },
             });
 
+            // Compute changes for update tracking
+            const existing = existingByExtId.get(String(country.externalId));
+            const changes = action === "updated"
+              ? computeChanges(existing, updatePayload, ["name", "imagePath", "iso2", "iso3"])
+              : null;
+
             await trackSeedItem(
               batchId!,
               String(country.externalId),
               RunStatus.success,
               undefined,
               {
+                entityType: "country",
                 name: country.name,
                 externalId: country.externalId,
+                action,
+                ...(changes && { changes }),
               }
             );
 
-            return { success: true, country };
+            return { success: true, country, action };
           } catch (e: unknown) {
             const errorMessage = e instanceof Error ? e.message : String(e);
             const errorCode =
@@ -160,10 +191,12 @@ export async function seedCountries(
               RunStatus.failed,
               errorMessage.slice(0, 500),
               {
+                entityType: "country",
                 name: country.name,
                 externalId: country.externalId,
                 errorCode,
                 errorMessage: errorMessage.slice(0, 200),
+                action,
               }
             );
 
@@ -172,7 +205,7 @@ export async function seedCountries(
               "Country failed"
             );
 
-            return { success: false, country, error: errorMessage };
+            return { success: false, country, error: errorMessage, action };
           }
         })
       );

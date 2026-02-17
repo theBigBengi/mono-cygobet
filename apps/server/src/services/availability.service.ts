@@ -8,20 +8,33 @@ const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 interface CacheEntry {
   data: AdminAvailabilityResponse["data"];
   expiresAt: number;
+  cacheKey: string;
 }
 
 let availabilityCache: CacheEntry | null = null;
 
 export const availabilityService = {
-  async getAvailability(): Promise<AdminAvailabilityResponse["data"]> {
-    if (availabilityCache && availabilityCache.expiresAt > Date.now()) {
+  async getAvailability(opts?: {
+    includeHistorical?: boolean;
+  }): Promise<AdminAvailabilityResponse["data"]> {
+    const includeHistorical = opts?.includeHistorical ?? false;
+    const cacheKey = includeHistorical ? "full" : "recent";
+
+    if (
+      availabilityCache &&
+      availabilityCache.expiresAt > Date.now() &&
+      availabilityCache.cacheKey === cacheKey
+    ) {
       return availabilityCache.data;
     }
 
-    const fetchSeasons =
-      typeof adapter.fetchAllSeasons === "function"
+    // By default, use fetchSeasons (current/future only) for faster response
+    // Only fetch all historical seasons when explicitly requested
+    const fetchSeasons = includeHistorical
+      ? typeof adapter.fetchAllSeasons === "function"
         ? adapter.fetchAllSeasons.bind(adapter)
-        : adapter.fetchSeasons.bind(adapter);
+        : adapter.fetchSeasons.bind(adapter)
+      : adapter.fetchSeasons.bind(adapter);
     const providerSeasons = await fetchSeasons();
 
     const dbSeasons = await prisma.seasons.findMany({
@@ -120,6 +133,7 @@ export const availabilityService = {
     availabilityCache = {
       data: result,
       expiresAt: Date.now() + CACHE_TTL_MS,
+      cacheKey,
     };
 
     return result;

@@ -271,8 +271,13 @@ function ItemsSection({ batch }: { batch: Batch }) {
             <TableBody>
               {items.map((item) => {
                 const m = (item.meta ?? {}) as Record<string, unknown>;
+                const entityType =
+                  typeof m["entityType"] === "string"
+                    ? m["entityType"]
+                    : item.itemKey?.split(":")[0] ?? null;
                 const name =
-                  typeof m["name"] === "string" ? m["name"] : item.itemKey;
+                  typeof m["name"] === "string" ? m["name"] : null;
+                const entityId = item.itemKey?.split(":")[1] ?? item.itemKey;
                 const reason =
                   typeof m["reason"] === "string"
                     ? (m["reason"] as string)
@@ -280,8 +285,17 @@ function ItemsSection({ batch }: { batch: Batch }) {
                 const changes = formatChanges(m["changes"]);
                 return (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium max-w-[200px] sm:max-w-[300px] truncate">
-                      {name ?? "—"}
+                    <TableCell className="max-w-[200px] sm:max-w-[300px]">
+                      <div className="flex flex-col">
+                        {entityType && (
+                          <span className="text-xs text-muted-foreground uppercase">
+                            {entityType}
+                          </span>
+                        )}
+                        <span className="font-medium truncate">
+                          {name ?? entityId ?? "—"}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <StatusBadge status={getActionLabel(item)} />

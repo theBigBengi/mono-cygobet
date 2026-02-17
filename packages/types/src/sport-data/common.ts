@@ -76,6 +76,27 @@ export type SeasonDTO = {
   countryName: string;
 };
 
+/** Preview data for seeding a season - fetched in a single optimized call */
+export type SeasonPreviewDTO = {
+  season: {
+    externalId: number;
+    name: string;
+  };
+  league: {
+    externalId: number;
+    name: string;
+  };
+  country: {
+    externalId: number;
+    name: string;
+  };
+  teamsCount: number;
+  /** Total fixtures in the season */
+  fixturesCount: number;
+  /** Fixtures with start date in the future */
+  fixturesCountFuture: number;
+};
+
 export const FixtureState = {
   NS: "NS",
   TBA: "TBA",

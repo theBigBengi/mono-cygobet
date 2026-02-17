@@ -36,7 +36,8 @@ import { SeedSeasonDialog } from "./seed-season-dialog";
 import { SectionTooltip } from "./section-tooltip";
 import { fixturesService } from "@/services/fixtures.service";
 import { toast } from "sonner";
-import { Calendar, RefreshCw, AlertCircle, Loader2, Search, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar, RefreshCw, AlertCircle, Loader2, Search, X, History } from "lucide-react";
 import type { AvailableSeason } from "@repo/types";
 
 function formatSeasonDates(startDate?: string, endDate?: string): string {
@@ -56,7 +57,8 @@ function formatSeasonDates(startDate?: string, endDate?: string): string {
 type StatusFilterValue = "active" | "upcoming" | "finished" | "all";
 
 export function SeasonManager() {
-  const { data, isLoading, refetch } = useAvailability();
+  const [includeHistorical, setIncludeHistorical] = useState(false);
+  const { data, isLoading, refetch } = useAvailability({ includeHistorical });
   const { name: provider } = useProvider();
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
@@ -225,6 +227,19 @@ Filter to see only what you need.`}
                 ))}
               </SelectContent>
             </Select>
+
+            <label className="flex items-center gap-2 cursor-pointer ml-auto">
+              <Checkbox
+                checked={includeHistorical}
+                onCheckedChange={(checked) =>
+                  setIncludeHistorical(checked === true)
+                }
+              />
+              <History className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                Include historical
+              </span>
+            </label>
           </div>
 
           {(() => {

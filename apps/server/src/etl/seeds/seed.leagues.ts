@@ -7,6 +7,7 @@ import {
   chunk,
   safeBigInt,
   normShortCode,
+  computeChanges,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
 import { getLogger } from "../../logger";
@@ -91,6 +92,7 @@ export async function seedLeagues(
         RunStatus.skipped,
         undefined,
         {
+          entityType: "league",
           name: league.name,
           reason: "duplicate",
         }
@@ -124,6 +126,24 @@ export async function seedLeagues(
     );
   }
 
+  // Pre-fetch which leagues already exist (with all tracked fields for change detection)
+  const allExternalIds = uniqueLeagues.map((l) => safeBigInt(l.externalId));
+  const existingRows = await prisma.leagues.findMany({
+    where: { externalId: { in: allExternalIds } },
+    select: {
+      externalId: true,
+      name: true,
+      shortCode: true,
+      imagePath: true,
+      type: true,
+      subType: true,
+    },
+  });
+  const existingByExtId = new Map(
+    existingRows.map((r) => [String(r.externalId), r])
+  );
+  const existingSet = new Set(existingRows.map((r) => String(r.externalId)));
+
   let ok = 0;
   let fail = 0;
 
@@ -132,6 +152,7 @@ export async function seedLeagues(
       // Process all leagues in the chunk in parallel
       const chunkResults = await Promise.allSettled(
         group.map(async (league) => {
+          const action = existingSet.has(String(league.externalId)) ? "updated" : "inserted";
           try {
             if (!league.name) {
               throw new Error(
@@ -158,17 +179,19 @@ export async function seedLeagues(
 
             const shortCode = normShortCode(league.shortCode);
 
+            const updatePayload = {
+              name: league.name,
+              shortCode: shortCode ?? null,
+              imagePath: league.imagePath ?? null,
+              countryId: countryId,
+              type: league.type,
+              subType: league.subType ?? null,
+              updatedAt: new Date(),
+            };
+
             await prisma.leagues.upsert({
               where: { externalId: safeBigInt(league.externalId) },
-              update: {
-                name: league.name,
-                shortCode: shortCode ?? null,
-                imagePath: league.imagePath ?? null,
-                countryId: countryId,
-                type: league.type,
-                subType: league.subType ?? null,
-                updatedAt: new Date(),
-              },
+              update: updatePayload,
               create: {
                 externalId: safeBigInt(league.externalId),
                 name: league.name,
@@ -180,18 +203,27 @@ export async function seedLeagues(
               },
             });
 
+            // Compute changes for update tracking
+            const existing = existingByExtId.get(String(league.externalId));
+            const changes = action === "updated"
+              ? computeChanges(existing, updatePayload, ["name", "shortCode", "imagePath", "type", "subType"])
+              : null;
+
             await trackSeedItem(
               batchId!,
               String(league.externalId),
               RunStatus.success,
               undefined,
               {
+                entityType: "league",
                 name: league.name,
                 externalId: league.externalId,
+                action,
+                ...(changes && { changes }),
               }
             );
 
-            return { success: true, league };
+            return { success: true, league, action };
           } catch (e: unknown) {
             const errorMessage = e instanceof Error ? e.message : String(e);
             const errorCode =
@@ -205,10 +237,12 @@ export async function seedLeagues(
               RunStatus.failed,
               errorMessage.slice(0, 500),
               {
+                entityType: "league",
                 name: league.name,
                 externalId: league.externalId,
                 errorCode,
                 errorMessage: errorMessage.slice(0, 200),
+                action,
               }
             );
 
@@ -217,7 +251,7 @@ export async function seedLeagues(
               "League failed"
             );
 
-            return { success: false, league, error: errorMessage };
+            return { success: false, league, error: errorMessage, action };
           }
         })
       );

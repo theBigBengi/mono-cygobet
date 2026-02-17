@@ -3,10 +3,19 @@ import { availabilityService } from "../../../../services/availability.service";
 import type { AdminAvailabilityResponse } from "@repo/types";
 
 const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.get<{ Reply: AdminAvailabilityResponse }>(
+  fastify.get<{
+    Querystring: { includeHistorical?: string };
+    Reply: AdminAvailabilityResponse;
+  }>(
     "/availability",
     {
       schema: {
+        querystring: {
+          type: "object",
+          properties: {
+            includeHistorical: { type: "string" },
+          },
+        },
         response: {
           200: {
             type: "object",
@@ -33,9 +42,12 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (_req, reply) => {
+    async (req, reply) => {
       try {
-        const data = await availabilityService.getAvailability();
+        const includeHistorical = req.query.includeHistorical === "true";
+        const data = await availabilityService.getAvailability({
+          includeHistorical,
+        });
         return reply.send({ status: "ok" as const, data });
       } catch (error) {
         const message =

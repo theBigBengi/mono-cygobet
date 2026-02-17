@@ -45,8 +45,10 @@ export interface SmTeamRaw {
 }
 
 export interface SmSeasonRawLeague {
+  id?: number;
   name?: string | null;
-  country?: { name?: string | null };
+  country_id?: number | null;
+  country?: { id?: number; name?: string | null };
 }
 
 export interface SmSeasonRaw {
@@ -59,7 +61,8 @@ export interface SmSeasonRaw {
   finished?: boolean;
   pending?: boolean;
   league?: SmSeasonRawLeague;
-  fixtures?: FixtureSportmonks[];
+  fixtures?: FixtureSportmonks[] | Array<{ id: number; starting_at?: string }>;
+  teams?: Array<{ id: number }>;
 }
 
 export interface SmBookmakerRaw {

@@ -15,7 +15,8 @@ export interface SeedSeasonParams {
   seasonExternalId: number;
   includeTeams: boolean;
   includeFixtures: boolean;
-  dryRun: boolean;
+  /** Only seed fixtures with start date in the future (default: true) */
+  futureOnly: boolean;
   triggeredBy?: string | null;
   triggeredById?: string | null;
   batchId?: number;
@@ -41,7 +42,7 @@ export async function processSeedSeason(
     seasonExternalId,
     includeTeams,
     includeFixtures,
-    dryRun,
+    futureOnly,
     triggeredBy,
     triggeredById,
     batchId: existingBatchId,
@@ -56,7 +57,7 @@ export async function processSeedSeason(
         seasonExternalId,
         includeTeams,
         includeFixtures,
-        dryRun,
+        futureOnly,
       },
       {
         trigger: RunTrigger.manual,
@@ -121,7 +122,7 @@ export async function processSeedSeason(
               Number(providerLeague.countryExternalId)
             );
             if (providerCountry) {
-              await seedCountries([providerCountry], { batchId, dryRun });
+              await seedCountries([providerCountry], { batchId });
               log.info(
                 { countryName: providerCountry.name },
                 "Country auto-created"
@@ -131,7 +132,7 @@ export async function processSeedSeason(
         }
 
         // Now create the league
-        await seedLeagues([providerLeague], { batchId, dryRun });
+        await seedLeagues([providerLeague], { batchId });
         log.info({ leagueName: providerLeague.name }, "League auto-created");
 
         // Re-fetch the league
@@ -146,28 +147,26 @@ export async function processSeedSeason(
         }
       }
 
-      if (!dryRun) {
-        season = await prisma.seasons.create({
-          data: {
-            externalId: BigInt(providerSeason.externalId),
-            name: providerSeason.name,
-            startDate: providerSeason.startDate,
-            endDate: providerSeason.endDate,
-            isCurrent: providerSeason.isCurrent,
-            leagueId: league.id,
-          },
-          include: { leagues: true },
-        });
-        seasonCreated = true;
-      }
+      season = await prisma.seasons.create({
+        data: {
+          externalId: BigInt(providerSeason.externalId),
+          name: providerSeason.name,
+          startDate: providerSeason.startDate,
+          endDate: providerSeason.endDate,
+          isCurrent: providerSeason.isCurrent,
+          leagueId: league.id,
+        },
+        include: { leagues: true },
+      });
+      seasonCreated = true;
     }
 
     const result: SeedSeasonResult = {
       season: {
-        id: season?.id ?? 0,
+        id: season.id,
         externalId: seasonExternalId,
-        name: season?.name ?? "N/A (dry run)",
-        league: season?.leagues?.name ?? "N/A",
+        name: season.name,
+        league: season.leagues?.name ?? "N/A",
         created: seasonCreated,
       },
       batchId,
@@ -183,7 +182,6 @@ export async function processSeedSeason(
       }
       const teamsDto = await fetchTeamsBySeason(seasonExternalId);
       const teamsResult = await seedTeams(teamsDto, {
-        dryRun,
         batchId,
       });
       result.teams = {
@@ -194,9 +192,20 @@ export async function processSeedSeason(
     }
 
     if (includeFixtures && season) {
-      const fixturesDto = await adapter.fetchFixturesBySeason(seasonExternalId);
+      let fixturesDto = await adapter.fetchFixturesBySeason(seasonExternalId);
+
+      // Filter to future fixtures only if requested
+      if (futureOnly) {
+        const now = new Date();
+        const beforeCount = fixturesDto.length;
+        fixturesDto = fixturesDto.filter((f) => new Date(f.startIso) > now);
+        log.info(
+          { beforeCount, afterCount: fixturesDto.length },
+          "Filtered to future fixtures only"
+        );
+      }
+
       const fixturesResult = await seedFixtures(fixturesDto, {
-        dryRun,
         batchId,
       });
       result.fixtures = {
@@ -211,6 +220,7 @@ export async function processSeedSeason(
         season: result.season,
         teams: result.teams,
         fixtures: result.fixtures,
+        futureOnly,
       },
     });
 
