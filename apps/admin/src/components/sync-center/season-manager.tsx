@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -69,6 +70,7 @@ export function SeasonManager() {
   const [syncingSeasonId, setSyncingSeasonId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setPage(1);
@@ -83,7 +85,8 @@ export function SeasonManager() {
         fetchAllFixtureStates: true,
       });
       toast.success(`Fixtures synced for ${season.name}`);
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ["sync-center"] });
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
     } catch {
       toast.error("Sync failed");
     } finally {

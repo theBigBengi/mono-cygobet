@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,7 @@ function PreviewItem({ label, name, exists, isLoading }: PreviewItemProps) {
 
 export function SeedSeasonDialog({ season, onClose }: SeedSeasonDialogProps) {
   const [futureOnly, setFutureOnly] = useState(true);
+  const queryClient = useQueryClient();
   const { seedSeason, isLoading, jobStatus, jobResult, errorMessage, reset } =
     useSeedSeason();
 
@@ -76,9 +78,14 @@ export function SeedSeasonDialog({ season, onClose }: SeedSeasonDialogProps) {
   const preview = previewData?.data;
 
   const handleClose = () => {
+    const wasCompleted = jobStatus === "completed" || jobStatus === "timeout";
     reset();
     setFutureOnly(true);
     onClose();
+    if (wasCompleted) {
+      queryClient.invalidateQueries({ queryKey: ["sync-center"] });
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
+    }
   };
 
   const handleSeed = () => {

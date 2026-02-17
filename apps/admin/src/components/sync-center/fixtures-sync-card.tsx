@@ -47,6 +47,7 @@ export function FixturesSyncCard() {
         description: `OK: ${result.data.ok} | Fail: ${result.data.fail}`,
       });
       queryClient.invalidateQueries({ queryKey: ["sync-center"] });
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
     },
     onError: (error: Error) => {
       toast.error("Sync failed", { description: error.message });
