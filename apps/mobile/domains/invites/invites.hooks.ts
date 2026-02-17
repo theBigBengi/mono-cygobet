@@ -17,9 +17,11 @@ import {
   getMyInvites,
   respondToInvite,
   cancelInvite,
+  getSentInvites,
   type UsersSearchParams,
   type SuggestedUsersParams,
   type MyInvitesParams,
+  type SentInvitesResponse,
 } from "./invites.api";
 import { invitesKeys } from "./invites.keys";
 import { groupsKeys } from "@/domains/groups/groups.keys";
@@ -67,7 +69,7 @@ export function useSuggestedUsersQuery(params?: SuggestedUsersParams) {
 }
 
 /**
- * Send a group invite. Invalidates invites list and group detail on success.
+ * Send a group invite. Invalidates invites list, sent invites, and group detail on success.
  */
 export function useSendInviteMutation(groupId: number) {
   const queryClient = useQueryClient();
@@ -80,6 +82,7 @@ export function useSendInviteMutation(groupId: number) {
     mutationFn: ({ userId, message }) => sendInvite(groupId, userId, message),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: invitesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: invitesKeys.sent(groupId) });
       queryClient.invalidateQueries({
         queryKey: groupsKeys.detail(groupId),
       });
@@ -125,7 +128,7 @@ export function useRespondToInviteMutation() {
 }
 
 /**
- * Cancel an invite (inviter only). Invalidates invites list.
+ * Cancel an invite (inviter only). Invalidates invites list and sent invites.
  */
 export function useCancelInviteMutation(groupId: number) {
   const queryClient = useQueryClient();
@@ -134,6 +137,22 @@ export function useCancelInviteMutation(groupId: number) {
     mutationFn: (inviteId) => cancelInvite(groupId, inviteId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: invitesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: invitesKeys.sent(groupId) });
     },
+  });
+}
+
+/**
+ * Get pending invites sent by current user for a specific group.
+ */
+export function useSentInvitesQuery(groupId: number) {
+  const { status, user } = useAuth();
+  const enabled = isReadyForProtected(status, user) && groupId > 0;
+
+  return useQuery<SentInvitesResponse, ApiError>({
+    queryKey: invitesKeys.sent(groupId),
+    queryFn: () => getSentInvites(groupId),
+    enabled,
+    meta: { scope: "user" },
   });
 }

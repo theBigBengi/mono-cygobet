@@ -114,6 +114,24 @@ export async function deleteInvite(id: number) {
   return prisma.groupInvites.delete({ where: { id } });
 }
 
+/**
+ * List pending invites sent by a user for a specific group.
+ */
+export async function listSentByInviterForGroup(
+  inviterId: number,
+  groupId: number
+) {
+  return prisma.groupInvites.findMany({
+    where: {
+      inviterId,
+      groupId,
+      status: "pending",
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 const DECLINE_COOLDOWN_HOURS = 24;
 
 /**

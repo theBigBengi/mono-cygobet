@@ -8,6 +8,7 @@ export {
   useMyInvitesQuery,
   useRespondToInviteMutation,
   useCancelInviteMutation,
+  useSentInvitesQuery,
 } from "./invites.hooks";
 export {
   searchUsers,
@@ -16,6 +17,13 @@ export {
   getMyInvites,
   respondToInvite,
   cancelInvite,
+  getSentInvites,
 } from "./invites.api";
 export { invitesKeys } from "./invites.keys";
-export type { UsersSearchParams, SuggestedUsersParams, MyInvitesParams } from "./invites.api";
+export type {
+  UsersSearchParams,
+  SuggestedUsersParams,
+  MyInvitesParams,
+  SentInviteItem,
+  SentInvitesResponse,
+} from "./invites.api";

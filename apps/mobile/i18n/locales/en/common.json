@@ -550,7 +550,15 @@
     "sendInvite": "Send invite",
     "messagePlaceholder": "Add a message...",
     "optionalMessage": "Optional message (e.g. \"Join us for the season!\")",
-    "suggestedUsers": "From your groups"
+    "suggestedUsers": "From your groups",
+    "sentInvites": "Sent Invites",
+    "sentInvitesCount": "{{count}} pending",
+    "noSentInvites": "No pending invites",
+    "noSentInvitesHint": "Invites you send will appear here",
+    "cancelInvite": "Cancel",
+    "cancelInviteConfirm": "Cancel invite to {{username}}?",
+    "inviteSent": "Invite sent",
+    "viewSentInvites": "View sent invites"
   },
   "members": {
     "loadingMembers": "Loading members...",

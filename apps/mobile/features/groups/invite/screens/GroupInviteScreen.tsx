@@ -3,7 +3,7 @@
 
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Share, Pressable, Text } from "react-native";
+import { View, StyleSheet, Share, Pressable, Text, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
@@ -16,6 +16,7 @@ import {
   useRegenerateInviteCodeMutation,
 } from "@/domains/groups";
 import { useTheme } from "@/lib/theme";
+import { SentInvitesList } from "@/features/invites/components/SentInvitesList";
 
 const DEEP_LINK_BASE = "mobile://groups/join";
 
@@ -86,7 +87,11 @@ export function GroupInviteScreen({
 
   return (
     <Screen>
-      <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header section */}
         <View style={styles.headerSection}>
           <View
@@ -178,15 +183,21 @@ export function GroupInviteScreen({
             />
           )}
         </View>
-      </View>
+
+        {/* Sent Invites */}
+        {groupId != null && <SentInvitesList groupId={groupId} />}
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
+  },
+  container: {
     padding: 20,
+    paddingBottom: 40,
   },
   headerSection: {
     alignItems: "center",

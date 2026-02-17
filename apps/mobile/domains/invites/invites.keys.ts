@@ -12,4 +12,5 @@ export const invitesKeys = {
     [...invitesKeys.all, "search", q, excludeGroupId] as const,
   suggested: (excludeGroupId?: number) =>
     [...invitesKeys.all, "suggested", excludeGroupId] as const,
+  sent: (groupId: number) => [...invitesKeys.all, "sent", groupId] as const,
 } as const;

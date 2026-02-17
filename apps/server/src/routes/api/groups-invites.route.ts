@@ -2,7 +2,7 @@
 // POST /api/groups/:id/invites, DELETE /api/groups/:id/invites/:inviteId
 
 import type { FastifyPluginAsync } from "fastify";
-import { sendInvite, cancelInvite } from "../../services/api/invites/service";
+import { sendInvite, cancelInvite, getSentInvites, type SentInviteItem } from "../../services/api/invites/service";
 import type { ApiSendInviteBody, ApiSendInviteResponse } from "@repo/types";
 import { getGroupParamsSchema } from "../../schemas/api";
 import {
@@ -41,6 +41,49 @@ const groupsInvitesRoutes: FastifyPluginAsync = async (fastify) => {
         message,
         fastify.io
       );
+      return reply.send(result);
+    }
+  );
+
+  // GET /api/groups/:id/invites/sent - get invites sent by current user
+  fastify.get<{
+    Params: { id: string };
+    Reply: { status: "success"; data: SentInviteItem[] };
+  }>(
+    "/groups/:id/invites/sent",
+    {
+      schema: {
+        params: getGroupParamsSchema,
+        response: {
+          200: {
+            type: "object",
+            required: ["status", "data"],
+            properties: {
+              status: { type: "string", enum: ["success"] },
+              data: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "number" },
+                    inviteeId: { type: "number" },
+                    inviteeUsername: { type: ["string", "null"] },
+                    inviteeImage: { type: ["string", "null"] },
+                    message: { type: ["string", "null"] },
+                    createdAt: { type: "string" },
+                    expiresAt: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      const groupId = Number(req.params.id);
+      const userId = req.userAuth!.user.id;
+      const result = await getSentInvites(groupId, userId);
       return reply.send(result);
     }
   );

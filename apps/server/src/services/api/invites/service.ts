@@ -304,3 +304,48 @@ export async function cancelInvite(
   }
   log.info({ inviteId, groupId, userId }, "cancelInvite - success");
 }
+
+export interface SentInviteItem {
+  id: number;
+  inviteeId: number;
+  inviteeUsername: string | null;
+  inviteeImage: string | null;
+  message: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
+/**
+ * Get pending invites sent by a user for a specific group.
+ */
+export async function getSentInvites(
+  groupId: number,
+  inviterId: number
+): Promise<{ status: "success"; data: SentInviteItem[] }> {
+  await assertGroupMember(groupId, inviterId);
+
+  const invites = await inviteRepo.listSentByInviterForGroup(inviterId, groupId);
+
+  // Get invitee details
+  const inviteeIds = invites.map((i) => i.inviteeId);
+  const invitees = await prisma.users.findMany({
+    where: { id: { in: inviteeIds } },
+    select: { id: true, username: true, image: true },
+  });
+  const inviteeMap = new Map(invitees.map((u) => [u.id, u]));
+
+  const data: SentInviteItem[] = invites.map((inv) => {
+    const invitee = inviteeMap.get(inv.inviteeId);
+    return {
+      id: inv.id,
+      inviteeId: inv.inviteeId,
+      inviteeUsername: invitee?.username ?? null,
+      inviteeImage: invitee?.image ?? null,
+      message: inv.message,
+      createdAt: inv.createdAt.toISOString(),
+      expiresAt: inv.expiresAt.toISOString(),
+    };
+  });
+
+  return { status: "success", data };
+}

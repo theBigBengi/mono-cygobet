@@ -566,7 +566,15 @@
     "sendInvite": "שלח הזמנה",
     "messagePlaceholder": "הוסף הודעה...",
     "optionalMessage": "הודעה אישית (לדוגמה: \"בוא לשחק איתנו!\")",
-    "suggestedUsers": "מהקבוצות שלך"
+    "suggestedUsers": "מהקבוצות שלך",
+    "sentInvites": "הזמנות שנשלחו",
+    "sentInvitesCount": "{{count}} ממתינות",
+    "noSentInvites": "אין הזמנות ממתינות",
+    "noSentInvitesHint": "הזמנות שתשלח יופיעו כאן",
+    "cancelInvite": "בטל",
+    "cancelInviteConfirm": "לבטל הזמנה ל-{{username}}?",
+    "inviteSent": "ההזמנה נשלחה",
+    "viewSentInvites": "צפה בהזמנות שנשלחו"
   },
   "members": {
     "loadingMembers": "טוען חברים...",

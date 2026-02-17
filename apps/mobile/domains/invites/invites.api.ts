@@ -120,3 +120,30 @@ export async function cancelInvite(
     method: "DELETE",
   });
 }
+
+export interface SentInviteItem {
+  id: number;
+  inviteeId: number;
+  inviteeUsername: string | null;
+  inviteeImage: string | null;
+  message: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface SentInvitesResponse {
+  status: "success";
+  data: SentInviteItem[];
+}
+
+/**
+ * Get pending invites sent by current user for a specific group.
+ */
+export async function getSentInvites(
+  groupId: number
+): Promise<SentInvitesResponse> {
+  return apiFetchWithAuthRetry<SentInvitesResponse>(
+    `/api/groups/${groupId}/invites/sent`,
+    { method: "GET" }
+  );
+}
