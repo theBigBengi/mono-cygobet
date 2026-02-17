@@ -112,6 +112,8 @@ export interface GroupsRepository {
       groupId: number;
       nudgeEnabled: boolean;
       nudgeWindowMinutes: number;
+      selectionMode: "games" | "teams" | "leagues";
+      groupTeamsIds: number[];
     }>
   >;
   findGroupMembersWithUsers(groupId: number): Promise<{

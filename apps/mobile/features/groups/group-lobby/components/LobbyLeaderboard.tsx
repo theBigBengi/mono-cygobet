@@ -1,14 +1,19 @@
 // features/groups/group-lobby/components/LobbyLeaderboard.tsx
 // Podium-style leaderboard with cards for top 3 players.
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { AppText, Card } from "@/components/ui";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
+import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiRankingItem } from "@repo/types";
-import { LobbyCardSkeleton } from "./LobbyCardSkeleton";
 
 const RANK_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"] as const; // Gold, Silver, Bronze
 const PODIUM_HEIGHTS = [100, 120, 90] as const; // 2nd, 1st, 3rd place heights
@@ -18,6 +23,7 @@ export interface LobbyLeaderboardProps {
   currentUserId: number | null;
   isLoading: boolean;
   onPress: () => void;
+  memberCount?: number;
 }
 
 /** Get initials from username */
@@ -35,11 +41,23 @@ export function LobbyLeaderboard({
   currentUserId,
   isLoading,
   onPress,
+  memberCount,
 }: LobbyLeaderboardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const allRanking = ranking ?? [];
   const top3 = allRanking.slice(0, 3);
+  const opacity = useSharedValue(0.3);
+
+  useEffect(() => {
+    if (isLoading) {
+      opacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
+    }
+  }, [isLoading, opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
 
   // Find current user's row
   const userRow = currentUserId
@@ -48,7 +66,64 @@ export function LobbyLeaderboard({
   const userInTop3 = userRow ? userRow.rank <= 3 : false;
 
   if (isLoading) {
-    return <LobbyCardSkeleton height={180} />;
+    return (
+      <View style={styles.container}>
+        <View
+          style={[
+            styles.wrapper,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          {/* Skeleton Header */}
+          <View style={styles.sectionHeader}>
+            <Animated.View
+              style={[
+                styles.skeletonIcon,
+                { backgroundColor: theme.colors.border },
+                animatedStyle,
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.skeletonHeaderText,
+                { backgroundColor: theme.colors.border },
+                animatedStyle,
+              ]}
+            />
+          </View>
+
+          {/* Skeleton Podium */}
+          <View style={styles.podiumRow}>
+            {[90, 110, 80].map((height, index) => (
+              <View key={index} style={styles.podiumSlot}>
+                <Animated.View
+                  style={[
+                    styles.skeletonPodiumCard,
+                    {
+                      height,
+                      backgroundColor: theme.colors.border,
+                    },
+                    animatedStyle,
+                  ]}
+                />
+              </View>
+            ))}
+          </View>
+
+          {/* Skeleton Button */}
+          <Animated.View
+            style={[
+              styles.skeletonButton,
+              { backgroundColor: theme.colors.border },
+              animatedStyle,
+            ]}
+          />
+        </View>
+      </View>
+    );
   }
 
   if (top3.length === 0) {
@@ -86,7 +161,6 @@ export function LobbyLeaderboard({
     const displayName = isCurrentUser ? t("lobby.you") : (item.username ?? `#${item.rank}`);
     const height = PODIUM_HEIGHTS[podiumIndex];
     const isFirst = actualRank === 1;
-
     return (
       <Pressable
         key={item.userId}
@@ -180,13 +254,17 @@ export function LobbyLeaderboard({
           },
         ]}
       >
-        {/* Section Header */}
-        <View style={styles.sectionHeader}>
-          <Ionicons name="podium-outline" size={16} color={theme.colors.textSecondary} />
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
-            {t("lobby.leaderboard")}
-          </Text>
-        </View>
+        {/* Member count badge */}
+        {memberCount != null && memberCount > 0 && (
+          <View style={styles.memberCountRow}>
+            <View style={[styles.memberCountBadge, { backgroundColor: theme.colors.primary + "15" }]}>
+              <Ionicons name="people" size={12} color={theme.colors.primary} />
+              <Text style={[styles.memberCountText, { color: theme.colors.primary }]}>
+                {memberCount}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Podium */}
         <View style={styles.podiumRow}>
@@ -230,17 +308,18 @@ export function LobbyLeaderboard({
           style={({ pressed }) => [
             styles.viewAllButton,
             {
-              backgroundColor: theme.colors.background,
+              backgroundColor: theme.colors.cardBackground,
               borderColor: theme.colors.border,
             },
             pressed && styles.pressed,
           ]}
         >
-          <Ionicons name="trophy" size={18} color={theme.colors.primary} />
-          <Text style={[styles.viewAllText, { color: theme.colors.textPrimary }]}>
-            {t("lobby.ranking")}
+          <View style={[styles.buttonIconCircle, { backgroundColor: theme.colors.primary + "15" }]}>
+            <Ionicons name="podium-outline" size={16} color={theme.colors.primary} />
+          </View>
+          <Text style={[styles.buttonText, { color: theme.colors.textPrimary }]}>
+            {t("lobby.leaderboard")}
           </Text>
-          <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
         </Pressable>
       </View>
     </View>
@@ -249,19 +328,33 @@ export function LobbyLeaderboard({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
     paddingHorizontal: 16,
   },
   wrapper: {
     borderRadius: 16,
     borderWidth: 1,
     padding: 16,
-    paddingTop: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+  },
+  memberCountRow: {
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  memberCountBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  memberCountText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   sectionHeader: {
     flexDirection: "row",
@@ -399,15 +492,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 10,
+    borderRadius: 12,
     borderWidth: 1,
   },
-  viewAllText: {
-    fontSize: 15,
+  buttonIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonText: {
+    fontSize: 12,
     fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   pressed: {
     opacity: 0.8,
+  },
+  // Skeleton styles
+  skeletonIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+  },
+  skeletonHeaderText: {
+    width: 80,
+    height: 12,
+    borderRadius: 4,
+  },
+  skeletonPodiumCard: {
+    borderRadius: 12,
+    width: "100%",
+  },
+  skeletonButton: {
+    height: 44,
+    borderRadius: 10,
   },
 });

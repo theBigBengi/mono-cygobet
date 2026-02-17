@@ -16,6 +16,7 @@ type RawRankRow = {
   total_points: string | number | bigint;
   prediction_count: string | number | bigint;
   correct_score_count: string | number | bigint;
+  correct_difference_count: string | number | bigint;
   correct_outcome_count: string | number | bigint;
 };
 
@@ -51,6 +52,7 @@ export async function getGroupRanking(
         COALESCE(SUM(CAST(gp.points AS INTEGER)), 0) AS total_points,
         COUNT(gp.id)::int AS prediction_count,
         COUNT(CASE WHEN gp.winning_correct_score = true THEN 1 END)::int AS correct_score_count,
+        COUNT(CASE WHEN gp.winning_correct_difference = true THEN 1 END)::int AS correct_difference_count,
         COUNT(CASE WHEN gp.winning_match_winner = true THEN 1 END)::int AS correct_outcome_count
       FROM group_predictions gp
       JOIN group_members gm ON gm.group_id = gp.group_id AND gm.user_id = gp.user_id
@@ -58,7 +60,7 @@ export async function getGroupRanking(
       WHERE gp.group_id = ${groupId}
         AND gm.status = 'joined'::group_members_status
       GROUP BY gp.user_id, u.username
-      ORDER BY total_points DESC, correct_score_count DESC, u.username ASC
+      ORDER BY total_points DESC, correct_score_count DESC, correct_difference_count DESC, u.username ASC
     `,
     repo.findGroupMembersWithUsers(groupId),
     repo.findGroupRules(groupId),
@@ -75,6 +77,7 @@ export async function getGroupRanking(
     totalPoints: toNumber(row.total_points),
     predictionCount: toNumber(row.prediction_count),
     correctScoreCount: toNumber(row.correct_score_count),
+    correctDifferenceCount: toNumber(row.correct_difference_count),
     correctOutcomeCount: toNumber(row.correct_outcome_count),
   }));
 
@@ -90,14 +93,18 @@ export async function getGroupRanking(
       totalPoints: 0,
       predictionCount: 0,
       correctScoreCount: 0,
+      correctDifferenceCount: 0,
       correctOutcomeCount: 0,
     });
   }
 
+  // Sort by: totalPoints > correctScoreCount > correctDifferenceCount > username
   const combined = [...fromSql, ...zeroRows].sort((a, b) => {
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
     if (b.correctScoreCount !== a.correctScoreCount)
       return b.correctScoreCount - a.correctScoreCount;
+    if (b.correctDifferenceCount !== a.correctDifferenceCount)
+      return b.correctDifferenceCount - a.correctDifferenceCount;
     const nameA = a.username ?? "";
     const nameB = b.username ?? "";
     return nameA.localeCompare(nameB);
@@ -109,7 +116,8 @@ export async function getGroupRanking(
     if (
       prev &&
       prev.totalPoints === row.totalPoints &&
-      prev.correctScoreCount === row.correctScoreCount
+      prev.correctScoreCount === row.correctScoreCount &&
+      prev.correctDifferenceCount === row.correctDifferenceCount
     ) {
       // same rank as previous
     } else {
@@ -117,6 +125,37 @@ export async function getGroupRanking(
     }
     return { ...row, rank };
   });
+
+  // Rank change enrichment: compare current rank to most recent snapshot
+  const latestSnapshot = await prisma.rankingSnapshots.findFirst({
+    where: { groupId },
+    orderBy: { createdAt: "desc" },
+    select: { fixtureId: true, createdAt: true },
+  });
+
+  if (latestSnapshot) {
+    // Get all snapshots from this fixture settlement
+    const snapshots = await prisma.rankingSnapshots.findMany({
+      where: {
+        groupId,
+        fixtureId: latestSnapshot.fixtureId,
+      },
+      select: { userId: true, rank: true },
+    });
+
+    const snapshotRankByUser = new Map(
+      snapshots.map((s) => [s.userId, s.rank])
+    );
+
+    items = items.map((item) => {
+      const previousRank = snapshotRankByUser.get(item.userId);
+      if (previousRank !== undefined) {
+        const rankChange = previousRank - item.rank; // positive = went up
+        return { ...item, previousRank, rankChange };
+      }
+      return item;
+    });
+  }
 
   // Nudge enrichment: when nudge is enabled, add nudgeable, nudgeFixtureId, nudgedByMe per item
   if (rules?.nudgeEnabled) {

@@ -179,6 +179,7 @@ export async function settlePredictionsForFixtures(
     id: number;
     points: string;
     winningCorrectScore: boolean;
+    winningCorrectDifference: boolean;
     winningMatchWinner: boolean;
   }> = [];
 
@@ -258,6 +259,7 @@ export async function settlePredictionsForFixtures(
       id: pred.id,
       points: String(result.points),
       winningCorrectScore: result.winningCorrectScore,
+      winningCorrectDifference: result.winningCorrectDifference,
       winningMatchWinner: result.winningMatchWinner,
     });
   }
@@ -303,6 +305,7 @@ export async function settlePredictionsForFixtures(
           data: {
             points: update.points,
             winningCorrectScore: update.winningCorrectScore,
+            winningCorrectDifference: update.winningCorrectDifference,
             winningMatchWinner: update.winningMatchWinner,
             settledAt: now,
           },
@@ -317,6 +320,16 @@ export async function settlePredictionsForFixtures(
     const afterResults = await Promise.allSettled(
       groupsWithCreator.map((g) => getGroupRanking(g.id, g.creatorId))
     );
+
+    // Save ranking snapshots to database for rank change tracking
+    const snapshotsToCreate: Array<{
+      groupId: number;
+      fixtureId: number;
+      userId: number;
+      rank: number;
+      totalPoints: number;
+    }> = [];
+
     for (const [i, g] of groupsWithCreator.entries()) {
       const afterResult = afterResults[i]!;
       if (afterResult.status === "rejected") {
@@ -331,6 +344,25 @@ export async function settlePredictionsForFixtures(
       if (!before) continue;
 
       const after = afterResult.value;
+
+      // Find fixture IDs for this group from the current settlement
+      const groupFixtureIdsForGroup = groupFixtures
+        .filter((gf) => gf.groupId === g.id)
+        .map((gf) => gf.fixtureId);
+      const fixtureIdForSnapshot = groupFixtureIdsForGroup[0]; // Use first fixture as reference
+
+      if (fixtureIdForSnapshot) {
+        // Create snapshots for all users in this group
+        for (const item of after.data) {
+          snapshotsToCreate.push({
+            groupId: g.id,
+            fixtureId: fixtureIdForSnapshot,
+            userId: item.userId,
+            rank: item.rank,
+            totalPoints: item.totalPoints,
+          });
+        }
+      }
 
       for (const item of after.data) {
         const prevRank = before.get(item.userId);
@@ -376,6 +408,23 @@ export async function settlePredictionsForFixtures(
           },
           io
         );
+      }
+    }
+
+    // Save ranking snapshots to database (batch upsert)
+    if (snapshotsToCreate.length > 0) {
+      try {
+        await prisma.rankingSnapshots.createMany({
+          data: snapshotsToCreate,
+          skipDuplicates: true, // Skip if already exists (same group/fixture/user)
+        });
+        log.debug(
+          { count: snapshotsToCreate.length },
+          "Saved ranking snapshots"
+        );
+      } catch (snapshotError) {
+        // Non-critical: log and continue
+        log.warn({ err: snapshotError }, "Failed to save ranking snapshots");
       }
     }
 

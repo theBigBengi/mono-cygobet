@@ -1,11 +1,16 @@
 // features/groups/group-lobby/components/LobbyQuickActions.tsx
 // Grid of 3 quick action buttons (Chat, Invite, Stats) - Game menu style.
 
-import React from "react";
+import React, { useEffect } from "react";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons, Entypo, Fontisto } from "@expo/vector-icons";
-import { AppText } from "@/components/ui";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { useTheme } from "@/lib/theme";
 
 export interface QuickAction {
@@ -17,6 +22,7 @@ export interface QuickAction {
 
 export interface LobbyQuickActionsProps {
   actions: QuickAction[];
+  isLoading?: boolean;
 }
 
 function renderIcon(
@@ -34,9 +40,85 @@ function renderIcon(
   }
 }
 
-export function LobbyQuickActions({ actions }: LobbyQuickActionsProps) {
+export function LobbyQuickActions({ actions, isLoading = false }: LobbyQuickActionsProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const opacity = useSharedValue(0.3);
+
+  useEffect(() => {
+    if (isLoading) {
+      opacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
+    }
+  }, [isLoading, opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View
+          style={[
+            styles.wrapper,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          {/* Skeleton Header */}
+          <View style={styles.sectionHeader}>
+            <Animated.View
+              style={[
+                styles.skeletonHeaderIcon,
+                { backgroundColor: theme.colors.border },
+                animatedStyle,
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.skeletonHeaderText,
+                { backgroundColor: theme.colors.border },
+                animatedStyle,
+              ]}
+            />
+          </View>
+
+          {/* Skeleton Cards Grid */}
+          <View style={styles.grid}>
+            {[0, 1, 2].map((index) => (
+              <View
+                key={index}
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: theme.colors.cardBackground,
+                    borderColor: theme.colors.border,
+                  },
+                ]}
+              >
+                <Animated.View
+                  style={[
+                    styles.skeletonCircle,
+                    { backgroundColor: theme.colors.border },
+                    animatedStyle,
+                  ]}
+                />
+                <Animated.View
+                  style={[
+                    styles.skeletonLabel,
+                    { backgroundColor: theme.colors.border },
+                    animatedStyle,
+                  ]}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -111,8 +193,7 @@ export function LobbyQuickActions({ actions }: LobbyQuickActionsProps) {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   wrapper: {
     borderRadius: 16,
@@ -182,5 +263,26 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
     transform: [{ scale: 0.98 }],
+  },
+  skeletonHeaderIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+  },
+  skeletonHeaderText: {
+    width: 80,
+    height: 12,
+    borderRadius: 4,
+  },
+  skeletonCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginBottom: 8,
+  },
+  skeletonLabel: {
+    width: 50,
+    height: 12,
+    borderRadius: 4,
   },
 });

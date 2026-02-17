@@ -38,6 +38,23 @@ model sessions {
   @@map("sessions")
 }
 
+model oauthStates {
+  id            String    @id
+  state         String    @unique
+  codeVerifier  String    @map("code_verifier")
+  redirectUri   String    @map("redirect_uri")
+  provider      String
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt        DateTime? @map("used_at") @db.Timestamptz(6)
+  otc           String?   @unique
+  otcExpiresAt  DateTime? @map("otc_expires_at") @db.Timestamptz(6)
+  userId        Int?      @map("user_id")
+
+  @@index([expiresAt])
+  @@map("oauth_states")
+}
+
 model users {
   image                   String?
   createdAt               DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -60,6 +77,7 @@ model users {
   // publicPredictions publicPredictions[]
   userActivityEvents      userActivityEvents[]
   fixturesScoreOverridden fixtures[]           @relation("FixtureScoreOverriddenBy")
+  rankingSnapshots        rankingSnapshots[]
 
   // groups groups[]
 
@@ -176,6 +194,7 @@ model fixtures {
   groupFixtures    groupFixtures[] // group fixtures that have been created for this fixture
   fixtureJobEvents fixtureJobEvents[] // job events that have been processed for this fixture
   fixtureAuditLog  fixtureAuditLog[] // audit log for this fixture
+  rankingSnapshots rankingSnapshots[] // ranking snapshots triggered by this fixture
 
   @@unique([homeTeamId, awayTeamId, startTs], map: "fixtures_home_away_start_uniq")
   @@index([id, startTs])
@@ -292,6 +311,7 @@ model groups {
   groupMessages      groupMessages[]
   groupMessageReads  groupMessageReads[]
   userActivityEvents userActivityEvents[]
+  rankingSnapshots   rankingSnapshots[]
 
   // relations
   groupRules groupRules? @relation("groupRulesRelation")
@@ -456,8 +476,9 @@ model groupPredictions {
   settledAt           DateTime? @map("settled_at") @db.Timestamptz(6)
   points              String    @default(dbgenerated("0"))
   prediction          String
-  winningCorrectScore Boolean   @default(false) @map("winning_correct_score")
-  winningMatchWinner  Boolean   @default(false) @map("winning_match_winner")
+  winningCorrectScore      Boolean   @default(false) @map("winning_correct_score")
+  winningCorrectDifference Boolean   @default(false) @map("winning_correct_difference")
+  winningMatchWinner       Boolean   @default(false) @map("winning_match_winner")
   updatedAt           DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   // relations
@@ -472,6 +493,26 @@ model groupPredictions {
   @@index([userId], map: "group_predictions_user_idx")
   @@index([settledAt, groupFixtureId], map: "group_predictions_settled_gf_idx")
   @@map("group_predictions")
+}
+
+/// Stores ranking snapshots after each fixture settlement.
+/// Used to calculate rank changes (up/down arrows).
+model rankingSnapshots {
+  id          Int      @id @default(autoincrement())
+  groupId     Int      @map("group_id")
+  fixtureId   Int      @map("fixture_id") // The fixture that triggered this snapshot
+  userId      Int      @map("user_id")
+  rank        Int
+  totalPoints Int      @map("total_points")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  groups   groups   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  users    users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fixtures fixtures @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, fixtureId, userId], map: "ranking_snapshots_unique")
+  @@index([groupId, createdAt(sort: Desc)], map: "ranking_snapshots_group_time_idx")
+  @@map("ranking_snapshots")
 }
 
 model groupMessages {

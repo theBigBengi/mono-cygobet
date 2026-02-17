@@ -95,22 +95,46 @@ function GroupsContent() {
             padding: 0,
           }}
         >
-          <View
-            style={{
-              paddingHorizontal: theme.spacing.md,
-              paddingTop: theme.spacing.md,
-            }}
-          >
+          {/* Header skeleton */}
+          <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
+            <View style={{ width: 100, height: 24, backgroundColor: theme.colors.surface, borderRadius: 6 }} />
+          </View>
+
+          {/* Filter tabs skeleton */}
+          <View style={{ flexDirection: "row", paddingHorizontal: 16, paddingVertical: 10, gap: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
+            {[80, 70, 60].map((w, i) => (
+              <View key={i} style={{ width: w, height: 36, backgroundColor: theme.colors.surface, borderRadius: 10 }} />
+            ))}
+          </View>
+
+          {/* Cards skeleton */}
+          <View style={{ paddingTop: 12 }}>
             {[1, 2, 3].map((i) => (
               <View
                 key={i}
                 style={{
-                  backgroundColor: theme.colors.surface,
-                  borderRadius: theme.radius.md,
-                  height: 120,
-                  marginBottom: theme.spacing.sm,
+                  marginHorizontal: 16,
+                  marginBottom: 12,
+                  backgroundColor: theme.colors.cardBackground,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  padding: 14,
                 }}
-              />
+              >
+                {/* Top row skeleton */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: theme.colors.surface }} />
+                  <View style={{ flex: 1, gap: 6 }}>
+                    <View style={{ width: "70%", height: 18, backgroundColor: theme.colors.surface, borderRadius: 4 }} />
+                    <View style={{ width: "50%", height: 14, backgroundColor: theme.colors.surface, borderRadius: 4 }} />
+                  </View>
+                </View>
+                {/* Stats bar skeleton */}
+                <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
+                  <View style={{ height: 36, backgroundColor: theme.colors.surface, borderRadius: 10 }} />
+                </View>
+              </View>
             ))}
           </View>
         </Screen>
@@ -218,15 +242,19 @@ function GroupsContent() {
   );
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <Screen
         scroll={false}
         contentContainerStyle={{ alignItems: "stretch", flex: 1, padding: 0 }}
       >
+        {/* Header */}
         <View
           style={[
             styles.header,
-            { paddingHorizontal: theme.spacing.md },
+            {
+              backgroundColor: theme.colors.background,
+              borderBottomColor: theme.colors.border,
+            },
           ]}
         >
           <AppText variant="title" style={styles.headerTitle}>
@@ -246,6 +274,8 @@ function GroupsContent() {
             />
           </Pressable>
         </View>
+
+        {/* Filter Tabs */}
         <GroupFilterTabs
           selectedFilter={selectedFilter}
           onFilterChange={setSelectedFilter}
@@ -253,13 +283,22 @@ function GroupsContent() {
           onPublicPress={handleBrowsePublic}
           onJoinPress={handleJoinWithCode}
         />
+
+        {/* Groups List */}
         <FlatList
           style={styles.list}
           data={filteredGroups}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
+          ListHeaderComponent={<View style={{ height: 12 }} />}
           ListEmptyComponent={
             <View style={styles.emptyFilter}>
+              <Ionicons
+                name="folder-open-outline"
+                size={48}
+                color={theme.colors.textSecondary}
+                style={{ marginBottom: 12, opacity: 0.5 }}
+              />
               <AppText variant="body" color="secondary">
                 {t("groups.noGroupsInFilter")}
               </AppText>
@@ -293,9 +332,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(128, 128, 128, 0.3)",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
   },
   headerTitle: {
     fontWeight: "700",
@@ -307,7 +346,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   emptyFilter: {
-    paddingVertical: 24,
+    paddingVertical: 48,
     alignItems: "center",
   },
   emptyContainer: {

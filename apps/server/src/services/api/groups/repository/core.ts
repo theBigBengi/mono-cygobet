@@ -235,22 +235,24 @@ export async function findGroupRules(groupId: number): Promise<{
 }
 
 /**
- * Find nudge settings for multiple groups (for getMyGroups batch).
+ * Find nudge settings, selection mode, and team IDs for multiple groups (for getMyGroups batch).
  */
 export async function findGroupRulesNudgeBatch(
   groupIds: number[]
 ): Promise<
-  Array<{ groupId: number; nudgeEnabled: boolean; nudgeWindowMinutes: number }>
+  Array<{ groupId: number; nudgeEnabled: boolean; nudgeWindowMinutes: number; selectionMode: "games" | "teams" | "leagues"; groupTeamsIds: number[] }>
 > {
   if (groupIds.length === 0) return [];
   const rows = await prisma.groupRules.findMany({
     where: { groupId: { in: groupIds } },
-    select: { groupId: true, nudgeEnabled: true, nudgeWindowMinutes: true },
+    select: { groupId: true, nudgeEnabled: true, nudgeWindowMinutes: true, selectionMode: true, groupTeamsIds: true },
   });
   return rows.map((r) => ({
     groupId: r.groupId,
     nudgeEnabled: r.nudgeEnabled ?? true,
     nudgeWindowMinutes: r.nudgeWindowMinutes ?? 60,
+    selectionMode: (r.selectionMode as "games" | "teams" | "leagues") ?? "games",
+    groupTeamsIds: r.groupTeamsIds ?? [],
   }));
 }
 

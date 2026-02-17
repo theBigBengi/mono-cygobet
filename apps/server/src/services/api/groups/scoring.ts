@@ -33,12 +33,14 @@ export type FixtureResult = {
 export type ScoringResult = {
   points: number;
   winningCorrectScore: boolean;
+  winningCorrectDifference: boolean;
   winningMatchWinner: boolean;
 };
 
 const ZERO_RESULT: ScoringResult = {
   points: 0,
   winningCorrectScore: false,
+  winningCorrectDifference: false,
   winningMatchWinner: false,
 };
 
@@ -140,6 +142,7 @@ function calculateNormalScore(
       return {
         points: rules.outcomePoints,
         winningCorrectScore: false,
+        winningCorrectDifference: false,
         winningMatchWinner: true,
       };
     }
@@ -151,6 +154,7 @@ function calculateNormalScore(
     return {
       points: rules.onTheNosePoints,
       winningCorrectScore: true,
+      winningCorrectDifference: true,
       winningMatchWinner: true,
     };
   }
@@ -158,6 +162,7 @@ function calculateNormalScore(
     return {
       points: rules.correctDifferencePoints,
       winningCorrectScore: false,
+      winningCorrectDifference: true,
       winningMatchWinner: true,
     };
   }
@@ -165,6 +170,7 @@ function calculateNormalScore(
     return {
       points: rules.outcomePoints,
       winningCorrectScore: false,
+      winningCorrectDifference: false,
       winningMatchWinner: true,
     };
   }
@@ -199,6 +205,7 @@ export function calculateScore(
       return {
         points: rules.outcomePoints,
         winningCorrectScore: false,
+        winningCorrectDifference: false,
         winningMatchWinner: true,
       };
     }

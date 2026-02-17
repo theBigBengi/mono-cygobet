@@ -101,11 +101,16 @@ export type RankingItem = {
   totalPoints: number;
   predictionCount: number;
   correctScoreCount: number;
+  correctDifferenceCount: number;
   correctOutcomeCount: number;
   nudgeable?: boolean;
   nudgeFixtureId?: number;
   nudgedByMe?: boolean;
   nudgeReceivedCount?: number;
+  /** Rank from the previous fixture settlement */
+  previousRank?: number;
+  /** Rank change: positive = went up, negative = went down, 0 = same */
+  rankChange?: number;
 };
 
 export type RankingResponse = {

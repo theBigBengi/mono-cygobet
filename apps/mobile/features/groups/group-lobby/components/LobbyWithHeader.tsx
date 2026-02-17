@@ -25,6 +25,8 @@ interface LobbyWithHeaderProps {
   onSettingsPress?: () => void;
   /** For active/ended: when provided, shows Info icon in header */
   onInfoPress?: () => void;
+  /** When true, hides the overlay header (for screens with integrated navigation) */
+  hideOverlayHeader?: boolean;
 }
 
 /**
@@ -40,6 +42,7 @@ export function LobbyWithHeader({
   isDeleting = false,
   onSettingsPress,
   onInfoPress,
+  hideOverlayHeader = false,
 }: LobbyWithHeaderProps) {
   const { t } = useTranslation("common");
   const goBack = useGoBack("/(tabs)/groups");
@@ -144,16 +147,18 @@ export function LobbyWithHeader({
         { backgroundColor: theme.colors.background },
       ]}
     >
-      <View style={[styles.lobbyContent, { paddingTop: HEADER_HEIGHT }]}>
+      <View style={[styles.lobbyContent, !hideOverlayHeader && { paddingTop: HEADER_HEIGHT }]}>
         {children}
       </View>
-      <View style={styles.headerOverlay} pointerEvents="box-none">
-        <GroupGamesHeader
-          backOnly
-          onBack={goBack}
-          rightContent={rightContent}
-        />
-      </View>
+      {!hideOverlayHeader && (
+        <View style={styles.headerOverlay} pointerEvents="box-none">
+          <GroupGamesHeader
+            backOnly
+            onBack={goBack}
+            rightContent={rightContent}
+          />
+        </View>
+      )}
     </View>
   );
 }

@@ -56,14 +56,39 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
     repo.findGroupRulesNudgeBatch(groupIds),
   ]);
 
-  const nudgeByGroupId = new Map(
-    rulesNudge.map((r) => [
-      r.groupId,
-      {
-        nudgeEnabled: r.nudgeEnabled,
-        nudgeWindowMinutes: r.nudgeWindowMinutes,
-      },
-    ])
+  // Collect all team IDs from teams-mode groups
+  const allTeamIds = new Set<number>();
+  rulesNudge.forEach((r) => {
+    if (r.selectionMode === "teams" && r.groupTeamsIds) {
+      r.groupTeamsIds.forEach((id) => allTeamIds.add(id));
+    }
+  });
+
+  // Fetch team info if needed
+  const teamInfoMap = new Map<number, { id: number; name: string; shortCode: string | null }>();
+  if (allTeamIds.size > 0) {
+    const teams = await prisma.teams.findMany({
+      where: { id: { in: Array.from(allTeamIds) } },
+      select: { id: true, name: true, shortCode: true },
+    });
+    teams.forEach((t) => teamInfoMap.set(t.id, { id: t.id, name: t.name, shortCode: t.shortCode }));
+  }
+
+  const rulesByGroupId = new Map(
+    rulesNudge.map((r) => {
+      const groupTeams = r.selectionMode === "teams" && r.groupTeamsIds
+        ? r.groupTeamsIds.map((id) => teamInfoMap.get(id)).filter(Boolean)
+        : [];
+      return [
+        r.groupId,
+        {
+          nudgeEnabled: r.nudgeEnabled,
+          nudgeWindowMinutes: r.nudgeWindowMinutes,
+          selectionMode: r.selectionMode,
+          groupTeams,
+        },
+      ];
+    })
   );
 
   // Build group items using batch stats
@@ -78,10 +103,14 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
       const firstGame = formatFixtureFromDb(rawFirstGame, null, null);
       const lastGame = formatFixtureFromDb(rawLastGame, null, null);
       const draftItem = buildDraftGroupItem(group, firstGame, lastGame);
-      const nudge = nudgeByGroupId.get(group.id);
-      if (nudge) {
-        draftItem.nudgeEnabled = nudge.nudgeEnabled;
-        draftItem.nudgeWindowMinutes = nudge.nudgeWindowMinutes;
+      const rules = rulesByGroupId.get(group.id);
+      if (rules) {
+        draftItem.nudgeEnabled = rules.nudgeEnabled;
+        draftItem.nudgeWindowMinutes = rules.nudgeWindowMinutes;
+        draftItem.selectionMode = rules.selectionMode;
+        if (rules.groupTeams && rules.groupTeams.length > 0) {
+          (draftItem as any).groupTeams = rules.groupTeams;
+        }
       }
       return draftItem;
     } else {
@@ -146,10 +175,14 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
         firstGame,
         lastGame
       );
-      const nudge = nudgeByGroupId.get(group.id);
-      if (nudge) {
-        activeItem.nudgeEnabled = nudge.nudgeEnabled;
-        activeItem.nudgeWindowMinutes = nudge.nudgeWindowMinutes;
+      const rules = rulesByGroupId.get(group.id);
+      if (rules) {
+        activeItem.nudgeEnabled = rules.nudgeEnabled;
+        activeItem.nudgeWindowMinutes = rules.nudgeWindowMinutes;
+        activeItem.selectionMode = rules.selectionMode;
+        if (rules.groupTeams && rules.groupTeams.length > 0) {
+          (activeItem as any).groupTeams = rules.groupTeams;
+        }
       }
       return activeItem;
     }

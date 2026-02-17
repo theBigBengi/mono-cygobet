@@ -1,7 +1,7 @@
 // features/groups/group-lobby/components/LobbyPredictionsCTA.tsx
 // Lobby predictions CTA - styled to match the Games screen
 
-import React, { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text, Dimensions, ScrollView } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -10,6 +10,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSpring,
+  withRepeat,
   runOnJS,
   Easing,
 } from "react-native-reanimated";
@@ -18,7 +19,6 @@ import { AppText, TeamLogo, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { isFinished as isFinishedState, isCancelled as isCancelledState, isLive as isLiveState } from "@repo/utils";
 import { formatKickoffDate, formatKickoffTime } from "@/utils/fixture";
-import { LobbyCardSkeleton } from "./LobbyCardSkeleton";
 import type { FixtureItem } from "@/types/common";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -39,91 +39,145 @@ const SUCCESS_COLOR = "#10B981";
 const MISSED_COLOR = "#EF4444";
 const LIVE_COLOR = "#EF4444";
 
-const DOT_SIZE = 8;
-const DOT_SIZE_ACTIVE = 16;
-const DOT_GAP = 10;
-const MAX_VISIBLE_DOTS = 10;
-const DOT_TOTAL_WIDTH = DOT_SIZE + DOT_GAP;
 
-/** Scrollable dots slider component */
-function DotsSlider({
+const MAX_VISIBLE_SEGMENTS = 20;
+const SEGMENT_WIDTH = 10;
+const SEGMENT_GAP = 3;
+
+/** Progress bar slider component - chronological segments */
+function ProgressSlider({
   fixtures,
   selectedIndex,
   isTrophySelected,
   theme,
+  onSelectIndex,
 }: {
   fixtures: FixtureItem[];
   selectedIndex: number;
   isTrophySelected: boolean;
   theme: any;
+  onSelectIndex: (index: number) => void;
 }) {
   const scrollViewRef = useRef<ScrollView>(null);
-  const totalItems = fixtures.length + 1; // +1 for trophy
+  const [containerWidth, setContainerWidth] = useState(0);
 
-  // Scroll to keep selected dot centered
+  const DOT_SIZE = 14;
+  const DOT_SIZE_SELECTED = 20;
+  const GAP = 6;
+  const TRACK_HEIGHT = 3;
+
+  // Auto-scroll to center selected segment
   useEffect(() => {
-    if (scrollViewRef.current && totalItems > MAX_VISIBLE_DOTS) {
-      const scrollX = Math.max(0, (selectedIndex - Math.floor(MAX_VISIBLE_DOTS / 2)) * DOT_TOTAL_WIDTH);
+    if (scrollViewRef.current && containerWidth > 0) {
+      const scrollX = selectedIndex * (DOT_SIZE + GAP);
       scrollViewRef.current.scrollTo({ x: scrollX, animated: true });
     }
-  }, [selectedIndex, totalItems]);
+  }, [selectedIndex, containerWidth]);
 
-  const containerWidth = Math.min(totalItems, MAX_VISIBLE_DOTS) * DOT_TOTAL_WIDTH;
+  const handleLayout = (event: any) => {
+    setContainerWidth(event.nativeEvent.layout.width);
+  };
+
+  const sidePadding = containerWidth > 0 ? (containerWidth / 2) - (DOT_SIZE / 2) : 100;
+
+  // Find index of last finished fixture for progress track
+  const lastFinishedIndex = fixtures.reduce((lastIdx, fixture, idx) => {
+    return isFinishedState(fixture.state) ? idx : lastIdx;
+  }, -1);
+
+  // Track calculations - from center of first dot to center of last dot
+  const fullTrackWidth = fixtures.length > 1 ? (fixtures.length - 1) * (DOT_SIZE + GAP) : 0;
+  const progressWidth = lastFinishedIndex > 0 ? lastFinishedIndex * (DOT_SIZE + GAP) : 0;
+
+  // Track positioning - centered vertically on the dots, starting at center of first dot
+  const trackTop = (DOT_SIZE - TRACK_HEIGHT) / 2;
+  const trackLeft = DOT_SIZE / 2;
+
+  const renderSegment = (fixture: FixtureItem, index: number) => {
+    const isSelected = index === selectedIndex && !isTrophySelected;
+    const finished = isFinishedState(fixture.state);
+    const cancelled = isCancelledState(fixture.state);
+    const prediction = fixture.prediction;
+    const hasPoints = (prediction?.points ?? 0) > 0;
+    const hasPrediction = prediction?.home != null && prediction?.away != null;
+
+    let backgroundColor: string;
+    if (cancelled) {
+      backgroundColor = theme.colors.border;
+    } else if (finished) {
+      backgroundColor = hasPoints ? SUCCESS_COLOR : MISSED_COLOR;
+    } else if (hasPrediction) {
+      backgroundColor = theme.colors.textSecondary;
+    } else {
+      backgroundColor = theme.colors.border;
+    }
+
+    // Selected dot is larger - we need to offset it to keep centers aligned
+    const sizeOffset = isSelected ? (DOT_SIZE_SELECTED - DOT_SIZE) / 2 : 0;
+
+    return (
+      <Pressable
+        key={index}
+        onPress={() => onSelectIndex(index)}
+        hitSlop={8}
+        style={({ pressed }) => [
+          styles.progressDot,
+          isSelected && styles.progressDotSelected,
+          {
+            backgroundColor,
+            marginTop: -sizeOffset,
+            marginBottom: -sizeOffset,
+          },
+          pressed && { opacity: 0.7 },
+        ]}
+      />
+    );
+  };
 
   return (
-    <View style={[styles.progressRow, { width: containerWidth }]}>
+    <View style={styles.progressWrapper} onLayout={handleLayout}>
       <ScrollView
         ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
-        scrollEnabled={false}
-        contentContainerStyle={styles.dotsContainer}
       >
-        {fixtures.map((fixture, index) => {
-          const fixtureFinished = isFinishedState(fixture.state);
-          const fixtureCancelled = isCancelledState(fixture.state);
-          const fixturePrediction = fixture.prediction;
-          const fixtureHasPoints = (fixturePrediction?.points ?? 0) > 0;
-          const isSelected = index === selectedIndex;
-
-          let dotColor = theme.colors.border;
-          if (fixtureCancelled) {
-            dotColor = theme.colors.border;
-          } else if (fixtureFinished) {
-            dotColor = fixtureHasPoints ? SUCCESS_COLOR : MISSED_COLOR;
-          } else if (fixturePrediction?.home != null && fixturePrediction?.away != null) {
-            dotColor = theme.colors.textSecondary;
-          }
-
-          return (
-            <View
-              key={index}
-              style={[
-                styles.progressDot,
-                { backgroundColor: dotColor },
-                isSelected && styles.progressDotActive,
-              ]}
-            >
-              {isSelected && (
-                <Text style={styles.dotNumber}>
-                  {index + 1}
-                </Text>
-              )}
+        <View style={{ paddingHorizontal: sidePadding }}>
+          {/* Single container with relative positioning */}
+          <View style={{ position: "relative" }}>
+            {/* Background track - absolute, behind dots */}
+            {fullTrackWidth > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: trackTop,
+                  left: trackLeft,
+                  width: fullTrackWidth,
+                  height: TRACK_HEIGHT,
+                  backgroundColor: theme.colors.border,
+                  borderRadius: TRACK_HEIGHT / 2,
+                }}
+              />
+            )}
+            {/* Progress track - absolute, behind dots */}
+            {progressWidth > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: trackTop,
+                  left: trackLeft,
+                  width: progressWidth,
+                  height: TRACK_HEIGHT,
+                  backgroundColor: theme.colors.primary,
+                  borderRadius: TRACK_HEIGHT / 2,
+                }}
+              />
+            )}
+            {/* Dots row - this is the layout source */}
+            <View style={styles.segmentsRow}>
+              {fixtures.map((fixture, index) => renderSegment(fixture, index))}
             </View>
-          );
-        })}
-        {/* Trophy dot */}
-        <View
-          style={[
-            styles.progressDot,
-            {
-              backgroundColor: isTrophySelected
-                ? "#FFD700"
-                : theme.colors.border,
-            },
-            isTrophySelected && styles.progressDotActive,
-          ]}
-        />
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -141,6 +195,17 @@ export function LobbyPredictionsCTA({
 }: LobbyPredictionsCTAProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const skeletonOpacity = useSharedValue(0.3);
+
+  useEffect(() => {
+    if (isLoading) {
+      skeletonOpacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
+    }
+  }, [isLoading, skeletonOpacity]);
+
+  const skeletonAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: skeletonOpacity.value,
+  }));
 
   // Find initial index - first upcoming game without prediction, or next upcoming game
   const initialSelectedIndex = useMemo(() => {
@@ -259,7 +324,136 @@ export function LobbyPredictionsCTA({
   }));
 
   if (isLoading) {
-    return <LobbyCardSkeleton height={200} />;
+    return (
+      <View style={styles.wrapper}>
+        <View
+          style={[
+            styles.container,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          {/* Skeleton Button */}
+          <Animated.View
+            style={[
+              styles.skeletonButton,
+              { backgroundColor: theme.colors.border },
+              skeletonAnimatedStyle,
+            ]}
+          />
+
+          {/* Skeleton Card */}
+          <View style={styles.cardRow}>
+            <View style={styles.matchNumberContainer}>
+              <Animated.View
+                style={[
+                  styles.skeletonMatchNumber,
+                  { backgroundColor: theme.colors.border },
+                  skeletonAnimatedStyle,
+                ]}
+              />
+            </View>
+            <View style={styles.cardContainer}>
+              <Animated.View
+                style={[
+                  styles.skeletonLeagueRow,
+                  { backgroundColor: theme.colors.border },
+                  skeletonAnimatedStyle,
+                ]}
+              />
+              <View
+                style={[
+                  styles.skeletonMatchCard,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.border,
+                  },
+                ]}
+              >
+                {/* Home team row skeleton */}
+                <View style={styles.skeletonTeamRow}>
+                  <Animated.View
+                    style={[
+                      styles.skeletonTeamLogo,
+                      { backgroundColor: theme.colors.border },
+                      skeletonAnimatedStyle,
+                    ]}
+                  />
+                  <Animated.View
+                    style={[
+                      styles.skeletonTeamName,
+                      { backgroundColor: theme.colors.border },
+                      skeletonAnimatedStyle,
+                    ]}
+                  />
+                  <Animated.View
+                    style={[
+                      styles.skeletonPredictionBox,
+                      { backgroundColor: theme.colors.border },
+                      skeletonAnimatedStyle,
+                    ]}
+                  />
+                </View>
+                {/* Away team row skeleton */}
+                <View style={styles.skeletonTeamRow}>
+                  <Animated.View
+                    style={[
+                      styles.skeletonTeamLogo,
+                      { backgroundColor: theme.colors.border },
+                      skeletonAnimatedStyle,
+                    ]}
+                  />
+                  <Animated.View
+                    style={[
+                      styles.skeletonTeamName,
+                      { backgroundColor: theme.colors.border },
+                      skeletonAnimatedStyle,
+                    ]}
+                  />
+                  <Animated.View
+                    style={[
+                      styles.skeletonPredictionBox,
+                      { backgroundColor: theme.colors.border },
+                      skeletonAnimatedStyle,
+                    ]}
+                  />
+                </View>
+              </View>
+            </View>
+            <View style={styles.pointsContainer} />
+          </View>
+
+          {/* Skeleton Slider */}
+          <View style={styles.sliderRow}>
+            <Animated.View
+              style={[
+                styles.skeletonChevron,
+                { backgroundColor: theme.colors.border },
+                skeletonAnimatedStyle,
+              ]}
+            />
+            <View style={styles.skeletonProgressRow}>
+              <Animated.View
+                style={[
+                  styles.skeletonProgressTrack,
+                  { backgroundColor: theme.colors.border },
+                  skeletonAnimatedStyle,
+                ]}
+              />
+            </View>
+            <Animated.View
+              style={[
+                styles.skeletonChevron,
+                { backgroundColor: theme.colors.border },
+                skeletonAnimatedStyle,
+              ]}
+            />
+          </View>
+        </View>
+      </View>
+    );
   }
 
   if (fixtures.length === 0) {
@@ -291,25 +485,30 @@ export function LobbyPredictionsCTA({
   const isAwayWinner = homeScore != null && awayScore != null && awayScore > homeScore;
 
   return (
-    <View style={[styles.container, { borderColor: theme.colors.border }]}>
-      {/* Section Header */}
-      <View style={styles.sectionHeader}>
-        <Ionicons name="football-outline" size={16} color={theme.colors.textSecondary} />
-        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
-          {t("lobby.predictions")}
-        </Text>
-      </View>
-
-      {/* Card Row: Number + Card + Points */}
-      <View style={styles.cardRow}>
-        {/* Left: Match number */}
-        <View style={styles.matchNumberContainer}>
-          <Text style={[styles.matchNumberText, { color: theme.colors.textSecondary }]}>
-            {isTrophySelected ? `${fixtures.length}/${fixtures.length}` : `${selectedIndex + 1}/${fixtures.length}`}
-          </Text>
+    <View style={styles.wrapper}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.colors.cardBackground,
+            borderColor: theme.colors.border,
+          },
+        ]}
+      >
+        {/* Slider */}
+        <View style={styles.sliderRowTop}>
+          <ProgressSlider
+            fixtures={fixtures}
+            selectedIndex={selectedIndex}
+            isTrophySelected={isTrophySelected}
+            theme={theme}
+            onSelectIndex={setSelectedIndex}
+          />
         </View>
 
-        {/* Center: Swipeable Card */}
+      {/* Card Row */}
+      <View style={styles.cardRow}>
+        {/* Swipeable Card */}
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.cardContainer, animatedStyle]}>
             {isTrophySelected ? (
@@ -516,84 +715,49 @@ export function LobbyPredictionsCTA({
           </Animated.View>
         </GestureDetector>
 
-        {/* Right: Points for finished games */}
-        <View style={styles.pointsContainer}>
-          {isFinished && !isCancelled && !isTrophySelected ? (
-            <>
-              <Text style={[styles.pointsNumber, { color: hasPoints ? SUCCESS_COLOR : MISSED_COLOR }]}>
-                {hasPoints ? `+${fixturePoints}` : "0"}
-              </Text>
-              <Text style={[styles.pointsLabel, { color: theme.colors.textSecondary }]}>
-                pts
-              </Text>
-            </>
-          ) : null}
-        </View>
       </View>
 
-      {/* Slider row: Chevron + Dots + Chevron */}
-      <View style={styles.sliderRow}>
+        {/* View All Games Button */}
         <Pressable
-          onPress={handlePrevious}
-          disabled={!canGoPrevious}
-          style={[styles.sliderChevron, !canGoPrevious && styles.sliderChevronDisabled]}
+          onPress={() => onPress()}
+          style={({ pressed }) => [
+            styles.viewAllButton,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.border,
+            },
+            pressed && styles.pressed,
+          ]}
         >
-          <Ionicons
-            name="chevron-back"
-            size={20}
-            color={canGoPrevious ? theme.colors.textSecondary : theme.colors.border}
-          />
-        </Pressable>
-
-        <DotsSlider
-          fixtures={fixtures}
-          selectedIndex={selectedIndex}
-          isTrophySelected={isTrophySelected}
-          theme={theme}
-        />
-
-        <Pressable
-          onPress={handleNext}
-          disabled={!canGoNext}
-          style={[styles.sliderChevron, !canGoNext && styles.sliderChevronDisabled]}
-        >
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={canGoNext ? theme.colors.textSecondary : theme.colors.border}
-          />
+          <View style={[styles.buttonIconCircle, { backgroundColor: theme.colors.primary + "15" }]}>
+            <Ionicons name="football-outline" size={16} color={theme.colors.primary} />
+          </View>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+            {t("lobby.predictions")}
+          </Text>
         </Pressable>
       </View>
-
-      {/* View All Games Button */}
-      <Pressable
-        onPress={() => onPress()}
-        style={({ pressed }) => [
-          styles.viewAllButton,
-          {
-            backgroundColor: theme.colors.cardBackground,
-            borderColor: theme.colors.border,
-          },
-          pressed && styles.pressed,
-        ]}
-      >
-        <Text style={[styles.viewAllText, { color: theme.colors.textPrimary }]}>
-          {t("lobby.viewAllGames")}
-        </Text>
-        <Ionicons name="arrow-forward" size={18} color={theme.colors.textSecondary} />
-      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 5,
+  },
   container: {
-    marginTop: 8,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
+    borderRadius: 16,
+    borderWidth: 1,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -613,15 +777,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginTop: 8,
-    paddingVertical: 12,
+    marginTop: 12,
+    paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+  },
+  buttonIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
   viewAllText: {
     fontSize: 15,
@@ -631,9 +797,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
+    paddingHorizontal: 8,
   },
   matchNumberContainer: {
-    width: 48,
+    width: 36,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 44,
@@ -644,7 +811,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   pointsContainer: {
-    width: 48,
+    width: 36,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 44,
@@ -660,13 +827,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     opacity: 0.8,
   },
+  sliderRowTop: {
+    marginBottom: 12,
+  },
   sliderRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
   },
   sliderChevron: {
-    padding: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
   },
   sliderChevronDisabled: {
     opacity: 0.3,
@@ -748,35 +925,101 @@ const styles = StyleSheet.create({
   trophyTextContainer: {
     flex: 1,
   },
-  progressRow: {
-    overflow: "hidden",
-    alignItems: "center",
+  progressWrapper: {
+    flex: 1,
     justifyContent: "center",
+    paddingVertical: 12,
+    overflow: "visible",
   },
-  dotsContainer: {
+  segmentsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: DOT_GAP,
-  },
-  dotNumber: {
-    fontSize: 8,
-    fontWeight: "600",
-    color: "#fff",
-    opacity: 0.8,
+    gap: 6,
   },
   progressDot: {
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
-    justifyContent: "center",
-    alignItems: "center",
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: "#fff",
+    elevation: 3,
   },
-  progressDotActive: {
-    width: DOT_SIZE_ACTIVE,
-    height: DOT_SIZE_ACTIVE,
-    borderRadius: DOT_SIZE_ACTIVE / 2,
+  progressDotSelected: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 3,
   },
   pressed: {
     opacity: 0.8,
+  },
+  // Skeleton styles
+  skeletonIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+  },
+  skeletonHeaderText: {
+    width: 70,
+    height: 12,
+    borderRadius: 4,
+  },
+  skeletonMatchNumber: {
+    width: 30,
+    height: 12,
+    borderRadius: 4,
+  },
+  skeletonLeagueRow: {
+    width: "60%",
+    height: 10,
+    borderRadius: 4,
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+  skeletonMatchCard: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  skeletonTeamRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  skeletonTeamLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+  },
+  skeletonTeamName: {
+    flex: 1,
+    height: 14,
+    borderRadius: 4,
+  },
+  skeletonPredictionBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+  },
+  skeletonChevron: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  skeletonProgressRow: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  skeletonProgressTrack: {
+    width: "100%",
+    height: 6,
+    borderRadius: 3,
+  },
+  skeletonButton: {
+    height: 44,
+    borderRadius: 12,
+    marginTop: 8,
   },
 });

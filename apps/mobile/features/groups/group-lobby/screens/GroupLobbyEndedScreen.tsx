@@ -25,6 +25,7 @@ interface GroupLobbyEndedScreenProps {
   onRefresh: () => Promise<void>;
   isCreator: boolean;
   isLoading?: boolean;
+  onSettingsPress?: () => void;
 }
 
 /**
@@ -39,6 +40,7 @@ export function GroupLobbyEndedScreen({
   onRefresh,
   isCreator,
   isLoading,
+  onSettingsPress,
 }: GroupLobbyEndedScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -92,6 +94,7 @@ export function GroupLobbyEndedScreen({
           compact
           onBack={goBack}
           onInfoPress={() => infoSheetRef.current?.present()}
+          onSettingsPress={onSettingsPress}
         />
 
         {/* Group Ended Banner */}

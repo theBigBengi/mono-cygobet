@@ -446,6 +446,8 @@ export type ApiGroupItem = {
   selectionMode?: "games" | "teams" | "leagues";
   /** Team IDs the group follows (teams mode). Used to filter team avatar chips. */
   groupTeamsIds?: number[];
+  /** Team info for teams mode - includes name and shortCode */
+  groupTeams?: Array<{ id: number; name: string; shortCode: string | null }>;
   /** KO round mode: "FullTime" | "ExtraTime" | "Penalties" - TODO: koRoundMode not yet used in scoring */
   koRoundMode?: string;
   onTheNosePoints?: number;
@@ -672,6 +674,7 @@ export type ApiRankingItem = {
   totalPoints: number;
   predictionCount: number;
   correctScoreCount: number;
+  correctDifferenceCount: number;
   correctOutcomeCount: number;
   /** True if this member has no prediction for an upcoming fixture in the nudge window. */
   nudgeable?: boolean;
@@ -681,6 +684,10 @@ export type ApiRankingItem = {
   nudgedByMe?: boolean;
   /** Phase 2: number of nudges received (for sleeper badge). */
   nudgeReceivedCount?: number;
+  /** Rank from the previous fixture settlement. */
+  previousRank?: number;
+  /** Rank change since last settlement: positive = went up, negative = went down, 0 = same. */
+  rankChange?: number;
 };
 
 /**

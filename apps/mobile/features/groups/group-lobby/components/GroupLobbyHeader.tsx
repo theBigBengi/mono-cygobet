@@ -1,8 +1,8 @@
 // features/groups/group-lobby/components/GroupLobbyHeader.tsx
-// Game HUD style header for lobby screen.
+// Game HUD style header for lobby screen with integrated navigation.
 
 import React from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet, Text, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,14 +15,16 @@ interface GroupLobbyHeaderProps {
   memberCount?: number;
   status: ApiGroupStatus;
   privacy?: ApiGroupPrivacy;
-  /** When true: HUD style */
+  /** When true: HUD style with integrated nav */
   compact?: boolean;
   /** Future: group image URL */
   image?: string | null;
-  /** When provided, shows info icon next to name; onPress opens group info sheet */
+  /** When provided, shows info icon; onPress opens group info sheet */
   onInfoPress?: () => void;
-  /** When provided, shows back button on the left of the avatar */
+  /** When provided, shows back button */
   onBack?: () => void;
+  /** When provided, shows settings icon */
+  onSettingsPress?: () => void;
 }
 
 function getInitials(name: string): string {
@@ -41,8 +43,9 @@ export function GroupLobbyHeader({
   privacy,
   compact = false,
   image: _image,
-  onInfoPress: _onInfoPress,
-  onBack: _onBack,
+  onInfoPress,
+  onBack,
+  onSettingsPress,
 }: GroupLobbyHeaderProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -68,9 +71,48 @@ export function GroupLobbyHeader({
     return (
       <View style={styles.hudContainer}>
         <LinearGradient
-          colors={[theme.colors.primary + "12", "transparent"]}
+          colors={[theme.colors.primary + "15", theme.colors.primary + "08", "transparent"]}
           style={styles.hudGradient}
         />
+
+        {/* Back Button - Positioned absolutely */}
+        {onBack && (
+          <Pressable
+            onPress={onBack}
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed && styles.navButtonPressed,
+            ]}
+          >
+            <View style={[styles.iconCircle, { backgroundColor: theme.colors.background + "90" }]}>
+              <Ionicons name="chevron-back" size={22} color={theme.colors.textPrimary} />
+            </View>
+          </Pressable>
+        )}
+
+        {/* Right Icons - Positioned absolutely */}
+        <View style={styles.rightIcons}>
+          {onInfoPress && (
+            <Pressable
+              onPress={onInfoPress}
+              style={({ pressed }) => [pressed && styles.navButtonPressed]}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: theme.colors.background + "90" }]}>
+                <Ionicons name="information-circle-outline" size={22} color={theme.colors.textPrimary} />
+              </View>
+            </Pressable>
+          )}
+          {onSettingsPress && (
+            <Pressable
+              onPress={onSettingsPress}
+              style={({ pressed }) => [pressed && styles.navButtonPressed]}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: theme.colors.background + "90" }]}>
+                <Ionicons name="settings-outline" size={20} color={theme.colors.textPrimary} />
+              </View>
+            </Pressable>
+          )}
+        </View>
 
         {/* Main Content */}
         <View style={styles.hudContent}>
@@ -165,21 +207,44 @@ export function GroupLobbyHeader({
 const styles = StyleSheet.create({
   // HUD Styles
   hudContainer: {
-    paddingTop: 20,
     paddingBottom: 12,
-    paddingHorizontal: 16,
     position: "relative",
-    overflow: "hidden",
   },
   hudGradient: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    height: 120,
+    height: 200,
+  },
+  backButton: {
+    position: "absolute",
+    left: 12,
+    top: 8,
+    zIndex: 10,
+  },
+  rightIcons: {
+    position: "absolute",
+    right: 12,
+    top: 8,
+    flexDirection: "row",
+    gap: 8,
+    zIndex: 10,
+  },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  navButtonPressed: {
+    opacity: 0.6,
   },
   hudContent: {
     alignItems: "center",
+    paddingHorizontal: 48,
+    paddingTop: 52,
   },
   shieldContainer: {
     marginBottom: 12,

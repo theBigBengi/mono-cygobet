@@ -178,16 +178,16 @@ function GroupLobbyContent() {
     content = (
       <LobbyWithHeader
         status={group.status}
-        onSettingsPress={() =>
-          router.push(`/groups/${group.id}/settings` as any)
-        }
-        onInfoPress={handleOpenInfo}
+        hideOverlayHeader
       >
         <GroupLobbyEndedScreen
           group={group}
           onRefresh={handleRefresh}
           isCreator={isCreator}
           isLoading={isFetching}
+          onSettingsPress={() =>
+            router.push(`/groups/${group.id}/settings` as any)
+          }
         />
       </LobbyWithHeader>
     );
@@ -212,16 +212,17 @@ function GroupLobbyContent() {
     content = (
       <LobbyWithHeader
         status={group.status}
-        onSettingsPress={() =>
-          router.push(`/groups/${group.id}/settings` as any)
-        }
-        onInfoPress={handleOpenInfo}
+        hideOverlayHeader
       >
         <GroupLobbyActiveScreen
           group={group}
           onRefresh={handleRefresh}
           isCreator={isCreator}
           isLoading={isFetching}
+          onSettingsPress={() =>
+            router.push(`/groups/${group.id}/settings` as any)
+          }
+          onInfoPress={handleOpenInfo}
         />
       </LobbyWithHeader>
     );

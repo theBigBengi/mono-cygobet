@@ -28,6 +28,8 @@ interface GroupLobbyActiveScreenProps {
   onRefresh: () => Promise<void>;
   isCreator: boolean;
   isLoading?: boolean;
+  onSettingsPress?: () => void;
+  onInfoPress?: () => void;
 }
 
 export function GroupLobbyActiveScreen({
@@ -35,6 +37,8 @@ export function GroupLobbyActiveScreen({
   onRefresh,
   isCreator,
   isLoading,
+  onSettingsPress,
+  onInfoPress,
 }: GroupLobbyActiveScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -133,13 +137,21 @@ export function GroupLobbyActiveScreen({
           compact
           onBack={goBack}
           onInfoPress={() => infoSheetRef.current?.present()}
+          onSettingsPress={onSettingsPress}
         />
 
-        {duration && (
+        {duration ? (
           <GroupTimelineBar
             startDate={duration.startDate}
             endDate={duration.endDate}
             progress={timelineProgress}
+          />
+        ) : (
+          <GroupTimelineBar
+            startDate=""
+            endDate=""
+            progress={0}
+            isLoading
           />
         )}
 
@@ -161,6 +173,7 @@ export function GroupLobbyActiveScreen({
           currentUserId={user?.id ?? null}
           isLoading={isRankingLoading}
           onPress={handleViewRanking}
+          memberCount={group.memberCount}
         />
       </Screen>
       <GroupInfoSheet
