@@ -1,14 +1,13 @@
 // features/groups/group-lobby/screens/GroupLobbyActiveScreen.tsx
 // Active state screen for group lobby - Clean & Minimal layout.
 
-import React, { useRef } from "react";
+import React, { useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import { useRouter } from "expo-router";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen } from "@/components/ui";
 import { useAuth } from "@/lib/auth/useAuth";
-import { useGoBack } from "@/hooks/useGoBack";
 import {
   useGroupRankingQuery,
   useGroupChatPreviewQuery,
@@ -30,6 +29,7 @@ interface GroupLobbyActiveScreenProps {
   isLoading?: boolean;
   onSettingsPress?: () => void;
   onInfoPress?: () => void;
+  onScroll?: (scrollY: number) => void;
 }
 
 export function GroupLobbyActiveScreen({
@@ -39,12 +39,19 @@ export function GroupLobbyActiveScreen({
   isLoading,
   onSettingsPress,
   onInfoPress,
+  onScroll,
 }: GroupLobbyActiveScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { user } = useAuth();
-  const goBack = useGoBack("/(tabs)/groups");
   const infoSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      onScroll?.(event.nativeEvent.contentOffset.y);
+    },
+    [onScroll]
+  );
   const { data: rankingData, isLoading: isRankingLoading } =
     useGroupRankingQuery(group.id);
   const { data: chatPreviewData } = useGroupChatPreviewQuery();
@@ -127,6 +134,7 @@ export function GroupLobbyActiveScreen({
       <Screen
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
+        onScroll={handleScroll}
         scroll
       >
         <GroupLobbyHeader
@@ -135,9 +143,8 @@ export function GroupLobbyActiveScreen({
           status="active"
           privacy={group.privacy}
           compact
-          onBack={goBack}
+          hideNavButtons
           onInfoPress={() => infoSheetRef.current?.present()}
-          onSettingsPress={onSettingsPress}
         />
 
         {duration ? (

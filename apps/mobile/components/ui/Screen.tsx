@@ -11,7 +11,7 @@
 // - This prevents double top offset
 
 import React, { useCallback, useState } from "react";
-import { Platform, RefreshControl, ScrollView, ViewStyle } from "react-native";
+import { Platform, RefreshControl, ScrollView, ViewStyle, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -28,6 +28,8 @@ interface ScreenProps {
   contentContainerStyle?: ViewStyle;
   /** Optional. When provided with scroll=true, enables pull-to-refresh. */
   onRefresh?: () => void | Promise<void>;
+  /** Optional. Called on scroll with the scroll event. */
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }
 
 export function Screen({
@@ -35,6 +37,7 @@ export function Screen({
   scroll = false,
   contentContainerStyle,
   onRefresh,
+  onScroll,
 }: ScreenProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -97,6 +100,8 @@ export function Screen({
             contentContainerStyle,
           ]}
           refreshControl={refreshControl}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
         >
           {children}
         </ScrollView>

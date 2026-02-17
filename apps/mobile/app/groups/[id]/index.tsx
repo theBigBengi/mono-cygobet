@@ -15,8 +15,19 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Text,
+  Pressable,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { useGoBack } from "@/hooks/useGoBack";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, AppText } from "@/components/ui";
 import { useGroupQuery, useDeleteGroupMutation } from "@/domains/groups";
@@ -32,6 +43,8 @@ import {
   GroupInfoSheet,
 } from "@/features/groups/group-lobby";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+const STICKY_HEADER_THRESHOLD = 100;
 
 /**
  * Group Lobby Screen
@@ -54,9 +67,37 @@ function GroupLobbyContent() {
   const router = useRouter();
   const { user } = useAuth();
   const { theme, colorScheme } = useTheme();
+  const insets = useSafeAreaInsets();
   const setOverlay = useSetAtom(globalBlockingOverlayAtom);
+  const goBack = useGoBack("/(tabs)/groups");
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
+
+  // Scroll tracking for sticky header
+  const scrollY = useSharedValue(0);
+  const handleScroll = useCallback((y: number) => {
+    scrollY.value = y;
+  }, []);
+
+  const stickyTitleStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      scrollY.value,
+      [STICKY_HEADER_THRESHOLD - 30, STICKY_HEADER_THRESHOLD],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+    return { opacity };
+  });
+
+  const stickyBgStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      scrollY.value,
+      [STICKY_HEADER_THRESHOLD - 30, STICKY_HEADER_THRESHOLD],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+    return { opacity };
+  });
 
   const {
     data,
@@ -223,6 +264,7 @@ function GroupLobbyContent() {
             router.push(`/groups/${group.id}/settings` as any)
           }
           onInfoPress={handleOpenInfo}
+          onScroll={handleScroll}
         />
       </LobbyWithHeader>
     );
@@ -241,9 +283,65 @@ function GroupLobbyContent() {
   const isDark = colorScheme === "dark";
   const showOverlay = isPublishing || deleteGroupMutation.isPending;
 
+  const showStickyHeader = group.status === "active";
+
   return (
     <View style={styles.draftContainer}>
       {content}
+
+      {/* Sticky header - only for active groups */}
+      {showStickyHeader && (
+        <View style={styles.stickyHeader}>
+          <Animated.View
+            style={[
+              styles.stickyHeaderBg,
+              { backgroundColor: theme.colors.background },
+              stickyBgStyle,
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.stickyHeaderTint,
+              { backgroundColor: theme.colors.primary + "15" },
+              stickyBgStyle,
+            ]}
+          />
+
+          {/* Back button */}
+          <Pressable
+            onPress={goBack}
+            style={({ pressed }) => [
+              styles.stickyIconButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={[styles.stickyIconCircle, { backgroundColor: theme.colors.surface }]}>
+              <Ionicons name="chevron-back" size={22} color={theme.colors.textPrimary} />
+            </View>
+          </Pressable>
+
+          {/* Title - appears on scroll */}
+          <Animated.View style={[styles.stickyTitleContainer, stickyTitleStyle]}>
+            <Text
+              style={[styles.stickyTitle, { color: theme.colors.textPrimary }]}
+              numberOfLines={1}
+            >
+              {group.name}
+            </Text>
+          </Animated.View>
+
+          {/* Right icon - settings only */}
+          <Pressable
+            onPress={() => router.push(`/groups/${group.id}/settings` as any)}
+            style={({ pressed }) => [pressed && styles.pressed]}
+          >
+            <View style={[styles.stickyIconCircle, { backgroundColor: theme.colors.surface }]}>
+              <Ionicons name="settings-outline" size={20} color={theme.colors.textPrimary} />
+            </View>
+          </Pressable>
+        </View>
+      )}
+
       {showOverlay && (
         <View style={styles.overlay} pointerEvents="box-none">
           <BlurView
@@ -293,5 +391,47 @@ const styles = StyleSheet.create({
   },
   overlayText: {
     marginTop: 12,
+  },
+  // Sticky header styles
+  stickyHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 52,
+    zIndex: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  stickyHeaderBg: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  stickyHeaderTint: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  stickyIconButton: {
+    zIndex: 10,
+  },
+  stickyIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  stickyTitleContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  stickyTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  pressed: {
+    opacity: 0.6,
   },
 });

@@ -25,6 +25,8 @@ interface GroupLobbyHeaderProps {
   onBack?: () => void;
   /** When provided, shows settings icon */
   onSettingsPress?: () => void;
+  /** When true, hides nav buttons (used with external sticky header) */
+  hideNavButtons?: boolean;
 }
 
 function getInitials(name: string): string {
@@ -46,6 +48,7 @@ export function GroupLobbyHeader({
   onInfoPress,
   onBack,
   onSettingsPress,
+  hideNavButtons = false,
 }: GroupLobbyHeaderProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -76,7 +79,7 @@ export function GroupLobbyHeader({
         />
 
         {/* Back Button - Positioned absolutely */}
-        {onBack && (
+        {!hideNavButtons && onBack && (
           <Pressable
             onPress={onBack}
             style={({ pressed }) => [
@@ -91,33 +94,39 @@ export function GroupLobbyHeader({
         )}
 
         {/* Right Icons - Positioned absolutely */}
-        <View style={styles.rightIcons}>
-          {onInfoPress && (
-            <Pressable
-              onPress={onInfoPress}
-              style={({ pressed }) => [pressed && styles.navButtonPressed]}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: theme.colors.background + "90" }]}>
-                <Ionicons name="information-circle-outline" size={22} color={theme.colors.textPrimary} />
-              </View>
-            </Pressable>
-          )}
-          {onSettingsPress && (
-            <Pressable
-              onPress={onSettingsPress}
-              style={({ pressed }) => [pressed && styles.navButtonPressed]}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: theme.colors.background + "90" }]}>
-                <Ionicons name="settings-outline" size={20} color={theme.colors.textPrimary} />
-              </View>
-            </Pressable>
-          )}
-        </View>
+        {!hideNavButtons && (
+          <View style={styles.rightIcons}>
+            {onInfoPress && (
+              <Pressable
+                onPress={onInfoPress}
+                style={({ pressed }) => [pressed && styles.navButtonPressed]}
+              >
+                <View style={[styles.iconCircle, { backgroundColor: theme.colors.background + "90" }]}>
+                  <Ionicons name="information-circle-outline" size={22} color={theme.colors.textPrimary} />
+                </View>
+              </Pressable>
+            )}
+            {onSettingsPress && (
+              <Pressable
+                onPress={onSettingsPress}
+                style={({ pressed }) => [pressed && styles.navButtonPressed]}
+              >
+                <View style={[styles.iconCircle, { backgroundColor: theme.colors.background + "90" }]}>
+                  <Ionicons name="settings-outline" size={20} color={theme.colors.textPrimary} />
+                </View>
+              </Pressable>
+            )}
+          </View>
+        )}
 
         {/* Main Content */}
         <View style={styles.hudContent}>
           {/* Shield/Badge with Avatar */}
-          <View style={styles.shieldContainer}>
+          <Pressable
+            style={styles.shieldContainer}
+            onPress={onInfoPress}
+            disabled={!onInfoPress}
+          >
             <View
               style={[
                 styles.shield,
@@ -131,7 +140,13 @@ export function GroupLobbyHeader({
                 {initials}
               </Text>
             </View>
-          </View>
+            {/* Info badge */}
+            {onInfoPress && (
+              <View style={[styles.infoBadge, { backgroundColor: theme.colors.background }]}>
+                <Ionicons name="information-circle" size={18} color={theme.colors.primary} />
+              </View>
+            )}
+          </Pressable>
 
           {/* Name */}
           <Text
@@ -248,6 +263,22 @@ const styles = StyleSheet.create({
   },
   shieldContainer: {
     marginBottom: 12,
+    position: "relative",
+  },
+  infoBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   shield: {
     width: 64,

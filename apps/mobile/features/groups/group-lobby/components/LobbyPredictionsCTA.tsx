@@ -335,26 +335,34 @@ export function LobbyPredictionsCTA({
             },
           ]}
         >
-          {/* Skeleton Button */}
-          <Animated.View
-            style={[
-              styles.skeletonButton,
-              { backgroundColor: theme.colors.border },
-              skeletonAnimatedStyle,
-            ]}
-          />
-
-          {/* Skeleton Card */}
-          <View style={styles.cardRow}>
-            <View style={styles.matchNumberContainer}>
+          {/* Skeleton Slider - dots with track */}
+          <View style={styles.skeletonSliderWrapper}>
+            <View style={styles.skeletonDotsRow}>
+              {/* Track line */}
               <Animated.View
                 style={[
-                  styles.skeletonMatchNumber,
+                  styles.skeletonTrackLine,
                   { backgroundColor: theme.colors.border },
                   skeletonAnimatedStyle,
                 ]}
               />
+              {/* Dots */}
+              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                <Animated.View
+                  key={i}
+                  style={[
+                    styles.skeletonDot,
+                    i === 3 && styles.skeletonDotSelected,
+                    { backgroundColor: theme.colors.border },
+                    skeletonAnimatedStyle,
+                  ]}
+                />
+              ))}
             </View>
+          </View>
+
+          {/* Skeleton Card */}
+          <View style={styles.cardRow}>
             <View style={styles.cardContainer}>
               <Animated.View
                 style={[
@@ -422,35 +430,16 @@ export function LobbyPredictionsCTA({
                 </View>
               </View>
             </View>
-            <View style={styles.pointsContainer} />
           </View>
 
-          {/* Skeleton Slider */}
-          <View style={styles.sliderRow}>
-            <Animated.View
-              style={[
-                styles.skeletonChevron,
-                { backgroundColor: theme.colors.border },
-                skeletonAnimatedStyle,
-              ]}
-            />
-            <View style={styles.skeletonProgressRow}>
-              <Animated.View
-                style={[
-                  styles.skeletonProgressTrack,
-                  { backgroundColor: theme.colors.border },
-                  skeletonAnimatedStyle,
-                ]}
-              />
-            </View>
-            <Animated.View
-              style={[
-                styles.skeletonChevron,
-                { backgroundColor: theme.colors.border },
-                skeletonAnimatedStyle,
-              ]}
-            />
-          </View>
+          {/* Skeleton Button */}
+          <Animated.View
+            style={[
+              styles.skeletonButton,
+              { backgroundColor: theme.colors.border },
+              skeletonAnimatedStyle,
+            ]}
+          />
         </View>
       </View>
     );
@@ -954,20 +943,36 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   // Skeleton styles
-  skeletonIcon: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
+  skeletonSliderWrapper: {
+    marginBottom: 12,
+    paddingVertical: 12,
+    alignItems: "center",
   },
-  skeletonHeaderText: {
-    width: 70,
-    height: 12,
-    borderRadius: 4,
+  skeletonDotsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    position: "relative",
   },
-  skeletonMatchNumber: {
-    width: 30,
-    height: 12,
-    borderRadius: 4,
+  skeletonTrackLine: {
+    position: "absolute",
+    left: 7,
+    right: 7,
+    height: 3,
+    borderRadius: 1.5,
+  },
+  skeletonDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  skeletonDotSelected: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 3,
   },
   skeletonLeagueRow: {
     width: "60%",
@@ -1002,24 +1007,9 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 10,
   },
-  skeletonChevron: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  skeletonProgressRow: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  skeletonProgressTrack: {
-    width: "100%",
-    height: 6,
-    borderRadius: 3,
-  },
   skeletonButton: {
     height: 44,
     borderRadius: 12,
-    marginTop: 8,
+    marginTop: 12,
   },
 });
