@@ -139,8 +139,7 @@ export function ScoresInput({
 
   const inputStyle: TextStyle = {
     ...variantStyle.input,
-    borderRadius: isMediumOrLarge ? 8 : 4,
-    borderWidth: 1,
+    borderRadius: isMediumOrLarge ? 12 : 8,
     fontWeight: "700",
   };
 
@@ -160,15 +159,22 @@ export function ScoresInput({
           inputStyle,
           {
             borderColor: homeFocused
-              ? theme.colors.textSecondary
+              ? theme.colors.primary
               : theme.colors.border,
-            borderWidth: homeFocused ? 2 : inputStyle.borderWidth,
-            backgroundColor: "rgba(15, 23, 42, 0.04)",
-            color: theme.colors.textPrimary,
+            borderWidth: 1,
+            backgroundColor: homeFocused
+              ? theme.colors.primary
+              : theme.colors.surface,
+            color: homeFocused ? theme.colors.primaryText : theme.colors.textPrimary,
             opacity: isEditable || isLive ? 1 : 0.5,
             padding: 0,
             textAlignVertical: "center",
             includeFontPadding: false,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: homeFocused ? 0.2 : 0.1,
+            shadowRadius: 3,
+            elevation: 2,
           },
         ]}
         value={toDisplay(prediction.home, isEditable)}
@@ -195,15 +201,22 @@ export function ScoresInput({
           inputStyle,
           {
             borderColor: awayFocused
-              ? theme.colors.textSecondary
+              ? theme.colors.primary
               : theme.colors.border,
-            borderWidth: awayFocused ? 2 : inputStyle.borderWidth,
-            backgroundColor: "rgba(15, 23, 42, 0.04)",
-            color: theme.colors.textPrimary,
+            borderWidth: 1,
+            backgroundColor: awayFocused
+              ? theme.colors.primary
+              : theme.colors.surface,
+            color: awayFocused ? theme.colors.primaryText : theme.colors.textPrimary,
             opacity: isEditable || isLive ? 1 : 0.5,
             padding: 0,
             textAlignVertical: "center",
             includeFontPadding: false,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: awayFocused ? 0.2 : 0.1,
+            shadowRadius: 3,
+            elevation: 2,
           },
         ]}
         value={toDisplay(prediction.away, isEditable)}
