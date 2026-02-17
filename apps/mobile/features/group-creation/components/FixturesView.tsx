@@ -160,6 +160,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           styles.scrollContent,
           (isLoading || leagueGroups.length === 0) && styles.scrollContentLoading,
         ]}
+        stickyHeaderIndices={[1]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -172,10 +173,12 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         }
       >
         {tabs}
-        <DateSlider
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-        />
+        <View style={{ backgroundColor: theme.colors.background }}>
+          <DateSlider
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+          />
+        </View>
         {isLoading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={theme.colors.textSecondary} />
