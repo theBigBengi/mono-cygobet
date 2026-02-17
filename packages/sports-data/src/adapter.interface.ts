@@ -12,6 +12,7 @@ import type {
   OddsDTO,
   SeasonDTO,
   SeasonPreviewDTO,
+  StandingDTO,
   TeamDTO,
 } from "@repo/types/sport-data/common";
 
@@ -77,6 +78,9 @@ export interface ISportsDataAdapter {
   fetchTeamById(id: number): Promise<TeamDTO | null>;
   /** All teams for a specific season. */
   fetchTeamsBySeason?(seasonExternalId: number): Promise<TeamDTO[]>;
+
+  /** League standings for a specific season. */
+  fetchStandingsBySeason?(seasonExternalId: number): Promise<StandingDTO[]>;
 
   /** Returns health/stats for observability (circuit breaker state, semaphore depth, etc.) */
   getStats?(): Record<string, unknown>;

@@ -243,3 +243,43 @@ export type OddsDTO = {
 export type FixtureOddsDTO = FixtureDTO & {
   odds: OddsDTO[];
 };
+
+/** Standing row for a team in a league table */
+export type StandingDTO = {
+  /** Team external ID */
+  teamExternalId: number;
+  /** Team name */
+  teamName: string;
+  /** Team logo URL */
+  teamImagePath: string | null;
+  /** Team short code (e.g., "FCB", "BVB") */
+  teamShortCode: string | null;
+  /** Position in the table */
+  position: number;
+  /** Total points */
+  points: number;
+  /** Matches played */
+  played: number;
+  /** Wins */
+  won: number;
+  /** Draws */
+  drawn: number;
+  /** Losses */
+  lost: number;
+  /** Goals scored */
+  goalsFor: number;
+  /** Goals conceded */
+  goalsAgainst: number;
+  /** Goal difference */
+  goalDifference: number;
+  /** Recent form (e.g., "WWDLW") */
+  form: string | null;
+  /** Season external ID */
+  seasonExternalId: number;
+  /** League external ID */
+  leagueExternalId: number;
+  /** Stage external ID (for cups with multiple stages) */
+  stageExternalId: number | null;
+  /** Group external ID (for group stages) */
+  groupExternalId: number | null;
+};

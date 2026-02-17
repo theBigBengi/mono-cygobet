@@ -19,6 +19,7 @@ import type {
   LeagueDTO,
   SeasonDTO,
   SeasonPreviewDTO,
+  StandingDTO,
   TeamDTO,
 } from "@repo/types/sport-data/common";
 import type {
@@ -27,7 +28,7 @@ import type {
   OddsFetchOptions,
 } from "../../adapter.interface";
 import type { ISportsDataAdapter } from "../../adapter.interface";
-import type { FixtureSportmonks } from "./sportmonks.types";
+import type { FixtureSportmonks, StandingSportmonks } from "./sportmonks.types";
 import { validateConfig } from "./sportmonks.config";
 import type { SportMonksConfig } from "./sportmonks.config";
 import { SportsDataError } from "../../errors";
@@ -39,6 +40,7 @@ import {
   type RequestOpts,
   buildOdds,
   buildFixtures,
+  buildStanding,
 } from "./helpers";
 import type {
   SmCountryRaw,
@@ -942,6 +944,41 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       count: teams.length,
     });
     return teams;
+  }
+
+  /**
+   * Fetches league standings for a specific season.
+   * Uses GET /v3/football/standings/seasons/{seasonId}
+   * Returns sorted standings with team info and statistics.
+   */
+  async fetchStandingsBySeason(seasonExternalId: number): Promise<StandingDTO[]> {
+    const startMs = performance.now();
+    this.logger.info("fetchStandingsBySeason", { seasonExternalId });
+
+    const rows = await this.httpFootball.get<StandingSportmonks>(
+      `standings/seasons/${seasonExternalId}`,
+      {
+        include: [
+          { name: "participant", fields: ["id", "name", "short_code", "image_path"] },
+          { name: "details" },
+        ],
+        perPage: this.config.defaultPerPage,
+        paginate: true,
+      }
+    );
+
+    const standings = rows.map(buildStanding);
+
+    // Sort by position
+    standings.sort((a, b) => a.position - b.position);
+
+    this.logger.info("fetchStandingsBySeason", {
+      seasonExternalId,
+      count: standings.length,
+      durationMs: Math.round(performance.now() - startMs),
+    });
+
+    return standings;
   }
 
   /**

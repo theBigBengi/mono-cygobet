@@ -13,12 +13,14 @@ import type {
   ParticipantsSportmonks,
   PeriodSportmonks,
   ScoreSportmonks,
+  StandingSportmonks,
 } from "./sportmonks.types";
 import {
   OddsDTO,
   FixtureDTO,
   FixtureState,
   FixtureScoreBreakdown,
+  StandingDTO,
 } from "@repo/types/sport-data/common";
 
 // SportMonks has separate APIs for different data types
@@ -585,4 +587,57 @@ export function coerceEpochSeconds(
     return Number(starting_at_timestamp);
   const ms = Date.parse(starting_at ?? "");
   return Number.isFinite(ms) ? Math.floor(ms / 1000) : 0;
+}
+
+/**
+ * SportMonks standing detail type_ids:
+ * 129 = matches played, 130 = wins, 131 = draws, 132 = losses
+ * 133 = goals for, 134 = goals against, 139 = goal difference
+ */
+const STANDING_TYPE_IDS = {
+  PLAYED: 129,
+  WON: 130,
+  DRAWN: 131,
+  LOST: 132,
+  GOALS_FOR: 133,
+  GOALS_AGAINST: 134,
+  GOAL_DIFFERENCE: 139,
+} as const;
+
+/**
+ * Extract a detail value from standings details array by type_id
+ */
+function getDetailValue(
+  details: { type_id: number; value: number }[] | undefined,
+  typeId: number
+): number {
+  return details?.find((d) => d.type_id === typeId)?.value ?? 0;
+}
+
+/**
+ * Build StandingDTO from SportMonks standing response
+ */
+export function buildStanding(s: StandingSportmonks): StandingDTO {
+  const details = s.details;
+
+  return {
+    teamExternalId: s.participant_id,
+    teamName: s.participant?.name ?? "",
+    teamImagePath: s.participant?.image_path ?? null,
+    teamShortCode: s.participant?.short_code ?? null,
+    position: s.position,
+    points: s.points,
+    played: getDetailValue(details, STANDING_TYPE_IDS.PLAYED),
+    won: getDetailValue(details, STANDING_TYPE_IDS.WON),
+    drawn: getDetailValue(details, STANDING_TYPE_IDS.DRAWN),
+    lost: getDetailValue(details, STANDING_TYPE_IDS.LOST),
+    goalsFor: getDetailValue(details, STANDING_TYPE_IDS.GOALS_FOR),
+    goalsAgainst: getDetailValue(details, STANDING_TYPE_IDS.GOALS_AGAINST),
+    goalDifference: getDetailValue(details, STANDING_TYPE_IDS.GOAL_DIFFERENCE),
+    form: null, // Would need separate include for form
+    seasonExternalId: s.season_id,
+    leagueExternalId: s.league_id,
+    stageExternalId: s.stage_id ?? null,
+    groupExternalId: s.group_id ?? null,
+  };
 }
