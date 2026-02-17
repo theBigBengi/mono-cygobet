@@ -51,20 +51,20 @@ type Runner = (fastify: FastifyInstance, opts: JobRunOpts) => Promise<unknown>;
  */
 const RUNNERS: Record<string, Runner> = {
   [UPCOMING_FIXTURES_JOB.key]: async (fastify, opts) => {
-    const { runUpcomingFixturesJob } = await import("./upcoming-fixtures.job");
+    const { runUpcomingFixturesJob } = await import("./cron/upcoming-fixtures.job");
     return runUpcomingFixturesJob(fastify, opts);
   },
   [LIVE_FIXTURES_JOB.key]: async (fastify, opts) => {
-    const { runLiveFixturesJob } = await import("./live-fixtures.job");
+    const { runLiveFixturesJob } = await import("./cron/live-fixtures.job");
     return runLiveFixturesJob(fastify, opts);
   },
   [FINISHED_FIXTURES_JOB.key]: async (fastify, opts) => {
-    const { runFinishedFixturesJob } = await import("./finished-fixtures.job");
+    const { runFinishedFixturesJob } = await import("./cron/finished-fixtures.job");
     return runFinishedFixturesJob(fastify, opts);
   },
   [UPDATE_PREMATCH_ODDS_JOB.key]: async (fastify, opts) => {
     const { runUpdatePrematchOddsJob } =
-      await import("./update-prematch-odds.job");
+      await import("./cron/update-prematch-odds.job");
     return runUpdatePrematchOddsJob(fastify, opts);
   },
   [/* cleanup-expired-sessions */ "cleanup-expired-sessions"]: async (
@@ -72,22 +72,22 @@ const RUNNERS: Record<string, Runner> = {
     opts
   ) => {
     const { runCleanupExpiredSessionsJob } =
-      await import("./cleanup-expired-sessions.job");
+      await import("./cron/cleanup-expired-sessions.job");
     return runCleanupExpiredSessionsJob(fastify, opts);
   },
   [SYNC_GROUP_FIXTURES_JOB.key]: async (fastify, opts) => {
     const { runSyncGroupFixturesJob } =
-      await import("./sync-group-fixtures.job");
+      await import("./cron/sync-group-fixtures.job");
     return runSyncGroupFixturesJob(fastify, opts);
   },
   [PREDICTION_REMINDERS_JOB.key]: async (fastify, opts) => {
     const { runPredictionRemindersJob } =
-      await import("./prediction-reminders.job");
+      await import("./cron/prediction-reminders.job");
     return runPredictionRemindersJob(fastify, opts);
   },
   [RECOVERY_OVERDUE_FIXTURES_JOB.key]: async (fastify, opts) => {
     const { runRecoveryOverdueFixturesJob } =
-      await import("./recovery-overdue-fixtures.job");
+      await import("./cron/recovery-overdue-fixtures.job");
     return runRecoveryOverdueFixturesJob(fastify, opts);
   },
 };

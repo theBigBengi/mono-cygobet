@@ -1,10 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@repo/db";
-import { JobRunOpts } from "../types/jobs";
-import { PREDICTION_REMINDERS_JOB } from "./jobs.definitions";
-import { getJobRowOrThrow } from "./jobs.db";
-import { getMeta, clampInt } from "./jobs.meta";
-import { runJob } from "./run-job";
+import { JobRunOpts } from "../../types/jobs";
+import { PREDICTION_REMINDERS_JOB } from "../jobs.definitions";
+import { getJobRowOrThrow } from "../jobs.db";
+import { getMeta, clampInt } from "../jobs.meta";
+import { runJob } from "../run-job";
 
 const DEFAULT_REMINDER_WINDOW_HOURS = 2;
 const EVENT_TYPE = "prediction_reminder" as const;

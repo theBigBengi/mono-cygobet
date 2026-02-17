@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useJobsFromDb } from "@/hooks/use-jobs";
 import { jobsService } from "@/services/jobs.service";
 import type { AdminJobsListResponse } from "@repo/types";
@@ -160,7 +161,9 @@ export default function JobsListPage() {
               return (
                 <Card
                   key={j.key}
-                  className="flex flex-col cursor-default hover:bg-muted/50 transition-colors"
+                  className={`flex flex-col cursor-default hover:bg-muted/50 transition-colors ${
+                    !j.enabled ? "opacity-60" : ""
+                  }`}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-3">
@@ -170,6 +173,16 @@ export default function JobsListPage() {
                           {titleCaseWords(jobNameFromKey(j.key))}
                         </CardTitle>
                       </div>
+                      <Badge
+                        variant={j.enabled ? "default" : "secondary"}
+                        className={`text-[10px] px-1.5 py-0 shrink-0 ${
+                          j.enabled
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                        }`}
+                      >
+                        {j.enabled ? "On" : "Off"}
+                      </Badge>
                     </div>
                     <CardDescription className="font-mono text-[11px] truncate">
                       {formatScheduleHuman(j.scheduleCron ?? null)}

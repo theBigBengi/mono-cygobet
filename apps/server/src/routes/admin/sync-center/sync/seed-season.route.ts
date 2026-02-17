@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { RunTrigger } from "@repo/db";
 import { startSeedBatch } from "../../../../etl/seeds/seed.utils";
-import { processSeedSeason } from "../../../../jobs/seed-season.job";
+import { processSeedSeason } from "../../../../jobs/tasks/seed-season.job";
 import type {
   AdminSeedSeasonRequest,
   AdminSeedSeasonResponse,

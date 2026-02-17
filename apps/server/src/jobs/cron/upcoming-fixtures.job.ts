@@ -1,14 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import { addDays, format } from "date-fns";
 import { RunStatus } from "@repo/db";
-import { adapter } from "../utils/adapter";
-import { syncFixtures } from "../etl/sync/sync.fixtures";
-import { finishSeedBatch } from "../etl/seeds/seed.utils";
-import { JobRunOpts, type StandardJobRunStats } from "../types/jobs";
-import { UPCOMING_FIXTURES_JOB } from "./jobs.definitions";
-import { createBatchForJob, getJobRowOrThrow } from "./jobs.db";
-import { clampInt, getMeta, isUpcomingFixturesJobMeta } from "./jobs.meta";
-import { runJob } from "./run-job";
+import { adapter } from "../../utils/adapter";
+import { syncFixtures } from "../../etl/sync/sync.fixtures";
+import { finishSeedBatch } from "../../etl/seeds/seed.utils";
+import { JobRunOpts, type StandardJobRunStats } from "../../types/jobs";
+import { UPCOMING_FIXTURES_JOB } from "../jobs.definitions";
+import { createBatchForJob, getJobRowOrThrow } from "../jobs.db";
+import { clampInt, getMeta, isUpcomingFixturesJobMeta } from "../jobs.meta";
+import { runJob } from "../run-job";
 
 // Days ahead to fetch fixtures for
 const DAYS_AHEAD = 3;

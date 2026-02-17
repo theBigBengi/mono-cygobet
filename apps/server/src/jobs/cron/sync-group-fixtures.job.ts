@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import { JobRunOpts } from "../types/jobs";
-import { SYNC_GROUP_FIXTURES_JOB } from "./jobs.definitions";
-import { getJobRowOrThrow } from "./jobs.db";
-import { runJob } from "./run-job";
-import { syncNewFixturesToActiveGroups } from "../services/api/groups/service/fixture-sync";
+import { JobRunOpts } from "../../types/jobs";
+import { SYNC_GROUP_FIXTURES_JOB } from "../jobs.definitions";
+import { getJobRowOrThrow } from "../jobs.db";
+import { runJob } from "../run-job";
+import { syncNewFixturesToActiveGroups } from "../../services/api/groups/service/fixture-sync";
 
 /**
  * sync-group-fixtures job

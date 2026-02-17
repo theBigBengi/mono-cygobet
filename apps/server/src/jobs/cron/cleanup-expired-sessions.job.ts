@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
-import type { JobRunOpts } from "../types/jobs";
-import { CLEANUP_EXPIRED_SESSIONS_JOB } from "./jobs.definitions";
-import { runJob } from "./run-job";
+import type { JobRunOpts } from "../../types/jobs";
+import { CLEANUP_EXPIRED_SESSIONS_JOB } from "../jobs.definitions";
+import { runJob } from "../run-job";
 import { prisma } from "@repo/db";
 
 export const cleanupExpiredSessionsJob = CLEANUP_EXPIRED_SESSIONS_JOB;

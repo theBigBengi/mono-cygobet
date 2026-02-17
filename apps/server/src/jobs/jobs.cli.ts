@@ -135,7 +135,7 @@ async function main() {
         switch (jobKey) {
           case "upsert-upcoming-fixtures": {
             const { runUpcomingFixturesJob } =
-              await import("./upcoming-fixtures.job");
+              await import("./cron/upcoming-fixtures.job");
             const runOpts: JobRunOpts & { daysAhead?: number } = {
               ...base,
               signal,
@@ -144,12 +144,12 @@ async function main() {
             return runUpcomingFixturesJob(fastify, runOpts);
           }
           case "upsert-live-fixtures": {
-            const { runLiveFixturesJob } = await import("./live-fixtures.job");
+            const { runLiveFixturesJob } = await import("./cron/live-fixtures.job");
             return runLiveFixturesJob(fastify, { ...base, signal });
           }
           case "finished-fixtures": {
             const { runFinishedFixturesJob } =
-              await import("./finished-fixtures.job");
+              await import("./cron/finished-fixtures.job");
             const runOpts: JobRunOpts & { maxLiveAgeHours?: number } = {
               ...base,
               signal,
@@ -161,7 +161,7 @@ async function main() {
           }
           case "update-prematch-odds": {
             const { runUpdatePrematchOddsJob } =
-              await import("./update-prematch-odds.job");
+              await import("./cron/update-prematch-odds.job");
             const runOpts: JobRunOpts & {
               daysAhead?: number;
               filters?: string;
@@ -175,7 +175,7 @@ async function main() {
           }
           case "cleanup-expired-sessions": {
             const { runCleanupExpiredSessionsJob } = await import(
-              "./cleanup-expired-sessions.job"
+              "./cron/cleanup-expired-sessions.job"
             );
             return runCleanupExpiredSessionsJob(fastify, { ...base, signal });
           }

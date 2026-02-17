@@ -1,16 +1,16 @@
 import type { FastifyInstance } from "fastify";
 import { addDays, format } from "date-fns";
 import { RunStatus } from "@repo/db";
-import { adapter } from "../utils/adapter";
+import { adapter } from "../../utils/adapter";
 import type { OddsDTO } from "@repo/types/sport-data/common";
-import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
-import { syncOdds } from "../etl/sync/sync.odds";
-import { finishSeedBatch } from "../etl/seeds/seed.utils";
-import { UPDATE_PREMATCH_ODDS_JOB } from "./jobs.definitions";
-import { createBatchForJob, getJobRowOrThrow } from "./jobs.db";
-import { getMeta } from "./jobs.meta";
+import type { JobRunOpts, StandardJobRunStats } from "../../types/jobs";
+import { syncOdds } from "../../etl/sync/sync.odds";
+import { finishSeedBatch } from "../../etl/seeds/seed.utils";
+import { UPDATE_PREMATCH_ODDS_JOB } from "../jobs.definitions";
+import { createBatchForJob, getJobRowOrThrow } from "../jobs.db";
+import { getMeta } from "../jobs.meta";
 import { UpdatePrematchOddsJobMeta } from "@repo/types";
-import { runJob } from "./run-job";
+import { runJob } from "../run-job";
 
 /**
  * update-prematch-odds job

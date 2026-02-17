@@ -25,8 +25,11 @@ import {
   Eye,
   RefreshCw,
   TimerOff,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { useDashboard } from "@/hooks/use-dashboard";
+import { useAvailability } from "@/hooks/use-availability";
 import { StatusBadge } from "@/components/table/status-badge";
 
 type StatusCardVariant = "gray" | "green" | "yellow" | "red";
@@ -86,6 +89,59 @@ function StatusCard({
   );
 }
 
+function NewDataAlert() {
+  const { data, isLoading } = useAvailability();
+
+  if (isLoading) return null;
+
+  const summary = data?.data?.summary;
+  const newSeasons = summary?.new ?? 0;
+  const fixturesAvailable = summary?.seasonsWithFixturesAvailable ?? 0;
+
+  if (newSeasons === 0 && fixturesAvailable === 0) return null;
+
+  return (
+    <Link to="/sync-center">
+      <Card className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800 hover:shadow-md transition-shadow cursor-pointer">
+        <CardContent className="py-4 px-4 sm:px-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/50">
+                <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-amber-900 dark:text-amber-100">
+                  New Data Available
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  {newSeasons > 0 && (
+                    <span>
+                      {newSeasons} new season{newSeasons !== 1 ? "s" : ""}{" "}
+                    </span>
+                  )}
+                  {newSeasons > 0 && fixturesAvailable > 0 && "• "}
+                  {fixturesAvailable > 0 && (
+                    <span>
+                      {fixturesAvailable} season
+                      {fixturesAvailable !== 1 ? "s" : ""} with fixtures to sync
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+              <span className="text-sm font-medium hidden sm:inline">
+                Go to Sync Center
+              </span>
+              <ArrowRight className="h-5 w-5" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 export default function DashboardPage() {
   const { data, isLoading, isError, error, refetch, isFetching } =
     useDashboard();
@@ -120,6 +176,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
+        {/* New Data Alert */}
+        <NewDataAlert />
+
         {/* Row 1 – Status Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {isLoading ? (

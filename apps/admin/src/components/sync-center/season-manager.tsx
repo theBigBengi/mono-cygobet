@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -35,7 +36,7 @@ import { SeedSeasonDialog } from "./seed-season-dialog";
 import { SectionTooltip } from "./section-tooltip";
 import { fixturesService } from "@/services/fixtures.service";
 import { toast } from "sonner";
-import { Calendar, RefreshCw, AlertCircle, Loader2 } from "lucide-react";
+import { Calendar, RefreshCw, AlertCircle, Loader2, Search, X } from "lucide-react";
 import type { AvailableSeason } from "@repo/types";
 
 function formatSeasonDates(startDate?: string, endDate?: string): string {
@@ -59,6 +60,7 @@ export function SeasonManager() {
   const { name: provider } = useProvider();
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSeason, setSelectedSeason] = useState<AvailableSeason | null>(
     null
   );
@@ -85,8 +87,20 @@ export function SeasonManager() {
   const leagues = [...new Set(seasons.map((s) => s.league.name))].sort();
 
   const filteredSeasons = seasons.filter((s) => {
+    // Text search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        s.league.name.toLowerCase().includes(query) ||
+        s.league.country.toLowerCase().includes(query) ||
+        s.name.toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+    }
+
+    // League filter
     if (leagueFilter !== "all" && s.league.name !== leagueFilter) return false;
 
+    // Status filter
     switch (statusFilter) {
       case "active":
         return !s.isFinished && !s.isPending;
@@ -148,7 +162,26 @@ Filter to see only what you need.`}
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-4">
+          <div className="flex flex-wrap gap-4 mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search league, country, season..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9 w-[280px]"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
             <Select
               value={statusFilter}
               onValueChange={(v: StatusFilterValue) => setStatusFilter(v)}

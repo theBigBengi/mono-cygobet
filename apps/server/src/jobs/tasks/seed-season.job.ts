@@ -1,11 +1,13 @@
 import { prisma } from "@repo/db";
 import { RunStatus, RunTrigger } from "@repo/db";
-import { adapter } from "../utils/adapter";
-import { startSeedBatch, finishSeedBatch } from "../etl/seeds/seed.utils";
-import { seedTeams } from "../etl/seeds/seed.teams";
-import { seedFixtures } from "../etl/seeds/seed.fixtures";
-import { availabilityService } from "../services/availability.service";
-import { getLogger } from "../logger";
+import { adapter } from "../../utils/adapter";
+import { startSeedBatch, finishSeedBatch } from "../../etl/seeds/seed.utils";
+import { seedTeams } from "../../etl/seeds/seed.teams";
+import { seedFixtures } from "../../etl/seeds/seed.fixtures";
+import { seedCountries } from "../../etl/seeds/seed.countries";
+import { seedLeagues } from "../../etl/seeds/seed.leagues";
+import { availabilityService } from "../../services/availability.service";
+import { getLogger } from "../../logger";
 
 const log = getLogger("SeedSeason");
 
@@ -83,14 +85,65 @@ export async function processSeedSeason(
         );
       }
 
-      const league = await prisma.leagues.findUnique({
+      let league = await prisma.leagues.findUnique({
         where: { externalId: BigInt(providerSeason.leagueExternalId) },
       });
 
+      // Auto-create league (and country) if missing
       if (!league) {
-        throw new Error(
-          `League ${providerSeason.leagueExternalId} not found in DB. Sync leagues first.`
+        log.info(
+          { leagueExternalId: providerSeason.leagueExternalId },
+          "League not found in DB, fetching from provider..."
         );
+
+        const providerLeague = await adapter.fetchLeagueById(
+          Number(providerSeason.leagueExternalId)
+        );
+        if (!providerLeague) {
+          throw new Error(
+            `League ${providerSeason.leagueExternalId} not found in provider`
+          );
+        }
+
+        // Check if country exists, create if not
+        if (providerLeague.countryExternalId) {
+          const existingCountry = await prisma.countries.findUnique({
+            where: { externalId: BigInt(providerLeague.countryExternalId) },
+          });
+
+          if (!existingCountry) {
+            log.info(
+              { countryExternalId: providerLeague.countryExternalId },
+              "Country not found in DB, fetching from provider..."
+            );
+
+            const providerCountry = await adapter.fetchCountryById(
+              Number(providerLeague.countryExternalId)
+            );
+            if (providerCountry) {
+              await seedCountries([providerCountry], { batchId, dryRun });
+              log.info(
+                { countryName: providerCountry.name },
+                "Country auto-created"
+              );
+            }
+          }
+        }
+
+        // Now create the league
+        await seedLeagues([providerLeague], { batchId, dryRun });
+        log.info({ leagueName: providerLeague.name }, "League auto-created");
+
+        // Re-fetch the league
+        league = await prisma.leagues.findUnique({
+          where: { externalId: BigInt(providerSeason.leagueExternalId) },
+        });
+
+        if (!league) {
+          throw new Error(
+            `Failed to create league ${providerSeason.leagueExternalId}`
+          );
+        }
       }
 
       if (!dryRun) {

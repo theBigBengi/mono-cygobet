@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAvailability } from "@/hooks/use-availability";
 import { useProvider } from "@/contexts/provider-context";
@@ -9,6 +10,8 @@ import {
   AlertCircle,
   CalendarDays,
   Clock,
+  Sparkles,
+  Download,
 } from "lucide-react";
 
 function StatItem({
@@ -81,22 +84,42 @@ Last checked: When this page loaded`}
           />
         </div>
 
-        {hasNew && (
-          <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-            <AlertCircle className="h-5 w-5 text-yellow-600" />
-            <span className="text-sm">
-              <strong>{summary?.new}</strong> new seasons available
-            </span>
-          </div>
-        )}
-
-        {(summary?.seasonsWithFixturesAvailable ?? 0) > 0 && (
-          <div className="flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg mt-2">
-            <AlertCircle className="h-5 w-5 text-orange-600" />
-            <span className="text-sm">
-              <strong>{summary?.seasonsWithFixturesAvailable}</strong> seasons
-              have fixtures available for sync
-            </span>
+        {(hasNew || (summary?.seasonsWithFixturesAvailable ?? 0) > 0) && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <span className="font-semibold text-amber-900 dark:text-amber-100">
+                New Data Available from {provider}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {hasNew && (
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border-amber-200 dark:border-amber-700">
+                    <Download className="h-3 w-3 mr-1" />
+                    {summary?.new} new season{summary?.new !== 1 ? "s" : ""}
+                  </Badge>
+                  <span className="text-sm text-amber-700 dark:text-amber-300">
+                    ready to seed
+                  </span>
+                </div>
+              )}
+              {(summary?.seasonsWithFixturesAvailable ?? 0) > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-700">
+                    <CalendarDays className="h-3 w-3 mr-1" />
+                    {summary?.seasonsWithFixturesAvailable} season
+                    {summary?.seasonsWithFixturesAvailable !== 1 ? "s" : ""}
+                  </Badge>
+                  <span className="text-sm text-orange-700 dark:text-orange-300">
+                    with fixtures available for sync
+                  </span>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-3">
+              Scroll down to the Seasons table to seed or sync
+            </p>
           </div>
         )}
 

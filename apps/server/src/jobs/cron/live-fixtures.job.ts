@@ -2,14 +2,14 @@ import type { FastifyInstance } from "fastify";
 import { RunStatus, prisma } from "@repo/db";
 import type { FixtureState } from "@repo/db";
 import { NOT_STARTED_STATES, LIVE_STATES } from "@repo/utils";
-import { adapter } from "../utils/adapter";
-import { syncFixtures } from "../etl/sync/sync.fixtures";
-import { finishSeedBatch } from "../etl/seeds/seed.utils";
-import { emitFixtureLiveEvents } from "../services/api/groups/service/chat-events";
-import type { JobRunOpts, StandardJobRunStats } from "../types/jobs";
-import { LIVE_FIXTURES_JOB } from "./jobs.definitions";
-import { createBatchForJob } from "./jobs.db";
-import { runJob } from "./run-job";
+import { adapter } from "../../utils/adapter";
+import { syncFixtures } from "../../etl/sync/sync.fixtures";
+import { finishSeedBatch } from "../../etl/seeds/seed.utils";
+import { emitFixtureLiveEvents } from "../../services/api/groups/service/chat-events";
+import type { JobRunOpts, StandardJobRunStats } from "../../types/jobs";
+import { LIVE_FIXTURES_JOB } from "../jobs.definitions";
+import { createBatchForJob } from "../jobs.db";
+import { runJob } from "../run-job";
 
 /**
  * live-fixtures job
