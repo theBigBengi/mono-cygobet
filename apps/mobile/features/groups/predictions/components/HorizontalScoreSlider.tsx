@@ -17,7 +17,7 @@ import { useTheme } from "@/lib/theme";
 import { getContrastTextColor } from "../utils/color-helpers";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const TRACK_PADDING = 0;
+const TRACK_PADDING = 12;
 const TRACK_WIDTH = SCREEN_WIDTH - TRACK_PADDING * 2;
 const CELL_WIDTH = TRACK_WIDTH / 11;
 const THUMB_SIZE = 52;
@@ -89,11 +89,13 @@ function AnimatedTeamLogo({
   cellIndex,
   imagePath,
   teamName,
+  position,
 }: {
   tabX: SharedValue<number>;
   cellIndex: number;
   imagePath?: string | null;
   teamName?: string;
+  position: "start" | "end";
 }) {
   const animatedStyle = useAnimatedStyle(() => {
     const distance = Math.abs(tabX.value - cellIndex * CELL_WIDTH) / CELL_WIDTH;
@@ -109,7 +111,13 @@ function AnimatedTeamLogo({
   });
 
   return (
-    <Animated.View style={[styles.cell, animatedStyle]}>
+    <Animated.View
+      style={[
+        styles.cell,
+        animatedStyle,
+        position === "start" ? styles.cellStart : styles.cellEnd,
+      ]}
+    >
       <TeamLogo imagePath={imagePath} teamName={teamName ?? ""} size={32} />
     </Animated.View>
   );
@@ -234,6 +242,7 @@ export function HorizontalScoreSlider({
               cellIndex={10}
               imagePath={teamImagePath}
               teamName={teamName}
+              position="end"
             />
           </>
         ) : (
@@ -243,6 +252,7 @@ export function HorizontalScoreSlider({
               cellIndex={0}
               imagePath={teamImagePath}
               teamName={teamName}
+              position="start"
             />
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
               <AnimatedDigit
@@ -286,7 +296,7 @@ export function HorizontalScoreSlider({
 const styles = StyleSheet.create({
   container: {
     height: TRACK_HEIGHT,
-    borderRadius: TRACK_HEIGHT / 2,
+    borderRadius: 14,
     marginHorizontal: TRACK_PADDING,
     marginVertical: 8,
     position: "relative",
@@ -309,6 +319,12 @@ const styles = StyleSheet.create({
     width: CELL_WIDTH,
     alignItems: "center",
     justifyContent: "center",
+  },
+  cellStart: {
+    paddingStart: 6,
+  },
+  cellEnd: {
+    paddingEnd: 6,
   },
   digitText: {
     fontSize: 16,
