@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -37,7 +37,7 @@ import { SectionTooltip } from "./section-tooltip";
 import { fixturesService } from "@/services/fixtures.service";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, RefreshCw, AlertCircle, Loader2, Search, X, History } from "lucide-react";
+import { Calendar, RefreshCw, AlertCircle, Loader2, Search, X, History, ChevronLeft, ChevronRight } from "lucide-react";
 import type { AvailableSeason } from "@repo/types";
 
 function formatSeasonDates(startDate?: string, endDate?: string): string {
@@ -67,6 +67,12 @@ export function SeasonManager() {
     null
   );
   const [syncingSeasonId, setSyncingSeasonId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, leagueFilter, includeHistorical]);
 
   const handleSyncFixtures = async (season: AvailableSeason) => {
     if (season.dbId == null) return;
@@ -116,6 +122,14 @@ export function SeasonManager() {
         return true;
     }
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredSeasons.length / pageSize));
+  const paginatedSeasons = filteredSeasons.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+  const rangeStart = filteredSeasons.length === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize, filteredSeasons.length);
 
   return (
     <>
@@ -288,7 +302,7 @@ Filter to see only what you need.`}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSeasons.map((season) => (
+                {paginatedSeasons.map((season) => (
                   <TableRow key={season.externalId}>
                     <TableCell>
                       <div className="text-xs font-mono">
@@ -438,6 +452,55 @@ From: ${provider} /schedules/seasons/{id} endpoint`}
                 ))}
               </TableBody>
             </Table>
+
+            {filteredSeasons.length > 0 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    {rangeStart}-{rangeEnd} of {filteredSeasons.length}
+                  </span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(v) => {
+                      setPageSize(Number(v));
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-[110px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="25">25 / page</SelectItem>
+                      <SelectItem value="50">50 / page</SelectItem>
+                      <SelectItem value="100">100 / page</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Page {page} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           )}
         </CardContent>
       </Card>
