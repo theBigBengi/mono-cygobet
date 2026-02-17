@@ -310,7 +310,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                 {/* Members */}
                 <View style={[styles.hudCell, { backgroundColor: theme.colors.surface }]}>
                   <Ionicons name="people" size={16} color={theme.colors.textSecondary} />
-                  <Text style={[styles.hudValue, { color: theme.colors.textPrimary }]}>
+                  <Text style={[styles.hudValue, { color: theme.colors.textSecondary }]}>
                     {memberCount}
                   </Text>
                 </View>
@@ -318,7 +318,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                 {/* Rank */}
                 <View style={[styles.hudCell, { backgroundColor: theme.colors.surface }]}>
                   <Ionicons name="trophy" size={16} color={theme.colors.textSecondary} />
-                  <Text style={[styles.hudValue, { color: theme.colors.textPrimary }]}>
+                  <Text style={[styles.hudValue, { color: theme.colors.textSecondary }]}>
                     {userRank != null ? `#${userRank}` : "—"}
                   </Text>
                 </View>
@@ -355,7 +355,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                           ? "#10B981"
                           : isUrgentPrediction
                             ? "#EF4444"
-                            : theme.colors.textPrimary,
+                            : theme.colors.textSecondary,
                       },
                     ]}
                   >
@@ -380,7 +380,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                   <Text
                     style={[
                       styles.hudValue,
-                      { color: liveCount > 0 ? "#EF4444" : theme.colors.textPrimary },
+                      { color: liveCount > 0 ? "#EF4444" : theme.colors.textSecondary },
                     ]}
                   >
                     {completedGames}/{totalFixtures}
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -14,
     paddingHorizontal: 14,
     paddingTop: 14,
-    paddingBottom: 2,
+    paddingBottom: 12,
     borderTopWidth: 1,
   },
   nextGameInfo: {
@@ -602,11 +602,8 @@ const styles = StyleSheet.create({
   statsHud: {
     flexDirection: "row",
     gap: 6,
-    marginTop: 12,
     marginHorizontal: -14,
     paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 10,
     borderTopWidth: 1,
   },
   hudCell: {

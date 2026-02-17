@@ -260,21 +260,15 @@ function GroupsContent() {
             </AppText>
             <Pressable
               onPress={handleOpenInfo}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={({ pressed }) => [
                 styles.infoButton,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
-                  borderBottomColor: pressed
-                    ? theme.colors.border
-                    : theme.colors.textSecondary + "40",
-                  transform: [{ scale: pressed ? 0.9 : 1 }],
-                },
+                pressed && { opacity: 0.5 },
               ]}
             >
               <Ionicons
                 name="information-circle-outline"
-                size={20}
+                size={22}
                 color={theme.colors.textSecondary}
               />
             </Pressable>
@@ -414,18 +408,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   infoButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderBottomWidth: 3,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    padding: 4,
   },
   headerLinks: {
     flexDirection: "row",
