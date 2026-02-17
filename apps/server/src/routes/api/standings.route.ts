@@ -1,11 +1,15 @@
-// src/routes/admin/provider/standings.route.ts
+// src/routes/api/standings.route.ts
+// Routes for league standings (read-only).
+
 import { FastifyPluginAsync } from "fastify";
-import { adapter, currentProviderLabel } from "../../../../utils/adapter";
-import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
+import { adapter } from "../../utils/adapter";
+
+interface StandingsParams {
+  seasonId: string;
+}
 
 interface StandingsResponse {
-  status: "success" | "error";
-  data: Array<{
+  standings: Array<{
     position: number;
     teamExternalId: number;
     teamName: string;
@@ -20,18 +24,19 @@ interface StandingsResponse {
     goalsAgainst: number;
     goalDifference: number;
   }>;
-  message: string;
-  provider: string;
 }
 
-const adminStandingsProviderRoutes: FastifyPluginAsync = async (fastify) => {
-  // GET /admin/provider/standings/season/:seasonId - Get standings from sports-data provider by season
-  fastify.get<{
-    Params: { seasonId: string };
-    Reply: StandingsResponse;
-  }>(
+const standingsRoutes: FastifyPluginAsync = async (fastify) => {
+  /**
+   * GET /api/standings/season/:seasonId
+   *
+   * Returns league standings for a specific season.
+   * Fetches directly from provider (always fresh data).
+   */
+  fastify.get<{ Params: StandingsParams; Reply: StandingsResponse }>(
     "/standings/season/:seasonId",
     {
+      preHandler: fastify.userAuth.requireOnboardingComplete,
       schema: {
         params: {
           type: "object",
@@ -40,38 +45,24 @@ const adminStandingsProviderRoutes: FastifyPluginAsync = async (fastify) => {
           },
           required: ["seasonId"],
         },
-        response: {
-          200: providerResponseSchema,
-        },
       },
     },
-    async (req, reply): Promise<StandingsResponse> => {
+    async (req, reply) => {
       const { seasonId } = req.params;
-
       const seasonIdNum = Number(seasonId);
+
       if (isNaN(seasonIdNum)) {
-        return reply.code(400).send({
-          status: "error",
-          data: [],
-          message: `Invalid season ID: ${seasonId}`,
-          provider: currentProviderLabel,
-        });
+        return reply.code(400).send({ standings: [] });
       }
 
       if (!adapter.fetchStandingsBySeason) {
-        return reply.code(501).send({
-          status: "error",
-          data: [],
-          message: "Standings not supported by current provider",
-          provider: currentProviderLabel,
-        });
+        return reply.code(501).send({ standings: [] });
       }
 
       const standings = await adapter.fetchStandingsBySeason(seasonIdNum);
 
       return reply.send({
-        status: "success",
-        data: standings.map((s) => ({
+        standings: standings.map((s) => ({
           position: s.position,
           teamExternalId: s.teamExternalId,
           teamName: s.teamName,
@@ -86,11 +77,9 @@ const adminStandingsProviderRoutes: FastifyPluginAsync = async (fastify) => {
           goalsAgainst: s.goalsAgainst,
           goalDifference: s.goalDifference,
         })),
-        message: `Standings fetched from provider successfully for season ${seasonId}`,
-        provider: currentProviderLabel,
       });
     }
   );
 };
 
-export default adminStandingsProviderRoutes;
+export default standingsRoutes;
