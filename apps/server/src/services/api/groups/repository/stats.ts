@@ -374,6 +374,7 @@ export async function findGroupsStatsBatch(
 
     // Parse prediction string "home:away"
     const [homeStr, awayStr] = (pred.prediction ?? "").split(":");
+    if (!homeStr || !awayStr) return;
     const home = parseInt(homeStr, 10);
     const away = parseInt(awayStr, 10);
     if (isNaN(home) || isNaN(away)) return;

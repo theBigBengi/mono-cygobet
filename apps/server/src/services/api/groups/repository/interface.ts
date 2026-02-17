@@ -143,6 +143,7 @@ export interface GroupsRepository {
             id: number;
             name: string;
             imagePath: string | null;
+            iso2: string | null;
           } | null;
           seasons: Array<{ id: number }>;
         } | null;
@@ -264,6 +265,9 @@ export interface GroupsRepository {
     todayGamesCountByGroupId: Map<number, number>;
     todayUnpredictedCountByGroupId: Map<number, number>;
     liveGamesCountByGroupId: Map<number, number>;
+    missedPredictionsCountByGroupId: Map<number, number>;
+    userRankByGroupId: Map<number, number>;
+    userPredictionsByGroupFixture: Map<string, any>;
   }>;
 
   // User operations (re-exported from users/repository)
