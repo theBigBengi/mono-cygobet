@@ -308,6 +308,7 @@ export type LeagueGroup = {
   leagueName: string;
   leagueImagePath: string | null;
   countryName: string | null;
+  countryIso2: string | null;
   fixtures: FixtureItem[];
 };
 
@@ -330,6 +331,7 @@ export function groupFixturesByLeague(fixtures: FixtureItem[]): LeagueGroup[] {
         leagueName,
         leagueImagePath: fixture.league?.imagePath ?? null,
         countryName: fixture.country?.name ?? null,
+        countryIso2: fixture.country?.iso2 ?? null,
         fixtures: [],
       };
     }

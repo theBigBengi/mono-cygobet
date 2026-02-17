@@ -208,16 +208,8 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
                       style={styles.leagueName}
                     >
                       {group.leagueName}
+                      {group.countryIso2 && ` (${group.countryIso2.toUpperCase()})`}
                     </AppText>
-                    {group.countryName && (
-                      <AppText
-                        variant="caption"
-                        color="secondary"
-                        style={styles.countryName}
-                      >
-                        {group.countryName}
-                      </AppText>
-                    )}
                   </View>
                   <LeagueAddRemoveButton fixtures={group.fixtures} />
                 </View>
@@ -311,10 +303,6 @@ const styles = StyleSheet.create({
   leagueName: {
     fontSize: 13,
     fontWeight: "500",
-  },
-  countryName: {
-    fontSize: 11,
-    marginTop: 2,
   },
   addAllButton: {
     flexDirection: "row",
