@@ -39,6 +39,7 @@ export interface ServerToClientEvents {
   "invite:received": (payload: InviteReceivedPayload) => void;
   "invite:cancelled": (payload: { inviteId: number }) => void;
   "invite:accepted": (payload: {
+    groupId: number;
     userId: number;
     username: string | null;
   }) => void;

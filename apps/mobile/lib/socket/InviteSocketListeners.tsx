@@ -23,12 +23,17 @@ export function InviteSocketListeners() {
     };
 
     const onInviteAccepted = (payload: {
+      groupId?: number;
       userId: number;
       username: string | null;
     }) => {
       queryClient.invalidateQueries({ queryKey: invitesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: groupsKeys.details() });
+      // Also refresh members list if we know the group
+      if (payload.groupId) {
+        queryClient.invalidateQueries({ queryKey: groupsKeys.members(payload.groupId) });
+      }
     };
 
     socket.on("invite:received", onInviteReceived);

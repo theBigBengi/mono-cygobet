@@ -11,6 +11,7 @@ import {
   FlatList,
   ListRenderItem,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
@@ -77,6 +78,13 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           sheetRef.current?.dismiss();
           setSelectedUser(null);
+        },
+        onError: (error) => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert(
+            t("errors.error"),
+            error.message || t("errors.somethingWentWrong")
+          );
         },
       }
     );

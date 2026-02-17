@@ -268,6 +268,7 @@ export async function respondToInvite(
 
   if (io) {
     io.to(`group:${groupId}`).emit("invite:accepted", {
+      groupId,
       userId,
       username: invitee?.username ?? null,
     });
