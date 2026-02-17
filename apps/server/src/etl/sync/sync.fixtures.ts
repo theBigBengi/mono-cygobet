@@ -46,6 +46,8 @@ type ExistingRow = {
   penAway: number | null;
   stage: string | null;
   round: string | null;
+  leg: string | null;
+  aggregateId: bigint | null;
 };
 
 function isSameFixture(
@@ -69,6 +71,8 @@ function isSameFixture(
     penAway: number | null;
     stage: string | null;
     round: string | null;
+    leg: string | null;
+    aggregateId: bigint | null;
   }
 ): boolean {
   return (
@@ -89,7 +93,9 @@ function isSameFixture(
     existing.penHome === payload.penHome &&
     existing.penAway === payload.penAway &&
     existing.stage === payload.stage &&
-    existing.round === payload.round
+    existing.round === payload.round &&
+    existing.leg === payload.leg &&
+    existing.aggregateId === payload.aggregateId
   );
 }
 
@@ -112,6 +118,8 @@ type ResolvedPayload = {
   penAway: number | null;
   stage: string | null;
   round: string | null;
+  leg: string | null;
+  aggregateId: bigint | null;
 };
 
 function toChangeVal(v: string | number | null | undefined): string {
@@ -132,6 +140,8 @@ const AUDIT_LOG_FIELDS: (keyof ResolvedPayload)[] = [
   "penAway",
   "stage",
   "round",
+  "leg",
+  "aggregateId",
 ];
 
 /** Build diff object for updated fixtures: only fields that changed, format "old→new". */
@@ -327,6 +337,8 @@ export async function syncFixtures(
         penAway: true,
         stage: true,
         round: true,
+        leg: true,
+        aggregateId: true,
       },
     });
     const existingByExtId = new Map(
@@ -391,6 +403,8 @@ export async function syncFixtures(
           penAway: payload.penAway,
           stage: payload.stage,
           round: payload.round,
+          leg: payload.leg,
+          aggregateId: payload.aggregateId ? BigInt(payload.aggregateId) : null,
         };
 
         // State validation: disallow invalid transitions (unless bypassed, e.g. admin sync-by-id)

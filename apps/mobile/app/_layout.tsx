@@ -17,7 +17,7 @@ import { Provider as JotaiProvider } from "jotai";
 import { I18nBootstrap } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
-import { SocketProvider } from "@/lib/socket";
+import { SocketProvider, InviteSocketListeners } from "@/lib/socket";
 import {
   useAuth,
   isAuthenticated,
@@ -72,7 +72,9 @@ function AppContent() {
   useEffect(() => {
     if (Platform.OS === "android") {
       NavigationBar.setBackgroundColorAsync("transparent");
-      NavigationBar.setButtonStyleAsync(colorScheme === "dark" ? "light" : "dark");
+      NavigationBar.setButtonStyleAsync(
+        colorScheme === "dark" ? "light" : "dark"
+      );
     }
   }, [colorScheme]);
 
@@ -143,6 +145,10 @@ function AppContent() {
                 options={{ title: t("groups.invite"), headerShown: false }}
               />
               <Stack.Screen
+                name="groups/[id]/invite-users"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="groups/[id]/members"
                 options={{ headerShown: false }}
               />
@@ -175,6 +181,10 @@ function AppContent() {
               />
               <Stack.Screen
                 name="profile/groups"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="invites/index"
                 options={{ headerShown: false }}
               />
               <Stack.Screen
@@ -226,6 +236,7 @@ function RootLayout() {
               <BottomSheetModalProvider>
                 <AuthProvider>
                   <SocketProvider>
+                    <InviteSocketListeners />
                     <AppContent />
                   </SocketProvider>
                 </AuthProvider>

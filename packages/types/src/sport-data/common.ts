@@ -202,11 +202,20 @@ export type FixtureDTO = {
   /** Round name -> fixtures.round */
   round: string | null;
 
+  /** Leg indicator for two-legged ties -> fixtures.leg (e.g., "1/2", "2/2", "1/1") */
+  leg: string | null;
+
+  /** Aggregate ID linking two-legged fixtures together -> fixtures.aggregate_id */
+  aggregateId: number | null;
+
   hasOdds: boolean;
 
   leagueName: string;
 
   countryName: string;
+
+  /** Country external ID from league.country - useful for filtering */
+  countryExternalId: number | null;
 };
 
 export type OddsDTO = {

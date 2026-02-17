@@ -17,7 +17,7 @@ const adminSeasonsProviderRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminProviderSeasonsResponse> => {
-      // Fetch seasons from provider
+      // Fetch seasons from provider (includes league.country data)
       const seasonsDto = await adapter.fetchSeasons();
 
       // Get all league external IDs from DB to check availability
@@ -26,12 +26,6 @@ const adminSeasonsProviderRoutes: FastifyPluginAsync = async (fastify) => {
       });
       const dbLeagueExternalIds = new Set(
         dbLeagues.map((l) => l.externalId.toString())
-      );
-
-      // Fetch leagues from provider to get league details
-      const leaguesDto = await adapter.fetchLeagues();
-      const leagueMap = new Map(
-        leaguesDto.map((l) => [String(l.externalId), l])
       );
 
       return reply.send({
@@ -44,11 +38,6 @@ const adminSeasonsProviderRoutes: FastifyPluginAsync = async (fastify) => {
             ? dbLeagueExternalIds.has(leagueExternalId)
             : false;
 
-          // Get league data from provider
-          const providerLeague = leagueExternalId
-            ? leagueMap.get(leagueExternalId)
-            : null;
-
           return {
             externalId: s.externalId,
             name: s.name,
@@ -56,10 +45,11 @@ const adminSeasonsProviderRoutes: FastifyPluginAsync = async (fastify) => {
             endDate: s.endDate ?? null,
             isCurrent: s.isCurrent,
             leagueExternalId: s.leagueExternalId ?? null,
-            league: providerLeague
+            // League data already included in season response
+            league: s.leagueExternalId
               ? {
-                  id: Number(providerLeague.externalId),
-                  name: providerLeague.name,
+                  id: Number(s.leagueExternalId),
+                  name: s.leagueName ?? "",
                 }
               : null,
             leagueInDb,

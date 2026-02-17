@@ -451,7 +451,12 @@ export type ApiGroupItem = {
   /** Team IDs the group follows (teams mode). Used to filter team avatar chips. */
   groupTeamsIds?: number[];
   /** Team info for teams mode - includes name, shortCode and image */
-  groupTeams?: Array<{ id: number; name: string; shortCode: string | null; imagePath: string | null }>;
+  groupTeams?: Array<{
+    id: number;
+    name: string;
+    shortCode: string | null;
+    imagePath: string | null;
+  }>;
   /** KO round mode: "FullTime" | "ExtraTime" | "Penalties" - TODO: koRoundMode not yet used in scoring */
   koRoundMode?: string;
   onTheNosePoints?: number;
@@ -539,8 +544,102 @@ export type ApiGroupMembersResponse = {
   message: string;
 };
 
+// ─── Users search (for inviting to group) ─────────────────────────────────────
+
 /**
- * Response for fetching fixtures attached to a specific group.
+ * Query parameters for GET /api/users/search.
+ */
+export type ApiUsersSearchQuery = {
+  q: string;
+  excludeGroupId?: number;
+  page?: number;
+  perPage?: number;
+};
+
+/**
+ * User item in GET /api/users/search response.
+ */
+export type ApiUserSearchItem = {
+  id: number;
+  username: string;
+  name: string | null;
+  image: string | null;
+  isInSharedGroup: boolean;
+};
+
+/**
+ * Response from GET /api/users/search.
+ */
+export type ApiUsersSearchResponse = {
+  status: "success";
+  data: ApiUserSearchItem[];
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    hasMore: boolean;
+  };
+};
+
+// ─── Group invites ───────────────────────────────────────────────────────────
+
+/**
+ * Body for POST /api/groups/:id/invites.
+ */
+export type ApiSendInviteBody = {
+  userId: number;
+  message?: string;
+};
+
+/**
+ * Response from POST /api/groups/:id/invites.
+ */
+export type ApiSendInviteResponse = {
+  status: "success";
+  data: { inviteId: number; expiresAt: string };
+};
+
+/**
+ * Invite item in GET /api/users/invites response.
+ */
+export type ApiInviteItem = {
+  id: number;
+  groupId: number;
+  groupName: string;
+  inviter: { id: number; username: string | null; image: string | null };
+  message: string | null;
+  createdAt: string;
+  expiresAt: string;
+};
+
+/**
+ * Response from GET /api/users/invites.
+ */
+export type ApiUserInvitesResponse = {
+  status: "success";
+  data: {
+    invites: ApiInviteItem[];
+    pendingCount: number;
+  };
+};
+
+/**
+ * Body for POST /api/users/invites/:inviteId/respond.
+ */
+export type ApiRespondToInviteBody = {
+  action: "accept" | "decline";
+};
+
+/**
+ * Response from POST /api/users/invites/:inviteId/respond (accept).
+ */
+export type ApiRespondToInviteResponse = {
+  status: "success";
+  data: ApiGroupItem;
+};
+
+/**
+ * Response from GET /api/fixtures attached to a group.
  * Reuses the same fixture item shape as generic fixtures list responses.
  */
 export type ApiGroupFixturesResponse = {
@@ -794,7 +893,12 @@ export type ApiFixtureDetailData = {
     thirdKitColor?: string | null;
   };
   league: { id: number; name: string; imagePath: string | null } | null;
-  country: { id: number; name: string; imagePath: string | null; iso2: string | null } | null;
+  country: {
+    id: number;
+    name: string;
+    imagePath: string | null;
+    iso2: string | null;
+  } | null;
   predictions: ApiFixtureDetailPrediction[];
 };
 

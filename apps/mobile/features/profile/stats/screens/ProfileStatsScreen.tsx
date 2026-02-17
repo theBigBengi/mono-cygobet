@@ -30,6 +30,7 @@ import { WelcomeCard } from "../components/WelcomeCard";
 import { BadgesCard } from "../components/BadgesCard";
 import { GroupStatsCard } from "../components/GroupStatsCard";
 import { EditProfileModal } from "../../components/EditProfileModal";
+import { InvitesBadgeButton } from "../../components/InvitesBadgeButton";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 
@@ -116,6 +117,7 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
         showEditButton={isOwnProfile}
         onEditPress={() => setEditModalVisible(true)}
       />
+      {isOwnProfile && <InvitesBadgeButton />}
       <StatsCard
         accuracy={data.overall.accuracy}
         totalPredictions={data.overall.settledPredictions}

@@ -179,6 +179,8 @@ model fixtures {
   penAway             Int?         @map("pen_away")
   stage               String?
   round               String?
+  leg                 String?      @db.VarChar(5) // "1/1", "1/2", "2/2" for two-legged ties
+  aggregateId         BigInt?      @map("aggregate_id") // Links two-legged fixtures together
   externalId          BigInt       @unique @map("external_id")
   hasOdds             Boolean      @default(false) @map("has_odds")
   scoreOverriddenAt   DateTime?    @map("score_overridden_at") @db.Timestamptz(6)
@@ -208,6 +210,7 @@ model fixtures {
   @@index([startTs, state], map: "idx_fixtures_start_ts_state")
   @@index([state], map: "idx_fixtures_state")
   @@index([homeTeamId, awayTeamId, startTs], map: "idx_fixtures_teams_start")
+  @@index([aggregateId], map: "idx_fixtures_aggregate_id")
   @@map("fixtures")
 }
 

@@ -564,9 +564,12 @@ export function buildFixtures(f: FixtureSportmonks): FixtureDTO | null {
     penAway: scores.penAway,
     stage: f?.stage?.name ?? null,
     round: f?.round?.name ?? null,
+    leg: f?.leg ?? null,
+    aggregateId: f?.aggregate_id ?? null,
     hasOdds: f.has_odds,
     leagueName: f.league?.name ?? "",
     countryName: f.league?.country?.name ?? "",
+    countryExternalId: f.league?.country?.id ?? null,
   };
 }
 

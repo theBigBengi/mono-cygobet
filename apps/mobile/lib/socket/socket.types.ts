@@ -22,14 +22,26 @@ export interface ChatMessage {
   tempId?: string;
 }
 
+export interface InviteReceivedPayload {
+  inviteId: number;
+  groupId: number;
+  groupName: string;
+  inviter: { id: number; username: string | null; image: string | null };
+  message: string | null;
+  expiresAt: string;
+}
+
 export interface ServerToClientEvents {
   "message:new": (message: ChatMessage) => void;
-  "typing:start": (data: {
+  "typing:start": (data: { userId: number; username: string | null }) => void;
+  "typing:stop": (data: { userId: number }) => void;
+  error: (data: { event: string; message: string }) => void;
+  "invite:received": (payload: InviteReceivedPayload) => void;
+  "invite:cancelled": (payload: { inviteId: number }) => void;
+  "invite:accepted": (payload: {
     userId: number;
     username: string | null;
   }) => void;
-  "typing:stop": (data: { userId: number }) => void;
-  "error": (data: { event: string; message: string }) => void;
 }
 
 export interface ClientToServerEvents {

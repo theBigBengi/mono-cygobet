@@ -228,6 +228,8 @@ export async function seedFixtures(
           penAway: true,
           stage: true,
           round: true,
+          leg: true,
+          aggregateId: true,
         },
       });
       const existingByExtId = new Map(
@@ -330,6 +332,8 @@ export async function seedFixtures(
               penAway: payload.penAway,
               stage: payload.stage,
               round: payload.round,
+              leg: payload.leg,
+              aggregateId: payload.aggregateId ? BigInt(payload.aggregateId) : null,
               updatedAt: new Date(),
             };
             const createPayload = {
@@ -351,6 +355,8 @@ export async function seedFixtures(
               penAway: payload.penAway,
               stage: payload.stage,
               round: payload.round,
+              leg: payload.leg,
+              aggregateId: payload.aggregateId ? BigInt(payload.aggregateId) : null,
             };
             await prisma.fixtures.upsert({
               where: { externalId: safeBigInt(payload.externalId) },
@@ -363,7 +369,7 @@ export async function seedFixtures(
               ? computeChanges(existing, updatePayload, [
                   "state", "result", "homeScore90", "awayScore90",
                   "homeScoreET", "awayScoreET", "penHome", "penAway",
-                  "stage", "round",
+                  "stage", "round", "leg", "aggregateId",
                 ])
               : null;
 

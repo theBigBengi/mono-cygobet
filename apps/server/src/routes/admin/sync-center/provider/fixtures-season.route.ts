@@ -57,21 +57,10 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
       }
 
       // Fetch fixtures for the specific season (with league, country, odds for filtering)
+      // countryExternalId is now included in FixtureDTO from league.country include
       const fixturesDto = await adapter.fetchFixturesBySeason(seasonIdNum, {
         includeOdds: true,
       });
-
-      // Fetch leagues to build league -> country map for country filtering
-      const leaguesDto = await adapter.fetchLeagues();
-      const leagueToCountryMap = new Map<string, string>();
-      for (const l of leaguesDto) {
-        if (l.countryExternalId != null) {
-          leagueToCountryMap.set(
-            String(l.externalId),
-            String(l.countryExternalId)
-          );
-        }
-      }
 
       // Get leagues and countries from DB for filtering
       const dbLeagues = await prisma.leagues.findMany({
@@ -120,12 +109,10 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
         if (countryExternalIds.length > 0) {
           const allowedCountryExternalIds = new Set(countryExternalIds);
           filteredFixturesDto = filteredFixturesDto.filter((f) => {
-            const leagueExternalId = f.leagueExternalId
-              ? String(f.leagueExternalId)
+            // countryExternalId is now directly available in FixtureDTO
+            const countryExternalId = f.countryExternalId
+              ? String(f.countryExternalId)
               : null;
-            const countryExternalId = leagueExternalId
-              ? leagueToCountryMap.get(leagueExternalId)
-              : undefined;
             return (
               countryExternalId &&
               allowedCountryExternalIds.has(countryExternalId)
@@ -158,6 +145,8 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
             awayScore90: f.awayScore90 ?? null,
             stage: f.stage ?? null,
             round: f.round ?? null,
+            leg: f.leg ?? null,
+            aggregateId: f.aggregateId ?? null,
             leagueExternalId: f.leagueExternalId ?? null,
             seasonExternalId: f.seasonExternalId ?? null,
             homeTeamExternalId: f.homeTeamExternalId,
@@ -170,6 +159,7 @@ const adminFixturesSeasonProviderRoutes: FastifyPluginAsync = async (
               : false,
             leagueName: f.leagueName ?? null,
             countryName: f.countryName ?? null,
+            countryExternalId: f.countryExternalId ?? null,
             hasOdds: f.hasOdds ?? false,
           };
         }),

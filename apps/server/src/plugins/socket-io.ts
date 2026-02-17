@@ -68,6 +68,8 @@ export default fp(async function socketIOPlugin(fastify) {
     const userId = socket.data.user.id;
     log.info({ userId }, "Socket connected");
 
+    socket.join(`user:${userId}`);
+
     socket.on("group:join", async (groupId) => {
       if (!isValidGroupId(groupId)) return;
       try {

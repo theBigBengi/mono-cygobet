@@ -33,6 +33,8 @@ export type FixtureTransformResult = {
   penAway: number | null;
   stage: string | null;
   round: string | null;
+  leg: string | null;
+  aggregateId: number | null;
   liveMinute: number | null;
 };
 
@@ -116,6 +118,8 @@ export function transformFixtureDto(dto: FixtureDTO): FixtureTransformResult {
     penAway: dto.penAway ?? null,
     stage: dto.stage ?? null,
     round: dto.round ?? null,
+    leg: dto.leg ?? null,
+    aggregateId: dto.aggregateId ?? null,
     liveMinute: dto.liveMinute ?? null,
   };
 }

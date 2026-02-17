@@ -4,6 +4,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Share, Pressable, Text } from "react-native";
+import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,6 +36,7 @@ export function GroupInviteScreen({
 }: GroupInviteScreenProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const router = useRouter();
   const { data, isLoading, error, refetch } = useInviteCodeQuery(groupId);
   const regenerateMutation = useRegenerateInviteCodeMutation(groupId);
   const [copied, setCopied] = React.useState(false);
@@ -87,7 +89,12 @@ export function GroupInviteScreen({
       <View style={styles.container}>
         {/* Header section */}
         <View style={styles.headerSection}>
-          <View style={[styles.iconCircle, { backgroundColor: theme.colors.primary + "15" }]}>
+          <View
+            style={[
+              styles.iconCircle,
+              { backgroundColor: theme.colors.primary + "15" },
+            ]}
+          >
             <Ionicons name="link" size={32} color={theme.colors.primary} />
           </View>
           <AppText variant="title" style={styles.title}>
@@ -109,7 +116,9 @@ export function GroupInviteScreen({
               },
             ]}
           >
-            <Text style={[styles.codeLabel, { color: theme.colors.textSecondary }]}>
+            <Text
+              style={[styles.codeLabel, { color: theme.colors.textSecondary }]}
+            >
               {t("groups.inviteCode")}
             </Text>
             <Text style={[styles.code, { color: theme.colors.textPrimary }]}>
@@ -119,9 +128,20 @@ export function GroupInviteScreen({
               <Ionicons
                 name={copied ? "checkmark-circle" : "copy-outline"}
                 size={16}
-                color={copied ? theme.colors.primary : theme.colors.textSecondary}
+                color={
+                  copied ? theme.colors.primary : theme.colors.textSecondary
+                }
               />
-              <Text style={[styles.copyText, { color: copied ? theme.colors.primary : theme.colors.textSecondary }]}>
+              <Text
+                style={[
+                  styles.copyText,
+                  {
+                    color: copied
+                      ? theme.colors.primary
+                      : theme.colors.textSecondary,
+                  },
+                ]}
+              >
                 {copied ? t("invite.copied") : t("invite.tapToCopy")}
               </Text>
             </View>
@@ -136,6 +156,17 @@ export function GroupInviteScreen({
             icon="share-outline"
             style={styles.button}
           />
+          {groupId != null && (
+            <Button
+              label={t("invite.inviteByUsername")}
+              variant="secondary"
+              onPress={() =>
+                router.push(`/groups/${groupId}/invite-users` as any)
+              }
+              icon="person-add-outline"
+              style={styles.button}
+            />
+          )}
           {isCreator && (
             <Button
               label={t("invite.regenerateCode")}
