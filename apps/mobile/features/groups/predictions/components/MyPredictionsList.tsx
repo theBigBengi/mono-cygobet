@@ -65,7 +65,7 @@ export function MyPredictionsList({ fixtureId, currentGroupId }: Props) {
               styles.row,
               {
                 backgroundColor: theme.colors.surface,
-                borderBottomColor: theme.colors.border,
+                borderColor: theme.colors.border,
               },
             ]}
           >
@@ -113,10 +113,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 4,
-    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
   groupName: {
     flex: 1,

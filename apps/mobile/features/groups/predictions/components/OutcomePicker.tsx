@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
+import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 
@@ -37,7 +38,12 @@ export function OutcomePicker({
         return (
           <Pressable
             key={outcome}
-            onPress={() => isEditable && onSelect(outcome)}
+            onPress={() => {
+              if (isEditable) {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onSelect(outcome);
+              }
+            }}
             disabled={!isEditable}
             style={({ pressed }) => [
               styles.button,
@@ -48,7 +54,9 @@ export function OutcomePicker({
                 borderColor: isSelected
                   ? theme.colors.primary
                   : theme.colors.border,
-                opacity: !isEditable ? 0.5 : pressed ? 0.7 : 1,
+                opacity: !isEditable ? 0.5 : 1,
+                shadowOpacity: pressed ? 0 : isSelected ? 0.2 : 0.1,
+                transform: [{ scale: pressed ? 0.95 : 1 }],
               },
             ]}
           >
@@ -81,12 +89,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   button: {
-    minWidth: 36,
-    height: 36,
-    borderRadius: 8,
+    minWidth: 40,
+    height: 40,
+    borderRadius: 12,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 2,
   },
   label: {
     fontSize: 16,

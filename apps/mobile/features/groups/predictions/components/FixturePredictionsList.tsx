@@ -119,7 +119,9 @@ export function FixturePredictionsList({ groupId, fixtureId }: Props) {
                   backgroundColor: isCurrentUser
                     ? theme.colors.primary + "14"
                     : theme.colors.surface,
-                  borderBottomColor: theme.colors.border,
+                  borderColor: isCurrentUser
+                    ? theme.colors.primary + "40"
+                    : theme.colors.border,
                 },
               ]}
             >
@@ -180,18 +182,29 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 4,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 6,
+    borderRadius: 12,
+    borderWidth: 1,
     gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
   rankBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   rankText: {
     fontWeight: "700",
