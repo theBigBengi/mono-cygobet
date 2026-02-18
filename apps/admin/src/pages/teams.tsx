@@ -536,16 +536,21 @@ Manchester City,#6CABDD,#FFFFFF,#1C2C5B`}
               {/* Title row */}
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-sm sm:text-base">
+                  <CardTitle className="text-sm sm:text-base flex items-center gap-1.5">
                     Teams{" "}
                     <span className="text-muted-foreground font-normal">
                       ({totalItems})
                     </span>
+                    {isFetching && !isLoading && (
+                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent text-muted-foreground" />
+                    )}
                   </CardTitle>
                   <CardDescription className="hidden sm:block">
                     Page {page} of {totalPages}
                     {debouncedSearch && <> &middot; Searching &ldquo;{debouncedSearch}&rdquo;</>}
-                    {isFetching && !isLoading && " — loading..."}
+                    {missingColors && teams.length !== allTeams.length && (
+                      <> &middot; Showing {teams.length} without colors</>
+                    )}
                   </CardDescription>
                 </div>
                 <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
@@ -670,7 +675,10 @@ Manchester City,#6CABDD,#FFFFFF,#1C2C5B`}
             {totalPages > 1 && (
               <div className="shrink-0 flex items-center justify-between pt-3 border-t">
                 <span className="text-[11px] sm:text-sm text-muted-foreground">
-                  {(page - 1) * PER_PAGE + 1}-{Math.min(page * PER_PAGE, totalItems)} of {totalItems}
+                  {missingColors && teams.length !== allTeams.length
+                    ? <>{teams.length} without colors (page {page}/{totalPages})</>
+                    : <>{(page - 1) * PER_PAGE + 1}-{Math.min(page * PER_PAGE, totalItems)} of {totalItems}</>
+                  }
                 </span>
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-muted-foreground hidden sm:inline mr-1">
