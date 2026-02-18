@@ -42,7 +42,7 @@ type Team = {
   id: number;
   name: string;
   imagePath: string | null;
-  country?: { id: number; name: string } | null;
+  country: { id: number; name: string } | null;
 };
 
 function useDebounce<T>(value: T, delay: number, minLength?: number): T {
