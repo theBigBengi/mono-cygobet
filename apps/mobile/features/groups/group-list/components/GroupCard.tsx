@@ -27,7 +27,7 @@ export interface GroupCardProps {
   unreadCount?: number;
 }
 
-const AVATAR_SIZE = 48;
+const AVATAR_SIZE = 56;
 
 export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
   const { t } = useTranslation("common");
@@ -48,12 +48,39 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
 
   const nextGameKickoff = group.nextGame?.kickoffAt ?? null;
   const countdown = useCountdown(nextGameKickoff);
+  const hasPrediction = !!group.nextGame?.prediction;
 
-  // Check if next game is today and has no prediction
-  const isNextGameToday = nextGameKickoff
-    ? new Date(nextGameKickoff).toDateString() === new Date().toDateString()
-    : false;
-  const isUrgentPrediction = isNextGameToday && !group.nextGame?.prediction;
+  // Prediction urgency levels based on time until kickoff
+  const getUrgencyLevel = (): "none" | "week" | "tomorrow" | "today" => {
+    if (!nextGameKickoff || hasPrediction) return "none";
+
+    const now = new Date();
+    const kickoff = new Date(nextGameKickoff);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    const dayAfterTomorrow = new Date(todayStart);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+    const weekFromNow = new Date(todayStart);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+
+    if (kickoff < tomorrowStart) return "today";
+    if (kickoff < dayAfterTomorrow) return "tomorrow";
+    if (kickoff < weekFromNow) return "week";
+    return "none";
+  };
+
+  const urgencyLevel = getUrgencyLevel();
+
+  // Colors for each urgency level
+  const URGENCY_COLORS = {
+    none: null,
+    week: "#EAB308",    // Yellow
+    tomorrow: "#F97316", // Orange
+    today: "#EF4444",    // Red
+  };
+
+  const urgencyColor = URGENCY_COLORS[urgencyLevel];
 
   // Status color - same as lobby
   const getStatusColor = () => {
@@ -113,10 +140,6 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                   {
                     backgroundColor: theme.colors.primary,
                     shadowColor: "#000",
-                    borderWidth: 2,
-                    borderColor: group.userRole === "owner"
-                      ? "#FFD700"
-                      : theme.colors.border,
                   },
                 ]}
               >
@@ -200,11 +223,42 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                 )}
               </View>
 
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={theme.colors.textSecondary}
-              />
+              {/* Right side: Role & Privacy badges */}
+              <View style={styles.rightBadges}>
+                {/* Role badge */}
+                <View
+                  style={[
+                    styles.roleBadge,
+                    { backgroundColor: theme.colors.textSecondary + "15" },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.roleText,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    {group.userRole === "owner"
+                      ? "C"
+                      : group.userRole === "admin"
+                        ? "A"
+                        : "M"}
+                  </Text>
+                </View>
+                {/* Privacy badge */}
+                <View
+                  style={[
+                    styles.privacyBadge,
+                    { backgroundColor: theme.colors.textSecondary + "15" },
+                  ]}
+                >
+                  <Ionicons
+                    name={group.privacy === "private" ? "lock-closed" : "globe-outline"}
+                    size={12}
+                    color={theme.colors.textSecondary}
+                  />
+                </View>
+              </View>
             </View>
 
             {/* Next Game Row (for active groups) */}
@@ -245,11 +299,11 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                       style={[
                         styles.scoreBox,
                         {
-                          backgroundColor: isUrgentPrediction
-                            ? "#EF4444" + "15"
+                          backgroundColor: urgencyColor
+                            ? urgencyColor + "15"
                             : theme.colors.surface,
-                          borderColor: isUrgentPrediction
-                            ? "#EF4444" + "40"
+                          borderColor: urgencyColor
+                            ? urgencyColor + "40"
                             : theme.colors.border,
                         },
                       ]}
@@ -258,9 +312,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                         style={[
                           styles.scoreText,
                           {
-                            color: isUrgentPrediction
-                              ? "#EF4444"
-                              : theme.colors.textPrimary,
+                            color: urgencyColor ?? theme.colors.textPrimary,
                           },
                         ]}
                       >
@@ -277,11 +329,11 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                       style={[
                         styles.scoreBox,
                         {
-                          backgroundColor: isUrgentPrediction
-                            ? "#EF4444" + "15"
+                          backgroundColor: urgencyColor
+                            ? urgencyColor + "15"
                             : theme.colors.surface,
-                          borderColor: isUrgentPrediction
-                            ? "#EF4444" + "40"
+                          borderColor: urgencyColor
+                            ? urgencyColor + "40"
                             : theme.colors.border,
                         },
                       ]}
@@ -290,9 +342,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                         style={[
                           styles.scoreText,
                           {
-                            color: isUrgentPrediction
-                              ? "#EF4444"
-                              : theme.colors.textPrimary,
+                            color: urgencyColor ?? theme.colors.textPrimary,
                           },
                         ]}
                       >
@@ -330,8 +380,8 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                     {
                       backgroundColor: predictionsCount === totalFixtures
                         ? "#10B981" + "15"
-                        : isUrgentPrediction
-                          ? "#EF4444" + "15"
+                        : urgencyColor
+                          ? urgencyColor + "15"
                           : theme.colors.surface,
                     },
                   ]}
@@ -342,9 +392,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                     color={
                       predictionsCount === totalFixtures
                         ? "#10B981"
-                        : isUrgentPrediction
-                          ? "#EF4444"
-                          : theme.colors.textSecondary
+                        : urgencyColor ?? theme.colors.textSecondary
                     }
                   />
                   <Text
@@ -353,9 +401,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                       {
                         color: predictionsCount === totalFixtures
                           ? "#10B981"
-                          : isUrgentPrediction
-                            ? "#EF4444"
-                            : theme.colors.textSecondary,
+                          : urgencyColor ?? theme.colors.textSecondary,
                       },
                     ]}
                   >
@@ -480,7 +526,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   initials: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "800",
   },
   info: {
@@ -516,6 +562,7 @@ const styles = StyleSheet.create({
   teamBadgesScroll: {
     marginTop: 4,
     marginHorizontal: -4,
+    maxWidth: "75%",
   },
   teamBadgesRow: {
     flexDirection: "row",
@@ -592,6 +639,7 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 7,
     borderWidth: 1,
+    borderBottomWidth: 3,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -611,7 +659,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
     paddingHorizontal: 4,
-    borderRadius: 8,
     gap: 2,
   },
   hudValue: {
@@ -636,5 +683,28 @@ const styles = StyleSheet.create({
   draftHintText: {
     fontSize: 13,
     fontWeight: "600",
+  },
+  rightBadges: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 6,
+  },
+  roleBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roleText: {
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  privacyBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
