@@ -40,8 +40,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { teamsService } from "@/services/teams.service";
 import type { AdminTeamsListResponse } from "@repo/types";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   AlertCircle,
   CheckCircle,
+  ChevronDown,
   FileText,
   Pencil,
   Search,
@@ -67,6 +73,7 @@ export default function TeamsPage() {
     tertiaryColor: "",
   });
 
+  const [isImportOpen, setIsImportOpen] = React.useState(false);
   const [csvFile, setCsvFile] = React.useState<File | null>(null);
   const [importResults, setImportResults] = React.useState<{
     updated: number;
@@ -260,76 +267,85 @@ export default function TeamsPage() {
           </CardContent>
         </Card>
 
-        {/* CSV Import */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Bulk Import Colors
-            </CardTitle>
-            <CardDescription>
-              Upload a CSV file to update team colors in bulk
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Input
-                type="file"
-                accept=".csv"
-                onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-                className="flex-1"
-              />
-              <Button
-                onClick={handleFileUpload}
-                disabled={!csvFile || importMutation.isPending}
-                className="w-full sm:w-auto"
-              >
-                {importMutation.isPending ? "Importing..." : "Import"}
-              </Button>
-            </div>
+        {/* CSV Import - Collapsible */}
+        <Collapsible open={isImportOpen} onOpenChange={setIsImportOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Upload className="h-5 w-5" />
+                      Bulk Import Colors
+                    </CardTitle>
+                    <CardDescription>
+                      Upload a CSV file to update team colors in bulk
+                    </CardDescription>
+                  </div>
+                  <ChevronDown
+                    className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${isImportOpen ? "rotate-180" : ""}`}
+                  />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleFileUpload}
+                    disabled={!csvFile || importMutation.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {importMutation.isPending ? "Importing..." : "Import"}
+                  </Button>
+                </div>
 
-            <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-              <p className="font-medium flex items-center gap-1">
-                <FileText className="h-4 w-4" /> CSV Format:
-              </p>
-              <code className="text-xs block mt-1">
-                name,primaryColor,secondaryColor,tertiaryColor
-                <br />
-                Manchester City,#6CABDD,#FFFFFF,#1C2C5B
-                <br />
-                Liverpool,#C8102E,#00B2A9,#F6EB61
-              </code>
-            </div>
+                <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                  <p className="font-medium flex items-center gap-1 mb-1">
+                    <FileText className="h-4 w-4" /> CSV Format:
+                  </p>
+                  <div className="overflow-x-auto">
+                    <code className="text-xs block whitespace-pre">
+{`name,primaryColor,secondaryColor,tertiaryColor
+Manchester City,#6CABDD,#FFFFFF,#1C2C5B
+Liverpool,#C8102E,#00B2A9,#F6EB61`}
+                    </code>
+                  </div>
+                </div>
 
-            {importResults && (
-              <div className="space-y-2">
-                <Alert
-                  variant={
-                    importResults.notFound.length > 0 ? "default" : "default"
-                  }
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertTitle>Import Complete</AlertTitle>
-                  <AlertDescription>
-                    Updated {importResults.updated} teams
-                  </AlertDescription>
-                </Alert>
+                {importResults && (
+                  <div className="space-y-2">
+                    <Alert>
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertTitle>Import Complete</AlertTitle>
+                      <AlertDescription>
+                        Updated {importResults.updated} teams
+                      </AlertDescription>
+                    </Alert>
 
-                {importResults.notFound.length > 0 && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>
-                      Teams Not Found ({importResults.notFound.length})
-                    </AlertTitle>
-                    <AlertDescription className="max-h-32 overflow-y-auto">
-                      {importResults.notFound.join(", ")}
-                    </AlertDescription>
-                  </Alert>
+                    {importResults.notFound.length > 0 && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>
+                          Teams Not Found ({importResults.notFound.length})
+                        </AlertTitle>
+                        <AlertDescription className="max-h-32 overflow-y-auto">
+                          {importResults.notFound.join(", ")}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
         {/* Teams Table */}
         <Card>
@@ -353,22 +369,22 @@ export default function TeamsPage() {
                 No teams found
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <Table className="min-w-[340px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-10 sm:w-12">Logo</TableHead>
+                      <TableHead className="w-10 sm:w-12 pl-4 sm:pl-2">Logo</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead className="hidden sm:table-cell w-24">Code</TableHead>
                       <TableHead className="hidden md:table-cell">Country</TableHead>
-                      <TableHead className="w-24 sm:w-32">Colors</TableHead>
-                      <TableHead className="w-12 sm:w-20 text-right">Actions</TableHead>
+                      <TableHead className="w-20 sm:w-32">Colors</TableHead>
+                      <TableHead className="w-10 sm:w-20 text-right pr-4 sm:pr-2" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {teams.map((team) => (
                       <TableRow key={team.id}>
-                        <TableCell>
+                        <TableCell className="pl-4 sm:pl-2 py-2 sm:py-3">
                           {team.imagePath ? (
                             <img
                               src={team.imagePath}
@@ -379,16 +395,16 @@ export default function TeamsPage() {
                             <div className="h-7 w-7 sm:h-8 sm:w-8 rounded bg-muted" />
                           )}
                         </TableCell>
-                        <TableCell className="font-medium text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">
+                        <TableCell className="font-medium text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate py-2 sm:py-3">
                           {team.name}
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell font-mono text-sm">
+                        <TableCell className="hidden sm:table-cell font-mono text-sm py-2 sm:py-3">
                           {team.shortCode || "—"}
                         </TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground">
+                        <TableCell className="hidden md:table-cell text-muted-foreground py-2 sm:py-3">
                           {team.country?.name || "—"}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-2 sm:py-3">
                           <div className="flex gap-1">
                             {team.primaryColor && (
                               <div
@@ -422,10 +438,11 @@ export default function TeamsPage() {
                               )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right pr-4 sm:pr-2 py-2 sm:py-3">
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => handleEdit(team)}
                           >
                             <Pencil className="h-4 w-4" />
@@ -475,7 +492,7 @@ export default function TeamsPage() {
           open={!!editingTeam}
           onOpenChange={(open) => !open && setEditingTeam(null)}
         >
-          <SheetContent className="sm:max-w-md overflow-y-auto">
+          <SheetContent className="w-full sm:max-w-md overflow-y-auto p-4 sm:p-6">
             <SheetHeader>
               <SheetTitle>Edit Team</SheetTitle>
               <SheetDescription>
@@ -484,14 +501,14 @@ export default function TeamsPage() {
             </SheetHeader>
 
             {editingTeam && (
-              <form onSubmit={handleUpdateSubmit} className="space-y-6 mt-6">
+              <form onSubmit={handleUpdateSubmit} className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
                 {/* Team Logo Preview */}
                 {editingTeam.imagePath && (
                   <div className="flex justify-center">
                     <img
                       src={editingTeam.imagePath}
                       alt=""
-                      className="h-20 w-20 object-contain"
+                      className="h-16 w-16 sm:h-20 sm:w-20 object-contain"
                     />
                   </div>
                 )}
@@ -528,7 +545,7 @@ export default function TeamsPage() {
                 {/* Primary Color */}
                 <div className="space-y-2">
                   <Label>Primary Color</Label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5 sm:gap-2">
                     <input
                       type="color"
                       value={updateForm.primaryColor || "#000000"}
@@ -538,7 +555,7 @@ export default function TeamsPage() {
                           primaryColor: e.target.value,
                         }))
                       }
-                      className="w-12 h-10 rounded border border-input cursor-pointer"
+                      className="w-10 h-9 sm:w-12 sm:h-10 rounded border border-input cursor-pointer shrink-0"
                     />
                     <Input
                       value={updateForm.primaryColor}
@@ -550,13 +567,14 @@ export default function TeamsPage() {
                           primaryColor: e.target.value,
                         }))
                       }
-                      className="flex-1 font-mono"
+                      className="flex-1 min-w-0 font-mono text-sm"
                     />
                     {updateForm.primaryColor && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
+                        className="shrink-0 h-9 w-9 sm:h-10 sm:w-10"
                         onClick={() =>
                           setUpdateForm((f) => ({ ...f, primaryColor: "" }))
                         }
@@ -570,7 +588,7 @@ export default function TeamsPage() {
                 {/* Secondary Color */}
                 <div className="space-y-2">
                   <Label>Secondary Color</Label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5 sm:gap-2">
                     <input
                       type="color"
                       value={updateForm.secondaryColor || "#FFFFFF"}
@@ -580,7 +598,7 @@ export default function TeamsPage() {
                           secondaryColor: e.target.value,
                         }))
                       }
-                      className="w-12 h-10 rounded border border-input cursor-pointer"
+                      className="w-10 h-9 sm:w-12 sm:h-10 rounded border border-input cursor-pointer shrink-0"
                     />
                     <Input
                       value={updateForm.secondaryColor}
@@ -592,13 +610,14 @@ export default function TeamsPage() {
                           secondaryColor: e.target.value,
                         }))
                       }
-                      className="flex-1 font-mono"
+                      className="flex-1 min-w-0 font-mono text-sm"
                     />
                     {updateForm.secondaryColor && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
+                        className="shrink-0 h-9 w-9 sm:h-10 sm:w-10"
                         onClick={() =>
                           setUpdateForm((f) => ({ ...f, secondaryColor: "" }))
                         }
@@ -612,7 +631,7 @@ export default function TeamsPage() {
                 {/* Tertiary Color */}
                 <div className="space-y-2">
                   <Label>Tertiary Color</Label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5 sm:gap-2">
                     <input
                       type="color"
                       value={updateForm.tertiaryColor || "#CCCCCC"}
@@ -622,7 +641,7 @@ export default function TeamsPage() {
                           tertiaryColor: e.target.value,
                         }))
                       }
-                      className="w-12 h-10 rounded border border-input cursor-pointer"
+                      className="w-10 h-9 sm:w-12 sm:h-10 rounded border border-input cursor-pointer shrink-0"
                     />
                     <Input
                       value={updateForm.tertiaryColor}
@@ -634,13 +653,14 @@ export default function TeamsPage() {
                           tertiaryColor: e.target.value,
                         }))
                       }
-                      className="flex-1 font-mono"
+                      className="flex-1 min-w-0 font-mono text-sm"
                     />
                     {updateForm.tertiaryColor && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
+                        className="shrink-0 h-9 w-9 sm:h-10 sm:w-10"
                         onClick={() =>
                           setUpdateForm((f) => ({ ...f, tertiaryColor: "" }))
                         }
