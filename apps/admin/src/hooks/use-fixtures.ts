@@ -2,9 +2,34 @@ import { useQuery } from "@tanstack/react-query";
 import { fixturesService } from "@/services/fixtures.service";
 import type {
   AdminFixturesAttentionResponse,
+  AdminFixturesListResponse,
   AdminFixtureSearchResponse,
   FixtureIssueType,
 } from "@repo/types";
+
+const LIVE_STATES = [
+  "INPLAY_1ST_HALF",
+  "INPLAY_2ND_HALF",
+  "INPLAY_ET",
+  "INPLAY_PENALTIES",
+  "HT",
+  "BREAK",
+  "EXTRA_TIME_BREAK",
+  "PEN_BREAK",
+].join(",");
+
+export function useLiveFixtures() {
+  return useQuery<AdminFixturesListResponse>({
+    queryKey: ["fixtures", "live"],
+    queryFn: () =>
+      fixturesService.getFromDb({
+        state: LIVE_STATES,
+        perPage: 100,
+        include: "homeTeam,awayTeam,league",
+      }),
+    refetchInterval: 30_000, // refresh every 30s while live
+  });
+}
 
 export function useFixturesAttention(
   params?: {

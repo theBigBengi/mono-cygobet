@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, Search } from "lucide-react";
+import { AlertTriangle, Loader2, Radio, RefreshCw, Search } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,12 +26,14 @@ import {
 import { AttentionFixturesTable } from "@/components/fixtures/AttentionFixturesTable";
 import { FixtureSearchBar } from "@/components/fixtures/FixtureSearchBar";
 import {
+  useLiveFixtures,
   useFixturesAttention,
   useFixtureSearch,
 } from "@/hooks/use-fixtures";
 import { fixturesService } from "@/services/fixtures.service";
 import type {
   AdminSyncFixturesResponse,
+  AdminFixturesListResponse,
   FixtureIssueType,
 } from "@repo/types";
 
@@ -40,6 +42,10 @@ type FixturesTab = "attention" | "search";
 export default function FixturesPage() {
   const [tab, setTab] = useState<FixturesTab>("attention");
   const queryClient = useQueryClient();
+
+  // ─── Live fixtures ───
+  const { data: liveData, isFetching: liveFetching } = useLiveFixtures();
+  const liveFixtures = liveData?.data ?? [];
 
   // ─── Attention tab state ───
   const [issueFilter, setIssueFilter] = useState<FixtureIssueType | "all">(
@@ -96,14 +102,17 @@ export default function FixturesPage() {
   });
 
   const handleSync = useCallback(
-    (externalId: string) => {
-      const fixture = attentionData?.data.find(
-        (f) => f.externalId === externalId
-      );
+    (externalId: string, fixtureName?: string) => {
+      if (!fixtureName) {
+        const fixture = attentionData?.data.find(
+          (f) => f.externalId === externalId
+        );
+        fixtureName = fixture?.name ?? externalId;
+      }
       setSyncingIds((prev) => new Set(prev).add(externalId));
       syncMutation.mutate({
         id: externalId,
-        name: fixture?.name ?? externalId,
+        name: fixtureName,
       });
     },
     [syncMutation, attentionData]
@@ -147,6 +156,16 @@ export default function FixturesPage() {
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
+      {/* Live Fixtures */}
+      {liveFixtures.length > 0 && (
+        <LiveFixturesSection
+          fixtures={liveFixtures}
+          isFetching={liveFetching}
+          syncingIds={syncingIds}
+          onSync={handleSync}
+        />
+      )}
+
       {/* Header */}
       <div className="flex-shrink-0 mb-3 sm:mb-4">
         <div className="flex items-center justify-between gap-2">
@@ -455,6 +474,101 @@ export default function FixturesPage() {
             />
           </div>
         )}
+    </div>
+  );
+}
+
+// ─── Live Fixtures Section ───
+
+type LiveFixture = AdminFixturesListResponse["data"][number];
+
+function LiveFixturesSection({
+  fixtures,
+  isFetching,
+  syncingIds,
+  onSync,
+}: {
+  fixtures: LiveFixture[];
+  isFetching: boolean;
+  syncingIds: Set<string>;
+  onSync: (externalId: string, name: string) => void;
+}) {
+  return (
+    <div className="flex-shrink-0 mb-3 sm:mb-4">
+      <div className="rounded-lg border border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20 p-3 sm:p-4">
+        <div className="flex items-center gap-2 mb-2.5">
+          <Radio className="h-3.5 w-3.5 text-green-600 dark:text-green-400 animate-pulse" />
+          <span className="text-sm font-semibold text-green-700 dark:text-green-400">
+            {fixtures.length} Live
+          </span>
+          {isFetching && (
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-green-600 border-t-transparent dark:border-green-400 dark:border-t-transparent" />
+          )}
+        </div>
+        <div className="space-y-1.5">
+          {fixtures.map((f) => {
+            const isSyncing = syncingIds.has(f.externalId);
+            return (
+              <div
+                key={f.id}
+                className="flex items-center gap-2 rounded-md bg-white/60 dark:bg-white/5 border border-green-100 dark:border-green-900/50 px-2.5 py-1.5 sm:px-3 sm:py-2"
+              >
+                {/* Team logos + score */}
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  {f.homeTeam?.imagePath && (
+                    <img src={f.homeTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />
+                  )}
+                  <span className="text-xs sm:text-sm font-medium truncate">
+                    {f.homeTeam?.name ?? "Home"}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold tabular-nums shrink-0">
+                    {f.homeScore90 ?? 0} - {f.awayScore90 ?? 0}
+                  </span>
+                  <span className="text-xs sm:text-sm font-medium truncate">
+                    {f.awayTeam?.name ?? "Away"}
+                  </span>
+                  {f.awayTeam?.imagePath && (
+                    <img src={f.awayTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />
+                  )}
+                </div>
+
+                {/* State badge */}
+                <Badge
+                  variant="outline"
+                  className="text-[10px] shrink-0 border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-400"
+                >
+                  {f.state.replace("INPLAY_", "").replace(/_/g, " ")}
+                </Badge>
+
+                {/* League name - desktop only */}
+                {f.league && (
+                  <span className="hidden md:inline text-[11px] text-muted-foreground truncate max-w-[120px]">
+                    {f.league.name}
+                  </span>
+                )}
+
+                {/* Sync button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs shrink-0"
+                  disabled={isSyncing}
+                  onClick={() => onSync(f.externalId, f.name)}
+                >
+                  {isSyncing ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <>
+                      <RefreshCw className="h-3 w-3 sm:mr-1" />
+                      <span className="hidden sm:inline">Sync</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
