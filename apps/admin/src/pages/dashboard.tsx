@@ -179,10 +179,10 @@ function FixtureBanners({
   fixtures: AdminDashboardResponse["fixtures"];
 }) {
   const hasIssues =
-    fixtures.stuck.length > 0 ||
+    fixtures.stuckCount > 0 ||
     fixtures.unsettled.length > 0 ||
-    fixtures.overdueNs.length > 0 ||
-    fixtures.noScores.length > 0;
+    fixtures.overdueNsCount > 0 ||
+    fixtures.noScoresCount > 0;
 
   if (!hasIssues && fixtures.pendingSettlement === 0) {
     return (
@@ -195,12 +195,11 @@ function FixtureBanners({
 
   return (
     <div className="space-y-2">
-      {fixtures.stuck.length > 0 && (
+      {fixtures.stuckCount > 0 && (
         <IssueBanner
           icon={Zap}
           variant="red"
-
-          title={`${fixtures.stuck.length} fixture${fixtures.stuck.length !== 1 ? "s" : ""} stuck in LIVE`}
+          title={`${fixtures.stuckCount} fixture${fixtures.stuckCount !== 1 ? "s" : ""} stuck in LIVE`}
           description={buildStuckDescription(fixtures.stuck)}
         />
       )}
@@ -209,28 +208,25 @@ function FixtureBanners({
         <IssueBanner
           icon={Clock}
           variant="amber"
-
           title={`${fixtures.unsettled.length} unsettled fixture${fixtures.unsettled.length !== 1 ? "s" : ""}`}
           description={buildUnsettledDescription(fixtures.unsettled)}
         />
       )}
 
-      {fixtures.overdueNs.length > 0 && (
+      {fixtures.overdueNsCount > 0 && (
         <IssueBanner
           icon={TimerOff}
           variant="orange"
-
-          title={`${fixtures.overdueNs.length} overdue fixture${fixtures.overdueNs.length !== 1 ? "s" : ""} still showing NS`}
+          title={`${fixtures.overdueNsCount} overdue fixture${fixtures.overdueNsCount !== 1 ? "s" : ""} still showing NS`}
           description={buildOverdueDescription(fixtures.overdueNs)}
         />
       )}
 
-      {fixtures.noScores.length > 0 && (
+      {fixtures.noScoresCount > 0 && (
         <IssueBanner
           icon={FileWarning}
           variant="yellow"
-
-          title={`${fixtures.noScores.length} finished fixture${fixtures.noScores.length !== 1 ? "s" : ""} missing scores`}
+          title={`${fixtures.noScoresCount} finished fixture${fixtures.noScoresCount !== 1 ? "s" : ""} missing scores`}
           description={buildNoScoresDescription(fixtures.noScores)}
         />
       )}

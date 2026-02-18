@@ -57,13 +57,32 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
   }
 
   // ── Fixtures data ──
+  const stuckWhere = {
+    externalId: { gte: 0 } as const,
+    state: { in: LIVE_STATES_ARR },
+    updatedAt: { lt: stuckCutoff },
+  };
+  const overdueNsWhere = {
+    externalId: { gte: 0 } as const,
+    state: "NS" as const,
+    startTs: { lt: nowTs },
+  };
+  const noScoresWhere = {
+    externalId: { gte: 0 } as const,
+    state: { in: FINISHED_STATES_ARR },
+    OR: [{ homeScore90: null }, { awayScore90: null }],
+  };
+
   const [
     liveCount,
     pendingSettlement,
     stuckRows,
+    stuckCount,
     overdueNsRows,
+    overdueNsCount,
     unsettledRows,
     noScoresRows,
+    noScoresCount,
   ] = await Promise.all([
     prisma.fixtures.count({
       where: { externalId: { gte: 0 }, state: { in: LIVE_STATES_ARR } },
@@ -78,21 +97,19 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
           },
         }),
     prisma.fixtures.findMany({
-      where: {
-        externalId: { gte: 0 },
-        state: { in: LIVE_STATES_ARR },
-        updatedAt: { lt: stuckCutoff },
-      },
+      where: stuckWhere,
       orderBy: { updatedAt: "asc" },
       take: 20,
       select: { id: true, name: true, state: true, updatedAt: true },
     }),
+    prisma.fixtures.count({ where: stuckWhere }),
     prisma.fixtures.findMany({
-      where: { externalId: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
+      where: overdueNsWhere,
       orderBy: { startTs: "asc" },
       take: 20,
       select: { id: true, name: true, startTs: true },
     }),
+    prisma.fixtures.count({ where: overdueNsWhere }),
     unsettledFixtureIds.length === 0
       ? []
       : prisma.fixtures.findMany({
@@ -106,15 +123,12 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
           select: { id: true, name: true, state: true },
         }),
     prisma.fixtures.findMany({
-      where: {
-        externalId: { gte: 0 },
-        state: { in: FINISHED_STATES_ARR },
-        OR: [{ homeScore90: null }, { awayScore90: null }],
-      },
+      where: noScoresWhere,
       orderBy: { updatedAt: "desc" },
       take: 20,
       select: { id: true, name: true, state: true },
     }),
+    prisma.fixtures.count({ where: noScoresWhere }),
   ]);
 
   // Enrich unsettled with prediction count
@@ -141,17 +155,20 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
         state: f.state,
         stuckSince: f.updatedAt.toISOString(),
       })),
+      stuckCount,
       unsettled,
       overdueNs: overdueNsRows.map((f) => ({
         id: f.id,
         name: f.name,
         hoursOverdue: Math.round((nowTs - f.startTs) / 3600),
       })),
+      overdueNsCount,
       noScores: noScoresRows.map((f) => ({
         id: f.id,
         name: f.name,
         state: f.state,
       })),
+      noScoresCount,
     },
   };
 }

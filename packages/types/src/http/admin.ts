@@ -988,9 +988,12 @@ export interface AdminDashboardResponse {
     liveCount: number;
     pendingSettlement: number;
     stuck: Array<{ id: number; name: string; state: string; stuckSince: string }>;
+    stuckCount: number;
     unsettled: Array<{ id: number; name: string; predictionCount: number }>;
     overdueNs: Array<{ id: number; name: string; hoursOverdue: number }>;
+    overdueNsCount: number;
     noScores: Array<{ id: number; name: string; state: string }>;
+    noScoresCount: number;
   };
 }
 
