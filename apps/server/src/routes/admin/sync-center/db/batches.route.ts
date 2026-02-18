@@ -24,37 +24,8 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
             limit: { type: "number", default: 20 },
           },
         },
-        response: {
-          200: {
-            type: "object",
-            properties: {
-              status: { type: "string" },
-              data: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    id: { type: "number" },
-                    name: { type: "string" },
-                    version: { type: ["string", "null"] },
-                    status: { type: "string" },
-                    triggeredBy: { type: ["string", "null"] },
-                    startedAt: { type: "string" },
-                    finishedAt: { type: ["string", "null"] },
-                    durationMs: { type: ["number", "null"] },
-                    itemsTotal: { type: "number" },
-                    itemsSuccess: { type: "number" },
-                    itemsFailed: { type: "number" },
-                    errorMessage: { type: ["string", "null"] },
-                    errorStack: { type: ["string", "null"] },
-                    meta: { type: ["object", "null"] },
-                  },
-                },
-              },
-              message: { type: "string" },
-            },
-          },
-        },
+        // No response schema — allows meta (JSON) to pass through without
+        // fast-json-stringify stripping nested properties.
       },
     },
     async (req, reply): Promise<AdminBatchesListResponse> => {
@@ -141,37 +112,8 @@ const adminBatchesRoutes: FastifyPluginAsync = async (fastify) => {
             },
           },
         },
-        response: {
-          200: {
-            type: "object",
-            properties: {
-              status: { type: "string" },
-              data: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    id: { type: "number" },
-                    itemKey: { type: ["string", "null"] },
-                    status: { type: "string" },
-                    errorMessage: { type: ["string", "null"] },
-                    meta: { type: "object" },
-                  },
-                },
-              },
-              pagination: {
-                type: "object",
-                properties: {
-                  page: { type: "number" },
-                  perPage: { type: "number" },
-                  totalItems: { type: "number" },
-                  totalPages: { type: "number" },
-                },
-              },
-              message: { type: "string" },
-            },
-          },
-        },
+        // No response schema — allows meta (JSON) to pass through without
+        // fast-json-stringify stripping nested properties.
       },
     },
     async (req, reply): Promise<AdminBatchItemsResponse> => {

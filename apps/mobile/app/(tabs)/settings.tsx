@@ -123,9 +123,17 @@ function SettingsContent() {
           />
         </SettingsSection>
 
-        {/* Preferences Section - iOS only for haptics */}
-        {Platform.OS === "ios" && (
-          <SettingsSection title={t("settings.preferences")}>
+        {/* Preferences Section */}
+        <SettingsSection title={t("settings.preferences")}>
+          <SettingsRow
+            type="navigation"
+            icon="list-outline"
+            label={t("settings.leagueOrder")}
+            subtitle={t("settings.leagueOrderSubtitle")}
+            onPress={() => router.push("/settings/league-order")}
+            isLast={Platform.OS !== "ios"}
+          />
+          {Platform.OS === "ios" && (
             <SettingsRow
               type="toggle"
               icon="phone-portrait-outline"
@@ -135,8 +143,8 @@ function SettingsContent() {
               onValueChange={toggleHaptics}
               isLast
             />
-          </SettingsSection>
-        )}
+          )}
+        </SettingsSection>
 
         {/* Advanced Section */}
         <SettingsSection title={t("settings.advanced")}>

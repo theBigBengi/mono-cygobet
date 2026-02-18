@@ -162,11 +162,22 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
         },
       };
 
+      // Build where clause with optional search
+      const where: Prisma.teamsWhereInput = {};
+      if (query.countryId) {
+        where.countryId = query.countryId;
+      }
+      if (query.type) {
+        where.type = query.type;
+      }
+      if (query.search) {
+        where.name = { contains: query.search, mode: "insensitive" };
+      }
+
       const { teams, count } = await service.get({
         take,
         skip,
-        countryId: query.countryId,
-        type: query.type,
+        where,
         orderBy: [{ name: "asc" }],
         include: includeWithCountry,
       });

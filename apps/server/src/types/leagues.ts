@@ -6,6 +6,7 @@ export interface ListLeaguesQuerystring {
   perPage?: number;
   countryId?: number;
   type?: string;
+  search?: string;
   include?: string;
 }
 

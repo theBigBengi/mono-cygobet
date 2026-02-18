@@ -1107,6 +1107,30 @@ export interface AdminNotificationSettingsResponse {
   message: string;
 }
 
+// ─── League Order Settings Types ───
+
+export interface AdminLeagueOrderSettings {
+  defaultLeagueOrder: number[] | null;
+}
+
+export interface AdminLeagueOrderSettingsResponse {
+  status: string;
+  data: AdminLeagueOrderSettings;
+  message: string;
+}
+
+// ─── Team Order Settings Types ───
+
+export interface AdminTeamOrderSettings {
+  defaultTeamOrder: number[] | null;
+}
+
+export interface AdminTeamOrderSettingsResponse {
+  status: string;
+  data: AdminTeamOrderSettings;
+  message: string;
+}
+
 export interface AdminFixtureSearchResponse {
   status: string;
   data: Array<{

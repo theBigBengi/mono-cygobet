@@ -599,6 +599,8 @@
     "noPopularTeams": "No popular teams",
     "tryDifferentSearch": "Try a different search term.",
     "noPopularTeamsDisplay": "There are no popular teams to display.",
+    "searchForTeams": "Search for teams",
+    "searchForTeamsHint": "Use the search box above to find teams.",
     "searchTeamsPlaceholder": "Search teams...",
     "loadingLeagues": "Loading competitions…",
     "failedLoadLeagues": "Failed to load competitions",
@@ -700,6 +702,8 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "preferences": "Preferences",
+    "leagueOrder": "League Order",
+    "leagueOrderSubtitle": "Customize league display order",
     "haptics": "Haptic Feedback",
     "hapticsSubtitle": "Vibration feedback for interactions",
     "advanced": "Advanced",
@@ -713,7 +717,20 @@
     "version": "Version",
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy",
-    "logoutConfirm": "Are you sure you want to log out?"
+    "logoutConfirm": "Are you sure you want to log out?",
+    "leagueOrderScreen": {
+      "title": "League Order",
+      "yourOrder": "Your Order",
+      "availableLeagues": "Available Leagues",
+      "addLeague": "Add League",
+      "resetToDefault": "Reset",
+      "noLeaguesConfigured": "No leagues configured yet",
+      "saveChanges": "Save Changes",
+      "saved": "League order saved successfully",
+      "resetConfirm": "Reset to default order?",
+      "reset": "Reset",
+      "cancel": "Cancel"
+    }
   },
   "changePassword": {
     "title": "Change Password",
@@ -742,6 +759,7 @@
     "updateFailed": "Failed to update profile"
   },
   "common": {
+    "save": "Save",
     "limitedConnectivity": "Limited connectivity — read-only mode",
     "loading": "Loading...",
     "restartRequired": "Restart Required",

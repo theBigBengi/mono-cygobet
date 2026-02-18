@@ -2,7 +2,8 @@
  * Admin Settings Service
  * ----------------------
  * CRUD for admin-wide settings (single row, id=1).
- * Currently handles notification preferences (Slack webhook, severity threshold).
+ * Currently handles notification preferences (Slack webhook, severity threshold)
+ * and league order preferences.
  */
 
 import { prisma } from "@repo/db";
@@ -11,6 +12,14 @@ export interface AdminNotificationSettings {
   slackWebhookUrl: string | null;
   slackEnabled: boolean;
   slackSeverityThreshold: "critical" | "warning" | "all";
+}
+
+export interface AdminLeagueOrderSettings {
+  defaultLeagueOrder: number[] | null;
+}
+
+export interface AdminTeamOrderSettings {
+  defaultTeamOrder: number[] | null;
 }
 
 const SETTINGS_ID = 1;
@@ -122,4 +131,140 @@ export async function shouldNotifySlack(
     // Fallback: notify for critical/warning
     return severity === "critical" || severity === "warning";
   }
+}
+
+// ─── League Order Settings ───
+
+/**
+ * Get league order settings (creates default row if none exists).
+ */
+export async function getLeagueOrderSettings(): Promise<AdminLeagueOrderSettings> {
+  const row = await prisma.adminSettings.upsert({
+    where: { id: SETTINGS_ID },
+    create: {
+      id: SETTINGS_ID,
+      slackWebhookUrl: process.env.SLACK_WEBHOOK_URL ?? null,
+      slackEnabled: !!process.env.SLACK_WEBHOOK_URL,
+      slackSeverityThreshold: "warning",
+      defaultLeagueOrder: null,
+    },
+    update: {},
+  });
+
+  return {
+    defaultLeagueOrder: row.defaultLeagueOrder as number[] | null,
+  };
+}
+
+/**
+ * Update league order settings with validation.
+ * @param leagueIds - Array of league IDs in display order
+ */
+export async function updateLeagueOrderSettings(
+  leagueIds: number[]
+): Promise<AdminLeagueOrderSettings> {
+  // Validate that all provided league IDs exist
+  if (leagueIds.length > 0) {
+    const existingLeagues = await prisma.leagues.findMany({
+      where: { id: { in: leagueIds } },
+      select: { id: true },
+    });
+    const existingIds = new Set(existingLeagues.map((l) => l.id));
+    const invalidIds = leagueIds.filter((id) => !existingIds.has(id));
+    if (invalidIds.length > 0) {
+      throw new Error(`Invalid league IDs: ${invalidIds.join(", ")}`);
+    }
+  }
+
+  // Ensure row exists
+  await prisma.adminSettings.upsert({
+    where: { id: SETTINGS_ID },
+    create: {
+      id: SETTINGS_ID,
+      slackWebhookUrl: process.env.SLACK_WEBHOOK_URL ?? null,
+      slackEnabled: !!process.env.SLACK_WEBHOOK_URL,
+      slackSeverityThreshold: "warning",
+      defaultLeagueOrder: leagueIds.length > 0 ? leagueIds : null,
+    },
+    update: {},
+  });
+
+  const row = await prisma.adminSettings.update({
+    where: { id: SETTINGS_ID },
+    data: {
+      defaultLeagueOrder: leagueIds.length > 0 ? leagueIds : null,
+    },
+  });
+
+  return {
+    defaultLeagueOrder: row.defaultLeagueOrder as number[] | null,
+  };
+}
+
+// ─── Team Order Settings ───
+
+/**
+ * Get team order settings (creates default row if none exists).
+ */
+export async function getTeamOrderSettings(): Promise<AdminTeamOrderSettings> {
+  const row = await prisma.adminSettings.upsert({
+    where: { id: SETTINGS_ID },
+    create: {
+      id: SETTINGS_ID,
+      slackWebhookUrl: process.env.SLACK_WEBHOOK_URL ?? null,
+      slackEnabled: !!process.env.SLACK_WEBHOOK_URL,
+      slackSeverityThreshold: "warning",
+      defaultTeamOrder: null,
+    },
+    update: {},
+  });
+
+  return {
+    defaultTeamOrder: row.defaultTeamOrder as number[] | null,
+  };
+}
+
+/**
+ * Update team order settings with validation.
+ * @param teamIds - Array of team IDs in display order
+ */
+export async function updateTeamOrderSettings(
+  teamIds: number[]
+): Promise<AdminTeamOrderSettings> {
+  // Validate that all provided team IDs exist
+  if (teamIds.length > 0) {
+    const existingTeams = await prisma.teams.findMany({
+      where: { id: { in: teamIds } },
+      select: { id: true },
+    });
+    const existingIds = new Set(existingTeams.map((t) => t.id));
+    const invalidIds = teamIds.filter((id) => !existingIds.has(id));
+    if (invalidIds.length > 0) {
+      throw new Error(`Invalid team IDs: ${invalidIds.join(", ")}`);
+    }
+  }
+
+  // Ensure row exists
+  await prisma.adminSettings.upsert({
+    where: { id: SETTINGS_ID },
+    create: {
+      id: SETTINGS_ID,
+      slackWebhookUrl: process.env.SLACK_WEBHOOK_URL ?? null,
+      slackEnabled: !!process.env.SLACK_WEBHOOK_URL,
+      slackSeverityThreshold: "warning",
+      defaultTeamOrder: teamIds.length > 0 ? teamIds : null,
+    },
+    update: {},
+  });
+
+  const row = await prisma.adminSettings.update({
+    where: { id: SETTINGS_ID },
+    data: {
+      defaultTeamOrder: teamIds.length > 0 ? teamIds : null,
+    },
+  });
+
+  return {
+    defaultTeamOrder: row.defaultTeamOrder as number[] | null,
+  };
 }

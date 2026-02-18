@@ -1096,4 +1096,16 @@ export type ApiGroupPreviewResponse = {
   data: ApiGroupPreviewData;
 };
 
+// ─── User League Preferences ───
+
+export type ApiUserLeaguePreferences = {
+  leagueOrder: number[] | null;
+};
+
+export type ApiUserLeaguePreferencesResponse = {
+  status: "success";
+  data: ApiUserLeaguePreferences;
+  message: string;
+};
+
 export * from "./gamification";

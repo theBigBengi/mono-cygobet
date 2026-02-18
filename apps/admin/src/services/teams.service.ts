@@ -14,6 +14,7 @@ export const teamsService = {
     perPage?: number;
     countryId?: number;
     type?: string;
+    search?: string;
     include?: string;
   }) {
     const searchParams = new URLSearchParams();
@@ -23,6 +24,7 @@ export const teamsService = {
     if (params?.countryId)
       searchParams.append("countryId", params.countryId.toString());
     if (params?.type) searchParams.append("type", params.type);
+    if (params?.search) searchParams.append("search", params.search);
     if (params?.include) searchParams.append("include", params.include);
 
     const queryString = searchParams.toString();

@@ -15,7 +15,10 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -27,29 +30,52 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProviderProvider } from "@/contexts/provider-context";
 import { useAlerts } from "@/hooks/use-dashboard";
 
-const ENTITY_BATCH_NAMES = [
-  { value: "all", label: "All" },
-  { value: "seed-countries", label: "Countries" },
-  { value: "seed-leagues", label: "Leagues" },
-  { value: "seed-seasons", label: "Seasons" },
-  { value: "seed-teams", label: "Teams" },
-  { value: "seed-fixtures", label: "Fixtures" },
-  { value: "seed-bookmakers", label: "Bookmakers" },
-  { value: "seed-season", label: "Seed Season (full)" },
-  { value: "batch-seed-seasons", label: "Batch Seed" },
+const AUTO_JOBS = [
+  { value: "upsert-live-fixtures", label: "Live fixtures update" },
+  { value: "upsert-upcoming-fixtures", label: "Upcoming fixtures update" },
+  { value: "finished-fixtures", label: "Finished fixtures check" },
+  { value: "recovery-overdue-fixtures", label: "Overdue fixtures recovery" },
 ] as const;
+
+const MANUAL_OPS = [
+  { value: "seed-season", label: "Season seed" },
+  { value: "batch-seed-seasons", label: "Batch season seed" },
+  { value: "seed-countries", label: "Countries sync" },
+  { value: "seed-leagues", label: "Leagues sync" },
+  { value: "seed-bookmakers", label: "Bookmakers sync" },
+] as const;
+
+const AUTO_JOB_NAMES = new Set(AUTO_JOBS.map((j) => j.value));
 
 export default function SyncCenterPage() {
   const [historyFilter, setHistoryFilter] = useState<string>("all");
 
-  const { data: batchesData, isLoading: batchesLoading } = useQuery({
-    queryKey: ["batches", historyFilter, 50],
+  const isAggregate =
+    historyFilter === "all" ||
+    historyFilter === "all-jobs" ||
+    historyFilter === "all-manual";
+
+  const { data: batchesRaw, isLoading: batchesLoading } = useQuery({
+    queryKey: ["batches", isAggregate ? "all" : historyFilter, 50],
     queryFn: () =>
-      historyFilter === "all"
+      isAggregate
         ? batchesService.getAllBatches(50)
         : batchesService.getBatchesByName(historyFilter, 50),
     staleTime: 10000,
   });
+
+  // Client-side filtering for aggregate filters
+  const batchesData = batchesRaw
+    ? {
+        ...batchesRaw,
+        data:
+          historyFilter === "all-jobs"
+            ? batchesRaw.data.filter((b) => AUTO_JOB_NAMES.has(b.name))
+            : historyFilter === "all-manual"
+              ? batchesRaw.data.filter((b) => !AUTO_JOB_NAMES.has(b.name))
+              : batchesRaw.data,
+      }
+    : undefined;
 
   const { data: healthData, isLoading: healthLoading } = useQuery({
     queryKey: ["sync-center", "health"],
@@ -70,15 +96,15 @@ export default function SyncCenterPage() {
           <div className="flex-shrink-0 mb-4 sm:mb-6">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <h1 className="text-2xl font-semibold">Sync Center</h1>
-                <p className="text-sm text-muted-foreground mt-1">
+                <h1 className="text-lg sm:text-2xl font-semibold">Sync Center</h1>
+                <p className="hidden sm:block text-sm text-muted-foreground mt-1">
                   Manage football data synchronization
                 </p>
               </div>
               {/* Provider Health Indicator */}
               <div className="flex items-center gap-2">
                 {healthLoading ? (
-                  <Skeleton className="h-7 w-32" />
+                  <Skeleton className="h-6 w-24 sm:h-7 sm:w-32" />
                 ) : healthData?.data ? (
                   <Badge
                     variant="outline"
@@ -104,9 +130,9 @@ export default function SyncCenterPage() {
 
             {/* Sync alerts banner */}
             {syncAlerts && syncAlerts.length > 0 && (
-              <div className="mt-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                <div className="text-sm">
+              <div className="mt-2 sm:mt-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-2 sm:p-3 flex items-start gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="text-xs sm:text-sm">
                   {syncAlerts.map((alert) => (
                     <p key={alert.id}>{alert.title}: {alert.description}</p>
                   ))}
@@ -115,33 +141,49 @@ export default function SyncCenterPage() {
             )}
           </div>
 
-          <div className="flex flex-col gap-6 pb-4">
+          <div className="flex flex-col gap-3 sm:gap-6 pb-4">
             <GapSummaryBar />
             <SeasonExplorer />
             <QuickActionsBar />
 
             <Card>
-              <CardHeader>
+              <CardHeader className="p-3 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <CardTitle>Sync History</CardTitle>
-                    <CardDescription>Recent sync operations</CardDescription>
+                    <CardTitle className="text-sm sm:text-base">Sync History</CardTitle>
+                    <CardDescription className="hidden sm:block">Recent sync operations</CardDescription>
                   </div>
                   <Select value={historyFilter} onValueChange={setHistoryFilter}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[220px] h-8 sm:h-9 text-xs sm:text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {ENTITY_BATCH_NAMES.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectSeparator />
+                      <SelectGroup>
+                        <SelectLabel>Automated Jobs</SelectLabel>
+                        <SelectItem value="all-jobs">All jobs</SelectItem>
+                        {AUTO_JOBS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectSeparator />
+                      <SelectGroup>
+                        <SelectLabel>Manual Operations</SelectLabel>
+                        <SelectItem value="all-manual">All manual</SelectItem>
+                        {MANUAL_OPS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
                 {batchesLoading ? (
                   <div className="space-y-4">
                     <Skeleton className="h-10 w-full" />

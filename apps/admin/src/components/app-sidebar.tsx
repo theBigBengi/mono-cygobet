@@ -51,6 +51,8 @@ const data = {
       items: [
         { title: "Users", url: "/users" },
         { title: "Settings", url: "/settings" },
+        { title: "League Order", url: "/settings/league-order" },
+        { title: "Team Order", url: "/settings/team-order" },
       ],
     },
   ],

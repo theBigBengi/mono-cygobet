@@ -595,6 +595,8 @@
   "groupCreation": {
     "tryDifferentSearch": "נסה מונח חיפוש אחר.",
     "noPopularTeamsDisplay": "אין קבוצות פופולריות להצגה.",
+    "searchForTeams": "חפש קבוצות",
+    "searchForTeamsHint": "השתמש בתיבת החיפוש למעלה כדי למצוא קבוצות.",
     "noPopularLeaguesDisplay": "אין ליגות פופולריות להצגה.",
     "loadingTeams": "טוען קבוצות…",
     "failedLoadTeams": "טעינת קבוצות נכשלה",
@@ -697,6 +699,8 @@
     "themeLight": "בהיר",
     "themeDark": "כהה",
     "preferences": "העדפות",
+    "leagueOrder": "סדר ליגות",
+    "leagueOrderSubtitle": "התאם אישית את סדר הצגת הליגות",
     "haptics": "רטט",
     "hapticsSubtitle": "משוב רטט לאינטראקציות",
     "advanced": "מתקדם",
@@ -710,7 +714,20 @@
     "version": "גרסה",
     "termsOfService": "תנאי שימוש",
     "privacyPolicy": "מדיניות פרטיות",
-    "logoutConfirm": "האם אתה בטוח שברצונך להתנתק?"
+    "logoutConfirm": "האם אתה בטוח שברצונך להתנתק?",
+    "leagueOrderScreen": {
+      "title": "סדר ליגות",
+      "yourOrder": "הסדר שלך",
+      "availableLeagues": "ליגות זמינות",
+      "addLeague": "הוסף ליגה",
+      "resetToDefault": "אפס",
+      "noLeaguesConfigured": "עדיין לא הוגדרו ליגות",
+      "saveChanges": "שמור שינויים",
+      "saved": "סדר הליגות נשמר בהצלחה",
+      "resetConfirm": "לאפס לסדר ברירת המחדל?",
+      "reset": "אפס",
+      "cancel": "ביטול"
+    }
   },
   "changePassword": {
     "title": "שינוי סיסמה",
@@ -739,6 +756,7 @@
     "updateFailed": "עדכון הפרופיל נכשל"
   },
   "common": {
+    "save": "שמור",
     "limitedConnectivity": "חיבור מוגבל — מצב קריאה בלבד",
     "loading": "טוען...",
     "restartRequired": "נדרש אתחול",

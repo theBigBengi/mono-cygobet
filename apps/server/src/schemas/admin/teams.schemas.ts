@@ -8,6 +8,7 @@ export const listTeamsQuerystringSchema = {
     perPage: { type: "number", default: 20 },
     countryId: { type: "number" },
     type: { type: "string" },
+    search: { type: "string" },
     include: { type: "string" }, // e.g., "country"
   },
 };

@@ -11,6 +11,7 @@ export class LeaguesService {
     skip: number;
     countryId?: number;
     type?: string;
+    where?: Prisma.leaguesWhereInput;
     orderBy?: Prisma.leaguesOrderByWithRelationInput[];
     include?: Prisma.leaguesInclude;
   }) {
@@ -18,14 +19,16 @@ export class LeaguesService {
       args.orderBy?.length ? args.orderBy : [{ name: "asc" }]
     ) as Prisma.leaguesOrderByWithRelationInput[];
 
-    const where: Prisma.leaguesWhereInput = {};
+    // Use provided where or build from individual params
+    const where: Prisma.leaguesWhereInput = args.where ?? {};
 
-    if (args.countryId !== undefined) {
-      where.countryId = args.countryId;
-    }
-
-    if (args.type !== undefined) {
-      where.type = args.type;
+    if (!args.where) {
+      if (args.countryId !== undefined) {
+        where.countryId = args.countryId;
+      }
+      if (args.type !== undefined) {
+        where.type = args.type;
+      }
     }
 
     const findManyArgs: Prisma.leaguesFindManyArgs = {

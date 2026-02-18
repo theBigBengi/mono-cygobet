@@ -312,7 +312,10 @@ export type LeagueGroup = {
   fixtures: FixtureItem[];
 };
 
-export function groupFixturesByLeague(fixtures: FixtureItem[]): LeagueGroup[] {
+export function groupFixturesByLeague(
+  fixtures: FixtureItem[],
+  leagueOrder?: number[]
+): LeagueGroup[] {
   const grouped: Record<string, LeagueGroup> = {};
 
   if (!fixtures || !Array.isArray(fixtures)) {
@@ -347,7 +350,43 @@ export function groupFixturesByLeague(fixtures: FixtureItem[]): LeagueGroup[] {
     });
   });
 
-  // Sort groups by earliest kickoff time, then by league name
+  // Sort groups by league order (if provided), then by kickoff time
+  if (leagueOrder && leagueOrder.length > 0) {
+    const orderMap = new Map(leagueOrder.map((id, idx) => [id, idx]));
+    return Object.values(grouped).sort((a, b) => {
+      // Extract league ID from first fixture
+      const aId = a.fixtures[0]?.league?.id;
+      const bId = b.fixtures[0]?.league?.id;
+      const aOrder = aId !== undefined ? orderMap.get(aId) : undefined;
+      const bOrder = bId !== undefined ? orderMap.get(bId) : undefined;
+
+      // Both ordered: by order, then kickoff
+      if (aOrder !== undefined && bOrder !== undefined) {
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        const timeA = a.fixtures[0]?.kickoffAt
+          ? new Date(a.fixtures[0].kickoffAt).getTime()
+          : 0;
+        const timeB = b.fixtures[0]?.kickoffAt
+          ? new Date(b.fixtures[0].kickoffAt).getTime()
+          : 0;
+        return timeA - timeB;
+      }
+      // One ordered: ordered first
+      if (aOrder !== undefined) return -1;
+      if (bOrder !== undefined) return 1;
+      // Neither: by kickoff time, then by league name
+      const timeA = a.fixtures[0]?.kickoffAt
+        ? new Date(a.fixtures[0].kickoffAt).getTime()
+        : 0;
+      const timeB = b.fixtures[0]?.kickoffAt
+        ? new Date(b.fixtures[0].kickoffAt).getTime()
+        : 0;
+      if (timeA !== timeB) return timeA - timeB;
+      return a.leagueName.localeCompare(b.leagueName);
+    });
+  }
+
+  // Default: sort groups by earliest kickoff time, then by league name
   return Object.values(grouped).sort((a, b) => {
     const timeA = a.fixtures[0]?.kickoffAt
       ? new Date(a.fixtures[0].kickoffAt).getTime()

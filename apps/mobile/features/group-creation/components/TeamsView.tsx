@@ -63,7 +63,7 @@ export function TeamsView({ tabs }: TeamsViewProps) {
           <AppText variant="title" style={styles.emptyTitle}>
             {isSearchMode
               ? t("groupCreation.noTeamsFound")
-              : t("groupCreation.noPopularTeams")}
+              : t("groupCreation.searchForTeams")}
           </AppText>
           <AppText
             variant="body"
@@ -72,7 +72,7 @@ export function TeamsView({ tabs }: TeamsViewProps) {
           >
             {isSearchMode
               ? t("groupCreation.tryDifferentSearch")
-              : t("groupCreation.noPopularTeamsDisplay")}
+              : t("groupCreation.searchForTeamsHint")}
           </AppText>
         </View>
       );

@@ -5,9 +5,10 @@ import type { ApiLeaguesResponse } from "@repo/types";
 import { buildLeaguesWhere } from "./queries";
 import { findLeagues, countLeagues } from "./repository";
 import { buildLeagueItem } from "./builders";
+import { getLeagueOrderSettings } from "../../admin/settings.service";
 
-/** League IDs to show when preset="popular". */
-const POPULAR_LEAGUE_IDS = [1, 5];
+/** Fallback league IDs if admin hasn't configured any. */
+const FALLBACK_POPULAR_IDS = [1, 5];
 
 /**
  * Get paginated list of leagues for pool creation.
@@ -39,9 +40,18 @@ export async function getLeagues(args: {
   const skip = (page - 1) * perPage;
   const take = perPage;
 
+  // Get popular league IDs from admin settings (or fallback)
+  let popularIds: number[] = FALLBACK_POPULAR_IDS;
+  if (preset === "popular") {
+    const adminSettings = await getLeagueOrderSettings();
+    if (adminSettings.defaultLeagueOrder && adminSettings.defaultLeagueOrder.length > 0) {
+      popularIds = adminSettings.defaultLeagueOrder;
+    }
+  }
+
   const where =
     preset === "popular"
-      ? { id: { in: POPULAR_LEAGUE_IDS } }
+      ? { id: { in: popularIds } }
       : buildLeaguesWhere({ onlyActiveSeasons, search });
 
   const effectiveOnlyActive = preset === "popular" ? false : onlyActiveSeasons;

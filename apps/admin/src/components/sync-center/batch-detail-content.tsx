@@ -1,20 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Timer, Hash, TrendingUp } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -27,29 +20,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/table/status-badge";
 import type { Batch, BatchItem } from "@repo/types";
 import { useBatchItems, useBatchFailedItems } from "@/hooks/use-batches";
 import { cn } from "@/lib/utils";
 
+// ── Labels ──────────────────────────────────────────────────────────
+
 const BATCH_LABELS: Record<string, string> = {
-  "seed-season": "Seed Season",
-  "seed-fixtures": "Sync Fixtures",
-  "seed-countries": "Sync Countries",
-  "seed-leagues": "Sync Leagues",
-  "seed-seasons": "Sync Seasons",
-  "seed-teams": "Sync Teams",
-  "seed-bookmakers": "Sync Bookmakers",
+  "seed-season": "Season seed",
+  "seed-fixtures": "Fixtures sync",
+  "seed-countries": "Countries sync",
+  "seed-leagues": "Leagues sync",
+  "seed-seasons": "Seasons sync",
+  "seed-teams": "Teams sync",
+  "seed-bookmakers": "Bookmakers sync",
+  "batch-seed-seasons": "Batch season seed",
+  "upsert-live-fixtures": "Live fixtures update",
+  "upsert-upcoming-fixtures": "Upcoming fixtures update",
+  "finished-fixtures": "Finished fixtures check",
+  "recovery-overdue-fixtures": "Overdue fixtures recovery",
 };
+
+// ── Helpers ─────────────────────────────────────────────────────────
 
 function formatDuration(batch: Batch): string {
   const ms =
@@ -68,72 +62,43 @@ function formatDuration(batch: Batch): string {
     : `${minutes}m`;
 }
 
-function TimeAgo({ date }: { date: string }) {
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  const now = new Date();
-  const then = new Date(date);
-  const diffMs = now.getTime() - then.getTime();
-  const diffMins = Math.round(diffMs / 60000);
-  const diffHours = Math.round(diffMs / 3600000);
-  const diffDays = Math.round(diffMs / 86400000);
+function formatTimestamp(date: string): string {
+  return new Date(date).toLocaleString("en", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-  let text: string;
-  if (diffMins < 60) {
-    text = rtf.format(-diffMins, "minute");
-  } else if (diffHours < 24) {
-    text = rtf.format(-diffHours, "hour");
-  } else {
-    text = rtf.format(-diffDays, "day");
+function getBatchContext(batch: Batch): string | null {
+  const meta = batch.meta as Record<string, unknown> | null;
+  if (!meta) return null;
+
+  // seed-season
+  const season = meta.season as { name?: string; league?: string } | undefined;
+  if (season?.league && season?.name) return `${season.league} · ${season.name}`;
+  if (season?.name) return season.name;
+
+  // seed-season (failed / in progress)
+  if (batch.name === "seed-season" && meta.seasonExternalId) {
+    return `Season #${meta.seasonExternalId}`;
   }
 
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="text-sm text-muted-foreground cursor-help">
-          {text}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{new Date(date).toLocaleString()}</TooltipContent>
-    </Tooltip>
-  );
-}
+  // batch-seed-seasons
+  if (batch.name === "batch-seed-seasons" && typeof meta.totalSeasons === "number") {
+    return `${meta.totalSeasons} seasons`;
+  }
 
-function BatchDetailHeader({ batch }: { batch: Batch }) {
-  const label = BATCH_LABELS[batch.name] ?? batch.name;
-  const isSuccess = batch.status === "success";
-  const meta = batch.meta as {
-    season?: { name?: string; league?: string };
-  } | null;
-  const context =
-    meta?.season?.league && meta?.season?.name
-      ? `${meta.season.league} · ${meta.season.name}`
-      : (meta?.season?.name ?? null);
+  // upcoming fixtures — date window
+  const window = meta.window as { from?: string; to?: string } | undefined;
+  if (window?.from && window?.to) {
+    const fmt = (iso: string) =>
+      new Date(iso).toLocaleDateString("en", { month: "short", day: "numeric" });
+    return `${fmt(window.from)} → ${fmt(window.to)}`;
+  }
 
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          {isSuccess ? (
-            <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-          ) : (
-            <XCircle className="h-5 w-5 text-destructive shrink-0" />
-          )}
-          <span className="font-semibold">{label}</span>
-        </div>
-        <TimeAgo date={batch.startedAt} />
-      </div>
-      {context && <p className="text-sm text-muted-foreground">{context}</p>}
-    </div>
-  );
-}
-
-function formatChanges(ch: unknown): string {
-  if (ch == null || typeof ch !== "object") return "—";
-  const obj = ch as Record<string, unknown>;
-  const parts = Object.entries(obj).map(
-    ([k, v]) => `${k}: ${String(v ?? "—")}`
-  );
-  return parts.length ? parts.join(", ") : "—";
+  return null;
 }
 
 function getActionLabel(item: BatchItem): string {
@@ -146,56 +111,108 @@ function getActionLabel(item: BatchItem): string {
   return item.status;
 }
 
-function SummaryCards({ batch }: { batch: Batch }) {
-  const duration = formatDuration(batch);
+// ── Header ──────────────────────────────────────────────────────────
+
+function Header({ batch }: { batch: Batch }) {
+  const label = BATCH_LABELS[batch.name] ?? batch.name;
+  const isSuccess = batch.status === "success";
+  const context = getBatchContext(batch);
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <Card>
-        <CardHeader className="pb-1 pt-4">
-          <CardDescription>Duration</CardDescription>
-        </CardHeader>
-        <CardContent className="pb-4">
-          <p className="text-lg font-medium">{duration}</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="pb-1 pt-4">
-          <CardDescription>Total</CardDescription>
-        </CardHeader>
-        <CardContent className="pb-4">
-          <p className="text-lg font-medium">{batch.itemsTotal}</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="pb-1 pt-4">
-          <CardDescription>Success</CardDescription>
-        </CardHeader>
-        <CardContent className="pb-4">
-          <p className="text-lg font-medium text-green-600">
-            {batch.itemsSuccess}
+    <div className="flex items-start gap-2 sm:gap-3 pr-8">
+      <div
+        className={cn(
+          "mt-0.5 rounded-full p-1 sm:p-1.5",
+          isSuccess ? "bg-green-100 dark:bg-green-950" : "bg-red-100 dark:bg-red-950"
+        )}
+      >
+        {isSuccess ? (
+          <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
+        ) : (
+          <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="font-semibold text-sm sm:text-base leading-tight">{label}</h3>
+          <StatusBadge status={batch.status} />
+        </div>
+        {context && (
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{context}</p>
+        )}
+        {batch.status === "failed" && batch.errorMessage && (
+          <p className="text-xs sm:text-sm text-destructive mt-1 line-clamp-2">
+            {batch.errorMessage}
           </p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="pb-1 pt-4">
-          <CardDescription>Failed</CardDescription>
-        </CardHeader>
-        <CardContent className="pb-4">
-          <p
-            className={cn(
-              "text-lg font-medium",
-              batch.itemsFailed > 0
-                ? "text-destructive"
-                : "text-muted-foreground"
-            )}
-          >
-            {batch.itemsFailed}
-          </p>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 }
+
+// ── Stats row ───────────────────────────────────────────────────────
+
+function StatsRow({ batch }: { batch: Batch }) {
+  const meta = (batch.meta ?? {}) as Record<string, unknown>;
+  const inserted = typeof meta.inserted === "number" ? meta.inserted : undefined;
+  const updated = typeof meta.updated === "number" ? meta.updated : undefined;
+  const skipped = typeof meta.skipped === "number" ? meta.skipped : undefined;
+
+  const stats = [
+    {
+      icon: Clock,
+      label: "Started",
+      value: formatTimestamp(batch.startedAt),
+    },
+    {
+      icon: Timer,
+      label: "Duration",
+      value: formatDuration(batch),
+    },
+    {
+      icon: Hash,
+      label: "Items",
+      value: String(batch.itemsTotal),
+    },
+    {
+      icon: TrendingUp,
+      label: "Result",
+      value:
+        inserted != null || updated != null
+          ? [
+              inserted ? `${inserted} new` : null,
+              updated ? `${updated} updated` : null,
+              skipped ? `${skipped} skipped` : null,
+              batch.itemsFailed > 0 ? `${batch.itemsFailed} failed` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "no changes"
+          : `${batch.itemsSuccess} ok${batch.itemsFailed > 0 ? ` · ${batch.itemsFailed} failed` : ""}`,
+      danger: batch.itemsFailed > 0,
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:gap-x-4 sm:gap-y-2 rounded-lg border p-2 sm:p-3 text-xs sm:text-sm">
+      {stats.map((s) => (
+        <div key={s.label} className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <s.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
+          <span className="text-muted-foreground shrink-0">{s.label}:</span>
+          <span
+            className={cn(
+              "truncate font-medium",
+              "danger" in s && s.danger && "text-destructive"
+            )}
+          >
+            {s.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Items section ───────────────────────────────────────────────────
 
 type StatusFilterValue = "all" | "success" | "failed" | "skipped";
 type ActionFilterValue = "all" | "inserted" | "updated" | "skipped" | "failed";
@@ -216,12 +233,10 @@ function ItemsSection({ batch }: { batch: Batch }) {
   const pagination = data?.pagination;
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Items</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="flex-1 min-h-0 flex flex-col gap-3">
+      <div className="flex-shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <h4 className="text-sm font-medium">Items</h4>
+        <div className="flex items-center gap-2">
           <Select
             value={statusFilter}
             onValueChange={(v) => {
@@ -229,7 +244,7 @@ function ItemsSection({ batch }: { batch: Batch }) {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-[120px] sm:w-[140px]">
+            <SelectTrigger className="h-7 sm:h-8 w-[100px] sm:w-[110px] text-xs">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -246,7 +261,7 @@ function ItemsSection({ batch }: { batch: Batch }) {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-[120px] sm:w-[140px]">
+            <SelectTrigger className="h-7 sm:h-8 w-[100px] sm:w-[110px] text-xs">
               <SelectValue placeholder="Action" />
             </SelectTrigger>
             <SelectContent>
@@ -258,103 +273,92 @@ function ItemsSection({ batch }: { batch: Batch }) {
             </SelectContent>
           </Select>
         </div>
-        <div className="overflow-x-auto border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Entity</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead className="hidden md:table-cell">Reason</TableHead>
-                <TableHead className="hidden lg:table-cell">Changes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => {
-                const m = (item.meta ?? {}) as Record<string, unknown>;
-                const entityType =
-                  typeof m["entityType"] === "string"
-                    ? m["entityType"]
-                    : item.itemKey?.split(":")[0] ?? null;
-                const name =
-                  typeof m["name"] === "string" ? m["name"] : null;
-                const entityId = item.itemKey?.split(":")[1] ?? item.itemKey;
-                const reason =
-                  typeof m["reason"] === "string"
-                    ? (m["reason"] as string)
-                    : "—";
-                const changes = formatChanges(m["changes"]);
-                return (
-                  <TableRow key={item.id}>
-                    <TableCell className="max-w-[200px] sm:max-w-[300px]">
-                      <div className="flex flex-col">
-                        {entityType && (
-                          <span className="text-xs text-muted-foreground uppercase">
-                            {entityType}
-                          </span>
-                        )}
-                        <span className="font-medium truncate">
-                          {name ?? entityId ?? "—"}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <StatusBadge status={getActionLabel(item)} />
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground text-xs max-w-[200px] truncate">
-                      {reason}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-muted-foreground text-xs max-w-[280px] truncate">
-                      {changes}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {!items.length && (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="text-center text-sm text-muted-foreground py-8"
-                  >
-                    {isLoading ? "Loading…" : "No items for this batch."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        {pagination && pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              {pagination.page}/{pagination.totalPages}
-              <span className="hidden sm:inline">
-                {" "}
-                ({pagination.totalItems})
-              </span>
+      </div>
+
+      {isLoading ? (
+        <Skeleton className="h-32 w-full" />
+      ) : !items.length ? (
+        <p className="text-center text-sm text-muted-foreground py-8">
+          No items for this batch.
+        </p>
+      ) : (
+        <ul className="flex-1 min-h-0 overflow-y-auto space-y-1">
+          {items.map((item) => (
+            <ItemRow key={item.id} item={item} />
+          ))}
+        </ul>
+      )}
+
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex-shrink-0 flex items-center justify-between text-xs text-muted-foreground pt-1">
+          <span>
+            Page {pagination.page} of {pagination.totalPages}
+            <span className="hidden sm:inline">
+              {" "}({pagination.totalItems} items)
             </span>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                Prev
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={page >= pagination.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </Button>
-            </div>
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Prev
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={page >= pagination.totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 }
+
+function ItemRow({ item }: { item: BatchItem }) {
+  const m = (item.meta ?? {}) as Record<string, unknown>;
+  const entityType =
+    typeof m["entityType"] === "string"
+      ? m["entityType"]
+      : item.itemKey?.split(":")[0] ?? null;
+  const name = typeof m["name"] === "string" ? m["name"] : null;
+  const entityId = item.itemKey?.split(":")[1] ?? item.itemKey;
+  const action = getActionLabel(item);
+  const errorMsg = item.errorMessage;
+
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 sm:px-3 sm:py-2">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 min-w-0">
+          {entityType && (
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide shrink-0">
+              {entityType}
+            </span>
+          )}
+          <span className="text-xs sm:text-sm font-medium truncate">
+            {name ?? entityId ?? "—"}
+          </span>
+        </div>
+        {errorMsg && (
+          <p className="text-[10px] sm:text-xs text-destructive mt-0.5 line-clamp-1">
+            {errorMsg}
+          </p>
+        )}
+      </div>
+      <StatusBadge status={action} />
+    </div>
+  );
+}
+
+// ── Failed items (collapsible) ──────────────────────────────────────
 
 function FailedItemsList({
   batchId,
@@ -370,7 +374,7 @@ function FailedItemsList({
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className="text-destructive">
           View {failedCount} failed item{failedCount !== 1 ? "s" : ""}
         </Button>
       </CollapsibleTrigger>
@@ -378,21 +382,9 @@ function FailedItemsList({
         {isLoading ? (
           <Skeleton className="mt-3 h-20 w-full" />
         ) : (
-          <ul className="mt-3 space-y-2 rounded-md border p-3 max-h-48 overflow-y-auto">
+          <ul className="mt-3 space-y-1 max-h-48 overflow-y-auto">
             {items.map((item: BatchItem) => (
-              <li
-                key={item.id}
-                className="text-sm border-b border-muted/50 pb-2 last:border-0 last:pb-0"
-              >
-                <span className="font-mono text-muted-foreground">
-                  {item.itemKey ?? `#${item.id}`}
-                </span>
-                {item.errorMessage && (
-                  <p className="mt-0.5 text-destructive text-xs">
-                    {item.errorMessage}
-                  </p>
-                )}
-              </li>
+              <ItemRow key={item.id} item={item} />
             ))}
           </ul>
         )}
@@ -401,28 +393,21 @@ function FailedItemsList({
   );
 }
 
-function ErrorSection({ batch }: { batch: Batch }) {
-  const hasBatchError = batch.status === "failed" && batch.errorMessage;
-  const hasItemFailures = batch.itemsFailed > 0;
+// ── Error section ───────────────────────────────────────────────────
 
-  if (!hasBatchError && !hasItemFailures) return null;
+function ErrorSection({ batch }: { batch: Batch }) {
+  const hasItemFailures = batch.itemsFailed > 0;
+  if (!hasItemFailures) return null;
 
   return (
-    <Card className="border-destructive/50">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base text-destructive">Errors</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {hasBatchError && (
-          <p className="text-sm text-destructive">{batch.errorMessage}</p>
-        )}
-        {hasItemFailures && (
-          <FailedItemsList batchId={batch.id} failedCount={batch.itemsFailed} />
-        )}
-      </CardContent>
-    </Card>
+    <div className="space-y-2">
+      <h4 className="text-sm font-medium text-destructive">Errors</h4>
+      <FailedItemsList batchId={batch.id} failedCount={batch.itemsFailed} />
+    </div>
   );
 }
+
+// ── Main export ─────────────────────────────────────────────────────
 
 export interface BatchDetailContentProps {
   batch: Batch;
@@ -430,12 +415,9 @@ export interface BatchDetailContentProps {
 
 export function BatchDetailContent({ batch }: BatchDetailContentProps) {
   return (
-    <div className="space-y-6">
-      <BatchDetailHeader batch={batch} />
-      <div>
-        <h4 className="text-sm font-medium mb-3">Summary</h4>
-        <SummaryCards batch={batch} />
-      </div>
+    <div className="flex flex-col gap-4 min-h-0 flex-1">
+      <Header batch={batch} />
+      <StatsRow batch={batch} />
       <ItemsSection batch={batch} />
       <ErrorSection batch={batch} />
     </div>

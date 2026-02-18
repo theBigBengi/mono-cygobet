@@ -19,6 +19,7 @@ import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiUpcomingFixturesQuery } from "@repo/types";
 import { useUpcomingFixturesQuery } from "@/domains/fixtures/fixtures.hooks";
+import { useLeaguePreferences } from "@/domains/preferences";
 import { GameSelectionCard } from "@/features/group-creation/selection/games";
 import {
   useIsGroupGameSelected,
@@ -160,6 +161,10 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
   const { data, isLoading, error, refetch } =
     useUpcomingFixturesQuery(mergedParams);
 
+  // Fetch user's league order preferences
+  const { data: prefsData } = useLeaguePreferences();
+  const effectiveLeagueOrder = prefsData?.data?.leagueOrder ?? undefined;
+
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -172,8 +177,8 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
 
   const leagueGroups = useMemo(() => {
     const fixtures = (data?.data || []) as FixtureItem[];
-    return groupFixturesByLeague(fixtures);
-  }, [data?.data]);
+    return groupFixturesByLeague(fixtures, effectiveLeagueOrder);
+  }, [data?.data, effectiveLeagueOrder]);
 
   return (
     <View

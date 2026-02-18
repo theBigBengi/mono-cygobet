@@ -11,6 +11,7 @@ export class TeamsService {
     skip: number;
     countryId?: number;
     type?: string;
+    where?: Prisma.teamsWhereInput;
     orderBy?: Prisma.teamsOrderByWithRelationInput[];
     include?: Prisma.teamsInclude;
   }) {
@@ -18,14 +19,16 @@ export class TeamsService {
       args.orderBy?.length ? args.orderBy : [{ name: "asc" }]
     ) as Prisma.teamsOrderByWithRelationInput[];
 
-    const where: Prisma.teamsWhereInput = {};
+    // Use provided where or build from individual params
+    const where: Prisma.teamsWhereInput = args.where ?? {};
 
-    if (args.countryId !== undefined) {
-      where.countryId = args.countryId;
-    }
-
-    if (args.type !== undefined) {
-      where.type = args.type;
+    if (!args.where) {
+      if (args.countryId !== undefined) {
+        where.countryId = args.countryId;
+      }
+      if (args.type !== undefined) {
+        where.type = args.type;
+      }
     }
 
     const findManyArgs: Prisma.teamsFindManyArgs = {

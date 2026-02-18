@@ -450,10 +450,17 @@ function CountryGroupRow({
 
   return (
     <div className="border rounded-lg">
-      <button
-        type="button"
-        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 transition-colors text-left"
+      <div
+        role="button"
+        tabIndex={0}
+        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 transition-colors text-left cursor-pointer select-none"
         onClick={() => onToggleCountry(group.country)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggleCountry(group.country);
+          }
+        }}
       >
         {expanded ? (
           <ChevronDown className="h-4 w-4 shrink-0" />
@@ -461,14 +468,15 @@ function CountryGroupRow({
           <ChevronRight className="h-4 w-4 shrink-0" />
         )}
         {showCheckboxes && (
-          <Checkbox
-            checked={allSelected}
-            onCheckedChange={(checked) => {
-              if (checked) selection.selectAll(newIds);
-              else selection.deselectAll(newIds);
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={(checked) => {
+                if (checked) selection.selectAll(newIds);
+                else selection.deselectAll(newIds);
+              }}
+            />
+          </div>
         )}
         <span className="font-medium text-sm truncate">{group.country}</span>
         <div className="flex items-center gap-1.5 ml-auto shrink-0">
@@ -485,7 +493,7 @@ function CountryGroupRow({
             {group.leagues.length !== 1 ? "s" : ""}
           </span>
         </div>
-      </button>
+      </div>
 
       {expanded && (
         <div className="pl-2 sm:pl-4 pb-1">
@@ -544,10 +552,17 @@ function LeagueGroupRow({
 
   return (
     <div className="ml-1 sm:ml-2">
-      <button
-        type="button"
-        className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-muted/50 transition-colors rounded text-left"
+      <div
+        role="button"
+        tabIndex={0}
+        className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-muted/50 transition-colors rounded text-left cursor-pointer select-none"
         onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
       >
         {expanded ? (
           <ChevronDown className="h-3.5 w-3.5 shrink-0" />
@@ -555,20 +570,21 @@ function LeagueGroupRow({
           <ChevronRight className="h-3.5 w-3.5 shrink-0" />
         )}
         {showCheckboxes && (
-          <Checkbox
-            checked={allSelected}
-            onCheckedChange={(checked) => {
-              if (checked) selection.selectAll(newIds);
-              else selection.deselectAll(newIds);
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={(checked) => {
+                if (checked) selection.selectAll(newIds);
+                else selection.deselectAll(newIds);
+              }}
+            />
+          </div>
         )}
         <span className="text-sm truncate">{league.leagueName}</span>
         <span className="text-xs text-muted-foreground ml-auto shrink-0">
           ({league.seasons.length})
         </span>
-      </button>
+      </div>
 
       {expanded && (
         <div className="ml-4 sm:ml-6 space-y-0.5 pb-1">

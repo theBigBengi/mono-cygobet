@@ -5,9 +5,8 @@ import type { ApiTeamsResponse } from "@repo/types";
 import { buildTeamsWhere } from "./queries";
 import { findTeams, countTeams } from "./repository";
 import { buildTeamItem } from "./builders";
+import { getTeamOrderSettings } from "../../admin/settings.service";
 
-/** Team IDs to show when preset="popular". */
-const POPULAR_TEAM_IDS = [35, 37, 1, 22, 36];
 
 /**
  * Get paginated list of teams for pool creation.
@@ -37,9 +36,18 @@ export async function getTeams(args: {
   const skip = (page - 1) * perPage;
   const take = perPage;
 
+  // Get popular team IDs from admin settings
+  let popularIds: number[] = [];
+  if (preset === "popular") {
+    const adminSettings = await getTeamOrderSettings();
+    if (adminSettings.defaultTeamOrder && adminSettings.defaultTeamOrder.length > 0) {
+      popularIds = adminSettings.defaultTeamOrder;
+    }
+  }
+
   const where =
     preset === "popular"
-      ? { id: { in: POPULAR_TEAM_IDS } }
+      ? { id: { in: popularIds } }
       : buildTeamsWhere({ leagueId, search });
 
   const [teams, count] = await Promise.all([
