@@ -64,8 +64,8 @@ type DialogState =
 // ── Helpers ──────────────────────────────────────────────────────────
 
 async function compareExternalIds(
-  providerItems: { externalId: string | number }[],
-  dbItems: { externalId: string | number }[]
+  providerItems: { externalId: string | number | null }[],
+  dbItems: { externalId: string | number | null }[]
 ): Promise<PreviewData> {
   const dbIdSet = new Set(dbItems.map((d) => String(d.externalId)));
   let newCount = 0;

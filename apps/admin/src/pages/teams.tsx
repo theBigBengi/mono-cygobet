@@ -280,7 +280,8 @@ export default function TeamsPage() {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["teams", serverParams],
     queryFn: () => teamsService.getFromDb(serverParams),
-    placeholderData: (prev) => prev, // keep previous data while loading
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   const allTeams = data?.data ?? [];

@@ -162,23 +162,32 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
         },
       };
 
-      // Build where clause with optional filters
-      const where: Prisma.teamsWhereInput = {};
+      // Build where clause — use AND to safely combine filters that each use OR
+      const filters: Prisma.teamsWhereInput[] = [];
       if (query.countryId) {
-        where.countryId = query.countryId;
+        filters.push({ countryId: query.countryId });
       }
       if (query.type) {
-        where.type = query.type;
+        filters.push({ type: query.type });
       }
       if (query.search) {
-        where.name = { contains: query.search, mode: "insensitive" };
+        filters.push({
+          OR: [
+            { name: { contains: query.search, mode: "insensitive" } },
+            { shortCode: { contains: query.search, mode: "insensitive" } },
+          ],
+        });
       }
       if (query.leagueId) {
-        where.OR = [
-          { fixtures_fixtures_home_team_idToteams: { some: { leagueId: query.leagueId } } },
-          { fixtures_fixtures_away_team_idToteams: { some: { leagueId: query.leagueId } } },
-        ];
+        filters.push({
+          OR: [
+            { fixtures_fixtures_home_team_idToteams: { some: { leagueId: query.leagueId } } },
+            { fixtures_fixtures_away_team_idToteams: { some: { leagueId: query.leagueId } } },
+          ],
+        });
       }
+      const where: Prisma.teamsWhereInput =
+        filters.length > 0 ? { AND: filters } : {};
 
       const { teams, count } = await service.get({
         take,
