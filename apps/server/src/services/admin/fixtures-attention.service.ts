@@ -54,6 +54,13 @@ type FixtureRow = {
   league: { id: number; name: string; imagePath: string | null } | null;
 };
 
+// Lightweight item — fixture row + issue metadata, without group/prediction counts
+type LightItem = FixtureRow & {
+  issueType: FixtureIssueType;
+  issueLabel: string;
+  issueSince: string;
+};
+
 export interface FixturesAttentionParams {
   issueType?: FixtureIssueType | "all";
   page?: number;
@@ -65,15 +72,15 @@ export async function getFixturesNeedingAttention(
 ): Promise<AdminFixturesAttentionResponse> {
   const { issueType = "all", page = 1, perPage = 25 } = params;
 
-  // Always fetch ALL categories (for global counts in the filter dropdown)
-  const allCategories: FixtureIssueType[] = ["stuck", "overdue", "noScores", "unsettled"];
+  // 1. Fetch ALL lightweight rows from every category (parallel, no take limit)
+  const allCategories: FixtureIssueType[] = ["stuck", "unsettled", "overdue", "noScores"];
   const allResults = await Promise.all(
-    allCategories.map((cat) => fetchByIssueType(cat))
+    allCategories.map((cat) => fetchLightRows(cat))
   );
 
-  // Merge and deduplicate (priority: stuck > unsettled > overdue > noScores)
+  // 2. Merge and deduplicate (priority: stuck > unsettled > overdue > noScores)
   const seen = new Set<number>();
-  const allItems: AdminFixtureAttentionItem[] = [];
+  const allItems: LightItem[] = [];
 
   for (const items of allResults) {
     for (const item of items) {
@@ -84,19 +91,19 @@ export async function getFixturesNeedingAttention(
     }
   }
 
-  // Compute global issue counts (always all categories)
+  // 3. Compute issue counts from the COMPLETE deduplicated list
   const issueCounts = { stuck: 0, overdue: 0, noScores: 0, unsettled: 0 };
   for (const item of allItems) {
     issueCounts[item.issueType]++;
   }
 
-  // Filter to requested category
+  // 4. Filter to requested category
   const filtered =
     issueType === "all"
       ? allItems
       : allItems.filter((item) => item.issueType === issueType);
 
-  // Sort: critical issues first (stuck > unsettled > overdue > noScores), then by issueSince asc (oldest first)
+  // 5. Sort: critical issues first (stuck > unsettled > overdue > noScores), then oldest first
   const priorityOrder: Record<FixtureIssueType, number> = {
     stuck: 0,
     unsettled: 1,
@@ -109,11 +116,14 @@ export async function getFixturesNeedingAttention(
     return new Date(a.issueSince).getTime() - new Date(b.issueSince).getTime();
   });
 
-  // Paginate
+  // 6. Paginate
   const totalItems = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / perPage));
   const offset = (page - 1) * perPage;
-  const pageItems = filtered.slice(offset, offset + perPage);
+  const pageSlice = filtered.slice(offset, offset + perPage);
+
+  // 7. Hydrate ONLY the current page items with group/prediction counts
+  const pageItems = await Promise.all(pageSlice.map(hydrateItem));
 
   return {
     status: "success",
@@ -124,22 +134,24 @@ export async function getFixturesNeedingAttention(
   };
 }
 
-async function fetchByIssueType(
+// ── Lightweight fetch (no take limit, no extra queries per row) ──────
+
+async function fetchLightRows(
   issueType: FixtureIssueType
-): Promise<AdminFixtureAttentionItem[]> {
+): Promise<LightItem[]> {
   switch (issueType) {
     case "stuck":
-      return fetchStuck();
+      return fetchStuckLight();
     case "overdue":
-      return fetchOverdue();
+      return fetchOverdueLight();
     case "noScores":
-      return fetchNoScores();
+      return fetchNoScoresLight();
     case "unsettled":
-      return fetchUnsettled();
+      return fetchUnsettledLight();
   }
 }
 
-async function fetchStuck(): Promise<AdminFixtureAttentionItem[]> {
+async function fetchStuckLight(): Promise<LightItem[]> {
   const stuckCutoff = new Date(Date.now() - STUCK_THRESHOLD_MS);
   const rows = await prisma.fixtures.findMany({
     where: {
@@ -149,12 +161,16 @@ async function fetchStuck(): Promise<AdminFixtureAttentionItem[]> {
     },
     select: FIXTURE_SELECT,
     orderBy: { updatedAt: "asc" },
-    take: 200,
   });
-  return Promise.all(rows.map((r) => toAttentionItem(r, "stuck", "Stuck LIVE", r.updatedAt.toISOString())));
+  return rows.map((r) => ({
+    ...r,
+    issueType: "stuck" as const,
+    issueLabel: "Stuck LIVE",
+    issueSince: r.updatedAt.toISOString(),
+  }));
 }
 
-async function fetchOverdue(): Promise<AdminFixtureAttentionItem[]> {
+async function fetchOverdueLight(): Promise<LightItem[]> {
   const nowTs = nowUnixSeconds();
   const rows = await prisma.fixtures.findMany({
     where: {
@@ -164,12 +180,16 @@ async function fetchOverdue(): Promise<AdminFixtureAttentionItem[]> {
     },
     select: FIXTURE_SELECT,
     orderBy: { startTs: "asc" },
-    take: 200,
   });
-  return Promise.all(rows.map((r) => toAttentionItem(r, "overdue", "Overdue NS", r.startIso)));
+  return rows.map((r) => ({
+    ...r,
+    issueType: "overdue" as const,
+    issueLabel: "Overdue NS",
+    issueSince: r.startIso,
+  }));
 }
 
-async function fetchNoScores(): Promise<AdminFixtureAttentionItem[]> {
+async function fetchNoScoresLight(): Promise<LightItem[]> {
   const rows = await prisma.fixtures.findMany({
     where: {
       externalId: { gte: 0 },
@@ -178,13 +198,16 @@ async function fetchNoScores(): Promise<AdminFixtureAttentionItem[]> {
     },
     select: FIXTURE_SELECT,
     orderBy: { updatedAt: "desc" },
-    take: 200,
   });
-  return Promise.all(rows.map((r) => toAttentionItem(r, "noScores", "No Scores", r.updatedAt.toISOString())));
+  return rows.map((r) => ({
+    ...r,
+    issueType: "noScores" as const,
+    issueLabel: "No Scores",
+    issueSince: r.updatedAt.toISOString(),
+  }));
 }
 
-async function fetchUnsettled(): Promise<AdminFixtureAttentionItem[]> {
-  // Find fixture IDs with unsettled predictions
+async function fetchUnsettledLight(): Promise<LightItem[]> {
   const gfRows = await prisma.groupPredictions.findMany({
     where: { settledAt: null },
     select: { groupFixtureId: true },
@@ -208,19 +231,20 @@ async function fetchUnsettled(): Promise<AdminFixtureAttentionItem[]> {
     },
     select: FIXTURE_SELECT,
     orderBy: { updatedAt: "desc" },
-    take: 200,
   });
-
-  return Promise.all(rows.map((r) => toAttentionItem(r, "unsettled", "Unsettled", r.updatedAt.toISOString())));
+  return rows.map((r) => ({
+    ...r,
+    issueType: "unsettled" as const,
+    issueLabel: "Unsettled",
+    issueSince: r.updatedAt.toISOString(),
+  }));
 }
 
-async function toAttentionItem(
-  row: FixtureRow,
-  issueType: FixtureIssueType,
-  issueLabel: string,
-  issueSince: string
+// ── Hydrate a single item with group/prediction counts (expensive) ───
+
+async function hydrateItem(
+  row: LightItem
 ): Promise<AdminFixtureAttentionItem> {
-  // Count groups and predictions for this fixture
   const groupFixtures = await prisma.groupFixtures.findMany({
     where: { fixtureId: row.id },
     select: { id: true, groupId: true },
@@ -244,9 +268,9 @@ async function toAttentionItem(
     result: row.result,
     homeScore90: row.homeScore90,
     awayScore90: row.awayScore90,
-    issueType,
-    issueLabel,
-    issueSince,
+    issueType: row.issueType,
+    issueLabel: row.issueLabel,
+    issueSince: row.issueSince,
     homeTeam: row.homeTeam,
     awayTeam: row.awayTeam,
     league: row.league,

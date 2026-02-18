@@ -37,14 +37,14 @@ import type {
   FixtureIssueType,
 } from "@repo/types";
 
-type FixturesTab = "attention" | "search";
+type FixturesTab = "live" | "attention" | "search";
 
 export default function FixturesPage() {
   const [tab, setTab] = useState<FixturesTab>("attention");
   const queryClient = useQueryClient();
 
   // ─── Live fixtures ───
-  const { data: liveData, isFetching: liveFetching } = useLiveFixtures();
+  const { data: liveData, isFetching: liveFetching, refetch: refetchLive } = useLiveFixtures();
   const liveFixtures = liveData?.data ?? [];
 
   // ─── Attention tab state ───
@@ -156,16 +156,6 @@ export default function FixturesPage() {
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      {/* Live Fixtures */}
-      {liveFixtures.length > 0 && (
-        <LiveFixturesSection
-          fixtures={liveFixtures}
-          isFetching={liveFetching}
-          syncingIds={syncingIds}
-          onSync={handleSync}
-        />
-      )}
-
       {/* Header */}
       <div className="flex-shrink-0 mb-3 sm:mb-4">
         <div className="flex items-center justify-between gap-2">
@@ -174,6 +164,18 @@ export default function FixturesPage() {
             onValueChange={(v) => setTab(v as FixturesTab)}
           >
             <TabsList>
+              <TabsTrigger value="live" className="gap-1.5">
+                <Radio className="h-3.5 w-3.5" />
+                Live
+                {liveFixtures.length > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="ml-1 h-5 min-w-5 px-1.5 text-[10px] border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400"
+                  >
+                    {liveFixtures.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="attention" className="gap-1.5">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 Attention
@@ -188,7 +190,7 @@ export default function FixturesPage() {
               </TabsTrigger>
               <TabsTrigger value="search" className="gap-1.5">
                 <Search className="h-3.5 w-3.5" />
-                Search & Fix
+                Search
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -240,6 +242,16 @@ export default function FixturesPage() {
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
+        {tab === "live" && (
+          <LiveFixturesSection
+            fixtures={liveFixtures}
+            isFetching={liveFetching}
+            syncingIds={syncingIds}
+            onSync={handleSync}
+            onRefresh={() => void refetchLive()}
+          />
+        )}
+
         {tab === "attention" && (
           <>
             {!attentionLoading && totalAttention > 0 && issueCounts && (
@@ -487,87 +499,113 @@ function LiveFixturesSection({
   isFetching,
   syncingIds,
   onSync,
+  onRefresh,
 }: {
   fixtures: LiveFixture[];
   isFetching: boolean;
   syncingIds: Set<string>;
   onSync: (externalId: string, name: string) => void;
+  onRefresh: () => void;
 }) {
+  if (fixtures.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Radio className="h-8 w-8 text-muted-foreground/50" />
+        <p className="mt-3 text-sm text-muted-foreground">
+          No live fixtures right now
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3 h-7 text-xs"
+          onClick={onRefresh}
+          disabled={isFetching}
+        >
+          <RefreshCw className={`h-3 w-3 mr-1.5 ${isFetching ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-shrink-0 mb-3 sm:mb-4">
-      <div className="rounded-lg border border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20 p-3 sm:p-4">
-        <div className="flex items-center gap-2 mb-2.5">
-          <Radio className="h-3.5 w-3.5 text-green-600 dark:text-green-400 animate-pulse" />
-          <span className="text-sm font-semibold text-green-700 dark:text-green-400">
-            {fixtures.length} Live
-          </span>
-          {isFetching && (
-            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-green-600 border-t-transparent dark:border-green-400 dark:border-t-transparent" />
-          )}
-        </div>
-        <div className="space-y-1.5">
-          {fixtures.map((f) => {
-            const isSyncing = syncingIds.has(f.externalId);
-            return (
-              <div
-                key={f.id}
-                className="flex items-center gap-2 rounded-md bg-white/60 dark:bg-white/5 border border-green-100 dark:border-green-900/50 px-2.5 py-1.5 sm:px-3 sm:py-2"
-              >
-                {/* Team logos + score */}
-                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  {f.homeTeam?.imagePath && (
-                    <img src={f.homeTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />
-                  )}
-                  <span className="text-xs sm:text-sm font-medium truncate">
-                    {f.homeTeam?.name ?? "Home"}
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold tabular-nums shrink-0">
-                    {f.homeScore90 ?? 0} - {f.awayScore90 ?? 0}
-                  </span>
-                  <span className="text-xs sm:text-sm font-medium truncate">
-                    {f.awayTeam?.name ?? "Away"}
-                  </span>
-                  {f.awayTeam?.imagePath && (
-                    <img src={f.awayTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />
-                  )}
-                </div>
-
-                {/* State badge */}
-                <Badge
-                  variant="outline"
-                  className="text-[10px] shrink-0 border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-400"
-                >
-                  {f.state.replace("INPLAY_", "").replace(/_/g, " ")}
-                </Badge>
-
-                {/* League name - desktop only */}
-                {f.league && (
-                  <span className="hidden md:inline text-[11px] text-muted-foreground truncate max-w-[120px]">
-                    {f.league.name}
-                  </span>
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-sm font-semibold">
+          {fixtures.length} fixture{fixtures.length !== 1 ? "s" : ""} in play
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={onRefresh}
+          disabled={isFetching}
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+        </Button>
+      </div>
+      <div className="space-y-1.5">
+        {fixtures.map((f) => {
+          const isSyncing = syncingIds.has(f.externalId);
+          return (
+            <div
+              key={f.id}
+              className="flex items-center gap-2 rounded-md border px-2.5 py-1.5 sm:px-3 sm:py-2"
+            >
+              {/* Team logos + score */}
+              <Link to={`/fixtures/${f.id}`} className="flex items-center gap-1.5 flex-1 min-w-0 hover:opacity-70 transition-opacity">
+                {f.homeTeam?.imagePath && (
+                  <img src={f.homeTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />
                 )}
+                <span className="text-xs sm:text-sm font-medium truncate">
+                  {f.homeTeam?.name ?? "Home"}
+                </span>
+                <span className="text-xs sm:text-sm font-bold tabular-nums shrink-0">
+                  {f.homeScore90 ?? 0} - {f.awayScore90 ?? 0}
+                </span>
+                <span className="text-xs sm:text-sm font-medium truncate">
+                  {f.awayTeam?.name ?? "Away"}
+                </span>
+                {f.awayTeam?.imagePath && (
+                  <img src={f.awayTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />
+                )}
+              </Link>
 
-                {/* Sync button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs shrink-0"
-                  disabled={isSyncing}
-                  onClick={() => onSync(f.externalId, f.name)}
-                >
-                  {isSyncing ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <>
-                      <RefreshCw className="h-3 w-3 sm:mr-1" />
-                      <span className="hidden sm:inline">Sync</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            );
-          })}
-        </div>
+              {/* State badge */}
+              <Badge
+                variant="outline"
+                className="text-[10px] shrink-0 border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-400"
+              >
+                {f.state.replace("INPLAY_", "").replace(/_/g, " ")}
+              </Badge>
+
+              {/* League name - desktop only */}
+              {f.league && (
+                <span className="hidden md:inline text-[11px] text-muted-foreground truncate max-w-[120px]">
+                  {f.league.name}
+                </span>
+              )}
+
+              {/* Sync button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs shrink-0"
+                disabled={isSyncing}
+                onClick={() => onSync(f.externalId, f.name)}
+              >
+                {isSyncing ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <>
+                    <RefreshCw className="h-3 w-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Sync</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
