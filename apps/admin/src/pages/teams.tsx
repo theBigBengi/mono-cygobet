@@ -48,6 +48,7 @@ import {
   AlertCircle,
   CheckCircle,
   ChevronDown,
+  Download,
   FileText,
   Pencil,
   Search,
@@ -164,6 +165,35 @@ export default function TeamsPage() {
         };
       })
       .filter((t) => t.name);
+  };
+
+  const [isExporting, setIsExporting] = React.useState(false);
+
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const res = await teamsService.getFromDb({ page: 1, perPage: 10000 });
+      const rows = res.data ?? [];
+      const header = "name,primaryColor,secondaryColor,tertiaryColor";
+      const csvRows = rows.map((t) => {
+        const escape = (v: string | null) =>
+          v && v.includes(",") ? `"${v}"` : (v ?? "");
+        return [escape(t.name), escape(t.primaryColor), escape(t.secondaryColor), escape(t.tertiaryColor)].join(",");
+      });
+      const csv = [header, ...csvRows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "teams-colors.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${rows.length} teams`);
+    } catch {
+      toast.error("Export failed");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleFileUpload = async () => {
@@ -290,6 +320,18 @@ export default function TeamsPage() {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleExportCSV}
+                    disabled={isExporting}
+                    className="w-full sm:w-auto"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {isExporting ? "Exporting..." : "Export Current CSV"}
+                  </Button>
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Input
                     type="file"
