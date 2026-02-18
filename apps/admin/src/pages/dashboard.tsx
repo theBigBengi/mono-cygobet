@@ -10,17 +10,21 @@ import {
   FileWarning,
   CheckCircle2,
   Radio,
+  Bell,
+  Check,
 } from "lucide-react";
-import { useDashboard } from "@/hooks/use-dashboard";
+import { useDashboard, useAlerts, useResolveAlert } from "@/hooks/use-dashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { AdminDashboardResponse } from "@repo/types";
+import type { AdminDashboardResponse, AdminAlertItem } from "@repo/types";
 
 export default function DashboardPage() {
   const { data, isLoading, isError, error, refetch, isFetching } =
     useDashboard();
+  const { data: alertsData, isLoading: alertsLoading } = useAlerts();
+  const resolveAlert = useResolveAlert();
 
   if (isError) {
     return (
@@ -53,6 +57,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto space-y-6">
+        {/* ── Section 0: Alerts ── */}
+        <AlertsSection alerts={alertsData?.data} loading={alertsLoading} onResolve={(id) => resolveAlert.mutate(id)} resolving={resolveAlert.isPending} />
+
         {/* ── Section 1: Jobs ── */}
         <Card>
           <CardHeader className="pb-3">
@@ -97,18 +104,23 @@ export default function DashboardPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Fixtures</CardTitle>
-              {isLoading ? (
-                <Skeleton className="h-5 w-32" />
-              ) : fixtures ? (
-                <div className="flex items-center gap-2">
-                  {fixtures.liveCount > 0 && (
-                    <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400">
-                      <Radio className="h-3 w-3 mr-1" />
-                      {fixtures.liveCount} live
-                    </Badge>
-                  )}
-                </div>
-              ) : null}
+              <div className="flex items-center gap-2">
+                {isLoading ? (
+                  <Skeleton className="h-5 w-32" />
+                ) : fixtures ? (
+                  <>
+                    {fixtures.liveCount > 0 && (
+                      <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400">
+                        <Radio className="h-3 w-3 mr-1" />
+                        {fixtures.liveCount} live
+                      </Badge>
+                    )}
+                  </>
+                ) : null}
+                <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
+                  <Link to="/fixtures">View all →</Link>
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -187,7 +199,7 @@ function FixtureBanners({
         <IssueBanner
           icon={Zap}
           variant="red"
-          href="/fixtures"
+
           title={`${fixtures.stuck.length} fixture${fixtures.stuck.length !== 1 ? "s" : ""} stuck in LIVE`}
           description={buildStuckDescription(fixtures.stuck)}
         />
@@ -197,7 +209,7 @@ function FixtureBanners({
         <IssueBanner
           icon={Clock}
           variant="amber"
-          href="/fixtures"
+
           title={`${fixtures.unsettled.length} unsettled fixture${fixtures.unsettled.length !== 1 ? "s" : ""}`}
           description={buildUnsettledDescription(fixtures.unsettled)}
         />
@@ -207,7 +219,7 @@ function FixtureBanners({
         <IssueBanner
           icon={TimerOff}
           variant="orange"
-          href="/fixtures"
+
           title={`${fixtures.overdueNs.length} overdue fixture${fixtures.overdueNs.length !== 1 ? "s" : ""} still showing NS`}
           description={buildOverdueDescription(fixtures.overdueNs)}
         />
@@ -217,7 +229,7 @@ function FixtureBanners({
         <IssueBanner
           icon={FileWarning}
           variant="yellow"
-          href="/fixtures"
+
           title={`${fixtures.noScores.length} finished fixture${fixtures.noScores.length !== 1 ? "s" : ""} missing scores`}
           description={buildNoScoresDescription(fixtures.noScores)}
         />
@@ -227,7 +239,7 @@ function FixtureBanners({
         <IssueBanner
           icon={AlertTriangle}
           variant="amber"
-          href="/fixtures"
+
           title={`${fixtures.pendingSettlement} fixture${fixtures.pendingSettlement !== 1 ? "s" : ""} pending settlement`}
           description="Finished fixtures with predictions waiting to be settled."
         />
@@ -259,30 +271,20 @@ const TITLE_STYLES = {
   yellow: "text-yellow-700 dark:text-yellow-400",
 } as const;
 
-const LINK_STYLES = {
-  red: "text-red-500 dark:text-red-400",
-  amber: "text-amber-500 dark:text-amber-400",
-  orange: "text-orange-500 dark:text-orange-400",
-  yellow: "text-yellow-500 dark:text-yellow-400",
-} as const;
-
 function IssueBanner({
   icon: Icon,
   variant,
-  href,
   title,
   description,
 }: {
   icon: typeof AlertTriangle;
   variant: keyof typeof BANNER_STYLES;
-  href: string;
   title: string;
   description: string;
 }) {
   return (
-    <Link
-      to={href}
-      className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors ${BANNER_STYLES[variant]}`}
+    <div
+      className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 ${BANNER_STYLES[variant]}`}
     >
       <Icon className={`h-4 w-4 flex-shrink-0 mt-0.5 ${ICON_STYLES[variant]}`} />
       <div className="flex-1 min-w-0">
@@ -293,10 +295,141 @@ function IssueBanner({
           {description}
         </p>
       </div>
-      <span className={`text-xs whitespace-nowrap flex-shrink-0 ${LINK_STYLES[variant]}`}>
-        View →
-      </span>
-    </Link>
+    </div>
+  );
+}
+
+// ─── Alerts Section ───
+
+const SEVERITY_STYLES = {
+  critical: {
+    border: "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20",
+    icon: "text-red-500",
+    title: "text-red-700 dark:text-red-400",
+    badge: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400",
+  },
+  warning: {
+    border: "border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20",
+    icon: "text-amber-500",
+    title: "text-amber-700 dark:text-amber-400",
+    badge: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400",
+  },
+  info: {
+    border: "border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20",
+    icon: "text-blue-500",
+    title: "text-blue-700 dark:text-blue-400",
+    badge: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-400",
+  },
+} as const;
+
+function AlertsSection({
+  alerts,
+  loading,
+  onResolve,
+  resolving,
+}: {
+  alerts: AdminAlertItem[] | undefined;
+  loading: boolean;
+  onResolve: (id: number) => void;
+  resolving: boolean;
+}) {
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Alerts</CardTitle>
+            <Skeleton className="h-5 w-20" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-16 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!alerts || alerts.length === 0) return null;
+
+  const criticalCount = alerts.filter((a) => a.severity === "critical").length;
+  const warningCount = alerts.filter((a) => a.severity === "warning").length;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">Alerts</CardTitle>
+            <Badge
+              variant="outline"
+              className={
+                criticalCount > 0
+                  ? SEVERITY_STYLES.critical.badge
+                  : warningCount > 0
+                    ? SEVERITY_STYLES.warning.badge
+                    : SEVERITY_STYLES.info.badge
+              }
+            >
+              {alerts.length} active
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {alerts.map((alert) => (
+            <AlertBanner key={alert.id} alert={alert} onResolve={onResolve} resolving={resolving} />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AlertBanner({
+  alert,
+  onResolve,
+  resolving,
+}: {
+  alert: AdminAlertItem;
+  onResolve: (id: number) => void;
+  resolving: boolean;
+}) {
+  const styles = SEVERITY_STYLES[alert.severity] ?? SEVERITY_STYLES.info;
+
+  return (
+    <div className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 ${styles.border}`}>
+      <Bell className={`h-4 w-4 flex-shrink-0 mt-0.5 ${styles.icon}`} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className={`text-sm font-medium ${styles.title}`}>{alert.title}</p>
+          <Badge variant="outline" className={`text-[10px] ${styles.badge}`}>
+            {alert.severity}
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5">{alert.description}</p>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          {formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {alert.actionUrl && (
+          <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
+            <Link to={alert.actionUrl}>{alert.actionLabel ?? "View"}</Link>
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs text-muted-foreground"
+          onClick={() => onResolve(alert.id)}
+          disabled={resolving}
+        >
+          <Check className="h-3 w-3 mr-1" />
+          Resolve
+        </Button>
+      </div>
+    </div>
   );
 }
 
