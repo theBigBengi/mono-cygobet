@@ -44,6 +44,7 @@ export function StaticDataSection() {
           description: `OK: ${result.data.ok} | Fail: ${result.data.fail}`,
         });
         queryClient.invalidateQueries({ queryKey: ["sync-center"] });
+        queryClient.invalidateQueries({ queryKey: ["batches"] });
       },
       onError: (error: Error) => {
         toast.error(`${name} sync failed`, { description: error.message });

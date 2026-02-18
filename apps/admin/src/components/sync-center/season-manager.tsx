@@ -59,7 +59,7 @@ type StatusFilterValue = "active" | "upcoming" | "finished" | "all";
 
 export function SeasonManager() {
   const [includeHistorical, setIncludeHistorical] = useState(false);
-  const { data, isLoading, refetch } = useAvailability({ includeHistorical });
+  const { data, isLoading } = useAvailability({ includeHistorical });
   const { name: provider } = useProvider();
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
@@ -170,7 +170,10 @@ Filter to see only what you need.`}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => refetch()}
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ["sync-center"] });
+                queryClient.invalidateQueries({ queryKey: ["batches"] });
+              }}
               disabled={isLoading}
             >
               <RefreshCw
@@ -512,7 +515,11 @@ From: ${provider} /schedules/seasons/{id} endpoint`}
 
       <SeedSeasonDialog
         season={selectedSeason}
-        onClose={() => setSelectedSeason(null)}
+        onClose={() => {
+          setSelectedSeason(null);
+          queryClient.invalidateQueries({ queryKey: ["sync-center"] });
+          queryClient.invalidateQueries({ queryKey: ["batches"] });
+        }}
       />
     </>
   );
