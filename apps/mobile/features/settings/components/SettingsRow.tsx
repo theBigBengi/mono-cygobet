@@ -16,6 +16,8 @@ interface SettingsRowBaseProps {
   label: string;
   subtitle?: string;
   isLast?: boolean;
+  /** When true, uses danger color for icon and label */
+  danger?: boolean;
 }
 
 interface SettingsRowNavigationProps extends SettingsRowBaseProps {
@@ -43,9 +45,11 @@ type SettingsRowProps =
 
 export function SettingsRow(props: SettingsRowProps) {
   const { theme } = useTheme();
-  const { icon, iconComponent, label, subtitle, isLast = false, type } = props;
+  const { icon, iconComponent, label, subtitle, isLast = false, type, danger = false } = props;
 
   const showIcon = icon != null || iconComponent != null;
+  const iconBgColor = danger ? theme.colors.danger : theme.colors.primary;
+  const labelColor = danger ? theme.colors.danger : theme.colors.textPrimary;
 
   const content = (
     <View
@@ -64,7 +68,7 @@ export function SettingsRow(props: SettingsRowProps) {
           style={[
             styles.iconContainer,
             {
-              backgroundColor: theme.colors.primary,
+              backgroundColor: iconBgColor,
               borderRadius: theme.radius.sm,
               marginEnd: theme.spacing.sm,
             },
@@ -82,7 +86,7 @@ export function SettingsRow(props: SettingsRowProps) {
       )}
 
       <View style={styles.labelContainer}>
-        <AppText variant="body" style={styles.label}>
+        <AppText variant="body" style={[styles.label, { color: labelColor }]}>
           {label}
         </AppText>
         {subtitle && (
@@ -96,7 +100,7 @@ export function SettingsRow(props: SettingsRowProps) {
         <Ionicons
           name="chevron-forward"
           size={20}
-          color={theme.colors.textSecondary}
+          color={danger ? theme.colors.danger : theme.colors.textSecondary}
         />
       )}
 

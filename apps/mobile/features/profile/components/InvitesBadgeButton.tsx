@@ -11,6 +11,7 @@ import { useMyInvitesQuery } from "@/domains/invites";
 import { useTheme } from "@/lib/theme";
 
 export function InvitesBadgeButton() {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const router = useRouter();
   const { data } = useMyInvitesQuery({ status: "pending" });

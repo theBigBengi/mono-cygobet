@@ -7,7 +7,7 @@ import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 
 interface SettingsSectionProps {
-  title: string;
+  title?: string;
   children: React.ReactNode;
   collapsible?: boolean;
   defaultExpanded?: boolean;
@@ -22,7 +22,7 @@ export function SettingsSection({
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(defaultExpanded);
 
-  const titleContent = (
+  const titleContent = title ? (
     <AppText
       variant="caption"
       color="secondary"
@@ -30,11 +30,11 @@ export function SettingsSection({
     >
       {title.toUpperCase()}
     </AppText>
-  );
+  ) : null;
 
   return (
     <View style={styles.container}>
-      {title !== "" &&
+      {title &&
         (collapsible ? (
           <Pressable
             onPress={() => setExpanded((e) => !e)}

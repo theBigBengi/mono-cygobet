@@ -3,11 +3,10 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { View, StyleSheet, Pressable, ScrollView } from "react-native";
+import { useRouter } from "expo-router";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { Screen, AppText } from "@/components/ui";
+import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useGroupQuery, useUpdateGroupMutation } from "@/domains/groups";
 import {
@@ -26,14 +25,15 @@ import type { ApiInviteAccess, ApiGroupPrivacy } from "@repo/types";
 
 const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
 
-export function GroupSettingsScreen() {
+interface GroupSettingsScreenProps {
+  groupId: number | null;
+}
+
+export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-
-  const groupId = id ? Number(id) : null;
   const { data: groupData } = useGroupQuery(groupId);
   const group = groupData?.data;
   const isCreator = group?.creatorId === user?.id;
@@ -111,27 +111,12 @@ export function GroupSettingsScreen() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color={theme.colors.textPrimary}
-          />
-        </Pressable>
-        <AppText variant="subtitle" style={styles.headerTitle}>
-          {t("lobby.groupSettings")}
-        </AppText>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <Screen scroll contentContainerStyle={styles.content}>
+    <>
+      <ScrollView
+        style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {/* General Section */}
         <SettingsSection
           title={t("groupSettings.general" as Parameters<typeof t>[0])}
@@ -278,9 +263,9 @@ export function GroupSettingsScreen() {
           </SettingsSection>
         )}
         <DangerZoneSection groupId={groupId} isCreator={!!isCreator} />
-      </Screen>
+      </ScrollView>
 
-      {/* Bottom Sheets - must be outside ScrollView */}
+      {/* Bottom Sheets */}
       <EditNameSheet
         sheetRef={editNameSheetRef}
         group={group}
@@ -308,33 +293,13 @@ export function GroupSettingsScreen() {
           updateGroupMutation={updateGroupMutation}
         />
       )}
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  scrollView: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
-    fontWeight: "600",
-  },
-  headerSpacer: {
-    width: 32,
   },
   content: {
     paddingHorizontal: 16,

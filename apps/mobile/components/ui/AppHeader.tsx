@@ -2,7 +2,7 @@
 // Generic app header with back button, optional title, and optional left/right content.
 
 import React from "react";
-import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,12 +34,9 @@ export function AppHeader({
     <View
       style={[
         styles.container,
-        Platform.OS === "android" && { elevation: 0 },
         {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: theme.colors.background,
           height: HEADER_HEIGHT,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.colors.border,
         },
       ]}
       pointerEvents="box-none"
@@ -50,21 +47,15 @@ export function AppHeader({
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onBack();
           }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={({ pressed }) => [
             styles.backButton,
-            {
-              backgroundColor: theme.colors.background,
-              borderColor: theme.colors.border,
-              borderBottomColor: pressed
-                ? theme.colors.border
-                : theme.colors.textSecondary + "40",
-              transform: [{ scale: pressed ? 0.95 : 1 }],
-            },
+            { opacity: pressed ? 0.5 : 1 },
           ]}
         >
           <Ionicons
             name="chevron-back"
-            size={20}
+            size={28}
             color={theme.colors.textPrimary}
           />
         </Pressable>
@@ -93,22 +84,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderBottomWidth: 3,
-    justifyContent: "center",
-    alignItems: "center",
+    padding: 4,
   },
   leftRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 4,
     flex: 1,
   },
   titleText: {
