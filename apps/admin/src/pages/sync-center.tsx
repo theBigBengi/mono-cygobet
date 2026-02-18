@@ -143,8 +143,8 @@ export default function SyncCenterPage() {
 
           <div className="flex flex-col gap-3 sm:gap-6 pb-4">
             <GapSummaryBar />
-            <SeasonExplorer />
             <QuickActionsBar />
+            <SeasonExplorer />
 
             <Card>
               <CardHeader className="p-3 sm:p-6">

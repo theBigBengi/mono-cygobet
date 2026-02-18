@@ -227,6 +227,35 @@ function ItemsSection({ batch }: { batch: Batch }) {
   const items = data?.data ?? [];
   const pagination = data?.pagination;
 
+  // Counts for status filter
+  const skippedCount = Math.max(
+    0,
+    batch.itemsTotal - batch.itemsSuccess - batch.itemsFailed
+  );
+  const statusOptions: { value: StatusFilterValue; label: string; count: number }[] = [
+    { value: "all", label: "All", count: batch.itemsTotal },
+    { value: "success", label: "success", count: batch.itemsSuccess },
+    { value: "failed", label: "failed", count: batch.itemsFailed },
+    { value: "skipped", label: "skipped", count: skippedCount },
+  ];
+
+  // Counts for action filter from meta
+  const meta = (batch.meta ?? {}) as Record<string, unknown>;
+  const actionCounts: Record<string, number | undefined> = {
+    inserted: typeof meta.inserted === "number" ? meta.inserted : undefined,
+    updated: typeof meta.updated === "number" ? meta.updated : undefined,
+    skipped: typeof meta.skipped === "number" ? meta.skipped : undefined,
+    failed: typeof meta.failed === "number" ? meta.failed : undefined,
+  };
+  const hasActionCounts = Object.values(actionCounts).some((v) => v != null);
+  const actionOptions: { value: ActionFilterValue; label: string; count?: number }[] = [
+    { value: "all", label: "All", count: hasActionCounts ? batch.itemsTotal : undefined },
+    { value: "inserted", label: "inserted", count: actionCounts.inserted },
+    { value: "updated", label: "updated", count: actionCounts.updated },
+    { value: "skipped", label: "skipped", count: actionCounts.skipped },
+    { value: "failed", label: "failed", count: actionCounts.failed ?? (batch.itemsFailed > 0 ? batch.itemsFailed : undefined) },
+  ];
+
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-3">
       <div className="flex-shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -239,14 +268,15 @@ function ItemsSection({ batch }: { batch: Batch }) {
               setPage(1);
             }}
           >
-            <SelectTrigger className="h-7 sm:h-8 w-[100px] sm:w-[110px] text-xs">
+            <SelectTrigger className="h-7 sm:h-8 w-[110px] sm:w-[130px] text-xs">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="success">success</SelectItem>
-              <SelectItem value="failed">failed</SelectItem>
-              <SelectItem value="skipped">skipped</SelectItem>
+              {statusOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value} disabled={opt.value !== "all" && opt.count === 0}>
+                  {opt.label} ({opt.count})
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select
@@ -256,33 +286,39 @@ function ItemsSection({ batch }: { batch: Batch }) {
               setPage(1);
             }}
           >
-            <SelectTrigger className="h-7 sm:h-8 w-[100px] sm:w-[110px] text-xs">
+            <SelectTrigger className="h-7 sm:h-8 w-[110px] sm:w-[130px] text-xs">
               <SelectValue placeholder="Action" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All actions</SelectItem>
-              <SelectItem value="inserted">inserted</SelectItem>
-              <SelectItem value="updated">updated</SelectItem>
-              <SelectItem value="skipped">skipped</SelectItem>
-              <SelectItem value="failed">failed</SelectItem>
+              {actionOptions.map((opt) => (
+                <SelectItem
+                  key={opt.value}
+                  value={opt.value}
+                  disabled={opt.value !== "all" && (opt.count === 0 || opt.count == null)}
+                >
+                  {opt.label}{opt.count != null ? ` (${opt.count})` : ""}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {isLoading ? (
-        <Skeleton className="h-32 w-full" />
-      ) : !items.length ? (
-        <p className="text-center text-sm text-muted-foreground py-8">
-          No items for this batch.
-        </p>
-      ) : (
-        <ul className="flex-1 min-h-0 overflow-y-auto space-y-1">
-          {items.map((item) => (
-            <ItemRow key={item.id} item={item} />
-          ))}
-        </ul>
-      )}
+      <div className="flex-1 min-h-[200px] sm:min-h-[280px]">
+        {isLoading ? (
+          <Skeleton className="h-full w-full rounded-md" />
+        ) : !items.length ? (
+          <p className="text-center text-sm text-muted-foreground py-8">
+            No items for this batch.
+          </p>
+        ) : (
+          <ul className="h-full overflow-y-auto space-y-1">
+            {items.map((item) => (
+              <ItemRow key={item.id} item={item} />
+            ))}
+          </ul>
+        )}
+      </div>
 
       {pagination && pagination.totalPages > 1 && (
         <div className="flex-shrink-0 flex items-center justify-between text-xs text-muted-foreground pt-1">
@@ -318,6 +354,14 @@ function ItemsSection({ batch }: { batch: Batch }) {
   );
 }
 
+const ACTION_STYLES: Record<string, string> = {
+  inserted: "text-green-600 dark:text-green-400",
+  updated: "text-blue-600 dark:text-blue-400",
+  skipped: "text-muted-foreground",
+  failed: "text-destructive",
+  success: "text-green-600 dark:text-green-400",
+};
+
 function ItemRow({ item }: { item: BatchItem }) {
   const m = (item.meta ?? {}) as Record<string, unknown>;
   const entityType =
@@ -348,7 +392,14 @@ function ItemRow({ item }: { item: BatchItem }) {
           </p>
         )}
       </div>
-      <StatusBadge status={action} />
+      <span
+        className={cn(
+          "text-[10px] sm:text-xs font-medium shrink-0",
+          ACTION_STYLES[action] ?? "text-muted-foreground"
+        )}
+      >
+        {action}
+      </span>
     </div>
   );
 }

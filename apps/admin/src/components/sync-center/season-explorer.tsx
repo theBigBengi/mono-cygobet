@@ -697,8 +697,7 @@ function SeasonRow({
           >
             Seed
           </Button>
-        ) : (season.fixturesCount ?? 0) === 0 &&
-          season.hasFixturesAvailable ? (
+        ) : season.status === "in_db" ? (
           <Button
             variant="outline"
             size="sm"
@@ -708,6 +707,8 @@ function SeasonRow({
           >
             {syncingSeasonId === season.dbId ? (
               <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (season.fixturesCount ?? 0) > 0 ? (
+              "Re-sync"
             ) : (
               "Sync"
             )}

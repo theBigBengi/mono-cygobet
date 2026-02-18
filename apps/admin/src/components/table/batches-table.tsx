@@ -586,7 +586,7 @@ export function BatchesTable({ batches, isLoading }: BatchesTableProps) {
 
       {/* Batch Detail Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="w-full h-full max-w-full sm:w-[95vw] sm:max-w-4xl sm:h-auto sm:max-h-[85vh] overflow-hidden flex flex-col p-3 sm:p-6">
+        <DialogContent className="w-full h-full max-w-full sm:w-[95vw] sm:max-w-4xl sm:h-[75vh] overflow-hidden flex flex-col p-3 sm:p-6">
           {selectedBatch && <BatchDetailContent batch={selectedBatch} />}
         </DialogContent>
       </Dialog>
