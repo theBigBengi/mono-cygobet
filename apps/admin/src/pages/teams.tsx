@@ -49,8 +49,9 @@ import {
   AlertCircle,
   CheckCircle,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Download,
-  FileText,
   Pencil,
   Search,
   Upload,
@@ -499,31 +500,32 @@ Manchester City,#6CABDD,#FFFFFF,#1C2C5B`}
               </div>
             )}
 
-            {/* Pagination - only show when not searching */}
             {!debouncedSearch && totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 gap-2">
-                <div className="text-xs sm:text-sm text-muted-foreground">
-                  {page}/{totalPages}
-                </div>
-                <div className="flex gap-2">
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <span className="text-sm text-muted-foreground">
+                  {(page - 1) * perPage + 1}-{Math.min(page * perPage, totalItems)} of {totalItems}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground hidden sm:inline">
+                    Page {page} / {totalPages}
+                  </span>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="icon"
+                    className="h-8 w-8"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1 || isFetching}
-                    className="h-8 sm:h-9"
                   >
-                    <span className="hidden sm:inline">Previous</span>
-                    <span className="sm:hidden">Prev</span>
+                    <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="icon"
+                    className="h-8 w-8"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages || isFetching}
-                    className="h-8 sm:h-9"
                   >
-                    Next
+                    <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
