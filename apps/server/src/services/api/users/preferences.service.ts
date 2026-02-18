@@ -1,7 +1,7 @@
 // users/preferences.service.ts
 // Service layer for user preferences (league order, etc.).
 
-import { prisma } from "@repo/db";
+import { prisma, Prisma } from "@repo/db";
 import { getLeagueOrderSettings } from "../../admin/settings.service";
 
 export interface UserLeaguePreferences {
@@ -76,7 +76,7 @@ export async function updateUserLeaguePreferences(
   await prisma.userProfiles.update({
     where: { userId },
     data: {
-      preferences: Object.keys(newPrefs).length > 0 ? newPrefs : null,
+      preferences: Object.keys(newPrefs).length > 0 ? (newPrefs as Prisma.InputJsonValue) : Prisma.JsonNull,
     },
   });
 
@@ -103,7 +103,7 @@ export async function resetUserLeaguePreferences(
   await prisma.userProfiles.update({
     where: { userId },
     data: {
-      preferences: Object.keys(otherPrefs).length > 0 ? otherPrefs : null,
+      preferences: Object.keys(otherPrefs).length > 0 ? (otherPrefs as Prisma.InputJsonValue) : Prisma.JsonNull,
     },
   });
 

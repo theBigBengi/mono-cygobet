@@ -6,7 +6,7 @@
  * and league order preferences.
  */
 
-import { prisma } from "@repo/db";
+import { prisma, Prisma } from "@repo/db";
 
 export interface AdminNotificationSettings {
   slackWebhookUrl: string | null;
@@ -146,7 +146,7 @@ export async function getLeagueOrderSettings(): Promise<AdminLeagueOrderSettings
       slackWebhookUrl: process.env.SLACK_WEBHOOK_URL ?? null,
       slackEnabled: !!process.env.SLACK_WEBHOOK_URL,
       slackSeverityThreshold: "warning",
-      defaultLeagueOrder: null,
+      defaultLeagueOrder: Prisma.JsonNull,
     },
     update: {},
   });
@@ -184,7 +184,7 @@ export async function updateLeagueOrderSettings(
       slackWebhookUrl: process.env.SLACK_WEBHOOK_URL ?? null,
       slackEnabled: !!process.env.SLACK_WEBHOOK_URL,
       slackSeverityThreshold: "warning",
-      defaultLeagueOrder: leagueIds.length > 0 ? leagueIds : null,
+      defaultLeagueOrder: leagueIds.length > 0 ? leagueIds : Prisma.JsonNull,
     },
     update: {},
   });
@@ -192,7 +192,7 @@ export async function updateLeagueOrderSettings(
   const row = await prisma.adminSettings.update({
     where: { id: SETTINGS_ID },
     data: {
-      defaultLeagueOrder: leagueIds.length > 0 ? leagueIds : null,
+      defaultLeagueOrder: leagueIds.length > 0 ? leagueIds : Prisma.JsonNull,
     },
   });
 
@@ -214,7 +214,7 @@ export async function getTeamOrderSettings(): Promise<AdminTeamOrderSettings> {
       slackWebhookUrl: process.env.SLACK_WEBHOOK_URL ?? null,
       slackEnabled: !!process.env.SLACK_WEBHOOK_URL,
       slackSeverityThreshold: "warning",
-      defaultTeamOrder: null,
+      defaultTeamOrder: Prisma.JsonNull,
     },
     update: {},
   });
@@ -252,7 +252,7 @@ export async function updateTeamOrderSettings(
       slackWebhookUrl: process.env.SLACK_WEBHOOK_URL ?? null,
       slackEnabled: !!process.env.SLACK_WEBHOOK_URL,
       slackSeverityThreshold: "warning",
-      defaultTeamOrder: teamIds.length > 0 ? teamIds : null,
+      defaultTeamOrder: teamIds.length > 0 ? teamIds : Prisma.JsonNull,
     },
     update: {},
   });
@@ -260,7 +260,7 @@ export async function updateTeamOrderSettings(
   const row = await prisma.adminSettings.update({
     where: { id: SETTINGS_ID },
     data: {
-      defaultTeamOrder: teamIds.length > 0 ? teamIds : null,
+      defaultTeamOrder: teamIds.length > 0 ? teamIds : Prisma.JsonNull,
     },
   });
 
