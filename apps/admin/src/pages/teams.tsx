@@ -269,34 +269,6 @@ export default function TeamsPage() {
           </p>
         </div>
 
-        {/* Search */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Search</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by team name or short code..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
-              {search && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                  onClick={() => setSearch("")}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* CSV Import - Collapsible */}
         <Collapsible open={isImportOpen} onOpenChange={setIsImportOpen}>
           <Card>
@@ -320,45 +292,39 @@ export default function TeamsPage() {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={handleExportCSV}
-                    disabled={isExporting}
-                    className="w-full sm:w-auto"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    {isExporting ? "Exporting..." : "Export Current CSV"}
-                  </Button>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <Input
                     type="file"
                     accept=".csv"
                     onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-                    className="flex-1"
+                    className="flex-1 min-w-0"
                   />
-                  <Button
-                    onClick={handleFileUpload}
-                    disabled={!csvFile || importMutation.isPending}
-                    className="w-full sm:w-auto"
-                  >
-                    {importMutation.isPending ? "Importing..." : "Import"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleFileUpload}
+                      disabled={!csvFile || importMutation.isPending}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {importMutation.isPending ? "Importing..." : "Import"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleExportCSV}
+                      disabled={isExporting}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      {isExporting ? "Exporting..." : "Export"}
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-                  <p className="font-medium flex items-center gap-1 mb-1">
-                    <FileText className="h-4 w-4" /> CSV Format:
-                  </p>
-                  <div className="overflow-x-auto">
-                    <code className="text-xs block whitespace-pre">
+                <div className="text-xs text-muted-foreground bg-muted px-3 py-2 rounded-md overflow-x-auto">
+                  <code className="whitespace-pre">
 {`name,primaryColor,secondaryColor,tertiaryColor
-Manchester City,#6CABDD,#FFFFFF,#1C2C5B
-Liverpool,#C8102E,#00B2A9,#F6EB61`}
-                    </code>
-                  </div>
+Manchester City,#6CABDD,#FFFFFF,#1C2C5B`}
+                  </code>
                 </div>
 
                 {importResults && (
@@ -392,12 +358,34 @@ Liverpool,#C8102E,#00B2A9,#F6EB61`}
         {/* Teams Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Teams ({totalItems})</CardTitle>
-            <CardDescription>
-              {debouncedSearch
-                ? `Search results for "${debouncedSearch}"`
-                : `Page ${page} of ${totalPages}`}
-            </CardDescription>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle>Teams ({totalItems})</CardTitle>
+                <CardDescription>
+                  {debouncedSearch
+                    ? `Search results for "${debouncedSearch}"`
+                    : `Page ${page} of ${totalPages}`}
+                </CardDescription>
+              </div>
+              <div className="relative w-full sm:w-[260px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search teams..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9 pr-9 h-9"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
