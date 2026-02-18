@@ -17,7 +17,12 @@ import { Provider as JotaiProvider } from "jotai";
 import { I18nBootstrap } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
-import { SocketProvider, InviteSocketListeners } from "@/lib/socket";
+import {
+  SocketProvider,
+  InviteSocketListeners,
+  ChatNotificationListeners,
+} from "@/lib/socket";
+import { ChatNotificationToast } from "@/components/ChatNotificationToast";
 import {
   useAuth,
   isAuthenticated,
@@ -237,6 +242,8 @@ function RootLayout() {
                 <BottomSheetModalProvider>
                   <SocketProvider>
                     <InviteSocketListeners />
+                    <ChatNotificationListeners />
+                    <ChatNotificationToast />
                     <AppContent />
                   </SocketProvider>
                 </BottomSheetModalProvider>

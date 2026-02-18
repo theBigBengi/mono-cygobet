@@ -28,6 +28,7 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 import { globalBlockingOverlayAtom } from "@/lib/state/globalOverlay.atom";
+import { activeGroupIdAtom } from "@/lib/state/activeGroup.atom";
 import {
   GroupLobbyDraftScreen,
   GroupLobbyActiveScreen,
@@ -60,8 +61,15 @@ function GroupLobbyContent() {
   const { theme, colorScheme } = useTheme();
   const insets = useSafeAreaInsets();
   const setOverlay = useSetAtom(globalBlockingOverlayAtom);
+  const setActiveGroup = useSetAtom(activeGroupIdAtom);
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
+
+  // Track active group for toast suppression
+  useEffect(() => {
+    setActiveGroup(groupId);
+    return () => setActiveGroup(null);
+  }, [groupId, setActiveGroup]);
 
   // Scroll tracking for sticky header (using reanimated shared value)
   const scrollY = useSharedValue(0);
