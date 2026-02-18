@@ -92,29 +92,21 @@ function LeagueAddRemoveButton({ fixtures }: { fixtures: FixtureItem[] }) {
         {
           backgroundColor: allSelected
             ? theme.colors.primary
-            : theme.colors.surface,
-          borderColor: allSelected
-            ? theme.colors.primary
-            : theme.colors.border,
-          borderBottomColor: allSelected
-            ? theme.colors.primary
-            : theme.colors.textSecondary + "40",
-          shadowColor: allSelected ? theme.colors.primary : "#000",
-          shadowOpacity: pressed ? 0 : allSelected ? 0.25 : 0.08,
-          transform: [{ scale: pressed ? 0.96 : 1 }],
+            : "transparent",
+          opacity: pressed ? 0.6 : 1,
         },
       ]}
     >
       <MaterialIcons
         name={allSelected ? "remove" : "add"}
         size={14}
-        color={allSelected ? "#fff" : theme.colors.primary}
+        color={allSelected ? "#fff" : theme.colors.textSecondary}
       />
       <AppText
         variant="caption"
         style={[
           styles.addAllText,
-          { color: allSelected ? "#fff" : theme.colors.primary },
+          { color: allSelected ? "#fff" : theme.colors.textSecondary },
         ]}
       >
         {allSelected
@@ -188,7 +180,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: totalTabBarSpace + theme.spacing.md },
+          { paddingBottom: totalTabBarSpace + 48 + theme.spacing.lg },
           (isLoading || leagueGroups.length === 0) && styles.scrollContentLoading,
         ]}
         stickyHeaderIndices={[1]}
@@ -234,33 +226,19 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           <>
             {leagueGroups.map((group) => (
               <View key={group.key} style={styles.leagueSection}>
-                <View style={styles.leagueHeader}>
-                  <View style={styles.leagueLogoContainer}>
-                    <TeamLogo
-                      imagePath={group.leagueImagePath}
-                      teamName={group.leagueName}
-                      size={22}
-                    />
-                  </View>
-                  <View style={styles.leagueInfo}>
-                    <AppText
-                      variant="caption"
-                      style={[styles.leagueName, { color: theme.colors.textPrimary }]}
-                      numberOfLines={1}
-                    >
-                      {group.leagueName}
-                    </AppText>
-                    {group.countryName && (
-                      <AppText
-                        variant="caption"
-                        color="secondary"
-                        style={styles.countryName}
-                        numberOfLines={1}
-                      >
-                        {group.countryName}
-                      </AppText>
-                    )}
-                  </View>
+                <View style={[styles.leagueHeader, { borderBottomColor: theme.colors.border }]}>
+                  <TeamLogo
+                    imagePath={group.leagueImagePath}
+                    teamName={group.leagueName}
+                    size={20}
+                  />
+                  <AppText
+                    variant="caption"
+                    style={[styles.leagueName, { color: theme.colors.textSecondary }]}
+                    numberOfLines={1}
+                  >
+                    {group.leagueName}
+                  </AppText>
                   <LeagueAddRemoveButton fixtures={group.fixtures} />
                 </View>
                 <View style={styles.groupCardContainer}>
@@ -370,40 +348,24 @@ const styles = StyleSheet.create({
   leagueHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  leagueLogoContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: "rgba(0,0,0,0.03)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  leagueInfo: {
-    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   leagueName: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  countryName: {
-    fontSize: 11,
-    marginTop: 1,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   addAllButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderBottomWidth: 2,
-    borderRadius: 8,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
   },
   addAllText: {
     fontSize: 11,
