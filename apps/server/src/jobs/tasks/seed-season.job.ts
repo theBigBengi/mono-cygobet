@@ -20,6 +20,8 @@ export interface SeedSeasonParams {
   triggeredBy?: string | null;
   triggeredById?: string | null;
   batchId?: number;
+  /** When true, skip calling finishSeedBatch (let parent batch handler finish it) */
+  skipBatchFinish?: boolean;
 }
 
 export interface SeedSeasonResult {
@@ -215,14 +217,16 @@ export async function processSeedSeason(
       };
     }
 
-    await finishSeedBatch(batchId, RunStatus.success, {
-      meta: {
-        season: result.season,
-        teams: result.teams,
-        fixtures: result.fixtures,
-        futureOnly,
-      },
-    });
+    if (!params.skipBatchFinish) {
+      await finishSeedBatch(batchId, RunStatus.success, {
+        meta: {
+          season: result.season,
+          teams: result.teams,
+          fixtures: result.fixtures,
+          futureOnly,
+        },
+      });
+    }
 
     await availabilityService.invalidateCache();
 
@@ -230,10 +234,12 @@ export async function processSeedSeason(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     log.error({ batchId, err: error }, "Seed season failed");
-    await finishSeedBatch(batchId!, RunStatus.failed, {
-      errorMessage: message.slice(0, 500),
-      meta: { error: message },
-    });
+    if (!params.skipBatchFinish) {
+      await finishSeedBatch(batchId!, RunStatus.failed, {
+        errorMessage: message.slice(0, 500),
+        meta: { error: message },
+      });
+    }
     throw error;
   }
 }

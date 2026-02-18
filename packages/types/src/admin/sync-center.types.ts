@@ -90,6 +90,46 @@ export interface AdminSeedSeasonPreviewResponse {
   };
 }
 
+export interface AdminBatchSeedSeasonsRequest {
+  seasonExternalIds: number[];
+  includeTeams?: boolean;
+  includeFixtures?: boolean;
+  futureOnly?: boolean;
+}
+
+export interface AdminBatchSeedSeasonsResponse {
+  status: "ok";
+  data: {
+    jobId: string;
+    totalSeasons: number;
+  };
+}
+
+export interface BatchSeedSeasonResult {
+  seasonExternalId: number;
+  status: "pending" | "processing" | "done" | "failed";
+  error?: string;
+  result?: {
+    season: { id: number; name: string; league: string; created: boolean };
+    teams?: { ok: number; fail: number; total: number };
+    fixtures?: { ok: number; fail: number; total: number };
+  };
+}
+
+export interface AdminBatchJobStatusResponse {
+  status: "ok";
+  data: {
+    jobId: string;
+    state: "waiting" | "active" | "completed" | "failed";
+    progress: number;
+    totalSeasons: number;
+    completedSeasons: number;
+    failedSeasons: number;
+    seasons: BatchSeedSeasonResult[];
+    error?: string;
+  };
+}
+
 export interface AdminJobStatusResponse {
   status: "ok";
   data: {

@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Wifi, WifiOff, AlertTriangle } from "lucide-react";
-import { DataStatusCard } from "@/components/sync-center/data-status-card";
-import { SeasonManager } from "@/components/sync-center/season-manager";
-import { FixturesSyncCard } from "@/components/sync-center/fixtures-sync-card";
-import { StaticDataSection } from "@/components/sync-center/static-data-section";
+import { GapSummaryBar } from "@/components/sync-center/gap-summary-bar";
+import { SeasonExplorer } from "@/components/sync-center/season-explorer";
+import { QuickActionsBar } from "@/components/sync-center/quick-actions-bar";
 import { BatchesTable } from "@/components/table/batches-table";
 import {
   Card,
@@ -37,6 +36,7 @@ const ENTITY_BATCH_NAMES = [
   { value: "seed-fixtures", label: "Fixtures" },
   { value: "seed-bookmakers", label: "Bookmakers" },
   { value: "seed-season", label: "Seed Season (full)" },
+  { value: "batch-seed-seasons", label: "Batch Seed" },
 ] as const;
 
 export default function SyncCenterPage() {
@@ -54,7 +54,7 @@ export default function SyncCenterPage() {
   const { data: healthData, isLoading: healthLoading } = useQuery({
     queryKey: ["sync-center", "health"],
     queryFn: () => syncService.getProviderHealth(),
-    staleTime: 60000, // 1 minute
+    staleTime: 60000,
     refetchOnWindowFocus: false,
   });
 
@@ -116,47 +116,46 @@ export default function SyncCenterPage() {
           </div>
 
           <div className="flex flex-col gap-6 pb-4">
-            <DataStatusCard />
-            <SeasonManager />
-            <FixturesSyncCard />
-            <StaticDataSection />
+            <GapSummaryBar />
+            <SeasonExplorer />
+            <QuickActionsBar />
 
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <CardTitle>Sync History</CardTitle>
-                  <CardDescription>Recent sync operations</CardDescription>
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <CardTitle>Sync History</CardTitle>
+                    <CardDescription>Recent sync operations</CardDescription>
+                  </div>
+                  <Select value={historyFilter} onValueChange={setHistoryFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ENTITY_BATCH_NAMES.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={historyFilter} onValueChange={setHistoryFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ENTITY_BATCH_NAMES.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {batchesLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-64 w-full" />
-                </div>
-              ) : (
-                <BatchesTable
-                  batches={batchesData?.data ?? []}
-                  isLoading={batchesLoading}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardHeader>
+              <CardContent>
+                {batchesLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                  </div>
+                ) : (
+                  <BatchesTable
+                    batches={batchesData?.data ?? []}
+                    isLoading={batchesLoading}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </ProviderProvider>
     </TooltipProvider>

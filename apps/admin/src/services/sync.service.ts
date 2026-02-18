@@ -18,6 +18,9 @@ import type {
   AdminSeedSeasonPreviewResponse,
   AdminJobStatusResponse,
   AdminProviderHealthResponse,
+  AdminBatchSeedSeasonsRequest,
+  AdminBatchSeedSeasonsResponse,
+  AdminBatchJobStatusResponse,
 } from "@repo/types";
 
 export interface SyncAllParams {
@@ -82,6 +85,23 @@ export const syncService = {
   ): Promise<AdminSeedSeasonPreviewResponse> {
     return apiGet<AdminSeedSeasonPreviewResponse>(
       `/admin/sync-center/sync/seed-season/preview?seasonExternalId=${seasonExternalId}`
+    );
+  },
+
+  async batchSeedSeasons(
+    params: AdminBatchSeedSeasonsRequest
+  ): Promise<AdminBatchSeedSeasonsResponse> {
+    return apiPost<AdminBatchSeedSeasonsResponse>(
+      "/admin/sync-center/sync/batch-seed-seasons",
+      params
+    );
+  },
+
+  async getBatchJobStatus(
+    jobId: string
+  ): Promise<AdminBatchJobStatusResponse> {
+    return apiGet<AdminBatchJobStatusResponse>(
+      `/admin/sync-center/jobs/${jobId}/status`
     );
   },
 

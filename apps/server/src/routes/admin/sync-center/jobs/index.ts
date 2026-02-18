@@ -22,9 +22,9 @@ function mapBatchStatusToState(
 }
 
 const jobsRoutes: FastifyPluginAsync = async (fastify) => {
+  // Reply typed as any to support both single seed and batch seed response shapes
   fastify.get<{
     Params: { jobId: string };
-    Reply: AdminJobStatusResponse;
   }>(
     "/:jobId/status",
     {
@@ -41,12 +41,17 @@ const jobsRoutes: FastifyPluginAsync = async (fastify) => {
               status: { type: "string", const: "ok" },
               data: {
                 type: "object",
+                additionalProperties: true,
                 properties: {
                   jobId: { type: "string" },
                   state: { type: "string" },
                   progress: { type: "number" },
                   result: { type: "object" },
                   error: { type: "string" },
+                  totalSeasons: { type: "number" },
+                  completedSeasons: { type: "number" },
+                  failedSeasons: { type: "number" },
+                  seasons: { type: "array" },
                 },
               },
             },
@@ -75,6 +80,7 @@ const jobsRoutes: FastifyPluginAsync = async (fastify) => {
         where: { id },
         select: {
           id: true,
+          name: true,
           status: true,
           meta: true,
           errorMessage: true,
@@ -93,6 +99,43 @@ const jobsRoutes: FastifyPluginAsync = async (fastify) => {
 
       const state = mapBatchStatusToState(batch.status);
       const meta = (batch.meta ?? {}) as Record<string, unknown>;
+
+      const progress =
+        batch.itemsTotal > 0
+          ? Math.round(
+              (((batch.itemsSuccess ?? 0) + (batch.itemsFailed ?? 0)) /
+                batch.itemsTotal) *
+                100
+            )
+          : undefined;
+
+      // Batch seed response — includes per-season progress
+      if (batch.name === "batch-seed-seasons") {
+        const totalSeasons = (meta.totalSeasons as number) ?? 0;
+        const completedSeasons = (meta.completedSeasons as number) ?? 0;
+        const failedSeasons = (meta.failedSeasons as number) ?? 0;
+        const seasons = (meta.seasons as unknown[]) ?? [];
+        const batchProgress =
+          totalSeasons > 0
+            ? Math.round(((completedSeasons + failedSeasons) / totalSeasons) * 100)
+            : 0;
+
+        return reply.send({
+          status: "ok",
+          data: {
+            jobId: String(batch.id),
+            state,
+            progress: batchProgress,
+            totalSeasons,
+            completedSeasons,
+            failedSeasons,
+            seasons,
+            ...(batch.errorMessage && { error: batch.errorMessage }),
+          },
+        });
+      }
+
+      // Single seed-season response
       const result =
         state === "completed" && meta
           ? {
@@ -106,15 +149,6 @@ const jobsRoutes: FastifyPluginAsync = async (fastify) => {
                 AdminJobStatusResponse["data"]["result"]
               >["fixtures"],
             }
-          : undefined;
-
-      const progress =
-        batch.itemsTotal > 0
-          ? Math.round(
-              (((batch.itemsSuccess ?? 0) + (batch.itemsFailed ?? 0)) /
-                batch.itemsTotal) *
-                100
-            )
           : undefined;
 
       return reply.send({
