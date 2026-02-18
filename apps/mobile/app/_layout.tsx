@@ -233,14 +233,14 @@ function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <I18nBootstrap>
             <ThemeProvider>
-              <BottomSheetModalProvider>
-                <AuthProvider>
+              <AuthProvider>
+                <BottomSheetModalProvider>
                   <SocketProvider>
                     <InviteSocketListeners />
                     <AppContent />
                   </SocketProvider>
-                </AuthProvider>
-              </BottomSheetModalProvider>
+                </BottomSheetModalProvider>
+              </AuthProvider>
             </ThemeProvider>
           </I18nBootstrap>
         </QueryClientProvider>

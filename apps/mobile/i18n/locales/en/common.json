@@ -614,6 +614,7 @@
     "filtersTitle": "Filters",
     "filtersClear": "Clear",
     "filtersApply": "Apply Filters",
+    "filtersApplyCount": "Apply ({{count}})",
     "filtersLeaguesSection": "Competitions",
     "games": "Games",
     "leagues": "Competitions",

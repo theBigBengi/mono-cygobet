@@ -1,6 +1,6 @@
 // features/group-creation/components/FixturesView.tsx
 // Upcoming fixtures list with league/date grouping, selection, and modal.
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   View,
@@ -12,7 +12,9 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MaterialIcons } from "@expo/vector-icons";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiUpcomingFixturesQuery } from "@repo/types";
@@ -28,7 +30,7 @@ import {
 import { groupFixturesByLeague } from "@/utils/fixture";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
 import { useFixtureFilters } from "@/features/group-creation/filters/useFixtureFilters";
-import { FilterDrawer } from "@/features/group-creation/filters/FilterDrawer";
+import { FilterSheet } from "@/features/group-creation/filters/FilterSheet";
 import { DateSlider } from "./DateSlider";
 
 function GameFixtureCardWithSelection({
@@ -138,7 +140,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
   const tabBarMarginBottom = theme.spacing.sm;
   const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
   const filters = useFixtureFilters();
-  const [drawerVisible, setDrawerVisible] = useState(false);
+  const filterSheetRef = useRef<BottomSheetModal>(null);
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   const mergedParams = useMemo(() => {
@@ -285,12 +287,39 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         )}
       </ScrollView>
 
-      <FilterDrawer
-        visible={drawerVisible}
-        onClose={() => setDrawerVisible(false)}
+      {/* Filter FAB */}
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          filterSheetRef.current?.present();
+        }}
+        style={({ pressed }) => [
+          styles.filterFab,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            borderBottomColor: pressed
+              ? theme.colors.border
+              : theme.colors.textSecondary + "40",
+            shadowOpacity: pressed ? 0 : 0.15,
+            transform: [{ scale: pressed ? 0.92 : 1 }],
+            bottom: totalTabBarSpace + theme.spacing.md,
+          },
+        ]}
+      >
+        <Ionicons
+          name="options-outline"
+          size={22}
+          color={theme.colors.textPrimary}
+        />
+      </Pressable>
+
+      <FilterSheet
+        sheetRef={filterSheetRef}
         selectedLeagueIds={filters.selectedLeagueIds}
         onApply={(ids) => {
           filters.setLeagues(ids);
+          filterSheetRef.current?.dismiss();
         }}
         onClear={filters.clearLeagues}
       />
@@ -377,4 +406,19 @@ const styles = StyleSheet.create({
     marginStart: 4,
   },
   groupCardContainer: {},
+  filterFab: {
+    position: "absolute",
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 6,
+  },
 });

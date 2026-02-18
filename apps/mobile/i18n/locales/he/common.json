@@ -614,6 +614,7 @@
     "filtersTitle": "מסננים",
     "filtersClear": "נקה",
     "filtersApply": "החל מסננים",
+    "filtersApplyCount": "החל ({{count}})",
     "filtersLeaguesSection": "ליגות",
     "games": "משחקים",
     "leagues": "ליגות",
