@@ -204,6 +204,7 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
         state: query.state,
         fromTs,
         toTs,
+        dataQuality: query.dataQuality,
         orderBy: [{ startTs: "desc" }],
         include: Object.keys(include).length > 0 ? include : undefined,
       });

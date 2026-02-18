@@ -16,6 +16,7 @@ export class FixturesService {
     state?: string;
     fromTs?: number;
     toTs?: number;
+    dataQuality?: "noScores";
     orderBy?: Prisma.fixturesOrderByWithRelationInput[];
     include?: Prisma.fixturesInclude;
   }) {
@@ -64,6 +65,13 @@ export class FixturesService {
       if (args.toTs !== undefined) {
         where.startTs.lte = args.toTs;
       }
+    }
+
+    // Data quality filters
+    if (args.dataQuality === "noScores") {
+      // Finished fixtures (FT, AET, FT_PEN) with missing scores
+      where.state = { in: ["FT", "AET", "FT_PEN"] };
+      where.OR = [{ homeScore90: null }, { awayScore90: null }];
     }
 
     const findManyArgs: Prisma.fixturesFindManyArgs = {

@@ -49,6 +49,9 @@ export default function FixturesPage() {
   const queryClient = useQueryClient();
 
   const stateFromUrl = searchParams.get("state");
+  const dataQualityFromUrl = searchParams.get("dataQuality") as
+    | "noScores"
+    | null;
 
   // Initialize date range: 3 days back and 4 days ahead
   const defaultDateRange = useMemo<DateRange>(() => {
@@ -69,6 +72,9 @@ export default function FixturesPage() {
   const [appliedState, setAppliedState] = useState<string | undefined>(
     () => stateFromUrl || undefined
   );
+  const [appliedDataQuality, setAppliedDataQuality] = useState<
+    "noScores" | undefined
+  >(() => dataQualityFromUrl || undefined);
   const [appliedLeagueIds, setAppliedLeagueIds] = useState<string[]>([]); // External IDs
   const [appliedCountryIds, setAppliedCountryIds] = useState<string[]>([]); // External IDs
   const [appliedSeasonId] = useState<string>(""); // External ID, "" = All
@@ -77,7 +83,8 @@ export default function FixturesPage() {
 
   useEffect(() => {
     setAppliedState(stateFromUrl || undefined);
-  }, [stateFromUrl]);
+    setAppliedDataQuality(dataQualityFromUrl || undefined);
+  }, [stateFromUrl, dataQualityFromUrl]);
 
   // Temporary filter states (for UI, not applied until submit)
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>(
@@ -223,8 +230,9 @@ export default function FixturesPage() {
       countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
       seasonId: seasonIdNum,
       state: appliedState,
-      fromTs,
-      toTs,
+      fromTs: appliedDataQuality ? undefined : fromTs, // Disable date filter when using data quality filter
+      toTs: appliedDataQuality ? undefined : toTs,
+      dataQuality: appliedDataQuality,
     },
     { enabled: viewMode === "provider" }
   );
@@ -242,8 +250,9 @@ export default function FixturesPage() {
       countryIds: appliedCountryIds.length > 0 ? appliedCountryIds : undefined,
       seasonId: seasonIdNum,
       state: appliedState,
-      fromTs,
-      toTs,
+      fromTs: appliedDataQuality ? undefined : fromTs, // Disable date filter when using data quality filter
+      toTs: appliedDataQuality ? undefined : toTs,
+      dataQuality: appliedDataQuality,
     },
     { enabled: viewMode === "db" }
   );
@@ -606,6 +615,28 @@ export default function FixturesPage() {
               </Button>
             </div>
           )}
+
+        {/* Data Quality Filter Active Banner */}
+        {appliedDataQuality && (
+          <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-2 mt-2 flex items-center justify-between">
+            <span className="text-xs sm:text-sm">
+              <span className="font-medium">Data Quality Filter:</span>{" "}
+              Finished fixtures without scores
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setAppliedDataQuality(undefined);
+                const url = new URL(window.location.href);
+                url.searchParams.delete("dataQuality");
+                window.history.replaceState({}, "", url.toString());
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+        )}
 
         {/* Messages */}
         {isPartialData && (

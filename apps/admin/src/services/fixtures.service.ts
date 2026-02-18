@@ -27,6 +27,7 @@ export const fixturesService = {
     include?: string;
     fromTs?: number; // Start timestamp filter
     toTs?: number; // End timestamp filter
+    dataQuality?: "noScores";
   }) {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append("page", params.page.toString());
@@ -48,6 +49,8 @@ export const fixturesService = {
       searchParams.append("fromTs", params.fromTs.toString());
     if (params?.toTs !== undefined)
       searchParams.append("toTs", params.toTs.toString());
+    if (params?.dataQuality)
+      searchParams.append("dataQuality", params.dataQuality);
 
     const queryString = searchParams.toString();
     const url = `/admin/sync-center/db/fixtures${queryString ? `?${queryString}` : ""}`;

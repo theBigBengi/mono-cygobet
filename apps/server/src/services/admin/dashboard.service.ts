@@ -28,6 +28,7 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
     recentFailedJobsRows,
     stuckFixtureRows,
     finishedUnsettledRows,
+    noScoresRows,
   ] = await Promise.all([
     prisma.fixtures.count({
       where: { externalId: { gte: 0 }, state: { in: LIVE_STATES_ARR } },
@@ -110,6 +111,17 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
             awayScore90: true,
           },
         }),
+    // Finished fixtures without scores
+    prisma.fixtures.findMany({
+      where: {
+        externalId: { gte: 0 },
+        state: { in: FINISHED_STATES_ARR },
+        OR: [{ homeScore90: null }, { awayScore90: null }],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 20,
+      select: { id: true, name: true, state: true, updatedAt: true },
+    }),
   ]);
 
   const attentionMap = new Map<
@@ -155,6 +167,17 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
     });
   }
 
+  for (const f of noScoresRows) {
+    if (attentionMap.has(f.id)) continue;
+    attentionMap.set(f.id, {
+      id: f.id,
+      name: f.name,
+      state: f.state,
+      updatedAt: f.updatedAt.toISOString(),
+      issue: "No Scores",
+    });
+  }
+
   const recentFailedJobs: AdminDashboardResponse["recentFailedJobs"] =
     recentFailedJobsRows.map((r) => ({
       id: r.id,
@@ -195,12 +218,14 @@ async function getUnsettledFixtureIds(): Promise<number[]> {
   return [...new Set(groupFixtures.map((gf) => gf.fixtureId))];
 }
 
-/** Compute issue for a single fixture (Stuck LIVE, Overdue NS, or Unsettled). */
+/** Compute issue for a single fixture (Stuck LIVE, Overdue NS, Unsettled, or No Scores). */
 export async function getFixtureIssue(fixture: {
   id: number;
   state: string;
   updatedAt: Date;
   startTs?: number | null;
+  homeScore90?: number | null;
+  awayScore90?: number | null;
 }): Promise<string | null> {
   const stuckCutoff = new Date(Date.now() - STUCK_THRESHOLD_MS);
   const nowTs = Math.floor(Date.now() / 1000);
@@ -220,6 +245,10 @@ export async function getFixtureIssue(fixture: {
   }
   if (!FINISHED_STATES_ARR.includes(fixture.state as FixtureState)) {
     return null;
+  }
+  // Check for finished fixtures without scores
+  if (fixture.homeScore90 == null || fixture.awayScore90 == null) {
+    return "No Scores";
   }
   const hasUnsettled =
     (await prisma.groupPredictions.count({

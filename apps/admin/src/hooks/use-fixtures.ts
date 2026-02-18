@@ -17,6 +17,7 @@ export function useFixturesFromDb(
     include?: string;
     fromTs?: number; // Start timestamp filter
     toTs?: number; // End timestamp filter
+    dataQuality?: "noScores";
   },
   options?: { enabled?: boolean }
 ) {

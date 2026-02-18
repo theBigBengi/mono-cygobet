@@ -21,6 +21,7 @@ import {
   SYNC_GROUP_FIXTURES_JOB,
   PREDICTION_REMINDERS_JOB,
   RECOVERY_OVERDUE_FIXTURES_JOB,
+  DATA_QUALITY_CHECK_JOB,
 } from "./jobs.definitions";
 
 export type RunnableJobDefinition = {
@@ -90,6 +91,11 @@ const RUNNERS: Record<string, Runner> = {
       await import("./cron/recovery-overdue-fixtures.job");
     return runRecoveryOverdueFixturesJob(fastify, opts);
   },
+  [DATA_QUALITY_CHECK_JOB.key]: async (fastify, opts) => {
+    const { runDataQualityCheckJob } =
+      await import("./cron/data-quality-check.job");
+    return runDataQualityCheckJob(fastify, opts);
+  },
 };
 
 /**
@@ -151,6 +157,12 @@ export const RUNNABLE_JOBS: RunnableJobDefinition[] = [
     description: RECOVERY_OVERDUE_FIXTURES_JOB.description,
     scheduleCron: RECOVERY_OVERDUE_FIXTURES_JOB.scheduleCron ?? null,
     run: RUNNERS[RECOVERY_OVERDUE_FIXTURES_JOB.key]!,
+  },
+  {
+    key: DATA_QUALITY_CHECK_JOB.key,
+    description: DATA_QUALITY_CHECK_JOB.description,
+    scheduleCron: DATA_QUALITY_CHECK_JOB.scheduleCron ?? null,
+    run: RUNNERS[DATA_QUALITY_CHECK_JOB.key]!,
   },
 ];
 

@@ -182,9 +182,25 @@ export const RECOVERY_OVERDUE_FIXTURES_JOB = {
 } as const satisfies JobDefinition;
 
 /**
+ * DATA_QUALITY_CHECK_JOB
+ * ----------------------
+ * Purpose: Report data quality issues for admin monitoring.
+ * Counts: finished without scores, missing leagues, missing seasons.
+ */
+export const DATA_QUALITY_CHECK_JOB = {
+  key: "data-quality-check",
+  description:
+    "Check data quality: finished fixtures without scores, missing leagues/seasons",
+  enabled: true,
+  // Run daily at 06:00 (admin can adjust in UI).
+  scheduleCron: "0 6 * * *",
+  meta: {},
+} as const satisfies JobDefinition;
+
+/**
  * JOB_DEFINITIONS
  * --------------
- * List of all “known jobs” and their default DB config.
+ * List of all "known jobs" and their default DB config.
  *
  * Used by:
  * - jobs seeding (`etl/seeds/seed.jobs.ts`) to guarantee rows exist in DB.
@@ -198,6 +214,7 @@ export const JOB_DEFINITIONS = [
   SYNC_GROUP_FIXTURES_JOB,
   PREDICTION_REMINDERS_JOB,
   RECOVERY_OVERDUE_FIXTURES_JOB,
+  DATA_QUALITY_CHECK_JOB,
 ] as const satisfies readonly JobDefinition[];
 
 export type JobKey = (typeof JOB_DEFINITIONS)[number]["key"];

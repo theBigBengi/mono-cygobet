@@ -12,6 +12,8 @@ export interface ListFixturesQuerystring {
   include?: string;
   fromTs?: number; // Start timestamp filter
   toTs?: number; // End timestamp filter
+  /** Data quality filter: noScores (finished fixtures without scores) */
+  dataQuality?: "noScores";
 }
 
 export interface GetFixtureQuerystring {

@@ -288,7 +288,7 @@ export default function DashboardPage() {
           <CardHeader className="px-3 sm:px-6">
             <CardTitle className="text-sm sm:text-base">Fixtures Needing Attention</CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Stuck LIVE, unsettled, or overdue NS
+              Stuck LIVE, unsettled, overdue NS, or no scores
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 sm:px-6">

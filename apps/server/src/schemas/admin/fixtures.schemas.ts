@@ -14,6 +14,7 @@ export const listFixturesQuerystringSchema = {
     include: { type: "string" },
     fromTs: { type: "number" }, // Start timestamp filter
     toTs: { type: "number" }, // End timestamp filter
+    dataQuality: { type: "string", enum: ["noScores"] },
   },
 };
 

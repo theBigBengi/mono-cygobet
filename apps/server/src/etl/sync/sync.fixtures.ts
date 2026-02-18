@@ -200,6 +200,13 @@ type FixtureOutcome =
       fixture: FixtureDTO;
       existing?: ExistingRow;
       resolvedPayload: ResolvedPayload;
+    }
+  | {
+      outcome: "skipped";
+      reason: "unsupported-league" | "unsupported-season";
+      fixture: FixtureDTO;
+      existing?: ExistingRow;
+      resolvedPayload: null;
     };
 
 /**
@@ -372,6 +379,36 @@ export async function syncFixtures(
             : null;
         const homeTeamId = teamMap.get(String(payload.homeTeamExternalId));
         const awayTeamId = teamMap.get(String(payload.awayTeamExternalId));
+
+        // Skip fixtures from unsupported leagues (league not in our DB)
+        if (!leagueId) {
+          log.debug(
+            { externalId: fixture.externalId, leagueExternalId: payload.leagueExternalId },
+            "Skipping fixture: league not in DB (unsupported league)"
+          );
+          return {
+            outcome: "skipped",
+            reason: "unsupported-league",
+            fixture,
+            existing,
+            resolvedPayload: null,
+          };
+        }
+
+        // Skip fixtures from unsupported seasons (season not in our DB)
+        if (!seasonId) {
+          log.debug(
+            { externalId: fixture.externalId, seasonExternalId: payload.seasonExternalId },
+            "Skipping fixture: season not in DB (unsupported season)"
+          );
+          return {
+            outcome: "skipped",
+            reason: "unsupported-season",
+            fixture,
+            existing,
+            resolvedPayload: null,
+          };
+        }
 
         if (!homeTeamId) {
           throw new Error(
