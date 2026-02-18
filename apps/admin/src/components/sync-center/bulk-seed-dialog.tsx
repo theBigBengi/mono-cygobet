@@ -58,7 +58,7 @@ export function BulkSeedDialog({ open, seasons, onClose }: BulkSeedDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-lg max-h-[90vh] sm:max-h-[80vh] flex flex-col w-[calc(100%-2rem)] sm:w-full">
         <DialogHeader>
           <DialogTitle>
             Seed {seasons.length} Season{seasons.length !== 1 ? "s" : ""}

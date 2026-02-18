@@ -104,14 +104,14 @@ export function QuickActionsBar() {
         <CardTitle className="text-lg">Quick Actions</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Sync Fixtures */}
-          <div className="space-y-2">
+          <div className="col-span-2 sm:col-span-1 space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Zap className="h-4 w-4 text-yellow-500" />
               Sync Fixtures
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground hidden sm:block">
               Update match data for existing seasons
             </p>
             <Select value={fixtureSeasonId} onValueChange={setFixtureSeasonId}>
@@ -149,15 +149,15 @@ export function QuickActionsBar() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Globe className="h-4 w-4" />
-              Sync Countries
+              Countries
             </div>
-            <p className="text-xs text-muted-foreground">
-              Download all countries from provider
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              Download all countries
             </p>
             <Button
               variant="outline"
               size="sm"
-              className="w-full mt-auto"
+              className="w-full"
               onClick={() => countriesMutation.mutate()}
               disabled={countriesMutation.isPending}
             >
@@ -173,10 +173,10 @@ export function QuickActionsBar() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Trophy className="h-4 w-4" />
-              Sync Leagues
+              Leagues
             </div>
-            <p className="text-xs text-muted-foreground">
-              Download all leagues from provider
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              Download all leagues
             </p>
             <Button
               variant="outline"
@@ -197,10 +197,10 @@ export function QuickActionsBar() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Bookmark className="h-4 w-4" />
-              Sync Bookmakers
+              Bookmakers
             </div>
-            <p className="text-xs text-muted-foreground">
-              Download betting companies from provider
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              Download betting companies
             </p>
             <Button
               variant="outline"

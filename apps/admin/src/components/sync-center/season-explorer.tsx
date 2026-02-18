@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Card,
@@ -33,6 +33,7 @@ import {
   ChevronDown,
   RefreshCw,
   Loader2,
+  ChevronsUpDown,
 } from "lucide-react";
 import type { AvailableSeason } from "@repo/types";
 
@@ -95,7 +96,9 @@ function groupSeasons(seasons: AvailableSeason[]): CountryGroup[] {
   }
 
   // Sort by most "new" first, then alphabetically
-  countries.sort((a, b) => b.newCount - a.newCount || a.country.localeCompare(b.country));
+  countries.sort(
+    (a, b) => b.newCount - a.newCount || a.country.localeCompare(b.country)
+  );
 
   return countries;
 }
@@ -125,11 +128,9 @@ export function SeasonExplorer() {
 
   const filteredSeasons = useMemo(() => {
     return allSeasons.filter((s) => {
-      // Tab filter
       if (tab === "new" && s.status !== "new") return false;
       if (tab === "in_db" && s.status !== "in_db") return false;
 
-      // Status filter
       if (statusFilter !== "all") {
         if (statusFilter === "active" && (s.isFinished || s.isPending))
           return false;
@@ -137,7 +138,6 @@ export function SeasonExplorer() {
         if (statusFilter === "finished" && !s.isFinished) return false;
       }
 
-      // Search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
@@ -151,15 +151,10 @@ export function SeasonExplorer() {
     });
   }, [allSeasons, tab, statusFilter, searchQuery]);
 
-  const grouped = useMemo(() => groupSeasons(filteredSeasons), [filteredSeasons]);
-
-  // Auto-expand all countries when there are few
-  const effectiveExpanded = useMemo(() => {
-    if (grouped.length <= 5) {
-      return new Set(grouped.map((g) => g.country));
-    }
-    return expandedCountries;
-  }, [grouped, expandedCountries]);
+  const grouped = useMemo(
+    () => groupSeasons(filteredSeasons),
+    [filteredSeasons]
+  );
 
   const toggleCountry = (country: string) => {
     setExpandedCountries((prev) => {
@@ -178,6 +173,19 @@ export function SeasonExplorer() {
       return next;
     });
   };
+
+  const allExpanded =
+    grouped.length > 0 &&
+    grouped.every((g) => expandedCountries.has(g.country));
+
+  const toggleExpandAll = useCallback(() => {
+    if (allExpanded) {
+      setExpandedCountries(new Set());
+      setExpandedLeagues(new Set());
+    } else {
+      setExpandedCountries(new Set(grouped.map((g) => g.country)));
+    }
+  }, [allExpanded, grouped]);
 
   const handleSyncFixtures = async (season: AvailableSeason) => {
     if (season.dbId == null) return;
@@ -208,7 +216,6 @@ export function SeasonExplorer() {
   const newTabCount = allSeasons.filter((s) => s.status === "new").length;
   const inDbTabCount = allSeasons.filter((s) => s.status === "in_db").length;
 
-  // Seasons selected for bulk dialog
   const selectedSeasons = allSeasons.filter(
     (s) => s.status === "new" && selection.isSelected(s.externalId)
   );
@@ -228,31 +235,37 @@ export function SeasonExplorer() {
               disabled={isLoading}
             >
               <RefreshCw
-                className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+                className={`h-4 w-4 sm:mr-2 ${isLoading ? "animate-spin" : ""}`}
               />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {/* Tabs */}
           <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
-            <TabsList>
-              <TabsTrigger value="new">New ({newTabCount})</TabsTrigger>
-              <TabsTrigger value="in_db">In DB ({inDbTabCount})</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="new" className="flex-1 sm:flex-none">
+                New ({newTabCount})
+              </TabsTrigger>
+              <TabsTrigger value="in_db" className="flex-1 sm:flex-none">
+                In DB ({inDbTabCount})
+              </TabsTrigger>
+              <TabsTrigger value="all" className="flex-1 sm:flex-none">
+                All
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          {/* Filters row */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 sm:gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search league, country..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-9 w-[240px] h-9"
+                className="pl-9 pr-9 h-9"
               />
               {searchQuery && (
                 <button
@@ -269,7 +282,7 @@ export function SeasonExplorer() {
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as StatusFilterValue)}
             >
-              <SelectTrigger className="w-[140px] h-9">
+              <SelectTrigger className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -280,7 +293,7 @@ export function SeasonExplorer() {
               </SelectContent>
             </Select>
 
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer h-9 px-1">
               <Checkbox
                 checked={includeHistorical}
                 onCheckedChange={(c) => setIncludeHistorical(c === true)}
@@ -292,8 +305,8 @@ export function SeasonExplorer() {
 
           {/* Bulk toolbar */}
           {tab === "new" && (
-            <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
-              <label className="flex items-center gap-2 cursor-pointer">
+            <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 gap-2">
+              <label className="flex items-center gap-2 cursor-pointer min-w-0">
                 <Checkbox
                   checked={allNewSelected}
                   onCheckedChange={(checked) => {
@@ -304,7 +317,7 @@ export function SeasonExplorer() {
                     }
                   }}
                 />
-                <span className="text-sm">
+                <span className="text-sm truncate">
                   {allNewSelected
                     ? "Deselect All"
                     : `Select All (${allFilteredIds.length})`}
@@ -314,15 +327,21 @@ export function SeasonExplorer() {
               {selection.selectedCount > 0 && (
                 <Button
                   size="sm"
+                  className="shrink-0"
                   onClick={() => setBulkDialogOpen(true)}
                 >
-                  Seed {selection.selectedCount} Selected
+                  <span className="hidden sm:inline">
+                    Seed {selection.selectedCount} Selected
+                  </span>
+                  <span className="sm:hidden">
+                    Seed ({selection.selectedCount})
+                  </span>
                 </Button>
               )}
             </div>
           )}
 
-          {/* Tree */}
+          {/* Tree with scroll container */}
           {isLoading ? (
             <Skeleton className="h-64 w-full" />
           ) : filteredSeasons.length === 0 ? (
@@ -330,31 +349,43 @@ export function SeasonExplorer() {
               No seasons match your filters.
             </p>
           ) : (
-            <div className="space-y-1">
-              {grouped.map((cg) => (
-                <CountryGroupRow
-                  key={cg.country}
-                  group={cg}
-                  expanded={effectiveExpanded.has(cg.country)}
-                  expandedLeagues={expandedLeagues}
-                  onToggleCountry={toggleCountry}
-                  onToggleLeague={toggleLeague}
-                  selection={selection}
-                  showCheckboxes={tab === "new"}
-                  onSeed={setSelectedSeason}
-                  onSyncFixtures={handleSyncFixtures}
-                  syncingSeasonId={syncingSeasonId}
-                />
-              ))}
-            </div>
-          )}
+            <>
+              {/* Expand/collapse toggle + count */}
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {filteredSeasons.length} seasons in {grouped.length}{" "}
+                  {grouped.length === 1 ? "country" : "countries"}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={toggleExpandAll}
+                >
+                  <ChevronsUpDown className="h-3.5 w-3.5" />
+                  {allExpanded ? "Collapse All" : "Expand All"}
+                </Button>
+              </div>
 
-          {/* Summary */}
-          {!isLoading && filteredSeasons.length > 0 && (
-            <p className="text-xs text-muted-foreground pt-2">
-              Showing {filteredSeasons.length} seasons in {grouped.length}{" "}
-              {grouped.length === 1 ? "country" : "countries"}
-            </p>
+              {/* Scrollable tree */}
+              <div className="max-h-[480px] overflow-y-auto -mx-1 px-1 space-y-1">
+                {grouped.map((cg) => (
+                  <CountryGroupRow
+                    key={cg.country}
+                    group={cg}
+                    expanded={expandedCountries.has(cg.country)}
+                    expandedLeagues={expandedLeagues}
+                    onToggleCountry={toggleCountry}
+                    onToggleLeague={toggleLeague}
+                    selection={selection}
+                    showCheckboxes={tab === "new"}
+                    onSeed={setSelectedSeason}
+                    onSyncFixtures={handleSyncFixtures}
+                    syncingSeasonId={syncingSeasonId}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -439,22 +470,25 @@ function CountryGroupRow({
             onClick={(e) => e.stopPropagation()}
           />
         )}
-        <span className="font-medium text-sm">{group.country}</span>
-        {group.newCount > 0 && (
-          <Badge
-            variant="outline"
-            className="ml-auto text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
-          >
-            {group.newCount} new
-          </Badge>
-        )}
-        <span className="text-xs text-muted-foreground">
-          {group.leagues.length} league{group.leagues.length !== 1 ? "s" : ""}
-        </span>
+        <span className="font-medium text-sm truncate">{group.country}</span>
+        <div className="flex items-center gap-1.5 ml-auto shrink-0">
+          {group.newCount > 0 && (
+            <Badge
+              variant="outline"
+              className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
+            >
+              {group.newCount} new
+            </Badge>
+          )}
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            {group.leagues.length} league
+            {group.leagues.length !== 1 ? "s" : ""}
+          </span>
+        </div>
       </button>
 
       {expanded && (
-        <div className="pl-4 pb-1">
+        <div className="pl-2 sm:pl-4 pb-1">
           {group.leagues.map((lg) => {
             const leagueKey = `${group.country}:${lg.leagueName}`;
             const leagueExpanded =
@@ -509,7 +543,7 @@ function LeagueGroupRow({
     newIds.length > 0 && newIds.every((id) => selection.isSelected(id));
 
   return (
-    <div className="ml-2">
+    <div className="ml-1 sm:ml-2">
       <button
         type="button"
         className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-muted/50 transition-colors rounded text-left"
@@ -530,14 +564,14 @@ function LeagueGroupRow({
             onClick={(e) => e.stopPropagation()}
           />
         )}
-        <span className="text-sm">{league.leagueName}</span>
-        <span className="text-xs text-muted-foreground ml-auto">
+        <span className="text-sm truncate">{league.leagueName}</span>
+        <span className="text-xs text-muted-foreground ml-auto shrink-0">
           ({league.seasons.length})
         </span>
       </button>
 
       {expanded && (
-        <div className="ml-6 space-y-0.5 pb-1">
+        <div className="ml-4 sm:ml-6 space-y-0.5 pb-1">
           {league.seasons.map((season) => (
             <SeasonRow
               key={season.externalId}
@@ -573,81 +607,86 @@ function SeasonRow({
   syncingSeasonId,
 }: SeasonRowProps) {
   return (
-    <div className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted/30 rounded text-sm">
+    <div className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2 py-1.5 hover:bg-muted/30 rounded text-sm">
       {showCheckbox && (
         <Checkbox
           checked={selection.isSelected(season.externalId)}
           onCheckedChange={() => selection.toggle(season.externalId)}
+          className="shrink-0"
         />
       )}
 
-      <span className="min-w-[80px]">{season.name}</span>
+      {/* Season name */}
+      <span className="min-w-0 truncate">{season.name}</span>
 
-      {/* Activity badge */}
-      {season.isPending ? (
-        <Badge
-          variant="outline"
-          className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-        >
-          Upcoming
-        </Badge>
-      ) : season.isFinished ? (
-        <Badge variant="outline" className="text-xs text-muted-foreground">
-          Finished
-        </Badge>
-      ) : (
-        <Badge
-          variant="outline"
-          className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-        >
-          Active
-        </Badge>
-      )}
+      {/* Activity badge - hidden on mobile to save space */}
+      <span className="hidden sm:inline-flex">
+        {season.isPending ? (
+          <Badge
+            variant="outline"
+            className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+          >
+            Upcoming
+          </Badge>
+        ) : season.isFinished ? (
+          <Badge variant="outline" className="text-xs text-muted-foreground">
+            Finished
+          </Badge>
+        ) : (
+          <Badge
+            variant="outline"
+            className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+          >
+            Active
+          </Badge>
+        )}
+      </span>
 
       {/* DB status */}
       {season.status === "new" ? (
         <Badge
           variant="outline"
-          className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400"
+          className="text-xs shrink-0 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400"
         >
           New
         </Badge>
       ) : (
         <Badge
           variant="outline"
-          className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400"
+          className="text-xs shrink-0 bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400"
         >
           In DB
         </Badge>
       )}
 
-      {/* Fixtures count */}
+      {/* Fixtures count - compact on mobile */}
       {season.status === "in_db" && (
-        <span className="text-xs text-muted-foreground ml-auto mr-2">
+        <span className="text-xs text-muted-foreground ml-auto mr-1 sm:mr-2 truncate hidden xs:inline">
           {(season.fixturesCount ?? 0) > 0
-            ? `${season.fixturesCount} fixtures`
+            ? `${season.fixturesCount} fix.`
             : season.hasFixturesAvailable
-              ? "Fixtures available"
-              : "No fixtures"}
+              ? "Avail."
+              : ""}
         </span>
       )}
 
-      {/* Action */}
+      {/* Action button */}
       <div className="ml-auto shrink-0">
         {season.status === "new" ? (
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-xs"
+            className="h-7 text-xs px-2 sm:px-3"
             onClick={() => onSeed(season)}
           >
             Seed
           </Button>
-        ) : (season.fixturesCount ?? 0) === 0 && season.hasFixturesAvailable ? (
+        ) : (season.fixturesCount ?? 0) === 0 &&
+          season.hasFixturesAvailable ? (
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-xs"
+            className="h-7 text-xs px-2 sm:px-3"
             onClick={() => onSyncFixtures(season)}
             disabled={syncingSeasonId === season.dbId}
           >
