@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, subDays, addDays } from "date-fns";
@@ -94,6 +94,11 @@ export default function FixtureDetailPage() {
   const [resettling, setResettling] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncDialogOpen, setSyncDialogOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setIsScrolled(e.currentTarget.scrollTop > 0);
+  }, []);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["fixture", fixtureId],
@@ -292,8 +297,8 @@ export default function FixtureDetailPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      {/* Back + title */}
-      <div className="flex-shrink-0 mb-3">
+      {/* Back + title — shadow appears on scroll */}
+      <div className={`flex-shrink-0 pb-3 relative z-10 transition-shadow duration-200 -mx-2 px-2 sm:-mx-3 sm:px-3 md:-mx-6 md:px-6 ${isScrolled ? "shadow-[0_4px_6px_-1px_rgba(0,0,0,0.08)]" : ""}`}>
         <Button
           variant="ghost"
           size="sm"
@@ -305,7 +310,7 @@ export default function FixtureDetailPage() {
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto space-y-3 sm:space-y-4">
+      <div className="flex-1 min-h-0 overflow-auto space-y-3 sm:space-y-4" onScroll={handleScroll}>
         {/* Issue banner (if any) */}
         {f.issue && (
           <div className="rounded-lg border border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20 px-3 py-2.5 sm:px-4">
