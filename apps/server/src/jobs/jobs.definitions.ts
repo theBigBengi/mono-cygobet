@@ -198,6 +198,22 @@ export const DATA_QUALITY_CHECK_JOB = {
 } as const satisfies JobDefinition;
 
 /**
+ * ADMIN_ALERTS_JOB
+ * ----------------
+ * Purpose: Generate and auto-resolve admin alerts by scanning system state.
+ * Sends Slack notifications for new critical/warning alerts.
+ */
+export const ADMIN_ALERTS_JOB = {
+  key: "admin-alerts",
+  description:
+    "Generate admin alerts from system state and send Slack notifications",
+  enabled: true,
+  // Every 2 minutes.
+  scheduleCron: "*/2 * * * *",
+  meta: {},
+} as const satisfies JobDefinition;
+
+/**
  * JOB_DEFINITIONS
  * --------------
  * List of all "known jobs" and their default DB config.
@@ -215,6 +231,7 @@ export const JOB_DEFINITIONS = [
   PREDICTION_REMINDERS_JOB,
   RECOVERY_OVERDUE_FIXTURES_JOB,
   DATA_QUALITY_CHECK_JOB,
+  ADMIN_ALERTS_JOB,
 ] as const satisfies readonly JobDefinition[];
 
 export type JobKey = (typeof JOB_DEFINITIONS)[number]["key"];

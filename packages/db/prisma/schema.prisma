@@ -889,6 +889,35 @@ model analyticsEvents {
   @@map("analytics_events")
 }
 
+model adminAlerts {
+  id          Int       @id @default(autoincrement())
+  severity    String    @db.VarChar(20) // "critical" | "warning" | "info"
+  category    String    @db.VarChar(50) // "job_failure" | "fixture_stuck" | "fixture_unsettled" | "data_quality" | "sync_needed" | "overdue_ns"
+  title       String
+  description String
+  actionUrl   String?   @map("action_url")
+  actionLabel String?   @map("action_label")
+  metadata    Json      @default("{}")
+  fingerprint String    @unique
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  resolvedAt  DateTime? @map("resolved_at") @db.Timestamptz(6)
+  slackSentAt DateTime? @map("slack_sent_at") @db.Timestamptz(6)
+
+  @@index([resolvedAt, severity], map: "admin_alerts_active_idx")
+  @@index([createdAt(sort: Desc)], map: "admin_alerts_created_idx")
+  @@map("admin_alerts")
+}
+
+model adminSettings {
+  id                     Int      @id @default(1)
+  slackWebhookUrl        String?  @map("slack_webhook_url")
+  slackEnabled           Boolean  @default(false) @map("slack_enabled")
+  slackSeverityThreshold String   @default("warning") @map("slack_severity_threshold") @db.VarChar(20) // "critical" | "warning" | "all"
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("admin_settings")
+}
+
 enum PublicPredictionStatus {
   upcoming
   active

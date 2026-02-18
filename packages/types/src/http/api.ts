@@ -468,6 +468,10 @@ export type ApiGroupItem = {
   nudgeWindowMinutes?: number;
   /** Current user's rank in the group (1-based). Only for active/ended groups. */
   userRank?: number;
+  /** User's rank change since last settlement: positive = went up, negative = went down, 0 = same. */
+  userRankChange?: number;
+  /** ISO timestamp of the last message in the group chat. Only for active/ended groups. */
+  lastMessageAt?: string;
 };
 
 /**

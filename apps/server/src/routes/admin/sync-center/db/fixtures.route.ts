@@ -87,6 +87,12 @@ function mapFixtureToResponse(f: any) {
           externalId: f.season.externalId.toString(),
         }
       : null,
+    homeScoreET: f.homeScoreET ?? null,
+    awayScoreET: f.awayScoreET ?? null,
+    penHome: f.penHome ?? null,
+    penAway: f.penAway ?? null,
+    leg: f.leg ?? null,
+    hasOdds: f.hasOdds ?? false,
     externalId: f.externalId.toString(),
     createdAt: f.createdAt.toISOString(),
     updatedAt: f.updatedAt.toISOString(),
@@ -391,7 +397,12 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
       state?: string;
       homeScore90?: number | null;
       awayScore90?: number | null;
+      homeScoreET?: number | null;
+      awayScoreET?: number | null;
+      penHome?: number | null;
+      penAway?: number | null;
       result?: string | null;
+      leg?: string | null;
     };
     Reply: AdminFixtureResponse;
   }>(
@@ -445,7 +456,12 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
           state: body.state,
           homeScore90: body.homeScore90,
           awayScore90: body.awayScore90,
+          homeScoreET: body.homeScoreET,
+          awayScoreET: body.awayScoreET,
+          penHome: body.penHome,
+          penAway: body.penAway,
           result: result,
+          leg: body.leg,
           overriddenById,
         });
 

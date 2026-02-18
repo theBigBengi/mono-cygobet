@@ -1,146 +1,22 @@
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Radio,
-  Clock,
-  AlertTriangle,
-  Zap,
-  Eye,
   RefreshCw,
+  AlertTriangle,
+  XCircle,
+  Clock,
+  Zap,
   TimerOff,
-  Sparkles,
-  ArrowRight,
+  FileWarning,
+  CheckCircle2,
+  Radio,
 } from "lucide-react";
 import { useDashboard } from "@/hooks/use-dashboard";
-import { useAvailability } from "@/hooks/use-availability";
-import { StatusBadge } from "@/components/table/status-badge";
-
-type StatusCardVariant = "gray" | "green" | "yellow" | "red";
-
-function getStatusCardVariant(label: string, count: number): StatusCardVariant {
-  if (label === "Live Now") {
-    return count === 0 ? "gray" : "green";
-  }
-  if (
-    label === "Pending Settlement" ||
-    label === "Failed Jobs (24h)" ||
-    label === "Stuck Fixtures" ||
-    label === "Overdue NS"
-  ) {
-    return count === 0 ? "green" : "red";
-  }
-  return "green";
-}
-
-function StatusCard({
-  label,
-  count,
-  href,
-  icon: Icon,
-}: {
-  label: string;
-  count: number;
-  href: string;
-  icon: React.ElementType;
-}) {
-  const variant = getStatusCardVariant(label, count);
-  const variantStyles: Record<StatusCardVariant, string> = {
-    gray: "border-l-gray-400",
-    green: "border-l-green-500",
-    yellow: "border-l-yellow-500",
-    red: "border-l-red-500",
-  };
-
-  return (
-    <Link to={href}>
-      <Card
-        className={`cursor-pointer transition-colors hover:bg-muted/50 border-l-4 ${variantStyles[variant]}`}
-      >
-        <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6 px-3 sm:px-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground">
-                {label}
-              </p>
-              <p className="text-xl sm:text-2xl font-bold">{count}</p>
-            </div>
-            <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/50" />
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
-
-function NewDataAlert() {
-  const { data, isLoading } = useAvailability();
-
-  if (isLoading) return null;
-
-  const summary = data?.data?.summary;
-  const newSeasons = summary?.new ?? 0;
-  const fixturesAvailable = summary?.seasonsWithFixturesAvailable ?? 0;
-
-  if (newSeasons === 0 && fixturesAvailable === 0) return null;
-
-  return (
-    <Link to="/sync-center">
-      <Card className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800 hover:shadow-md transition-shadow cursor-pointer">
-        <CardContent className="py-4 px-4 sm:px-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/50">
-                <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="font-semibold text-amber-900 dark:text-amber-100">
-                  New Data Available
-                </p>
-                <p className="text-sm text-amber-700 dark:text-amber-300">
-                  {newSeasons > 0 && (
-                    <span>
-                      {newSeasons} new season{newSeasons !== 1 ? "s" : ""}{" "}
-                    </span>
-                  )}
-                  {newSeasons > 0 && fixturesAvailable > 0 && "• "}
-                  {fixturesAvailable > 0 && (
-                    <span>
-                      {fixturesAvailable} season
-                      {fixturesAvailable !== 1 ? "s" : ""} with fixtures to sync
-                    </span>
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-              <span className="text-sm font-medium hidden sm:inline">
-                Go to Sync Center
-              </span>
-              <ArrowRight className="h-5 w-5" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { AdminDashboardResponse } from "@repo/types";
 
 export default function DashboardPage() {
   const { data, isLoading, isError, error, refetch, isFetching } =
@@ -148,7 +24,7 @@ export default function DashboardPage() {
 
   if (isError) {
     return (
-      <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
+      <div className="flex-1 p-4 sm:p-6">
         <div className="text-destructive">
           Failed to load dashboard: {error?.message ?? "Unknown error"}
         </div>
@@ -156,12 +32,13 @@ export default function DashboardPage() {
     );
   }
 
+  const jobs = data?.jobs;
+  const fixtures = data?.fixtures;
+
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-4">
-      <div className="flex-shrink-0 mb-2 flex items-center justify-between gap-2 sm:gap-4">
-        <h1 className="text-base sm:text-lg font-semibold truncate">
-          Operational Console
-        </h1>
+    <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
+      <div className="flex-shrink-0 mb-4 flex items-center justify-between">
+        <h1 className="text-lg sm:text-2xl font-semibold">Dashboard</h1>
         <Button
           variant="outline"
           size="sm"
@@ -175,173 +52,292 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto space-y-4">
-        {/* New Data Alert */}
-        <NewDataAlert />
-
-        {/* Row 1 – Status Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full" />
-            ))
-          ) : (
-            <>
-              <StatusCard
-                label="Live Now"
-                count={data?.liveCount ?? 0}
-                href="/fixtures?state=INPLAY_1ST_HALF,INPLAY_2ND_HALF,INPLAY_ET,INPLAY_PENALTIES,HT,BREAK,EXTRA_TIME_BREAK,PEN_BREAK"
-                icon={Radio}
-              />
-              <StatusCard
-                label="Pending Settlement"
-                count={data?.pendingSettlement ?? 0}
-                href="/fixtures?state=FT,AET,FT_PEN"
-                icon={Clock}
-              />
-              <StatusCard
-                label="Failed Jobs (24h)"
-                count={data?.failedJobs24h ?? 0}
-                href="/jobs?status=failed"
-                icon={AlertTriangle}
-              />
-              <StatusCard
-                label="Stuck Fixtures"
-                count={data?.stuckFixtures ?? 0}
-                href="/fixtures?state=INPLAY_1ST_HALF,INPLAY_2ND_HALF,INPLAY_ET,INPLAY_PENALTIES,HT,BREAK,EXTRA_TIME_BREAK,PEN_BREAK"
-                icon={Zap}
-              />
-              <StatusCard
-                label="Overdue NS"
-                count={data?.overdueNsCount ?? 0}
-                href="/fixtures?state=NS"
-                icon={TimerOff}
-              />
-            </>
-          )}
-        </div>
-
-        {/* Row 2 – Recent Job Failures */}
+      <div className="flex-1 min-h-0 overflow-auto space-y-6">
+        {/* ── Section 1: Jobs ── */}
         <Card>
-          <CardHeader className="px-3 sm:px-6">
-            <CardTitle className="text-sm sm:text-base">Recent Job Failures</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Last 10 failed job runs in the past 24 hours
-            </CardDescription>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Jobs</CardTitle>
+              {isLoading ? (
+                <Skeleton className="h-5 w-24" />
+              ) : jobs ? (
+                <Badge
+                  variant="outline"
+                  className={
+                    jobs.failingJobs.length > 0
+                      ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400"
+                      : "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400"
+                  }
+                >
+                  {jobs.healthyCount}/{jobs.totalEnabled} healthy
+                </Badge>
+              ) : null}
+            </div>
           </CardHeader>
-          <CardContent className="px-3 sm:px-6">
+          <CardContent>
             {isLoading ? (
-              <Skeleton className="h-48 w-full" />
-            ) : !data?.recentFailedJobs?.length ? (
-              <p className="text-sm text-muted-foreground py-4">
-                No recent failures
-              </p>
+              <Skeleton className="h-16 w-full" />
+            ) : !jobs?.failingJobs.length ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                All {jobs?.totalEnabled} jobs are running normally.
+              </div>
             ) : (
-              <div className="overflow-x-auto -mx-3 sm:mx-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Job</TableHead>
-                      <TableHead className="hidden sm:table-cell">Error</TableHead>
-                      <TableHead>When</TableHead>
-                      <TableHead className="w-[60px] sm:w-[80px]">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.recentFailedJobs.map((run) => (
-                      <TableRow key={run.id}>
-                        <TableCell className="font-medium text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">
-                          {run.jobKey}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell max-w-[320px]">
-                          <span
-                            className="block truncate"
-                            title={run.errorMessage ?? undefined}
-                          >
-                            {run.errorMessage ?? "—"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs sm:text-sm whitespace-nowrap">
-                          {formatDistanceToNow(new Date(run.startedAt), {
-                            addSuffix: true,
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/jobs?runId=${run.id}`}>
-                              <Eye className="h-4 w-4 sm:mr-1" />
-                              <span className="hidden sm:inline">View</span>
-                            </Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="space-y-2">
+                {jobs.failingJobs.map((job) => (
+                  <JobBanner key={job.key} job={job} />
+                ))}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Row 3 – Fixtures Needing Attention */}
+        {/* ── Section 2: Fixtures ── */}
         <Card>
-          <CardHeader className="px-3 sm:px-6">
-            <CardTitle className="text-sm sm:text-base">Fixtures Needing Attention</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Stuck LIVE, unsettled, overdue NS, or no scores
-            </CardDescription>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Fixtures</CardTitle>
+              {isLoading ? (
+                <Skeleton className="h-5 w-32" />
+              ) : fixtures ? (
+                <div className="flex items-center gap-2">
+                  {fixtures.liveCount > 0 && (
+                    <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400">
+                      <Radio className="h-3 w-3 mr-1" />
+                      {fixtures.liveCount} live
+                    </Badge>
+                  )}
+                </div>
+              ) : null}
+            </div>
           </CardHeader>
-          <CardContent className="px-3 sm:px-6">
+          <CardContent>
             {isLoading ? (
-              <Skeleton className="h-48 w-full" />
-            ) : !data?.fixturesNeedingAttention?.length ? (
-              <p className="text-sm text-muted-foreground py-4">
-                No fixtures need attention
-              </p>
-            ) : (
-              <div className="overflow-x-auto -mx-3 sm:mx-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Fixture</TableHead>
-                      <TableHead>State</TableHead>
-                      <TableHead className="hidden sm:table-cell">Since</TableHead>
-                      <TableHead className="hidden sm:table-cell">Issue</TableHead>
-                      <TableHead className="w-[60px] sm:w-[80px]">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.fixturesNeedingAttention.map((f) => (
-                      <TableRow key={f.id}>
-                        <TableCell className="font-medium max-w-[120px] sm:max-w-[200px] truncate text-xs sm:text-sm">
-                          {f.name}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={f.state} />
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell text-muted-foreground">
-                          {formatDistanceToNow(new Date(f.updatedAt), {
-                            addSuffix: true,
-                          })}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">{f.issue}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/fixtures/${f.id}`}>
-                              <Eye className="h-4 w-4 sm:mr-1" />
-                              <span className="hidden sm:inline">View</span>
-                            </Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <Skeleton className="h-16 w-full" />
+            ) : !fixtures ? null : (
+              <FixtureBanners fixtures={fixtures} />
             )}
           </CardContent>
         </Card>
       </div>
     </div>
   );
+}
+
+// ─── Job Banner ───
+
+function JobBanner({
+  job,
+}: {
+  job: AdminDashboardResponse["jobs"]["failingJobs"][number];
+}) {
+  return (
+    <Link
+      to={`/jobs/${encodeURIComponent(job.key)}`}
+      className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20 px-3 py-2.5 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+    >
+      <XCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-red-700 dark:text-red-400">
+          {job.description ?? job.key}
+          <span className="ml-2 text-xs font-normal text-red-500 dark:text-red-500">
+            {job.consecutiveFailures}x consecutive failure{job.consecutiveFailures !== 1 ? "s" : ""}
+          </span>
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+          Last failed{" "}
+          {formatDistanceToNow(new Date(job.lastRunAt), { addSuffix: true })}
+          {job.lastError && (
+            <> — {job.lastError.slice(0, 120)}{job.lastError.length > 120 ? "…" : ""}</>
+          )}
+        </p>
+      </div>
+      <span className="text-xs text-red-500 dark:text-red-400 whitespace-nowrap flex-shrink-0">
+        View →
+      </span>
+    </Link>
+  );
+}
+
+// ─── Fixture Banners ───
+
+function FixtureBanners({
+  fixtures,
+}: {
+  fixtures: AdminDashboardResponse["fixtures"];
+}) {
+  const hasIssues =
+    fixtures.stuck.length > 0 ||
+    fixtures.unsettled.length > 0 ||
+    fixtures.overdueNs.length > 0 ||
+    fixtures.noScores.length > 0;
+
+  if (!hasIssues && fixtures.pendingSettlement === 0) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+        No fixture issues detected.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {fixtures.stuck.length > 0 && (
+        <IssueBanner
+          icon={Zap}
+          variant="red"
+          href="/fixtures"
+          title={`${fixtures.stuck.length} fixture${fixtures.stuck.length !== 1 ? "s" : ""} stuck in LIVE`}
+          description={buildStuckDescription(fixtures.stuck)}
+        />
+      )}
+
+      {fixtures.unsettled.length > 0 && (
+        <IssueBanner
+          icon={Clock}
+          variant="amber"
+          href="/fixtures"
+          title={`${fixtures.unsettled.length} unsettled fixture${fixtures.unsettled.length !== 1 ? "s" : ""}`}
+          description={buildUnsettledDescription(fixtures.unsettled)}
+        />
+      )}
+
+      {fixtures.overdueNs.length > 0 && (
+        <IssueBanner
+          icon={TimerOff}
+          variant="orange"
+          href="/fixtures"
+          title={`${fixtures.overdueNs.length} overdue fixture${fixtures.overdueNs.length !== 1 ? "s" : ""} still showing NS`}
+          description={buildOverdueDescription(fixtures.overdueNs)}
+        />
+      )}
+
+      {fixtures.noScores.length > 0 && (
+        <IssueBanner
+          icon={FileWarning}
+          variant="yellow"
+          href="/fixtures"
+          title={`${fixtures.noScores.length} finished fixture${fixtures.noScores.length !== 1 ? "s" : ""} missing scores`}
+          description={buildNoScoresDescription(fixtures.noScores)}
+        />
+      )}
+
+      {fixtures.pendingSettlement > 0 && !fixtures.unsettled.length && (
+        <IssueBanner
+          icon={AlertTriangle}
+          variant="amber"
+          href="/fixtures"
+          title={`${fixtures.pendingSettlement} fixture${fixtures.pendingSettlement !== 1 ? "s" : ""} pending settlement`}
+          description="Finished fixtures with predictions waiting to be settled."
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Generic Issue Banner ───
+
+const BANNER_STYLES = {
+  red: "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20 hover:bg-red-50 dark:hover:bg-red-950/30",
+  amber: "border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20 hover:bg-amber-50 dark:hover:bg-amber-950/30",
+  orange: "border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/20 hover:bg-orange-50 dark:hover:bg-orange-950/30",
+  yellow: "border-yellow-200 bg-yellow-50/50 dark:border-yellow-900 dark:bg-yellow-950/20 hover:bg-yellow-50 dark:hover:bg-yellow-950/30",
+} as const;
+
+const ICON_STYLES = {
+  red: "text-red-500",
+  amber: "text-amber-500",
+  orange: "text-orange-500",
+  yellow: "text-yellow-500",
+} as const;
+
+const TITLE_STYLES = {
+  red: "text-red-700 dark:text-red-400",
+  amber: "text-amber-700 dark:text-amber-400",
+  orange: "text-orange-700 dark:text-orange-400",
+  yellow: "text-yellow-700 dark:text-yellow-400",
+} as const;
+
+const LINK_STYLES = {
+  red: "text-red-500 dark:text-red-400",
+  amber: "text-amber-500 dark:text-amber-400",
+  orange: "text-orange-500 dark:text-orange-400",
+  yellow: "text-yellow-500 dark:text-yellow-400",
+} as const;
+
+function IssueBanner({
+  icon: Icon,
+  variant,
+  href,
+  title,
+  description,
+}: {
+  icon: typeof AlertTriangle;
+  variant: keyof typeof BANNER_STYLES;
+  href: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link
+      to={href}
+      className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors ${BANNER_STYLES[variant]}`}
+    >
+      <Icon className={`h-4 w-4 flex-shrink-0 mt-0.5 ${ICON_STYLES[variant]}`} />
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium ${TITLE_STYLES[variant]}`}>
+          {title}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {description}
+        </p>
+      </div>
+      <span className={`text-xs whitespace-nowrap flex-shrink-0 ${LINK_STYLES[variant]}`}>
+        View →
+      </span>
+    </Link>
+  );
+}
+
+// ─── Description builders ───
+
+function buildStuckDescription(
+  stuck: AdminDashboardResponse["fixtures"]["stuck"]
+): string {
+  const longest = stuck[0]; // sorted by updatedAt asc = longest stuck first
+  const since = formatDistanceToNow(new Date(longest.stuckSince));
+  if (stuck.length === 1) {
+    return `${longest.name} has been in ${longest.state} for ${since}.`;
+  }
+  return `Longest: ${longest.name} (${since} in ${longest.state}). ${stuck.length - 1} other${stuck.length - 1 !== 1 ? "s" : ""} also stuck.`;
+}
+
+function buildUnsettledDescription(
+  unsettled: AdminDashboardResponse["fixtures"]["unsettled"]
+): string {
+  const totalPredictions = unsettled.reduce((sum, f) => sum + f.predictionCount, 0);
+  if (unsettled.length === 1) {
+    return `${unsettled[0].name} — ${totalPredictions} prediction${totalPredictions !== 1 ? "s" : ""} waiting for settlement.`;
+  }
+  return `${totalPredictions} total prediction${totalPredictions !== 1 ? "s" : ""} across ${unsettled.length} fixtures waiting for settlement.`;
+}
+
+function buildOverdueDescription(
+  overdueNs: AdminDashboardResponse["fixtures"]["overdueNs"]
+): string {
+  const most = overdueNs[0]; // sorted by startTs asc = most overdue first
+  if (overdueNs.length === 1) {
+    return `${most.name} is ${most.hoursOverdue}h past its scheduled start time.`;
+  }
+  return `Most overdue: ${most.name} (${most.hoursOverdue}h). ${overdueNs.length - 1} other${overdueNs.length - 1 !== 1 ? "s" : ""} also overdue.`;
+}
+
+function buildNoScoresDescription(
+  noScores: AdminDashboardResponse["fixtures"]["noScores"]
+): string {
+  if (noScores.length === 1) {
+    return `${noScores[0].name} (${noScores[0].state}) finished without score data.`;
+  }
+  return `${noScores.length} matches finished without score data. May need a re-sync from the provider.`;
 }

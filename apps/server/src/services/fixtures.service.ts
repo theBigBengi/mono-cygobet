@@ -151,7 +151,12 @@ export class FixturesService {
       state?: string;
       homeScore90?: number | null;
       awayScore90?: number | null;
+      homeScoreET?: number | null;
+      awayScoreET?: number | null;
+      penHome?: number | null;
+      penAway?: number | null;
       result?: string | null;
+      leg?: string | null;
       /** When set, marks this update as a manual override (score/state) and records who did it. */
       overriddenById?: number | null;
     }
@@ -164,7 +169,12 @@ export class FixturesService {
         state: true,
         homeScore90: true,
         awayScore90: true,
+        homeScoreET: true,
+        awayScoreET: true,
+        penHome: true,
+        penAway: true,
         result: true,
+        leg: true,
       },
     });
     if (!current) {
@@ -173,29 +183,27 @@ export class FixturesService {
 
     const updateData: Prisma.fixturesUpdateInput = {};
 
-    if (data.name !== undefined) {
-      updateData.name = data.name;
+    const simpleFields = [
+      "name", "homeScore90", "awayScore90", "homeScoreET", "awayScoreET",
+      "penHome", "penAway", "result", "leg",
+    ] as const;
+    for (const field of simpleFields) {
+      if (data[field] !== undefined) {
+        (updateData as any)[field] = data[field];
+      }
     }
 
     if (data.state !== undefined) {
       updateData.state = data.state as any;
     }
 
-    if (data.homeScore90 !== undefined) {
-      updateData.homeScore90 = data.homeScore90;
-    }
-
-    if (data.awayScore90 !== undefined) {
-      updateData.awayScore90 = data.awayScore90;
-    }
-
-    if (data.result !== undefined) {
-      updateData.result = data.result;
-    }
-
     const isScoreOrStateOverride =
       data.homeScore90 !== undefined ||
       data.awayScore90 !== undefined ||
+      data.homeScoreET !== undefined ||
+      data.awayScoreET !== undefined ||
+      data.penHome !== undefined ||
+      data.penAway !== undefined ||
       data.state !== undefined ||
       data.result !== undefined;
     if (isScoreOrStateOverride) {
@@ -221,44 +229,14 @@ export class FixturesService {
     const toStr = (v: string | number | null | undefined): string =>
       v === null || v === undefined ? "null" : String(v);
     const auditChanges: Record<string, { old: string; new: string }> = {};
-    if (data.name !== undefined && toStr(current.name) !== toStr(data.name)) {
-      auditChanges.name = { old: toStr(current.name), new: toStr(data.name) };
-    }
-    if (
-      data.state !== undefined &&
-      toStr(current.state) !== toStr(data.state)
-    ) {
-      auditChanges.state = {
-        old: toStr(current.state),
-        new: toStr(data.state),
-      };
-    }
-    if (
-      data.homeScore90 !== undefined &&
-      toStr(current.homeScore90) !== toStr(data.homeScore90)
-    ) {
-      auditChanges.homeScore90 = {
-        old: toStr(current.homeScore90),
-        new: toStr(data.homeScore90),
-      };
-    }
-    if (
-      data.awayScore90 !== undefined &&
-      toStr(current.awayScore90) !== toStr(data.awayScore90)
-    ) {
-      auditChanges.awayScore90 = {
-        old: toStr(current.awayScore90),
-        new: toStr(data.awayScore90),
-      };
-    }
-    if (
-      data.result !== undefined &&
-      toStr(current.result) !== toStr(data.result)
-    ) {
-      auditChanges.result = {
-        old: toStr(current.result),
-        new: toStr(data.result),
-      };
+    const auditFields = [
+      "name", "state", "homeScore90", "awayScore90", "homeScoreET", "awayScoreET",
+      "penHome", "penAway", "result", "leg",
+    ] as const;
+    for (const field of auditFields) {
+      if (data[field] !== undefined && toStr((current as any)[field]) !== toStr(data[field])) {
+        auditChanges[field] = { old: toStr((current as any)[field]), new: toStr(data[field]) };
+      }
     }
     // Write one audit row only when something actually changed; admin Timeline shows these as "admin" source
     if (Object.keys(auditChanges).length > 0) {

@@ -135,6 +135,13 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
       const missedPredictionsCount =
         stats.missedPredictionsCountByGroupId.get(group.id) ?? 0;
       const userRank = stats.userRankByGroupId.get(group.id);
+      const userPreviousRank = stats.userPreviousRankByGroupId.get(group.id);
+      // Calculate rank change: positive = went up, negative = went down
+      const userRankChange = userRank !== undefined && userPreviousRank !== undefined
+        ? userPreviousRank - userRank
+        : undefined;
+      const lastMessageAtDate = stats.lastMessageAtByGroupId.get(group.id);
+      const lastMessageAt = lastMessageAtDate ? lastMessageAtDate.toISOString() : undefined;
       const rawNextGame = stats.nextGameByGroupId.get(group.id) ?? null;
       const rawFirstGame = stats.firstGameByGroupId.get(group.id) ?? null;
       const rawLastGame = stats.lastGameByGroupId.get(group.id) ?? null;
@@ -173,6 +180,8 @@ export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
           liveGamesCount,
           missedPredictionsCount,
           userRank,
+          userRankChange,
+          lastMessageAt,
         },
         nextGame,
         firstGame,

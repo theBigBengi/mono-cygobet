@@ -4,11 +4,15 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { AdminHeader } from "./AdminHeader";
+import { useAdminSocket } from "@/hooks/use-admin-socket";
 
 /**
  * Main admin layout with sidebar, header, and content area
  */
 export function AdminLayout() {
+  // Connect to Socket.IO for real-time alert updates
+  useAdminSocket();
+
   return (
     <SidebarProvider>
       <AppSidebar />

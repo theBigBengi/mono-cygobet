@@ -17,6 +17,7 @@ import type {
   AdminSeedSeasonResponse,
   AdminSeedSeasonPreviewResponse,
   AdminJobStatusResponse,
+  AdminProviderHealthResponse,
 } from "@repo/types";
 
 export interface SyncAllParams {
@@ -42,6 +43,10 @@ export const syncService = {
     return apiGet<AdminSyncCenterOverviewResponse>(
       "/admin/sync-center/overview"
     );
+  },
+
+  async getProviderHealth(): Promise<AdminProviderHealthResponse> {
+    return apiGet<AdminProviderHealthResponse>("/admin/sync-center/health");
   },
 
   async getAvailability(opts?: {

@@ -1,18 +1,21 @@
 /**
  * User Settings Page
- * 
+ *
  * Allows users to:
  * - View and edit their name
  * - Change password
  * - View account information (email, role, last login)
+ * - Configure notification preferences (Slack webhook, severity threshold)
  */
 
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { AdminMeResponse } from "@repo/types/http/admin";
+import type { AdminMeResponse, AdminNotificationSettings } from "@repo/types/http/admin";
 import { useAdminAuth } from "@/auth";
 import { apiGet, apiPost } from "@/lib/adminApi";
+import { useNotificationSettings } from "@/hooks/use-settings";
+import { settingsService } from "@/services/settings.service";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,6 +28,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Use the shared type from @repo/types
 type UserProfile = AdminMeResponse["data"];
@@ -64,6 +75,24 @@ export default function UserSettingsPage() {
     }
   }, [profile]);
 
+  // Notification settings
+  const { data: notifData, isLoading: notifLoading } = useNotificationSettings();
+  const notifSettings = notifData?.data ?? null;
+
+  const [slackWebhookUrl, setSlackWebhookUrl] = React.useState("");
+  const [slackEnabled, setSlackEnabled] = React.useState(false);
+  const [slackSeverityThreshold, setSlackSeverityThreshold] = React.useState<
+    "critical" | "warning" | "all"
+  >("warning");
+
+  React.useEffect(() => {
+    if (notifSettings) {
+      setSlackWebhookUrl(notifSettings.slackWebhookUrl ?? "");
+      setSlackEnabled(notifSettings.slackEnabled);
+      setSlackSeverityThreshold(notifSettings.slackSeverityThreshold);
+    }
+  }, [notifSettings]);
+
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UpdateProfileBody) => {
       return apiPost<{ status: string; data: UserProfile; message: string }>(
@@ -79,6 +108,18 @@ export default function UserSettingsPage() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to update profile");
+    },
+  });
+
+  const updateNotifMutation = useMutation({
+    mutationFn: (data: Partial<AdminNotificationSettings>) =>
+      settingsService.updateNotificationSettings(data),
+    onSuccess: () => {
+      toast.success("Notification settings updated");
+      queryClient.invalidateQueries({ queryKey: ["admin-settings", "notifications"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update notification settings");
     },
   });
 
@@ -133,6 +174,21 @@ export default function UserSettingsPage() {
       confirmPassword,
     });
   };
+
+  const handleSaveNotifications = async (e: React.FormEvent) => {
+    e.preventDefault();
+    updateNotifMutation.mutate({
+      slackWebhookUrl: slackWebhookUrl.trim() || null,
+      slackEnabled,
+      slackSeverityThreshold,
+    });
+  };
+
+  const notifDirty =
+    notifSettings &&
+    (slackWebhookUrl !== (notifSettings.slackWebhookUrl ?? "") ||
+      slackEnabled !== notifSettings.slackEnabled ||
+      slackSeverityThreshold !== notifSettings.slackSeverityThreshold);
 
   if (isLoading) {
     return (
@@ -223,6 +279,97 @@ export default function UserSettingsPage() {
 
           <Separator />
 
+          {/* Notification Preferences */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification Preferences</CardTitle>
+              <CardDescription>
+                Configure Slack notifications for system alerts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {notifLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : (
+                <form onSubmit={handleSaveNotifications} className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="slack-enabled">Slack Notifications</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Send alert notifications to a Slack channel
+                      </p>
+                    </div>
+                    <Switch
+                      id="slack-enabled"
+                      checked={slackEnabled}
+                      onCheckedChange={setSlackEnabled}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="slack-webhook">Webhook URL</Label>
+                    <Input
+                      id="slack-webhook"
+                      type="url"
+                      value={slackWebhookUrl}
+                      onChange={(e) => setSlackWebhookUrl(e.target.value)}
+                      placeholder="https://hooks.slack.com/services/..."
+                      disabled={!slackEnabled}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Create a Slack Incoming Webhook and paste the URL here
+                    </p>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="severity-threshold">Severity Threshold</Label>
+                    <Select
+                      value={slackSeverityThreshold}
+                      onValueChange={(v) =>
+                        setSlackSeverityThreshold(
+                          v as "critical" | "warning" | "all"
+                        )
+                      }
+                      disabled={!slackEnabled}
+                    >
+                      <SelectTrigger id="severity-threshold" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="critical">
+                          Critical only
+                        </SelectItem>
+                        <SelectItem value="warning">
+                          Critical + Warning
+                        </SelectItem>
+                        <SelectItem value="all">
+                          All (Critical + Warning + Info)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      Choose which alert severity levels trigger Slack notifications
+                    </p>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={updateNotifMutation.isPending || !notifDirty}
+                  >
+                    {updateNotifMutation.isPending
+                      ? "Saving..."
+                      : "Save Notifications"}
+                  </Button>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+
+          <Separator />
+
           {/* Change Password */}
           <Card>
             <CardHeader>
@@ -291,4 +438,3 @@ export default function UserSettingsPage() {
     </div>
   );
 }
-

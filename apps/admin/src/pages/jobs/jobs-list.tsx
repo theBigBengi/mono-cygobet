@@ -123,18 +123,61 @@ export default function JobsListPage() {
     },
   });
 
+  // Sort: failing jobs first, then alphabetically
   const sortedJobs = useMemo(
     () =>
-      [...jobs].sort((a, b) =>
-        (a.description ?? a.key).localeCompare(b.description ?? b.key)
-      ),
+      [...jobs].sort((a, b) => {
+        const aFailing = a.lastRun?.status === "failed" ? 0 : 1;
+        const bFailing = b.lastRun?.status === "failed" ? 0 : 1;
+        if (aFailing !== bFailing) return aFailing - bFailing;
+        return (a.description ?? a.key).localeCompare(b.description ?? b.key);
+      }),
     [jobs]
   );
 
+  // Health summary
+  const healthSummary = useMemo(() => {
+    const total = jobs.filter((j) => j.enabled).length;
+    const failing = jobs.filter(
+      (j) => j.enabled && j.lastRun?.status === "failed"
+    ).length;
+    const healthy = total - failing;
+    return { total, healthy, failing };
+  }, [jobs]);
+
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      <div className="flex-shrink-0 mb-3 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Jobs</h1>
+      <div className="flex-shrink-0 mb-3 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold">Jobs</h1>
+        </div>
+        {/* Health summary bar */}
+        {jobs.length > 0 && (
+          <div
+            className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm ${
+              healthSummary.failing > 0
+                ? "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20"
+                : "border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20"
+            }`}
+          >
+            <span
+              className={`inline-block h-2.5 w-2.5 rounded-full ${
+                healthSummary.failing > 0 ? "bg-red-500" : "bg-green-500"
+              }`}
+            />
+            <span>
+              <span className="font-medium">
+                {healthSummary.healthy}/{healthSummary.total}
+              </span>{" "}
+              healthy
+            </span>
+            {healthSummary.failing > 0 && (
+              <span className="text-red-600 dark:text-red-400 font-medium">
+                {healthSummary.failing} failing
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto">

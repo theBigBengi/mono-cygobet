@@ -14,8 +14,59 @@ import {
   DEFAULT_LOCK_TIMEOUT_MS,
   withAdvisoryLock,
 } from "../../../../utils/advisory-lock";
+import { transformFixtureDto } from "../../../../etl/transform/fixtures.transform";
 
 const LOCK_KEY = "sync:fixtures";
+
+const FIELDS_TO_COMPARE = [
+  { key: "state", label: "State" },
+  { key: "homeScore90", label: "Home Score (90')" },
+  { key: "awayScore90", label: "Away Score (90')" },
+  { key: "result", label: "Result" },
+  { key: "homeScoreET", label: "Home Score (ET)" },
+  { key: "awayScoreET", label: "Away Score (ET)" },
+  { key: "penHome", label: "Penalties (Home)" },
+  { key: "penAway", label: "Penalties (Away)" },
+  { key: "liveMinute", label: "Live Minute" },
+  { key: "startIso", label: "Start Time" },
+  { key: "name", label: "Name" },
+] as const;
+
+const DB_FIXTURE_SELECT = {
+  state: true,
+  result: true,
+  homeScore90: true,
+  awayScore90: true,
+  homeScoreET: true,
+  awayScoreET: true,
+  penHome: true,
+  penAway: true,
+  liveMinute: true,
+  startIso: true,
+  name: true,
+} as const;
+
+type SyncPreviewChange = {
+  field: string;
+  label: string;
+  current: string | number | null;
+  incoming: string | number | null;
+};
+
+function computeChanges(
+  dbFixture: Record<string, unknown>,
+  incoming: Record<string, unknown>
+): SyncPreviewChange[] {
+  const changes: SyncPreviewChange[] = [];
+  for (const { key, label } of FIELDS_TO_COMPARE) {
+    const current = (dbFixture[key] as string | number | null) ?? null;
+    const next = (incoming[key] as string | number | null) ?? null;
+    if (String(current) !== String(next)) {
+      changes.push({ field: key, label, current, incoming: next });
+    }
+  }
+  return changes;
+}
 
 const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sync/fixtures - Sync fixtures from provider to database
@@ -198,6 +249,96 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         }
         throw err;
       }
+    }
+  );
+
+  // GET /admin/sync/fixtures/:id/preview - Preview what a sync would change
+  fastify.get<{ Params: { id: string } }>(
+    "/fixtures/:id/preview",
+    {
+      schema: {
+        params: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+      },
+    },
+    async (req, reply) => {
+      const fixtureId = Number(req.params.id);
+      if (isNaN(fixtureId)) {
+        return reply.status(400).send({ status: "error", message: "Invalid fixture ID" });
+      }
+
+      const dbFixture = await prisma.fixtures.findFirst({
+        where: { externalId: fixtureId },
+        select: DB_FIXTURE_SELECT,
+      });
+      if (!dbFixture) {
+        return reply.status(404).send({ status: "error", message: "Fixture not found in DB" });
+      }
+
+      const providerDto = await adapter.fetchFixtureById(fixtureId);
+      if (!providerDto) {
+        return reply.status(404).send({ status: "error", message: "Fixture not found in provider" });
+      }
+
+      const incoming = transformFixtureDto(providerDto);
+      const changes = computeChanges(dbFixture as Record<string, unknown>, incoming as Record<string, unknown>);
+
+      return reply.send({
+        status: "success",
+        data: { fixtureName: dbFixture.name, changes, hasChanges: changes.length > 0 },
+      });
+    }
+  );
+
+  // POST /admin/sync/fixtures/preview-batch - Preview changes for multiple fixtures at once
+  fastify.post<{ Body: { externalIds: number[] } }>(
+    "/fixtures/preview-batch",
+    {
+      schema: {
+        body: {
+          type: "object",
+          properties: { externalIds: { type: "array", items: { type: "number" }, maxItems: 50 } },
+          required: ["externalIds"],
+        },
+      },
+    },
+    async (req, reply) => {
+      const { externalIds } = req.body;
+      if (!externalIds?.length) {
+        return reply.send({ status: "success", data: {} });
+      }
+
+      // Fetch all DB fixtures in one query
+      const dbFixtures = await prisma.fixtures.findMany({
+        where: { externalId: { in: externalIds } },
+        select: { externalId: true, ...DB_FIXTURE_SELECT },
+      });
+      const dbMap = new Map(dbFixtures.map((f) => [Number(f.externalId), f]));
+
+      // Fetch all from provider in ONE call using fetchFixturesByIds
+      const providerDtos = await adapter.fetchFixturesByIds(externalIds, {
+        includeScores: true,
+      });
+      const providerMap = new Map(providerDtos.map((dto) => [dto.externalId, dto]));
+
+      // Compare each fixture
+      const results: Record<string, SyncPreviewChange[]> = {};
+      for (const extId of externalIds) {
+        const dbFixture = dbMap.get(extId);
+        const providerDto = providerMap.get(extId);
+
+        if (!dbFixture || !providerDto) {
+          results[String(extId)] = [];
+          continue;
+        }
+
+        const incoming = transformFixtureDto(providerDto);
+        results[String(extId)] = computeChanges(
+          dbFixture as unknown as Record<string, unknown>,
+          incoming as Record<string, unknown>
+        );
+      }
+
+      return reply.send({ status: "success", data: results });
     }
   );
 

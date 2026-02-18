@@ -9,11 +9,16 @@ import type {
   AdminBatchesListResponse,
   AdminBatchItemsResponse,
   AdminSyncFixturesResponse,
+  AdminFixturesAttentionResponse,
+  AdminFixtureSearchResponse,
+  FixtureIssueType,
 } from "@repo/types";
 
 export const fixturesService = {
   async getById(id: number | string) {
-    return apiGet<AdminFixtureResponse>(`/admin/sync-center/db/fixtures/${id}`);
+    return apiGet<AdminFixtureResponse>(
+      `/admin/sync-center/db/fixtures/${id}?include=homeTeam,awayTeam,league,season`
+    );
   },
 
   async getFromDb(params?: {
@@ -127,6 +132,34 @@ export const fixturesService = {
     return apiPost(`/admin/sync-center/sync/fixtures/${id}`, { dryRun });
   },
 
+  async syncPreview(externalId: number | string) {
+    return apiGet<{
+      status: string;
+      data: {
+        fixtureName: string;
+        hasChanges: boolean;
+        changes: Array<{
+          field: string;
+          label: string;
+          current: string | number | null;
+          incoming: string | number | null;
+        }>;
+      };
+    }>(`/admin/sync-center/sync/fixtures/${externalId}/preview`);
+  },
+
+  async syncPreviewBatch(externalIds: number[]) {
+    return apiPost<{
+      status: string;
+      data: Record<string, Array<{
+        field: string;
+        label: string;
+        current: string | number | null;
+        incoming: string | number | null;
+      }>>;
+    }>(`/admin/sync-center/sync/fixtures/preview-batch`, { externalIds });
+  },
+
   async getBatches(name?: string, limit = 20) {
     const params = new URLSearchParams();
     if (name) params.append("name", name);
@@ -149,7 +182,12 @@ export const fixturesService = {
       state?: string;
       homeScore90?: number | null;
       awayScore90?: number | null;
+      homeScoreET?: number | null;
+      awayScoreET?: number | null;
+      penHome?: number | null;
+      penAway?: number | null;
       result?: string | null;
+      leg?: string | null;
     }
   ) {
     return apiPatch(`/admin/sync-center/db/fixtures/${id}`, data);
@@ -174,6 +212,37 @@ export const fixturesService = {
   ): Promise<AdminFixtureAuditLogResponse> {
     return apiGet<AdminFixtureAuditLogResponse>(
       `/admin/sync-center/db/fixtures/${fixtureId}/audit-log`
+    );
+  },
+
+  async getAttention(params?: {
+    issueType?: FixtureIssueType | "all";
+    page?: number;
+    perPage?: number;
+  }): Promise<AdminFixturesAttentionResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.issueType) searchParams.append("issueType", params.issueType);
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.perPage)
+      searchParams.append("perPage", params.perPage.toString());
+    const qs = searchParams.toString();
+    return apiGet<AdminFixturesAttentionResponse>(
+      `/admin/fixtures/attention${qs ? `?${qs}` : ""}`
+    );
+  },
+
+  async search(params: {
+    q: string;
+    page?: number;
+    perPage?: number;
+  }): Promise<AdminFixtureSearchResponse> {
+    const searchParams = new URLSearchParams();
+    searchParams.append("q", params.q);
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.perPage)
+      searchParams.append("perPage", params.perPage.toString());
+    return apiGet<AdminFixtureSearchResponse>(
+      `/admin/fixtures/search?${searchParams.toString()}`
     );
   },
 };

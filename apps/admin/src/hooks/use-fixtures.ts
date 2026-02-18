@@ -1,61 +1,37 @@
 import { useQuery } from "@tanstack/react-query";
 import { fixturesService } from "@/services/fixtures.service";
 import type {
-  AdminFixturesListResponse,
-  AdminProviderFixturesResponse,
+  AdminFixturesAttentionResponse,
+  AdminFixtureSearchResponse,
+  FixtureIssueType,
 } from "@repo/types";
 
-export function useFixturesFromDb(
+export function useFixturesAttention(
   params?: {
+    issueType?: FixtureIssueType | "all";
     page?: number;
     perPage?: number;
-    leagueId?: number;
-    leagueIds?: string[]; // External IDs
-    countryIds?: string[]; // External IDs
-    seasonId?: number;
-    state?: string;
-    include?: string;
-    fromTs?: number; // Start timestamp filter
-    toTs?: number; // End timestamp filter
-    dataQuality?: "noScores";
   },
   options?: { enabled?: boolean }
 ) {
-  return useQuery<AdminFixturesListResponse>({
-    queryKey: ["fixtures", "db", params],
-    queryFn: () => fixturesService.getFromDb(params),
-    staleTime: 30000, // 30 seconds
+  return useQuery<AdminFixturesAttentionResponse>({
+    queryKey: ["fixtures", "attention", params],
+    queryFn: () => fixturesService.getAttention(params),
+    staleTime: 15 * 60 * 1000, // 15 min — invalidated on sync/resettle
     enabled: options?.enabled ?? true,
   });
 }
 
-export function useFixturesFromProvider(
-  from?: string,
-  to?: string,
-  seasonId?: number,
-  leagueIds?: string[], // External IDs
-  countryIds?: string[], // External IDs
+export function useFixtureSearch(
+  query: string,
+  params?: { page?: number; perPage?: number },
   options?: { enabled?: boolean }
 ) {
-  return useQuery<AdminProviderFixturesResponse>({
-    queryKey: [
-      "fixtures",
-      "provider",
-      from,
-      to,
-      seasonId,
-      leagueIds,
-      countryIds,
-    ],
+  return useQuery<AdminFixtureSearchResponse>({
+    queryKey: ["fixtures", "search", query, params],
     queryFn: () =>
-      fixturesService.getFromProvider(
-        from,
-        to,
-        seasonId,
-        leagueIds,
-        countryIds
-      ),
-    staleTime: 30000, // 30 seconds
-    enabled: !!from && !!to && (options?.enabled !== false),
+      fixturesService.search({ q: query, ...params }),
+    staleTime: 15 * 60 * 1000, // 15 min — invalidated on sync/resettle
+    enabled: query.length >= 2 && (options?.enabled ?? true),
   });
 }

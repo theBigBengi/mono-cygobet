@@ -28,6 +28,8 @@ export interface ClientToServerEvents {
     groupId: number;
     lastReadMessageId: number;
   }) => void;
+  // Admin namespace events
+  "admin:join": () => void;
 }
 
 export interface InviteReceivedPayload {
@@ -65,10 +67,21 @@ export interface ServerToClientEvents {
   "typing:start": (data: { userId: number; username: string | null }) => void;
   "typing:stop": (data: { userId: number }) => void;
   error: (data: { event: string; message: string }) => void;
+  // Admin alert events (sent to "admin" room)
+  "alert:new": (alert: unknown) => void;
+  "alert:resolved": (data: { count: number }) => void;
+}
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  role: string;
+  name: string | null;
 }
 
 export interface SocketData {
   user: SocketUser;
+  adminUser?: AdminUser;
 }
 
 export interface InterServerEvents {}

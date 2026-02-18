@@ -14,20 +14,55 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
   const now = new Date();
   const nowTs = nowUnixSeconds();
   const stuckCutoff = new Date(now.getTime() - STUCK_THRESHOLD_MS);
-  const failedJobsCutoff = new Date(now.getTime() - TWENTY_FOUR_HOURS_MS);
 
   const unsettledFixtureIds = await getUnsettledFixtureIds();
 
+  // ── Jobs data ──
+  const enabledJobs = await prisma.jobs.findMany({
+    where: { enabled: true },
+    select: { key: true, description: true },
+  });
+
+  const failingJobs: AdminDashboardResponse["jobs"]["failingJobs"] = [];
+  let healthyCount = 0;
+
+  for (const job of enabledJobs) {
+    const lastRuns = await prisma.jobRuns.findMany({
+      where: { jobKey: job.key },
+      orderBy: { startedAt: "desc" },
+      take: 10,
+      select: { status: true, startedAt: true, errorMessage: true },
+    });
+
+    const lastRun = lastRuns[0];
+    if (!lastRun || lastRun.status !== RunStatus.failed) {
+      healthyCount++;
+      continue;
+    }
+
+    // Count consecutive failures
+    let consecutive = 0;
+    for (const run of lastRuns) {
+      if (run.status === RunStatus.failed) consecutive++;
+      else break;
+    }
+
+    failingJobs.push({
+      key: job.key,
+      description: job.description,
+      lastError: lastRun.errorMessage,
+      lastRunAt: lastRun.startedAt.toISOString(),
+      consecutiveFailures: consecutive,
+    });
+  }
+
+  // ── Fixtures data ──
   const [
     liveCount,
     pendingSettlement,
-    failedJobs24h,
-    stuckFixtures,
-    overdueNsCount,
+    stuckRows,
     overdueNsRows,
-    recentFailedJobsRows,
-    stuckFixtureRows,
-    finishedUnsettledRows,
+    unsettledRows,
     noScoresRows,
   ] = await Promise.all([
     prisma.fixtures.count({
@@ -42,56 +77,21 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
             state: { in: FINISHED_STATES_ARR },
           },
         }),
-    prisma.jobRuns.count({
-      where: {
-        status: RunStatus.failed,
-        startedAt: { gte: failedJobsCutoff },
-      },
-    }),
-    prisma.fixtures.count({
+    prisma.fixtures.findMany({
       where: {
         externalId: { gte: 0 },
         state: { in: LIVE_STATES_ARR },
         updatedAt: { lt: stuckCutoff },
       },
-    }),
-    prisma.fixtures.count({
-      where: { externalId: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
+      orderBy: { updatedAt: "asc" },
+      take: 20,
+      select: { id: true, name: true, state: true, updatedAt: true },
     }),
     prisma.fixtures.findMany({
       where: { externalId: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
       orderBy: { startTs: "asc" },
       take: 20,
-      select: {
-        id: true,
-        name: true,
-        state: true,
-        startIso: true,
-        startTs: true,
-        league: { select: { name: true } },
-      },
-    }),
-    prisma.jobRuns.findMany({
-      where: {
-        status: RunStatus.failed,
-        startedAt: { gte: failedJobsCutoff },
-      },
-      orderBy: { startedAt: "desc" },
-      take: 10,
-      select: {
-        id: true,
-        jobKey: true,
-        errorMessage: true,
-        startedAt: true,
-      },
-    }),
-    prisma.fixtures.findMany({
-      where: {
-        externalId: { gte: 0 },
-        state: { in: LIVE_STATES_ARR },
-        updatedAt: { lt: stuckCutoff },
-      },
-      select: { id: true, name: true, state: true, updatedAt: true },
+      select: { id: true, name: true, startTs: true },
     }),
     unsettledFixtureIds.length === 0
       ? []
@@ -101,17 +101,10 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
             externalId: { gte: 0 },
             state: { in: FINISHED_STATES_ARR },
           },
-          select: {
-            id: true,
-            name: true,
-            state: true,
-            updatedAt: true,
-            result: true,
-            homeScore90: true,
-            awayScore90: true,
-          },
+          orderBy: { updatedAt: "desc" },
+          take: 20,
+          select: { id: true, name: true, state: true },
         }),
-    // Finished fixtures without scores
     prisma.fixtures.findMany({
       where: {
         externalId: { gte: 0 },
@@ -120,82 +113,46 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
       },
       orderBy: { updatedAt: "desc" },
       take: 20,
-      select: { id: true, name: true, state: true, updatedAt: true },
+      select: { id: true, name: true, state: true },
     }),
   ]);
 
-  const attentionMap = new Map<
-    number,
-    {
-      id: number;
-      name: string;
-      state: string;
-      updatedAt: string;
-      issue: string;
-    }
-  >();
-
-  for (const f of stuckFixtureRows) {
-    attentionMap.set(f.id, {
-      id: f.id,
-      name: f.name,
-      state: f.state,
-      updatedAt: f.updatedAt.toISOString(),
-      issue: "Stuck LIVE",
+  // Enrich unsettled with prediction count
+  const unsettled: AdminDashboardResponse["fixtures"]["unsettled"] = [];
+  for (const f of unsettledRows) {
+    const predictionCount = await prisma.groupPredictions.count({
+      where: { settledAt: null, groupFixtures: { fixtureId: f.id } },
     });
+    unsettled.push({ id: f.id, name: f.name, predictionCount });
   }
-
-  for (const f of finishedUnsettledRows) {
-    if (attentionMap.has(f.id)) continue;
-    attentionMap.set(f.id, {
-      id: f.id,
-      name: f.name,
-      state: f.state,
-      updatedAt: f.updatedAt.toISOString(),
-      issue: "Unsettled",
-    });
-  }
-
-  for (const f of overdueNsRows) {
-    if (attentionMap.has(f.id)) continue;
-    attentionMap.set(f.id, {
-      id: f.id,
-      name: f.name,
-      state: f.state,
-      updatedAt: f.startIso,
-      issue: "Overdue NS",
-    });
-  }
-
-  for (const f of noScoresRows) {
-    if (attentionMap.has(f.id)) continue;
-    attentionMap.set(f.id, {
-      id: f.id,
-      name: f.name,
-      state: f.state,
-      updatedAt: f.updatedAt.toISOString(),
-      issue: "No Scores",
-    });
-  }
-
-  const recentFailedJobs: AdminDashboardResponse["recentFailedJobs"] =
-    recentFailedJobsRows.map((r) => ({
-      id: r.id,
-      jobKey: r.jobKey,
-      errorMessage: r.errorMessage,
-      startedAt: r.startedAt.toISOString(),
-    }));
-
-  const fixturesNeedingAttention = Array.from(attentionMap.values());
 
   return {
-    liveCount,
-    pendingSettlement,
-    failedJobs24h,
-    stuckFixtures,
-    overdueNsCount,
-    recentFailedJobs,
-    fixturesNeedingAttention,
+    jobs: {
+      totalEnabled: enabledJobs.length,
+      healthyCount,
+      failingJobs,
+    },
+    fixtures: {
+      liveCount,
+      pendingSettlement,
+      stuck: stuckRows.map((f) => ({
+        id: f.id,
+        name: f.name,
+        state: f.state,
+        stuckSince: f.updatedAt.toISOString(),
+      })),
+      unsettled,
+      overdueNs: overdueNsRows.map((f) => ({
+        id: f.id,
+        name: f.name,
+        hoursOverdue: Math.round((nowTs - f.startTs) / 3600),
+      })),
+      noScores: noScoresRows.map((f) => ({
+        id: f.id,
+        name: f.name,
+        state: f.state,
+      })),
+    },
   };
 }
 
@@ -246,7 +203,6 @@ export async function getFixtureIssue(fixture: {
   if (!FINISHED_STATES_ARR.includes(fixture.state as FixtureState)) {
     return null;
   }
-  // Check for finished fixtures without scores
   if (fixture.homeScore90 == null || fixture.awayScore90 == null) {
     return "No Scores";
   }

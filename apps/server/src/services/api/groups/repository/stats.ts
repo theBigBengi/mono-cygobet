@@ -50,6 +50,8 @@ export async function findGroupsStatsBatch(
       missedPredictionsCountByGroupId: new Map<number, number>(),
       userRankByGroupId: new Map<number, number>(),
       userPredictionsByGroupFixture: new Map<string, any>(),
+      lastMessageAtByGroupId: new Map<number, Date>(),
+      userPreviousRankByGroupId: new Map<number, number>(),
     };
   }
 
@@ -70,6 +72,8 @@ export async function findGroupsStatsBatch(
     missedPredictionsCountsRaw,
     userPredictionsRaw,
     userRanksRaw,
+    lastMessagesRaw,
+    userPreviousRanksRaw,
   ] = await Promise.all([
     // Query 1: memberCount per group
     prisma.groupMembers.groupBy({
@@ -260,6 +264,27 @@ export async function findGroupsStatsBatch(
       FROM ranked
       WHERE user_id = ${userId}
     `,
+    // Query 15: last message per group
+    prisma.$queryRaw<{ group_id: number; last_message_at: Date }[]>`
+      SELECT DISTINCT ON (group_id)
+        group_id,
+        created_at AS last_message_at
+      FROM group_messages
+      WHERE group_id = ANY(${groupIds})
+      ORDER BY group_id, created_at DESC
+    `,
+    // Query 16: user's previous rank per group (from latest ranking snapshot)
+    prisma.$queryRaw<{ group_id: number; rank: number }[]>`
+      SELECT rs.group_id, rs.rank
+      FROM ranking_snapshots rs
+      INNER JOIN (
+        SELECT group_id, MAX(created_at) AS max_created_at
+        FROM ranking_snapshots
+        WHERE group_id = ANY(${groupIds}) AND user_id = ${userId}
+        GROUP BY group_id
+      ) latest ON rs.group_id = latest.group_id AND rs.created_at = latest.max_created_at
+      WHERE rs.user_id = ${userId}
+    `,
   ]);
 
   // Build Maps: groupId -> data (cleaner - service לא יעשה transform)
@@ -358,6 +383,16 @@ export async function findGroupsStatsBatch(
     userRankByGroupId.set(item.group_id, item.user_rank)
   );
 
+  const lastMessageAtByGroupId = new Map<number, Date>();
+  lastMessagesRaw.forEach((item) =>
+    lastMessageAtByGroupId.set(item.group_id, item.last_message_at)
+  );
+
+  const userPreviousRankByGroupId = new Map<number, number>();
+  userPreviousRanksRaw.forEach((item) =>
+    userPreviousRankByGroupId.set(item.group_id, item.rank)
+  );
+
   // Map predictions by groupId_fixtureId for quick lookup
   type PredictionData = {
     home: number;
@@ -406,5 +441,7 @@ export async function findGroupsStatsBatch(
     missedPredictionsCountByGroupId,
     userRankByGroupId,
     userPredictionsByGroupFixture,
+    lastMessageAtByGroupId,
+    userPreviousRankByGroupId,
   };
 }

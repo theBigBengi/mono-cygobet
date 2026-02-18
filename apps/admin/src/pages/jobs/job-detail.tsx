@@ -28,6 +28,7 @@ import {
   titleCaseWords,
 } from "./jobs.utils";
 import { JobConfigForm } from "./job-config-form";
+import { useAlerts } from "@/hooks/use-dashboard";
 
 export default function JobDetailPage() {
   const { jobKey } = useParams<{ jobKey: string }>();
@@ -103,6 +104,38 @@ export default function JobDetailPage() {
     },
   });
 
+  // Alert context for this job
+  const { data: alertsData } = useAlerts();
+  const jobAlerts = useMemo(
+    () =>
+      alertsData?.data?.filter(
+        (a) =>
+          a.category === "job_failure" &&
+          a.fingerprint === `job_failure:${jobKey}`
+      ) ?? [],
+    [alertsData, jobKey]
+  );
+
+  // Failure pattern: count consecutive failures from most recent runs
+  const failurePattern = useMemo(() => {
+    const lastRuns = job?.lastRuns ?? [];
+    if (!lastRuns.length || lastRuns[0].status !== "failed") return null;
+    let consecutive = 0;
+    for (const run of lastRuns) {
+      if (run.status === "failed") {
+        consecutive++;
+      } else {
+        break;
+      }
+    }
+    return {
+      consecutiveFailures: consecutive,
+      firstFailedAt: lastRuns[consecutive - 1]?.startedAt ?? null,
+      lastFailedAt: lastRuns[0]?.startedAt ?? null,
+      lastError: lastRuns[0]?.errorMessage ?? null,
+    };
+  }, [job]);
+
   const canGoPrev = cursorStack.length > 1;
   const canGoNext = runs.length === 50 && nextCursor != null;
 
@@ -154,6 +187,48 @@ export default function JobDetailPage() {
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto space-y-6">
+        {/* Failure Pattern (shown when job is currently failing) */}
+        {failurePattern && (
+          <Card className="border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base text-red-700 dark:text-red-400">
+                Failure Pattern
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                <span>
+                  <span className="font-semibold text-red-600 dark:text-red-400">
+                    {failurePattern.consecutiveFailures}
+                  </span>{" "}
+                  consecutive failure
+                  {failurePattern.consecutiveFailures !== 1 ? "s" : ""}
+                </span>
+                {failurePattern.firstFailedAt && (
+                  <span className="text-muted-foreground">
+                    Since: {formatRelativeTime(failurePattern.firstFailedAt)}
+                  </span>
+                )}
+              </div>
+              {failurePattern.lastError && (
+                <p className="text-xs text-muted-foreground font-mono bg-red-100/50 dark:bg-red-950/30 rounded px-2 py-1 truncate">
+                  {failurePattern.lastError.slice(0, 200)}
+                </p>
+              )}
+              {/* Alert context */}
+              {jobAlerts.length > 0 && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  {jobAlerts.map((a) => (
+                    <p key={a.id}>
+                      Alert: {a.title} — {a.description}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Configuration</CardTitle>

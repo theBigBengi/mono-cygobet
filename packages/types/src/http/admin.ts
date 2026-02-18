@@ -832,8 +832,14 @@ export interface AdminFixtureResponse {
     result: string | null;
     homeScore90: number | null;
     awayScore90: number | null;
+    homeScoreET: number | null;
+    awayScoreET: number | null;
+    penHome: number | null;
+    penAway: number | null;
     stage: string | null;
     round: string | null;
+    leg: string | null;
+    hasOdds: boolean;
     leagueId: number | null;
     seasonId: number | null;
     homeTeamId: number;
@@ -966,27 +972,163 @@ export interface AdminSyncTeamsResponse {
   message: string;
 }
 
-export interface AdminDashboardRecentFailedJob {
-  id: number;
-  jobKey: string;
-  errorMessage: string | null;
-  startedAt: string;
+export interface AdminDashboardResponse {
+  jobs: {
+    totalEnabled: number;
+    healthyCount: number;
+    failingJobs: Array<{
+      key: string;
+      description: string | null;
+      lastError: string | null;
+      lastRunAt: string;
+      consecutiveFailures: number;
+    }>;
+  };
+  fixtures: {
+    liveCount: number;
+    pendingSettlement: number;
+    stuck: Array<{ id: number; name: string; state: string; stuckSince: string }>;
+    unsettled: Array<{ id: number; name: string; predictionCount: number }>;
+    overdueNs: Array<{ id: number; name: string; hoursOverdue: number }>;
+    noScores: Array<{ id: number; name: string; state: string }>;
+  };
 }
 
-export interface AdminDashboardFixtureNeedingAttention {
+// ─── Alert System Types ───
+
+export type AdminAlertSeverity = "critical" | "warning" | "info";
+
+export type AdminAlertCategory =
+  | "job_failure"
+  | "fixture_stuck"
+  | "fixture_unsettled"
+  | "data_quality"
+  | "sync_needed"
+  | "overdue_ns";
+
+export interface AdminAlertItem {
+  id: number;
+  severity: AdminAlertSeverity;
+  category: AdminAlertCategory;
+  title: string;
+  description: string;
+  actionUrl: string | null;
+  actionLabel: string | null;
+  metadata: Record<string, unknown>;
+  fingerprint: string;
+  createdAt: string;
+  resolvedAt: string | null;
+  slackSentAt: string | null;
+}
+
+export interface AdminAlertsListResponse {
+  status: string;
+  data: AdminAlertItem[];
+  message: string;
+}
+
+export interface AdminAlertResolveResponse {
+  status: string;
+  data: AdminAlertItem | null;
+  message: string;
+}
+
+// ─── Fixtures Attention Types ───
+
+export type FixtureIssueType =
+  | "stuck"
+  | "overdue"
+  | "noScores"
+  | "unsettled";
+
+export interface AdminFixtureAttentionItem {
   id: number;
   name: string;
+  externalId: string;
+  startIso: string;
+  startTs: number;
   state: string;
-  updatedAt: string;
-  issue: string;
+  result: string | null;
+  homeScore90: number | null;
+  awayScore90: number | null;
+  issueType: FixtureIssueType;
+  issueLabel: string;
+  /** When the issue started (e.g. updatedAt for stuck, startIso for overdue) */
+  issueSince: string;
+  homeTeam: { id: number; name: string; imagePath: string | null } | null;
+  awayTeam: { id: number; name: string; imagePath: string | null } | null;
+  league: { id: number; name: string; imagePath: string | null } | null;
+  /** Number of groups this fixture appears in */
+  groupCount: number;
+  /** Number of predictions for this fixture */
+  predictionCount: number;
 }
 
-export interface AdminDashboardResponse {
-  liveCount: number;
-  pendingSettlement: number;
-  failedJobs24h: number;
-  stuckFixtures: number;
-  overdueNsCount: number;
-  recentFailedJobs: AdminDashboardRecentFailedJob[];
-  fixturesNeedingAttention: AdminDashboardFixtureNeedingAttention[];
+export interface AdminFixturesAttentionResponse {
+  status: string;
+  data: AdminFixtureAttentionItem[];
+  issueCounts: {
+    stuck: number;
+    overdue: number;
+    noScores: number;
+    unsettled: number;
+  };
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
+export interface AdminProviderHealthResponse {
+  status: string;
+  data: {
+    provider: string;
+    reachable: boolean;
+    latencyMs: number;
+    error?: string;
+  };
+  message: string;
+}
+
+// ─── Admin Settings Types ───
+
+export interface AdminNotificationSettings {
+  slackWebhookUrl: string | null;
+  slackEnabled: boolean;
+  slackSeverityThreshold: "critical" | "warning" | "all";
+}
+
+export interface AdminNotificationSettingsResponse {
+  status: string;
+  data: AdminNotificationSettings;
+  message: string;
+}
+
+export interface AdminFixtureSearchResponse {
+  status: string;
+  data: Array<{
+    id: number;
+    name: string;
+    externalId: string;
+    startIso: string;
+    startTs: number;
+    state: string;
+    result: string | null;
+    homeScore90: number | null;
+    awayScore90: number | null;
+    homeTeam: { id: number; name: string; imagePath: string | null } | null;
+    awayTeam: { id: number; name: string; imagePath: string | null } | null;
+    league: { id: number; name: string; imagePath: string | null } | null;
+    issue: string | null;
+  }>;
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
 }

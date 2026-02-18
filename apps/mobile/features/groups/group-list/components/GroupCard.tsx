@@ -12,6 +12,22 @@ import { useTheme } from "@/lib/theme";
 import { useCountdown } from "@/features/groups/predictions/hooks";
 import type { ApiGroupItem } from "@repo/types";
 
+function formatLastMessageTime(isoDate: string | undefined): string | null {
+  if (!isoDate) return null;
+  const date = new Date(isoDate);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return "now";
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffHours < 24) return `${diffHours}h`;
+  if (diffDays < 7) return `${diffDays}d`;
+  return `${Math.floor(diffDays / 7)}w`;
+}
+
 function getInitials(name: string): string {
   if (!name?.trim()) return "?";
   const parts = name.trim().split(/\s+/);
@@ -354,99 +370,160 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
               </View>
             )}
 
-            {/* Stats HUD (for active/ended groups) */}
-            {!isDraft && (
+            {/* Alert HUD - always visible, items light up when there's an alert */}
+            {!isDraft && !isEnded && (
               <View style={[styles.statsHud, { borderTopColor: theme.colors.border }]}>
-                {/* Members */}
-                <View style={[styles.hudCell, { backgroundColor: theme.colors.surface }]}>
-                  <Ionicons name="people" size={16} color={theme.colors.textSecondary} />
-                  <Text style={[styles.hudValue, { color: theme.colors.textSecondary }]}>
-                    {memberCount}
-                  </Text>
-                </View>
-
-                {/* Rank */}
-                <View style={[styles.hudCell, { backgroundColor: theme.colors.surface }]}>
-                  <Ionicons name="trophy" size={16} color={theme.colors.textSecondary} />
-                  <Text style={[styles.hudValue, { color: theme.colors.textSecondary }]}>
-                    {userRank != null ? `#${userRank}` : "—"}
-                  </Text>
-                </View>
+                {/* Ranking */}
+                {(() => {
+                  const rankChange = group.userRankChange ?? 0;
+                  const isLit = rankChange !== 0;
+                  const isUp = rankChange > 0;
+                  const rankColor = isUp ? "#10B981" : "#EF4444"; // green / red
+                  return (
+                    <View
+                      style={[
+                        styles.hudCell,
+                        {
+                          backgroundColor: isLit ? rankColor + "15" : "transparent",
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={isLit ? "trophy" : "trophy-outline"}
+                        size={16}
+                        color={isLit ? rankColor : theme.colors.textSecondary + "50"}
+                      />
+                      <Text
+                        style={[
+                          styles.hudValue,
+                          {
+                            color: isLit ? rankColor : theme.colors.textSecondary + "50",
+                          },
+                        ]}
+                      >
+                        {userRank ? `#${userRank}` : "–"}
+                      </Text>
+                      {isLit && (
+                        <View style={styles.rankChangeIndicator}>
+                          <Ionicons
+                            name={isUp ? "caret-up" : "caret-down"}
+                            size={12}
+                            color={rankColor}
+                          />
+                        </View>
+                      )}
+                    </View>
+                  );
+                })()}
 
                 {/* Predictions */}
-                <View
-                  style={[
-                    styles.hudCell,
-                    {
-                      backgroundColor: predictionsCount === totalFixtures
-                        ? "#10B981" + "15"
-                        : urgencyColor
-                          ? urgencyColor + "15"
-                          : theme.colors.surface,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={predictionsCount === totalFixtures ? "checkmark-circle" : "ellipse-outline"}
-                    size={16}
-                    color={
-                      predictionsCount === totalFixtures
-                        ? "#10B981"
-                        : urgencyColor ?? theme.colors.textSecondary
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.hudValue,
-                      {
-                        color: predictionsCount === totalFixtures
-                          ? "#10B981"
-                          : urgencyColor ?? theme.colors.textSecondary,
-                      },
-                    ]}
-                  >
-                    {predictionsCount}/{totalFixtures}
-                  </Text>
-                </View>
+                {(() => {
+                  const missingCount = totalFixtures - predictionsCount;
+                  const isComplete = missingCount === 0;
+                  const hasUrgency = !isComplete && urgencyColor;
+                  const litColor = urgencyColor;
+                  return (
+                    <View
+                      style={[
+                        styles.hudCell,
+                        {
+                          backgroundColor: hasUrgency ? litColor + "15" : "transparent",
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={isComplete ? "checkmark-circle" : "create-outline"}
+                        size={16}
+                        color={
+                          hasUrgency
+                            ? litColor
+                            : isComplete
+                              ? "#10B981"
+                              : theme.colors.textSecondary + "50"
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.hudValue,
+                          {
+                            color: hasUrgency
+                              ? litColor
+                              : theme.colors.textSecondary + "50",
+                          },
+                        ]}
+                      >
+                        {hasUrgency ? `${missingCount}/${totalFixtures}` : `${predictionsCount}/${totalFixtures}`}
+                      </Text>
+                    </View>
+                  );
+                })()}
 
-                {/* Games */}
-                <View
-                  style={[
-                    styles.hudCell,
-                    {
-                      backgroundColor: liveCount > 0 ? "#EF4444" + "15" : theme.colors.surface,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name="football"
-                    size={16}
-                    color={liveCount > 0 ? "#EF4444" : theme.colors.textSecondary}
-                  />
-                  <Text
-                    style={[
-                      styles.hudValue,
-                      { color: liveCount > 0 ? "#EF4444" : theme.colors.textSecondary },
-                    ]}
-                  >
-                    {completedGames}/{totalFixtures}
-                  </Text>
-                </View>
+                {/* LIVE / Games */}
+                {(() => {
+                  const isLit = liveCount > 0;
+                  const liveColor = "#EC4899"; // Pink/Magenta
+                  return (
+                    <View
+                      style={[
+                        styles.hudCell,
+                        {
+                          backgroundColor: isLit ? liveColor + "15" : "transparent",
+                        },
+                      ]}
+                    >
+                      {isLit ? (
+                        <View style={[styles.liveDot, { backgroundColor: liveColor }]} />
+                      ) : (
+                        <Ionicons
+                          name="football-outline"
+                          size={16}
+                          color={theme.colors.textSecondary + "50"}
+                        />
+                      )}
+                      <Text
+                        style={[
+                          styles.hudValue,
+                          {
+                            color: isLit ? liveColor : theme.colors.textSecondary + "50",
+                          },
+                        ]}
+                      >
+                        {isLit ? "LIVE" : `${completedGames}/${totalFixtures}`}
+                      </Text>
+                    </View>
+                  );
+                })()}
 
                 {/* Chat */}
-                {unreadCount > 0 && (
-                  <View
-                    style={[
-                      styles.hudCell,
-                      { backgroundColor: theme.colors.primary + "15" },
-                    ]}
-                  >
-                    <Ionicons name="chatbubble" size={16} color={theme.colors.primary} />
-                    <Text style={[styles.hudValue, { color: theme.colors.primary }]}>
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </Text>
-                  </View>
-                )}
+                {(() => {
+                  const isLit = unreadCount > 0;
+                  const lastMsgTime = formatLastMessageTime(group.lastMessageAt);
+                  return (
+                    <View
+                      style={[
+                        styles.hudCell,
+                        {
+                          backgroundColor: isLit ? theme.colors.primary + "15" : "transparent",
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={isLit ? "chatbubble" : "chatbubble-outline"}
+                        size={16}
+                        color={isLit ? theme.colors.primary : theme.colors.textSecondary + "50"}
+                      />
+                      {isLit ? (
+                        <Text style={[styles.hudValue, { color: theme.colors.primary }]}>
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </Text>
+                      ) : (
+                        <Text style={[styles.hudValue, { color: theme.colors.textSecondary + "50" }]}>
+                          {lastMsgTime ?? "–"}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })()}
               </View>
             )}
 
@@ -460,7 +537,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
               >
                 <Ionicons
                   name="construct-outline"
-                  size={14}
+                  size={16}
                   color={theme.colors.warning}
                 />
                 <Text
@@ -512,7 +589,7 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
   },
   avatar: {
     width: AVATAR_SIZE,
@@ -562,7 +639,6 @@ const styles = StyleSheet.create({
   teamBadgesScroll: {
     marginTop: 4,
     marginHorizontal: -4,
-    maxWidth: "75%",
   },
   teamBadgesRow: {
     flexDirection: "row",
@@ -649,17 +725,29 @@ const styles = StyleSheet.create({
   },
   statsHud: {
     flexDirection: "row",
-    gap: 6,
-    marginHorizontal: -14,
-    paddingHorizontal: 14,
+    marginTop: 14,
+    paddingVertical: 8,
+    gap: 4,
     borderTopWidth: 1,
   },
   hudCell: {
     flex: 1,
+    flexShrink: 1,
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    gap: 2,
+    justifyContent: "center",
+    paddingVertical: 10,
+    gap: 4,
+    overflow: "hidden",
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#EF4444",
+  },
+  rankChangeIndicator: {
+    marginLeft: -2,
   },
   hudValue: {
     fontSize: 13,

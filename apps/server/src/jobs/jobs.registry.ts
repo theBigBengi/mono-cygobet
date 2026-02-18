@@ -22,6 +22,7 @@ import {
   PREDICTION_REMINDERS_JOB,
   RECOVERY_OVERDUE_FIXTURES_JOB,
   DATA_QUALITY_CHECK_JOB,
+  ADMIN_ALERTS_JOB,
 } from "./jobs.definitions";
 
 export type RunnableJobDefinition = {
@@ -96,6 +97,11 @@ const RUNNERS: Record<string, Runner> = {
       await import("./cron/data-quality-check.job");
     return runDataQualityCheckJob(fastify, opts);
   },
+  [ADMIN_ALERTS_JOB.key]: async (fastify, opts) => {
+    const { runAdminAlertsJob } =
+      await import("./cron/admin-alerts.job");
+    return runAdminAlertsJob(fastify, opts);
+  },
 };
 
 /**
@@ -163,6 +169,12 @@ export const RUNNABLE_JOBS: RunnableJobDefinition[] = [
     description: DATA_QUALITY_CHECK_JOB.description,
     scheduleCron: DATA_QUALITY_CHECK_JOB.scheduleCron ?? null,
     run: RUNNERS[DATA_QUALITY_CHECK_JOB.key]!,
+  },
+  {
+    key: ADMIN_ALERTS_JOB.key,
+    description: ADMIN_ALERTS_JOB.description,
+    scheduleCron: ADMIN_ALERTS_JOB.scheduleCron ?? null,
+    run: RUNNERS[ADMIN_ALERTS_JOB.key]!,
   },
 ];
 

@@ -268,6 +268,8 @@ export interface GroupsRepository {
     missedPredictionsCountByGroupId: Map<number, number>;
     userRankByGroupId: Map<number, number>;
     userPredictionsByGroupFixture: Map<string, any>;
+    lastMessageAtByGroupId: Map<number, Date>;
+    userPreviousRankByGroupId: Map<number, number>;
   }>;
 
   // User operations (re-exported from users/repository)

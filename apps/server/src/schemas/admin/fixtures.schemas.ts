@@ -84,9 +84,14 @@ export const updateFixtureBodySchema = {
   properties: {
     name: { type: "string" },
     state: { type: "string" },
-    homeScore90: { type: "number" },
-    awayScore90: { type: "number" },
-    result: { type: "string" },
+    homeScore90: { type: ["number", "null"] },
+    awayScore90: { type: ["number", "null"] },
+    homeScoreET: { type: ["number", "null"] },
+    awayScoreET: { type: ["number", "null"] },
+    penHome: { type: ["number", "null"] },
+    penAway: { type: ["number", "null"] },
+    result: { type: ["string", "null"] },
+    leg: { type: ["string", "null"] },
   },
 };
 

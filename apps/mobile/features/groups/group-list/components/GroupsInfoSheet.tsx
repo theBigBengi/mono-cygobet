@@ -1,5 +1,4 @@
 // features/groups/group-list/components/GroupsInfoSheet.tsx
-// Bottom sheet with explanation of the groups screen and status bar icons.
 
 import React from "react";
 import { View, StyleSheet } from "react-native";
@@ -14,108 +13,182 @@ interface GroupsInfoSheetProps {
   sheetRef: React.RefObject<React.ComponentRef<typeof BottomSheetModal>>;
 }
 
+const GREEN = "#10B981";
+const RED = "#EF4444";
+const YELLOW = "#EAB308";
+const ORANGE = "#F97316";
+const PINK = "#EC4899";
+const DIMMED = "#9CA3AF";
+
 export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   return (
-    <InfoSheet sheetRef={sheetRef} enableDynamicSizing>
-      <AppText variant="subtitle" style={styles.header}>
+    <InfoSheet sheetRef={sheetRef} snapPoints={["90%"]}>
+      <AppText variant="title" style={styles.title}>
         {t("groups.info.title")}
       </AppText>
-      <AppText variant="body" color="secondary" style={styles.description}>
-        {t("groups.info.description")}
-      </AppText>
 
-      <AppText variant="body" style={styles.sectionHeader}>
-        {t("groups.info.statusBarTitle")}
-      </AppText>
+      {/* === RANKING === */}
+      <View style={styles.section}>
+        <View style={styles.header}>
+          <Ionicons name="trophy-outline" size={20} color={DIMMED} />
+          <AppText variant="subtitle">{t("groups.info.ranking")}</AppText>
+        </View>
 
-      {/* Members */}
-      <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.colors.border }]}>
-          <Ionicons name="people-outline" size={18} color={theme.colors.textSecondary} />
-        </View>
-        <View style={styles.rowText}>
-          <AppText variant="body" style={styles.label}>
-            {t("groups.info.members")}
-          </AppText>
-          <AppText variant="caption" color="secondary">
-            {t("groups.info.membersDesc")}
-          </AppText>
-        </View>
-      </View>
+        <AppText variant="body" color="secondary" style={styles.desc}>
+          {t("groups.info.rankingOff")}
+        </AppText>
 
-      {/* Rank */}
-      <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.colors.border }]}>
-          <Ionicons name="trophy-outline" size={18} color={theme.colors.textSecondary} />
-        </View>
-        <View style={styles.rowText}>
-          <AppText variant="body" style={styles.label}>
-            {t("groups.info.rank")}
-          </AppText>
-          <AppText variant="caption" color="secondary">
-            {t("groups.info.rankDesc")}
-          </AppText>
-        </View>
-      </View>
+        <AppText variant="body" style={styles.lightUpLabel}>
+          {t("groups.info.lightsUp")}
+        </AppText>
+        <AppText variant="body" color="secondary" style={styles.desc}>
+          {t("groups.info.rankingOn")}
+        </AppText>
 
-      {/* Predictions with color explanations */}
-      <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.colors.border }]}>
-          <Ionicons name="checkmark-circle-outline" size={18} color={theme.colors.textSecondary} />
-        </View>
-        <View style={styles.rowText}>
-          <AppText variant="body" style={styles.label}>
-            {t("groups.info.predictions")}
-          </AppText>
-          <AppText variant="caption" color="secondary">
-            {t("groups.info.predictionsDesc")}
-          </AppText>
-          <View style={styles.colorList}>
-            <View style={styles.colorItem}>
-              <View style={[styles.colorDot, { backgroundColor: theme.colors.success }]} />
-              <AppText variant="caption" color="secondary">
-                {t("groups.info.predictionsGreen")}
-              </AppText>
-            </View>
-            <View style={styles.colorItem}>
-              <View style={[styles.colorDot, { backgroundColor: theme.colors.warning }]} />
-              <AppText variant="caption" color="secondary">
-                {t("groups.info.predictionsOrange")}
-              </AppText>
-            </View>
-            <View style={styles.colorItem}>
-              <View style={[styles.colorDot, { backgroundColor: theme.colors.danger }]} />
-              <AppText variant="caption" color="secondary">
-                {t("groups.info.predictionsRed")}
-              </AppText>
-            </View>
+        <View style={styles.colorsRow}>
+          <View style={[styles.colorChip, { backgroundColor: GREEN + "20" }]}>
+            <Ionicons name="caret-up" size={12} color={GREEN} />
+            <AppText variant="caption" style={{ color: GREEN, fontWeight: "700" }}>
+              {t("groups.info.up")}
+            </AppText>
+          </View>
+          <View style={[styles.colorChip, { backgroundColor: RED + "20" }]}>
+            <Ionicons name="caret-down" size={12} color={RED} />
+            <AppText variant="caption" style={{ color: RED, fontWeight: "700" }}>
+              {t("groups.info.down")}
+            </AppText>
           </View>
         </View>
       </View>
 
-      {/* Games/Completion with color explanations */}
-      <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.colors.border }]}>
-          <Ionicons name="football-outline" size={18} color={theme.colors.textSecondary} />
+      {/* === PREDICTIONS === */}
+      <View style={styles.section}>
+        <View style={styles.header}>
+          <Ionicons name="create-outline" size={20} color={DIMMED} />
+          <AppText variant="subtitle">{t("groups.info.predictions")}</AppText>
         </View>
-        <View style={styles.rowText}>
-          <AppText variant="body" style={styles.label}>
-            {t("groups.info.completion")}
-          </AppText>
-          <AppText variant="caption" color="secondary">
-            {t("groups.info.completionDesc")}
-          </AppText>
-          <View style={styles.colorList}>
-            <View style={styles.colorItem}>
-              <View style={[styles.colorDot, { backgroundColor: theme.colors.primary }]} />
-              <AppText variant="caption" color="secondary">
-                {t("groups.info.completionPrimary")}
-              </AppText>
-            </View>
+
+        <AppText variant="body" color="secondary" style={styles.desc}>
+          {t("groups.info.predictionsOff")}
+        </AppText>
+
+        <AppText variant="body" style={styles.lightUpLabel}>
+          {t("groups.info.lightsUp")}
+        </AppText>
+        <AppText variant="body" color="secondary" style={styles.desc}>
+          {t("groups.info.predictionsOn")}
+        </AppText>
+
+        <View style={styles.colorsList}>
+          <View style={styles.colorRow}>
+            <View style={[styles.dot, { backgroundColor: YELLOW }]} />
+            <AppText variant="caption" color="secondary">{t("groups.info.predictionsYellow")}</AppText>
           </View>
+          <View style={styles.colorRow}>
+            <View style={[styles.dot, { backgroundColor: ORANGE }]} />
+            <AppText variant="caption" color="secondary">{t("groups.info.predictionsOrange")}</AppText>
+          </View>
+          <View style={styles.colorRow}>
+            <View style={[styles.dot, { backgroundColor: RED }]} />
+            <AppText variant="caption" color="secondary">{t("groups.info.predictionsRed")}</AppText>
+          </View>
+        </View>
+
+        <View style={[styles.colorRow, { marginTop: 8 }]}>
+          <Ionicons name="checkmark-circle" size={14} color={GREEN} />
+          <AppText variant="caption" color="secondary">{t("groups.info.predictionsComplete")}</AppText>
+        </View>
+      </View>
+
+      {/* === LIVE === */}
+      <View style={styles.section}>
+        <View style={styles.header}>
+          <Ionicons name="football-outline" size={20} color={DIMMED} />
+          <AppText variant="subtitle">{t("groups.info.live")}</AppText>
+        </View>
+
+        <AppText variant="body" color="secondary" style={styles.desc}>
+          {t("groups.info.liveOff")}
+        </AppText>
+
+        <AppText variant="body" style={styles.lightUpLabel}>
+          {t("groups.info.lightsUp")}
+        </AppText>
+        <AppText variant="body" color="secondary" style={styles.desc}>
+          {t("groups.info.liveOn")}
+        </AppText>
+
+        <View style={styles.colorRow}>
+          <View style={[styles.dot, { backgroundColor: PINK }]} />
+          <AppText variant="caption" style={{ color: PINK, fontWeight: "600" }}>LIVE</AppText>
+        </View>
+      </View>
+
+      {/* === CHAT === */}
+      <View style={styles.section}>
+        <View style={styles.header}>
+          <Ionicons name="chatbubble-outline" size={20} color={DIMMED} />
+          <AppText variant="subtitle">{t("groups.info.chat")}</AppText>
+        </View>
+
+        <AppText variant="body" color="secondary" style={styles.desc}>
+          {t("groups.info.chatOff")}
+        </AppText>
+
+        <AppText variant="body" style={styles.lightUpLabel}>
+          {t("groups.info.lightsUp")}
+        </AppText>
+        <AppText variant="body" color="secondary" style={styles.desc}>
+          {t("groups.info.chatOn")}
+        </AppText>
+
+        <View style={styles.colorRow}>
+          <View style={[styles.dot, { backgroundColor: theme.colors.primary }]} />
+          <AppText variant="caption" style={{ color: theme.colors.primary, fontWeight: "600" }}>
+            {t("groups.info.chatUnread")}
+          </AppText>
+        </View>
+      </View>
+
+      {/* === BADGES === */}
+      <View style={[styles.section, styles.badgesSection]}>
+        <AppText variant="subtitle" style={{ marginBottom: 12 }}>
+          {t("groups.info.badgesTitle")}
+        </AppText>
+
+        <View style={styles.badgeRow}>
+          <View style={[styles.badge, { backgroundColor: theme.colors.textSecondary + "20" }]}>
+            <AppText style={{ fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary }}>C</AppText>
+          </View>
+          <AppText variant="caption" color="secondary">{t("groups.info.roleCreator")}</AppText>
+        </View>
+        <View style={styles.badgeRow}>
+          <View style={[styles.badge, { backgroundColor: theme.colors.textSecondary + "20" }]}>
+            <AppText style={{ fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary }}>A</AppText>
+          </View>
+          <AppText variant="caption" color="secondary">{t("groups.info.roleAdmin")}</AppText>
+        </View>
+        <View style={styles.badgeRow}>
+          <View style={[styles.badge, { backgroundColor: theme.colors.textSecondary + "20" }]}>
+            <AppText style={{ fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary }}>M</AppText>
+          </View>
+          <AppText variant="caption" color="secondary">{t("groups.info.roleMember")}</AppText>
+        </View>
+
+        <View style={[styles.badgeRow, { marginTop: 10 }]}>
+          <View style={[styles.badge, { backgroundColor: theme.colors.textSecondary + "20" }]}>
+            <Ionicons name="lock-closed" size={11} color={theme.colors.textSecondary} />
+          </View>
+          <AppText variant="caption" color="secondary">{t("groups.info.privacyPrivate")}</AppText>
+        </View>
+        <View style={styles.badgeRow}>
+          <View style={[styles.badge, { backgroundColor: theme.colors.textSecondary + "20" }]}>
+            <Ionicons name="globe-outline" size={11} color={theme.colors.textSecondary} />
+          </View>
+          <AppText variant="caption" color="secondary">{t("groups.info.privacyPublic")}</AppText>
         </View>
       </View>
     </InfoSheet>
@@ -123,50 +196,73 @@ export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
 }
 
 const styles = StyleSheet.create({
+  title: {
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  section: {
+    marginBottom: 24,
+    paddingBottom: 24,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E5E7EB",
+  },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     marginBottom: 8,
   },
-  description: {
-    marginBottom: 24,
-    lineHeight: 22,
+  desc: {
+    lineHeight: 20,
   },
-  sectionHeader: {
-    fontWeight: "600",
-    marginBottom: 12,
+  lightUpLabel: {
+    fontWeight: "700",
+    marginTop: 12,
+    marginBottom: 4,
   },
-  row: {
+  colorsRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    paddingVertical: 12,
-    gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 8,
+    marginTop: 10,
   },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+  colorChip: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 6,
   },
-  rowText: {
-    flex: 1,
-  },
-  label: {
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  colorList: {
-    marginTop: 8,
+  colorsList: {
+    marginTop: 10,
     gap: 4,
   },
-  colorItem: {
+  colorRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  colorDot: {
+  dot: {
     width: 10,
     height: 10,
     borderRadius: 5,
+  },
+  badgesSection: {
+    borderBottomWidth: 0,
+    marginBottom: 0,
+    paddingBottom: 0,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 6,
+  },
+  badge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

@@ -4,6 +4,9 @@ import { prisma } from "@repo/db";
 import { verifyAccessToken } from "../auth/user-tokens";
 import { assertGroupMember } from "../services/api/groups/permissions";
 import { sendMessage, markAsRead } from "../services/api/groups/service/chat";
+import { adminSessionDb } from "../auth/admin-session";
+import { ADMIN_SESSION_COOKIE_NAME } from "../constants/admin-auth.constants";
+import { ADMIN_ROLE } from "../constants/roles.constants";
 import { getLogger } from "../logger";
 
 const log = getLogger("SocketIO");
@@ -144,6 +147,50 @@ export default fp(async function socketIOPlugin(fastify) {
 
     socket.on("disconnect", (reason) => {
       log.info({ userId, reason }, "Socket disconnected");
+    });
+  });
+
+  // ── Admin namespace (cookie-based auth) ──
+  const adminNs = io.of("/admin");
+
+  adminNs.use(async (socket, next) => {
+    try {
+      // Parse cookie from handshake headers
+      const cookieHeader = socket.handshake.headers.cookie ?? "";
+      const cookies = Object.fromEntries(
+        cookieHeader.split(";").map((c) => {
+          const [key, ...rest] = c.trim().split("=");
+          return [key, rest.join("=")];
+        })
+      );
+
+      const sessionToken = cookies[ADMIN_SESSION_COOKIE_NAME];
+      if (!sessionToken) return next(new Error("Admin session required"));
+
+      const resolved = await adminSessionDb.resolve(sessionToken);
+      if (!resolved) return next(new Error("Invalid admin session"));
+      if (resolved.user.role !== ADMIN_ROLE) return next(new Error("Admin role required"));
+
+      socket.data.adminUser = resolved.user;
+      next();
+    } catch {
+      next(new Error("Admin auth failed"));
+    }
+  });
+
+  adminNs.on("connection", (socket) => {
+    const adminUser = socket.data.adminUser;
+    log.info({ adminId: adminUser?.id }, "Admin socket connected");
+
+    // Join admin room for broadcast alert events
+    socket.join("admin");
+
+    socket.on("admin:join", () => {
+      socket.join("admin");
+    });
+
+    socket.on("disconnect", (reason) => {
+      log.info({ adminId: adminUser?.id, reason }, "Admin socket disconnected");
     });
   });
 });

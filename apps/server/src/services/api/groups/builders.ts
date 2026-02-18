@@ -125,6 +125,8 @@ export function buildActiveGroupItem(
     liveGamesCount: number;
     missedPredictionsCount: number;
     userRank?: number;
+    userRankChange?: number;
+    lastMessageAt?: string;
   },
   nextGame: ApiFixturesListResponse["data"][0] | null,
   firstGame: ApiFixturesListResponse["data"][0] | null,
@@ -144,6 +146,8 @@ export function buildActiveGroupItem(
   liveGamesCount: number;
   missedPredictionsCount: number;
   userRank?: number;
+  userRankChange?: number;
+  lastMessageAt?: string;
 } {
   return {
     ...buildGroupItem(group),
