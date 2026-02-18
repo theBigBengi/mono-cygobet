@@ -44,6 +44,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertCircle,
   CheckCircle,
@@ -62,6 +63,7 @@ export default function TeamsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = React.useState("");
   const [debouncedSearch, setDebouncedSearch] = React.useState("");
+  const [missingColors, setMissingColors] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const perPage = 50;
 
@@ -253,10 +255,13 @@ export default function TeamsPage() {
     updateMutation.mutate({ id: editingTeam.id, data: changes });
   };
 
-  const teams = data?.data ?? [];
+  const allTeams = data?.data ?? [];
+  const teams = missingColors
+    ? allTeams.filter((t) => !t.primaryColor && !t.secondaryColor && !t.tertiaryColor)
+    : allTeams;
   const pagination = (data as AdminTeamsListResponse)?.pagination;
   const totalPages = pagination?.totalPages ?? 1;
-  const totalItems = pagination?.totalItems ?? teams.length;
+  const totalItems = pagination?.totalItems ?? allTeams.length;
 
   return (
     <div className="h-full w-full p-4 sm:p-6 md:p-8">
@@ -367,23 +372,32 @@ Manchester City,#6CABDD,#FFFFFF,#1C2C5B`}
                     : `Page ${page} of ${totalPages}`}
                 </CardDescription>
               </div>
-              <div className="relative w-full sm:w-[260px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search teams..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 pr-9 h-9"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
+                  <Checkbox
+                    checked={missingColors}
+                    onCheckedChange={(c) => setMissingColors(c === true)}
+                  />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">No colors</span>
+                </label>
+                <div className="relative flex-1 sm:w-[220px] sm:flex-none">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search teams..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 pr-9 h-9"
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -408,12 +422,12 @@ Manchester City,#6CABDD,#FFFFFF,#1C2C5B`}
                       <TableHead className="hidden sm:table-cell w-24">Code</TableHead>
                       <TableHead className="hidden md:table-cell">Country</TableHead>
                       <TableHead className="w-20 sm:w-32">Colors</TableHead>
-                      <TableHead className="w-10 sm:w-20 text-right pr-4 sm:pr-2" />
+                      <TableHead className="hidden sm:table-cell w-20 text-right pr-2" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {teams.map((team) => (
-                      <TableRow key={team.id}>
+                      <TableRow key={team.id} className="cursor-pointer" onClick={() => handleEdit(team)}>
                         <TableCell className="pl-4 sm:pl-2 py-2 sm:py-3">
                           {team.imagePath ? (
                             <img
@@ -468,12 +482,12 @@ Manchester City,#6CABDD,#FFFFFF,#1C2C5B`}
                               )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right pr-4 sm:pr-2 py-2 sm:py-3">
+                        <TableCell className="hidden sm:table-cell text-right pr-2 py-2 sm:py-3">
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => handleEdit(team)}
+                            onClick={(e) => { e.stopPropagation(); handleEdit(team); }}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
