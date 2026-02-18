@@ -1,7 +1,7 @@
 // lib/i18n/i18n.date.ts
 // Locale-aware date formatters using date-fns.
 
-import { format } from "date-fns";
+import { format, isToday, isYesterday } from "date-fns";
 import { enUS, he } from "date-fns/locale";
 import type { Locale } from "./i18n.types";
 
@@ -40,6 +40,20 @@ export function formatDateHeaderLocale(
 ): string {
   const dateStr = format(date, "d MMM yyyy", { locale: getDateFnsLocale(locale) });
   return time ? `${dateStr} - ${time}` : dateStr;
+}
+
+/**
+ * Format chat date separator (e.g., "Today", "Yesterday", "15 Feb 2026").
+ * Requires translated labels for today/yesterday.
+ */
+export function formatChatDateSeparator(
+  date: Date,
+  locale: Locale,
+  labels: { today: string; yesterday: string }
+): string {
+  if (isToday(date)) return labels.today;
+  if (isYesterday(date)) return labels.yesterday;
+  return format(date, "d MMM yyyy", { locale: getDateFnsLocale(locale) });
 }
 
 /**

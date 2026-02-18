@@ -162,7 +162,7 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
         },
       };
 
-      // Build where clause with optional search
+      // Build where clause with optional filters
       const where: Prisma.teamsWhereInput = {};
       if (query.countryId) {
         where.countryId = query.countryId;
@@ -172,6 +172,12 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
       }
       if (query.search) {
         where.name = { contains: query.search, mode: "insensitive" };
+      }
+      if (query.leagueId) {
+        where.OR = [
+          { fixtures_fixtures_home_team_idToteams: { some: { leagueId: query.leagueId } } },
+          { fixtures_fixtures_away_team_idToteams: { some: { leagueId: query.leagueId } } },
+        ];
       }
 
       const { teams, count } = await service.get({

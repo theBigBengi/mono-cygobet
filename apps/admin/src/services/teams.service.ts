@@ -13,6 +13,7 @@ export const teamsService = {
     page?: number;
     perPage?: number;
     countryId?: number;
+    leagueId?: number;
     type?: string;
     search?: string;
     include?: string;
@@ -23,6 +24,8 @@ export const teamsService = {
       searchParams.append("perPage", params.perPage.toString());
     if (params?.countryId)
       searchParams.append("countryId", params.countryId.toString());
+    if (params?.leagueId)
+      searchParams.append("leagueId", params.leagueId.toString());
     if (params?.type) searchParams.append("type", params.type);
     if (params?.search) searchParams.append("search", params.search);
     if (params?.include) searchParams.append("include", params.include);

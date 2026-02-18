@@ -5,6 +5,7 @@ export interface ListTeamsQuerystring {
   page?: number;
   perPage?: number;
   countryId?: number;
+  leagueId?: number;
   type?: string;
   search?: string;
   include?: string;

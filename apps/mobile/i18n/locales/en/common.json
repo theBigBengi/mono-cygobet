@@ -520,7 +520,9 @@
     "someone": "Someone",
     "noMentionResults": "No matches",
     "mentionMembers": "Members",
-    "mentionGames": "Games"
+    "mentionGames": "Games",
+    "dateToday": "Today",
+    "dateYesterday": "Yesterday"
   },
   "invite": {
     "groupInvite": "Group invite",

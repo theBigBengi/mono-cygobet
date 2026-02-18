@@ -520,7 +520,9 @@
     "someone": "מישהו",
     "noMentionResults": "אין התאמות",
     "mentionMembers": "חברים",
-    "mentionGames": "משחקים"
+    "mentionGames": "משחקים",
+    "dateToday": "היום",
+    "dateYesterday": "אתמול"
   },
   "predictionsOverview": {
     "loadingPredictions": "טוען סקירת תחזיות...",

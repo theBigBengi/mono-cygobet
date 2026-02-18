@@ -7,6 +7,7 @@ export const listTeamsQuerystringSchema = {
     page: { type: "number", default: 1 },
     perPage: { type: "number", default: 20 },
     countryId: { type: "number" },
+    leagueId: { type: "number" },
     type: { type: "string" },
     search: { type: "string" },
     include: { type: "string" }, // e.g., "country"
