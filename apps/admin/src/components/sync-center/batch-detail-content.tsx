@@ -2,11 +2,6 @@
 
 import { useState } from "react";
 import { CheckCircle2, XCircle, Clock, Timer, Hash, TrendingUp } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,

@@ -45,7 +45,7 @@ const MANUAL_OPS = [
   { value: "seed-bookmakers", label: "Bookmakers sync" },
 ] as const;
 
-const AUTO_JOB_NAMES = new Set(AUTO_JOBS.map((j) => j.value));
+const AUTO_JOB_NAMES: Set<string> = new Set(AUTO_JOBS.map((j) => j.value));
 
 export default function SyncCenterPage() {
   const [historyFilter, setHistoryFilter] = useState<string>("all");
