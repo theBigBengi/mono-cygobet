@@ -172,6 +172,14 @@ export function CreateGroupModal() {
     (mode === "leagues" && leagues.length > 0) ||
     (mode === "teams" && teams.length > 0);
 
+  const handleClearAll = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (mode === "fixtures") clearGames();
+    if (mode === "leagues") clearLeagues();
+    if (mode === "teams") clearTeams();
+    setModalVisible(false);
+  };
+
   const title =
     mode === "fixtures"
       ? t("groupCreation.selectedGames")
@@ -234,7 +242,32 @@ export function CreateGroupModal() {
           <AppText variant="subtitle" style={styles.headerTitle}>
             {title}
           </AppText>
-          <View style={styles.headerBtn} />
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              handleClearAll();
+            }}
+            style={({ pressed }) => [
+              styles.closeBtn,
+              {
+                backgroundColor: theme.colors.background,
+                borderColor: theme.colors.border,
+                borderBottomColor: pressed
+                  ? theme.colors.border
+                  : theme.colors.textSecondary + "40",
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+                opacity: isCreating || !canCreate ? 0.4 : 1,
+              },
+            ]}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            disabled={isCreating || !canCreate}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={18}
+              color={theme.colors.textSecondary}
+            />
+          </Pressable>
         </View>
 
         <ScrollView
@@ -284,23 +317,25 @@ export function CreateGroupModal() {
               </AppText>
             </View>
           )}
-          <Button
-            label={
-              isCreating
-                ? t("groupCreation.creating")
-                : t("groupCreation.createAndPublish")
-            }
-            onPress={handleCreateAndPublish}
-            disabled={isCreating || !canCreate}
-            style={styles.createBtn}
-          />
-          <Button
-            label={t("groupCreation.createDraft")}
-            variant="secondary"
-            onPress={handleCreate}
-            disabled={isCreating || !canCreate}
-            style={styles.createDraftBtn}
-          />
+          <View style={styles.buttonsRow}>
+            <Button
+              label={t("groupCreation.draft")}
+              variant="secondary"
+              onPress={handleCreate}
+              disabled={isCreating || !canCreate}
+              style={styles.draftBtn}
+            />
+            <Button
+              label={
+                isCreating
+                  ? t("groupCreation.creating")
+                  : t("groupCreation.publish")
+              }
+              onPress={handleCreateAndPublish}
+              disabled={isCreating || !canCreate}
+              style={styles.publishBtn}
+            />
+          </View>
         </View>
       </View>
 
@@ -406,12 +441,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600",
   },
-  createBtn: {
-    width: "100%",
-    marginBottom: 10,
+  buttonsRow: {
+    flexDirection: "row",
+    gap: 10,
   },
-  createDraftBtn: {
-    width: "100%",
+  draftBtn: {
+    flex: 1,
+  },
+  publishBtn: {
+    flex: 1,
   },
   globalOverlay: {
     ...StyleSheet.absoluteFillObject,

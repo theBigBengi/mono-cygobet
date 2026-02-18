@@ -122,14 +122,7 @@ export function FloatingTabBar({
                 },
               ]}
             >
-              <View
-                style={[
-                  styles.iconCircle,
-                  !isHomeTab && isFocused && {
-                    backgroundColor: theme.colors.primary,
-                  },
-                ]}
-              >
+              <View style={styles.iconCircle}>
                 {showBadge ? (
                   <Ionicons
                     name="checkmark"
@@ -144,7 +137,7 @@ export function FloatingTabBar({
                       isHomeTab
                         ? "#fff"
                         : isFocused
-                          ? "#fff"
+                          ? theme.colors.primary
                           : theme.colors.textSecondary
                     }
                   />

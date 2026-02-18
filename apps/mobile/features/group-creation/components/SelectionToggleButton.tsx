@@ -27,8 +27,8 @@ export function SelectionToggleButton({
 
   useEffect(() => {
     rotation.value = withSpring(isSelected ? 45 : 0, {
-      damping: 12,
-      stiffness: 200,
+      damping: 20,
+      stiffness: 300,
     });
   }, [isSelected]);
 
@@ -40,9 +40,9 @@ export function SelectionToggleButton({
   }));
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    scale.value = withSpring(0.8, { damping: 10 }, () => {
-      scale.value = withSpring(1, { damping: 10 });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    scale.value = withSpring(0.92, { damping: 20, stiffness: 400 }, () => {
+      scale.value = withSpring(1, { damping: 20, stiffness: 400 });
     });
     onPress();
   };
@@ -65,7 +65,7 @@ export function SelectionToggleButton({
             : theme.colors.textSecondary + "40",
           shadowColor: isSelected ? theme.colors.primary : "#000",
           shadowOpacity: pressed ? 0 : isSelected ? 0.3 : 0.1,
-          transform: [{ scale: pressed ? 0.9 : 1 }],
+          transform: [{ scale: pressed ? 0.95 : 1 }],
         },
       ]}
     >

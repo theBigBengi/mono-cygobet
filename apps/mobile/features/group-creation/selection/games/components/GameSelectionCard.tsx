@@ -61,6 +61,9 @@ export function GameSelectionCard({
           styles.card,
           getBorderRadius(),
           positionInGroup !== "single" && positionInGroup !== "top" && styles.cardConnected,
+          positionInGroup === "bottom" || positionInGroup === "single"
+            ? styles.cardWithBottomBorder
+            : {},
           {
             backgroundColor: isSelected
               ? theme.colors.primary + "08"
@@ -68,15 +71,34 @@ export function GameSelectionCard({
             borderColor: isSelected
               ? theme.colors.primary + "40"
               : theme.colors.border,
-            shadowColor: "#000",
+            borderBottomColor: isSelected
+              ? theme.colors.primary + "40"
+              : positionInGroup === "bottom" || positionInGroup === "single"
+                ? theme.colors.textSecondary + "30"
+                : theme.colors.border,
+            shadowColor: isSelected ? theme.colors.primary : "#000",
             shadowOpacity: pressed ? 0 : isSelected ? 0.15 : 0.06,
             transform: [{ scale: pressed ? 0.98 : 1 }],
           },
         ]}
       >
-        {/* Time */}
-        <View style={styles.timeContainer}>
-          <Text style={[styles.timeText, { color: theme.colors.textSecondary }]}>
+        {/* Time Chip */}
+        <View
+          style={[
+            styles.timeChip,
+            {
+              backgroundColor: isSelected
+                ? theme.colors.primary + "15"
+                : theme.colors.textSecondary + "10",
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.timeText,
+              { color: isSelected ? theme.colors.primary : theme.colors.textSecondary },
+            ]}
+          >
             {formatKickoffTime(fixture.kickoffAt)}
           </Text>
         </View>
@@ -152,13 +174,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     marginTop: -1,
   },
-  timeContainer: {
-    width: 44,
+  cardWithBottomBorder: {
+    borderBottomWidth: 3,
+  },
+  timeChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
   },
   timeText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   teamsContainer: {
     flex: 1,

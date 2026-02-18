@@ -11,8 +11,9 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
-import { AppText } from "@/components/ui";
+import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiUpcomingFixturesQuery } from "@repo/types";
 import { useUpcomingFixturesQuery } from "@/domains/fixtures/fixtures.hooks";
@@ -86,17 +87,33 @@ function LeagueAddRemoveButton({ fixtures }: { fixtures: FixtureItem[] }) {
       style={({ pressed }) => [
         styles.addAllButton,
         {
-          opacity: pressed ? 0.5 : 1,
-          borderColor: theme.colors.border,
+          backgroundColor: allSelected
+            ? theme.colors.primary
+            : theme.colors.surface,
+          borderColor: allSelected
+            ? theme.colors.primary
+            : theme.colors.border,
+          borderBottomColor: allSelected
+            ? theme.colors.primary
+            : theme.colors.textSecondary + "40",
+          shadowColor: allSelected ? theme.colors.primary : "#000",
+          shadowOpacity: pressed ? 0 : allSelected ? 0.25 : 0.08,
+          transform: [{ scale: pressed ? 0.96 : 1 }],
         },
       ]}
     >
       <MaterialIcons
         name={allSelected ? "remove" : "add"}
-        size={16}
-        color={theme.colors.textSecondary}
+        size={14}
+        color={allSelected ? "#fff" : theme.colors.primary}
       />
-      <AppText variant="caption" color="secondary" style={styles.addAllText}>
+      <AppText
+        variant="caption"
+        style={[
+          styles.addAllText,
+          { color: allSelected ? "#fff" : theme.colors.primary },
+        ]}
+      >
         {allSelected
           ? t("groupCreation.removeAll")
           : t("groupCreation.addAll")}
@@ -113,7 +130,13 @@ interface FixturesViewProps {
 export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const toggleGroupGame = useToggleGroupGame();
+
+  // Calculate tab bar space to ensure content isn't hidden
+  const tabBarHeight = 60 + insets.bottom;
+  const tabBarMarginBottom = theme.spacing.sm;
+  const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
   const filters = useFixtureFilters();
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => new Date());
@@ -158,6 +181,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
+          { paddingBottom: totalTabBarSpace + theme.spacing.md },
           (isLoading || leagueGroups.length === 0) && styles.scrollContentLoading,
         ]}
         stickyHeaderIndices={[1]}
@@ -204,15 +228,31 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
             {leagueGroups.map((group) => (
               <View key={group.key} style={styles.leagueSection}>
                 <View style={styles.leagueHeader}>
+                  <View style={styles.leagueLogoContainer}>
+                    <TeamLogo
+                      imagePath={group.leagueImagePath}
+                      teamName={group.leagueName}
+                      size={22}
+                    />
+                  </View>
                   <View style={styles.leagueInfo}>
                     <AppText
                       variant="caption"
-                      color="secondary"
-                      style={styles.leagueName}
+                      style={[styles.leagueName, { color: theme.colors.textPrimary }]}
+                      numberOfLines={1}
                     >
                       {group.leagueName}
-                      {group.countryIso2 && ` (${group.countryIso2.toUpperCase()})`}
                     </AppText>
+                    {group.countryName && (
+                      <AppText
+                        variant="caption"
+                        color="secondary"
+                        style={styles.countryName}
+                        numberOfLines={1}
+                      >
+                        {group.countryName}
+                      </AppText>
+                    )}
                   </View>
                   <LeagueAddRemoveButton fixtures={group.fixtures} />
                 </View>
@@ -285,7 +325,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    // paddingBottom is set dynamically in the component
   },
   scrollContentLoading: {
     flexGrow: 1,
@@ -296,28 +336,45 @@ const styles = StyleSheet.create({
   leagueHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  leagueLogoContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: "rgba(0,0,0,0.03)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   leagueInfo: {
     flex: 1,
   },
   leagueName: {
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "600",
+  },
+  countryName: {
+    fontSize: 11,
+    marginTop: 1,
   },
   addAllButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderWidth: 1,
-    borderRadius: 4,
+    borderBottomWidth: 2,
+    borderRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 2,
   },
   addAllText: {
     fontSize: 11,
-    marginStart: 2,
+    fontWeight: "600",
+    marginStart: 4,
   },
   groupCardContainer: {},
 });

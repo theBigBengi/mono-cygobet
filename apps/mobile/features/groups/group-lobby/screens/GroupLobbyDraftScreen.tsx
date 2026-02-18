@@ -75,6 +75,7 @@ export function GroupLobbyDraftScreen({
   isCreator,
   onPublishStart,
   onPublishError,
+  isLoading,
 }: GroupLobbyDraftScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();

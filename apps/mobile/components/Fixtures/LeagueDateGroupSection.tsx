@@ -1,11 +1,13 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { AppText } from "@/components/ui";
+import { AppText, TeamLogo } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import { formatDateHeader } from "@/utils/fixture";
 
 type Props = {
   leagueName: string;
   countryName?: string | null;
+  leagueImagePath?: string | null;
   dateKey?: string | null;
   kickoffIso?: string | null;
   children: React.ReactNode;
@@ -18,17 +20,29 @@ type Props = {
 export function LeagueDateGroupSection({
   leagueName,
   countryName,
+  leagueImagePath,
   dateKey,
   children,
 }: Props) {
+  const { theme } = useTheme();
+
   return (
     <View style={styles.section}>
       <View style={styles.header}>
+        {leagueImagePath && (
+          <View style={styles.logoContainer}>
+            <TeamLogo
+              imagePath={leagueImagePath}
+              teamName={leagueName}
+              size={20}
+            />
+          </View>
+        )}
         <View style={styles.headerLeft}>
           <AppText
             variant="caption"
-            color="secondary"
-            style={styles.leagueName}
+            style={[styles.leagueName, { color: theme.colors.textPrimary }]}
+            numberOfLines={1}
           >
             {leagueName}
           </AppText>
@@ -37,6 +51,7 @@ export function LeagueDateGroupSection({
               variant="caption"
               color="secondary"
               style={styles.countryName}
+              numberOfLines={1}
             >
               {countryName}
             </AppText>
@@ -59,27 +74,33 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: "transparent",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  logoContainer: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    backgroundColor: "rgba(0,0,0,0.03)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerLeft: {
     flex: 1,
   },
   leagueName: {
-    fontSize: 12,
-    fontWeight: "400",
+    fontSize: 13,
+    fontWeight: "600",
   },
   countryName: {
     fontSize: 11,
-    marginTop: 2,
+    marginTop: 1,
   },
   headerText: {
-    fontSize: 12,
-    fontWeight: "400",
-    marginStart: 12,
-    opacity: 0.6,
+    fontSize: 11,
+    fontWeight: "500",
+    opacity: 0.7,
   },
 });

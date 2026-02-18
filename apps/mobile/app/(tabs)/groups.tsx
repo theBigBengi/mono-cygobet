@@ -103,7 +103,7 @@ function GroupsContent() {
   // Loading state — skeleton
   if (isLoading) {
     return (
-      <View style={styles.root}>
+      <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
         <Screen
           scroll={false}
           contentContainerStyle={{
@@ -114,14 +114,58 @@ function GroupsContent() {
         >
           {/* Header skeleton */}
           <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-            <View style={{ width: 100, height: 28, backgroundColor: theme.colors.surface, borderRadius: 8 }} />
-            <View style={{ width: 36, height: 36, backgroundColor: theme.colors.surface, borderRadius: 12 }} />
+            <View style={styles.headerTop}>
+              <View style={{ width: 100, height: 28, backgroundColor: theme.colors.surface, borderRadius: 8 }} />
+              <View style={{ width: 28, height: 28, backgroundColor: theme.colors.surface, borderRadius: 14 }} />
+            </View>
+            <View style={styles.headerChips}>
+              <View
+                style={{
+                  width: 100,
+                  height: 36,
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderBottomWidth: 3,
+                  borderColor: theme.colors.border,
+                }}
+              />
+              <View
+                style={{
+                  width: 95,
+                  height: 36,
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderBottomWidth: 3,
+                  borderColor: theme.colors.border,
+                }}
+              />
+            </View>
           </View>
 
           {/* Filter tabs skeleton */}
-          <View style={{ flexDirection: "row", paddingHorizontal: 16, paddingVertical: 10, gap: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
-            {[80, 70, 60].map((w, i) => (
-              <View key={i} style={{ width: w, height: 36, backgroundColor: theme.colors.surface, borderRadius: 10 }} />
+          <View style={{
+            flexDirection: "row",
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            gap: 8,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.colors.border,
+            backgroundColor: theme.colors.background,
+          }}>
+            {[70, 85, 60, 55, 60].map((w, i) => (
+              <View
+                key={i}
+                style={{
+                  width: w,
+                  height: 32,
+                  backgroundColor: i === 0 ? theme.colors.primary + "20" : theme.colors.surface,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: i === 0 ? theme.colors.primary + "40" : theme.colors.border,
+                }}
+              />
             ))}
           </View>
 
@@ -133,24 +177,133 @@ function GroupsContent() {
                 style={{
                   marginHorizontal: 16,
                   marginBottom: 12,
-                  backgroundColor: theme.colors.cardBackground,
                   borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  padding: 14,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                  elevation: 3,
                 }}
               >
-                {/* Top row skeleton */}
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                  <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: theme.colors.surface }} />
-                  <View style={{ flex: 1, gap: 6 }}>
-                    <View style={{ width: "70%", height: 18, backgroundColor: theme.colors.surface, borderRadius: 4 }} />
-                    <View style={{ width: "50%", height: 14, backgroundColor: theme.colors.surface, borderRadius: 4 }} />
+                <View
+                  style={{
+                    backgroundColor: theme.colors.cardBackground,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: theme.colors.border,
+                    paddingTop: 14,
+                    paddingHorizontal: 14,
+                    overflow: "hidden",
+                  }}
+                >
+                  {/* Top row skeleton */}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                    {/* Avatar */}
+                    <View
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: 12,
+                        backgroundColor: theme.colors.surface,
+                      }}
+                    />
+                    {/* Info */}
+                    <View style={{ flex: 1, gap: 8 }}>
+                      <View style={{ width: "75%", height: 18, backgroundColor: theme.colors.surface, borderRadius: 6 }} />
+                      <View
+                        style={{
+                          width: 100,
+                          height: 24,
+                          backgroundColor: theme.colors.surface,
+                          borderRadius: 8,
+                        }}
+                      />
+                    </View>
+                    {/* Right badges */}
+                    <View style={{ gap: 6, alignItems: "center" }}>
+                      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.surface }} />
+                      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.surface }} />
+                    </View>
                   </View>
-                </View>
-                {/* Stats bar skeleton */}
-                <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
-                  <View style={{ height: 36, backgroundColor: theme.colors.surface, borderRadius: 10 }} />
+
+                  {/* Next game skeleton */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginTop: 14,
+                      marginHorizontal: -14,
+                      paddingHorizontal: 14,
+                      paddingTop: 14,
+                      paddingBottom: 12,
+                      borderTopWidth: 1,
+                      borderTopColor: theme.colors.border,
+                    }}
+                  >
+                    <View style={{ flex: 1, gap: 6 }}>
+                      <View style={{ width: 100, height: 12, backgroundColor: theme.colors.surface, borderRadius: 4 }} />
+                      <View style={{ width: 150, height: 16, backgroundColor: theme.colors.surface, borderRadius: 4 }} />
+                    </View>
+                    <View style={{ flexDirection: "row", gap: 6 }}>
+                      <View style={{ alignItems: "center", gap: 2 }}>
+                        <View style={{ width: 20, height: 10, backgroundColor: theme.colors.surface, borderRadius: 3 }} />
+                        <View
+                          style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 7,
+                            backgroundColor: theme.colors.surface,
+                            borderWidth: 1,
+                            borderBottomWidth: 3,
+                            borderColor: theme.colors.border,
+                          }}
+                        />
+                      </View>
+                      <View style={{ alignItems: "center", gap: 2 }}>
+                        <View style={{ width: 20, height: 10, backgroundColor: theme.colors.surface, borderRadius: 3 }} />
+                        <View
+                          style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 7,
+                            backgroundColor: theme.colors.surface,
+                            borderWidth: 1,
+                            borderBottomWidth: 3,
+                            borderColor: theme.colors.border,
+                          }}
+                        />
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Stats HUD skeleton */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      paddingVertical: 12,
+                      gap: 4,
+                      borderTopWidth: 1,
+                      borderTopColor: theme.colors.border,
+                    }}
+                  >
+                    {[1, 2, 3, 4].map((j) => (
+                      <View
+                        key={j}
+                        style={{
+                          flex: 1,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                          paddingVertical: 6,
+                        }}
+                      >
+                        <View style={{ width: 16, height: 16, borderRadius: 4, backgroundColor: theme.colors.surface }} />
+                        <View style={{ width: 28, height: 14, borderRadius: 4, backgroundColor: theme.colors.surface }} />
+                      </View>
+                    ))}
+                  </View>
                 </View>
               </View>
             ))}
@@ -273,39 +426,50 @@ function GroupsContent() {
               />
             </Pressable>
           </View>
-          <View style={styles.headerLinks}>
+          <View style={styles.headerChips}>
             <Pressable
               onPress={handleBrowsePublic}
               style={({ pressed }) => [
-                styles.headerLink,
-                pressed && styles.headerLinkPressed,
+                styles.headerChip,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  borderBottomColor: pressed
+                    ? theme.colors.border
+                    : theme.colors.textSecondary + "40",
+                  transform: [{ scale: pressed ? 0.96 : 1 }],
+                },
               ]}
             >
               <Ionicons
                 name="globe-outline"
                 size={14}
-                color={theme.colors.primary}
+                color={theme.colors.textSecondary}
               />
-              <AppText style={[styles.headerLinkText, { color: theme.colors.primary }]}>
+              <AppText style={[styles.headerChipText, { color: theme.colors.textPrimary }]}>
                 {t("groups.browsePublic")}
               </AppText>
             </Pressable>
-            <AppText style={[styles.headerLinkDot, { color: theme.colors.textSecondary }]}>
-              •
-            </AppText>
             <Pressable
               onPress={handleJoinWithCode}
               style={({ pressed }) => [
-                styles.headerLink,
-                pressed && styles.headerLinkPressed,
+                styles.headerChip,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  borderBottomColor: pressed
+                    ? theme.colors.border
+                    : theme.colors.textSecondary + "40",
+                  transform: [{ scale: pressed ? 0.96 : 1 }],
+                },
               ]}
             >
               <Ionicons
-                name="enter-outline"
+                name="key-outline"
                 size={14}
-                color={theme.colors.primary}
+                color={theme.colors.textSecondary}
               />
-              <AppText style={[styles.headerLinkText, { color: theme.colors.primary }]}>
+              <AppText style={[styles.headerChipText, { color: theme.colors.textPrimary }]}>
                 {t("groups.joinWithCode")}
               </AppText>
             </Pressable>
@@ -410,28 +574,25 @@ const styles = StyleSheet.create({
   infoButton: {
     padding: 4,
   },
-  headerLinks: {
+  headerChips: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 6,
+    marginTop: 10,
+    gap: 8,
+  },
+  headerChip: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderBottomWidth: 3,
   },
-  headerLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 4,
-  },
-  headerLinkPressed: {
-    opacity: 0.6,
-  },
-  headerLinkText: {
+  headerChipText: {
     fontSize: 13,
     fontWeight: "600",
-  },
-  headerLinkDot: {
-    fontSize: 10,
-    opacity: 0.5,
   },
   list: {
     flex: 1,

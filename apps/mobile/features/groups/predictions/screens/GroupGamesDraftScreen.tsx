@@ -176,6 +176,7 @@ export function GroupGamesDraftScreen({
           <LeagueDateGroupSection
             key={group.key}
             leagueName={group.leagueName}
+            leagueImagePath={group.leagueImagePath}
             dateKey={group.dateKey}
             kickoffIso={group.kickoffIso}
           >

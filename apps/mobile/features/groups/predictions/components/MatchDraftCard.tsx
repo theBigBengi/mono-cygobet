@@ -34,20 +34,25 @@ export function MatchDraftCard({
         style={({ pressed }) => [
           styles.button,
           {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            opacity: pressed ? 0.7 : 1,
+            backgroundColor: isDeselected
+              ? theme.colors.primary
+              : theme.colors.surface,
+            borderColor: isDeselected
+              ? theme.colors.primary
+              : theme.colors.border,
+            borderBottomColor: isDeselected
+              ? theme.colors.primary
+              : theme.colors.textSecondary + "40",
+            shadowColor: isDeselected ? theme.colors.primary : "#000",
+            shadowOpacity: pressed ? 0 : isDeselected ? 0.25 : 0.1,
+            transform: [{ scale: pressed ? 0.92 : 1 }],
           },
         ]}
       >
         <MaterialIcons
           name={isDeselected ? "add" : "close"}
-          size={18}
-          color={
-            isDeselected
-              ? theme.colors.primary
-              : theme.colors.danger || theme.colors.textPrimary
-          }
+          size={16}
+          color={isDeselected ? "#fff" : theme.colors.danger}
         />
       </Pressable>
     </View>
@@ -94,11 +99,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   button: {
-    width: 28,
-    height: 28,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     borderWidth: 1,
+    borderBottomWidth: 3,
     alignItems: "center",
     justifyContent: "center",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 3,
   },
 });

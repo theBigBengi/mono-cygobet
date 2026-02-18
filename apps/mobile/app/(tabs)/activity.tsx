@@ -40,6 +40,11 @@ function ActivityContent() {
     isFetchingNextPage,
   } = useActivityFeedQuery();
 
+  // Calculate tab bar space to ensure content isn't hidden
+  const tabBarHeight = 60 + insets.bottom;
+  const tabBarMarginBottom = theme.spacing.sm;
+  const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
+
   const handleRefresh = useCallback(async () => {
     await refetch();
   }, [refetch]);
@@ -75,7 +80,7 @@ function ActivityContent() {
         contentContainerStyle={[
           styles.listContent,
           items.length === 0 && styles.emptyList,
-          { paddingBottom: insets.bottom + theme.spacing.lg },
+          { paddingBottom: totalTabBarSpace + theme.spacing.md },
         ]}
         refreshControl={
           <RefreshControl

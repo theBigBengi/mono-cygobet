@@ -4,7 +4,8 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
-import { AppText } from "@/components/ui";
+import { AppText, TeamLogo } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import {
   useSelectedGroupGames,
   useToggleGroupGame,
@@ -22,6 +23,7 @@ interface GroupedGame {
 function groupGamesByLeague(games: GroupedGame[]): {
   key: string;
   leagueName: string;
+  leagueImagePath: string | null;
   countryName: string | null;
   fixtures: GroupedGame[];
 }[] {
@@ -37,6 +39,7 @@ function groupGamesByLeague(games: GroupedGame[]): {
     return {
       key: group.key,
       leagueName: group.leagueName,
+      leagueImagePath: group.leagueImagePath,
       countryName: group.countryName,
       fixtures: groupedFixtures,
     };
@@ -45,6 +48,7 @@ function groupGamesByLeague(games: GroupedGame[]): {
 
 export function CreateGroupModalFixturesView() {
   const { t } = useTranslation("common");
+  const { theme } = useTheme();
   const { games } = useSelectedGroupGames();
   const toggleGame = useToggleGroupGame();
 
@@ -106,22 +110,32 @@ export function CreateGroupModalFixturesView() {
       {groupedGames.map((group) => (
         <View key={group.key} style={styles.leagueSection}>
           <View style={styles.leagueHeader}>
-            <AppText
-              variant="caption"
-              color="secondary"
-              style={styles.leagueName}
-            >
-              {group.leagueName}
-            </AppText>
-            {group.countryName && (
+            <View style={styles.leagueLogoContainer}>
+              <TeamLogo
+                imagePath={group.leagueImagePath}
+                teamName={group.leagueName}
+                size={22}
+              />
+            </View>
+            <View style={styles.leagueInfo}>
               <AppText
                 variant="caption"
-                color="secondary"
-                style={styles.countryName}
+                style={[styles.leagueName, { color: theme.colors.textPrimary }]}
+                numberOfLines={1}
               >
-                {group.countryName}
+                {group.leagueName}
               </AppText>
-            )}
+              {group.countryName && (
+                <AppText
+                  variant="caption"
+                  color="secondary"
+                  style={styles.countryName}
+                  numberOfLines={1}
+                >
+                  {group.countryName}
+                </AppText>
+              )}
+            </View>
           </View>
           <View style={styles.groupCards}>
             {group.fixtures.map(({ fixtureId, game }, i) => {
@@ -161,16 +175,30 @@ const styles = StyleSheet.create({
     marginHorizontal: -16,
   },
   leagueHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  leagueLogoContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: "rgba(0,0,0,0.03)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  leagueInfo: {
+    flex: 1,
   },
   leagueName: {
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   countryName: {
     fontSize: 11,
-    marginTop: 2,
+    marginTop: 1,
   },
   groupCards: {
     marginTop: 0,

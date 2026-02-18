@@ -170,8 +170,12 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 10,
     borderWidth: 1,
-    borderBottomWidth: 2,
+    borderBottomWidth: 3,
     alignItems: "center",
     justifyContent: "center",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    shadowOpacity: 0.1,
+    elevation: 2,
   },
 });
