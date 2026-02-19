@@ -880,7 +880,7 @@ export default function SandboxPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 text-xs shrink-0"
+                      className="h-8 text-xs shrink-0"
                       onClick={() => {
                         setAddFixtureDialog({
                           open: true,
@@ -907,7 +907,7 @@ export default function SandboxPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="h-8 w-8 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={() => setDeleteGroupDialogOpen(true)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />

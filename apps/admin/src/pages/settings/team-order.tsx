@@ -177,9 +177,6 @@ export default function TeamOrderSettingsPage() {
 
   const selectedIdSet = React.useMemo(() => new Set(selectedTeams.map((t) => t.id)), [selectedTeams]);
 
-  const sortedAvailableTeams = React.useMemo(() => {
-    return [...availableTeams].sort((a, b) => (selectedIdSet.has(a.id) ? 0 : 1) - (selectedIdSet.has(b.id) ? 0 : 1));
-  }, [availableTeams, selectedIdSet]);
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
@@ -331,10 +328,10 @@ export default function TeamOrderSettingsPage() {
               <div className="max-h-[60vh] lg:max-h-[calc(100vh-340px)] overflow-y-auto space-y-1.5">
                 {teamsLoading ? (
                   <div className="space-y-1.5">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-9" />)}</div>
-                ) : sortedAvailableTeams.length === 0 ? (
+                ) : availableTeams.length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-4">No teams found</p>
                 ) : (
-                  sortedAvailableTeams.map((team) => (
+                  availableTeams.map((team) => (
                     <AvailableTeamItem key={team.id} team={team} isSelected={selectedIdSet.has(team.id)} onToggle={handleToggle} />
                   ))
                 )}

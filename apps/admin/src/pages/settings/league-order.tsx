@@ -177,9 +177,6 @@ export default function LeagueOrderSettingsPage() {
 
   const selectedIdSet = React.useMemo(() => new Set(selectedLeagues.map((l) => l.id)), [selectedLeagues]);
 
-  const sortedAvailableLeagues = React.useMemo(() => {
-    return [...availableLeagues].sort((a, b) => (selectedIdSet.has(a.id) ? 0 : 1) - (selectedIdSet.has(b.id) ? 0 : 1));
-  }, [availableLeagues, selectedIdSet]);
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
@@ -331,10 +328,10 @@ export default function LeagueOrderSettingsPage() {
               <div className="max-h-[60vh] lg:max-h-[calc(100vh-340px)] overflow-y-auto space-y-1.5">
                 {leaguesLoading ? (
                   <div className="space-y-1.5">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-9" />)}</div>
-                ) : sortedAvailableLeagues.length === 0 ? (
+                ) : availableLeagues.length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-4">No leagues found</p>
                 ) : (
-                  sortedAvailableLeagues.map((league) => (
+                  availableLeagues.map((league) => (
                     <AvailableLeagueItem key={league.id} league={league} isSelected={selectedIdSet.has(league.id)} onToggle={handleToggle} />
                   ))
                 )}
