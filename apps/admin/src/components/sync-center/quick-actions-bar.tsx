@@ -18,6 +18,11 @@ import { countriesService } from "@/services/countries.service";
 import { leaguesService } from "@/services/leagues.service";
 import { bookmakersService } from "@/services/bookmakers.service";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Loader2,
   Globe,
   Trophy,
@@ -29,6 +34,7 @@ import {
   Database,
   Cloud,
   ArrowRight,
+  ChevronDown,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -94,6 +100,7 @@ async function compareExternalIds(
 export function QuickActionsBar() {
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<DialogState>({ step: "closed" });
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["sync-center"] });
@@ -227,12 +234,72 @@ export function QuickActionsBar() {
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-3 p-3 sm:p-6 sm:pb-3">
-          <CardTitle className="text-sm sm:text-lg">Quick Actions</CardTitle>
+      <Collapsible open={mobileOpen} onOpenChange={setMobileOpen} className="sm:hidden">
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-3 p-3 cursor-pointer select-none">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Quick Actions</CardTitle>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${mobileOpen ? "rotate-180" : ""}`} />
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="p-3 pt-0">
+              <div className="grid grid-cols-1 gap-2">
+                {actions.map((action) => {
+                  const Icon = action.icon;
+                  const count = dbCounts[action.key];
+                  return (
+                    <div
+                      key={action.key}
+                      className="rounded-lg border p-3 flex flex-col gap-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 font-medium text-sm">
+                          <Icon className="h-4 w-4" />
+                          {action.label}
+                        </div>
+                        {count != null && (
+                          <Badge variant="secondary" className="text-xs">
+                            <Database className="h-3 w-3 mr-1" />
+                            {count}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {action.description}
+                      </p>
+                      {action.dependsOn && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <ArrowRight className="h-3 w-3" />
+                          Depends on: <span className="font-medium">{action.dependsOn}</span>
+                        </div>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-8 text-xs mt-auto"
+                        onClick={() => handleOpen(action)}
+                      >
+                        Sync
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Desktop: always visible */}
+      <Card className="hidden sm:block">
+        <CardHeader className="pb-3 p-6 sm:pb-3">
+          <CardTitle className="text-lg">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+        <CardContent className="p-6 pt-0">
+          <div className="grid grid-cols-3 gap-3">
             {actions.map((action) => {
               const Icon = action.icon;
               const count = dbCounts[action.key];
