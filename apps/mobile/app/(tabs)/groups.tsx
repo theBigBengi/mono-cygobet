@@ -12,6 +12,8 @@ import {
   RefreshControl,
   Platform,
   FlatList,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -49,7 +51,23 @@ function GroupsContent() {
   const { data: unreadData, refetch: refetchUnread } = useUnreadCountsQuery();
   const unreadCounts = unreadData?.data ?? {};
   const [refreshing, setRefreshing] = useState(false);
+  const [isTabsSticky, setIsTabsSticky] = useState(false);
+  const isTabsStickyRef = useRef(false);
+  const headerHeightRef = useRef(0);
   const infoSheetRef = useRef<BottomSheetModal>(null);
+
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const sticky =
+        headerHeightRef.current > 0 &&
+        e.nativeEvent.contentOffset.y >= headerHeightRef.current;
+      if (sticky !== isTabsStickyRef.current) {
+        isTabsStickyRef.current = sticky;
+        setIsTabsSticky(sticky);
+      }
+    },
+    [],
+  );
 
   const handleOpenInfo = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -406,7 +424,10 @@ function GroupsContent() {
   const renderListItem = ({ item }: { item: ListItem }) => {
     if (item.type === "header") {
       return (
-        <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
+        <View
+          style={[styles.header, { backgroundColor: theme.colors.background }]}
+          onLayout={(e) => { headerHeightRef.current = e.nativeEvent.layout.height; }}
+        >
           <View style={styles.headerTop}>
             <AppText variant="title" style={styles.headerTitle}>
               {t("groups.title")}
@@ -480,7 +501,12 @@ function GroupsContent() {
 
     if (item.type === "tabs") {
       return (
-        <View style={{ backgroundColor: theme.colors.background }}>
+        <View
+          style={[
+            { backgroundColor: theme.colors.background },
+            isTabsSticky && styles.tabsStickyDropShadow,
+          ]}
+        >
           <GroupFilterTabs
             selectedFilter={selectedFilter}
             onFilterChange={setSelectedFilter}
@@ -518,6 +544,8 @@ function GroupsContent() {
           keyExtractor={getItemKey}
           renderItem={renderListItem}
           stickyHeaderIndices={[1]}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
           ListFooterComponent={
             filteredGroups.length === 0 ? (
               <View style={styles.emptyFilter}>
@@ -596,6 +624,13 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
+  },
+  tabsStickyDropShadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   emptyFilter: {
     paddingVertical: 48,

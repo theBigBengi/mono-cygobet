@@ -223,7 +223,8 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply) => {
       const result = await sandbox.sandboxSendMessage(
-        req.body as Parameters<typeof sandbox.sandboxSendMessage>[0]
+        req.body as Parameters<typeof sandbox.sandboxSendMessage>[0],
+        fastify.io
       );
       return reply.send({
         status: "success",

@@ -808,11 +808,29 @@ export async function sandboxGetGroupMembers(groupId: number) {
 
 // ───── 5c. send message as member ─────
 
-export async function sandboxSendMessage(args: {
-  groupId: number;
-  senderId: number;
-  body: string;
-}) {
+/**
+ * Send a chat message on behalf of a sandbox group member.
+ *
+ * This mirrors the regular chat flow (POST /api/groups/:id/messages) but is
+ * triggered from the admin panel for testing purposes.
+ *
+ * In addition to persisting the message in the database, we also broadcast it
+ * via Socket.IO so that connected mobile clients receive the real-time event
+ * (e.g. in-app toast notifications, chat screen live updates).
+ *
+ * The optional `io` parameter follows the same pattern used by other sandbox
+ * simulation functions (sandboxSimulateKickoff, sandboxSimulateFT, etc.).
+ * When provided, the message is emitted to the group's socket room exactly
+ * like a regular user-sent message would be.
+ */
+export async function sandboxSendMessage(
+  args: {
+    groupId: number;
+    senderId: number;
+    body: string;
+  },
+  io?: TypedIOServer
+) {
   const { groupId, senderId, body } = args;
 
   const group = await prisma.groups.findUnique({
@@ -821,6 +839,17 @@ export async function sandboxSendMessage(args: {
   });
   if (!group || !group.name.startsWith("[SANDBOX]")) {
     throw new Error("Group not found or is not a sandbox group");
+  }
+
+  // Fetch the sender with username and image so we can include them in the
+  // socket payload. This lets the mobile client display the sender's avatar
+  // and name in toast notifications and chat bubbles without an extra fetch.
+  const sender = await prisma.users.findUnique({
+    where: { id: senderId },
+    select: { id: true, username: true, image: true },
+  });
+  if (!sender) {
+    throw new Error("Sender user not found");
   }
 
   const member = await prisma.groupMembers.findUnique({
@@ -842,6 +871,28 @@ export async function sandboxSendMessage(args: {
       body: trimmed,
     },
   });
+
+  // Broadcast the new message to all clients in the group's socket room.
+  // This is the same event shape emitted by the regular chat route
+  // (routes/api/groups-chat.route.ts), ensuring the mobile app handles
+  // sandbox messages identically to real ones — including toast notifications,
+  // unread counts, and live chat updates.
+  if (io) {
+    io.to(`group:${groupId}`).emit("message:new", {
+      id: message.id,
+      createdAt: message.createdAt.toISOString(),
+      groupId,
+      senderId,
+      type: message.type,
+      body: message.body,
+      meta: null,
+      sender: {
+        id: sender.id,
+        username: sender.username,
+        image: sender.image,
+      },
+    });
+  }
 
   return {
     messageId: message.id,

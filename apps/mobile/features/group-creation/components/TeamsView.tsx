@@ -2,9 +2,16 @@
 // Teams list from API. Loading/error/empty + ScrollView + RefreshControl. English only.
 // Supports popular teams preset and search functionality with debouncing.
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, TextInput, Pressable } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TextInput,
+  Pressable,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
+} from "react-native";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useTeamsQuery } from "@/domains/teams/teams.hooks";
@@ -23,7 +30,23 @@ export function TeamsView({ tabs }: TeamsViewProps) {
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchFocused, setSearchFocused] = useState(false);
+  const [isSearchSticky, setIsSearchSticky] = useState(false);
+  const isSearchStickyRef = useRef(false);
+  const tabsHeightRef = useRef(0);
   const debouncedSearch = useDebounce(searchQuery, 400);
+
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const sticky =
+        tabsHeightRef.current > 0 &&
+        e.nativeEvent.contentOffset.y >= tabsHeightRef.current;
+      if (sticky !== isSearchStickyRef.current) {
+        isSearchStickyRef.current = sticky;
+        setIsSearchSticky(sticky);
+      }
+    },
+    [],
+  );
 
   // Determine query parameters based on search state
   const queryParams = useMemo(() => {
@@ -92,56 +115,46 @@ export function TeamsView({ tabs }: TeamsViewProps) {
       <Screen
         scroll
         safeAreaEdges={[]}
+        stickyHeaderIndices={[1]}
+        onScroll={handleScroll}
         onRefresh={async () => {
           await refetch();
         }}
       >
-        {tabs}
+        <View onLayout={(e) => { tabsHeightRef.current = e.nativeEvent.layout.height; }}>
+          {tabs}
+        </View>
         {/* Search Input */}
-        <View style={styles.searchContainer}>
+        <View
+          style={[
+            styles.searchContainer,
+            { backgroundColor: theme.colors.background },
+            isSearchSticky && styles.stickyDropShadow,
+          ]}
+        >
           <View
             style={[
               styles.searchInputContainer,
               {
-                backgroundColor: searchFocused
-                  ? theme.colors.primary
-                  : theme.colors.surface,
+                backgroundColor: theme.colors.textSecondary + "12",
                 borderColor: searchFocused
                   ? theme.colors.primary
                   : theme.colors.border,
-                borderBottomColor: searchFocused
-                  ? theme.colors.primary
-                  : theme.colors.textSecondary + "40",
-                shadowColor: "#000",
-                shadowOpacity: searchFocused ? 0.25 : 0.1,
               },
             ]}
           >
-            <View
-              style={[
-                styles.searchIconContainer,
-                {
-                  backgroundColor: searchFocused
-                    ? "rgba(255,255,255,0.25)"
-                    : theme.colors.textSecondary + "15",
-                },
-              ]}
-            >
-              <MaterialIcons
-                name="search"
-                size={16}
-                color={searchFocused ? "#fff" : theme.colors.textSecondary}
-              />
-            </View>
+            <MaterialIcons
+              name="search"
+              size={18}
+              color={theme.colors.textSecondary}
+            />
             <TextInput
               style={[
                 styles.searchInput,
-                { color: searchFocused ? "#fff" : theme.colors.textPrimary },
+                { color: theme.colors.textPrimary },
               ]}
               placeholder={t("groupCreation.searchTeamsPlaceholder")}
-              placeholderTextColor={
-                searchFocused ? "rgba(255,255,255,0.7)" : theme.colors.textSecondary
-              }
+              placeholderTextColor={theme.colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
               onFocus={() => setSearchFocused(true)}
@@ -159,7 +172,7 @@ export function TeamsView({ tabs }: TeamsViewProps) {
                 <MaterialIcons
                   name="close"
                   size={18}
-                  color={searchFocused ? "#fff" : theme.colors.textSecondary}
+                  color={theme.colors.textSecondary}
                 />
               </Pressable>
             )}
@@ -185,29 +198,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderBottomWidth: 3,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  searchIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    marginEnd: 10,
+    height: 40,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "500",
     padding: 0,
-    minHeight: 24,
-    maxHeight: 24,
   },
   clearButton: {
     marginStart: 8,
@@ -228,5 +228,12 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: 0,
+  },
+  stickyDropShadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });

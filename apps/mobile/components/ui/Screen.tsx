@@ -32,6 +32,8 @@ interface ScreenProps {
   onRefresh?: () => void | Promise<void>;
   /** Optional. Called on scroll with the scroll event. */
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  /** Optional. Indices of children that should stick to the top when scrolling. */
+  stickyHeaderIndices?: number[];
   /**
    * When true, content can extend into the status bar area.
    * Useful for screens with gradient headers that should cover the status bar.
@@ -52,6 +54,7 @@ export function Screen({
   onRefresh,
   onScroll,
   extendIntoStatusBar = false,
+  stickyHeaderIndices,
   safeAreaEdges: customEdges,
 }: ScreenProps) {
   const { theme } = useTheme();
@@ -122,6 +125,7 @@ export function Screen({
           refreshControl={refreshControl}
           onScroll={onScroll}
           scrollEventThrottle={16}
+          stickyHeaderIndices={stickyHeaderIndices}
         >
           {children}
         </ScrollView>

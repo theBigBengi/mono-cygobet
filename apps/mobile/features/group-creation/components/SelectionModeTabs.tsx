@@ -114,7 +114,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   tab: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -129,9 +130,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   iconContainer: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
   },

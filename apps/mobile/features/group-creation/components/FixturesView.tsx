@@ -10,6 +10,8 @@ import {
   Platform,
   Pressable,
   ActivityIndicator,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -135,6 +137,22 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
   const filters = useFixtureFilters();
   const filterSheetRef = useRef<BottomSheetModal>(null);
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [isDateSliderSticky, setIsDateSliderSticky] = useState(false);
+  const isDateSliderStickyRef = useRef(false);
+  const tabsHeightRef = useRef(0);
+
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const sticky =
+        tabsHeightRef.current > 0 &&
+        e.nativeEvent.contentOffset.y >= tabsHeightRef.current;
+      if (sticky !== isDateSliderStickyRef.current) {
+        isDateSliderStickyRef.current = sticky;
+        setIsDateSliderSticky(sticky);
+      }
+    },
+    [],
+  );
 
   const mergedParams = useMemo(() => {
     const start = new Date(selectedDate);
@@ -184,6 +202,8 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           (isLoading || leagueGroups.length === 0) && styles.scrollContentLoading,
         ]}
         stickyHeaderIndices={[1]}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -195,8 +215,15 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           />
         }
       >
-        {tabs}
-        <View style={{ backgroundColor: theme.colors.background }}>
+        <View onLayout={(e) => { tabsHeightRef.current = e.nativeEvent.layout.height; }}>
+          {tabs}
+        </View>
+        <View
+          style={[
+            { backgroundColor: theme.colors.background },
+            isDateSliderSticky && styles.stickyDropShadow,
+          ]}
+        >
           <DateSlider
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
@@ -373,6 +400,13 @@ const styles = StyleSheet.create({
     marginStart: 4,
   },
   groupCardContainer: {},
+  stickyDropShadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   filterFab: {
     position: "absolute",
     right: 16,
