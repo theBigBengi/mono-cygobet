@@ -144,6 +144,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
               {
                 backgroundColor: theme.colors.cardBackground,
                 borderColor: theme.colors.border,
+                borderBottomColor: theme.colors.textSecondary + "40",
               },
               isDraft && styles.cardDraft,
             ]}
@@ -565,19 +566,20 @@ const styles = StyleSheet.create({
   cardShadowWrapper: {
     borderRadius: 14,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 6,
   },
   cardPressed: {
     shadowOpacity: 0,
     elevation: 0,
-    transform: [{ scale: 0.98 }],
+    transform: [{ scale: 0.98 }, { translateY: 2 }],
   },
   card: {
     borderRadius: 14,
     borderWidth: 1,
+    borderBottomWidth: 3,
     paddingTop: 14,
     paddingHorizontal: 14,
     paddingBottom: 0,

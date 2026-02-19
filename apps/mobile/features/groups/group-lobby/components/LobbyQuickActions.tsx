@@ -128,6 +128,7 @@ export function LobbyQuickActions({ actions, isLoading = false }: LobbyQuickActi
           {
             backgroundColor: theme.colors.surface,
             borderColor: theme.colors.border,
+            borderBottomColor: theme.colors.textSecondary + "40",
           },
         ]}
       >
@@ -150,8 +151,10 @@ export function LobbyQuickActions({ actions, isLoading = false }: LobbyQuickActi
                 {
                   backgroundColor: theme.colors.cardBackground,
                   borderColor: theme.colors.border,
+                  borderBottomColor: theme.colors.textSecondary + "40",
+                  transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
+                  shadowOpacity: pressed ? 0 : 0.1,
                 },
-                pressed && styles.pressed,
               ]}
             >
               {/* Badge */}
@@ -198,13 +201,14 @@ const styles = StyleSheet.create({
   wrapper: {
     borderRadius: 16,
     borderWidth: 1,
+    borderBottomWidth: 3,
     padding: 16,
     paddingTop: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -230,6 +234,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 12,
     borderWidth: 1,
+    borderBottomWidth: 3,
     position: "relative",
   },
   iconCircle: {
@@ -262,7 +267,6 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
-    transform: [{ scale: 0.98 }],
   },
   skeletonHeaderIcon: {
     width: 16,

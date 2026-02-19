@@ -503,7 +503,7 @@ function GroupsContent() {
       return (
         <View
           style={[
-            { backgroundColor: theme.colors.background },
+            { backgroundColor: theme.colors.background, paddingBottom: 8 },
             isTabsSticky && styles.tabsStickyDropShadow,
           ]}
         >

@@ -251,6 +251,7 @@ export function LobbyLeaderboard({
           {
             backgroundColor: theme.colors.surface,
             borderColor: theme.colors.border,
+            borderBottomColor: theme.colors.textSecondary + "40",
           },
         ]}
       >
@@ -298,6 +299,8 @@ export function LobbyLeaderboard({
             {
               backgroundColor: theme.colors.cardBackground,
               borderColor: theme.colors.border,
+              borderBottomColor: theme.colors.textSecondary + "40",
+              transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
             },
             pressed && styles.pressed,
           ]}
@@ -321,12 +324,13 @@ const styles = StyleSheet.create({
   wrapper: {
     borderRadius: 16,
     borderWidth: 1,
+    borderBottomWidth: 3,
     padding: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
   },
   memberCountRow: {
     alignItems: "center",
@@ -383,13 +387,14 @@ const styles = StyleSheet.create({
   podiumCard: {
     borderRadius: 12,
     borderWidth: 1,
+    borderBottomWidth: 3,
     padding: 8,
     alignItems: "center",
     justifyContent: "center",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 5,
   },
   podiumCardFirst: {
     shadowOpacity: 0.25,
@@ -452,6 +457,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 10,
     borderWidth: 1,
+    borderBottomWidth: 3,
     marginBottom: 16,
     gap: 10,
   },
@@ -483,6 +489,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
+    borderBottomWidth: 3,
   },
   buttonIconCircle: {
     width: 28,

@@ -454,6 +454,7 @@ export function LobbyPredictionsCTA({
           {
             backgroundColor: theme.colors.cardBackground,
             borderColor: theme.colors.border,
+            borderBottomColor: theme.colors.textSecondary + "40",
           },
         ]}
       >
@@ -685,6 +686,8 @@ export function LobbyPredictionsCTA({
             {
               backgroundColor: theme.colors.cardBackground,
               borderColor: theme.colors.border,
+              borderBottomColor: theme.colors.textSecondary + "40",
+              transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
             },
             pressed && styles.pressed,
           ]}
@@ -707,10 +710,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 6,
   },
   container: {
     paddingHorizontal: 12,
@@ -718,6 +721,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderRadius: 16,
     borderWidth: 1,
+    borderBottomWidth: 3,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -741,6 +745,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
+    borderBottomWidth: 3,
   },
   buttonIconCircle: {
     width: 28,
@@ -895,6 +900,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 10,
     borderWidth: 1,
+    borderBottomWidth: 3,
     justifyContent: "center",
     alignItems: "center",
   },
