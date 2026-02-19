@@ -34,7 +34,6 @@ import { fixturesService } from "@/services/fixtures.service";
 import type {
   AdminSyncFixturesResponse,
   AdminFixturesListResponse,
-  AdminProviderFixturesResponse,
   FixtureIssueType,
   FixtureDTO,
 } from "@repo/types";
