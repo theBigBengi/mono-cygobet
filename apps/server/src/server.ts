@@ -3,6 +3,7 @@ import Fastify from "fastify";
 // import qs from "qs";
 import app from "./app";
 import { logger, getLogger } from "./logger";
+import { disconnectRedis } from "@repo/redis";
 
 // Create Fastify instance
 const fastify = Fastify({
@@ -40,6 +41,7 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
   serverLogger.info({ signal }, "Received signal, shutting down server");
   try {
     await fastify.close();
+    await disconnectRedis();
     process.exit(0);
   } catch (err) {
     serverLogger.error({ err }, "Error during shutdown");

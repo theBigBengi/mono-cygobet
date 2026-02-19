@@ -1,6 +1,8 @@
 import fp from "fastify-plugin";
 import fastifySocketIO from "fastify-socket.io";
 import { prisma } from "@repo/db";
+import { createRedisClient, isRedisConfigured } from "@repo/redis";
+import { createAdapter } from "@socket.io/redis-adapter";
 import { verifyAccessToken } from "../auth/user-tokens";
 import { assertGroupMember } from "../services/api/groups/permissions";
 import { sendMessage, markAsRead } from "../services/api/groups/service/chat";
@@ -22,6 +24,46 @@ export default fp(async function socketIOPlugin(fastify) {
     .filter(Boolean);
   const vercelSuffix = (process.env.CORS_VERCEL_SUFFIX ?? "").trim();
 
+  // ── Redis adapter for multi-instance Socket.IO ──
+  // When REDIS_URL is set, Socket.IO rooms and broadcasts sync across all server instances.
+  // Without it, falls back to the default in-memory adapter (single-instance only).
+  let adapter: ReturnType<typeof createAdapter> | undefined;
+
+  if (isRedisConfigured()) {
+    try {
+      const pubClient = createRedisClient({
+        onEvent: (e) => {
+          if (e.type === "error")
+            log.error({ err: e.error }, "Socket.IO Redis pub error");
+        },
+      });
+      const subClient = pubClient.duplicate();
+
+      subClient.on("error", (err) =>
+        log.error({ err }, "Socket.IO Redis sub error")
+      );
+
+      adapter = createAdapter(pubClient, subClient);
+
+      // Clean up Redis connections on server close
+      fastify.addHook("onClose", async () => {
+        await Promise.all([pubClient.quit(), subClient.quit()]);
+        log.info("Socket.IO Redis adapter connections closed");
+      });
+
+      log.info("Socket.IO Redis adapter enabled (multi-instance ready)");
+    } catch (err) {
+      log.warn(
+        { err },
+        "Failed to initialize Redis adapter — falling back to in-memory"
+      );
+    }
+  } else {
+    log.info(
+      "REDIS_URL not set — Socket.IO using in-memory adapter (single-instance)"
+    );
+  }
+
   await fastify.register(fastifySocketIO, {
     cors: {
       origin: (origin, cb) => {
@@ -42,6 +84,7 @@ export default fp(async function socketIOPlugin(fastify) {
       credentials: true,
     },
     transports: ["websocket", "polling"],
+    ...(adapter && { adapter }),
   });
 
   const io = fastify.io;
