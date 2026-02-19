@@ -17,7 +17,7 @@ export function useJobsFromDb() {
   return useQuery<AdminJobsListResponse>({
     queryKey: ["jobs", "db"],
     queryFn: () => jobsService.getJobs(),
-    staleTime: 30000,
+    staleTime: Infinity,
   });
 }
 
@@ -26,7 +26,7 @@ export function useJobFromDb(jobKey: string | null) {
     queryKey: ["jobs", "db", jobKey],
     queryFn: () => jobsService.getJob(jobKey!),
     enabled: !!jobKey,
-    staleTime: 30000,
+    staleTime: Infinity,
   });
 }
 
@@ -34,7 +34,7 @@ export function useJobRunsFromDb(params: GetJobRunsParams) {
   return useQuery<AdminJobRunsListResponse>({
     queryKey: ["job-runs", params],
     queryFn: () => jobsService.getRuns(params),
-    staleTime: 15000,
+    staleTime: Infinity,
   });
 }
 
@@ -46,7 +46,7 @@ export function useJobRunsForJob(
     queryKey: ["job-runs", jobKey, params],
     queryFn: () => jobsService.getJobRuns(jobKey!, params),
     enabled: !!jobKey,
-    staleTime: 15000,
+    staleTime: Infinity,
   });
 }
 
@@ -55,7 +55,7 @@ export function useRun(runId: number | null) {
     queryKey: ["job-run", runId],
     queryFn: () => jobsService.getRun(runId!),
     enabled: runId != null && Number.isFinite(runId),
-    staleTime: 15000,
+    staleTime: Infinity,
   });
 }
 
@@ -67,7 +67,7 @@ export function useRunItems(
     queryKey: ["run-items", runId, params],
     queryFn: () => jobsService.getRunItems(runId!, params),
     enabled: runId != null && Number.isFinite(runId),
-    staleTime: 15000,
+    staleTime: Infinity,
   });
 }
 

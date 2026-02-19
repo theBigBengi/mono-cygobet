@@ -51,79 +51,96 @@ export async function processBatchSeedSeasons(params: BatchSeedParams) {
 
   let completedCount = 0;
   let failedCount = 0;
+  let batchError: string | undefined;
 
-  for (const seasonStatus of seasons) {
-    seasonStatus.status = "processing";
-    await updateBatchMeta(batchId, seasons, completedCount, failedCount);
+  try {
+    for (const seasonStatus of seasons) {
+      seasonStatus.status = "processing";
+      await updateBatchMetaSafe(batchId, seasons, completedCount, failedCount);
 
-    try {
-      const result = await processSeedSeason({
-        seasonExternalId: seasonStatus.seasonExternalId,
-        includeTeams,
-        includeFixtures,
-        futureOnly,
-        batchId,
-        triggeredBy,
-        triggeredById,
-        skipBatchFinish: true,
-      });
+      try {
+        const result = await processSeedSeason({
+          seasonExternalId: seasonStatus.seasonExternalId,
+          includeTeams,
+          includeFixtures,
+          futureOnly,
+          batchId,
+          triggeredBy,
+          triggeredById,
+          skipBatchFinish: true,
+        });
 
-      seasonStatus.status = "done";
-      seasonStatus.result = {
-        season: result.season,
-        teams: result.teams,
-        fixtures: result.fixtures,
-      };
-      completedCount++;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      log.error(
-        { batchId, seasonExternalId: seasonStatus.seasonExternalId, err: error },
-        "Failed to seed season in batch"
-      );
-      seasonStatus.status = "failed";
-      seasonStatus.error = message.slice(0, 500);
-      failedCount++;
+        seasonStatus.status = "done";
+        seasonStatus.result = {
+          season: result.season,
+          teams: result.teams,
+          fixtures: result.fixtures,
+        };
+        completedCount++;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        log.error(
+          { batchId, seasonExternalId: seasonStatus.seasonExternalId, err: error },
+          "Failed to seed season in batch"
+        );
+        seasonStatus.status = "failed";
+        seasonStatus.error = message.slice(0, 500);
+        failedCount++;
+      }
+
+      await updateBatchMetaSafe(batchId, seasons, completedCount, failedCount);
     }
-
-    await updateBatchMeta(batchId, seasons, completedCount, failedCount);
+  } catch (error) {
+    batchError = error instanceof Error ? error.message : String(error);
+    log.error({ batchId, err: error }, "Batch processing loop error");
   }
 
+  // Always finish the batch — even if the loop threw
   const finalStatus =
     failedCount === seasonExternalIds.length
       ? RunStatus.failed
       : RunStatus.success;
 
-  await finishSeedBatch(batchId, finalStatus, {
-    itemsTotal: seasonExternalIds.length,
-    itemsSuccess: completedCount,
-    itemsFailed: failedCount,
-    meta: {
-      seasons: JSON.parse(JSON.stringify(seasons)) as Prisma.InputJsonValue,
-      totalSeasons: seasonExternalIds.length,
-      completedSeasons: completedCount,
-      failedSeasons: failedCount,
-    },
-  });
+  try {
+    await finishSeedBatch(batchId, finalStatus, {
+      itemsTotal: seasonExternalIds.length,
+      itemsSuccess: completedCount,
+      itemsFailed: failedCount,
+      errorMessage: batchError,
+      meta: {
+        seasons: JSON.parse(JSON.stringify(seasons)) as Prisma.InputJsonValue,
+        totalSeasons: seasonExternalIds.length,
+        completedSeasons: completedCount,
+        failedSeasons: failedCount,
+      },
+    });
+  } catch (finishError) {
+    log.error({ batchId, err: finishError }, "Failed to finish seed batch");
+  }
 
-  await availabilityService.invalidateCache();
+  await availabilityService.invalidateCache().catch(() => {});
 }
 
-async function updateBatchMeta(
+/** Best-effort meta update — never throws */
+async function updateBatchMetaSafe(
   batchId: number,
   seasons: SeasonStatus[],
   completedCount: number,
   failedCount: number
 ) {
-  await prisma.seedBatches.update({
-    where: { id: batchId },
-    data: {
-      meta: {
-        seasons: JSON.parse(JSON.stringify(seasons)) as Prisma.InputJsonValue,
-        totalSeasons: seasons.length,
-        completedSeasons: completedCount,
-        failedSeasons: failedCount,
+  try {
+    await prisma.seedBatches.update({
+      where: { id: batchId },
+      data: {
+        meta: {
+          seasons: JSON.parse(JSON.stringify(seasons)) as Prisma.InputJsonValue,
+          totalSeasons: seasons.length,
+          completedSeasons: completedCount,
+          failedSeasons: failedCount,
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    log.warn({ batchId, err: error }, "Failed to update batch meta (non-fatal)");
+  }
 }

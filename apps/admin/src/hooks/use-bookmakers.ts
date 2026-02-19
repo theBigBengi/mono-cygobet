@@ -17,7 +17,7 @@ export function useBookmakersFromProvider() {
   return useQuery<AdminProviderBookmakersResponse>({
     queryKey: ["bookmakers", "provider"],
     queryFn: () => bookmakersService.getFromProvider(),
-    staleTime: 30000, // 30 seconds
+    staleTime: Infinity,
   });
 }
 

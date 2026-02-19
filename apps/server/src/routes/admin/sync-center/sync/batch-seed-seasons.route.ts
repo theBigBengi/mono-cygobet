@@ -94,8 +94,8 @@ const batchSeedSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
             futureOnly,
             triggeredBy: userId ? "user" : null,
             triggeredById: userId,
-          }).catch(() => {
-            // Error already handled in processBatchSeedSeasons (finishSeedBatch)
+          }).catch((err) => {
+            fastify.log.error({ err, batchId: batch.id }, "Batch seed failed");
           });
         });
 

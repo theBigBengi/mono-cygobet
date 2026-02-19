@@ -34,28 +34,9 @@ const jobsRoutes: FastifyPluginAsync = async (fastify) => {
           required: ["jobId"],
           properties: { jobId: { type: "string" } },
         },
+        // No response schema — use default JSON.stringify to avoid
+        // fast-json-stringify stripping nested objects from the seasons array
         response: {
-          200: {
-            type: "object",
-            properties: {
-              status: { type: "string", const: "ok" },
-              data: {
-                type: "object",
-                additionalProperties: true,
-                properties: {
-                  jobId: { type: "string" },
-                  state: { type: "string" },
-                  progress: { type: "number" },
-                  result: { type: "object" },
-                  error: { type: "string" },
-                  totalSeasons: { type: "number" },
-                  completedSeasons: { type: "number" },
-                  failedSeasons: { type: "number" },
-                  seasons: { type: "array" },
-                },
-              },
-            },
-          },
           404: {
             type: "object",
             properties: {
