@@ -54,12 +54,14 @@ export async function seedLeagues(
   }
 
   if (!leagues?.length) {
-    await finishSeedBatch(batchId!, RunStatus.success, {
-      itemsTotal: 0,
-      itemsSuccess: 0,
-      itemsFailed: 0,
-      meta: { reason: "no-input" },
-    });
+    if (createdHere) {
+      await finishSeedBatch(batchId!, RunStatus.success, {
+        itemsTotal: 0,
+        itemsSuccess: 0,
+        itemsFailed: 0,
+        meta: { reason: "no-input" },
+      });
+    }
     return { batchId, ok: 0, fail: 0, total: 0 };
   }
 
@@ -231,6 +233,8 @@ export async function seedLeagues(
                 ? String((e as { code?: string }).code)
                 : "UNKNOWN_ERROR";
 
+            const failedAction = action === "updated" ? "update_failed" : "insert_failed";
+
             await trackSeedItem(
               batchId!,
               String(league.externalId),
@@ -242,7 +246,7 @@ export async function seedLeagues(
                 externalId: league.externalId,
                 errorCode,
                 errorMessage: errorMessage.slice(0, 200),
-                action,
+                action: failedAction,
               }
             );
 
@@ -251,7 +255,7 @@ export async function seedLeagues(
               "League failed"
             );
 
-            return { success: false, league, error: errorMessage, action };
+            return { success: false, league, error: errorMessage, action: failedAction };
           }
         })
       );
@@ -270,12 +274,14 @@ export async function seedLeagues(
       }
     }
 
-    await finishSeedBatch(batchId!, RunStatus.success, {
-      itemsTotal: ok + fail,
-      itemsSuccess: ok,
-      itemsFailed: fail,
-      meta: { ok, fail },
-    });
+    if (createdHere) {
+      await finishSeedBatch(batchId!, RunStatus.success, {
+        itemsTotal: ok + fail,
+        itemsSuccess: ok,
+        itemsFailed: fail,
+        meta: { ok, fail },
+      });
+    }
 
     log.info(
       { batchId, ok, fail },
@@ -285,13 +291,15 @@ export async function seedLeagues(
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     log.error({ batchId, err: e }, "Unexpected error during leagues seeding");
-    await finishSeedBatch(batchId!, RunStatus.failed, {
-      itemsTotal: ok + fail,
-      itemsSuccess: ok,
-      itemsFailed: fail,
-      errorMessage: msg.slice(0, 500),
-      meta: { ok, fail },
-    });
+    if (createdHere) {
+      await finishSeedBatch(batchId!, RunStatus.failed, {
+        itemsTotal: ok + fail,
+        itemsSuccess: ok,
+        itemsFailed: fail,
+        errorMessage: msg.slice(0, 500),
+        meta: { ok, fail },
+      });
+    }
 
     return { batchId, ok, fail, total: ok + fail };
   }

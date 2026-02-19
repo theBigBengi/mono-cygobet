@@ -219,6 +219,8 @@ export async function seedSeasons(
                 ? String((e as { code?: string }).code)
                 : "UNKNOWN_ERROR";
 
+            const failedAction = action === "updated" ? "update_failed" : "insert_failed";
+
             await trackSeedItem(
               batchId!,
               String(season.externalId),
@@ -230,7 +232,7 @@ export async function seedSeasons(
                 externalId: season.externalId,
                 errorCode,
                 errorMessage: errorMessage.slice(0, 200),
-                action,
+                action: failedAction,
               }
             );
 
@@ -239,7 +241,7 @@ export async function seedSeasons(
               "Season failed"
             );
 
-            return { success: false, season, error: errorMessage, action };
+            return { success: false, season, error: errorMessage, action: failedAction };
           }
         })
       );

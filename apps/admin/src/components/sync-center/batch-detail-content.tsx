@@ -81,8 +81,35 @@ function getBatchContext(batch: Batch): string | null {
   }
 
   // batch-seed-seasons
-  if (batch.name === "batch-seed-seasons" && typeof meta.totalSeasons === "number") {
-    return `${meta.totalSeasons} seasons`;
+  if (batch.name === "batch-seed-seasons") {
+    const seasons = meta.seasons as Array<{
+      result?: { season?: { league?: string; name?: string } };
+    }> | undefined;
+    if (Array.isArray(seasons) && seasons.length > 0) {
+      // 1-2 seasons: full names
+      if (seasons.length <= 2) {
+        const names = seasons
+          .map((s) => {
+            const r = s.result?.season;
+            return r?.league && r?.name ? `${r.league} · ${r.name}` : null;
+          })
+          .filter(Boolean);
+        if (names.length > 0) return names.join("\n");
+      }
+      // 3+: group by league with counts
+      const leagueMap = new Map<string, number>();
+      for (const s of seasons) {
+        const league = s.result?.season?.league;
+        if (league) leagueMap.set(league, (leagueMap.get(league) ?? 0) + 1);
+      }
+      if (leagueMap.size > 0) {
+        const parts = [...leagueMap.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, count]) => count > 1 ? `${name} (${count})` : name);
+        return `${seasons.length} seasons · ${parts.join(", ")}`;
+      }
+    }
+    if (typeof meta.totalSeasons === "number") return `${meta.totalSeasons} seasons`;
   }
 
   // upcoming fixtures — date window
@@ -97,12 +124,13 @@ function getBatchContext(batch: Batch): string | null {
 }
 
 function getActionLabel(item: BatchItem): string {
+  // Failed items always show "failed" regardless of meta.action
+  if (item.status === "failed") return "failed";
   const m = (item.meta ?? {}) as Record<string, unknown>;
   const action = m["action"];
   if (typeof action === "string") return action;
   if (item.status === "success") return "success";
   if (item.status === "skipped") return "skipped";
-  if (item.status === "failed") return "failed";
   return item.status;
 }
 
@@ -133,7 +161,7 @@ function Header({ batch }: { batch: Batch }) {
           <StatusBadge status={batch.status} />
         </div>
         {context && (
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{context}</p>
+          <p className="text-sm sm:text-base font-medium mt-0.5 whitespace-pre-line">{context}</p>
         )}
         {batch.status === "failed" && batch.errorMessage && (
           <p className="text-xs sm:text-sm text-destructive mt-1 line-clamp-2">
@@ -147,11 +175,77 @@ function Header({ batch }: { batch: Batch }) {
 
 // ── Stats row ───────────────────────────────────────────────────────
 
+function getSeedSeasonStats(meta: Record<string, unknown>): {
+  teamsOk: number; teamsFail: number;
+  fixturesOk: number; fixturesFail: number;
+} | null {
+  let teamsOk = 0, teamsFail = 0, fixturesOk = 0, fixturesFail = 0;
+
+  // batch-seed-seasons: aggregate across meta.seasons[].result
+  const seasons = meta.seasons as Array<{
+    result?: { teams?: { ok?: number; fail?: number }; fixtures?: { ok?: number; fail?: number } };
+  }> | undefined;
+  if (Array.isArray(seasons)) {
+    for (const s of seasons) {
+      teamsOk += s.result?.teams?.ok ?? 0;
+      teamsFail += s.result?.teams?.fail ?? 0;
+      fixturesOk += s.result?.fixtures?.ok ?? 0;
+      fixturesFail += s.result?.fixtures?.fail ?? 0;
+    }
+    return { teamsOk, teamsFail, fixturesOk, fixturesFail };
+  }
+
+  // seed-season: flat meta.teams / meta.fixtures
+  const teams = meta.teams as { ok?: number; fail?: number } | undefined;
+  const fixtures = meta.fixtures as { ok?: number; fail?: number } | undefined;
+  if (!teams && !fixtures) return null;
+  return {
+    teamsOk: teams?.ok ?? 0, teamsFail: teams?.fail ?? 0,
+    fixturesOk: fixtures?.ok ?? 0, fixturesFail: fixtures?.fail ?? 0,
+  };
+}
+
 function StatsRow({ batch }: { batch: Batch }) {
   const meta = (batch.meta ?? {}) as Record<string, unknown>;
+  const isSeedSeason = batch.name === "seed-season" || batch.name === "batch-seed-seasons";
+  const seedStats = isSeedSeason ? getSeedSeasonStats(meta) : null;
+
   const inserted = typeof meta.inserted === "number" ? meta.inserted : undefined;
   const updated = typeof meta.updated === "number" ? meta.updated : undefined;
   const skipped = typeof meta.skipped === "number" ? meta.skipped : undefined;
+
+  let itemsValue: string;
+  let resultValue: string;
+  let hasDanger = false;
+
+  if (seedStats) {
+    // seed-season / batch-seed-seasons: show teams + fixtures breakdown
+    const parts: string[] = [];
+    if (seedStats.teamsOk > 0 || seedStats.teamsFail > 0)
+      parts.push(`${seedStats.teamsOk} teams`);
+    if (seedStats.fixturesOk > 0 || seedStats.fixturesFail > 0)
+      parts.push(`${seedStats.fixturesOk} fixtures`);
+    itemsValue = parts.join(" · ") || "—";
+
+    const totalFail = seedStats.teamsFail + seedStats.fixturesFail;
+    const totalOk = seedStats.teamsOk + seedStats.fixturesOk;
+    hasDanger = totalFail > 0;
+    resultValue = `${totalOk} ok${totalFail > 0 ? ` · ${totalFail} failed` : ""}`;
+  } else {
+    itemsValue = String(batch.itemsTotal);
+    hasDanger = batch.itemsFailed > 0;
+    resultValue =
+      inserted != null || updated != null
+        ? [
+            inserted ? `${inserted} new` : null,
+            updated ? `${updated} updated` : null,
+            skipped ? `${skipped} skipped` : null,
+            batch.itemsFailed > 0 ? `${batch.itemsFailed} failed` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") || "no changes"
+        : `${batch.itemsSuccess} ok${batch.itemsFailed > 0 ? ` · ${batch.itemsFailed} failed` : ""}`;
+  }
 
   const stats = [
     {
@@ -167,23 +261,13 @@ function StatsRow({ batch }: { batch: Batch }) {
     {
       icon: Hash,
       label: "Items",
-      value: String(batch.itemsTotal),
+      value: itemsValue,
     },
     {
       icon: TrendingUp,
       label: "Result",
-      value:
-        inserted != null || updated != null
-          ? [
-              inserted ? `${inserted} new` : null,
-              updated ? `${updated} updated` : null,
-              skipped ? `${skipped} skipped` : null,
-              batch.itemsFailed > 0 ? `${batch.itemsFailed} failed` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ") || "no changes"
-          : `${batch.itemsSuccess} ok${batch.itemsFailed > 0 ? ` · ${batch.itemsFailed} failed` : ""}`,
-      danger: batch.itemsFailed > 0,
+      value: resultValue,
+      danger: hasDanger,
     },
   ];
 
@@ -359,6 +443,8 @@ const ACTION_STYLES: Record<string, string> = {
   updated: "text-blue-600 dark:text-blue-400",
   skipped: "text-muted-foreground",
   failed: "text-destructive",
+  insert_failed: "text-destructive",
+  update_failed: "text-destructive",
   success: "text-green-600 dark:text-green-400",
 };
 
@@ -442,13 +528,22 @@ function FailedItemsList({
 // ── Error section ───────────────────────────────────────────────────
 
 function ErrorSection({ batch }: { batch: Batch }) {
-  const hasItemFailures = batch.itemsFailed > 0;
-  if (!hasItemFailures) return null;
+  // For seed-season, itemsFailed on the batch is often 0 but child items may have failures
+  // Check both the batch-level count and the meta for nested failures
+  let failedCount = batch.itemsFailed;
+  if (failedCount === 0 && (batch.name === "seed-season" || batch.name === "batch-seed-seasons")) {
+    const meta = (batch.meta ?? {}) as Record<string, unknown>;
+    const seedStats = getSeedSeasonStats(meta);
+    if (seedStats) {
+      failedCount = seedStats.teamsFail + seedStats.fixturesFail;
+    }
+  }
+  if (failedCount === 0) return null;
 
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-medium text-destructive">Errors</h4>
-      <FailedItemsList batchId={batch.id} failedCount={batch.itemsFailed} />
+      <FailedItemsList batchId={batch.id} failedCount={failedCount} />
     </div>
   );
 }

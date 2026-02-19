@@ -23,6 +23,7 @@ import { useAvailability } from "@/hooks/use-availability";
 import { useSeasonSelection } from "@/hooks/use-season-selection";
 import { SeedSeasonDialog } from "./seed-season-dialog";
 import { BulkSeedDialog } from "./bulk-seed-dialog";
+import { DeleteSeasonDialog } from "./delete-season-dialog";
 import { fixturesService } from "@/services/fixtures.service";
 import { toast } from "sonner";
 import {
@@ -34,6 +35,7 @@ import {
   RefreshCw,
   Loader2,
   ChevronsUpDown,
+  Trash2,
 } from "lucide-react";
 import type { AvailableSeason } from "@repo/types";
 
@@ -123,6 +125,9 @@ export function SeasonExplorer() {
   );
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [syncingSeasonId, setSyncingSeasonId] = useState<number | null>(null);
+  const [deletingSeason, setDeletingSeason] = useState<AvailableSeason | null>(
+    null
+  );
 
   const allSeasons = data?.data?.seasons ?? [];
 
@@ -379,8 +384,10 @@ export function SeasonExplorer() {
                     onToggleLeague={toggleLeague}
                     selection={selection}
                     showCheckboxes={tab === "new"}
+                    activeTab={tab}
                     onSeed={setSelectedSeason}
                     onSyncFixtures={handleSyncFixtures}
+                    onDelete={setDeletingSeason}
                     syncingSeasonId={syncingSeasonId}
                   />
                 ))}
@@ -402,11 +409,23 @@ export function SeasonExplorer() {
       <BulkSeedDialog
         open={bulkDialogOpen}
         seasons={selectedSeasons}
+        allSeasons={allSeasons}
         onClose={() => {
           setBulkDialogOpen(false);
           selection.deselectAll();
           queryClient.invalidateQueries({ queryKey: ["sync-center"] });
           queryClient.invalidateQueries({ queryKey: ["batches"] });
+        }}
+      />
+
+      <DeleteSeasonDialog
+        season={deletingSeason}
+        onClose={(deleted) => {
+          setDeletingSeason(null);
+          if (deleted) {
+            queryClient.invalidateQueries({ queryKey: ["sync-center"] });
+            queryClient.invalidateQueries({ queryKey: ["batches"] });
+          }
         }}
       />
     </>
@@ -423,8 +442,10 @@ interface CountryGroupRowProps {
   onToggleLeague: (key: string) => void;
   selection: ReturnType<typeof useSeasonSelection>;
   showCheckboxes: boolean;
+  activeTab: TabValue;
   onSeed: (s: AvailableSeason) => void;
   onSyncFixtures: (s: AvailableSeason) => void;
+  onDelete: (s: AvailableSeason) => void;
   syncingSeasonId: number | null;
 }
 
@@ -436,8 +457,10 @@ function CountryGroupRow({
   onToggleLeague,
   selection,
   showCheckboxes,
+  activeTab,
   onSeed,
   onSyncFixtures,
+  onDelete,
   syncingSeasonId,
 }: CountryGroupRowProps) {
   const newIds = group.leagues
@@ -510,8 +533,10 @@ function CountryGroupRow({
                 onToggle={() => onToggleLeague(leagueKey)}
                 selection={selection}
                 showCheckboxes={showCheckboxes}
+                activeTab={activeTab}
                 onSeed={onSeed}
                 onSyncFixtures={onSyncFixtures}
+                onDelete={onDelete}
                 syncingSeasonId={syncingSeasonId}
               />
             );
@@ -528,8 +553,10 @@ interface LeagueGroupRowProps {
   onToggle: () => void;
   selection: ReturnType<typeof useSeasonSelection>;
   showCheckboxes: boolean;
+  activeTab: TabValue;
   onSeed: (s: AvailableSeason) => void;
   onSyncFixtures: (s: AvailableSeason) => void;
+  onDelete: (s: AvailableSeason) => void;
   syncingSeasonId: number | null;
 }
 
@@ -539,8 +566,10 @@ function LeagueGroupRow({
   onToggle,
   selection,
   showCheckboxes,
+  activeTab,
   onSeed,
   onSyncFixtures,
+  onDelete,
   syncingSeasonId,
 }: LeagueGroupRowProps) {
   const newIds = league.seasons
@@ -594,8 +623,10 @@ function LeagueGroupRow({
               season={season}
               selection={selection}
               showCheckbox={showCheckboxes && season.status === "new"}
+              activeTab={activeTab}
               onSeed={onSeed}
               onSyncFixtures={onSyncFixtures}
+              onDelete={onDelete}
               syncingSeasonId={syncingSeasonId}
             />
           ))}
@@ -609,8 +640,10 @@ interface SeasonRowProps {
   season: AvailableSeason;
   selection: ReturnType<typeof useSeasonSelection>;
   showCheckbox: boolean;
+  activeTab: TabValue;
   onSeed: (s: AvailableSeason) => void;
   onSyncFixtures: (s: AvailableSeason) => void;
+  onDelete: (s: AvailableSeason) => void;
   syncingSeasonId: number | null;
 }
 
@@ -618,8 +651,10 @@ function SeasonRow({
   season,
   selection,
   showCheckbox,
+  activeTab,
   onSeed,
   onSyncFixtures,
+  onDelete,
   syncingSeasonId,
 }: SeasonRowProps) {
   return (
@@ -658,15 +693,16 @@ function SeasonRow({
         )}
       </span>
 
-      {/* DB status */}
-      {season.status === "new" ? (
+      {/* DB status - hide redundant badge when already filtered by tab */}
+      {season.status === "new" && activeTab !== "new" && (
         <Badge
           variant="outline"
           className="text-xs shrink-0 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400"
         >
           New
         </Badge>
-      ) : (
+      )}
+      {season.status === "in_db" && activeTab !== "in_db" && (
         <Badge
           variant="outline"
           className="text-xs shrink-0 bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400"
@@ -686,8 +722,8 @@ function SeasonRow({
         </span>
       )}
 
-      {/* Action button */}
-      <div className="ml-auto shrink-0">
+      {/* Action buttons */}
+      <div className="ml-auto shrink-0 flex items-center gap-1">
         {season.status === "new" ? (
           <Button
             variant="outline"
@@ -698,21 +734,31 @@ function SeasonRow({
             Seed
           </Button>
         ) : season.status === "in_db" ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs px-2 sm:px-3"
-            onClick={() => onSyncFixtures(season)}
-            disabled={syncingSeasonId === season.dbId}
-          >
-            {syncingSeasonId === season.dbId ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (season.fixturesCount ?? 0) > 0 ? (
-              "Re-sync"
-            ) : (
-              "Sync"
-            )}
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2 sm:px-3"
+              onClick={() => onSyncFixtures(season)}
+              disabled={syncingSeasonId === season.dbId}
+            >
+              {syncingSeasonId === season.dbId ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (season.fixturesCount ?? 0) > 0 ? (
+                "Re-sync"
+              ) : (
+                "Sync"
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+              onClick={() => onDelete(season)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </>
         ) : null}
       </div>
     </div>

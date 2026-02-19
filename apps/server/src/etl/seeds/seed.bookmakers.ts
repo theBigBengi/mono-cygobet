@@ -175,6 +175,8 @@ export async function seedBookmakers(
                 ? String((error as { code?: string }).code)
                 : "UNKNOWN_ERROR";
 
+            const failedAction = action === "updated" ? "update_failed" : "insert_failed";
+
             await trackSeedItem(
               batchId!,
               String(bookmaker.externalId),
@@ -186,7 +188,7 @@ export async function seedBookmakers(
                 externalId: bookmaker.externalId,
                 errorCode,
                 errorMessage: errorMessage.slice(0, 200),
-                action,
+                action: failedAction,
               }
             );
 
@@ -195,7 +197,7 @@ export async function seedBookmakers(
               "Bookmaker failed"
             );
 
-            return { success: false, bookmaker, error: errorMessage, action };
+            return { success: false, bookmaker, error: errorMessage, action: failedAction };
           }
         })
       );

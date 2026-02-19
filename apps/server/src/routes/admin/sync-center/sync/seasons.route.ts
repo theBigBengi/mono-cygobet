@@ -2,6 +2,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { seedSeasons } from "../../../../etl/seeds/seed.seasons";
 import { adapter } from "../../../../utils/adapter";
+import { availabilityService } from "../../../../services/availability.service";
 import { AdminSyncSeasonsResponse } from "@repo/types";
 import {
   syncBodySchema,
@@ -44,6 +45,7 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
               dryRun,
               triggeredBy: "admin-ui",
             });
+            await availabilityService.invalidateCache().catch(() => {});
             return reply.send({
               status: "success",
               data: {
@@ -140,6 +142,7 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
               dryRun,
               triggeredBy: "admin-ui",
             });
+            await availabilityService.invalidateCache().catch(() => {});
             return reply.send({
               status: "success",
               data: {

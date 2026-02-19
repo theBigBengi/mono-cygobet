@@ -107,6 +107,31 @@ const OPERATION_CONFIG: Record<string, OpConfig> = {
     label: "Batch season seed",
     icon: Layers,
     detail: (meta) => {
+      const seasons = meta.seasons as Array<{
+        result?: { season?: { league?: string; name?: string } };
+      }> | undefined;
+      if (Array.isArray(seasons) && seasons.length > 0) {
+        // 1-2 seasons: show full names
+        if (seasons.length <= 2) {
+          const names = seasons
+            .map((s) => {
+              const r = s.result?.season;
+              return r?.league && r?.name ? `${r.league} · ${r.name}` : null;
+            })
+            .filter(Boolean);
+          if (names.length > 0) return names.join(", ");
+        }
+        // 3+: show count + unique league names
+        const leagues = [...new Set(
+          seasons.map((s) => s.result?.season?.league).filter(Boolean) as string[]
+        )];
+        if (leagues.length > 0) {
+          const leagueText = leagues.length <= 3
+            ? leagues.join(", ")
+            : `${leagues.slice(0, 2).join(", ")} +${leagues.length - 2}`;
+          return `${seasons.length} seasons · ${leagueText}`;
+        }
+      }
       const total = typeof meta.totalSeasons === "number" ? meta.totalSeasons : 0;
       if (total > 0) return `${total} seasons`;
       return null;
@@ -148,8 +173,51 @@ function getDurationText(batch: Batch): string {
   return r > 0 ? `${m}m ${r}s` : `${m}m`;
 }
 
+function getSeedSeasonSummary(
+  meta: Record<string, unknown>
+): { text: string; hasFailures: boolean } | null {
+  let teamsOk = 0, teamsFail = 0, fixturesOk = 0, fixturesFail = 0;
+
+  // batch-seed-seasons: aggregate across meta.seasons[].result
+  const seasons = meta.seasons as Array<{
+    result?: { teams?: { ok?: number; fail?: number }; fixtures?: { ok?: number; fail?: number } };
+  }> | undefined;
+  if (Array.isArray(seasons)) {
+    for (const s of seasons) {
+      teamsOk += s.result?.teams?.ok ?? 0;
+      teamsFail += s.result?.teams?.fail ?? 0;
+      fixturesOk += s.result?.fixtures?.ok ?? 0;
+      fixturesFail += s.result?.fixtures?.fail ?? 0;
+    }
+  } else {
+    // seed-season: flat meta.teams / meta.fixtures
+    const teams = meta.teams as { ok?: number; fail?: number } | undefined;
+    const fixtures = meta.fixtures as { ok?: number; fail?: number } | undefined;
+    if (!teams && !fixtures) return null;
+    teamsOk = teams?.ok ?? 0;
+    teamsFail = teams?.fail ?? 0;
+    fixturesOk = fixtures?.ok ?? 0;
+    fixturesFail = fixtures?.fail ?? 0;
+  }
+
+  const parts: string[] = [];
+  if (teamsOk > 0 || teamsFail > 0) parts.push(`${teamsOk} teams`);
+  if (fixturesOk > 0 || fixturesFail > 0) parts.push(`${fixturesOk} fixtures`);
+  const totalFail = teamsFail + fixturesFail;
+  if (totalFail > 0) parts.push(`${totalFail} fail`);
+  if (parts.length === 0) return null;
+  return { text: parts.join(" · "), hasFailures: totalFail > 0 };
+}
+
 function getItemsSummary(batch: Batch): { text: string; hasFailures: boolean } {
   const meta = (batch.meta ?? {}) as Record<string, unknown>;
+
+  // seed-season / batch-seed-seasons have nested meta: { teams: {ok,fail}, fixtures: {ok,fail} }
+  if (batch.name === "seed-season" || batch.name === "batch-seed-seasons") {
+    const summary = getSeedSeasonSummary(meta);
+    if (summary) return summary;
+  }
+
   const inserted = typeof meta.inserted === "number" ? meta.inserted : 0;
   const updated = typeof meta.updated === "number" ? meta.updated : 0;
   const failed = typeof meta.failed === "number" ? meta.failed : batch.itemsFailed;
@@ -220,7 +288,7 @@ function BatchCard({
 
       {/* Row 2: detail (if any) */}
       {detail && (
-        <p className="text-[11px] text-muted-foreground truncate pl-5">{detail}</p>
+        <p className="text-xs font-medium truncate pl-5">{detail}</p>
       )}
 
       {/* Row 3: when · duration · items */}
@@ -268,7 +336,7 @@ function OperationCell({ batch }: { batch: Batch }) {
           </span>
         </div>
         {detail && (
-          <p className="text-xs text-muted-foreground truncate">{detail}</p>
+          <p className="text-sm truncate">{detail}</p>
         )}
       </div>
     </div>
@@ -290,6 +358,21 @@ function TimeAgo({ date }: { date: string }) {
 
 function ItemsCell({ batch }: { batch: Batch }) {
   const meta = (batch.meta ?? {}) as Record<string, unknown>;
+
+  // seed-season / batch-seed-seasons: show teams + fixtures breakdown
+  if (batch.name === "seed-season" || batch.name === "batch-seed-seasons") {
+    const summary = getSeedSeasonSummary(meta);
+    if (summary) {
+      return (
+        <span className="text-sm">
+          <span className={summary.hasFailures ? "text-red-600" : ""}>
+            {summary.text}
+          </span>
+        </span>
+      );
+    }
+  }
+
   const inserted = typeof meta.inserted === "number" ? meta.inserted : 0;
   const updated = typeof meta.updated === "number" ? meta.updated : 0;
   const skipped = typeof meta.skipped === "number" ? meta.skipped : 0;

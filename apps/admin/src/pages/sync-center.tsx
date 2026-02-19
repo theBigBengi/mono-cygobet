@@ -61,7 +61,8 @@ export default function SyncCenterPage() {
       isAggregate
         ? batchesService.getAllBatches(50)
         : batchesService.getBatchesByName(historyFilter, 50),
-    staleTime: 10000,
+    staleTime: 30 * 60_000, // 30 min – invalidated manually after operations
+    gcTime: 60 * 60_000, // 1 hour – survives navigation
   });
 
   // Client-side filtering for aggregate filters

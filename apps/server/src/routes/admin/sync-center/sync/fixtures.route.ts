@@ -2,6 +2,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { syncFixtures } from "../../../../etl/sync/sync.fixtures";
 import { adapter } from "../../../../utils/adapter";
+import { availabilityService } from "../../../../services/availability.service";
 import { AdminSyncFixturesResponse } from "@repo/types";
 import {
   syncBodySchema,
@@ -175,6 +176,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               const result = await syncFixtures(batch.fixturesDto, {
                 dryRun,
               });
+              await availabilityService.invalidateCache().catch(() => {});
               const ok = result.inserted + result.updated;
               return reply.send({
                 status: "success",
@@ -214,6 +216,8 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
                 }
               }
             }
+
+            await availabilityService.invalidateCache().catch(() => {});
 
             return reply.send({
               status: "success",
@@ -406,6 +410,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               dryRun,
               bypassStateValidation: !dryRun,
             });
+            await availabilityService.invalidateCache().catch(() => {});
             const ok = result.inserted + result.updated;
             return reply.send({
               status: "success",

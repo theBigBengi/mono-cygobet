@@ -72,12 +72,14 @@ export async function seedFixtures(
   }
 
   if (!fixtures?.length) {
-    await finishSeedBatch(batchId!, RunStatus.success, {
-      itemsTotal: 0,
-      itemsSuccess: 0,
-      itemsFailed: 0,
-      meta: { reason: "no-input" },
-    });
+    if (createdHere) {
+      await finishSeedBatch(batchId!, RunStatus.success, {
+        itemsTotal: 0,
+        itemsSuccess: 0,
+        itemsFailed: 0,
+        meta: { reason: "no-input" },
+      });
+    }
     return {
       batchId,
       ok: 0,
@@ -390,7 +392,7 @@ export async function seedFixtures(
             return { success: true, fixture, action };
           } catch (e: unknown) {
             const extIdKey = String(safeBigInt(fixture.externalId));
-            const action = existingSet.has(extIdKey) ? "updated" : "inserted";
+            const action = existingSet.has(extIdKey) ? "update_failed" : "insert_failed";
             const errorCode = getErrorCode(e);
             const errorMessage = getErrorMessage(e);
 
@@ -437,12 +439,14 @@ export async function seedFixtures(
       }
     }
 
-    await finishSeedBatch(batchId!, RunStatus.success, {
-      itemsTotal: ok + fail,
-      itemsSuccess: ok,
-      itemsFailed: fail,
-      meta: { ok, fail, inserted, updated, skipped },
-    });
+    if (createdHere) {
+      await finishSeedBatch(batchId!, RunStatus.success, {
+        itemsTotal: ok + fail,
+        itemsSuccess: ok,
+        itemsFailed: fail,
+        meta: { ok, fail, inserted, updated, skipped },
+      });
+    }
 
     let firstError: string | undefined;
     if (fail > 0 && batchId) {
@@ -473,13 +477,15 @@ export async function seedFixtures(
     };
   } catch (e: unknown) {
     log.error({ batchId, err: e }, "Fixtures seeding failed");
-    await finishSeedBatch(batchId!, RunStatus.failed, {
-      itemsTotal: ok + fail,
-      itemsSuccess: ok,
-      itemsFailed: fail,
-      errorMessage: getErrorMessage(e).slice(0, 500),
-      meta: { ok, fail, inserted, updated, skipped },
-    });
+    if (createdHere) {
+      await finishSeedBatch(batchId!, RunStatus.failed, {
+        itemsTotal: ok + fail,
+        itemsSuccess: ok,
+        itemsFailed: fail,
+        errorMessage: getErrorMessage(e).slice(0, 500),
+        meta: { ok, fail, inserted, updated, skipped },
+      });
+    }
 
     return {
       batchId,

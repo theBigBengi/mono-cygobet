@@ -6,7 +6,7 @@ export function useAvailability(opts?: { includeHistorical?: boolean }) {
   return useQuery({
     queryKey: ["sync-center", "availability", { includeHistorical }],
     queryFn: () => syncService.getAvailability({ includeHistorical }),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 60_000, // 30 min – data only changes via manual ops, which call invalidateQueries
+    gcTime: 60 * 60_000, // 1 hour – survives navigation between pages
   });
 }

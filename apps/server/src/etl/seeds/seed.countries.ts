@@ -54,12 +54,14 @@ export async function seedCountries(
   }
 
   if (!countries?.length) {
-    await finishSeedBatch(batchId!, RunStatus.success, {
-      itemsTotal: 0,
-      itemsSuccess: 0,
-      itemsFailed: 0,
-      meta: { reason: "no-input" },
-    });
+    if (createdHere) {
+      await finishSeedBatch(batchId!, RunStatus.success, {
+        itemsTotal: 0,
+        itemsSuccess: 0,
+        itemsFailed: 0,
+        meta: { reason: "no-input" },
+      });
+    }
     return { batchId, ok: 0, fail: 0, total: 0 };
   }
 
@@ -185,6 +187,8 @@ export async function seedCountries(
                 ? String((e as { code?: string }).code)
                 : "UNKNOWN_ERROR";
 
+            const failedAction = action === "updated" ? "update_failed" : "insert_failed";
+
             await trackSeedItem(
               batchId!,
               String(country.externalId),
@@ -196,7 +200,7 @@ export async function seedCountries(
                 externalId: country.externalId,
                 errorCode,
                 errorMessage: errorMessage.slice(0, 200),
-                action,
+                action: failedAction,
               }
             );
 
@@ -205,7 +209,7 @@ export async function seedCountries(
               "Country failed"
             );
 
-            return { success: false, country, error: errorMessage, action };
+            return { success: false, country, error: errorMessage, action: failedAction };
           }
         })
       );
@@ -224,12 +228,14 @@ export async function seedCountries(
       }
     }
 
-    await finishSeedBatch(batchId!, RunStatus.success, {
-      itemsTotal: ok + fail,
-      itemsSuccess: ok,
-      itemsFailed: fail,
-      meta: { ok, fail },
-    });
+    if (createdHere) {
+      await finishSeedBatch(batchId!, RunStatus.success, {
+        itemsTotal: ok + fail,
+        itemsSuccess: ok,
+        itemsFailed: fail,
+        meta: { ok, fail },
+      });
+    }
 
     log.info(
       { batchId, ok, fail },
@@ -239,13 +245,15 @@ export async function seedCountries(
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     log.error({ batchId, err: e }, "Unexpected error during countries seeding");
-    await finishSeedBatch(batchId!, RunStatus.failed, {
-      itemsTotal: ok + fail,
-      itemsSuccess: ok,
-      itemsFailed: fail,
-      errorMessage: msg.slice(0, 500),
-      meta: { ok, fail },
-    });
+    if (createdHere) {
+      await finishSeedBatch(batchId!, RunStatus.failed, {
+        itemsTotal: ok + fail,
+        itemsSuccess: ok,
+        itemsFailed: fail,
+        errorMessage: msg.slice(0, 500),
+        meta: { ok, fail },
+      });
+    }
 
     return { batchId, ok, fail, total: ok + fail };
   }

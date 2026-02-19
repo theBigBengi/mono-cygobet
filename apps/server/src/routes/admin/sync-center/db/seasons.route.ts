@@ -1,6 +1,7 @@
 // src/routes/admin/db/seasons.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { Prisma } from "@repo/db";
+import { Prisma, prisma } from "@repo/db";
+import { availabilityService } from "../../../../services/availability.service";
 import { SeasonsService } from "../../../../services/seasons.service";
 import { AdminSeasonsListResponse, AdminSeasonResponse } from "@repo/types";
 import {
@@ -285,6 +286,63 @@ const adminSeasonsDbRoutes: FastifyPluginAsync = async (fastify) => {
         })),
         pagination: createPaginationResponse(1, take, seasons.length),
         message: "Seasons search completed",
+      });
+    }
+  );
+  // DELETE /admin/seasons/db/:id - Delete season and its fixtures
+  fastify.delete<{
+    Params: { id: string };
+  }>(
+    "/seasons/:id",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: { id: { type: "string" } },
+        },
+      },
+    },
+    async (req, reply) => {
+      let seasonId: number;
+      try {
+        seasonId = parseId(req.params.id);
+      } catch (error: unknown) {
+        return reply.code(400).send({
+          status: "error",
+          message: getErrorMessage(error),
+        });
+      }
+
+      const season = await prisma.seasons.findUnique({
+        where: { id: seasonId },
+        select: { id: true, name: true },
+      });
+
+      if (!season) {
+        return reply.code(404).send({
+          status: "error",
+          message: "Season not found",
+        });
+      }
+
+      // Delete fixtures first (their children cascade automatically)
+      const deletedFixtures = await prisma.fixtures.deleteMany({
+        where: { seasonId },
+      });
+
+      // Delete the season
+      await prisma.seasons.delete({ where: { id: seasonId } });
+
+      await availabilityService.invalidateCache().catch(() => {});
+
+      return reply.send({
+        status: "ok",
+        data: {
+          seasonId,
+          seasonName: season.name,
+          deletedFixtures: deletedFixtures.count,
+        },
       });
     }
   );

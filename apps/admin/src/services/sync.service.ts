@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "@/lib/adminApi";
+import { apiGet, apiPost, apiDelete } from "@/lib/adminApi";
 import { countriesService } from "./countries.service";
 import { leaguesService } from "./leagues.service";
 import { seasonsService } from "./seasons.service";
@@ -103,6 +103,15 @@ export const syncService = {
     return apiGet<AdminBatchJobStatusResponse>(
       `/admin/sync-center/jobs/${jobId}/status`
     );
+  },
+
+  async deleteSeason(
+    seasonId: number
+  ): Promise<{
+    status: string;
+    data: { seasonId: number; seasonName: string; deletedFixtures: number };
+  }> {
+    return apiDelete(`/admin/sync-center/db/seasons/${seasonId}`);
   },
 
   async syncAll(
