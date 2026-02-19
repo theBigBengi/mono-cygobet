@@ -22,3 +22,7 @@ export type RecoveryOverdueFixturesJobMeta = {
   graceMinutes?: number;
   maxOverdueHours?: number;
 };
+
+export type PredictionRemindersJobMeta = {
+  reminderWindowHours?: number;
+};

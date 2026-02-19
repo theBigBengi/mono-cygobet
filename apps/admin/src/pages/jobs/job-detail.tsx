@@ -26,6 +26,7 @@ import {
   jobNameFromKey,
   getRunReason,
   titleCaseWords,
+  truncate,
 } from "./jobs.utils";
 import { JobConfigForm } from "./job-config-form";
 import { useAlerts } from "@/hooks/use-dashboard";
@@ -253,7 +254,54 @@ export default function JobDetailPage() {
             <CardTitle>Run History</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto border-t">
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y border-t">
+              {runs.map((r) => {
+                const reason = getRunReason(r.meta);
+                const summary = formatRunSummary(r.meta);
+                return (
+                  <div
+                    key={r.id}
+                    className="px-3 py-3 space-y-1.5 cursor-pointer hover:bg-muted/50 active:bg-muted/70"
+                    onClick={() =>
+                      navigate(
+                        `/jobs/${encodeURIComponent(jobKey)}/runs/${r.id}`
+                      )
+                    }
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <StatusBadge status={r.status} />
+                        {r.status === "success" && reason && (
+                          <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">
+                            {reason}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {formatRelativeTime(r.startedAt)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span>{formatDurationMs(r.durationMs)}</span>
+                      <span className="truncate text-right max-w-[60%]">{summary}</span>
+                    </div>
+                    {r.errorMessage && (
+                      <p className="text-xs text-destructive truncate">
+                        {truncate(r.errorMessage, 100)}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+              {!runs.length && (
+                <div className="text-center text-sm text-muted-foreground py-8">
+                  No runs yet.
+                </div>
+              )}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto border-t">
               <Table>
                 <TableHeader>
                   <TableRow>

@@ -12,6 +12,9 @@ export type ScheduleState =
 export const UPDATE_PREMATCH_ODDS_JOB_KEY = "update-prematch-odds" as const;
 export const UPCOMING_FIXTURES_JOB_KEY = "upsert-upcoming-fixtures" as const;
 export const FINISHED_FIXTURES_JOB_KEY = "finished-fixtures" as const;
+export const PREDICTION_REMINDERS_JOB_KEY = "prediction-reminders" as const;
+export const RECOVERY_OVERDUE_FIXTURES_JOB_KEY =
+  "recovery-overdue-fixtures" as const;
 
 export function formatDateTime(iso: string | null) {
   if (!iso) return "—";

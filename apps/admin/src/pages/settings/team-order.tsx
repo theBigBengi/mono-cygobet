@@ -203,17 +203,15 @@ export default function TeamOrderSettingsPage() {
     } else {
       setSelectedTeams((items) => [...items, team]);
     }
-    setHasChanges(true);
   };
 
   const handleRemove = (id: number) => {
     setSelectedTeams((items) => items.filter((i) => i.id !== id));
-    setHasChanges(true);
   };
 
   const handleSave = () => {
     updateMutation.mutate(selectedTeams.map((t) => t.id), {
-      onSuccess: () => { toast.success("Saved"); setHasChanges(false); },
+      onSuccess: () => { toast.success("Saved"); },
       onError: (error) => { toast.error(error.message || "Failed to save"); },
     });
   };

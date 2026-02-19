@@ -203,17 +203,15 @@ export default function LeagueOrderSettingsPage() {
     } else {
       setSelectedLeagues((items) => [...items, league]);
     }
-    setHasChanges(true);
   };
 
   const handleRemove = (id: number) => {
     setSelectedLeagues((items) => items.filter((i) => i.id !== id));
-    setHasChanges(true);
   };
 
   const handleSave = () => {
     updateMutation.mutate(selectedLeagues.map((l) => l.id), {
-      onSuccess: () => { toast.success("Saved"); setHasChanges(false); },
+      onSuccess: () => { toast.success("Saved"); },
       onError: (error) => { toast.error(error.message || "Failed to save"); },
     });
   };

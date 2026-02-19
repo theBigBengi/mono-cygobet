@@ -139,24 +139,26 @@ export default function RunDetailPage() {
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      <div className="flex-shrink-0 mb-3 flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">
+      <div className="flex-shrink-0 mb-3 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-semibold truncate">
             {titleCaseWords(jobNameFromKey(run.jobKey))} — Run #{run.id}
           </h1>
-          <p className="text-sm text-muted-foreground font-mono">
+          <p className="text-xs sm:text-sm text-muted-foreground font-mono truncate">
             {run.jobKey}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <StatusBadge status={run.status} />
           <Button
             variant="outline"
+            size="sm"
             onClick={() =>
               navigate(`/jobs/${encodeURIComponent(jobKey)}`)
             }
           >
-            Back to Job
+            <span className="hidden sm:inline">Back to Job</span>
+            <span className="sm:hidden">Back</span>
           </Button>
         </div>
       </div>
@@ -263,7 +265,7 @@ export default function RunDetailPage() {
                   setItemsPage(1);
                 }}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -280,7 +282,7 @@ export default function RunDetailPage() {
                   setItemsPage(1);
                 }}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="Action" />
                 </SelectTrigger>
                 <SelectContent>
@@ -298,8 +300,8 @@ export default function RunDetailPage() {
                   <TableRow>
                     <TableHead>Entity</TableHead>
                     <TableHead>Action</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Changes</TableHead>
+                    <TableHead className="hidden sm:table-cell">Reason</TableHead>
+                    <TableHead className="hidden md:table-cell">Changes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -320,10 +322,10 @@ export default function RunDetailPage() {
                         <TableCell className="whitespace-nowrap">
                           <StatusBadge status={getActionLabel(item)} />
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-xs max-w-[200px] truncate">
+                        <TableCell className="hidden sm:table-cell text-muted-foreground text-xs max-w-[200px] truncate">
                           {reason}
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-xs max-w-[280px] truncate">
+                        <TableCell className="hidden md:table-cell text-muted-foreground text-xs max-w-[280px] truncate">
                           {changes}
                         </TableCell>
                       </TableRow>
