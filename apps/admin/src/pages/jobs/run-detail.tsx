@@ -20,9 +20,11 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/table/status-badge";
 import { useRun, useRunItems } from "@/hooks/use-jobs";
+import { ArrowLeft } from "lucide-react";
 import {
   formatDateTime,
   formatDurationMs,
+  formatRelativeTime,
   jobNameFromKey,
   titleCaseWords,
   camelToHuman,
@@ -139,104 +141,86 @@ export default function RunDetailPage() {
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      <div className="flex-shrink-0 mb-3 flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-2xl font-semibold truncate">
-            {titleCaseWords(jobNameFromKey(run.jobKey))} — Run #{run.id}
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground font-mono truncate">
-            {run.jobKey}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <StatusBadge status={run.status} />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              navigate(`/jobs/${encodeURIComponent(jobKey)}`)
-            }
-          >
-            <span className="hidden sm:inline">Back to Job</span>
-            <span className="sm:hidden">Back</span>
-          </Button>
-        </div>
+      {/* Header */}
+      <div className="flex-shrink-0 mb-2 sm:mb-3 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="shrink-0 h-7 w-7 sm:h-8 sm:w-8"
+          onClick={() => navigate(`/jobs/${encodeURIComponent(jobKey)}`)}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-sm sm:text-xl font-semibold truncate min-w-0">
+          <span className="hidden sm:inline">{titleCaseWords(jobNameFromKey(run.jobKey))} — </span>
+          Run #{run.id}
+        </h1>
+        <StatusBadge status={run.status} />
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto space-y-6">
+      <div className="flex-1 min-h-0 overflow-auto space-y-3 sm:space-y-6">
+        {/* Run info — compact on mobile, grid on desktop */}
         <Card>
-          <CardHeader>
-            <CardTitle>Run info</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-            <div>
-              <div className="text-muted-foreground">Started</div>
-              <div className="font-medium">
-                {formatDateTime(run.startedAt)}
+          <CardContent className="px-3 py-3 sm:p-6">
+            <div className="hidden sm:block text-base font-semibold mb-3">Run info</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 sm:gap-4 text-[11px] sm:text-sm">
+              <div className="min-w-0">
+                <div className="text-muted-foreground">Started</div>
+                <div className="font-medium truncate">
+                  <span className="sm:hidden">{formatRelativeTime(run.startedAt)}</span>
+                  <span className="hidden sm:inline">{formatDateTime(run.startedAt)}</span>
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Finished</div>
-              <div className="font-medium">
-                {formatDateTime(run.finishedAt)}
+              <div className="min-w-0">
+                <div className="text-muted-foreground">Finished</div>
+                <div className="font-medium truncate">
+                  <span className="sm:hidden">{formatRelativeTime(run.finishedAt)}</span>
+                  <span className="hidden sm:inline">{formatDateTime(run.finishedAt)}</span>
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Duration</div>
-              <div className="font-medium">
-                {formatDurationMs(run.durationMs)}
+              <div>
+                <div className="text-muted-foreground">Duration</div>
+                <div className="font-medium">{formatDurationMs(run.durationMs)}</div>
               </div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Trigger</div>
-              <div className="font-medium font-mono">
-                {run.trigger}
-                {run.triggeredBy ? ` • ${run.triggeredBy}` : ""}
+              <div className="min-w-0">
+                <div className="text-muted-foreground">Trigger</div>
+                <div className="font-medium truncate">{run.trigger}</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Summary */}
         <Card>
-          <CardHeader>
-            <CardTitle>Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <CardContent className="px-3 py-3 sm:p-6">
+            <div className="hidden sm:block text-base font-semibold mb-3">Summary</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1.5 sm:gap-4">
               {hasStandard ? (
                 <>
-                  <div>
-                    <div className="text-muted-foreground">Inserted</div>
-                    <div className="font-medium text-lg">
-                      {inserted ?? "—"}
-                    </div>
+                  <div className="min-w-0 overflow-hidden">
+                    <div className="text-[11px] text-muted-foreground">Inserted</div>
+                    <div className="font-semibold text-xs sm:text-lg">{inserted ?? "—"}</div>
                   </div>
-                  <div>
-                    <div className="text-muted-foreground">Updated</div>
-                    <div className="font-medium text-lg">
-                      {updated ?? "—"}
-                    </div>
+                  <div className="min-w-0 overflow-hidden">
+                    <div className="text-[11px] text-muted-foreground">Updated</div>
+                    <div className="font-semibold text-xs sm:text-lg">{updated ?? "—"}</div>
                   </div>
-                  <div>
-                    <div className="text-muted-foreground">Skipped</div>
-                    <div className="font-medium text-lg">
-                      {skipped ?? "—"}
-                    </div>
+                  <div className="min-w-0 overflow-hidden">
+                    <div className="text-[11px] text-muted-foreground">Skipped</div>
+                    <div className="font-semibold text-xs sm:text-lg">{skipped ?? "—"}</div>
                   </div>
-                  <div>
-                    <div className="text-muted-foreground">Failed</div>
-                    <div className="font-medium text-lg">
-                      {failed ?? "—"}
-                    </div>
+                  <div className="min-w-0 overflow-hidden">
+                    <div className="text-[11px] text-muted-foreground">Failed</div>
+                    <div className="font-semibold text-xs sm:text-lg">{failed ?? "—"}</div>
                   </div>
                 </>
               ) : (
                 dynamicSummaryEntries.map(([key, value]) => (
-                  <div key={key}>
-                    <div className="text-muted-foreground">
+                  <div key={key} className="min-w-0 overflow-hidden">
+                    <div className="text-[11px] text-muted-foreground truncate">
                       {titleCaseWords(camelToHuman(key))}
                     </div>
-                    <div className="font-medium text-lg">
+                    <div className="font-semibold text-xs sm:text-lg truncate">
                       {typeof value === "boolean"
                         ? String(value)
                         : value == null
@@ -252,12 +236,11 @@ export default function RunDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Items */}
         <Card>
-          <CardHeader>
-            <CardTitle>Items</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
+          <CardContent className="px-3 py-3 sm:p-6 space-y-2 sm:space-y-3">
+            <div className="hidden sm:block text-base font-semibold">Items</div>
+            <div className="grid grid-cols-2 gap-2">
               <Select
                 value={itemsStatusFilter}
                 onValueChange={(v) => {
@@ -265,7 +248,7 @@ export default function RunDetailPage() {
                   setItemsPage(1);
                 }}
               >
-                <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectTrigger className="h-8 text-xs sm:text-sm sm:h-9">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -282,7 +265,7 @@ export default function RunDetailPage() {
                   setItemsPage(1);
                 }}
               >
-                <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectTrigger className="h-8 text-xs sm:text-sm sm:h-9">
                   <SelectValue placeholder="Action" />
                 </SelectTrigger>
                 <SelectContent>
@@ -294,14 +277,14 @@ export default function RunDetailPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="overflow-auto border rounded-md">
+            <div className="overflow-auto border rounded-md -mx-3 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Entity</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead className="hidden sm:table-cell">Reason</TableHead>
-                    <TableHead className="hidden md:table-cell">Changes</TableHead>
+                    <TableHead className="text-xs">Entity</TableHead>
+                    <TableHead className="text-xs">Action</TableHead>
+                    <TableHead className="hidden sm:table-cell text-xs">Reason</TableHead>
+                    <TableHead className="hidden md:table-cell text-xs">Changes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -316,16 +299,16 @@ export default function RunDetailPage() {
                     const changes = formatChanges(m["changes"]);
                     return (
                       <TableRow key={item.id}>
-                        <TableCell className="font-medium max-w-[320px] truncate">
+                        <TableCell className="py-2 font-medium max-w-[120px] sm:max-w-[320px] truncate text-xs">
                           {name ?? "—"}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">
+                        <TableCell className="py-2 whitespace-nowrap">
                           <StatusBadge status={getActionLabel(item)} />
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell text-muted-foreground text-xs max-w-[200px] truncate">
+                        <TableCell className="py-2 hidden sm:table-cell text-muted-foreground text-xs max-w-[200px] truncate">
                           {reason}
                         </TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground text-xs max-w-[280px] truncate">
+                        <TableCell className="py-2 hidden md:table-cell text-muted-foreground text-xs max-w-[280px] truncate">
                           {changes}
                         </TableCell>
                       </TableRow>
@@ -335,7 +318,7 @@ export default function RunDetailPage() {
                     <TableRow>
                       <TableCell
                         colSpan={4}
-                        className="text-center text-sm text-muted-foreground py-8"
+                        className="text-center text-xs sm:text-sm text-muted-foreground py-6"
                       >
                         {runItemsQuery.isLoading
                           ? "Loading…"
@@ -347,15 +330,15 @@ export default function RunDetailPage() {
               </Table>
             </div>
             {itemsPagination && itemsPagination.totalPages > 1 && (
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
                 <span>
-                  Page {itemsPagination.page} of {itemsPagination.totalPages} (
-                  {itemsPagination.totalItems} items)
+                  {itemsPagination.page}/{itemsPagination.totalPages} ({itemsPagination.totalItems})
                 </span>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <Button
                     size="sm"
                     variant="secondary"
+                    className="h-7 px-2 text-xs"
                     disabled={itemsPage <= 1}
                     onClick={() => setItemsPage((p) => p - 1)}
                   >
@@ -364,6 +347,7 @@ export default function RunDetailPage() {
                   <Button
                     size="sm"
                     variant="secondary"
+                    className="h-7 px-2 text-xs"
                     disabled={itemsPage >= itemsPagination.totalPages}
                     onClick={() => setItemsPage((p) => p + 1)}
                   >
@@ -375,19 +359,16 @@ export default function RunDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Error */}
         {run.status === "failed" && (
           <Card className="border-destructive/30">
-            <CardHeader>
-              <CardTitle>Error</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <pre className="text-sm whitespace-pre-wrap break-words flex-1 min-w-0">
-                  {run.errorMessage ?? "—"}
-                </pre>
+            <CardContent className="px-3 py-3 sm:p-6 space-y-2 sm:space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold">Error</div>
                 <Button
                   size="sm"
                   variant="secondary"
+                  className="h-7 px-2 text-xs"
                   onClick={async () => {
                     const text = [run.errorMessage ?? "", run.errorStack ?? ""]
                       .filter(Boolean)
@@ -403,12 +384,15 @@ export default function RunDetailPage() {
                   Copy
                 </Button>
               </div>
+              <pre className="text-xs whitespace-pre-wrap break-words min-w-0">
+                {run.errorMessage ?? "—"}
+              </pre>
               {run.errorStack ? (
-                <details className="text-sm">
+                <details className="text-xs">
                   <summary className="cursor-pointer font-medium">
                     Stack trace
                   </summary>
-                  <pre className="mt-2 whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs overflow-auto max-h-48">
+                  <pre className="mt-1.5 whitespace-pre-wrap break-words rounded-md bg-muted p-2 overflow-auto max-h-40">
                     {run.errorStack}
                   </pre>
                 </details>

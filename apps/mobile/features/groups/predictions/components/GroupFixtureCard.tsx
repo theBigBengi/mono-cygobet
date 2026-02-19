@@ -46,6 +46,14 @@ export type GroupFixtureCardProps = {
   groupName?: string;
   /** Global match number for display (e.g., "1/12") */
   matchNumber?: string;
+  /** Timeline: is this card in the filled (completed) zone? */
+  timelineFilled?: boolean;
+  /** Timeline: should the connector below this card be filled? */
+  timelineConnectorFilled?: boolean;
+  /** Timeline: first card in the list */
+  isFirstInTimeline?: boolean;
+  /** Timeline: last card in the list */
+  isLastInTimeline?: boolean;
   onFieldFocus: (fixtureId: number, type: "home" | "away") => void;
   onFieldBlur: (fixtureId: number) => void;
   onCardChange: (
@@ -76,6 +84,10 @@ function GroupFixtureCardInner({
   predictionMode,
   groupName,
   matchNumber,
+  timelineFilled,
+  timelineConnectorFilled,
+  isFirstInTimeline,
+  isLastInTimeline,
   onFieldFocus,
   onFieldBlur,
   onCardChange,
@@ -172,6 +184,10 @@ function GroupFixtureCardInner({
       predictionMode={predictionMode}
       onSelectOutcome={onSelectOutcome ? onSelectOutcomeLocal : undefined}
       onPressCard={onPressCard ? () => onPressCard(fixture.id) : undefined}
+      timelineFilled={timelineFilled}
+      timelineConnectorFilled={timelineConnectorFilled}
+      isFirstInTimeline={isFirstInTimeline}
+      isLastInTimeline={isLastInTimeline}
     />
   );
 }
@@ -205,6 +221,10 @@ function arePropsEqual(
   if (prevProps.index !== nextProps.index) return false;
   if (prevProps.totalInGroup !== nextProps.totalInGroup) return false;
   if (prevProps.predictionMode !== nextProps.predictionMode) return false;
+  if (prevProps.timelineFilled !== nextProps.timelineFilled) return false;
+  if (prevProps.timelineConnectorFilled !== nextProps.timelineConnectorFilled) return false;
+  if (prevProps.isFirstInTimeline !== nextProps.isFirstInTimeline) return false;
+  if (prevProps.isLastInTimeline !== nextProps.isLastInTimeline) return false;
 
   // Callbacks and refs are stable (from useCallback/useRef), no need to compare
   return true;

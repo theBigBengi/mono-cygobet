@@ -1,6 +1,7 @@
 import * as React from "react";
-import { ChevronRight, Bell } from "lucide-react";
+import { ChevronRight, Bell, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useAdminAuth } from "@/auth";
 
 import {
   Collapsible,
@@ -17,6 +18,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -81,6 +83,7 @@ function getAlertBadge(
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
+  const { me, logout } = useAdminAuth();
   const { data: alertsData } = useAlerts();
 
   const handleLinkClick = () => {
@@ -173,6 +176,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </Collapsible>
         ))}
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => void logout()}
+              className="text-muted-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+              <span className="ml-auto text-xs text-muted-foreground truncate max-w-[120px]">
+                {me?.name ?? me?.email ?? ""}
+              </span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
+import {
   MultiSelectCombobox,
   type MultiSelectOption,
 } from "@/components/filters/multi-select-combobox";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { AdminJobDetailResponse } from "@repo/types";
 import type {
   FinishedFixturesJobMeta,
@@ -23,6 +38,7 @@ import type {
   UpdatePrematchOddsJobMeta,
   UpcomingFixturesJobMeta,
 } from "@repo/types";
+import { Settings } from "lucide-react";
 import {
   type ScheduleState,
   parseScheduleCron,
@@ -128,6 +144,54 @@ function buildPatch(
   };
 }
 
+function buildFormState(job: JobForForm): JobFormState {
+  const oddsMeta = (job.meta ?? {}) as Record<string, unknown>;
+  const odds = (oddsMeta["odds"] ?? {}) as Record<string, unknown>;
+  return {
+    description: job.description ?? "",
+    enabled: !!job.enabled,
+    schedule: parseScheduleCron(job.scheduleCron),
+    oddsBookmakerExternalIds: asStringArray(odds["bookmakerExternalIds"]),
+    oddsMarketExternalIds: asStringArray(odds["marketExternalIds"]),
+    upcomingDaysAhead:
+      job.key === UPCOMING_FIXTURES_JOB_KEY &&
+      typeof oddsMeta["daysAhead"] === "number" &&
+      Number.isFinite(oddsMeta["daysAhead"])
+        ? Math.max(1, Math.trunc(oddsMeta["daysAhead"] as number))
+        : 3,
+    prematchDaysAhead:
+      job.key === UPDATE_PREMATCH_ODDS_JOB_KEY &&
+      typeof oddsMeta["daysAhead"] === "number" &&
+      Number.isFinite(oddsMeta["daysAhead"])
+        ? Math.max(1, Math.trunc(oddsMeta["daysAhead"] as number))
+        : 7,
+    finishedMaxLiveAgeHours:
+      job.key === FINISHED_FIXTURES_JOB_KEY &&
+      typeof oddsMeta["maxLiveAgeHours"] === "number" &&
+      Number.isFinite(oddsMeta["maxLiveAgeHours"])
+        ? Math.max(1, Math.trunc(oddsMeta["maxLiveAgeHours"] as number))
+        : 2,
+    reminderWindowHours:
+      job.key === PREDICTION_REMINDERS_JOB_KEY &&
+      typeof oddsMeta["reminderWindowHours"] === "number" &&
+      Number.isFinite(oddsMeta["reminderWindowHours"])
+        ? clampInt(oddsMeta["reminderWindowHours"] as number, 1, 24)
+        : 2,
+    recoveryGraceMinutes:
+      job.key === RECOVERY_OVERDUE_FIXTURES_JOB_KEY &&
+      typeof oddsMeta["graceMinutes"] === "number" &&
+      Number.isFinite(oddsMeta["graceMinutes"])
+        ? clampInt(oddsMeta["graceMinutes"] as number, 1, 120)
+        : 30,
+    recoveryMaxOverdueHours:
+      job.key === RECOVERY_OVERDUE_FIXTURES_JOB_KEY &&
+      typeof oddsMeta["maxOverdueHours"] === "number" &&
+      Number.isFinite(oddsMeta["maxOverdueHours"])
+        ? clampInt(oddsMeta["maxOverdueHours"] as number, 1, 168)
+        : 48,
+  };
+}
+
 export function JobConfigForm({
   job,
   bookmakerOptions,
@@ -137,84 +201,147 @@ export function JobConfigForm({
   isSavePending,
   isRunPending,
 }: JobConfigFormProps) {
-  const [jobForm, setJobForm] = useState<JobFormState | null>(null);
+  const [jobForm, setJobForm] = useState<JobFormState>(() => buildFormState(job));
+  const [prevJobKey, setPrevJobKey] = useState(job.key);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const isMobile = useIsMobile();
 
-  useEffect(() => {
-    const oddsMeta = (job.meta ?? {}) as Record<string, unknown>;
-    const odds = (oddsMeta["odds"] ?? {}) as Record<string, unknown>;
-    const upcomingDaysAhead =
-      job.key === UPCOMING_FIXTURES_JOB_KEY &&
-      typeof (job.meta as Record<string, unknown>)["daysAhead"] === "number" &&
-      Number.isFinite((job.meta as Record<string, unknown>)["daysAhead"])
-        ? Math.max(
-            1,
-            Math.trunc((job.meta as Record<string, unknown>)["daysAhead"] as number)
-          )
-        : 3;
-    const prematchDaysAhead =
-      job.key === UPDATE_PREMATCH_ODDS_JOB_KEY &&
-      typeof oddsMeta["daysAhead"] === "number" &&
-      Number.isFinite(oddsMeta["daysAhead"])
-        ? Math.max(1, Math.trunc(oddsMeta["daysAhead"] as number))
-        : 7;
-    const finishedMaxLiveAgeHours =
-      job.key === FINISHED_FIXTURES_JOB_KEY &&
-      typeof (job.meta as Record<string, unknown>)["maxLiveAgeHours"] ===
-        "number" &&
-      Number.isFinite(
-        (job.meta as Record<string, unknown>)["maxLiveAgeHours"]
-      )
-        ? Math.max(
-            1,
-            Math.trunc(
-              (job.meta as Record<string, unknown>)["maxLiveAgeHours"] as number
-            )
-          )
-        : 2;
-    const reminderWindowHours =
-      job.key === PREDICTION_REMINDERS_JOB_KEY &&
-      typeof oddsMeta["reminderWindowHours"] === "number" &&
-      Number.isFinite(oddsMeta["reminderWindowHours"])
-        ? clampInt(oddsMeta["reminderWindowHours"] as number, 1, 24)
-        : 2;
-    const recoveryGraceMinutes =
-      job.key === RECOVERY_OVERDUE_FIXTURES_JOB_KEY &&
-      typeof oddsMeta["graceMinutes"] === "number" &&
-      Number.isFinite(oddsMeta["graceMinutes"])
-        ? clampInt(oddsMeta["graceMinutes"] as number, 1, 120)
-        : 30;
-    const recoveryMaxOverdueHours =
-      job.key === RECOVERY_OVERDUE_FIXTURES_JOB_KEY &&
-      typeof oddsMeta["maxOverdueHours"] === "number" &&
-      Number.isFinite(oddsMeta["maxOverdueHours"])
-        ? clampInt(oddsMeta["maxOverdueHours"] as number, 1, 168)
-        : 48;
-    setJobForm({
-      description: job.description ?? "",
-      enabled: !!job.enabled,
-      schedule: parseScheduleCron(job.scheduleCron),
-      oddsBookmakerExternalIds: asStringArray(odds["bookmakerExternalIds"]),
-      oddsMarketExternalIds: asStringArray(odds["marketExternalIds"]),
-      upcomingDaysAhead,
-      prematchDaysAhead,
-      finishedMaxLiveAgeHours,
-      reminderWindowHours,
-      recoveryGraceMinutes,
-      recoveryMaxOverdueHours,
-    });
-  }, [job]);
+  if (job.key !== prevJobKey) {
+    setPrevJobKey(job.key);
+    setJobForm(buildFormState(job));
+  }
 
-  if (!jobForm) return null;
+  const initialState = buildFormState(job);
+  const isDirty = JSON.stringify(jobForm) !== JSON.stringify(initialState);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const patch = buildPatch(job, jobForm);
-    onSave(patch);
+    await onSave(patch);
+    setSettingsOpen(false);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="job-description">Description</Label>
+    <>
+      {/* Quick actions bar — always visible */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Switch
+            id="job-enabled"
+            checked={jobForm.enabled}
+            onCheckedChange={(v) =>
+              setJobForm((prev) =>
+                prev ? { ...prev, enabled: v } : prev
+              )
+            }
+          />
+          <Label htmlFor="job-enabled" className="text-sm cursor-pointer">
+            {jobForm.enabled ? "Enabled" : "Disabled"}
+          </Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onRunNow}
+            disabled={!job.runnable || isRunPending}
+          >
+            {isRunPending ? "Running…" : "Run Now"}
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Dirty indicator — show save outside dialog when toggle changed */}
+      {isDirty && !settingsOpen && (
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={isSavePending}
+          className="w-full mt-2"
+        >
+          {isSavePending ? "Saving…" : "Save Changes"}
+        </Button>
+      )}
+
+      {/* Settings — Drawer on mobile, Dialog on desktop */}
+      {isMobile ? (
+        <Drawer open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <DrawerContent className="max-h-[85vh]">
+            <DrawerHeader className="text-left">
+              <DrawerTitle className="text-base">Settings</DrawerTitle>
+              <DrawerDescription className="sr-only">Job configuration</DrawerDescription>
+            </DrawerHeader>
+            <div className="overflow-y-auto px-4 pb-6">
+              <SettingsFormBody
+                job={job}
+                jobForm={jobForm}
+                setJobForm={setJobForm}
+                bookmakerOptions={bookmakerOptions}
+                marketOptions={marketOptions}
+                isDirty={isDirty}
+                isSavePending={isSavePending}
+                onSave={handleSave}
+              />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-base">Settings</DialogTitle>
+              <DialogDescription className="sr-only">Job configuration</DialogDescription>
+            </DialogHeader>
+            <SettingsFormBody
+              job={job}
+              jobForm={jobForm}
+              setJobForm={setJobForm}
+              bookmakerOptions={bookmakerOptions}
+              marketOptions={marketOptions}
+              isDirty={isDirty}
+              isSavePending={isSavePending}
+              onSave={handleSave}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+/* ---------- Shared form body ---------- */
+
+function SettingsFormBody({
+  job,
+  jobForm,
+  setJobForm,
+  bookmakerOptions,
+  marketOptions,
+  isDirty,
+  isSavePending,
+  onSave,
+}: {
+  job: JobForForm;
+  jobForm: JobFormState;
+  setJobForm: React.Dispatch<React.SetStateAction<JobFormState>>;
+  bookmakerOptions: MultiSelectOption[];
+  marketOptions: MultiSelectOption[];
+  isDirty: boolean;
+  isSavePending: boolean;
+  onSave: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Description */}
+      <div className="space-y-1.5">
+        <Label htmlFor="job-description" className="text-xs text-muted-foreground">Description</Label>
         <Textarea
           id="job-description"
           value={jobForm.description}
@@ -224,243 +351,13 @@ export function JobConfigForm({
             )
           }
           placeholder="What does this job do?"
-          className="min-h-[96px]"
+          className="min-h-[56px] sm:min-h-[80px] text-sm"
         />
       </div>
 
-      {job.key === "update-prematch-odds" && (
-        <div className="space-y-3 rounded-lg border p-4">
-          <div className="text-sm font-medium">Odds fetch settings</div>
-          <div className="text-xs text-muted-foreground mb-3">
-            Configure which odds to fetch: time window, bookmakers, and markets.
-          </div>
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              Days ahead
-            </Label>
-            <Input
-              type="number"
-              min={1}
-              max={30}
-              value={jobForm.prematchDaysAhead}
-              onChange={(e) => {
-                const n = Math.trunc(Number(e.target.value));
-                setJobForm((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        prematchDaysAhead: Number.isFinite(n)
-                          ? Math.max(1, Math.min(30, n))
-                          : 1,
-                      }
-                    : prev
-                );
-              }}
-            />
-            <p className="text-xs text-muted-foreground">How many days into the future to fetch odds for (1–30)</p>
-          </div>
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              Bookmakers
-            </Label>
-            <MultiSelectCombobox
-              options={bookmakerOptions}
-              selectedValues={jobForm.oddsBookmakerExternalIds}
-              onSelectionChange={(values) =>
-                setJobForm((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        oddsBookmakerExternalIds: values.map((v) => String(v)),
-                      }
-                    : prev
-                )
-              }
-              placeholder="Select bookmakers..."
-              searchPlaceholder="Search bookmakers..."
-              emptyMessage="No bookmakers found."
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">Markets</Label>
-            <MultiSelectCombobox
-              options={marketOptions}
-              selectedValues={jobForm.oddsMarketExternalIds}
-              onSelectionChange={(values) =>
-                setJobForm((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        oddsMarketExternalIds: values.map((v) => String(v)),
-                      }
-                    : prev
-                )
-              }
-              placeholder="Select markets..."
-              searchPlaceholder="Search markets..."
-              emptyMessage="No markets found."
-            />
-          </div>
-        </div>
-      )}
-
-      {job.key === UPCOMING_FIXTURES_JOB_KEY && (
-        <div className="space-y-3 rounded-lg border p-4">
-          <div className="text-sm font-medium">Upcoming fixtures</div>
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              Days ahead
-            </Label>
-            <Input
-              type="number"
-              min={1}
-              max={30}
-              value={jobForm.upcomingDaysAhead}
-              onChange={(e) => {
-                const n = Math.trunc(Number(e.target.value));
-                setJobForm((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        upcomingDaysAhead: Number.isFinite(n)
-                          ? Math.max(1, Math.min(30, n))
-                          : 1,
-                      }
-                    : prev
-                );
-              }}
-            />
-            <p className="text-xs text-muted-foreground">How many days ahead to fetch upcoming fixtures (1–30)</p>
-          </div>
-        </div>
-      )}
-
-      {job.key === FINISHED_FIXTURES_JOB_KEY && (
-        <div className="space-y-3 rounded-lg border p-4">
-          <div className="text-sm font-medium">Finished fixtures</div>
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              Max live age (hours)
-            </Label>
-            <Input
-              type="number"
-              min={1}
-              max={168}
-              value={jobForm.finishedMaxLiveAgeHours}
-              onChange={(e) => {
-                const n = Math.trunc(Number(e.target.value));
-                setJobForm((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        finishedMaxLiveAgeHours: Number.isFinite(n)
-                          ? Math.max(1, Math.min(168, n))
-                          : 1,
-                      }
-                    : prev
-                );
-              }}
-            />
-            <p className="text-xs text-muted-foreground">Fixtures still live after this many hours will be considered finished (1–168)</p>
-          </div>
-        </div>
-      )}
-
-      {job.key === PREDICTION_REMINDERS_JOB_KEY && (
-        <div className="space-y-3 rounded-lg border p-4">
-          <div className="text-sm font-medium">Prediction reminders</div>
-          <div className="text-xs text-muted-foreground mb-3">
-            Send reminders for matches without predictions before they start.
-          </div>
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              Reminder window (hours)
-            </Label>
-            <Input
-              type="number"
-              min={1}
-              max={24}
-              value={jobForm.reminderWindowHours}
-              onChange={(e) => {
-                const n = Math.trunc(Number(e.target.value));
-                setJobForm((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        reminderWindowHours: Number.isFinite(n)
-                          ? Math.max(1, Math.min(24, n))
-                          : 2,
-                      }
-                    : prev
-                );
-              }}
-            />
-            <p className="text-xs text-muted-foreground">How many hours before kickoff to send reminders (1–24)</p>
-          </div>
-        </div>
-      )}
-
-      {job.key === RECOVERY_OVERDUE_FIXTURES_JOB_KEY && (
-        <div className="space-y-3 rounded-lg border p-4">
-          <div className="text-sm font-medium">Recovery overdue fixtures</div>
-          <div className="text-xs text-muted-foreground mb-3">
-            Settings for recovering fixtures that got stuck during processing.
-          </div>
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              Grace period (minutes)
-            </Label>
-            <Input
-              type="number"
-              min={1}
-              max={120}
-              value={jobForm.recoveryGraceMinutes}
-              onChange={(e) => {
-                const n = Math.trunc(Number(e.target.value));
-                setJobForm((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        recoveryGraceMinutes: Number.isFinite(n)
-                          ? Math.max(1, Math.min(120, n))
-                          : 30,
-                      }
-                    : prev
-                );
-              }}
-            />
-            <p className="text-xs text-muted-foreground">Wait this long before considering a fixture stuck (1–120)</p>
-          </div>
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              Max overdue (hours)
-            </Label>
-            <Input
-              type="number"
-              min={1}
-              max={168}
-              value={jobForm.recoveryMaxOverdueHours}
-              onChange={(e) => {
-                const n = Math.trunc(Number(e.target.value));
-                setJobForm((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        recoveryMaxOverdueHours: Number.isFinite(n)
-                          ? Math.max(1, Math.min(168, n))
-                          : 48,
-                      }
-                    : prev
-                );
-              }}
-            />
-            <p className="text-xs text-muted-foreground">Ignore fixtures overdue by more than this many hours (1–168)</p>
-          </div>
-        </div>
-      )}
-
+      {/* Schedule */}
       <div className="space-y-2">
-        <Label>Schedule</Label>
+        <Label className="text-xs text-muted-foreground">Schedule</Label>
         <Select
           value={jobForm.schedule.mode}
           onValueChange={(v) =>
@@ -474,22 +371,13 @@ export function JobConfigForm({
                         : v === "every_minutes"
                           ? { mode: "every_minutes", intervalMinutes: 5 }
                           : v === "every_hours"
-                            ? {
-                                mode: "every_hours",
-                                intervalHours: 6,
-                                minute: 0,
-                              }
+                            ? { mode: "every_hours", intervalHours: 6, minute: 0 }
                             : v === "hourly"
                               ? { mode: "hourly", minute: 0 }
                               : v === "daily"
                                 ? { mode: "daily", hour: 3, minute: 0 }
                                 : v === "weekly"
-                                  ? {
-                                      mode: "weekly",
-                                      dayOfWeek: 1,
-                                      hour: 3,
-                                      minute: 0,
-                                    }
+                                  ? { mode: "weekly", dayOfWeek: 1, hour: 3, minute: 0 }
                                   : { mode: "custom", raw: "" },
                   }
                 : prev
@@ -509,373 +397,367 @@ export function JobConfigForm({
             <SelectItem value="custom">Custom cron</SelectItem>
           </SelectContent>
         </Select>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[11px] text-muted-foreground">
           {formatScheduleHuman(buildCronFromSchedule(jobForm.schedule))}
-          {" — "}
-          <span className="font-mono">
-            {buildCronFromSchedule(jobForm.schedule) ?? "—"}
-          </span>
+          {jobForm.schedule.mode !== "disabled" && (
+            <>
+              {" — "}
+              <span className="font-mono">
+                {buildCronFromSchedule(jobForm.schedule) ?? "—"}
+              </span>
+            </>
+          )}
         </p>
         {jobForm.schedule.mode === "every_minutes" && (
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              Interval (minutes)
-            </Label>
+          <Select
+            value={String(jobForm.schedule.intervalMinutes)}
+            onValueChange={(v) =>
+              setJobForm((prev) =>
+                prev
+                  ? { ...prev, schedule: { mode: "every_minutes", intervalMinutes: clampInt(Number(v), 1, 59) } }
+                  : prev
+              )
+            }
+          >
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 5, 10, 15, 20, 30, 45].map((n) => (
+                <SelectItem key={n} value={String(n)}>{n} min</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {jobForm.schedule.mode === "every_hours" && (
+          <div className="grid grid-cols-2 gap-2">
             <Select
-              value={String(jobForm.schedule.intervalMinutes)}
+              value={String(jobForm.schedule.intervalHours)}
               onValueChange={(v) =>
                 setJobForm((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        schedule: {
-                          mode: "every_minutes",
-                          intervalMinutes: clampInt(Number(v), 1, 59),
-                        },
-                      }
+                  prev && prev.schedule.mode === "every_hours"
+                    ? { ...prev, schedule: { ...prev.schedule, intervalHours: clampInt(Number(v), 1, 23) } }
                     : prev
                 )
               }
             >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 5, 10, 15, 20, 30, 45].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n} min
-                  </SelectItem>
+                {[2, 3, 4, 6, 8, 12].map((n) => (
+                  <SelectItem key={n} value={String(n)}>Every {n}h</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        )}
-        {jobForm.schedule.mode === "every_hours" && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">
-                Interval (hours)
-              </Label>
-              <Select
-                value={String(jobForm.schedule.intervalHours)}
-                onValueChange={(v) =>
-                  setJobForm((prev) =>
-                    prev && prev.schedule.mode === "every_hours"
-                      ? {
-                          ...prev,
-                          schedule: {
-                            ...prev.schedule,
-                            intervalHours: clampInt(Number(v), 1, 23),
-                          },
-                        }
-                      : prev
-                  )
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[2, 3, 4, 6, 8, 12].map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n} hours
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">
-                At minute
-              </Label>
-              <Select
-                value={String(jobForm.schedule.minute)}
-                onValueChange={(v) =>
-                  setJobForm((prev) =>
-                    prev && prev.schedule.mode === "every_hours"
-                      ? {
-                          ...prev,
-                          schedule: {
-                            ...prev.schedule,
-                            minute: clampInt(Number(v), 0, 59),
-                          },
-                        }
-                      : prev
-                  )
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[0, 5, 10, 15, 20, 30, 45].map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      :{String(n).padStart(2, "0")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-        {jobForm.schedule.mode === "hourly" && (
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              At minute
-            </Label>
             <Select
               value={String(jobForm.schedule.minute)}
               onValueChange={(v) =>
                 setJobForm((prev) =>
-                  prev && prev.schedule.mode === "hourly"
-                    ? {
-                        ...prev,
-                        schedule: {
-                          ...prev.schedule,
-                          minute: clampInt(Number(v), 0, 59),
-                        },
-                      }
+                  prev && prev.schedule.mode === "every_hours"
+                    ? { ...prev, schedule: { ...prev.schedule, minute: clampInt(Number(v), 0, 59) } }
                     : prev
                 )
               }
             >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {[0, 5, 10, 15, 20, 30, 45].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    :{String(n).padStart(2, "0")}
-                  </SelectItem>
+                  <SelectItem key={n} value={String(n)}>at :{String(n).padStart(2, "0")}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         )}
+        {jobForm.schedule.mode === "hourly" && (
+          <Select
+            value={String(jobForm.schedule.minute)}
+            onValueChange={(v) =>
+              setJobForm((prev) =>
+                prev && prev.schedule.mode === "hourly"
+                  ? { ...prev, schedule: { ...prev.schedule, minute: clampInt(Number(v), 0, 59) } }
+                  : prev
+              )
+            }
+          >
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {[0, 5, 10, 15, 20, 30, 45].map((n) => (
+                <SelectItem key={n} value={String(n)}>at :{String(n).padStart(2, "0")}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {jobForm.schedule.mode === "daily" && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">
-                Hour
-              </Label>
-              <Select
-                value={String(jobForm.schedule.hour)}
-                onValueChange={(v) =>
-                  setJobForm((prev) =>
-                    prev && prev.schedule.mode === "daily"
-                      ? {
-                          ...prev,
-                          schedule: {
-                            ...prev.schedule,
-                            hour: clampInt(Number(v), 0, 23),
-                          },
-                        }
-                      : prev
-                  )
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 24 }, (_, i) => i).map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {String(n).padStart(2, "0")}:00
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">
-                Minute
-              </Label>
-              <Select
-                value={String(jobForm.schedule.minute)}
-                onValueChange={(v) =>
-                  setJobForm((prev) =>
-                    prev && prev.schedule.mode === "daily"
-                      ? {
-                          ...prev,
-                          schedule: {
-                            ...prev.schedule,
-                            minute: clampInt(Number(v), 0, 59),
-                          },
-                        }
-                      : prev
-                  )
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[0, 5, 10, 15, 20, 30, 45].map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      :{String(n).padStart(2, "0")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-        {jobForm.schedule.mode === "weekly" && (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">
-                Day
-              </Label>
-              <Select
-                value={String(jobForm.schedule.dayOfWeek)}
-                onValueChange={(v) =>
-                  setJobForm((prev) =>
-                    prev && prev.schedule.mode === "weekly"
-                      ? {
-                          ...prev,
-                          schedule: {
-                            ...prev.schedule,
-                            dayOfWeek: clampInt(Number(v), 0, 6),
-                          },
-                        }
-                      : prev
-                  )
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map(
-                    (day, i) => (
-                      <SelectItem key={i} value={String(i)}>
-                        {day}
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">
-                Hour
-              </Label>
-              <Select
-                value={String(jobForm.schedule.hour)}
-                onValueChange={(v) =>
-                  setJobForm((prev) =>
-                    prev && prev.schedule.mode === "weekly"
-                      ? {
-                          ...prev,
-                          schedule: {
-                            ...prev.schedule,
-                            hour: clampInt(Number(v), 0, 23),
-                          },
-                        }
-                      : prev
-                  )
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 24 }, (_, i) => i).map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {String(n).padStart(2, "0")}:00
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">
-                Minute
-              </Label>
-              <Select
-                value={String(jobForm.schedule.minute)}
-                onValueChange={(v) =>
-                  setJobForm((prev) =>
-                    prev && prev.schedule.mode === "weekly"
-                      ? {
-                          ...prev,
-                          schedule: {
-                            ...prev.schedule,
-                            minute: clampInt(Number(v), 0, 59),
-                          },
-                        }
-                      : prev
-                  )
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[0, 5, 10, 15, 20, 30, 45].map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      :{String(n).padStart(2, "0")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-        {jobForm.schedule.mode === "custom" && (
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              Cron (5 fields)
-            </Label>
-            <Input
-              value={jobForm.schedule.raw}
-              onChange={(e) =>
+          <div className="grid grid-cols-2 gap-2">
+            <Select
+              value={String(jobForm.schedule.hour)}
+              onValueChange={(v) =>
                 setJobForm((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        schedule: { mode: "custom", raw: e.target.value },
-                      }
+                  prev && prev.schedule.mode === "daily"
+                    ? { ...prev, schedule: { ...prev.schedule, hour: clampInt(Number(v), 0, 23) } }
                     : prev
                 )
               }
-              placeholder="*/5 * * * *"
-              className="font-mono"
-            />
+            >
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 24 }, (_, i) => i).map((n) => (
+                  <SelectItem key={n} value={String(n)}>{String(n).padStart(2, "0")}:00</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={String(jobForm.schedule.minute)}
+              onValueChange={(v) =>
+                setJobForm((prev) =>
+                  prev && prev.schedule.mode === "daily"
+                    ? { ...prev, schedule: { ...prev.schedule, minute: clampInt(Number(v), 0, 59) } }
+                    : prev
+                )
+              }
+            >
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[0, 5, 10, 15, 20, 30, 45].map((n) => (
+                  <SelectItem key={n} value={String(n)}>:{String(n).padStart(2, "0")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+        )}
+        {jobForm.schedule.mode === "weekly" && (
+          <div className="grid grid-cols-3 gap-2">
+            <Select
+              value={String(jobForm.schedule.dayOfWeek)}
+              onValueChange={(v) =>
+                setJobForm((prev) =>
+                  prev && prev.schedule.mode === "weekly"
+                    ? { ...prev, schedule: { ...prev.schedule, dayOfWeek: clampInt(Number(v), 0, 6) } }
+                    : prev
+                )
+              }
+            >
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
+                  <SelectItem key={i} value={String(i)}>{day}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={String(jobForm.schedule.hour)}
+              onValueChange={(v) =>
+                setJobForm((prev) =>
+                  prev && prev.schedule.mode === "weekly"
+                    ? { ...prev, schedule: { ...prev.schedule, hour: clampInt(Number(v), 0, 23) } }
+                    : prev
+                )
+              }
+            >
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 24 }, (_, i) => i).map((n) => (
+                  <SelectItem key={n} value={String(n)}>{String(n).padStart(2, "0")}:00</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={String(jobForm.schedule.minute)}
+              onValueChange={(v) =>
+                setJobForm((prev) =>
+                  prev && prev.schedule.mode === "weekly"
+                    ? { ...prev, schedule: { ...prev.schedule, minute: clampInt(Number(v), 0, 59) } }
+                    : prev
+                )
+              }
+            >
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[0, 5, 10, 15, 20, 30, 45].map((n) => (
+                  <SelectItem key={n} value={String(n)}>:{String(n).padStart(2, "0")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {jobForm.schedule.mode === "custom" && (
+          <Input
+            value={jobForm.schedule.raw}
+            onChange={(e) =>
+              setJobForm((prev) =>
+                prev ? { ...prev, schedule: { mode: "custom", raw: e.target.value } } : prev
+              )
+            }
+            placeholder="*/5 * * * *"
+            className="font-mono"
+          />
         )}
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border p-4">
-        <div>
-          <div className="text-sm font-medium">Enabled</div>
-          <div className="text-xs text-muted-foreground">
-            When disabled, it won&apos;t run on schedule.
+      {/* Job-specific settings */}
+      {job.key === UPDATE_PREMATCH_ODDS_JOB_KEY && (
+        <div className="space-y-3 border-t pt-3 min-w-0 overflow-hidden">
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Odds settings</div>
+          <div className="grid gap-1.5">
+            <Label className="text-sm">Days ahead</Label>
+            <Input
+              type="number"
+              min={1}
+              max={30}
+              value={jobForm.prematchDaysAhead}
+              onChange={(e) => {
+                const n = Math.trunc(Number(e.target.value));
+                setJobForm((prev) =>
+                  prev ? { ...prev, prematchDaysAhead: Number.isFinite(n) ? Math.max(1, Math.min(30, n)) : 1 } : prev
+                );
+              }}
+            />
+            <p className="text-[11px] text-muted-foreground">How far ahead to fetch odds (1-30)</p>
+          </div>
+          <div className="grid gap-1.5 min-w-0">
+            <Label className="text-sm">Bookmakers</Label>
+            <MultiSelectCombobox
+              options={bookmakerOptions}
+              selectedValues={jobForm.oddsBookmakerExternalIds}
+              onSelectionChange={(values) =>
+                setJobForm((prev) =>
+                  prev ? { ...prev, oddsBookmakerExternalIds: values.map((v) => String(v)) } : prev
+                )
+              }
+              placeholder="Select bookmakers..."
+              searchPlaceholder="Search bookmakers..."
+              emptyMessage="No bookmakers found."
+            />
+          </div>
+          <div className="grid gap-1.5 min-w-0">
+            <Label className="text-sm">Markets</Label>
+            <MultiSelectCombobox
+              options={marketOptions}
+              selectedValues={jobForm.oddsMarketExternalIds}
+              onSelectionChange={(values) =>
+                setJobForm((prev) =>
+                  prev ? { ...prev, oddsMarketExternalIds: values.map((v) => String(v)) } : prev
+                )
+              }
+              placeholder="Select markets..."
+              searchPlaceholder="Search markets..."
+              emptyMessage="No markets found."
+            />
           </div>
         </div>
-        <Switch
-          id="job-enabled"
-          checked={jobForm.enabled}
-          onCheckedChange={(v) =>
-            setJobForm((prev) =>
-              prev ? { ...prev, enabled: v } : prev
-            )
-          }
-        />
-      </div>
+      )}
 
-      <div className="flex items-center justify-end gap-2 pt-2">
-        <Button
-          variant="secondary"
-          onClick={onRunNow}
-          disabled={!job.runnable || isRunPending}
-        >
-          {isRunPending ? "Running…" : "Run Now"}
-        </Button>
-        <Button onClick={handleSave} disabled={isSavePending}>
-          {isSavePending ? "Saving…" : "Save"}
-        </Button>
-      </div>
+      {job.key === UPCOMING_FIXTURES_JOB_KEY && (
+        <div className="space-y-3 border-t pt-3">
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Settings</div>
+          <div className="grid gap-1.5">
+            <Label className="text-sm">Days ahead</Label>
+            <Input
+              type="number"
+              min={1}
+              max={30}
+              value={jobForm.upcomingDaysAhead}
+              onChange={(e) => {
+                const n = Math.trunc(Number(e.target.value));
+                setJobForm((prev) =>
+                  prev ? { ...prev, upcomingDaysAhead: Number.isFinite(n) ? Math.max(1, Math.min(30, n)) : 1 } : prev
+                );
+              }}
+            />
+            <p className="text-[11px] text-muted-foreground">How many days ahead to fetch (1-30)</p>
+          </div>
+        </div>
+      )}
+
+      {job.key === FINISHED_FIXTURES_JOB_KEY && (
+        <div className="space-y-3 border-t pt-3">
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Settings</div>
+          <div className="grid gap-1.5">
+            <Label className="text-sm">Max live age (hours)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={168}
+              value={jobForm.finishedMaxLiveAgeHours}
+              onChange={(e) => {
+                const n = Math.trunc(Number(e.target.value));
+                setJobForm((prev) =>
+                  prev ? { ...prev, finishedMaxLiveAgeHours: Number.isFinite(n) ? Math.max(1, Math.min(168, n)) : 1 } : prev
+                );
+              }}
+            />
+            <p className="text-[11px] text-muted-foreground">Consider live after this many hours as finished (1-168)</p>
+          </div>
+        </div>
+      )}
+
+      {job.key === PREDICTION_REMINDERS_JOB_KEY && (
+        <div className="space-y-3 border-t pt-3">
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reminder settings</div>
+          <div className="grid gap-1.5">
+            <Label className="text-sm">Reminder window (hours)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={24}
+              value={jobForm.reminderWindowHours}
+              onChange={(e) => {
+                const n = Math.trunc(Number(e.target.value));
+                setJobForm((prev) =>
+                  prev ? { ...prev, reminderWindowHours: Number.isFinite(n) ? Math.max(1, Math.min(24, n)) : 2 } : prev
+                );
+              }}
+            />
+            <p className="text-[11px] text-muted-foreground">Hours before kickoff to send reminders (1-24)</p>
+          </div>
+        </div>
+      )}
+
+      {job.key === RECOVERY_OVERDUE_FIXTURES_JOB_KEY && (
+        <div className="space-y-3 border-t pt-3">
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recovery settings</div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-1.5">
+              <Label className="text-sm">Grace period (min)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={120}
+                value={jobForm.recoveryGraceMinutes}
+                onChange={(e) => {
+                  const n = Math.trunc(Number(e.target.value));
+                  setJobForm((prev) =>
+                    prev ? { ...prev, recoveryGraceMinutes: Number.isFinite(n) ? Math.max(1, Math.min(120, n)) : 30 } : prev
+                  );
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground">Wait before considering stuck (1-120)</p>
+            </div>
+            <div className="grid gap-1.5">
+              <Label className="text-sm">Max overdue (hours)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={168}
+                value={jobForm.recoveryMaxOverdueHours}
+                onChange={(e) => {
+                  const n = Math.trunc(Number(e.target.value));
+                  setJobForm((prev) =>
+                    prev ? { ...prev, recoveryMaxOverdueHours: Number.isFinite(n) ? Math.max(1, Math.min(168, n)) : 48 } : prev
+                  );
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground">Ignore if overdue longer than this (1-168)</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save */}
+      <Button
+        onClick={onSave}
+        disabled={!isDirty || isSavePending}
+        className="w-full"
+      >
+        {isSavePending ? "Saving…" : "Save Changes"}
+      </Button>
     </div>
   );
 }

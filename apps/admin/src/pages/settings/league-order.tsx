@@ -3,6 +3,7 @@
  */
 
 import * as React from "react";
+import { HeaderActions } from "@/contexts/header-actions";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { GripVertical, Plus, Trash2, Check, Search, X, Loader2, ChevronsUpDown } from "lucide-react";
@@ -233,12 +234,11 @@ export default function LeagueOrderSettingsPage() {
   return (
     <div className="w-full p-4 pb-8 sm:p-6">
       <div className="max-w-5xl mx-auto space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold">League Order</h1>
+        <HeaderActions>
           <Button size="sm" onClick={handleSave} disabled={!hasChanges || updateMutation.isPending}>
             {updateMutation.isPending ? "Saving..." : "Save"}
           </Button>
-        </div>
+        </HeaderActions>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Selected */}

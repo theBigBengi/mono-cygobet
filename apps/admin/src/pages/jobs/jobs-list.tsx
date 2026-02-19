@@ -148,9 +148,6 @@ export default function JobsListPage() {
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
       <div className="flex-shrink-0 mb-3 space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold">Jobs</h1>
-        </div>
         {/* Health summary bar */}
         {jobs.length > 0 && (
           <div
@@ -204,11 +201,9 @@ export default function JobsListPage() {
               return (
                 <Card
                   key={j.key}
-                  className={`flex flex-col cursor-default hover:bg-muted/50 transition-colors ${
-                    !j.enabled ? "opacity-60" : ""
-                  }`}
+                  className="flex flex-col cursor-default hover:bg-muted/50 transition-colors"
                 >
-                  <CardHeader className="pb-3">
+                  <CardHeader className={`pb-3 ${!j.enabled ? "opacity-50" : ""}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2 min-w-0">
                         <StatusDot job={j} />
@@ -232,7 +227,7 @@ export default function JobsListPage() {
                     </CardDescription>
                   </CardHeader>
 
-                  <CardContent className="pt-0 space-y-3 flex-1">
+                  <CardContent className={`pt-0 space-y-3 flex-1 ${!j.enabled ? "opacity-50" : ""}`}>
                     <div>
                       <div className="text-[11px] text-muted-foreground">
                         Last run

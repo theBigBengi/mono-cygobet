@@ -1,4 +1,5 @@
 import * as React from "react";
+import { HeaderActions } from "@/contexts/header-actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import { toast } from "sonner";
@@ -813,44 +814,33 @@ export default function SandboxPage() {
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      {/* ── Header ── */}
-      <div className="flex-shrink-0 mb-3 sm:mb-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-semibold">Sandbox</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Create fictive data, simulate match lifecycle, test settlement
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => setCreateGroupDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">New Group</span>
-            </Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setCleanupDialogOpen(true)}
-                    disabled={fixtures.length === 0 && groups.length === 0}
-                  >
-                    <Trash2 className="h-4 w-4 sm:mr-1.5" />
-                    <span className="hidden sm:inline">Cleanup</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="sm:hidden">
-                  <p>Cleanup All</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
-      </div>
+      <HeaderActions>
+        <Button
+          size="sm"
+          onClick={() => setCreateGroupDialogOpen(true)}
+        >
+          <Plus className="h-4 w-4 sm:mr-1.5" />
+          <span className="hidden sm:inline">New Group</span>
+        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setCleanupDialogOpen(true)}
+                disabled={fixtures.length === 0 && groups.length === 0}
+              >
+                <Trash2 className="h-4 w-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Cleanup</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="sm:hidden">
+              <p>Cleanup All</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </HeaderActions>
 
       {/* ── Scrollable Content ── */}
       <div className="flex-1 min-h-0 overflow-auto">

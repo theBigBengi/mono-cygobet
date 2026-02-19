@@ -4,7 +4,7 @@ import type { AdminAvailabilityResponse } from "@repo/types";
 
 const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{
-    Querystring: { includeHistorical?: string };
+    Querystring: { includeHistorical?: string; skipFixtureCheck?: string };
     Reply: AdminAvailabilityResponse;
   }>(
     "/availability",
@@ -14,6 +14,7 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
           type: "object",
           properties: {
             includeHistorical: { type: "string" },
+            skipFixtureCheck: { type: "string" },
           },
         },
         response: {
@@ -45,8 +46,10 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply) => {
       try {
         const includeHistorical = req.query.includeHistorical === "true";
+        const skipFixtureCheck = req.query.skipFixtureCheck === "true";
         const data = await availabilityService.getAvailability({
           includeHistorical,
+          skipFixtureCheck,
         });
         return reply.send({ status: "ok" as const, data });
       } catch (error) {

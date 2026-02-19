@@ -1,3 +1,4 @@
+import { HeaderActions } from "@/contexts/header-actions";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -41,8 +42,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      <div className="flex-shrink-0 mb-4 flex items-center justify-between">
-        <h1 className="text-lg sm:text-2xl font-semibold">Dashboard</h1>
+      <HeaderActions>
         <Button
           variant="outline"
           size="sm"
@@ -54,7 +54,7 @@ export default function DashboardPage() {
           />
           Refresh
         </Button>
-      </div>
+      </HeaderActions>
 
       <div className="flex-1 min-h-0 overflow-auto space-y-6">
         {/* ── Section 0: Alerts ── */}

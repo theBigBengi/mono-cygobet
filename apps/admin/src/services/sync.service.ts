@@ -54,10 +54,14 @@ export const syncService = {
 
   async getAvailability(opts?: {
     includeHistorical?: boolean;
+    skipFixtureCheck?: boolean;
   }): Promise<AdminAvailabilityResponse> {
     const params = new URLSearchParams();
     if (opts?.includeHistorical) {
       params.set("includeHistorical", "true");
+    }
+    if (opts?.skipFixtureCheck) {
+      params.set("skipFixtureCheck", "true");
     }
     const query = params.toString();
     return apiGet<AdminAvailabilityResponse>(

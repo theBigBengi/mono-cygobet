@@ -21,6 +21,7 @@ import { usePredictionsStats } from "../hooks/usePredictionsStats";
 import type { PredictionMode, FixtureItem } from "../types";
 import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
+import { isFinished as isFinishedState, isLive as isLiveState } from "@repo/utils";
 import { HEADER_HEIGHT, FOOTER_PADDING, SAVE_PENDING_DELAY_MS, SCROLL_OFFSET } from "../utils/constants";
 
 type Props = {
@@ -188,6 +189,37 @@ export function GroupGamesScreen({
       });
     });
     return map;
+  }, [fixtureGroups]);
+
+  /** Timeline fill maps — computed from all fixtures in display order. */
+  const timelineMaps = useMemo(() => {
+    // Flatten all fixtures in display order
+    const allFixtures: FixtureItem[] = [];
+    fixtureGroups.forEach((g) => g.fixtures.forEach((f) => allFixtures.push(f)));
+
+    // Find the index of the last finished/live fixture (the progress front)
+    let lastFilledIdx = -1;
+    for (let i = allFixtures.length - 1; i >= 0; i--) {
+      const state = allFixtures[i].state;
+      if (state && (isFinishedState(state) || isLiveState(state))) {
+        lastFilledIdx = i;
+        break;
+      }
+    }
+
+    const filled: Record<number, boolean> = {};
+    const connectorFilled: Record<number, boolean> = {};
+    const isFirst: Record<number, boolean> = {};
+    const isLast: Record<number, boolean> = {};
+
+    allFixtures.forEach((f, i) => {
+      filled[f.id] = i <= lastFilledIdx;
+      connectorFilled[f.id] = i < lastFilledIdx; // connector goes to next, so stop at the front
+      isFirst[f.id] = i === 0;
+      isLast[f.id] = i === allFixtures.length - 1;
+    });
+
+    return { filled, connectorFilled, isFirst, isLast };
   }, [fixtureGroups]);
 
   /** For MatchWinner mode: set 1/X/2 and trigger a save shortly after. */
@@ -434,6 +466,10 @@ export function GroupGamesScreen({
                         predictionMode={predictionModeTyped}
                         groupName={groupName}
                         matchNumber={matchNumbersMap[fixture.id]}
+                        timelineFilled={timelineMaps.filled[fixture.id]}
+                        timelineConnectorFilled={timelineMaps.connectorFilled[fixture.id]}
+                        isFirstInTimeline={timelineMaps.isFirst[fixture.id]}
+                        isLastInTimeline={timelineMaps.isLast[fixture.id]}
                         onFieldFocus={handleFieldFocus}
                         onFieldBlur={handleFieldBlur}
                         onCardChange={handleCardChange}

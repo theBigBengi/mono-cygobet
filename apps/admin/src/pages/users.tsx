@@ -8,6 +8,7 @@
  */
 
 import * as React from "react";
+import { HeaderActions } from "@/contexts/header-actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -239,17 +240,12 @@ export default function UsersPage() {
   return (
     <div className="h-full w-full p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl sm:text-3xl font-bold">Users</h1>
-            <p className="text-sm text-muted-foreground">Manage system users</p>
-          </div>
-          <Button size="sm" className="sm:size-default" onClick={() => setIsCreateSheetOpen(true)}>
+        <HeaderActions>
+          <Button size="sm" onClick={() => setIsCreateSheetOpen(true)}>
             <Plus className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Create User</span>
           </Button>
-        </div>
+        </HeaderActions>
 
         {/* Filters */}
         <Card>

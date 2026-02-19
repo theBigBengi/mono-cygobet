@@ -47,11 +47,20 @@ type Props = {
   showLeagueInfo?: boolean;
   /** Sequential match number for display (e.g., "1/12") */
   matchNumber?: string;
+  /** Timeline: is this card in the filled (completed) zone? */
+  timelineFilled?: boolean;
+  /** Timeline: should the connector below this card be filled? */
+  timelineConnectorFilled?: boolean;
+  /** Timeline: first card in the list (no line above) */
+  isFirstInTimeline?: boolean;
+  /** Timeline: last card in the list (no line below) */
+  isLastInTimeline?: boolean;
 };
 
 /**
  * Vertical match card + score prediction inputs.
  * Teams are displayed vertically (home on top, away on bottom) with score inputs on the right side.
+ * Includes a vertical timeline on the left that fills as games complete.
  */
 export function MatchPredictionCardVertical({
   fixture,
@@ -71,6 +80,10 @@ export function MatchPredictionCardVertical({
   onPressCard: onPressCardProp,
   showLeagueInfo = true,
   matchNumber,
+  timelineFilled = false,
+  timelineConnectorFilled = false,
+  isFirstInTimeline = false,
+  isLastInTimeline = false,
 }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -132,13 +145,53 @@ export function MatchPredictionCardVertical({
   // Prediction success based on points (for finished games)
   const predictionSuccess = isFinished ? hasPoints : undefined;
 
+  // Timeline line colors
+  const trackColor = theme.colors.border;
+  const filledColor = theme.colors.primary;
+  const topLineColor = isFirstInTimeline ? "transparent" : timelineFilled ? filledColor : trackColor;
+  const bottomLineColor = isLastInTimeline ? "transparent" : timelineConnectorFilled ? filledColor : trackColor;
+
   return (
-    <View ref={cardRef} style={styles.outerWrapper}>
-      {/* League info row - centered like the card */}
-      {showLeagueInfo && (
-        <View style={styles.leagueInfoWrapper}>
-          {/* Left spacer to match side width */}
-          <View style={styles.leftSpacer} />
+    <View ref={cardRef} style={styles.outerRow}>
+      {/* ── Timeline column ── */}
+      <View style={styles.timelineColumn}>
+        {/* Line above waypoint */}
+        <View style={[styles.timelineLine, { backgroundColor: topLineColor }]} />
+        {/* Waypoint node */}
+        <View
+          style={[
+            styles.waypointNode,
+            {
+              backgroundColor: timelineFilled
+                ? filledColor + "18"
+                : theme.colors.background,
+              borderColor: timelineFilled
+                ? filledColor + "60"
+                : trackColor,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.waypointText,
+              {
+                color: timelineFilled
+                  ? filledColor
+                  : theme.colors.textSecondary,
+              },
+            ]}
+          >
+            {matchNumber || ""}
+          </Text>
+        </View>
+        {/* Line below waypoint */}
+        <View style={[styles.timelineLine, { backgroundColor: bottomLineColor }]} />
+      </View>
+
+      {/* ── Content column ── */}
+      <View style={[styles.contentColumn, isLastInTimeline && { paddingBottom: 0 }]}>
+        {/* League info row */}
+        {showLeagueInfo && (
           <View style={styles.leagueInfoRow}>
             <View style={styles.leagueInfoLeft}>
               <Text
@@ -159,201 +212,188 @@ export function MatchPredictionCardVertical({
             <Text style={[styles.leagueText, { color: theme.colors.textSecondary }]}>
               {formatKickoffDate(fixture.kickoffAt)} {formatKickoffTime(fixture.kickoffAt)}
             </Text>
+            {/* Spacer to align with points column */}
+            <View style={styles.rightAlignSpacer} />
           </View>
-          {/* Right spacer to match side width */}
-          <View style={styles.chevronSpacer} />
-        </View>
-      )}
-
-      {/* Card row: match number + card + points */}
-      <View style={styles.cardRow}>
-        {/* Left side: match number */}
-        <View style={styles.statusContainer}>
-          <Text style={[styles.matchNumber, { color: theme.colors.textSecondary }]}>
-            {matchNumber || ""}
-          </Text>
-        </View>
-        <View
-          style={[
-            styles.cardShadowWrapper,
-            isFinished && !isCancelled && !isCardPressed && {
-              shadowColor: hasPoints ? successColor : missedColor,
-              shadowOpacity: 0.2,
-            },
-            isCardPressed && styles.cardShadowWrapperPressed,
-          ]}
-        >
-          <Card
-            style={[
-              styles.matchCard,
-              { backgroundColor: isHighlighted ? theme.colors.primary + "15" : theme.colors.cardBackground },
-              isFinished && !isCancelled && {
-                borderWidth: 1,
-                borderColor: (hasPoints ? successColor : missedColor) + "30",
-              },
-            ]}
-          >
-          <Pressable
-            onPress={onPressCard}
-            onPressIn={() => {
-              setIsCardPressed(true);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-            onPressOut={() => setIsCardPressed(false)}
-            style={[
-              styles.matchContent,
-              isCancelled && { opacity: 0.6 },
-            ]}
-          >
-            {/* Home Row: logo + name + result + input */}
-            <View style={styles.teamRow}>
-              <View style={styles.teamPressable}>
-                <TeamRow
-                  team={fixture.homeTeam}
-                  teamName={homeTeamName}
-                  isWinner={isHomeWinner}
-                />
-              </View>
-              <ResultDisplay
-                result={gameResultOrTime}
-                isLive={isLive}
-                isFinished={isFinished}
-                isCancelled={isCancelled}
-                isHomeWinner={isHomeWinner}
-                isAwayWinner={isAwayWinner}
-                type="home"
-              />
-              {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
-                <ScoreInput
-                  type="home"
-                  value={prediction.home}
-                  isFocused={isHomeFocused}
-                  isEditable={isEditable}
-                  isFinished={isFinished}
-                  inputRef={homeRef}
-                  onChange={(text) => onChange("home", text)}
-                  onFocus={() => onFocus("home")}
-                  onBlur={onBlur}
-                  onAutoNext={onAutoNext ? () => onAutoNext("home") : undefined}
-                  isCorrect={predictionSuccess}
-                />
-              )}
-            </View>
-
-            {/* Away Row: logo + name + result + input */}
-            <View style={styles.teamRow}>
-              <View style={styles.teamPressable}>
-                <TeamRow
-                  team={fixture.awayTeam}
-                  teamName={awayTeamName}
-                  isWinner={isAwayWinner}
-                />
-              </View>
-              <ResultDisplay
-                result={gameResultOrTime}
-                isLive={isLive}
-                isFinished={isFinished}
-                isCancelled={isCancelled}
-                isHomeWinner={isHomeWinner}
-                isAwayWinner={isAwayWinner}
-                type="away"
-              />
-              {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
-                <ScoreInput
-                  type="away"
-                  value={prediction.away}
-                  isFocused={isAwayFocused}
-                  isEditable={isEditable}
-                  isFinished={isFinished}
-                  inputRef={awayRef}
-                  onChange={(text) => onChange("away", text)}
-                  onFocus={() => onFocus("away")}
-                  onBlur={onBlur}
-                  onAutoNext={onAutoNext ? () => onAutoNext("away") : undefined}
-                  isCorrect={predictionSuccess}
-                />
-              )}
-            </View>
-
-            {/* OutcomePicker for MatchWinner mode */}
-            {predictionMode === "MatchWinner" && onSelectOutcome && (
-              <OutcomePicker
-                selectedOutcome={getOutcomeFromPrediction(prediction)}
-                isEditable={isEditable}
-                onSelect={onSelectOutcome}
-              />
-            )}
-          </Pressable>
-        </Card>
-        </View>
-        {/* Right side: points for finished games, empty otherwise */}
-        {isFinished && !isCancelled ? (
-          <Pressable onPress={onPressCard} style={styles.pointsContainer}>
-            <Text style={[styles.pointsNumber, { color: hasPoints ? successColor : missedColor }]}>
-              {hasPoints ? `+${fixturePoints}` : "0"}
-            </Text>
-            <Text style={[styles.pointsLabel, { color: theme.colors.textSecondary }]}>
-              pts
-            </Text>
-          </Pressable>
-        ) : (
-          <View style={styles.rightSpacer} />
         )}
+
+        {/* Card + points row */}
+        <View style={styles.cardContentRow}>
+          <View
+            style={[
+              styles.cardShadowWrapper,
+              isFinished && !isCancelled && !isCardPressed && {
+                shadowColor: hasPoints ? successColor : missedColor,
+                shadowOpacity: 0.2,
+              },
+              isCardPressed && styles.cardShadowWrapperPressed,
+            ]}
+          >
+            <Card
+              style={[
+                styles.matchCard,
+                {
+                  backgroundColor: isHighlighted ? theme.colors.primary + "15" : theme.colors.cardBackground,
+                  borderColor: theme.colors.border,
+                  borderBottomColor: theme.colors.textSecondary + "40",
+                },
+                isFinished && !isCancelled && {
+                  borderColor: (hasPoints ? successColor : missedColor) + "30",
+                  borderBottomColor: (hasPoints ? successColor : missedColor) + "50",
+                },
+              ]}
+            >
+            <Pressable
+              onPress={onPressCard}
+              onPressIn={() => {
+                setIsCardPressed(true);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              onPressOut={() => setIsCardPressed(false)}
+              style={[
+                styles.matchContent,
+                isCancelled && { opacity: 0.6 },
+              ]}
+            >
+              {/* Home Row */}
+              <View style={styles.teamRow}>
+                <View style={styles.teamPressable}>
+                  <TeamRow
+                    team={fixture.homeTeam}
+                    teamName={homeTeamName}
+                    isWinner={isHomeWinner}
+                  />
+                </View>
+                <ResultDisplay
+                  result={gameResultOrTime}
+                  isLive={isLive}
+                  isFinished={isFinished}
+                  isCancelled={isCancelled}
+                  isHomeWinner={isHomeWinner}
+                  isAwayWinner={isAwayWinner}
+                  type="home"
+                />
+                {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
+                  <ScoreInput
+                    type="home"
+                    value={prediction.home}
+                    isFocused={isHomeFocused}
+                    isEditable={isEditable}
+                    isFinished={isFinished}
+                    inputRef={homeRef}
+                    onChange={(text) => onChange("home", text)}
+                    onFocus={() => onFocus("home")}
+                    onBlur={onBlur}
+                    onAutoNext={onAutoNext ? () => onAutoNext("home") : undefined}
+                    isCorrect={predictionSuccess}
+                  />
+                )}
+              </View>
+
+              {/* Away Row */}
+              <View style={styles.teamRow}>
+                <View style={styles.teamPressable}>
+                  <TeamRow
+                    team={fixture.awayTeam}
+                    teamName={awayTeamName}
+                    isWinner={isAwayWinner}
+                  />
+                </View>
+                <ResultDisplay
+                  result={gameResultOrTime}
+                  isLive={isLive}
+                  isFinished={isFinished}
+                  isCancelled={isCancelled}
+                  isHomeWinner={isHomeWinner}
+                  isAwayWinner={isAwayWinner}
+                  type="away"
+                />
+                {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
+                  <ScoreInput
+                    type="away"
+                    value={prediction.away}
+                    isFocused={isAwayFocused}
+                    isEditable={isEditable}
+                    isFinished={isFinished}
+                    inputRef={awayRef}
+                    onChange={(text) => onChange("away", text)}
+                    onFocus={() => onFocus("away")}
+                    onBlur={onBlur}
+                    onAutoNext={onAutoNext ? () => onAutoNext("away") : undefined}
+                    isCorrect={predictionSuccess}
+                  />
+                )}
+              </View>
+
+              {/* OutcomePicker for MatchWinner mode */}
+              {predictionMode === "MatchWinner" && onSelectOutcome && (
+                <OutcomePicker
+                  selectedOutcome={getOutcomeFromPrediction(prediction)}
+                  isEditable={isEditable}
+                  onSelect={onSelectOutcome}
+                />
+              )}
+            </Pressable>
+          </Card>
+          </View>
+          {/* Right side: points for finished games, empty otherwise */}
+          {isFinished && !isCancelled ? (
+            <Pressable onPress={onPressCard} style={styles.pointsContainer}>
+              <Text style={[styles.pointsNumber, { color: hasPoints ? successColor : missedColor }]}>
+                {hasPoints ? `+${fixturePoints}` : "0"}
+              </Text>
+              <Text style={[styles.pointsLabel, { color: theme.colors.textSecondary }]}>
+                pts
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={styles.rightSpacer} />
+          )}
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outerWrapper: {
-    flexDirection: "column",
-    marginBottom: 20,
-  },
-  leagueInfoWrapper: {
+  /* ── Layout ── */
+  outerRow: {
     flexDirection: "row",
-    marginBottom: 4,
   },
-  leagueInfoRow: {
+  timelineColumn: {
+    width: 36,
+    alignItems: "center",
+    alignSelf: "stretch",
+  },
+  timelineLine: {
+    width: 2,
     flex: 1,
+    borderRadius: 1,
+  },
+  waypointNode: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  waypointText: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  contentColumn: {
+    flex: 1,
+    paddingBottom: 20,
+  },
+
+  /* ── League info ── */
+  leagueInfoRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 4,
-  },
-  leftSpacer: {
-    width: 48,
-  },
-  chevronSpacer: {
-    width: 48,
-  },
-  statusContainer: {
-    width: 48,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  matchNumber: {
-    fontSize: 11,
-    fontWeight: "600",
-    opacity: 0.7,
-  },
-  rightSpacer: {
-    width: 48,
-  },
-  pointsContainer: {
-    width: 48,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pointsNumber: {
-    fontSize: 24,
-    fontWeight: "800",
-  },
-  pointsLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    opacity: 0.8,
+    marginBottom: 4,
   },
   leagueInfoLeft: {
     flexDirection: "row",
@@ -370,20 +410,23 @@ const styles = StyleSheet.create({
     fontSize: 11,
     opacity: 0.4,
   },
-  cardRow: {
+  rightAlignSpacer: {
+    width: 36,
+  },
+
+  /* ── Card + points row ── */
+  cardContentRow: {
     flexDirection: "row",
     alignItems: "center",
   },
   cardShadowWrapper: {
     flex: 1,
     borderRadius: 10,
-    // Shadow for iOS
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    // Shadow for Android
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 6,
   },
   cardShadowWrapperPressed: {
     shadowColor: "transparent",
@@ -391,20 +434,15 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     shadowOffset: { width: 0, height: 0 },
     elevation: 0,
-    transform: [{ scale: 0.98 }],
+    transform: [{ scale: 0.98 }, { translateY: 2 }],
   },
   matchCard: {
     marginHorizontal: 0,
     marginBottom: 0,
     padding: 12,
     borderRadius: 10,
-    borderWidth: 0,
-  },
-  chevronContainer: {
-    width: 48,
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
+    borderWidth: 1,
+    borderBottomWidth: 3,
   },
   matchContent: {
     flexDirection: "column",
@@ -418,8 +456,25 @@ const styles = StyleSheet.create({
   teamPressable: {
     flex: 1,
   },
-  chevron: {
-    fontSize: 20,
-    opacity: 0.5,
+
+  /* ── Points / right side ── */
+  pointsContainer: {
+    width: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pointsNumber: {
+    fontSize: 24,
+    fontWeight: "800",
+  },
+  pointsLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    opacity: 0.8,
+  },
+  rightSpacer: {
+    width: 36,
   },
 });

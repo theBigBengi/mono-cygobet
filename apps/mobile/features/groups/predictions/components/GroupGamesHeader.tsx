@@ -40,13 +40,17 @@ export function GroupGamesHeader({ onBack, children, backOnly, rightContent }: G
         <View
           style={[
             styles.iconButton,
-            { backgroundColor: theme.colors.background },
+            {
+              backgroundColor: theme.colors.background,
+              borderColor: theme.colors.border,
+              borderBottomColor: theme.colors.textSecondary + "40",
+            },
           ]}
         >
           <Ionicons
             name="chevron-back"
             size={20}
-            color={theme.colors.textPrimary}
+            color={theme.colors.textSecondary}
           />
         </View>
       </Pressable>
@@ -74,6 +78,8 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderBottomWidth: 2,
   },
   content: {
     flex: 1,

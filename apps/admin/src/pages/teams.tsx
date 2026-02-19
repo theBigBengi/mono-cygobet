@@ -439,13 +439,6 @@ export default function TeamsPage() {
 
   return (
     <div className="h-full flex flex-col p-2 sm:p-3 md:p-6">
-      <div className="shrink-0 mb-3 sm:mb-4">
-        <h1 className="text-lg sm:text-2xl font-semibold">Teams</h1>
-        <p className="hidden sm:block text-sm text-muted-foreground mt-1">
-          Manage team names, short codes, and brand colors
-        </p>
-      </div>
-
       <div className="flex-1 min-h-0 flex flex-col gap-3 sm:gap-4">
         {/* CSV Import - Collapsible */}
         <Collapsible open={isImportOpen} onOpenChange={setIsImportOpen}>

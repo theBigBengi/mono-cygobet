@@ -1,3 +1,4 @@
+import { HeaderActions } from "@/contexts/header-actions";
 import {
   Card,
   CardContent,
@@ -117,8 +118,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-4">
-      <div className="flex-shrink-0 mb-2 flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">Analytics</h1>
+      <HeaderActions>
         <Button
           variant="outline"
           size="sm"
@@ -130,11 +130,11 @@ export default function AnalyticsPage() {
           />
           Refresh
         </Button>
-      </div>
+      </HeaderActions>
 
-      <div className="flex-1 min-h-0 overflow-auto space-y-4">
+      <div className="flex-1 min-h-0 overflow-auto space-y-3 sm:space-y-4 pb-4">
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 xl:grid-cols-7">
           <KpiCard
             label="DAU"
             value={overview.data?.dau ?? 0}
@@ -160,13 +160,13 @@ export default function AnalyticsPage() {
             isLoading={overview.isLoading}
           />
           <KpiCard
-            label="Predictions Today"
+            label="Predictions"
             value={overview.data?.predictionsToday ?? 0}
             icon={MousePointerClick}
             isLoading={overview.isLoading}
           />
           <KpiCard
-            label="Groups Created"
+            label="Groups"
             value={overview.data?.groupsCreatedToday ?? 0}
             icon={Users}
             isLoading={overview.isLoading}
@@ -180,26 +180,26 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Row 2: Active Users + Growth */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
           {/* Active Users Over Time */}
           <Card>
-            <CardHeader>
-              <CardTitle>Active Users (30 days)</CardTitle>
-              <CardDescription>Daily active users</CardDescription>
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="text-sm sm:text-base">Active Users (30d)</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Daily active users</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {activeUsers.isLoading ? (
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-48 sm:h-64 w-full" />
               ) : (
-                <ResponsiveContainer width="100%" height={250}>
+                <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={activeUsers.data?.data ?? []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="date"
                       tickFormatter={(d) => new Date(d).toLocaleDateString("en", { month: "short", day: "numeric" })}
-                      fontSize={12}
+                      fontSize={11}
                     />
-                    <YAxis fontSize={12} />
+                    <YAxis fontSize={11} width={35} />
                     <Tooltip
                       labelFormatter={(d) => new Date(d).toLocaleDateString()}
                     />
@@ -218,23 +218,23 @@ export default function AnalyticsPage() {
 
           {/* User Growth */}
           <Card>
-            <CardHeader>
-              <CardTitle>User Growth (30 days)</CardTitle>
-              <CardDescription>New users per day + cumulative total</CardDescription>
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="text-sm sm:text-base">User Growth (30d)</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">New users per day</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {growth.isLoading ? (
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-48 sm:h-64 w-full" />
               ) : (
-                <ResponsiveContainer width="100%" height={250}>
+                <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={growth.data?.data ?? []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="date"
                       tickFormatter={(d) => new Date(d).toLocaleDateString("en", { month: "short", day: "numeric" })}
-                      fontSize={12}
+                      fontSize={11}
                     />
-                    <YAxis fontSize={12} />
+                    <YAxis fontSize={11} width={35} />
                     <Tooltip
                       labelFormatter={(d) => new Date(d).toLocaleDateString()}
                     />
@@ -247,32 +247,38 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Row 3: Top Features + Top Screens */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
           {/* Top Features */}
           <Card>
-            <CardHeader>
-              <CardTitle>Top Features</CardTitle>
-              <CardDescription>Most used features (30 days)</CardDescription>
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="text-sm sm:text-base">Top Features</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Most used features (30d)</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {topFeatures.isLoading ? (
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-48 sm:h-64 w-full" />
               ) : (
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart
                     data={topFeatures.data?.data?.slice(0, 10) ?? []}
                     layout="vertical"
+                    margin={{ left: 0, right: 10 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" fontSize={12} />
+                    <XAxis type="number" fontSize={11} />
                     <YAxis
                       type="category"
                       dataKey="eventName"
-                      width={150}
-                      fontSize={12}
-                      tickFormatter={(v) => v.replace(/_/g, " ")}
+                      width={100}
+                      fontSize={10}
+                      tickFormatter={(v) => {
+                        const label = v.replace(/_/g, " ");
+                        return label.length > 16 ? label.slice(0, 14) + "…" : label;
+                      }}
                     />
-                    <Tooltip />
+                    <Tooltip
+                      labelFormatter={(v) => String(v).replace(/_/g, " ")}
+                    />
                     <Bar dataKey="count" name="Events">
                       {(topFeatures.data?.data?.slice(0, 10) ?? []).map(
                         (_, i) => (
@@ -288,64 +294,81 @@ export default function AnalyticsPage() {
 
           {/* Top Screens */}
           <Card>
-            <CardHeader>
-              <CardTitle>Top Screens</CardTitle>
-              <CardDescription>
-                Most viewed screens with avg. time spent
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="text-sm sm:text-base">Top Screens</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Most viewed screens with avg. time
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {topScreens.isLoading ? (
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-48 sm:h-64 w-full" />
               ) : (
-                <div className="overflow-x-auto"><Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Screen</TableHead>
-                      <TableHead className="text-right">Views</TableHead>
-                      <TableHead className="text-right">Avg. Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop: table */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Screen</TableHead>
+                          <TableHead className="text-right">Views</TableHead>
+                          <TableHead className="text-right">Avg. Time</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(topScreens.data?.data ?? []).map((s) => (
+                          <TableRow key={s.screenName}>
+                            <TableCell className="font-medium max-w-[200px] truncate">
+                              {s.screenName}
+                            </TableCell>
+                            <TableCell className="text-right">{s.views}</TableCell>
+                            <TableCell className="text-right">
+                              {formatDuration(s.avgDurationMs)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {/* Mobile: stacked list */}
+                  <div className="sm:hidden divide-y">
                     {(topScreens.data?.data ?? []).map((s) => (
-                      <TableRow key={s.screenName}>
-                        <TableCell className="font-medium max-w-[200px] truncate">
-                          {s.screenName}
-                        </TableCell>
-                        <TableCell className="text-right">{s.views}</TableCell>
-                        <TableCell className="text-right">
-                          {formatDuration(s.avgDurationMs)}
-                        </TableCell>
-                      </TableRow>
+                      <div key={s.screenName} className="py-2.5 first:pt-0 last:pb-0">
+                        <p className="text-sm font-medium truncate">{s.screenName}</p>
+                        <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                          <span>{s.views} views</span>
+                          <span>{formatDuration(s.avgDurationMs)} avg</span>
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table></div>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
         </div>
 
         {/* Row 4: Usage by Hour + User Journey */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
           {/* Usage by Hour */}
           <Card>
-            <CardHeader>
-              <CardTitle>Usage by Hour</CardTitle>
-              <CardDescription>When are users most active (UTC)</CardDescription>
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="text-sm sm:text-base">Usage by Hour</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">When users are most active (UTC)</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {hourlyUsage.isLoading ? (
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-48 sm:h-64 w-full" />
               ) : (
-                <ResponsiveContainer width="100%" height={250}>
+                <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={hourlyUsage.data?.data ?? []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="hour"
                       tickFormatter={(h) => `${h}:00`}
-                      fontSize={12}
+                      fontSize={11}
                     />
-                    <YAxis fontSize={12} />
+                    <YAxis fontSize={11} width={35} />
                     <Tooltip
                       labelFormatter={(h) => `${h}:00 - ${Number(h) + 1}:00`}
                     />
@@ -358,28 +381,28 @@ export default function AnalyticsPage() {
 
           {/* User Journey Funnel */}
           <Card>
-            <CardHeader>
-              <CardTitle>User Journey</CardTitle>
-              <CardDescription>
-                Conversion funnel: Registration to Prediction
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="text-sm sm:text-base">User Journey</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Funnel: Registration to Prediction
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {userJourney.isLoading ? (
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-48 sm:h-64 w-full" />
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {(userJourney.data?.steps ?? []).map((step, i) => (
                     <div key={step.step}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">{step.step}</span>
-                        <span className="text-muted-foreground">
+                      <div className="flex justify-between text-xs sm:text-sm mb-1">
+                        <span className="font-medium truncate mr-2">{step.step}</span>
+                        <span className="text-muted-foreground shrink-0">
                           {step.count} ({step.percentage}%)
                         </span>
                       </div>
-                      <div className="w-full bg-muted rounded-full h-3">
+                      <div className="w-full bg-muted rounded-full h-2.5 sm:h-3">
                         <div
-                          className="h-3 rounded-full transition-all"
+                          className="h-2.5 sm:h-3 rounded-full transition-all"
                           style={{
                             width: `${step.percentage}%`,
                             backgroundColor: COLORS[i % COLORS.length],
@@ -395,67 +418,90 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Row 5: Top Users + Popular Content */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
           {/* Top Users */}
           <Card>
-            <CardHeader>
-              <CardTitle>Top Users</CardTitle>
-              <CardDescription>Most active users (30 days)</CardDescription>
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="text-sm sm:text-base">Top Users</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Most active users (30d)</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {topUsers.isLoading ? (
                 <Skeleton className="h-48 w-full" />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead className="text-right">Events</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop: table */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead className="text-right">Events</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(topUsers.data?.data ?? []).map((u) => (
+                          <TableRow key={u.userId}>
+                            <TableCell>
+                              <div>
+                                <span className="font-medium">
+                                  {u.username ?? "No username"}
+                                </span>
+                                <span className="text-muted-foreground text-xs ml-2">
+                                  {u.email}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {u.eventCount}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {/* Mobile: stacked list */}
+                  <div className="sm:hidden divide-y">
                     {(topUsers.data?.data ?? []).map((u) => (
-                      <TableRow key={u.userId}>
-                        <TableCell>
-                          <div>
-                            <span className="font-medium">
-                              {u.username ?? "No username"}
-                            </span>
-                            <span className="text-muted-foreground text-xs ml-2">
-                              {u.email}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
+                      <div key={u.userId} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {u.username ?? "No username"}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {u.email}
+                          </p>
+                        </div>
+                        <span className="text-sm font-medium tabular-nums shrink-0">
                           {u.eventCount}
-                        </TableCell>
-                      </TableRow>
+                        </span>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
 
           {/* Popular Content */}
           <Card>
-            <CardHeader>
-              <CardTitle>Popular Content</CardTitle>
-              <CardDescription>
-                Most predicted leagues and teams (30 days)
+            <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-2">
+              <CardTitle className="text-sm sm:text-base">Popular Content</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Most predicted leagues and teams (30d)
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {popularContent.isLoading ? (
                 <Skeleton className="h-48 w-full" />
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <h4 className="text-sm font-medium mb-2">Leagues</h4>
+                    <h4 className="text-xs sm:text-sm font-medium mb-2">Leagues</h4>
                     {(popularContent.data?.leagues ?? []).map((l, i) => (
                       <div
                         key={l.name}
-                        className="flex justify-between text-sm py-1"
+                        className="flex justify-between text-xs sm:text-sm py-1"
                       >
                         <span className="truncate mr-2">
                           {i + 1}. {l.name}
@@ -467,11 +513,11 @@ export default function AnalyticsPage() {
                     ))}
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium mb-2">Teams</h4>
+                    <h4 className="text-xs sm:text-sm font-medium mb-2">Teams</h4>
                     {(popularContent.data?.teams ?? []).map((t, i) => (
                       <div
                         key={t.name}
-                        className="flex justify-between text-sm py-1"
+                        className="flex justify-between text-xs sm:text-sm py-1"
                       >
                         <span className="truncate mr-2">
                           {i + 1}. {t.name}

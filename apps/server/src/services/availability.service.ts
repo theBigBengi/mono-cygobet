@@ -3,7 +3,7 @@ import { adapter, currentProviderLabel } from "../utils/adapter";
 import type { AvailableSeason, AdminAvailabilityResponse } from "@repo/types";
 
 const CACHE_KEY = "sync:availability";
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 interface CacheEntry {
   data: AdminAvailabilityResponse["data"];
@@ -16,14 +16,16 @@ let availabilityCache: CacheEntry | null = null;
 export const availabilityService = {
   async getAvailability(opts?: {
     includeHistorical?: boolean;
+    skipFixtureCheck?: boolean;
   }): Promise<AdminAvailabilityResponse["data"]> {
     const includeHistorical = opts?.includeHistorical ?? false;
-    const cacheKey = includeHistorical ? "full" : "recent";
+    const skipFixtureCheck = opts?.skipFixtureCheck ?? false;
+    const baseCacheKey = includeHistorical ? "full" : "recent";
 
     if (
       availabilityCache &&
       availabilityCache.expiresAt > Date.now() &&
-      availabilityCache.cacheKey === cacheKey
+      availabilityCache.cacheKey === baseCacheKey
     ) {
       return availabilityCache.data;
     }
@@ -88,9 +90,27 @@ export const availabilityService = {
       (s) =>
         s.status === "in_db" && (s.fixturesCount ?? 0) === 0 && !s.isFinished
     );
-    for (const season of seasonsNeedingCheck) {
-      const fixtures = await adapter.fetchFixturesBySeason(season.externalId);
-      season.hasFixturesAvailable = fixtures.length > 0;
+
+    if (!skipFixtureCheck) {
+      const FIXTURE_CHECK_CONCURRENCY = 5;
+      for (let i = 0; i < seasonsNeedingCheck.length; i += FIXTURE_CHECK_CONCURRENCY) {
+        const batch = seasonsNeedingCheck.slice(i, i + FIXTURE_CHECK_CONCURRENCY);
+        await Promise.allSettled(
+          batch.map(async (season) => {
+            try {
+              if (adapter.fetchSeasonPreview) {
+                const preview = await adapter.fetchSeasonPreview(season.externalId);
+                season.hasFixturesAvailable = (preview?.fixturesCount ?? 0) > 0;
+              } else {
+                const fixtures = await adapter.fetchFixturesBySeason(season.externalId);
+                season.hasFixturesAvailable = fixtures.length > 0;
+              }
+            } catch {
+              season.hasFixturesAvailable = false;
+            }
+          })
+        );
+      }
     }
 
     const isUpcoming = (s: AvailableSeason) =>
@@ -110,12 +130,14 @@ export const availabilityService = {
       (sum, s) => sum + (s.fixturesCount ?? 0),
       0
     );
-    const seasonsWithFixturesAvailable = seasons.filter(
-      (s) =>
-        s.status === "in_db" &&
-        (s.fixturesCount ?? 0) === 0 &&
-        s.hasFixturesAvailable === true
-    ).length;
+    const seasonsWithFixturesAvailable = skipFixtureCheck
+      ? undefined
+      : seasons.filter(
+          (s) =>
+            s.status === "in_db" &&
+            (s.fixturesCount ?? 0) === 0 &&
+            s.hasFixturesAvailable === true
+        ).length;
 
     const result: AdminAvailabilityResponse["data"] = {
       provider: currentProviderLabel,
@@ -130,11 +152,14 @@ export const availabilityService = {
       lastChecked: new Date().toISOString(),
     };
 
-    availabilityCache = {
-      data: result,
-      expiresAt: Date.now() + CACHE_TTL_MS,
-      cacheKey,
-    };
+    // Only cache full results (with fixture checks) — fast results are cheap to recompute
+    if (!skipFixtureCheck) {
+      availabilityCache = {
+        data: result,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+        cacheKey: includeHistorical ? "full" : "recent",
+      };
+    }
 
     return result;
   },

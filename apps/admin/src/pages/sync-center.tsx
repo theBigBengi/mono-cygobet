@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HeaderActions } from "@/contexts/header-actions";
 import { useQuery } from "@tanstack/react-query";
 import { Wifi, WifiOff, AlertTriangle } from "lucide-react";
 import { GapSummaryBar } from "@/components/sync-center/gap-summary-bar";
@@ -94,41 +95,32 @@ export default function SyncCenterPage() {
     <TooltipProvider>
       <ProviderProvider>
         <div className="flex flex-1 flex-col min-h-0 overflow-y-auto p-2 sm:p-3 md:p-6">
-          <div className="flex-shrink-0 mb-4 sm:mb-6">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <h1 className="text-lg sm:text-2xl font-semibold">Sync Center</h1>
-                <p className="hidden sm:block text-sm text-muted-foreground mt-1">
-                  Manage football data synchronization
-                </p>
-              </div>
-              {/* Provider Health Indicator */}
-              <div className="flex items-center gap-2">
-                {healthLoading ? (
-                  <Skeleton className="h-6 w-24 sm:h-7 sm:w-32" />
-                ) : healthData?.data ? (
-                  <Badge
-                    variant="outline"
-                    className={
-                      healthData.data.reachable
-                        ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800"
-                        : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800"
-                    }
-                  >
-                    {healthData.data.reachable ? (
-                      <Wifi className="mr-1.5 h-3 w-3" />
-                    ) : (
-                      <WifiOff className="mr-1.5 h-3 w-3" />
-                    )}
-                    {healthData.data.provider}:{" "}
-                    {healthData.data.reachable
-                      ? `${healthData.data.latencyMs}ms`
-                      : "Unreachable"}
-                  </Badge>
-                ) : null}
-              </div>
-            </div>
+          <HeaderActions>
+            {healthLoading ? (
+              <Skeleton className="h-6 w-24 sm:h-7 sm:w-32" />
+            ) : healthData?.data ? (
+              <Badge
+                variant="outline"
+                className={
+                  healthData.data.reachable
+                    ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800"
+                    : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800"
+                }
+              >
+                {healthData.data.reachable ? (
+                  <Wifi className="mr-1.5 h-3 w-3" />
+                ) : (
+                  <WifiOff className="mr-1.5 h-3 w-3" />
+                )}
+                {healthData.data.provider}:{" "}
+                {healthData.data.reachable
+                  ? `${healthData.data.latencyMs}ms`
+                  : "Unreachable"}
+              </Badge>
+            ) : null}
+          </HeaderActions>
 
+          <div className="flex-shrink-0 mb-4 sm:mb-6">
             {/* Sync alerts banner */}
             {syncAlerts && syncAlerts.length > 0 && (
               <div className="mt-2 sm:mt-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-2 sm:p-3 flex items-start gap-2">

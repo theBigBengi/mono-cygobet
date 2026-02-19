@@ -204,13 +204,6 @@ export default function UserSettingsPage() {
   return (
     <div className="h-full w-full p-4 sm:p-6 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">User Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your account settings and preferences
-          </p>
-        </div>
-
         <div className="space-y-6">
           {/* Profile Information */}
           <Card>
