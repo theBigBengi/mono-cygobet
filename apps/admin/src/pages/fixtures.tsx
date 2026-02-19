@@ -34,7 +34,9 @@ import { fixturesService } from "@/services/fixtures.service";
 import type {
   AdminSyncFixturesResponse,
   AdminFixturesListResponse,
+  AdminProviderFixturesResponse,
   FixtureIssueType,
+  FixtureDTO,
 } from "@repo/types";
 
 type FixturesTab = "live" | "attention" | "search";
@@ -44,8 +46,12 @@ export default function FixturesPage() {
   const queryClient = useQueryClient();
 
   // ─── Live fixtures ───
-  const { data: liveData, isFetching: liveFetching, refetch: refetchLive } = useLiveFixtures();
-  const liveFixtures = liveData?.data ?? [];
+  const { db: liveDb, provider: liveProvider } = useLiveFixtures();
+  const dbFixtures = liveDb.data?.data ?? [];
+  const providerFixtures = liveProvider.data?.data ?? [];
+  const liveFetching = liveDb.isFetching || liveProvider.isFetching;
+  const liveCount = Math.max(dbFixtures.length, providerFixtures.length);
+  const refetchLive = () => { void liveDb.refetch(); void liveProvider.refetch(); };
 
   // ─── Attention tab state ───
   const [issueFilter, setIssueFilter] = useState<FixtureIssueType | "all">(
@@ -167,12 +173,12 @@ export default function FixturesPage() {
               <TabsTrigger value="live" className="gap-1.5">
                 <Radio className="h-3.5 w-3.5" />
                 Live
-                {liveFixtures.length > 0 && (
+                {liveCount > 0 && (
                   <Badge
                     variant="outline"
                     className="ml-1 h-5 min-w-5 px-1.5 text-[10px] border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400"
                   >
-                    {liveFixtures.length}
+                    {liveCount}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -244,11 +250,13 @@ export default function FixturesPage() {
       <div className="flex-1 min-h-0 overflow-y-auto">
         {tab === "live" && (
           <LiveFixturesSection
-            fixtures={liveFixtures}
+            dbFixtures={dbFixtures}
+            providerFixtures={providerFixtures}
+            isLoading={liveDb.isLoading || liveProvider.isLoading}
             isFetching={liveFetching}
             syncingIds={syncingIds}
             onSync={handleSync}
-            onRefresh={() => void refetchLive()}
+            onRefresh={refetchLive}
           />
         )}
 
@@ -492,22 +500,94 @@ export default function FixturesPage() {
 
 // ─── Live Fixtures Section ───
 
-type LiveFixture = AdminFixturesListResponse["data"][number];
+type DbFixture = AdminFixturesListResponse["data"][number];
+
+function hasDiff(db: DbFixture, prov: FixtureDTO): boolean {
+  if (db.state !== prov.state) return true;
+  if ((db.homeScore90 ?? null) !== (prov.homeScore ?? null)) return true;
+  if ((db.awayScore90 ?? null) !== (prov.awayScore ?? null)) return true;
+  return false;
+}
+
+function formatState(state: string) {
+  return state.replace("INPLAY_", "").replace(/_/g, " ");
+}
+
+type MergedFixture = {
+  externalId: string;
+  name: string;
+  dbFixture: DbFixture | null;
+  provFixture: FixtureDTO | null;
+  isDiff: boolean;
+};
+
+function mergeFixtures(dbFixtures: DbFixture[], providerFixtures: FixtureDTO[]): MergedFixture[] {
+  const provMap = new Map<string, FixtureDTO>();
+  for (const p of providerFixtures) provMap.set(String(p.externalId), p);
+
+  const seen = new Set<string>();
+  const result: MergedFixture[] = [];
+
+  // Start with provider fixtures (source of truth for what's live)
+  for (const p of providerFixtures) {
+    const eid = String(p.externalId);
+    seen.add(eid);
+    const db = dbFixtures.find((d) => d.externalId === eid) ?? null;
+    result.push({
+      externalId: eid,
+      name: p.name,
+      dbFixture: db,
+      provFixture: p,
+      isDiff: db ? hasDiff(db, p) : true,
+    });
+  }
+
+  // Add DB fixtures not in provider (maybe finished in provider but still live in DB)
+  for (const db of dbFixtures) {
+    if (!seen.has(db.externalId)) {
+      result.push({
+        externalId: db.externalId,
+        name: db.name,
+        dbFixture: db,
+        provFixture: null,
+        isDiff: true, // provider doesn't have it as live anymore
+      });
+    }
+  }
+
+  return result;
+}
 
 function LiveFixturesSection({
-  fixtures,
+  dbFixtures,
+  providerFixtures,
+  isLoading,
   isFetching,
   syncingIds,
   onSync,
   onRefresh,
 }: {
-  fixtures: LiveFixture[];
+  dbFixtures: DbFixture[];
+  providerFixtures: FixtureDTO[];
+  isLoading: boolean;
   isFetching: boolean;
   syncingIds: Set<string>;
   onSync: (externalId: string, name: string) => void;
   onRefresh: () => void;
 }) {
-  if (fixtures.length === 0) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  const merged = mergeFixtures(dbFixtures, providerFixtures);
+
+  if (merged.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Radio className="h-8 w-8 text-muted-foreground/50" />
@@ -528,12 +608,19 @@ function LiveFixturesSection({
     );
   }
 
+  const diffCount = merged.filter((m) => m.isDiff).length;
+
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
         <span className="text-sm font-semibold">
-          {fixtures.length} fixture{fixtures.length !== 1 ? "s" : ""} in play
+          {merged.length} fixture{merged.length !== 1 ? "s" : ""} in play
         </span>
+        {diffCount > 0 && (
+          <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400">
+            {diffCount} out of sync
+          </Badge>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -544,65 +631,131 @@ function LiveFixturesSection({
           <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
         </Button>
       </div>
+
+      {/* Header row - desktop */}
+      <div className="hidden sm:grid sm:grid-cols-[1fr_auto_1fr_auto] gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 px-3">
+        <span>Database</span>
+        <span />
+        <span>Provider</span>
+        <span />
+      </div>
+
       <div className="space-y-1.5">
-        {fixtures.map((f) => {
-          const isSyncing = syncingIds.has(f.externalId);
+        {merged.map((m) => {
+          const isSyncing = syncingIds.has(m.externalId);
+          const db = m.dbFixture;
+          const prov = m.provFixture;
+
           return (
             <div
-              key={f.id}
-              className="flex items-center gap-2 rounded-md border px-2.5 py-1.5 sm:px-3 sm:py-2"
+              key={m.externalId}
+              className={`rounded-md border px-2.5 py-2 sm:px-3 ${m.isDiff ? "border-amber-200 bg-amber-50/30 dark:border-amber-900/50 dark:bg-amber-950/10" : ""}`}
             >
-              {/* Team logos + score */}
-              <Link to={`/fixtures/${f.id}`} className="flex items-center gap-1.5 flex-1 min-w-0 hover:opacity-70 transition-opacity">
-                {f.homeTeam?.imagePath && (
-                  <img src={f.homeTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />
-                )}
-                <span className="text-xs sm:text-sm font-medium truncate">
-                  {f.homeTeam?.name ?? "Home"}
-                </span>
-                <span className="text-xs sm:text-sm font-bold tabular-nums shrink-0">
-                  {f.homeScore90 ?? 0} - {f.awayScore90 ?? 0}
-                </span>
-                <span className="text-xs sm:text-sm font-medium truncate">
-                  {f.awayTeam?.name ?? "Away"}
-                </span>
-                {f.awayTeam?.imagePath && (
-                  <img src={f.awayTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />
-                )}
-              </Link>
+              {/* Mobile: stacked layout */}
+              <div className="sm:hidden space-y-1.5">
+                <Link to={db ? `/fixtures/${db.id}` : "#"} className="text-xs font-medium hover:underline truncate block">
+                  {m.name}
+                </Link>
+                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center text-[11px]">
+                  {/* DB column */}
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] text-muted-foreground">DB</div>
+                    {db ? (
+                      <>
+                        <div className="font-bold tabular-nums">{db.homeScore90 ?? "–"} - {db.awayScore90 ?? "–"}</div>
+                        <Badge variant="outline" className="text-[9px] px-1 py-0">{formatState(db.state)}</Badge>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Not in DB</span>
+                    )}
+                  </div>
+                  {/* Sync button */}
+                  <div>
+                    {m.isDiff && (
+                      <Button
+                        variant={m.isDiff ? "default" : "outline"}
+                        size="icon"
+                        className="h-7 w-7"
+                        disabled={isSyncing}
+                        onClick={() => onSync(m.externalId, m.name)}
+                      >
+                        {isSyncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                      </Button>
+                    )}
+                  </div>
+                  {/* Provider column */}
+                  <div className="space-y-0.5 text-right">
+                    <div className="text-[10px] text-muted-foreground">Provider</div>
+                    {prov ? (
+                      <>
+                        <div className="font-bold tabular-nums">{prov.homeScore ?? "–"} - {prov.awayScore ?? "–"}</div>
+                        <Badge variant="outline" className="text-[9px] px-1 py-0">{formatState(prov.state)}</Badge>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Not live</span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-              {/* State badge */}
-              <Badge
-                variant="outline"
-                className="text-[10px] shrink-0 border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-400"
-              >
-                {f.state.replace("INPLAY_", "").replace(/_/g, " ")}
-              </Badge>
+              {/* Desktop: single row */}
+              <div className="hidden sm:grid sm:grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
+                {/* DB side */}
+                <div className="flex items-center gap-2 min-w-0">
+                  {db ? (
+                    <Link to={`/fixtures/${db.id}`} className="flex items-center gap-1.5 min-w-0 hover:opacity-70 transition-opacity">
+                      {db.homeTeam?.imagePath && <img src={db.homeTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />}
+                      <span className="text-xs font-medium truncate">{db.homeTeam?.name ?? "Home"}</span>
+                      <span className="text-sm font-bold tabular-nums shrink-0">{db.homeScore90 ?? "–"} - {db.awayScore90 ?? "–"}</span>
+                      <span className="text-xs font-medium truncate">{db.awayTeam?.name ?? "Away"}</span>
+                      {db.awayTeam?.imagePath && <img src={db.awayTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />}
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Not in DB</span>
+                  )}
+                  {db && (
+                    <Badge variant="outline" className="text-[10px] shrink-0">{formatState(db.state)}</Badge>
+                  )}
+                </div>
 
-              {/* League name - desktop only */}
-              {f.league && (
-                <span className="hidden md:inline text-[11px] text-muted-foreground truncate max-w-[120px]">
-                  {f.league.name}
-                </span>
-              )}
+                {/* Sync button in the middle */}
+                <div className="flex items-center justify-center w-16">
+                  {m.isDiff ? (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={isSyncing}
+                      onClick={() => onSync(m.externalId, m.name)}
+                    >
+                      {isSyncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <><RefreshCw className="h-3 w-3 mr-1" />Sync</>}
+                    </Button>
+                  ) : (
+                    <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">OK</span>
+                  )}
+                </div>
 
-              {/* Sync button */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-2 text-xs shrink-0"
-                disabled={isSyncing}
-                onClick={() => onSync(f.externalId, f.name)}
-              >
-                {isSyncing ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <>
-                    <RefreshCw className="h-3 w-3 sm:mr-1" />
-                    <span className="hidden sm:inline">Sync</span>
-                  </>
-                )}
-              </Button>
+                {/* Provider side */}
+                <div className="flex items-center gap-2 min-w-0">
+                  {prov ? (
+                    <>
+                      <span className="text-xs font-medium truncate">{prov.name}</span>
+                      <span className="text-sm font-bold tabular-nums shrink-0">{prov.homeScore ?? "–"} - {prov.awayScore ?? "–"}</span>
+                      <Badge variant="outline" className="text-[10px] shrink-0">{formatState(prov.state)}</Badge>
+                      {prov.liveMinute != null && (
+                        <span className="text-[10px] text-muted-foreground shrink-0">{prov.liveMinute}'</span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Not live in provider</span>
+                  )}
+                </div>
+
+                {/* League */}
+                <div className="hidden lg:block text-[11px] text-muted-foreground truncate max-w-[100px]">
+                  {db?.league?.name ?? prov?.leagueName ?? ""}
+                </div>
+              </div>
             </div>
           );
         })}

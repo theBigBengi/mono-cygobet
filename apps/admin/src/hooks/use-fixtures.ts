@@ -3,6 +3,7 @@ import { fixturesService } from "@/services/fixtures.service";
 import type {
   AdminFixturesAttentionResponse,
   AdminFixturesListResponse,
+  AdminProviderFixturesResponse,
   AdminFixtureSearchResponse,
   FixtureIssueType,
 } from "@repo/types";
@@ -19,16 +20,24 @@ const LIVE_STATES = [
 ].join(",");
 
 export function useLiveFixtures() {
-  return useQuery<AdminFixturesListResponse>({
-    queryKey: ["fixtures", "live"],
+  const db = useQuery<AdminFixturesListResponse>({
+    queryKey: ["fixtures", "live", "db"],
     queryFn: () =>
       fixturesService.getFromDb({
         state: LIVE_STATES,
         perPage: 100,
         include: "homeTeam,awayTeam,league",
       }),
-    refetchInterval: 30_000, // refresh every 30s while live
+    refetchInterval: 30_000,
   });
+
+  const provider = useQuery<AdminProviderFixturesResponse>({
+    queryKey: ["fixtures", "live", "provider"],
+    queryFn: () => fixturesService.getLiveFromProvider(),
+    refetchInterval: 30_000,
+  });
+
+  return { db, provider };
 }
 
 export function useFixturesAttention(

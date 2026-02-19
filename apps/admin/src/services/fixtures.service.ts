@@ -62,6 +62,12 @@ export const fixturesService = {
     return apiGet<AdminFixturesListResponse>(url);
   },
 
+  async getLiveFromProvider() {
+    return apiGet<AdminProviderFixturesResponse>(
+      "/admin/sync-center/provider/fixtures/live"
+    );
+  },
+
   async getFromProvider(
     from?: string,
     to?: string,
