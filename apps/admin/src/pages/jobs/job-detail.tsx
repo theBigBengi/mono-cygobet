@@ -478,7 +478,7 @@ export default function JobDetailPage() {
 
 type RunItem = {
   id: number;
-  itemKey: string;
+  itemKey: string | null;
   status: string;
   meta: Record<string, unknown>;
 };
@@ -502,8 +502,8 @@ function RunDetailSheetContent({
     jobKey: string;
     status: string;
     startedAt: string;
-    finishedAt: string;
-    durationMs: number;
+    finishedAt: string | null;
+    durationMs: number | null;
     trigger: string;
     meta: Record<string, unknown>;
     errorMessage?: string | null;
@@ -547,13 +547,6 @@ function RunDetailSheetContent({
         if (excludeSummaryKeys.has(key)) return false;
         return typeof value === "number" || typeof value === "string" || typeof value === "boolean";
       });
-
-  function formatChanges(ch: unknown): string {
-    if (ch == null || typeof ch !== "object") return "—";
-    const obj = ch as Record<string, unknown>;
-    const parts = Object.entries(obj).map(([k, v]) => `${k}: ${String(v ?? "—")}`);
-    return parts.length ? parts.join(", ") : "—";
-  }
 
   function getActionLabel(item: RunItem): string {
     const m = (item.meta ?? {}) as Record<string, unknown>;
