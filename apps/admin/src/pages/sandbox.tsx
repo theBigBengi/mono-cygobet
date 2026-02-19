@@ -7,11 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
   Table,
   TableBody,
   TableCell,
@@ -26,12 +21,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -50,6 +48,12 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Play,
   Flag,
   RotateCcw,
@@ -58,6 +62,9 @@ import {
   Pencil,
   ChevronDown,
   MessageSquare,
+  Clock,
+  Users,
+  Trophy,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useSandboxList } from "@/hooks/use-sandbox";
@@ -69,6 +76,7 @@ import {
 } from "@/services/sandbox.service";
 import { leaguesService } from "@/services/leagues.service";
 import { teamsService } from "@/services/teams.service";
+import { usersService } from "@/services/users.service";
 import { MultiSelectCombobox } from "@/components/filters/multi-select-combobox";
 
 function tsToDatetimeLocal(ts: number): string {
@@ -127,13 +135,197 @@ function getRandomSample(lang: "he" | "en"): string {
   return pool[Math.floor(Math.random() * pool.length)] ?? pool[0]!;
 }
 
+/* ──────────────────── Fixture Mobile Card ──────────────────── */
+
+function FixtureMobileCard({
+  fixture,
+  onKickoff,
+  onEditLive,
+  onFullTime,
+  onReset,
+  onUpdateStartTime,
+  kickoffPending,
+  resetPending,
+}: {
+  fixture: SandboxFixture;
+  onKickoff: (id: number) => void;
+  onEditLive: (f: SandboxFixture) => void;
+  onFullTime: (id: number) => void;
+  onReset: (id: number) => void;
+  onUpdateStartTime: (id: number, startTime: string) => void;
+  kickoffPending: boolean;
+  resetPending: boolean;
+}) {
+  const action = getFixtureAction(fixture.state);
+  const matchName =
+    fixture.homeTeam && fixture.awayTeam
+      ? `${fixture.homeTeam} vs ${fixture.awayTeam}`
+      : fixture.name;
+  const score =
+    fixture.homeScore90 !== null && fixture.awayScore90 !== null
+      ? `${fixture.homeScore90} - ${fixture.awayScore90}`
+      : null;
+  const isLive = LIVE_STATES.includes(
+    fixture.state as (typeof LIVE_STATES)[number]
+  );
+
+  return (
+    <div className="rounded-lg border p-3 space-y-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium truncate">{matchName}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant={getStateBadgeVariant(fixture.state)} className="text-[10px]">
+              {fixture.state}
+            </Badge>
+            {isLive && fixture.liveMinute != null && (
+              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                <Clock className="h-3 w-3" />
+                {fixture.liveMinute}'
+              </span>
+            )}
+            {score && (
+              <span className="text-sm font-semibold tabular-nums">{score}</span>
+            )}
+          </div>
+        </div>
+        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+          #{fixture.id}
+        </span>
+      </div>
+
+      {fixture.state === "NS" && (
+        <div className="flex items-center gap-2">
+          <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <Input
+            type="datetime-local"
+            className="h-8 text-xs flex-1"
+            value={tsToDatetimeLocal(fixture.startTs)}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              onUpdateStartTime(
+                fixture.id,
+                new Date(e.target.value).toISOString()
+              );
+            }}
+          />
+        </div>
+      )}
+      {fixture.state !== "NS" && (
+        <p className="text-[10px] text-muted-foreground">
+          {new Date(fixture.startTs * 1000).toLocaleString()}
+        </p>
+      )}
+
+      {action && (
+        <>
+          <Separator />
+          <div className="flex items-center gap-2">
+            {action === "kickoff" && (
+              <Button
+                size="sm"
+                className="flex-1 h-8 text-xs"
+                onClick={() => onKickoff(fixture.id)}
+                disabled={kickoffPending}
+              >
+                <Play className="mr-1.5 h-3 w-3" />
+                Kickoff
+              </Button>
+            )}
+            {action === "full-time" && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-8 text-xs"
+                  onClick={() => onEditLive(fixture)}
+                >
+                  <Pencil className="mr-1.5 h-3 w-3" />
+                  Edit Live
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 h-8 text-xs"
+                  onClick={() => onFullTime(fixture.id)}
+                >
+                  <Flag className="mr-1.5 h-3 w-3" />
+                  Full Time
+                </Button>
+              </>
+            )}
+            {action === "reset" && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 h-8 text-xs"
+                onClick={() => onReset(fixture.id)}
+                disabled={resetPending}
+              >
+                <RotateCcw className="mr-1.5 h-3 w-3" />
+                Reset
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────── Member Mobile Card ──────────────────── */
+
+function MemberMobileCard({
+  member,
+  onSendMessage,
+}: {
+  member: SandboxMember;
+  onSendMessage: (member: SandboxMember) => void;
+}) {
+  return (
+    <div className="rounded-lg border p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium truncate">{member.username}</p>
+            <Badge
+              variant={member.role === "owner" ? "default" : "secondary"}
+              className="text-[10px] shrink-0"
+            >
+              {member.role}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-[10px] text-muted-foreground">
+              ID: {member.userId}
+            </span>
+            {member.email && (
+              <span className="text-[10px] text-muted-foreground truncate">
+                {member.email}
+              </span>
+            )}
+          </div>
+        </div>
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-8 w-8 shrink-0"
+          onClick={() => onSendMessage(member)}
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────── Main Page ──────────────────── */
+
 export default function SandboxPage() {
   const queryClient = useQueryClient();
   const { data: listData, isLoading } = useSandboxList();
   const fixtures = listData?.data?.fixtures ?? [];
   const groups = listData?.data?.groups ?? [];
 
-  // Group filter tab: null until first group is auto-selected (must be before filteredFixtures useMemo)
   const [selectedGroupTab, setSelectedGroupTab] = React.useState<number | null>(
     null
   );
@@ -151,7 +343,6 @@ export default function SandboxPage() {
     return fixtures.filter((f) => group.fixtureIds.includes(f.id));
   }, [fixtures, groups, selectedGroupTab]);
 
-  // View toggle: "fixtures" | "members"
   const [viewMode, setViewMode] = React.useState<"fixtures" | "members">(
     "fixtures"
   );
@@ -171,16 +362,36 @@ export default function SandboxPage() {
     fixtureCount: 3,
     selectedLeagueIds: [] as number[],
     selectedTeamIds: [] as number[],
-    memberUserIds: "",
+    selectedUserIds: [] as number[],
     predictionMode: "CorrectScore" as "CorrectScore" | "MatchWinner",
     autoGeneratePredictions: true,
     groupName: "",
     startInMinutes: 60,
   });
+  const [userSearchQuery, setUserSearchQuery] = React.useState("");
   const [leagueSearchQuery, setLeagueSearchQuery] = React.useState("");
   const [teamSearchQuery, setTeamSearchQuery] = React.useState("");
+  const [debouncedUserQuery] = useDebounce(userSearchQuery, 300);
   const [debouncedLeagueQuery] = useDebounce(leagueSearchQuery, 300);
   const [debouncedTeamQuery] = useDebounce(teamSearchQuery, 300);
+
+  const { data: usersSearchData } = useQuery({
+    queryKey: ["users", "search", debouncedUserQuery],
+    queryFn: () => usersService.list({ search: debouncedUserQuery, limit: 20 }),
+    enabled: debouncedUserQuery.length >= 2,
+  });
+
+  const userOptions = React.useMemo(() => {
+    const data = usersSearchData?.data?.users ?? [];
+    return data.map((u) => ({
+      value: u.id,
+      label: u.username
+        ? `${u.username} (${u.email})`
+        : u.name
+          ? `${u.name} (${u.email})`
+          : u.email,
+    }));
+  }, [usersSearchData]);
 
   const { data: leaguesSearchData } = useQuery({
     queryKey: ["leagues", "search", debouncedLeagueQuery],
@@ -296,6 +507,9 @@ export default function SandboxPage() {
     state: "INPLAY_1ST_HALF",
   });
 
+  // Create group dialog
+  const [createGroupDialogOpen, setCreateGroupDialogOpen] = React.useState(false);
+
   // Cleanup confirmation dialog
   const [cleanupDialogOpen, setCleanupDialogOpen] = React.useState(false);
 
@@ -314,17 +528,19 @@ export default function SandboxPage() {
     onSuccess: (data) => {
       toast.success(`Sandbox setup complete — group #${data.data.groupId}`);
       queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
+      setCreateGroupDialogOpen(false);
       setSetupForm({
         selectionMode: "games",
         fixtureCount: 3,
         selectedLeagueIds: [],
         selectedTeamIds: [],
-        memberUserIds: "",
+        selectedUserIds: [],
         predictionMode: "CorrectScore",
         autoGeneratePredictions: true,
         groupName: "",
         startInMinutes: 60,
       });
+      setUserSearchQuery("");
       setLeagueSearchQuery("");
       setTeamSearchQuery("");
     },
@@ -443,6 +659,23 @@ export default function SandboxPage() {
     },
   });
 
+  const [deleteGroupDialogOpen, setDeleteGroupDialogOpen] = React.useState(false);
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: (groupId: number) => sandboxService.deleteGroup(groupId),
+    onSuccess: (data) => {
+      toast.success(`Group deleted (${data.data.deletedFixtures} fixtures removed)`);
+      queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
+      setDeleteGroupDialogOpen(false);
+      if (selectedGroupTab === data.data.groupId) {
+        setSelectedGroupTab(null);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error("Delete group failed", { description: error.message });
+    },
+  });
+
   const cleanupMutation = useMutation({
     mutationFn: () => sandboxService.cleanup(),
     onSuccess: (data) => {
@@ -478,12 +711,9 @@ export default function SandboxPage() {
 
   const handleSetup = (e: React.FormEvent) => {
     e.preventDefault();
-    const memberUserIds = setupForm.memberUserIds
-      .split(",")
-      .map((s) => Number(s.trim()))
-      .filter((n) => !Number.isNaN(n));
+    const memberUserIds = setupForm.selectedUserIds;
     if (memberUserIds.length === 0) {
-      toast.error("Enter at least one user ID");
+      toast.error("Select at least one user");
       return;
     }
     if (setupForm.selectionMode === "games") {
@@ -562,241 +792,76 @@ export default function SandboxPage() {
     });
   };
 
+  const openSendMessageDialog = (member: SandboxMember) => {
+    setMessageLang("en");
+    setMessageBody(getRandomSample("en"));
+    setSendMessageDialog({
+      open: true,
+      memberId: member.userId,
+      memberName: member.username,
+    });
+  };
+
+  const selectedGroup = groups.find((g) => g.id === selectedGroupTab) ?? null;
+
   return (
-    <div className="h-full w-full p-4 sm:p-6 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Sandbox</h1>
-            <p className="text-muted-foreground">
+    <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
+      {/* ── Header ── */}
+      <div className="flex-shrink-0 mb-3 sm:mb-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-semibold">Sandbox</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Create fictive data, simulate match lifecycle, test settlement
             </p>
           </div>
-          <Button
-            variant="destructive"
-            onClick={() => setCleanupDialogOpen(true)}
-            disabled={fixtures.length === 0 && groups.length === 0}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Cleanup All
-          </Button>
-        </div>
-
-        {/* Collapsible Create New Group */}
-        <Collapsible
-          defaultOpen={groups.length === 0}
-          className="rounded-lg border"
-        >
-          <CollapsibleTrigger asChild>
+          <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
-              className="group flex w-full items-center justify-between px-4 py-3"
+              size="sm"
+              onClick={() => setCreateGroupDialogOpen(true)}
             >
-              <span className="font-medium">Create New Group</span>
-              <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+              <Plus className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">New Group</span>
             </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="border-t px-4 pb-4 pt-2">
-              <form onSubmit={handleSetup}>
-                <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="selectionMode">Selection Mode</Label>
-                    <Select
-                      value={setupForm.selectionMode}
-                      onValueChange={(v: "games" | "leagues" | "teams") =>
-                        setSetupForm((prev) => ({
-                          ...prev,
-                          selectionMode: v,
-                        }))
-                      }
-                    >
-                      <SelectTrigger id="selectionMode">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="games">Games (fictive)</SelectItem>
-                        <SelectItem value="leagues">Leagues</SelectItem>
-                        <SelectItem value="teams">Teams</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="predictionMode">Prediction Mode</Label>
-                    <Select
-                      value={setupForm.predictionMode}
-                      onValueChange={(v: "CorrectScore" | "MatchWinner") =>
-                        setSetupForm((prev) => ({
-                          ...prev,
-                          predictionMode: v,
-                        }))
-                      }
-                    >
-                      <SelectTrigger id="predictionMode">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CorrectScore">
-                          CorrectScore
-                        </SelectItem>
-                        <SelectItem value="MatchWinner">MatchWinner</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="memberUserIds">User IDs</Label>
-                    <Input
-                      id="memberUserIds"
-                      type="text"
-                      placeholder="1, 2, 3"
-                      value={setupForm.memberUserIds}
-                      onChange={(e) =>
-                        setSetupForm((prev) => ({
-                          ...prev,
-                          memberUserIds: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  {setupForm.selectionMode === "games" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="fixtureCount">Fixture count</Label>
-                      <Input
-                        id="fixtureCount"
-                        type="number"
-                        min={1}
-                        max={10}
-                        value={setupForm.fixtureCount}
-                        onChange={(e) =>
-                          setSetupForm((prev) => ({
-                            ...prev,
-                            fixtureCount: Number(e.target.value) || 1,
-                          }))
-                        }
-                      />
-                    </div>
-                  )}
-                  {setupForm.selectionMode === "leagues" && (
-                    <div className="space-y-2 min-w-0">
-                      <Label>Leagues</Label>
-                      <MultiSelectCombobox
-                        options={leagueOptions}
-                        selectedValues={setupForm.selectedLeagueIds}
-                        onSelectionChange={(vals) =>
-                          setSetupForm((prev) => ({
-                            ...prev,
-                            selectedLeagueIds: vals.map(Number),
-                          }))
-                        }
-                        placeholder="Search leagues (min 2 chars)..."
-                        searchPlaceholder="Type to search..."
-                        emptyMessage="Type at least 2 characters to search."
-                        onSearchChange={setLeagueSearchQuery}
-                        searchValue={leagueSearchQuery}
-                      />
-                    </div>
-                  )}
-                  {setupForm.selectionMode === "teams" && (
-                    <div className="space-y-2 min-w-0">
-                      <Label>Teams</Label>
-                      <MultiSelectCombobox
-                        options={teamOptions}
-                        selectedValues={setupForm.selectedTeamIds}
-                        onSelectionChange={(vals) =>
-                          setSetupForm((prev) => ({
-                            ...prev,
-                            selectedTeamIds: vals.map(Number),
-                          }))
-                        }
-                        placeholder="Search teams (min 2 chars)..."
-                        searchPlaceholder="Type to search..."
-                        emptyMessage="Type at least 2 characters to search."
-                        onSearchChange={setTeamSearchQuery}
-                        searchValue={teamSearchQuery}
-                      />
-                    </div>
-                  )}
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="autoGenerate"
-                      checked={setupForm.autoGeneratePredictions}
-                      onCheckedChange={(checked) =>
-                        setSetupForm((prev) => ({
-                          ...prev,
-                          autoGeneratePredictions: checked === true,
-                        }))
-                      }
-                    />
-                    <Label htmlFor="autoGenerate" className="font-normal">
-                      Auto-generate predictions
-                    </Label>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="groupName">Group name (optional)</Label>
-                    <Input
-                      id="groupName"
-                      className="min-w-0"
-                      value={setupForm.groupName}
-                      onChange={(e) =>
-                        setSetupForm((prev) => ({
-                          ...prev,
-                          groupName: e.target.value,
-                        }))
-                      }
-                      placeholder="Test Group"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="startInMinutes">Start in (minutes)</Label>
-                    <Input
-                      id="startInMinutes"
-                      type="number"
-                      min={1}
-                      placeholder="60"
-                      className="min-w-0 max-w-[120px]"
-                      value={setupForm.startInMinutes}
-                      onChange={(e) =>
-                        setSetupForm((prev) => ({
-                          ...prev,
-                          startInMinutes: Number(e.target.value) || 60,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <Button type="submit" disabled={setupMutation.isPending}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    {setupMutation.isPending ? "Setting up..." : "Create"}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setCleanupDialogOpen(true)}
+                    disabled={fixtures.length === 0 && groups.length === 0}
+                  >
+                    <Trash2 className="h-4 w-4 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Cleanup</span>
                   </Button>
-                </div>
-              </form>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+                </TooltipTrigger>
+                <TooltipContent className="sm:hidden">
+                  <p>Cleanup All</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+      </div>
 
-        {/* Fixtures Card */}
+      {/* ── Scrollable Content ── */}
+      <div className="flex-1 min-h-0 overflow-auto">
+        {/* ── Fixtures / Members Card ── */}
         <Card>
-          <CardHeader>
-            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                <CardTitle className="shrink-0">
-                  Fixtures (
-                  {selectedGroupTab === null
-                    ? 0
-                    : (groups.find((g) => g.id === selectedGroupTab)?.fixtureIds
-                        .length ?? 0)}
-                  )
-                </CardTitle>
-                {groups.length > 0 && (
+          <CardHeader className="px-3 sm:px-6 py-3 sm:py-4 space-y-2.5">
+            {/* Row 1 desktop: selector + actions + tabs inline */}
+            {/* Row 1+2 mobile: selector full width, tabs full width below */}
+            <div className="space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3">
+              <div className="flex items-center gap-2">
+                {groups.length > 0 ? (
                   <Select
                     value={
                       selectedGroupTab === null ? "" : String(selectedGroupTab)
                     }
                     onValueChange={(v) => setSelectedGroupTab(Number(v))}
                   >
-                    <SelectTrigger className="w-full min-w-0 sm:w-[200px]">
+                    <SelectTrigger className="h-8 w-full sm:w-[200px] text-xs sm:text-sm">
                       <SelectValue placeholder="Select group" />
                     </SelectTrigger>
                     <SelectContent>
@@ -807,414 +872,502 @@ export default function SandboxPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                ) : (
+                  <CardTitle className="text-sm sm:text-base">Groups</CardTitle>
                 )}
-                {groups.length > 0 && selectedGroupTab !== null && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setAddFixtureDialog({
-                        open: true,
-                        groupId: selectedGroupTab,
-                      });
-                      setAddFixtureForm({
-                        homeTeamId: null,
-                        awayTeamId: null,
-                        leagueId: null,
-                        homeTeamLabel: null,
-                        awayTeamLabel: null,
-                        leagueLabel: null,
-                        round: "",
-                        startInMinutes: 60,
-                      });
-                      setAddFixtureHomeSearch("");
-                      setAddFixtureAwaySearch("");
-                      setAddFixtureLeagueSearch("");
-                    }}
-                  >
-                    <Plus className="mr-1 h-3 w-3" />
-                    Add Fixture
-                  </Button>
-                )}
-                {selectedGroupTab !== null && (
-                  <div className="flex items-center gap-1 rounded-lg border p-1">
+                {selectedGroup && (
+                  <>
                     <Button
                       size="sm"
-                      variant={viewMode === "fixtures" ? "secondary" : "ghost"}
-                      onClick={() => setViewMode("fixtures")}
+                      variant="outline"
+                      className="h-7 text-xs shrink-0"
+                      onClick={() => {
+                        setAddFixtureDialog({
+                          open: true,
+                          groupId: selectedGroupTab!,
+                        });
+                        setAddFixtureForm({
+                          homeTeamId: null,
+                          awayTeamId: null,
+                          leagueId: null,
+                          homeTeamLabel: null,
+                          awayTeamLabel: null,
+                          leagueLabel: null,
+                          round: "",
+                          startInMinutes: 60,
+                        });
+                        setAddFixtureHomeSearch("");
+                        setAddFixtureAwaySearch("");
+                        setAddFixtureLeagueSearch("");
+                      }}
                     >
-                      Fixtures
+                      <Plus className="h-3 w-3 sm:mr-1" />
+                      <span className="hidden sm:inline">Add Fixture</span>
                     </Button>
                     <Button
-                      size="sm"
-                      variant={viewMode === "members" ? "secondary" : "ghost"}
-                      onClick={() => setViewMode("members")}
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleteGroupDialogOpen(true)}
                     >
-                      Members
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
-                  </div>
+                  </>
                 )}
               </div>
+
+              {selectedGroupTab !== null && (
+                <Tabs
+                  value={viewMode}
+                  onValueChange={(v) =>
+                    setViewMode(v as "fixtures" | "members")
+                  }
+                  className="w-full sm:w-auto shrink-0"
+                >
+                  <TabsList className="h-8 w-full sm:w-auto">
+                    <TabsTrigger value="fixtures" className="text-xs px-2.5 h-6 flex-1 sm:flex-initial">
+                      Fixtures
+                    </TabsTrigger>
+                    <TabsTrigger value="members" className="text-xs px-2.5 h-6 flex-1 sm:flex-initial">
+                      Members
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              )}
             </div>
-            {selectedGroupTab !== null &&
-              groups.length > 0 &&
-              (() => {
-                const group = groups.find((g) => g.id === selectedGroupTab);
-                if (!group) return null;
-                return (
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <Badge variant="secondary">{group.status}</Badge>
-                    <span className="text-muted-foreground">
-                      {group.memberCount} members, {group.fixtureCount} fixtures
-                    </span>
-                  </div>
-                );
-              })()}
+
+            {/* Row 2: Group meta */}
+            {selectedGroup && (
+              <div className="flex items-center gap-1.5">
+                <Badge variant="secondary" className="text-[10px]">
+                  {selectedGroup.status}
+                </Badge>
+                <span className="text-[10px] sm:text-xs text-muted-foreground">
+                  {selectedGroup.memberCount} members, {selectedGroup.fixtureCount} fixtures
+                </span>
+              </div>
+            )}
           </CardHeader>
-          <CardContent>
+
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6 pt-0">
             {isLoading ? (
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
+                  <Skeleton key={i} className="h-10 w-full rounded-lg" />
                 ))}
               </div>
             ) : groups.length === 0 ? (
-              <p className="text-muted-foreground">
-                No groups yet. Create a group first using the form above.
-              </p>
+              <div className="text-center py-8">
+                <Trophy className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  No groups yet. Create a group using the form above.
+                </p>
+              </div>
             ) : selectedGroupTab === null ? (
-              <p className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground text-center py-8">
                 Select a group to view its fixtures.
               </p>
             ) : viewMode === "fixtures" ? (
               filteredFixtures.length === 0 ? (
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground text-center py-8">
                   No fixtures in this group.
                 </p>
               ) : (
-                <div className="min-w-0 overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Match</TableHead>
-                        <TableHead>State</TableHead>
-                        <TableHead>Min</TableHead>
-                        <TableHead>Score</TableHead>
-                        <TableHead>Start</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredFixtures.map((fixture) => {
-                        const action = getFixtureAction(fixture.state);
-                        const matchName =
-                          fixture.homeTeam && fixture.awayTeam
-                            ? `${fixture.homeTeam} vs ${fixture.awayTeam}`
-                            : fixture.name;
-                        const score =
-                          fixture.homeScore90 !== null &&
-                          fixture.awayScore90 !== null
-                            ? `${fixture.homeScore90} - ${fixture.awayScore90}`
+                <>
+                  {/* Mobile: Cards */}
+                  <div className="space-y-2 sm:hidden">
+                    {filteredFixtures.map((fixture) => (
+                      <FixtureMobileCard
+                        key={fixture.id}
+                        fixture={fixture}
+                        onKickoff={(id) => kickoffMutation.mutate(id)}
+                        onEditLive={openEditLiveDialog}
+                        onFullTime={openFtDialog}
+                        onReset={(id) => resetMutation.mutate(id)}
+                        onUpdateStartTime={(id, startTime) =>
+                          updateStartTimeMutation.mutate({
+                            fixtureId: id,
+                            startTime,
+                          })
+                        }
+                        kickoffPending={kickoffMutation.isPending}
+                        resetPending={resetMutation.isPending}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Desktop: Table */}
+                  <div className="hidden sm:block min-w-0 overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[60px]">ID</TableHead>
+                          <TableHead>Match</TableHead>
+                          <TableHead className="w-[100px]">State</TableHead>
+                          <TableHead className="w-[50px]">Min</TableHead>
+                          <TableHead className="w-[70px]">Score</TableHead>
+                          <TableHead className="w-[180px]">Start</TableHead>
+                          <TableHead className="w-[180px]">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredFixtures.map((fixture) => {
+                          const action = getFixtureAction(fixture.state);
+                          const matchName =
+                            fixture.homeTeam && fixture.awayTeam
+                              ? `${fixture.homeTeam} vs ${fixture.awayTeam}`
+                              : fixture.name;
+                          const score =
+                            fixture.homeScore90 !== null &&
+                            fixture.awayScore90 !== null
+                              ? `${fixture.homeScore90} - ${fixture.awayScore90}`
+                              : "—";
+                          const isLive = LIVE_STATES.includes(
+                            fixture.state as (typeof LIVE_STATES)[number]
+                          );
+                          const minDisplay = isLive
+                            ? (fixture.liveMinute ?? "—")
                             : "—";
-                        const isLive = LIVE_STATES.includes(
-                          fixture.state as (typeof LIVE_STATES)[number]
-                        );
-                        const minDisplay = isLive
-                          ? (fixture.liveMinute ?? "—")
-                          : "—";
-                        return (
-                          <TableRow key={fixture.id}>
-                            <TableCell>{fixture.id}</TableCell>
-                            <TableCell>{matchName}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={getStateBadgeVariant(fixture.state)}
-                              >
-                                {fixture.state}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{minDisplay}</TableCell>
-                            <TableCell>{score}</TableCell>
-                            <TableCell>
-                              {fixture.state === "NS" ? (
-                                <Input
-                                  type="datetime-local"
-                                  className="w-[180px]"
-                                  value={tsToDatetimeLocal(fixture.startTs)}
-                                  onChange={(e) => {
-                                    if (!e.target.value) return;
-                                    updateStartTimeMutation.mutate({
-                                      fixtureId: fixture.id,
-                                      startTime: new Date(
-                                        e.target.value
-                                      ).toISOString(),
-                                    });
-                                  }}
-                                />
-                              ) : (
-                                <span className="text-sm text-muted-foreground">
-                                  {new Date(
-                                    fixture.startTs * 1000
-                                  ).toLocaleString()}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {action === "kickoff" && (
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  onClick={() =>
-                                    kickoffMutation.mutate(fixture.id)
-                                  }
-                                  disabled={kickoffMutation.isPending}
+                          return (
+                            <TableRow key={fixture.id}>
+                              <TableCell className="text-xs text-muted-foreground tabular-nums">
+                                {fixture.id}
+                              </TableCell>
+                              <TableCell className="text-sm font-medium">
+                                {matchName}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={getStateBadgeVariant(fixture.state)}
+                                  className="text-[10px]"
                                 >
-                                  <Play className="mr-1 h-3 w-3" />
-                                  Kickoff
-                                </Button>
-                              )}
-                              {action === "full-time" && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => openEditLiveDialog(fixture)}
-                                    className="mr-1"
-                                  >
-                                    <Pencil className="mr-1 h-3 w-3" />
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    onClick={() => openFtDialog(fixture.id)}
-                                  >
-                                    <Flag className="mr-1 h-3 w-3" />
-                                    Full Time
-                                  </Button>
-                                </>
-                              )}
-                              {action === "reset" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    resetMutation.mutate(fixture.id)
-                                  }
-                                  disabled={resetMutation.isPending}
-                                >
-                                  <RotateCcw className="mr-1 h-3 w-3" />
-                                  Reset
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                                  {fixture.state}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="tabular-nums text-sm">
+                                {minDisplay}
+                              </TableCell>
+                              <TableCell className="tabular-nums font-medium text-sm">
+                                {score}
+                              </TableCell>
+                              <TableCell>
+                                {fixture.state === "NS" ? (
+                                  <Input
+                                    type="datetime-local"
+                                    className="h-8 w-[170px] text-xs"
+                                    value={tsToDatetimeLocal(fixture.startTs)}
+                                    onChange={(e) => {
+                                      if (!e.target.value) return;
+                                      updateStartTimeMutation.mutate({
+                                        fixtureId: fixture.id,
+                                        startTime: new Date(
+                                          e.target.value
+                                        ).toISOString(),
+                                      });
+                                    }}
+                                  />
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(
+                                      fixture.startTs * 1000
+                                    ).toLocaleString()}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1.5">
+                                  {action === "kickoff" && (
+                                    <Button
+                                      size="sm"
+                                      className="h-7 text-xs"
+                                      onClick={() =>
+                                        kickoffMutation.mutate(fixture.id)
+                                      }
+                                      disabled={kickoffMutation.isPending}
+                                    >
+                                      <Play className="mr-1 h-3 w-3" />
+                                      Kickoff
+                                    </Button>
+                                  )}
+                                  {action === "full-time" && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 text-xs"
+                                        onClick={() =>
+                                          openEditLiveDialog(fixture)
+                                        }
+                                      >
+                                        <Pencil className="mr-1 h-3 w-3" />
+                                        Edit
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        className="h-7 text-xs"
+                                        onClick={() =>
+                                          openFtDialog(fixture.id)
+                                        }
+                                      >
+                                        <Flag className="mr-1 h-3 w-3" />
+                                        FT
+                                      </Button>
+                                    </>
+                                  )}
+                                  {action === "reset" && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 text-xs"
+                                      onClick={() =>
+                                        resetMutation.mutate(fixture.id)
+                                      }
+                                      disabled={resetMutation.isPending}
+                                    >
+                                      <RotateCcw className="mr-1 h-3 w-3" />
+                                      Reset
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               )
             ) : membersLoading ? (
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
+                  <Skeleton key={i} className="h-10 w-full rounded-lg" />
                 ))}
               </div>
             ) : members.length === 0 ? (
-              <p className="text-muted-foreground">No members in this group.</p>
-            ) : (
-              <div className="min-w-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User ID</TableHead>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {members.map((member: SandboxMember) => (
-                      <TableRow key={member.userId}>
-                        <TableCell>{member.userId}</TableCell>
-                        <TableCell>{member.username}</TableCell>
-                        <TableCell>{member.email ?? "—"}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              member.role === "owner" ? "default" : "secondary"
-                            }
-                          >
-                            {member.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setMessageLang("en");
-                              setMessageBody(getRandomSample("en"));
-                              setSendMessageDialog({
-                                open: true,
-                                memberId: member.userId,
-                                memberName: member.username,
-                              });
-                            }}
-                          >
-                            <MessageSquare className="mr-1 h-3 w-3" />
-                            Send Message
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="text-center py-8">
+                <Users className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  No members in this group.
+                </p>
               </div>
+            ) : (
+              <>
+                {/* Mobile: Cards */}
+                <div className="space-y-2 sm:hidden">
+                  {members.map((member: SandboxMember) => (
+                    <MemberMobileCard
+                      key={member.userId}
+                      member={member}
+                      onSendMessage={openSendMessageDialog}
+                    />
+                  ))}
+                </div>
+
+                {/* Desktop: Table */}
+                <div className="hidden sm:block min-w-0 overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[80px]">User ID</TableHead>
+                        <TableHead>Username</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead className="w-[80px]">Role</TableHead>
+                        <TableHead className="w-[130px]">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {members.map((member: SandboxMember) => (
+                        <TableRow key={member.userId}>
+                          <TableCell className="text-xs text-muted-foreground tabular-nums">
+                            {member.userId}
+                          </TableCell>
+                          <TableCell className="text-sm font-medium">
+                            {member.username}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {member.email ?? "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                member.role === "owner"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className="text-[10px]"
+                            >
+                              {member.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              onClick={() => openSendMessageDialog(member)}
+                            >
+                              <MessageSquare className="mr-1 h-3 w-3" />
+                              Send Message
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Full-Time Dialog */}
+      {/* ── Full-Time Dialog ── */}
       <Dialog
         open={ftDialog.open}
         onOpenChange={(open) => {
           if (!open) setFtDialog({ open: false, fixtureId: null });
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Set Final Score</DialogTitle>
+            <DialogTitle className="text-base">Set Final Score</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center gap-2 py-4">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="ftHome">Home</Label>
-              <Input
-                id="ftHome"
-                type="number"
-                min={0}
-                value={ftScores.home}
-                onChange={(e) =>
-                  setFtScores((prev) => ({
-                    ...prev,
-                    home: Math.max(0, Number(e.target.value) || 0),
-                  }))
+          <div className="space-y-4">
+            <div className="flex items-end gap-3">
+              <div className="flex-1 space-y-1.5">
+                <Label htmlFor="ftHome" className="text-xs">Home</Label>
+                <Input
+                  id="ftHome"
+                  type="number"
+                  className="h-9 text-center text-lg font-semibold tabular-nums"
+                  min={0}
+                  value={ftScores.home}
+                  onChange={(e) =>
+                    setFtScores((prev) => ({
+                      ...prev,
+                      home: Math.max(0, Number(e.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+              <span className="pb-2 text-muted-foreground font-medium">—</span>
+              <div className="flex-1 space-y-1.5">
+                <Label htmlFor="ftAway" className="text-xs">Away</Label>
+                <Input
+                  id="ftAway"
+                  type="number"
+                  className="h-9 text-center text-lg font-semibold tabular-nums"
+                  min={0}
+                  value={ftScores.away}
+                  onChange={(e) =>
+                    setFtScores((prev) => ({
+                      ...prev,
+                      away: Math.max(0, Number(e.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Finished State</Label>
+              <Select
+                value={ftScores.state}
+                onValueChange={(v: "FT" | "AET" | "FT_PEN") =>
+                  setFtScores((prev) => ({ ...prev, state: v }))
                 }
-              />
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FT">FT (Full Time)</SelectItem>
+                  <SelectItem value="AET">AET (After Extra Time)</SelectItem>
+                  <SelectItem value="FT_PEN">FT_PEN (Penalties)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <span className="pt-6">—</span>
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="ftAway">Away</Label>
-              <Input
-                id="ftAway"
-                type="number"
-                min={0}
-                value={ftScores.away}
-                onChange={(e) =>
-                  setFtScores((prev) => ({
-                    ...prev,
-                    away: Math.max(0, Number(e.target.value) || 0),
-                  }))
-                }
-              />
-            </div>
+            {(ftScores.state === "AET" || ftScores.state === "FT_PEN") && (
+              <div className="flex items-end gap-3">
+                <div className="flex-1 space-y-1.5">
+                  <Label className="text-xs">ET Home</Label>
+                  <Input
+                    type="number"
+                    className="h-9 text-center tabular-nums"
+                    min={0}
+                    value={ftScores.homeScoreET}
+                    onChange={(e) =>
+                      setFtScores((prev) => ({
+                        ...prev,
+                        homeScoreET: Math.max(0, Number(e.target.value) || 0),
+                      }))
+                    }
+                  />
+                </div>
+                <span className="pb-2 text-muted-foreground font-medium">—</span>
+                <div className="flex-1 space-y-1.5">
+                  <Label className="text-xs">ET Away</Label>
+                  <Input
+                    type="number"
+                    className="h-9 text-center tabular-nums"
+                    min={0}
+                    value={ftScores.awayScoreET}
+                    onChange={(e) =>
+                      setFtScores((prev) => ({
+                        ...prev,
+                        awayScoreET: Math.max(0, Number(e.target.value) || 0),
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            )}
+            {ftScores.state === "FT_PEN" && (
+              <div className="flex items-end gap-3">
+                <div className="flex-1 space-y-1.5">
+                  <Label className="text-xs">Pen Home</Label>
+                  <Input
+                    type="number"
+                    className="h-9 text-center tabular-nums"
+                    min={0}
+                    value={ftScores.penHome}
+                    onChange={(e) =>
+                      setFtScores((prev) => ({
+                        ...prev,
+                        penHome: Math.max(0, Number(e.target.value) || 0),
+                      }))
+                    }
+                  />
+                </div>
+                <span className="pb-2 text-muted-foreground font-medium">—</span>
+                <div className="flex-1 space-y-1.5">
+                  <Label className="text-xs">Pen Away</Label>
+                  <Input
+                    type="number"
+                    className="h-9 text-center tabular-nums"
+                    min={0}
+                    value={ftScores.penAway}
+                    onChange={(e) =>
+                      setFtScores((prev) => ({
+                        ...prev,
+                        penAway: Math.max(0, Number(e.target.value) || 0),
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            )}
           </div>
-          <div className="space-y-2">
-            <Label>Finished State</Label>
-            <Select
-              value={ftScores.state}
-              onValueChange={(v: "FT" | "AET" | "FT_PEN") =>
-                setFtScores((prev) => ({ ...prev, state: v }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="FT">FT (Full Time)</SelectItem>
-                <SelectItem value="AET">AET (After Extra Time)</SelectItem>
-                <SelectItem value="FT_PEN">FT_PEN (Penalties)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {(ftScores.state === "AET" || ftScores.state === "FT_PEN") && (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 space-y-2">
-                <Label>ET Home</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={ftScores.homeScoreET}
-                  onChange={(e) =>
-                    setFtScores((prev) => ({
-                      ...prev,
-                      homeScoreET: Math.max(0, Number(e.target.value) || 0),
-                    }))
-                  }
-                />
-              </div>
-              <span className="pt-6">—</span>
-              <div className="flex-1 space-y-2">
-                <Label>ET Away</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={ftScores.awayScoreET}
-                  onChange={(e) =>
-                    setFtScores((prev) => ({
-                      ...prev,
-                      awayScoreET: Math.max(0, Number(e.target.value) || 0),
-                    }))
-                  }
-                />
-              </div>
-            </div>
-          )}
-          {ftScores.state === "FT_PEN" && (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 space-y-2">
-                <Label>Pen Home</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={ftScores.penHome}
-                  onChange={(e) =>
-                    setFtScores((prev) => ({
-                      ...prev,
-                      penHome: Math.max(0, Number(e.target.value) || 0),
-                    }))
-                  }
-                />
-              </div>
-              <span className="pt-6">—</span>
-              <div className="flex-1 space-y-2">
-                <Label>Pen Away</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={ftScores.penAway}
-                  onChange={(e) =>
-                    setFtScores((prev) => ({
-                      ...prev,
-                      penAway: Math.max(0, Number(e.target.value) || 0),
-                    }))
-                  }
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setFtDialog({ open: false, fixtureId: null })}
             >
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={() => {
                 if (ftDialog.fixtureId == null) return;
                 fullTimeMutation.mutate({
@@ -1246,24 +1399,25 @@ export default function SandboxPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Live Dialog */}
+      {/* ── Edit Live Dialog ── */}
       <Dialog
         open={editLiveDialog.open}
         onOpenChange={(open) => {
           if (!open) setEditLiveDialog({ open: false, fixtureId: null });
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Edit Live Fixture</DialogTitle>
+            <DialogTitle className="text-base">Edit Live Fixture</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="editHomeScore">Home Score</Label>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="editHomeScore" className="text-xs">Home Score</Label>
                 <Input
                   id="editHomeScore"
                   type="number"
+                  className="h-9 text-center tabular-nums"
                   min={0}
                   value={editLiveForm.homeScore90}
                   onChange={(e) =>
@@ -1274,11 +1428,12 @@ export default function SandboxPage() {
                   }
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="editAwayScore">Away Score</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="editAwayScore" className="text-xs">Away Score</Label>
                 <Input
                   id="editAwayScore"
                   type="number"
+                  className="h-9 text-center tabular-nums"
                   min={0}
                   value={editLiveForm.awayScore90}
                   onChange={(e) =>
@@ -1290,11 +1445,12 @@ export default function SandboxPage() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="editLiveMinute">Minute</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="editLiveMinute" className="text-xs">Minute</Label>
               <Input
                 id="editLiveMinute"
                 type="number"
+                className="h-9 tabular-nums"
                 min={0}
                 max={120}
                 value={editLiveForm.liveMinute}
@@ -1309,15 +1465,15 @@ export default function SandboxPage() {
                 }
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="editState">State</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="editState" className="text-xs">State</Label>
               <Select
                 value={editLiveForm.state}
                 onValueChange={(v) =>
                   setEditLiveForm((prev) => ({ ...prev, state: v }))
                 }
               >
-                <SelectTrigger id="editState">
+                <SelectTrigger id="editState" className="h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1341,9 +1497,10 @@ export default function SandboxPage() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() =>
                 setEditLiveDialog({ open: false, fixtureId: null })
               }
@@ -1351,6 +1508,7 @@ export default function SandboxPage() {
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={() => {
                 if (editLiveDialog.fixtureId == null) return;
                 updateLiveMutation.mutate({
@@ -1369,25 +1527,267 @@ export default function SandboxPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Cleanup Confirmation Dialog */}
-      <Dialog open={cleanupDialogOpen} onOpenChange={setCleanupDialogOpen}>
-        <DialogContent className="sm:max-w-sm">
+      {/* ── Create Group Dialog ── */}
+      <Dialog open={createGroupDialogOpen} onOpenChange={setCreateGroupDialogOpen}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Delete all sandbox data?</DialogTitle>
+            <DialogTitle className="text-base">Create New Group</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              Set up a sandbox group with fictive fixtures and members.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            id="create-group-form"
+            onSubmit={handleSetup}
+            className="space-y-4"
+          >
+            <div className="grid min-w-0 gap-3 grid-cols-1 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="selectionMode" className="text-xs">Selection Mode</Label>
+                <Select
+                  value={setupForm.selectionMode}
+                  onValueChange={(v: "games" | "leagues" | "teams") =>
+                    setSetupForm((prev) => ({
+                      ...prev,
+                      selectionMode: v,
+                    }))
+                  }
+                >
+                  <SelectTrigger id="selectionMode" className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="games">Games (fictive)</SelectItem>
+                    <SelectItem value="leagues">Leagues</SelectItem>
+                    <SelectItem value="teams">Teams</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="predictionMode" className="text-xs">Prediction Mode</Label>
+                <Select
+                  value={setupForm.predictionMode}
+                  onValueChange={(v: "CorrectScore" | "MatchWinner") =>
+                    setSetupForm((prev) => ({
+                      ...prev,
+                      predictionMode: v,
+                    }))
+                  }
+                >
+                  <SelectTrigger id="predictionMode" className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CorrectScore">CorrectScore</SelectItem>
+                    <SelectItem value="MatchWinner">MatchWinner</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5 min-w-0">
+              <Label className="text-xs">Users</Label>
+              <MultiSelectCombobox
+                options={userOptions}
+                selectedValues={setupForm.selectedUserIds}
+                onSelectionChange={(vals) =>
+                  setSetupForm((prev) => ({
+                    ...prev,
+                    selectedUserIds: vals.map(Number),
+                  }))
+                }
+                placeholder="Search users..."
+                searchPlaceholder="Type name or email..."
+                emptyMessage="Type at least 2 characters."
+                onSearchChange={setUserSearchQuery}
+                searchValue={userSearchQuery}
+              />
+            </div>
+            {setupForm.selectionMode === "games" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="fixtureCount" className="text-xs">Fixture count (1-10)</Label>
+                <Input
+                  id="fixtureCount"
+                  type="number"
+                  inputMode="numeric"
+                  className="h-9 w-20 tabular-nums"
+                  min={1}
+                  max={10}
+                  value={setupForm.fixtureCount}
+                  onChange={(e) => {
+                    const val = Math.min(10, Math.max(1, Number(e.target.value) || 1));
+                    setSetupForm((prev) => ({ ...prev, fixtureCount: val }));
+                  }}
+                />
+              </div>
+            )}
+            {setupForm.selectionMode === "leagues" && (
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs">Leagues</Label>
+                <MultiSelectCombobox
+                  options={leagueOptions}
+                  selectedValues={setupForm.selectedLeagueIds}
+                  onSelectionChange={(vals) =>
+                    setSetupForm((prev) => ({
+                      ...prev,
+                      selectedLeagueIds: vals.map(Number),
+                    }))
+                  }
+                  placeholder="Search leagues..."
+                  searchPlaceholder="Type to search..."
+                  emptyMessage="Type at least 2 characters."
+                  onSearchChange={setLeagueSearchQuery}
+                  searchValue={leagueSearchQuery}
+                />
+              </div>
+            )}
+            {setupForm.selectionMode === "teams" && (
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs">Teams</Label>
+                <MultiSelectCombobox
+                  options={teamOptions}
+                  selectedValues={setupForm.selectedTeamIds}
+                  onSelectionChange={(vals) =>
+                    setSetupForm((prev) => ({
+                      ...prev,
+                      selectedTeamIds: vals.map(Number),
+                    }))
+                  }
+                  placeholder="Search teams..."
+                  searchPlaceholder="Type to search..."
+                  emptyMessage="Type at least 2 characters."
+                  onSearchChange={setTeamSearchQuery}
+                  searchValue={teamSearchQuery}
+                />
+              </div>
+            )}
+            <div className="grid min-w-0 gap-3 grid-cols-1 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="groupName" className="text-xs">Group name (optional)</Label>
+                <Input
+                  id="groupName"
+                  className="h-9 min-w-0"
+                  value={setupForm.groupName}
+                  onChange={(e) =>
+                    setSetupForm((prev) => ({
+                      ...prev,
+                      groupName: e.target.value,
+                    }))
+                  }
+                  placeholder="Test Group"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="startInMinutes" className="text-xs">Start in (minutes)</Label>
+                <Input
+                  id="startInMinutes"
+                  type="number"
+                  className="h-9 min-w-0"
+                  min={1}
+                  placeholder="60"
+                  value={setupForm.startInMinutes}
+                  onChange={(e) =>
+                    setSetupForm((prev) => ({
+                      ...prev,
+                      startInMinutes: Number(e.target.value) || 60,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="autoGenerate"
+                checked={setupForm.autoGeneratePredictions}
+                onCheckedChange={(checked) =>
+                  setSetupForm((prev) => ({
+                    ...prev,
+                    autoGeneratePredictions: checked === true,
+                  }))
+                }
+              />
+              <Label htmlFor="autoGenerate" className="text-xs font-normal">
+                Auto-generate predictions
+              </Label>
+            </div>
+          </form>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCreateGroupDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="create-group-form"
+              size="sm"
+              disabled={setupMutation.isPending}
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              {setupMutation.isPending ? "Setting up..." : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Group Dialog ── */}
+      <Dialog open={deleteGroupDialogOpen} onOpenChange={setDeleteGroupDialogOpen}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">Delete this group?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will delete the group
+            {selectedGroup && (
+              <> <span className="font-medium text-foreground">{selectedGroup.name.replace(/^\[SANDBOX\]\s*/, "")}</span></>
+            )}
+            {" "}and its sandbox fixtures. This action cannot be undone.
+          </p>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteGroupDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (selectedGroupTab == null) return;
+                deleteGroupMutation.mutate(selectedGroupTab);
+              }}
+              disabled={deleteGroupMutation.isPending}
+            >
+              {deleteGroupMutation.isPending ? "Deleting..." : "Delete Group"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Cleanup Confirmation Dialog ── */}
+      <Dialog open={cleanupDialogOpen} onOpenChange={setCleanupDialogOpen}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">Delete all sandbox data?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             This will delete {fixtures.length} fixtures and {groups.length}{" "}
             groups. This action cannot be undone.
           </p>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setCleanupDialogOpen(false)}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={() => cleanupMutation.mutate()}
               disabled={cleanupMutation.isPending}
             >
@@ -1397,36 +1797,38 @@ export default function SandboxPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Fixture Dialog */}
+      {/* ── Add Fixture Dialog ── */}
       <Dialog
         open={addFixtureDialog.open}
         onOpenChange={(open) => {
           if (!open) setAddFixtureDialog({ open: false, groupId: null });
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Add Fixture to Group</DialogTitle>
+            <DialogTitle className="text-base">Add Fixture to Group</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2 min-w-0">
-                <Label>Home Team</Label>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs">Home Team</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       role="combobox"
-                      className="w-full justify-between font-normal"
+                      className="w-full h-9 justify-between font-normal text-xs"
                     >
-                      {addFixtureForm.homeTeamId != null
-                        ? (addFixtureForm.homeTeamLabel ??
-                          addFixtureHomeOptions.find(
-                            (o) => o.value === addFixtureForm.homeTeamId
-                          )?.label ??
-                          `Team #${addFixtureForm.homeTeamId}`)
-                        : "Search team..."}
-                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      <span className="truncate">
+                        {addFixtureForm.homeTeamId != null
+                          ? (addFixtureForm.homeTeamLabel ??
+                            addFixtureHomeOptions.find(
+                              (o) => o.value === addFixtureForm.homeTeamId
+                            )?.label ??
+                            `Team #${addFixtureForm.homeTeamId}`)
+                          : "Search team..."}
+                      </span>
+                      <ChevronDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
@@ -1435,7 +1837,7 @@ export default function SandboxPage() {
                   >
                     <Command shouldFilter={false}>
                       <CommandInput
-                        placeholder="Type to search (min 2 chars)..."
+                        placeholder="Type to search..."
                         value={addFixtureHomeSearch}
                         onValueChange={setAddFixtureHomeSearch}
                       />
@@ -1463,23 +1865,25 @@ export default function SandboxPage() {
                   </PopoverContent>
                 </Popover>
               </div>
-              <div className="space-y-2 min-w-0">
-                <Label>Away Team</Label>
+              <div className="space-y-1.5 min-w-0">
+                <Label className="text-xs">Away Team</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       role="combobox"
-                      className="w-full justify-between font-normal"
+                      className="w-full h-9 justify-between font-normal text-xs"
                     >
-                      {addFixtureForm.awayTeamId != null
-                        ? (addFixtureForm.awayTeamLabel ??
-                          addFixtureAwayOptions.find(
-                            (o) => o.value === addFixtureForm.awayTeamId
-                          )?.label ??
-                          `Team #${addFixtureForm.awayTeamId}`)
-                        : "Search team..."}
-                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      <span className="truncate">
+                        {addFixtureForm.awayTeamId != null
+                          ? (addFixtureForm.awayTeamLabel ??
+                            addFixtureAwayOptions.find(
+                              (o) => o.value === addFixtureForm.awayTeamId
+                            )?.label ??
+                            `Team #${addFixtureForm.awayTeamId}`)
+                          : "Search team..."}
+                      </span>
+                      <ChevronDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
@@ -1488,7 +1892,7 @@ export default function SandboxPage() {
                   >
                     <Command shouldFilter={false}>
                       <CommandInput
-                        placeholder="Type to search (min 2 chars)..."
+                        placeholder="Type to search..."
                         value={addFixtureAwaySearch}
                         onValueChange={setAddFixtureAwaySearch}
                       />
@@ -1517,23 +1921,25 @@ export default function SandboxPage() {
                 </Popover>
               </div>
             </div>
-            <div className="space-y-2 min-w-0">
-              <Label>League (optional)</Label>
+            <div className="space-y-1.5 min-w-0">
+              <Label className="text-xs">League (optional)</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
-                    className="w-full justify-between font-normal"
+                    className="w-full h-9 justify-between font-normal text-xs"
                   >
-                    {addFixtureForm.leagueId != null
-                      ? (addFixtureForm.leagueLabel ??
-                        addFixtureLeagueOptions.find(
-                          (o) => o.value === addFixtureForm.leagueId
-                        )?.label ??
-                        `League #${addFixtureForm.leagueId}`)
-                      : "Search league (optional)..."}
-                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <span className="truncate">
+                      {addFixtureForm.leagueId != null
+                        ? (addFixtureForm.leagueLabel ??
+                          addFixtureLeagueOptions.find(
+                            (o) => o.value === addFixtureForm.leagueId
+                          )?.label ??
+                          `League #${addFixtureForm.leagueId}`)
+                        : "Search league (optional)..."}
+                    </span>
+                    <ChevronDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -1542,7 +1948,7 @@ export default function SandboxPage() {
                 >
                   <Command shouldFilter={false}>
                     <CommandInput
-                      placeholder="Type to search (min 2 chars)..."
+                      placeholder="Type to search..."
                       value={addFixtureLeagueSearch}
                       onValueChange={setAddFixtureLeagueSearch}
                     />
@@ -1570,40 +1976,44 @@ export default function SandboxPage() {
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="addRound">Round (optional)</Label>
-              <Input
-                id="addRound"
-                type="text"
-                placeholder=""
-                value={addFixtureForm.round}
-                onChange={(e) =>
-                  setAddFixtureForm((prev) => ({
-                    ...prev,
-                    round: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="addStartInMinutes">Start in (minutes)</Label>
-              <Input
-                id="addStartInMinutes"
-                type="number"
-                min={1}
-                value={addFixtureForm.startInMinutes}
-                onChange={(e) =>
-                  setAddFixtureForm((prev) => ({
-                    ...prev,
-                    startInMinutes: Number(e.target.value) || 60,
-                  }))
-                }
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="addRound" className="text-xs">Round (optional)</Label>
+                <Input
+                  id="addRound"
+                  type="text"
+                  className="h-9"
+                  value={addFixtureForm.round}
+                  onChange={(e) =>
+                    setAddFixtureForm((prev) => ({
+                      ...prev,
+                      round: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="addStartInMinutes" className="text-xs">Start in (min)</Label>
+                <Input
+                  id="addStartInMinutes"
+                  type="number"
+                  className="h-9"
+                  min={1}
+                  value={addFixtureForm.startInMinutes}
+                  onChange={(e) =>
+                    setAddFixtureForm((prev) => ({
+                      ...prev,
+                      startInMinutes: Number(e.target.value) || 60,
+                    }))
+                  }
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() =>
                 setAddFixtureDialog({ open: false, groupId: null })
               }
@@ -1611,6 +2021,7 @@ export default function SandboxPage() {
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={() => {
                 if (addFixtureDialog.groupId == null) return;
                 const home = addFixtureForm.homeTeamId;
@@ -1636,7 +2047,7 @@ export default function SandboxPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Send Message Dialog */}
+      {/* ── Send Message Dialog ── */}
       <Dialog
         open={sendMessageDialog.open}
         onOpenChange={(open) => {
@@ -1648,60 +2059,55 @@ export default function SandboxPage() {
             });
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-base">
               Send Message as {sendMessageDialog.memberName}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Label className="shrink-0">Language</Label>
-              <div className="flex items-center gap-1 rounded-lg border p-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={messageLang === "en" ? "secondary" : "ghost"}
-                  onClick={() => {
-                    setMessageLang("en");
-                    setMessageBody(getRandomSample("en"));
-                  }}
-                >
-                  English
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={messageLang === "he" ? "secondary" : "ghost"}
-                  onClick={() => {
-                    setMessageLang("he");
-                    setMessageBody(getRandomSample("he"));
-                  }}
-                >
-                  עברית
-                </Button>
-              </div>
+              <Label className="text-xs shrink-0">Language</Label>
+              <Tabs
+                value={messageLang}
+                onValueChange={(v) => {
+                  const lang = v as "he" | "en";
+                  setMessageLang(lang);
+                  setMessageBody(getRandomSample(lang));
+                }}
+              >
+                <TabsList className="h-8">
+                  <TabsTrigger value="en" className="text-xs px-2.5 h-6">
+                    English
+                  </TabsTrigger>
+                  <TabsTrigger value="he" className="text-xs px-2.5 h-6">
+                    עברית
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="messageBody">Message</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="messageBody" className="text-xs">Message</Label>
               <Textarea
                 id="messageBody"
                 rows={4}
+                className="text-sm"
                 value={messageBody}
                 onChange={(e) => setMessageBody(e.target.value)}
                 placeholder={
                   messageLang === "he" ? "הזן הודעה..." : "Enter message..."
                 }
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 This message will appear in the group chat as if sent by{" "}
                 {sendMessageDialog.memberName}.
               </p>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() =>
                 setSendMessageDialog({
                   open: false,
@@ -1713,6 +2119,7 @@ export default function SandboxPage() {
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={() => {
                 if (
                   selectedGroupTab == null ||

@@ -66,6 +66,12 @@ export type SandboxResetResponse = {
   message: string;
 };
 
+export type SandboxDeleteGroupResponse = {
+  status: string;
+  data: { groupId: number; deletedFixtures: number };
+  message: string;
+};
+
 export type SandboxCleanupResponse = {
   status: string;
   data: { deletedFixtures: number; deletedGroups: number };
@@ -171,6 +177,9 @@ export const sandboxService = {
     startTime: string;
   }): Promise<SandboxSimulateResponse> =>
     apiPost<SandboxSimulateResponse>("/admin/sandbox/update-start-time", args),
+
+  deleteGroup: (groupId: number): Promise<SandboxDeleteGroupResponse> =>
+    apiDelete<SandboxDeleteGroupResponse>(`/admin/sandbox/group/${groupId}`),
 
   cleanup: (): Promise<SandboxCleanupResponse> =>
     apiDelete<SandboxCleanupResponse>("/admin/sandbox/cleanup"),

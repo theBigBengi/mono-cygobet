@@ -673,7 +673,57 @@ export async function sandboxResetFixture(fixtureId: number) {
   };
 }
 
-// ───── 5. cleanup ─────
+// ───── 5. delete single group ─────
+
+export async function sandboxDeleteGroup(groupId: number) {
+  const group = await prisma.groups.findUnique({
+    where: { id: groupId },
+    select: { id: true, name: true },
+  });
+  if (!group || !group.name.startsWith("[SANDBOX]")) {
+    throw new Error("Group not found or is not a sandbox group");
+  }
+
+  // Find sandbox fixtures that belong ONLY to this group
+  const groupFixtures = await prisma.groupFixtures.findMany({
+    where: { groupId },
+    select: { fixtureId: true },
+  });
+  const fixtureIds = groupFixtures.map((gf) => gf.fixtureId);
+
+  // Check which of these fixtures are sandbox (negative externalId) and not shared with other groups
+  let deletedFixtures = 0;
+  if (fixtureIds.length > 0) {
+    const sharedFixtures = await prisma.groupFixtures.findMany({
+      where: {
+        fixtureId: { in: fixtureIds },
+        groupId: { not: groupId },
+      },
+      select: { fixtureId: true },
+    });
+    const sharedIds = new Set(sharedFixtures.map((gf) => gf.fixtureId));
+    const exclusiveIds = fixtureIds.filter((id) => !sharedIds.has(id));
+
+    if (exclusiveIds.length > 0) {
+      const res = await prisma.fixtures.deleteMany({
+        where: { id: { in: exclusiveIds }, externalId: { lt: 0 } },
+      });
+      deletedFixtures = res.count;
+    }
+  }
+
+  // Delete the group (cascades groupMembers, groupFixtures, groupMessages, etc.)
+  await prisma.groups.delete({ where: { id: groupId } });
+
+  log.info(
+    { groupId, deletedFixtures },
+    "Sandbox group deleted"
+  );
+
+  return { groupId, deletedFixtures };
+}
+
+// ───── 5a. cleanup all ─────
 
 export async function sandboxCleanup() {
   const sandboxFixtures = await prisma.fixtures.findMany({

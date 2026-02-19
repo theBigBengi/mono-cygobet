@@ -154,6 +154,26 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  // DELETE /admin/sandbox/group/:groupId
+  fastify.delete(
+    "/group/:groupId",
+    {
+      schema: {
+        params: schemas.sandboxGroupIdParamsSchema,
+        response: { 200: schemas.sandboxResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const groupId = Number((req.params as { groupId: string }).groupId);
+      const result = await sandbox.sandboxDeleteGroup(groupId);
+      return reply.send({
+        status: "success",
+        data: result,
+        message: "Sandbox group deleted",
+      });
+    }
+  );
+
   // DELETE /admin/sandbox/cleanup
   fastify.delete(
     "/cleanup",
