@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Card,
@@ -21,6 +21,15 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAvailability } from "@/hooks/use-availability";
 import { useSeasonSelection } from "@/hooks/use-season-selection";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer";
+import { Separator } from "@/components/ui/separator";
 import { SeedSeasonDialog } from "./seed-season-dialog";
 import { BulkSeedDialog } from "./bulk-seed-dialog";
 import { DeleteSeasonDialog } from "./delete-season-dialog";
@@ -36,6 +45,7 @@ import {
   Loader2,
   ChevronsUpDown,
   Trash2,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { AvailableSeason } from "@repo/types";
 
@@ -128,6 +138,10 @@ export function SeasonExplorer() {
   const [deletingSeason, setDeletingSeason] = useState<AvailableSeason | null>(
     null
   );
+  const [drawerSeason, setDrawerSeason] = useState<AvailableSeason | null>(
+    null
+  );
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const allSeasons = data?.data?.seasons ?? [];
 
@@ -262,8 +276,82 @@ export function SeasonExplorer() {
             </TabsList>
           </Tabs>
 
-          {/* Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 sm:gap-3">
+          {/* Filters — desktop: inline, mobile: inside drawer */}
+          {/* Mobile: filter trigger button */}
+          <div className="sm:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full h-9 gap-2"
+              onClick={() => setFiltersOpen(true)}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Filters
+              {(searchQuery || statusFilter !== "all" || includeHistorical) && (
+                <Badge variant="secondary" className="text-xs ml-1 h-5 px-1.5">
+                  {[searchQuery, statusFilter !== "all", includeHistorical].filter(Boolean).length}
+                </Badge>
+              )}
+            </Button>
+
+            <Drawer open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <DrawerContent>
+                <DrawerHeader className="text-left">
+                  <DrawerTitle>Filters</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 pb-2 space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search league, country..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 pr-9 h-9"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <Select
+                    value={statusFilter}
+                    onValueChange={(v) => setStatusFilter(v as StatusFilterValue)}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                      <SelectItem value="finished">Finished</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <label className="flex items-center gap-2 cursor-pointer h-9 px-1">
+                    <Checkbox
+                      checked={includeHistorical}
+                      onCheckedChange={(c) => setIncludeHistorical(c === true)}
+                    />
+                    <History className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Historical</span>
+                  </label>
+                </div>
+                <DrawerFooter>
+                  <Button onClick={() => setFiltersOpen(false)}>Done</Button>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+          </div>
+
+          {/* Desktop: inline filters */}
+          <div className="hidden sm:grid sm:grid-cols-[1fr_auto_auto] gap-2 max-w-2xl">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -287,7 +375,7 @@ export function SeasonExplorer() {
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as StatusFilterValue)}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 w-[130px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -298,7 +386,7 @@ export function SeasonExplorer() {
               </SelectContent>
             </Select>
 
-            <label className="flex items-center gap-2 cursor-pointer h-9 px-1">
+            <label className="flex items-center gap-2 cursor-pointer h-9 px-3 border rounded-md">
               <Checkbox
                 checked={includeHistorical}
                 onCheckedChange={(c) => setIncludeHistorical(c === true)}
@@ -307,44 +395,6 @@ export function SeasonExplorer() {
               <span className="text-sm text-muted-foreground">Historical</span>
             </label>
           </div>
-
-          {/* Bulk toolbar */}
-          {tab === "new" && (
-            <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 gap-2">
-              <label className="flex items-center gap-2 cursor-pointer min-w-0">
-                <Checkbox
-                  checked={allNewSelected}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      selection.selectAll(allFilteredIds);
-                    } else {
-                      selection.deselectAll(allFilteredIds);
-                    }
-                  }}
-                />
-                <span className="text-sm truncate">
-                  {allNewSelected
-                    ? "Deselect All"
-                    : `Select All (${allFilteredIds.length})`}
-                </span>
-              </label>
-
-              {selection.selectedCount > 0 && (
-                <Button
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => setBulkDialogOpen(true)}
-                >
-                  <span className="hidden sm:inline">
-                    Seed {selection.selectedCount} Selected
-                  </span>
-                  <span className="sm:hidden">
-                    Seed ({selection.selectedCount})
-                  </span>
-                </Button>
-              )}
-            </div>
-          )}
 
           {/* Tree with scroll container */}
           {isLoading ? (
@@ -372,6 +422,44 @@ export function SeasonExplorer() {
                 </Button>
               </div>
 
+              {/* Bulk toolbar */}
+              {tab === "new" && (
+                <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer min-w-0">
+                    <Checkbox
+                      checked={allNewSelected}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          selection.selectAll(allFilteredIds);
+                        } else {
+                          selection.deselectAll(allFilteredIds);
+                        }
+                      }}
+                    />
+                    <span className="text-sm truncate">
+                      {allNewSelected
+                        ? "Deselect All"
+                        : `Select All (${allFilteredIds.length})`}
+                    </span>
+                  </label>
+
+                  {selection.selectedCount > 0 && (
+                    <Button
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => setBulkDialogOpen(true)}
+                    >
+                      <span className="hidden sm:inline">
+                        Seed {selection.selectedCount} Selected
+                      </span>
+                      <span className="sm:hidden">
+                        Seed ({selection.selectedCount})
+                      </span>
+                    </Button>
+                  )}
+                </div>
+              )}
+
               {/* Scrollable tree */}
               <div className="max-h-[480px] overflow-y-auto -mx-1 px-1 space-y-1">
                 {grouped.map((cg) => (
@@ -388,6 +476,7 @@ export function SeasonExplorer() {
                     onSeed={setSelectedSeason}
                     onSyncFixtures={handleSyncFixtures}
                     onDelete={setDeletingSeason}
+                    onOpenDrawer={setDrawerSeason}
                     syncingSeasonId={syncingSeasonId}
                   />
                 ))}
@@ -428,6 +517,24 @@ export function SeasonExplorer() {
           }
         }}
       />
+
+      <SeasonDetailDrawer
+        season={drawerSeason}
+        onClose={() => setDrawerSeason(null)}
+        onSeed={(s) => {
+          setDrawerSeason(null);
+          setSelectedSeason(s);
+        }}
+        onSyncFixtures={(s) => {
+          setDrawerSeason(null);
+          handleSyncFixtures(s);
+        }}
+        onDelete={(s) => {
+          setDrawerSeason(null);
+          setDeletingSeason(s);
+        }}
+        syncingSeasonId={syncingSeasonId}
+      />
     </>
   );
 }
@@ -446,6 +553,7 @@ interface CountryGroupRowProps {
   onSeed: (s: AvailableSeason) => void;
   onSyncFixtures: (s: AvailableSeason) => void;
   onDelete: (s: AvailableSeason) => void;
+  onOpenDrawer: (s: AvailableSeason) => void;
   syncingSeasonId: number | null;
 }
 
@@ -461,6 +569,7 @@ function CountryGroupRow({
   onSeed,
   onSyncFixtures,
   onDelete,
+  onOpenDrawer,
   syncingSeasonId,
 }: CountryGroupRowProps) {
   const newIds = group.leagues
@@ -537,6 +646,7 @@ function CountryGroupRow({
                 onSeed={onSeed}
                 onSyncFixtures={onSyncFixtures}
                 onDelete={onDelete}
+                onOpenDrawer={onOpenDrawer}
                 syncingSeasonId={syncingSeasonId}
               />
             );
@@ -557,6 +667,7 @@ interface LeagueGroupRowProps {
   onSeed: (s: AvailableSeason) => void;
   onSyncFixtures: (s: AvailableSeason) => void;
   onDelete: (s: AvailableSeason) => void;
+  onOpenDrawer: (s: AvailableSeason) => void;
   syncingSeasonId: number | null;
 }
 
@@ -570,6 +681,7 @@ function LeagueGroupRow({
   onSeed,
   onSyncFixtures,
   onDelete,
+  onOpenDrawer,
   syncingSeasonId,
 }: LeagueGroupRowProps) {
   const newIds = league.seasons
@@ -627,6 +739,7 @@ function LeagueGroupRow({
               onSeed={onSeed}
               onSyncFixtures={onSyncFixtures}
               onDelete={onDelete}
+              onOpenDrawer={onOpenDrawer}
               syncingSeasonId={syncingSeasonId}
             />
           ))}
@@ -644,6 +757,7 @@ interface SeasonRowProps {
   onSeed: (s: AvailableSeason) => void;
   onSyncFixtures: (s: AvailableSeason) => void;
   onDelete: (s: AvailableSeason) => void;
+  onOpenDrawer: (s: AvailableSeason) => void;
   syncingSeasonId: number | null;
 }
 
@@ -655,22 +769,34 @@ function SeasonRow({
   onSeed,
   onSyncFixtures,
   onDelete,
+  onOpenDrawer,
   syncingSeasonId,
 }: SeasonRowProps) {
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2 py-1.5 hover:bg-muted/30 rounded text-sm">
+    <div
+      className="flex items-center gap-1.5 sm:gap-2 px-1 sm:px-2 py-1.5 hover:bg-muted/30 rounded text-sm cursor-pointer sm:cursor-default"
+      onClick={() => {
+        if (window.innerWidth < 640) onOpenDrawer(season);
+      }}
+    >
       {showCheckbox && (
         <Checkbox
           checked={selection.isSelected(season.externalId)}
           onCheckedChange={() => selection.toggle(season.externalId)}
           className="shrink-0"
+          onClick={(e) => e.stopPropagation()}
         />
       )}
 
       {/* Season name */}
       <span className="min-w-0 truncate">{season.name}</span>
 
-      {/* Activity badge - hidden on mobile to save space */}
+      {/* Mobile-only: status dot indicator */}
+      <span className="sm:hidden shrink-0">
+        <SeasonStatusDot season={season} />
+      </span>
+
+      {/* Activity badge - hidden on mobile (drawer shows full details) */}
       <span className="hidden sm:inline-flex">
         {season.isPending ? (
           <Badge
@@ -697,7 +823,7 @@ function SeasonRow({
       {season.status === "new" && activeTab !== "new" && (
         <Badge
           variant="outline"
-          className="text-xs shrink-0 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400"
+          className="text-xs shrink-0 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 hidden sm:inline-flex"
         >
           New
         </Badge>
@@ -705,15 +831,15 @@ function SeasonRow({
       {season.status === "in_db" && activeTab !== "in_db" && (
         <Badge
           variant="outline"
-          className="text-xs shrink-0 bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400"
+          className="text-xs shrink-0 bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 hidden sm:inline-flex"
         >
           In DB
         </Badge>
       )}
 
-      {/* Fixtures count - compact on mobile */}
+      {/* Fixtures count - desktop only */}
       {season.status === "in_db" && (
-        <span className="text-xs text-muted-foreground ml-auto mr-1 sm:mr-2 truncate hidden xs:inline">
+        <span className="text-xs text-muted-foreground ml-auto mr-1 sm:mr-2 truncate hidden sm:inline">
           {(season.fixturesCount ?? 0) > 0
             ? `${season.fixturesCount} fix.`
             : season.hasFixturesAvailable
@@ -722,14 +848,20 @@ function SeasonRow({
         </span>
       )}
 
-      {/* Action buttons */}
-      <div className="ml-auto shrink-0 flex items-center gap-1">
+      {/* Mobile: chevron hint */}
+      <ChevronRight className="h-3.5 w-3.5 ml-auto shrink-0 text-muted-foreground sm:hidden" />
+
+      {/* Action buttons - desktop only */}
+      <div className="ml-auto shrink-0 hidden sm:flex items-center gap-1">
         {season.status === "new" ? (
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-xs px-2 sm:px-3"
-            onClick={() => onSeed(season)}
+            className="h-7 text-xs px-3"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSeed(season);
+            }}
           >
             Seed
           </Button>
@@ -738,8 +870,11 @@ function SeasonRow({
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs px-2 sm:px-3"
-              onClick={() => onSyncFixtures(season)}
+              className="h-7 text-xs px-3"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSyncFixtures(season);
+              }}
               disabled={syncingSeasonId === season.dbId}
             >
               {syncingSeasonId === season.dbId ? (
@@ -754,7 +889,10 @@ function SeasonRow({
               variant="ghost"
               size="sm"
               className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-              onClick={() => onDelete(season)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(season);
+              }}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -762,5 +900,151 @@ function SeasonRow({
         ) : null}
       </div>
     </div>
+  );
+}
+
+// ---------- Mobile Drawer ----------
+
+function SeasonStatusDot({ season }: { season: AvailableSeason }) {
+  const color = season.isPending
+    ? "bg-blue-500"
+    : season.isFinished
+      ? "bg-muted-foreground"
+      : "bg-green-500";
+  return <span className={`inline-block h-2 w-2 rounded-full ${color}`} />;
+}
+
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium">{children}</span>
+    </div>
+  );
+}
+
+interface SeasonDetailDrawerProps {
+  season: AvailableSeason | null;
+  onClose: () => void;
+  onSeed: (s: AvailableSeason) => void;
+  onSyncFixtures: (s: AvailableSeason) => void;
+  onDelete: (s: AvailableSeason) => void;
+  syncingSeasonId: number | null;
+}
+
+function SeasonDetailDrawer({
+  season,
+  onClose,
+  onSeed,
+  onSyncFixtures,
+  onDelete,
+  syncingSeasonId,
+}: SeasonDetailDrawerProps) {
+  const activityBadge = season?.isPending ? (
+    <Badge
+      variant="outline"
+      className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+    >
+      Upcoming
+    </Badge>
+  ) : season?.isFinished ? (
+    <Badge variant="outline" className="text-xs text-muted-foreground">
+      Finished
+    </Badge>
+  ) : (
+    <Badge
+      variant="outline"
+      className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+    >
+      Active
+    </Badge>
+  );
+
+  const dbBadge =
+    season?.status === "new" ? (
+      <Badge
+        variant="outline"
+        className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400"
+      >
+        New
+      </Badge>
+    ) : (
+      <Badge
+        variant="outline"
+        className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400"
+      >
+        In DB
+      </Badge>
+    );
+
+  return (
+    <Drawer open={!!season} onOpenChange={(open) => !open && onClose()}>
+      <DrawerContent>
+        <DrawerHeader className="text-left">
+          <DrawerTitle>{season?.name}</DrawerTitle>
+          <DrawerDescription>
+            {season?.league.name} &middot; {season?.league.country}
+          </DrawerDescription>
+        </DrawerHeader>
+
+        {season && (
+          <div className="px-4 pb-2">
+            <Separator className="mb-3" />
+            <DetailRow label="Status">{activityBadge}</DetailRow>
+            <DetailRow label="DB">{dbBadge}</DetailRow>
+            {season.status === "in_db" && (
+              <DetailRow label="Fixtures">
+                {(season.fixturesCount ?? 0) > 0
+                  ? season.fixturesCount
+                  : season.hasFixturesAvailable
+                    ? "Available"
+                    : "0"}
+              </DetailRow>
+            )}
+            {season.lastSyncedAt && (
+              <DetailRow label="Last synced">
+                {new Date(season.lastSyncedAt).toLocaleDateString()}
+              </DetailRow>
+            )}
+          </div>
+        )}
+
+        <DrawerFooter className="flex-row gap-2">
+          {season?.status === "new" ? (
+            <Button className="flex-1" onClick={() => onSeed(season)}>
+              Seed
+            </Button>
+          ) : season?.status === "in_db" ? (
+            <>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => onSyncFixtures(season)}
+                disabled={syncingSeasonId === season.dbId}
+              >
+                {syncingSeasonId === season.dbId ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                {(season.fixturesCount ?? 0) > 0 ? "Re-sync" : "Sync"}
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => onDelete(season)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </>
+          ) : null}
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

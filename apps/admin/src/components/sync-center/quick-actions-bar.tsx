@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ import {
   RefreshCw,
   Database,
   Cloud,
+  ArrowRight,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -41,6 +43,8 @@ interface PreviewData {
 interface SyncAction {
   key: string;
   label: string;
+  description: string;
+  dependsOn?: string;
   icon: React.ElementType;
   fetchPreview: () => Promise<PreviewData>;
   syncFn: () => Promise<{ data: { ok: number; fail: number; total: number } }>;
@@ -96,10 +100,34 @@ export function QuickActionsBar() {
     queryClient.invalidateQueries({ queryKey: ["batches"] });
   };
 
+  // Fetch DB counts for display on cards
+  const { data: countriesDb } = useQuery({
+    queryKey: ["quick-actions", "countries-count"],
+    queryFn: () => countriesService.getFromDb({ perPage: 1 }),
+    staleTime: Infinity,
+  });
+  const { data: leaguesDb } = useQuery({
+    queryKey: ["quick-actions", "leagues-count"],
+    queryFn: () => leaguesService.getFromDb({ perPage: 1 }),
+    staleTime: Infinity,
+  });
+  const { data: bookmakersDb } = useQuery({
+    queryKey: ["quick-actions", "bookmakers-count"],
+    queryFn: () => bookmakersService.getFromDb({ perPage: 1 }),
+    staleTime: Infinity,
+  });
+
+  const dbCounts: Record<string, number | undefined> = {
+    countries: countriesDb?.pagination?.totalItems,
+    leagues: leaguesDb?.pagination?.totalItems,
+    bookmakers: bookmakersDb?.pagination?.totalItems,
+  };
+
   const actions: SyncAction[] = [
     {
       key: "countries",
       label: "Countries",
+      description: "Fetch all countries from the provider and upsert into DB.",
       icon: Globe,
       fetchPreview: async () => {
         const [provider, db] = await Promise.all([
@@ -116,6 +144,8 @@ export function QuickActionsBar() {
     {
       key: "leagues",
       label: "Leagues",
+      description: "Fetch all leagues from the provider and upsert into DB.",
+      dependsOn: "Countries",
       icon: Trophy,
       fetchPreview: async () => {
         const [provider, db] = await Promise.all([
@@ -132,6 +162,7 @@ export function QuickActionsBar() {
     {
       key: "bookmakers",
       label: "Bookmakers",
+      description: "Fetch all bookmakers from the provider and upsert into DB.",
       icon: Bookmark,
       fetchPreview: async () => {
         const [provider, db] = await Promise.all([
@@ -201,19 +232,40 @@ export function QuickActionsBar() {
           <CardTitle className="text-sm sm:text-lg">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             {actions.map((action) => {
               const Icon = action.icon;
+              const count = dbCounts[action.key];
               return (
-                <div key={action.key} className="space-y-1.5 sm:space-y-2">
-                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium">
-                    <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    {action.label}
+                <div
+                  key={action.key}
+                  className="rounded-lg border p-3 flex flex-col gap-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 font-medium text-sm">
+                      <Icon className="h-4 w-4" />
+                      {action.label}
+                    </div>
+                    {count != null && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Database className="h-3 w-3 mr-1" />
+                        {count}
+                      </Badge>
+                    )}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    {action.description}
+                  </p>
+                  {action.dependsOn && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <ArrowRight className="h-3 w-3" />
+                      Depends on: <span className="font-medium">{action.dependsOn}</span>
+                    </div>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full h-7 sm:h-8 text-xs"
+                    className="w-full h-8 text-xs mt-auto"
                     onClick={() => handleOpen(action)}
                   >
                     Sync
