@@ -103,7 +103,6 @@ export default function TeamOrderSettingsPage() {
   const updateMutation = useUpdateTeamOrderSettings();
 
   const [selectedTeams, setSelectedTeams] = React.useState<Team[]>([]);
-  const [hasChanges, setHasChanges] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [countryFilter, setCountryFilter] = React.useState<string>("all");
   const [countryOpen, setCountryOpen] = React.useState(false);
@@ -113,7 +112,7 @@ export default function TeamOrderSettingsPage() {
   const { data: countriesData } = useQuery({
     queryKey: ["countries-list"],
     queryFn: () => countriesService.getFromDb({ perPage: 300 }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
   });
 
   const countries = React.useMemo(() => {
@@ -128,7 +127,7 @@ export default function TeamOrderSettingsPage() {
   const { data: totalCountData } = useQuery({
     queryKey: ["teams-total-count"],
     queryFn: () => teamsService.getFromDb({ perPage: 1 }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
   });
 
   const totalInDb = totalCountData?.pagination?.totalItems ?? 0;
@@ -136,7 +135,7 @@ export default function TeamOrderSettingsPage() {
   const { data: teamsData, isLoading: teamsLoading, isFetching } = useQuery({
     queryKey: ["teams-filtered", { search: debouncedSearch, countryId: selectedCountryId }],
     queryFn: () => teamsService.getFromDb({ perPage: PER_PAGE, search: debouncedSearch || undefined, countryId: selectedCountryId }),
-    staleTime: 30 * 1000,
+    staleTime: Infinity,
     placeholderData: (prev) => prev,
   });
 
@@ -161,7 +160,7 @@ export default function TeamOrderSettingsPage() {
       return { data: response.data.filter((t) => selectedIds.includes(t.id)) };
     },
     enabled: selectedIds.length > 0 && !settingsLoading,
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
   });
 
   React.useEffect(() => {
@@ -171,11 +170,17 @@ export default function TeamOrderSettingsPage() {
       );
       const ordered = settingsData.data.defaultTeamOrder.map((id) => teamMap.get(id)).filter((t): t is Team => t !== undefined);
       setSelectedTeams(ordered);
-      setHasChanges(false);
+
     }
   }, [settingsData?.data?.defaultTeamOrder, selectedTeamsData?.data]);
 
   const selectedIdSet = React.useMemo(() => new Set(selectedTeams.map((t) => t.id)), [selectedTeams]);
+
+  const hasChanges = React.useMemo(() => {
+    const currentIds = selectedTeams.map((t) => t.id);
+    if (currentIds.length !== selectedIds.length) return true;
+    return currentIds.some((id, i) => id !== selectedIds[i]);
+  }, [selectedTeams, selectedIds]);
 
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
@@ -188,7 +193,7 @@ export default function TeamOrderSettingsPage() {
         const newIndex = items.findIndex((i) => i.id === over.id);
         return arrayMove(items, oldIndex, newIndex);
       });
-      setHasChanges(true);
+
     }
   };
 

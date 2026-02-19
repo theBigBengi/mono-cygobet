@@ -379,6 +379,7 @@ export default function SandboxPage() {
     queryKey: ["users", "search", debouncedUserQuery],
     queryFn: () => usersService.list({ search: debouncedUserQuery, limit: 20 }),
     enabled: debouncedUserQuery.length >= 2,
+    staleTime: Infinity,
   });
 
   const userOptions = React.useMemo(() => {
@@ -398,12 +399,14 @@ export default function SandboxPage() {
     queryFn: () => leaguesService.search(debouncedLeagueQuery, 20),
     enabled:
       setupForm.selectionMode === "leagues" && debouncedLeagueQuery.length >= 2,
+    staleTime: Infinity,
   });
   const { data: teamsSearchData } = useQuery({
     queryKey: ["teams", "search", debouncedTeamQuery],
     queryFn: () => teamsService.search(debouncedTeamQuery, 20),
     enabled:
       setupForm.selectionMode === "teams" && debouncedTeamQuery.length >= 2,
+    staleTime: Infinity,
   });
 
   const leagueOptions = React.useMemo(() => {
@@ -447,16 +450,19 @@ export default function SandboxPage() {
     queryKey: ["teams", "search", "addHome", debouncedAddHome],
     queryFn: () => teamsService.search(debouncedAddHome, 20),
     enabled: addFixtureDialog.open && debouncedAddHome.length >= 2,
+    staleTime: Infinity,
   });
   const { data: addAwayTeams } = useQuery({
     queryKey: ["teams", "search", "addAway", debouncedAddAway],
     queryFn: () => teamsService.search(debouncedAddAway, 20),
     enabled: addFixtureDialog.open && debouncedAddAway.length >= 2,
+    staleTime: Infinity,
   });
   const { data: addLeagues } = useQuery({
     queryKey: ["leagues", "search", "addLeague", debouncedAddLeague],
     queryFn: () => leaguesService.search(debouncedAddLeague, 20),
     enabled: addFixtureDialog.open && debouncedAddLeague.length >= 2,
+    staleTime: Infinity,
   });
   const addFixtureHomeOptions = React.useMemo(() => {
     const data = addHomeTeams?.data ?? [];
@@ -694,6 +700,7 @@ export default function SandboxPage() {
     queryKey: ["sandbox", "members", selectedGroupTab],
     queryFn: () => sandboxService.getGroupMembers(selectedGroupTab!),
     enabled: selectedGroupTab !== null && viewMode === "members",
+    staleTime: Infinity,
   });
   const members = membersData?.data ?? [];
 

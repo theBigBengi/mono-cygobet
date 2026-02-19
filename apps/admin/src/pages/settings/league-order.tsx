@@ -103,7 +103,6 @@ export default function LeagueOrderSettingsPage() {
   const updateMutation = useUpdateLeagueOrderSettings();
 
   const [selectedLeagues, setSelectedLeagues] = React.useState<League[]>([]);
-  const [hasChanges, setHasChanges] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [countryFilter, setCountryFilter] = React.useState<string>("all");
   const [countryOpen, setCountryOpen] = React.useState(false);
@@ -113,7 +112,7 @@ export default function LeagueOrderSettingsPage() {
   const { data: countriesData } = useQuery({
     queryKey: ["countries-list"],
     queryFn: () => countriesService.getFromDb({ perPage: 300 }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
   });
 
   const countries = React.useMemo(() => {
@@ -128,7 +127,7 @@ export default function LeagueOrderSettingsPage() {
   const { data: totalCountData } = useQuery({
     queryKey: ["leagues-total-count"],
     queryFn: () => leaguesService.getFromDb({ perPage: 1 }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
   });
 
   const totalInDb = totalCountData?.pagination?.totalItems ?? 0;
@@ -136,7 +135,7 @@ export default function LeagueOrderSettingsPage() {
   const { data: leaguesData, isLoading: leaguesLoading, isFetching } = useQuery({
     queryKey: ["leagues-filtered", { search: debouncedSearch, countryId: selectedCountryId }],
     queryFn: () => leaguesService.getFromDb({ perPage: PER_PAGE, search: debouncedSearch || undefined, countryId: selectedCountryId }),
-    staleTime: 30 * 1000,
+    staleTime: Infinity,
     placeholderData: (prev) => prev,
   });
 
@@ -161,7 +160,7 @@ export default function LeagueOrderSettingsPage() {
       return { data: response.data.filter((l) => selectedIds.includes(l.id)) };
     },
     enabled: selectedIds.length > 0 && !settingsLoading,
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
   });
 
   React.useEffect(() => {
@@ -171,11 +170,17 @@ export default function LeagueOrderSettingsPage() {
       );
       const ordered = settingsData.data.defaultLeagueOrder.map((id) => leagueMap.get(id)).filter((l): l is League => l !== undefined);
       setSelectedLeagues(ordered);
-      setHasChanges(false);
+
     }
   }, [settingsData?.data?.defaultLeagueOrder, selectedLeaguesData?.data]);
 
   const selectedIdSet = React.useMemo(() => new Set(selectedLeagues.map((l) => l.id)), [selectedLeagues]);
+
+  const hasChanges = React.useMemo(() => {
+    const currentIds = selectedLeagues.map((l) => l.id);
+    if (currentIds.length !== selectedIds.length) return true;
+    return currentIds.some((id, i) => id !== selectedIds[i]);
+  }, [selectedLeagues, selectedIds]);
 
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
@@ -188,7 +193,7 @@ export default function LeagueOrderSettingsPage() {
         const newIndex = items.findIndex((i) => i.id === over.id);
         return arrayMove(items, oldIndex, newIndex);
       });
-      setHasChanges(true);
+
     }
   };
 

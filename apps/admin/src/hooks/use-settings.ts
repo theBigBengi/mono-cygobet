@@ -13,7 +13,7 @@ export function useLeagueOrderSettings() {
   return useQuery({
     queryKey: ["admin-settings", "league-order"],
     queryFn: () => settingsService.getLeagueOrderSettings(),
-    staleTime: 30_000,
+    staleTime: Infinity,
   });
 }
 
@@ -33,7 +33,7 @@ export function useTeamOrderSettings() {
   return useQuery({
     queryKey: ["admin-settings", "team-order"],
     queryFn: () => settingsService.getTeamOrderSettings(),
-    staleTime: 30_000,
+    staleTime: Infinity,
   });
 }
 
