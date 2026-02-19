@@ -2,7 +2,6 @@
 // Barrel export for group creation components
 
 export { SelectionModeTabs, type SelectionMode } from "./SelectionModeTabs";
-export { SelectionModeInfoSheet } from "./SelectionModeInfoSheet";
 export { DateSlider, type DateSliderProps } from "./DateSlider";
 export { FixturesView } from "./FixturesView";
 export { LeaguesView } from "./LeaguesView";

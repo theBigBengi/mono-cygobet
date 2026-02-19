@@ -14,10 +14,9 @@ export type SelectionMode = "fixtures" | "leagues" | "teams";
 interface SelectionModeTabsProps {
   value: SelectionMode;
   onChange: (mode: SelectionMode) => void;
-  onInfoPress?: () => void;
 }
 
-export function SelectionModeTabs({ value, onChange, onInfoPress }: SelectionModeTabsProps) {
+export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [pressedTab, setPressedTab] = useState<SelectionMode | null>(null);
@@ -43,8 +42,7 @@ export function SelectionModeTabs({ value, onChange, onInfoPress }: SelectionMod
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.tabsRow}>
-        {MODES.map((m) => {
+      {MODES.map((m) => {
           const isSelected = value === m.value;
           const isPressed = pressedTab === m.value;
 
@@ -100,21 +98,7 @@ export function SelectionModeTabs({ value, onChange, onInfoPress }: SelectionMod
               </Text>
             </Pressable>
           );
-        })}
-      </View>
-      <Pressable
-        onPress={onInfoPress}
-        style={({ pressed }) => [
-          styles.infoButton,
-          { opacity: pressed ? 0.5 : 1 },
-        ]}
-      >
-        <Ionicons
-          name="information-circle-outline"
-          size={24}
-          color={theme.colors.textSecondary}
-        />
-      </Pressable>
+      })}
     </View>
   );
 }
@@ -124,24 +108,19 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 6,
     paddingVertical: 8,
-    paddingStart: 8,
-    paddingEnd: 12,
+    paddingHorizontal: 8,
     minHeight: 44,
   },
-  tabsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
   tab: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 5,
     paddingVertical: 7,
     paddingHorizontal: 10,
-    paddingLeft: 7,
     borderRadius: 10,
     borderWidth: 1,
     borderBottomWidth: 3,
@@ -161,8 +140,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 0.3,
-  },
-  infoButton: {
-    padding: 4,
   },
 });

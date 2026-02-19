@@ -43,6 +43,15 @@ export function useSaveGroupPredictionMutation(groupId: number | null) {
         queryClient.invalidateQueries({
           queryKey: groupsKeys.fixtures(groupId),
         });
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.predictionsOverview(groupId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.ranking(groupId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.list(),
+        });
       }
     },
   });
@@ -81,6 +90,9 @@ export function useSaveGroupPredictionsBatchMutation(groupId: number | null) {
         });
         queryClient.invalidateQueries({
           queryKey: groupsKeys.ranking(groupId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.list(),
         });
       }
     },
