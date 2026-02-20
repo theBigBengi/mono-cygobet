@@ -12,7 +12,7 @@ type TeamRowProps = {
 /**
  * Displays team logo and name in a row
  */
-export function TeamRow({ team, teamName, isWinner }: TeamRowProps) {
+function TeamRowInner({ team, teamName, isWinner }: TeamRowProps) {
   return (
     <View style={styles.teamRow}>
       <View style={styles.teamSection}>
@@ -28,6 +28,8 @@ export function TeamRow({ team, teamName, isWinner }: TeamRowProps) {
     </View>
   );
 }
+
+export const TeamRow = React.memo(TeamRowInner);
 
 const styles = StyleSheet.create({
   teamRow: {

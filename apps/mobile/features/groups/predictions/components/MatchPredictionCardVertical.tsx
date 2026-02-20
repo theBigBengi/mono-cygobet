@@ -27,6 +27,9 @@ import { OutcomePicker } from "./OutcomePicker";
 import { TeamRow } from "./TeamRow";
 import { ResultDisplay } from "./ResultDisplay";
 
+/** Cached viewport height — constant for the lifetime of the app. */
+const VIEWPORT_H = Dimensions.get("window").height;
+
 type InputRefs = {
   home: React.RefObject<TextInput | null>;
   away: React.RefObject<TextInput | null>;
@@ -108,7 +111,6 @@ export function MatchPredictionCardVertical({
   const [isCardPressed, setIsCardPressed] = React.useState(false);
 
   // Scroll-reveal animation: content fades in when card scrolls into viewport
-  const VIEWPORT_H = Dimensions.get("window").height;
   const cardY = useSharedValue(-1);
   const revealed = useSharedValue(scrollY ? 0 : 1); // no scrollY → always visible
 
@@ -151,13 +153,21 @@ export function MatchPredictionCardVertical({
     ],
   }));
 
-  const onPressCard = () => {
+  const onPressCard = useCallback(() => {
     if (onPressCardProp) {
       onPressCardProp();
     } else {
       router.push(`/fixtures/${fixture.id}` as any);
     }
-  };
+  }, [onPressCardProp, router, fixture.id]);
+
+  // Stable callbacks for ScoreInput — avoids creating new closures every render
+  const handleHomeChange = useCallback((text: string) => onChange("home", text), [onChange]);
+  const handleAwayChange = useCallback((text: string) => onChange("away", text), [onChange]);
+  const handleHomeFocus = useCallback(() => onFocus("home"), [onFocus]);
+  const handleAwayFocus = useCallback(() => onFocus("away"), [onFocus]);
+  const handleHomeAutoNext = useCallback(() => onAutoNext?.("home"), [onAutoNext]);
+  const handleAwayAutoNext = useCallback(() => onAutoNext?.("away"), [onAutoNext]);
 
   // Get or create refs for input fields
   if (!inputRefs.current[fixtureIdStr]) {
@@ -191,6 +201,9 @@ export function MatchPredictionCardVertical({
 
   const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
+
+  // Card is actively being edited (any input focused)
+  const isCardFocused = isHomeFocused || isAwayFocused;
 
   // Game status for side displays
   const fixturePoints = fixture.prediction?.points ?? 0;
@@ -274,7 +287,7 @@ export function MatchPredictionCardVertical({
                 shadowColor: hasPoints ? successColor : missedColor,
                 shadowOpacity: 0.2,
               },
-              isNextToPredict && !isCardPressed && {
+              isCardFocused && !isCardPressed && {
                 shadowColor: theme.colors.primary,
                 shadowOpacity: 0.25,
                 shadowRadius: 12,
@@ -288,13 +301,13 @@ export function MatchPredictionCardVertical({
                 {
                   backgroundColor: isHighlighted
                     ? theme.colors.primary + "15"
-                    : isNextToPredict
+                    : isCardFocused
                       ? theme.colors.primary + "08"
                       : theme.colors.cardBackground,
-                  borderColor: isNextToPredict
+                  borderColor: isCardFocused
                     ? theme.colors.primary + "40"
                     : theme.colors.border,
-                  borderBottomColor: isNextToPredict
+                  borderBottomColor: isCardFocused
                     ? theme.colors.primary + "60"
                     : theme.colors.textSecondary + "40",
                 },
@@ -342,10 +355,10 @@ export function MatchPredictionCardVertical({
                     isEditable={isEditable}
                     isFinished={isFinished}
                     inputRef={homeRef}
-                    onChange={(text) => onChange("home", text)}
-                    onFocus={() => onFocus("home")}
+                    onChange={handleHomeChange}
+                    onFocus={handleHomeFocus}
                     onBlur={onBlur}
-                    onAutoNext={onAutoNext ? () => onAutoNext("home") : undefined}
+                    onAutoNext={onAutoNext ? handleHomeAutoNext : undefined}
                     isCorrect={predictionSuccess}
                   />
                 )}
@@ -377,10 +390,10 @@ export function MatchPredictionCardVertical({
                     isEditable={isEditable}
                     isFinished={isFinished}
                     inputRef={awayRef}
-                    onChange={(text) => onChange("away", text)}
-                    onFocus={() => onFocus("away")}
+                    onChange={handleAwayChange}
+                    onFocus={handleAwayFocus}
                     onBlur={onBlur}
-                    onAutoNext={onAutoNext ? () => onAutoNext("away") : undefined}
+                    onAutoNext={onAutoNext ? handleAwayAutoNext : undefined}
                     isCorrect={predictionSuccess}
                   />
                 )}

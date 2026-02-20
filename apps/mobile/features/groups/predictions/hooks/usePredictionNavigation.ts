@@ -63,27 +63,20 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
     );
   };
 
-  const scrollToMatchCard = useCallback((fixtureId: number, keyboardHeight: number = 0) => {
+  const scrollToMatchCard = useCallback((fixtureId: number) => {
     const fixtureIdStr = String(fixtureId);
     const cardRef = matchCardRefs.current[fixtureIdStr];
 
     if (cardRef?.current && scrollViewRef.current) {
       cardRef.current?.measureLayout(
         scrollViewRef.current as any,
-        (x, y, width, height) => {
-          // When keyboard is shown, position card higher on screen (closer to top)
-          // by using a smaller offset (scrolling more)
-          const offset = keyboardHeight > 0 ? 80 : SCROLL_OFFSET;
-          const scrollY = Math.max(0, y - offset);
-
+        (x, y) => {
           scrollViewRef.current?.scrollTo({
-            y: scrollY,
+            y: Math.max(0, y - SCROLL_OFFSET),
             animated: true,
           });
         },
-        () => {
-          // ignore measure errors
-        }
+        () => {}
       );
     }
   }, []);

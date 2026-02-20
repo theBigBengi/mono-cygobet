@@ -172,6 +172,11 @@ function GroupFixtureCardInner({
     [fixture.id, onSelectOutcome]
   );
 
+  /** Stable press callback — avoids creating a new closure on every render. */
+  const onPressCardLocal = useCallback(() => {
+    onPressCard?.(fixture.id);
+  }, [fixture.id, onPressCard]);
+
   /** Pass bound callbacks and share state into the presentational card. */
   return (
     <MatchPredictionCardVertical
@@ -190,7 +195,7 @@ function GroupFixtureCardInner({
       onAutoNext={onAutoNextLocal}
       predictionMode={predictionMode}
       onSelectOutcome={onSelectOutcome ? onSelectOutcomeLocal : undefined}
-      onPressCard={onPressCard ? () => onPressCard(fixture.id) : undefined}
+      onPressCard={onPressCard ? onPressCardLocal : undefined}
       timelineFilled={timelineFilled}
       timelineConnectorFilled={timelineConnectorFilled}
       isFirstInTimeline={isFirstInTimeline}

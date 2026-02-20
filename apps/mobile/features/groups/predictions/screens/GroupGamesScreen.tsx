@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Keyboard, Alert, Text } from "react-native";
+import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager } from "react-native";
 import Animated, { useSharedValue, useAnimatedScrollHandler } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,6 +23,7 @@ import { usePredictionsStats } from "../hooks/usePredictionsStats";
 import type { PredictionMode, FixtureItem } from "../types";
 import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
+import { GroupGamesSkeleton } from "../components/GroupGamesSkeleton";
 import { isFinished as isFinishedState, isLive as isLiveState } from "@repo/utils";
 import { HEADER_HEIGHT, FOOTER_PADDING, SAVE_PENDING_DELAY_MS, SCROLL_OFFSET, TIMELINE } from "../utils/constants";
 
@@ -66,6 +67,18 @@ export function GroupGamesScreen({
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const mode = selectionMode ?? "games";
+
+  /** Defer heavy content rendering until navigation animation finishes. */
+  const [isReady, setIsReady] = React.useState(false);
+  React.useEffect(() => {
+    const handle = InteractionManager.runAfterInteractions(() => {
+      // Ensure skeleton is painted for at least one frame before loading content
+      requestAnimationFrame(() => {
+        setIsReady(true);
+      });
+    });
+    return () => handle.cancel();
+  }, []);
 
   /** Normalise fixtures from props; ensure we always have an array. */
   const fixtures = useMemo(() => {
@@ -283,16 +296,13 @@ export function GroupGamesScreen({
       }
     }
 
-    // 3. Compute timeline state for every item
+    // 3. Compute timeline state for every item (single O(n) pass)
+    let seenFirstCard = false;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      const isLast = i === items.length - 1;
-      const beforeFirstCard = !items.slice(0, i).some((it) => it.type === "card");
 
       if (item.type === "header") {
-        // Headers before first card: no track (timeline starts at first card)
-        item.showTrack = !beforeFirstCard;
-        // Fill if the nearest card after this header is filled
+        item.showTrack = seenFirstCard;
         let nextFilled = false;
         for (let j = i + 1; j < items.length; j++) {
           if (items[j].type === "card") {
@@ -302,13 +312,14 @@ export function GroupGamesScreen({
         }
         item.isFilled = nextFilled;
       } else {
-        item.isFirstInTimeline = beforeFirstCard;
-        item.isLastInTimeline = isLast;
+        item.isFirstInTimeline = !seenFirstCard;
+        item.isLastInTimeline = i === items.length - 1;
+        seenFirstCard = true;
       }
     }
 
     return items;
-  }, [fixtureGroups, theme.colors.primary, theme.colors.border]);
+  }, [fixtureGroups]);
 
   /** Summary stats for the summary card. */
   const summaryStats = useMemo(() => {
@@ -428,10 +439,9 @@ export function GroupGamesScreen({
       const fixtureChanged = lastScrolledFixtureRef.current !== fixtureId;
       const keyboardJustAppeared = lastKeyboardHeightRef.current === 0 && keyboardHeight > 0;
 
-      // Scroll if fixture changed OR keyboard just appeared
       if (fixtureChanged || keyboardJustAppeared) {
         lastScrolledFixtureRef.current = fixtureId;
-        scrollToMatchCard(fixtureId, keyboardHeight);
+        scrollToMatchCard(fixtureId);
       }
       lastKeyboardHeightRef.current = keyboardHeight;
     } else {
@@ -461,40 +471,28 @@ export function GroupGamesScreen({
   // Track highlighted fixture for visual feedback after scroll
   const [highlightedFixtureId, setHighlightedFixtureId] = React.useState<number | null>(null);
 
-  // Simple scroll to fixture by index (only once on mount)
+  // Scroll to specific fixture on mount (only once, after cards are rendered)
   React.useEffect(() => {
-    if (scrollToFixtureId == null) return;
+    if (scrollToFixtureId == null || !isReady) return;
     if (initialScrollDone.current) return;
-
-    // Find index in the flattened fixtures list
-    const allFixturesFlat = fixtureGroups.flatMap(g => g.fixtures);
-    const index = allFixturesFlat.findIndex(f => f.id === scrollToFixtureId);
-
-    if (index < 0) return;
 
     initialScrollDone.current = true;
 
-    // Simple calculation: each card is ~130px
-    const CARD_HEIGHT = 130;
-    const scrollY = index * CARD_HEIGHT;
-
+    // Small delay to ensure cards are laid out after isReady
     setTimeout(() => {
-      scrollViewRef.current?.scrollTo({
-        y: scrollY,
-        animated: true,
-      });
-      // Highlight the card after scroll
+      scrollToMatchCard(scrollToFixtureId);
       setHighlightedFixtureId(scrollToFixtureId);
-      // Remove highlight after 2 seconds
       setTimeout(() => setHighlightedFixtureId(null), 2000);
     }, 100);
-  }, [scrollToFixtureId, fixtureGroups, scrollViewRef]);
+  }, [scrollToFixtureId, isReady, scrollToMatchCard]);
 
   /** Save all changed predictions then dismiss keyboard (Done button). */
   const handleDone = useCallback(() => {
     handleSaveAllChanged();
     Keyboard.dismiss();
   }, [handleSaveAllChanged]);
+
+  const handleBack = useCallback(() => router.back(), [router]);
 
   /** Save pending then navigate to dedicated single game screen. */
   const handlePressCard = useCallback(
@@ -544,18 +542,20 @@ export function GroupGamesScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      {/* Timeline track — full screen height */}
-      <View
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: TIMELINE.TRACK_WIDTH,
-          backgroundColor: theme.colors.primary + "18",
-        }}
-        pointerEvents="none"
-      />
+      {/* Timeline track — full screen height, hidden during skeleton */}
+      {isReady && (
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: TIMELINE.TRACK_WIDTH,
+            backgroundColor: theme.colors.primary + "18",
+          }}
+          pointerEvents="none"
+        />
+      )}
 
       {/* Background ambient gradient */}
       <LinearGradient
@@ -584,8 +584,10 @@ export function GroupGamesScreen({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Filters applied but no fixtures match. */}
-          {emptyState && filteredFixtures.length === 0 ? (
+          {/* Skeleton placeholders until navigation animation completes */}
+          {!isReady ? (
+            <GroupGamesSkeleton />
+          ) : emptyState && filteredFixtures.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <AppText
                 variant="body"
@@ -609,7 +611,6 @@ export function GroupGamesScreen({
             </View>
           ) : (
             <>
-              {/* Summary stats card */}
               <GamesSummaryCard
                 totalPoints={summaryStats.totalPoints}
                 predictedCount={savedPredictionsCount}
@@ -617,13 +618,10 @@ export function GroupGamesScreen({
                 accuracy={summaryStats.accuracy}
               />
 
-              {/* Flat render list: headers + cards, each with timeline state */}
-              <View style={styles.timelineItemsWrapper}>
-                {renderItems.map((item) => {
+              {renderItems.map((item) => {
                 if (item.type === "header") {
                   return (
                     <View key={item.key} style={styles.sectionHeaderRow}>
-                      {/* Timeline column — fill only, track is in parent */}
                       <View style={styles.sectionTimelineCol}>
                         {item.showTrack && item.isFilled && (
                           <View
@@ -638,7 +636,6 @@ export function GroupGamesScreen({
                           />
                         )}
                       </View>
-                      {/* Header content */}
                       <View style={styles.sectionHeaderContent}>
                         {item.isLive ? (
                           <View style={styles.sectionLiveBadge}>
@@ -672,39 +669,41 @@ export function GroupGamesScreen({
                 }
 
                 const { fixture, group, indexInGroup } = item;
-                const cardProps = {
-                  fixture,
-                  index: indexInGroup,
-                  totalInGroup: group.fixtures.length,
-                  prediction: predictionsMap[fixture.id],
-                  inputRefs,
-                  currentFocusedField,
-                  isSaved: savedStatesMap[fixture.id],
-                  isHighlighted: highlightedFixtureId === fixture.id,
-                  matchCardRefs,
-                  predictionMode: predictionModeTyped,
-                  groupName,
-                  matchNumber: matchNumbersMap[fixture.id],
-                  timelineFilled: item.timelineFilled,
-                  timelineConnectorFilled: item.timelineConnectorFilled,
-                  isFirstInTimeline: item.isFirstInTimeline,
-                  isLastInTimeline: item.isLastInTimeline,
-                  isNextToPredict: fixture.id === nextToPredictId,
-                  onFieldFocus: handleFieldFocus,
-                  onFieldBlur: handleFieldBlur,
-                  onCardChange: handleCardChange,
-                  onAutoNext: handleAutoNext,
-                  onSelectOutcome:
-                    predictionMode === "MatchWinner"
-                      ? handleSelectOutcome
-                      : undefined,
-                  onScrollToCard: scrollToMatchCard,
-                  onPressCard: handlePressCard,
-                  scrollY,
-                };
-                return <GroupFixtureCard key={fixture.id} {...cardProps} />;
+                return (
+                  <GroupFixtureCard
+                    key={fixture.id}
+                    fixture={fixture}
+                    index={indexInGroup}
+                    totalInGroup={group.fixtures.length}
+                    prediction={predictionsMap[fixture.id]}
+                    inputRefs={inputRefs}
+                    currentFocusedField={currentFocusedField}
+                    isSaved={savedStatesMap[fixture.id]}
+                    isHighlighted={highlightedFixtureId === fixture.id}
+                    matchCardRefs={matchCardRefs}
+                    predictionMode={predictionModeTyped}
+                    groupName={groupName}
+                    matchNumber={matchNumbersMap[fixture.id]}
+                    timelineFilled={item.timelineFilled}
+                    timelineConnectorFilled={item.timelineConnectorFilled}
+                    isFirstInTimeline={item.isFirstInTimeline}
+                    isLastInTimeline={item.isLastInTimeline}
+                    isNextToPredict={fixture.id === nextToPredictId}
+                    onFieldFocus={handleFieldFocus}
+                    onFieldBlur={handleFieldBlur}
+                    onCardChange={handleCardChange}
+                    onAutoNext={handleAutoNext}
+                    onSelectOutcome={
+                      predictionMode === "MatchWinner"
+                        ? handleSelectOutcome
+                        : undefined
+                    }
+                    onScrollToCard={scrollToMatchCard}
+                    onPressCard={handlePressCard}
+                    scrollY={scrollY}
+                  />
+                );
               })}
-              </View>
             </>
           )}
         </Animated.ScrollView>
@@ -726,7 +725,7 @@ export function GroupGamesScreen({
           style={[styles.headerOverlay, { top: 0 }]}
           pointerEvents="box-none"
         >
-          <GroupGamesHeader onBack={() => router.back()}>
+          <GroupGamesHeader onBack={handleBack}>
             {hasAnyChips && (
               <SmartFilterChips
                 actionChips={actionChips}
@@ -759,9 +758,6 @@ const styles = StyleSheet.create({
   },
   scrollView: { flex: 1 },
   contentContainer: { paddingHorizontal: 0, paddingVertical: 16 },
-  timelineItemsWrapper: {
-    position: "relative",
-  },
   headerOverlay: {
     position: "absolute",
     left: 0,

@@ -18,7 +18,7 @@ type ResultDisplayProps = {
 /**
  * Displays game result scores, or status text for cancelled games
  */
-export function ResultDisplay({
+function ResultDisplayInner({
   result,
   isLive,
   isFinished,
@@ -145,6 +145,8 @@ export function ResultDisplay({
     </View>
   );
 }
+
+export const ResultDisplay = React.memo(ResultDisplayInner);
 
 const styles = StyleSheet.create({
   timeResultContainer: {

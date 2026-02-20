@@ -22,7 +22,7 @@ const OUTCOME_LABELS: Record<OutcomeOption, string> = {
  * Outcome picker for MatchWinner mode: 1 (home win), X (draw), 2 (away win).
  * Canonical storage: home → 1:0, draw → 0:0, away → 0:1.
  */
-export function OutcomePicker({
+function OutcomePickerInner({
   selectedOutcome,
   isEditable,
   onSelect,
@@ -80,6 +80,8 @@ export function OutcomePicker({
     </View>
   );
 }
+
+export const OutcomePicker = React.memo(OutcomePickerInner);
 
 const styles = StyleSheet.create({
   container: {

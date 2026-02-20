@@ -25,7 +25,7 @@ type ScoreInputProps = {
  * Handles both editable (TextInput) and read-only (View) modes
  * Game-like styling with visual feedback
  */
-export function ScoreInput({
+function ScoreInputInner({
   type,
   value,
   isFocused,
@@ -59,7 +59,7 @@ export function ScoreInput({
   // Editable input (before game)
   if (isEditable) {
     const hasValue = value !== null && value !== undefined;
-    const displayText = toDisplay(value) || (isFocused ? "" : "–");
+    const displayText = toDisplay(value) || "–";
 
     return (
       <View style={[
@@ -72,11 +72,11 @@ export function ScoreInput({
             {
               backgroundColor: hasValue ? "#F1F5F9" : theme.colors.surface,
               borderColor: isFocused
-                ? theme.colors.textPrimary
+                ? theme.colors.primary + "80"
                 : hasValue
                   ? "#94A3B8"
                   : theme.colors.border,
-              borderWidth: isFocused ? 2 : 1,
+              borderWidth: 1,
               justifyContent: "center",
               alignItems: "center",
             },
@@ -86,7 +86,11 @@ export function ScoreInput({
             style={{
               fontSize: 18,
               fontWeight: "700",
-              color: hasValue ? theme.colors.textPrimary : theme.colors.textSecondary + "80",
+              color: isFocused
+                ? theme.colors.primary
+                : hasValue
+                  ? theme.colors.textPrimary
+                  : theme.colors.textSecondary + "80",
             }}
           >
             {displayText}
@@ -158,6 +162,8 @@ export function ScoreInput({
     </View>
   );
 }
+
+export const ScoreInput = React.memo(ScoreInputInner);
 
 const styles = StyleSheet.create({
   inputWrapper: {
