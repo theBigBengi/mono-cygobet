@@ -14,7 +14,8 @@ node_modules
 
 # Testing
 coverage
-
+.vitest
+.cache
 # Turbo
 .turbo
 
@@ -36,5 +37,6 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+.expo/
 
 /generated/prisma
