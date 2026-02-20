@@ -91,12 +91,6 @@ import { cn } from "@/lib/utils";
 import { MultiSelectCombobox } from "@/components/filters/multi-select-combobox";
 import { Calendar } from "@/components/ui/calendar";
 
-function tsToDatetimeLocal(ts: number): string {
-  const d = new Date(ts * 1000);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 function formatDateTimeShort(ts: number): string {
   const d = new Date(ts * 1000);
   return d.toLocaleString("en-GB", {
