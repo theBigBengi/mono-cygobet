@@ -13,6 +13,10 @@ import type {
 import * as repo from "./repository";
 import { computeBadges, computeMaxStreak } from "./badges";
 import { generateInsights } from "./insights";
+import { getCache } from "../../../lib/cache";
+
+const statsCache = getCache("user-stats");
+const h2hCache = getCache("h2h");
 
 /**
  * Derive form result from prediction flags and points.
@@ -31,9 +35,9 @@ function toFormResult(
 }
 
 /**
- * Get user stats: parallel fetch all queries, compute badges, assemble response.
+ * Compute user stats from database (expensive — 14 parallel queries).
  */
-export async function getUserStats(
+async function computeUserStats(
   targetUserId: number
 ): Promise<ApiUserStatsResponse> {
   const [
@@ -245,9 +249,25 @@ export async function getUserStats(
 }
 
 /**
- * Get head-to-head comparison between two users.
+ * Get user stats — cached for 5 minutes when Redis is available.
  */
-export async function getHeadToHead(
+export async function getUserStats(
+  targetUserId: number
+): Promise<ApiUserStatsResponse> {
+  if (statsCache) {
+    return statsCache.getOrSet(
+      String(targetUserId),
+      300,
+      () => computeUserStats(targetUserId)
+    );
+  }
+  return computeUserStats(targetUserId);
+}
+
+/**
+ * Compute head-to-head comparison from database.
+ */
+async function computeHeadToHead(
   userId: number,
   opponentId: number
 ): Promise<ApiHeadToHeadResponse> {
@@ -401,6 +421,23 @@ export async function getHeadToHead(
     data,
     message: "Head-to-head fetched successfully",
   };
+}
+
+/**
+ * Get head-to-head comparison — cached for 5 minutes when Redis is available.
+ * Cache key uses canonical ordering (min:max) so A-vs-B and B-vs-A share a key.
+ */
+export async function getHeadToHead(
+  userId: number,
+  opponentId: number
+): Promise<ApiHeadToHeadResponse> {
+  if (h2hCache) {
+    const key = `${Math.min(userId, opponentId)}:${Math.max(userId, opponentId)}`;
+    return h2hCache.getOrSet(key, 300, () =>
+      computeHeadToHead(userId, opponentId)
+    );
+  }
+  return computeHeadToHead(userId, opponentId);
 }
 
 /**

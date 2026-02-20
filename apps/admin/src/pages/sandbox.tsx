@@ -66,8 +66,17 @@ import {
   Clock,
   Users,
   Trophy,
+  MoreHorizontal,
+  CalendarIcon,
+  ArrowUpDown,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useSandboxList } from "@/hooks/use-sandbox";
 import {
   sandboxService,
@@ -78,12 +87,132 @@ import {
 import { leaguesService } from "@/services/leagues.service";
 import { teamsService } from "@/services/teams.service";
 import { usersService } from "@/services/users.service";
+import { cn } from "@/lib/utils";
 import { MultiSelectCombobox } from "@/components/filters/multi-select-combobox";
+import { Calendar } from "@/components/ui/calendar";
 
 function tsToDatetimeLocal(ts: number): string {
   const d = new Date(ts * 1000);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function formatDateTimeShort(ts: number): string {
+  const d = new Date(ts * 1000);
+  return d.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/* ──────────────────── DateTime Picker Popover ──────────────────── */
+
+function DateTimePickerPopover({
+  startTs,
+  onSave,
+  saving,
+  className,
+}: {
+  startTs: number;
+  onSave: (isoString: string) => void;
+  saving?: boolean;
+  className?: string;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [date, setDate] = React.useState<Date>(() => new Date(startTs * 1000));
+  const [time, setTime] = React.useState(() => {
+    const d = new Date(startTs * 1000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+
+  // Reset internal state when popover opens
+  React.useEffect(() => {
+    if (open) {
+      const d = new Date(startTs * 1000);
+      setDate(d);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      setTime(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
+    }
+  }, [open, startTs]);
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const combinedDate = React.useMemo(() => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const d = new Date(date);
+    d.setHours(hours ?? 0, minutes ?? 0, 0, 0);
+    return d;
+  }, [date, time]);
+
+  const isInPast = combinedDate.getTime() <= Date.now();
+
+  const handleSave = () => {
+    if (isInPast) return;
+    onSave(combinedDate.toISOString());
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "h-8 justify-start text-xs font-normal",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-1.5 h-3 w-3 text-muted-foreground" />
+          {formatDateTimeShort(startTs)}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(d) => d && setDate(d)}
+          disabled={{ before: today }}
+          initialFocus
+        />
+        <div className="border-t px-3 py-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              type="time"
+              className="h-8 w-[100px] text-xs tabular-nums"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+            />
+            {isInPast && (
+              <span className="text-[10px] text-destructive">In the past</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 h-8 text-xs"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="flex-1 h-8 text-xs"
+              onClick={handleSave}
+              disabled={saving || isInPast}
+            >
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 const LIVE_STATES = [
@@ -99,6 +228,16 @@ const LIVE_STATES = [
 
 const FINISHED_STATES = ["FT", "AET", "FT_PEN"] as const;
 
+const CANCELLED_STATES = [
+  "CANCELLED",
+  "POSTPONED",
+  "SUSPENDED",
+  "ABANDONED",
+  "INTERRUPTED",
+  "WO",
+  "AWARDED",
+] as const;
+
 function getFixtureAction(
   state: string
 ): "kickoff" | "full-time" | "reset" | null {
@@ -107,15 +246,19 @@ function getFixtureAction(
     return "full-time";
   if (FINISHED_STATES.includes(state as (typeof FINISHED_STATES)[number]))
     return "reset";
+  if (CANCELLED_STATES.includes(state as (typeof CANCELLED_STATES)[number]))
+    return "reset";
   return null;
 }
 
 function getStateBadgeVariant(
   state: string
-): "secondary" | "default" | "outline" {
+): "secondary" | "default" | "outline" | "destructive" {
   if (state === "NS") return "secondary";
   if (LIVE_STATES.includes(state as (typeof LIVE_STATES)[number]))
     return "default";
+  if (CANCELLED_STATES.includes(state as (typeof CANCELLED_STATES)[number]))
+    return "destructive";
   return "outline";
 }
 
@@ -145,17 +288,21 @@ function FixtureMobileCard({
   onFullTime,
   onReset,
   onUpdateStartTime,
+  onSetState,
   kickoffPending,
   resetPending,
+  startTimeSaving,
 }: {
   fixture: SandboxFixture;
   onKickoff: (id: number) => void;
   onEditLive: (f: SandboxFixture) => void;
   onFullTime: (id: number) => void;
   onReset: (id: number) => void;
-  onUpdateStartTime: (id: number, startTime: string) => void;
+  onUpdateStartTime: (id: number, isoString: string) => void;
+  onSetState: (id: number, state: string) => void;
   kickoffPending: boolean;
   resetPending: boolean;
+  startTimeSaving: boolean;
 }) {
   const action = getFixtureAction(fixture.state);
   const matchName =
@@ -169,6 +316,8 @@ function FixtureMobileCard({
   const isLive = LIVE_STATES.includes(
     fixture.state as (typeof LIVE_STATES)[number]
   );
+  const canSetState =
+    fixture.state === "NS" || isLive;
 
   return (
     <div className="rounded-lg border p-3 space-y-2.5">
@@ -196,21 +345,12 @@ function FixtureMobileCard({
       </div>
 
       {fixture.state === "NS" && (
-        <div className="flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <Input
-            type="datetime-local"
-            className="h-8 text-xs flex-1"
-            value={tsToDatetimeLocal(fixture.startTs)}
-            onChange={(e) => {
-              if (!e.target.value) return;
-              onUpdateStartTime(
-                fixture.id,
-                new Date(e.target.value).toISOString()
-              );
-            }}
-          />
-        </div>
+        <DateTimePickerPopover
+          startTs={fixture.startTs}
+          onSave={(iso) => onUpdateStartTime(fixture.id, iso)}
+          saving={startTimeSaving}
+          className="w-full"
+        />
       )}
       {fixture.state !== "NS" && (
         <p className="text-[10px] text-muted-foreground">
@@ -218,7 +358,7 @@ function FixtureMobileCard({
         </p>
       )}
 
-      {action && (
+      {(action || canSetState) && (
         <>
           <Separator />
           <div className="flex items-center gap-2">
@@ -265,6 +405,29 @@ function FixtureMobileCard({
                 <RotateCcw className="mr-1.5 h-3 w-3" />
                 Reset
               </Button>
+            )}
+            {canSetState && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="outline" className="h-8 w-8 shrink-0">
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onSetState(fixture.id, "POSTPONED")}>
+                    Postpone
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onSetState(fixture.id, "CANCELLED")}>
+                    Cancel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onSetState(fixture.id, "SUSPENDED")}>
+                    Suspend
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onSetState(fixture.id, "ABANDONED")}>
+                    Abandon
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </>
@@ -337,12 +500,18 @@ export default function SandboxPage() {
     }
   }, [groups, selectedGroupTab]);
 
+  const [sortByTime, setSortByTime] = React.useState(false);
+
   const filteredFixtures = React.useMemo(() => {
     if (selectedGroupTab === null) return [];
     const group = groups.find((g) => g.id === selectedGroupTab);
     if (!group) return [];
-    return fixtures.filter((f) => group.fixtureIds.includes(f.id));
-  }, [fixtures, groups, selectedGroupTab]);
+    const list = fixtures.filter((f) => group.fixtureIds.includes(f.id));
+    if (sortByTime) {
+      return [...list].sort((a, b) => a.startTs - b.startTs);
+    }
+    return list;
+  }, [fixtures, groups, selectedGroupTab, sortByTime]);
 
   const [viewMode, setViewMode] = React.useState<"fixtures" | "members">(
     "fixtures"
@@ -368,6 +537,7 @@ export default function SandboxPage() {
     autoGeneratePredictions: true,
     groupName: "",
     startInMinutes: 60,
+    intervalMinutes: 15,
   });
   const [userSearchQuery, setUserSearchQuery] = React.useState("");
   const [leagueSearchQuery, setLeagueSearchQuery] = React.useState("");
@@ -531,6 +701,7 @@ export default function SandboxPage() {
       autoGeneratePredictions?: boolean;
       groupName?: string;
       startInMinutes?: number;
+      intervalMinutes?: number;
     }) => sandboxService.setup(args),
     onSuccess: (data) => {
       toast.success(`Sandbox setup complete — group #${data.data.groupId}`);
@@ -546,6 +717,7 @@ export default function SandboxPage() {
         autoGeneratePredictions: true,
         groupName: "",
         startInMinutes: 60,
+        intervalMinutes: 15,
       });
       setUserSearchQuery("");
       setLeagueSearchQuery("");
@@ -666,6 +838,35 @@ export default function SandboxPage() {
     },
   });
 
+  const bulkKickoffMutation = useMutation({
+    mutationFn: (fixtureIds: number[]) => sandboxService.bulkKickoff(fixtureIds),
+    onSuccess: () => {
+      toast.success("All fixtures kicked off!");
+      queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
+    },
+    onError: (error: Error) => {
+      toast.error("Bulk kickoff failed", { description: error.message });
+    },
+  });
+
+  const setStateMutation = useMutation({
+    mutationFn: (args: { fixtureId: number; state: string }) =>
+      sandboxService.setState(args),
+    onSuccess: (data) => {
+      toast.success(`Fixture set to ${(data.data as { state?: string })?.state ?? "new state"}`);
+      queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
+    },
+    onError: (error: Error) => {
+      toast.error("Set state failed", { description: error.message });
+    },
+  });
+
+  const nsFixtureIds = React.useMemo(() => {
+    return filteredFixtures
+      .filter((f) => f.state === "NS")
+      .map((f) => f.id);
+  }, [filteredFixtures]);
+
   const [deleteGroupDialogOpen, setDeleteGroupDialogOpen] = React.useState(false);
 
   const deleteGroupMutation = useMutation({
@@ -747,6 +948,7 @@ export default function SandboxPage() {
         autoGeneratePredictions: setupForm.autoGeneratePredictions,
         groupName: setupForm.groupName || undefined,
         startInMinutes: setupForm.startInMinutes,
+        intervalMinutes: setupForm.intervalMinutes,
       });
       return;
     }
@@ -763,6 +965,7 @@ export default function SandboxPage() {
         autoGeneratePredictions: setupForm.autoGeneratePredictions,
         groupName: setupForm.groupName || undefined,
         startInMinutes: setupForm.startInMinutes,
+        intervalMinutes: setupForm.intervalMinutes,
       });
       return;
     }
@@ -774,6 +977,7 @@ export default function SandboxPage() {
       autoGeneratePredictions: setupForm.autoGeneratePredictions,
       groupName: setupForm.groupName || undefined,
       startInMinutes: setupForm.startInMinutes,
+      intervalMinutes: setupForm.intervalMinutes,
     });
   };
 
@@ -901,6 +1105,39 @@ export default function SandboxPage() {
                       <Plus className="h-3 w-3 sm:mr-1" />
                       <span className="hidden sm:inline">Add Fixture</span>
                     </Button>
+                    {nsFixtureIds.length >= 2 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs shrink-0"
+                        onClick={() => bulkKickoffMutation.mutate(nsFixtureIds)}
+                        disabled={bulkKickoffMutation.isPending}
+                      >
+                        <Play className="h-3 w-3 sm:mr-1" />
+                        <span className="hidden sm:inline">
+                          {bulkKickoffMutation.isPending
+                            ? "Kicking off..."
+                            : `Kickoff All (${nsFixtureIds.length})`}
+                        </span>
+                      </Button>
+                    )}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant={sortByTime ? "default" : "outline"}
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => setSortByTime((p) => !p)}
+                          >
+                            <ArrowUpDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{sortByTime ? "Sorted by start time" : "Sort by start time"}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Button
                       size="icon"
                       variant="ghost"
@@ -981,14 +1218,18 @@ export default function SandboxPage() {
                         onEditLive={openEditLiveDialog}
                         onFullTime={openFtDialog}
                         onReset={(id) => resetMutation.mutate(id)}
-                        onUpdateStartTime={(id, startTime) =>
+                        onUpdateStartTime={(id, iso) =>
                           updateStartTimeMutation.mutate({
                             fixtureId: id,
-                            startTime,
+                            startTime: iso,
                           })
+                        }
+                        onSetState={(id, state) =>
+                          setStateMutation.mutate({ fixtureId: id, state })
                         }
                         kickoffPending={kickoffMutation.isPending}
                         resetPending={resetMutation.isPending}
+                        startTimeSaving={updateStartTimeMutation.isPending}
                       />
                     ))}
                   </div>
@@ -1049,19 +1290,16 @@ export default function SandboxPage() {
                               </TableCell>
                               <TableCell>
                                 {fixture.state === "NS" ? (
-                                  <Input
-                                    type="datetime-local"
-                                    className="h-8 w-[170px] text-xs"
-                                    value={tsToDatetimeLocal(fixture.startTs)}
-                                    onChange={(e) => {
-                                      if (!e.target.value) return;
+                                  <DateTimePickerPopover
+                                    startTs={fixture.startTs}
+                                    onSave={(iso) =>
                                       updateStartTimeMutation.mutate({
                                         fixtureId: fixture.id,
-                                        startTime: new Date(
-                                          e.target.value
-                                        ).toISOString(),
-                                      });
-                                    }}
+                                        startTime: iso,
+                                      })
+                                    }
+                                    saving={updateStartTimeMutation.isPending}
+                                    className="w-[170px]"
                                   />
                                 ) : (
                                   <span className="text-xs text-muted-foreground">
@@ -1124,6 +1362,64 @@ export default function SandboxPage() {
                                       <RotateCcw className="mr-1 h-3 w-3" />
                                       Reset
                                     </Button>
+                                  )}
+                                  {(fixture.state === "NS" ||
+                                    LIVE_STATES.includes(
+                                      fixture.state as (typeof LIVE_STATES)[number]
+                                    )) && (
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-7 w-7"
+                                        >
+                                          <MoreHorizontal className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            setStateMutation.mutate({
+                                              fixtureId: fixture.id,
+                                              state: "POSTPONED",
+                                            })
+                                          }
+                                        >
+                                          Postpone
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            setStateMutation.mutate({
+                                              fixtureId: fixture.id,
+                                              state: "CANCELLED",
+                                            })
+                                          }
+                                        >
+                                          Cancel
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            setStateMutation.mutate({
+                                              fixtureId: fixture.id,
+                                              state: "SUSPENDED",
+                                            })
+                                          }
+                                        >
+                                          Suspend
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            setStateMutation.mutate({
+                                              fixtureId: fixture.id,
+                                              state: "ABANDONED",
+                                            })
+                                          }
+                                        >
+                                          Abandon
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                   )}
                                 </div>
                               </TableCell>
@@ -1690,6 +1986,23 @@ export default function SandboxPage() {
                   }
                 />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="intervalMinutes" className="text-xs">Interval between fixtures (minutes)</Label>
+              <Input
+                id="intervalMinutes"
+                type="number"
+                className="h-9 w-20 tabular-nums"
+                min={0}
+                max={120}
+                value={setupForm.intervalMinutes}
+                onChange={(e) =>
+                  setSetupForm((prev) => ({
+                    ...prev,
+                    intervalMinutes: Math.min(120, Math.max(0, Number(e.target.value) || 0)),
+                  }))
+                }
+              />
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox

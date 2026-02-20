@@ -24,6 +24,7 @@ export const sandboxSetupBodySchema = {
     autoGeneratePredictions: { type: "boolean", default: false },
     groupName: { type: "string" },
     startInMinutes: { type: "integer", minimum: 1, maximum: 10080 },
+    intervalMinutes: { type: "integer", minimum: 0, maximum: 120 },
   },
 } as const;
 
@@ -159,6 +160,63 @@ export const sandboxSendMessageBodySchema = {
     groupId: { type: "integer" },
     senderId: { type: "integer" },
     body: { type: "string", minLength: 1, maxLength: 2000 },
+  },
+} as const;
+
+export const sandboxBatchUpdateStartTimesBodySchema = {
+  type: "object",
+  required: ["updates"],
+  additionalProperties: false,
+  properties: {
+    updates: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["fixtureId", "startTime"],
+        additionalProperties: false,
+        properties: {
+          fixtureId: { type: "integer" },
+          startTime: { type: "string", format: "date-time" },
+        },
+      },
+      minItems: 1,
+      maxItems: 50,
+    },
+  },
+} as const;
+
+export const sandboxBulkKickoffBodySchema = {
+  type: "object",
+  required: ["fixtureIds"],
+  additionalProperties: false,
+  properties: {
+    fixtureIds: {
+      type: "array",
+      items: { type: "integer" },
+      minItems: 1,
+      maxItems: 50,
+    },
+  },
+} as const;
+
+export const sandboxSetStateBodySchema = {
+  type: "object",
+  required: ["fixtureId", "state"],
+  additionalProperties: false,
+  properties: {
+    fixtureId: { type: "integer" },
+    state: {
+      type: "string",
+      enum: [
+        "CANCELLED",
+        "POSTPONED",
+        "SUSPENDED",
+        "ABANDONED",
+        "INTERRUPTED",
+        "WO",
+        "AWARDED",
+      ],
+    },
   },
 } as const;
 

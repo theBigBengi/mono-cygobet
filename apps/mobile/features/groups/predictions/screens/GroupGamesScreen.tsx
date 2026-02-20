@@ -1,6 +1,8 @@
 import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, ScrollView, Keyboard, Alert } from "react-native";
+import { View, StyleSheet, Keyboard, Alert, Text } from "react-native";
+import Animated, { useSharedValue, useAnimatedScrollHandler } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { AppText, Screen } from "@/components/ui";
@@ -9,7 +11,7 @@ import {
   ScoreInputNavigationBar,
   SmartFilterChips,
   GroupFixtureCard,
-  FixtureGroupSection,
+  GamesSummaryCard,
 } from "../components";
 import { useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { usePredictionNavigation } from "../hooks/usePredictionNavigation";
@@ -22,7 +24,7 @@ import type { PredictionMode, FixtureItem } from "../types";
 import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { isFinished as isFinishedState, isLive as isLiveState } from "@repo/utils";
-import { HEADER_HEIGHT, FOOTER_PADDING, SAVE_PENDING_DELAY_MS, SCROLL_OFFSET } from "../utils/constants";
+import { HEADER_HEIGHT, FOOTER_PADDING, SAVE_PENDING_DELAY_MS, SCROLL_OFFSET, TIMELINE } from "../utils/constants";
 
 type Props = {
   groupId: number | null;
@@ -191,13 +193,39 @@ export function GroupGamesScreen({
     return map;
   }, [fixtureGroups]);
 
-  /** Timeline fill maps — computed from all fixtures in display order. */
-  const timelineMaps = useMemo(() => {
-    // Flatten all fixtures in display order
+  /**
+   * Flat render list — ALL elements (headers + cards) in display order.
+   * Each element carries its own timeline state so the timeline is always
+   * continuous regardless of what elements are in the list.
+   */
+  type RenderItem =
+    | {
+        type: "header";
+        key: string;
+        label: string;
+        level?: "date" | "league";
+        isLive?: boolean;
+        /** Show the track line (false = before first card) */
+        showTrack: boolean;
+        /** Fill the line with primary color */
+        isFilled: boolean;
+      }
+    | {
+        type: "card";
+        fixture: FixtureItem;
+        group: { fixtures: FixtureItem[] };
+        indexInGroup: number;
+        timelineFilled: boolean;
+        timelineConnectorFilled: boolean;
+        isFirstInTimeline: boolean;
+        isLastInTimeline: boolean;
+      };
+
+  const renderItems = useMemo((): RenderItem[] => {
+    // 1. Flatten all fixtures to compute progress front
     const allFixtures: FixtureItem[] = [];
     fixtureGroups.forEach((g) => g.fixtures.forEach((f) => allFixtures.push(f)));
 
-    // Find the index of the last finished/live fixture (the progress front)
     let lastFilledIdx = -1;
     for (let i = allFixtures.length - 1; i >= 0; i--) {
       const state = allFixtures[i].state;
@@ -207,20 +235,120 @@ export function GroupGamesScreen({
       }
     }
 
+    // Per-fixture timeline state
     const filled: Record<number, boolean> = {};
-    const connectorFilled: Record<number, boolean> = {};
-    const isFirst: Record<number, boolean> = {};
-    const isLast: Record<number, boolean> = {};
-
+    const connector: Record<number, boolean> = {};
     allFixtures.forEach((f, i) => {
       filled[f.id] = i <= lastFilledIdx;
-      connectorFilled[f.id] = i < lastFilledIdx; // connector goes to next, so stop at the front
-      isFirst[f.id] = i === 0;
-      isLast[f.id] = i === allFixtures.length - 1;
+      connector[f.id] = i < lastFilledIdx;
     });
 
-    return { filled, connectorFilled, isFirst, isLast };
-  }, [fixtureGroups]);
+    // 2. Build flat render list
+    const items: RenderItem[] = [];
+    for (const group of fixtureGroups) {
+      if (group.fixtures.length === 0 && group.label) {
+        // Date-only header (no fixtures in this group)
+        items.push({
+          type: "header",
+          key: group.key,
+          label: group.dateLabel || group.label,
+          level: "date",
+          isLive: group.isLive,
+          showTrack: false,
+          isFilled: false,
+        });
+      } else if (group.fixtures.length > 0 && group.label) {
+        // League/round header (group has fixtures — header shown above them)
+        items.push({
+          type: "header",
+          key: `header-${group.key}`,
+          label: group.label,
+          level: group.level ?? "league",
+          isLive: group.isLive,
+          showTrack: false,
+          isFilled: false,
+        });
+      }
+      for (let i = 0; i < group.fixtures.length; i++) {
+        items.push({
+          type: "card",
+          fixture: group.fixtures[i],
+          group,
+          indexInGroup: i,
+          timelineFilled: filled[group.fixtures[i].id] ?? false,
+          timelineConnectorFilled: connector[group.fixtures[i].id] ?? false,
+          isFirstInTimeline: false, // filled below
+          isLastInTimeline: false,
+        });
+      }
+    }
+
+    // 3. Compute timeline state for every item
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const isLast = i === items.length - 1;
+      const beforeFirstCard = !items.slice(0, i).some((it) => it.type === "card");
+
+      if (item.type === "header") {
+        // Headers before first card: no track (timeline starts at first card)
+        item.showTrack = !beforeFirstCard;
+        // Fill if the nearest card after this header is filled
+        let nextFilled = false;
+        for (let j = i + 1; j < items.length; j++) {
+          if (items[j].type === "card") {
+            nextFilled = (items[j] as any).timelineFilled;
+            break;
+          }
+        }
+        item.isFilled = nextFilled;
+      } else {
+        item.isFirstInTimeline = beforeFirstCard;
+        item.isLastInTimeline = isLast;
+      }
+    }
+
+    return items;
+  }, [fixtureGroups, theme.colors.primary, theme.colors.border]);
+
+  /** Summary stats for the summary card. */
+  const summaryStats = useMemo(() => {
+    let totalPoints = 0;
+    let settledWithPoints = 0;
+    let totalSettled = 0;
+
+    filteredFixtures.forEach((f) => {
+      if (f.prediction?.points != null && f.prediction.points > 0) {
+        totalPoints += f.prediction.points;
+        settledWithPoints++;
+      }
+      if (f.prediction?.settled) {
+        totalSettled++;
+      }
+    });
+
+    const accuracy =
+      totalSettled > 0
+        ? Math.round((settledWithPoints / totalSettled) * 100)
+        : 0;
+    return { totalPoints, accuracy };
+  }, [filteredFixtures]);
+
+  /** Next fixture to predict — first upcoming game without a complete prediction. */
+  const nextToPredictId = useMemo(() => {
+    const allFixtures: FixtureItem[] = [];
+    fixtureGroups.forEach((g) =>
+      g.fixtures.forEach((f) => allFixtures.push(f))
+    );
+    for (const f of allFixtures) {
+      const state = f.state;
+      if (state && (isFinishedState(state) || isLiveState(state))) continue;
+      const pred = predictionsMap[f.id];
+      if (!pred || pred.home === null || pred.away === null) {
+        return f.id;
+      }
+    }
+    return null;
+  }, [fixtureGroups, predictionsMap]);
 
   /** For MatchWinner mode: set 1/X/2 and trigger a save shortly after. */
   const handleSelectOutcome = React.useCallback(
@@ -250,6 +378,14 @@ export function GroupGamesScreen({
     navigateToField,
     scrollToMatchCard,
   } = usePredictionNavigation(fixtureGroups);
+
+  /** Scroll position for card reveal animations. */
+  const scrollY = useSharedValue(0);
+  const animatedScrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
 
   const keyboardHeight = useKeyboardHeight();
 
@@ -408,8 +544,32 @@ export function GroupGamesScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      {/* Timeline track — full screen height */}
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: TIMELINE.TRACK_WIDTH,
+          backgroundColor: theme.colors.primary + "18",
+        }}
+        pointerEvents="none"
+      />
+
+      {/* Background ambient gradient */}
+      <LinearGradient
+        colors={[
+          theme.colors.primary + "0C",
+          theme.colors.primary + "04",
+          "transparent",
+        ]}
+        style={styles.backgroundGradient}
+        pointerEvents="none"
+      />
+
       <View style={{ flex: 1 }}>
-        <ScrollView
+        <Animated.ScrollView
           ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={[
@@ -419,6 +579,8 @@ export function GroupGamesScreen({
               paddingBottom: FOOTER_PADDING + keyboardHeight,
             },
           ]}
+          onScroll={animatedScrollHandler}
+          scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -447,49 +609,105 @@ export function GroupGamesScreen({
             </View>
           ) : (
             <>
-              {/* One section per group (date for leagues mode, league for others). */}
-              {fixtureGroups.map((group) => (
-                <FixtureGroupSection key={group.key} group={group}>
-                  <View style={styles.groupCardContainer}>
-                    {group.fixtures.map((fixture, index) => (
-                      <GroupFixtureCard
-                        key={fixture.id}
-                        fixture={fixture}
-                        index={index}
-                        totalInGroup={group.fixtures.length}
-                        prediction={predictionsMap[fixture.id]}
-                        inputRefs={inputRefs}
-                        currentFocusedField={currentFocusedField}
-                        isSaved={savedStatesMap[fixture.id]}
-                        isHighlighted={highlightedFixtureId === fixture.id}
-                        matchCardRefs={matchCardRefs}
-                        predictionMode={predictionModeTyped}
-                        groupName={groupName}
-                        matchNumber={matchNumbersMap[fixture.id]}
-                        timelineFilled={timelineMaps.filled[fixture.id]}
-                        timelineConnectorFilled={timelineMaps.connectorFilled[fixture.id]}
-                        isFirstInTimeline={timelineMaps.isFirst[fixture.id]}
-                        isLastInTimeline={timelineMaps.isLast[fixture.id]}
-                        onFieldFocus={handleFieldFocus}
-                        onFieldBlur={handleFieldBlur}
-                        onCardChange={handleCardChange}
-                        onAutoNext={handleAutoNext}
-                        onSelectOutcome={
-                          predictionMode === "MatchWinner"
-                            ? handleSelectOutcome
-                            : undefined
-                        }
-                        onScrollToCard={scrollToMatchCard}
-                        onPressCard={handlePressCard}
-                      />
-                    ))}
-                  </View>
-                </FixtureGroupSection>
-              ))}
+              {/* Summary stats card */}
+              <GamesSummaryCard
+                totalPoints={summaryStats.totalPoints}
+                predictedCount={savedPredictionsCount}
+                totalCount={totalPredictionsCount}
+                accuracy={summaryStats.accuracy}
+              />
 
+              {/* Flat render list: headers + cards, each with timeline state */}
+              <View style={styles.timelineItemsWrapper}>
+                {renderItems.map((item) => {
+                if (item.type === "header") {
+                  return (
+                    <View key={item.key} style={styles.sectionHeaderRow}>
+                      {/* Timeline column — fill only, track is in parent */}
+                      <View style={styles.sectionTimelineCol}>
+                        {item.showTrack && item.isFilled && (
+                          <View
+                            style={{
+                              position: "absolute",
+                              left: (TIMELINE.TRACK_WIDTH - TIMELINE.LINE_WIDTH) / 2,
+                              top: -1,
+                              bottom: -1,
+                              width: TIMELINE.LINE_WIDTH,
+                              backgroundColor: theme.colors.primary,
+                            }}
+                          />
+                        )}
+                      </View>
+                      {/* Header content */}
+                      <View style={styles.sectionHeaderContent}>
+                        {item.isLive ? (
+                          <View style={styles.sectionLiveBadge}>
+                            <View style={styles.sectionLiveDot} />
+                            <Text style={styles.sectionLiveText}>LIVE</Text>
+                          </View>
+                        ) : item.level === "date" ? (
+                          <Text
+                            style={[
+                              styles.sectionDateLabel,
+                              { color: theme.colors.textSecondary },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {item.label}
+                          </Text>
+                        ) : (
+                          <Text
+                            style={[
+                              styles.sectionLeagueLabel,
+                              { color: theme.colors.textSecondary },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {item.label}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  );
+                }
+
+                const { fixture, group, indexInGroup } = item;
+                const cardProps = {
+                  fixture,
+                  index: indexInGroup,
+                  totalInGroup: group.fixtures.length,
+                  prediction: predictionsMap[fixture.id],
+                  inputRefs,
+                  currentFocusedField,
+                  isSaved: savedStatesMap[fixture.id],
+                  isHighlighted: highlightedFixtureId === fixture.id,
+                  matchCardRefs,
+                  predictionMode: predictionModeTyped,
+                  groupName,
+                  matchNumber: matchNumbersMap[fixture.id],
+                  timelineFilled: item.timelineFilled,
+                  timelineConnectorFilled: item.timelineConnectorFilled,
+                  isFirstInTimeline: item.isFirstInTimeline,
+                  isLastInTimeline: item.isLastInTimeline,
+                  isNextToPredict: fixture.id === nextToPredictId,
+                  onFieldFocus: handleFieldFocus,
+                  onFieldBlur: handleFieldBlur,
+                  onCardChange: handleCardChange,
+                  onAutoNext: handleAutoNext,
+                  onSelectOutcome:
+                    predictionMode === "MatchWinner"
+                      ? handleSelectOutcome
+                      : undefined,
+                  onScrollToCard: scrollToMatchCard,
+                  onPressCard: handlePressCard,
+                  scrollY,
+                };
+                return <GroupFixtureCard key={fixture.id} {...cardProps} />;
+              })}
+              </View>
             </>
           )}
-        </ScrollView>
+        </Animated.ScrollView>
 
         <ScoreInputNavigationBar
           onPrevious={handlePrevious}
@@ -530,18 +748,73 @@ export function GroupGamesScreen({
 
 /** Layout: full-screen container, scroll content with padding, floating header overlay. */
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, overflow: "hidden" },
+  backgroundGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 300,
+    zIndex: 0,
+  },
   scrollView: { flex: 1 },
   contentContainer: { paddingHorizontal: 0, paddingVertical: 16 },
+  timelineItemsWrapper: {
+    position: "relative",
+  },
   headerOverlay: {
     position: "absolute",
     left: 0,
     right: 0,
     zIndex: 10,
   },
-  groupCardContainer: {
-    marginBottom: 0,
-    paddingHorizontal: 0,
+  /* ── Section headers (same timeline column as cards) ── */
+  sectionHeaderRow: {
+    flexDirection: "row",
+  },
+  sectionTimelineCol: {
+    width: TIMELINE.COLUMN_WIDTH,
+    alignItems: "center",
+    alignSelf: "stretch",
+  },
+  sectionHeaderContent: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    justifyContent: "center",
+  },
+  sectionDateLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+  },
+  sectionLeagueLabel: {
+    fontSize: 11,
+    fontWeight: "500",
+    opacity: 0.7,
+  },
+  sectionLiveBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: "#EF444415",
+  },
+  sectionLiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#EF4444",
+  },
+  sectionLiveText: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    color: "#EF4444",
   },
   emptyContainer: {
     flex: 1,

@@ -125,6 +125,7 @@ export const sandboxService = {
     autoGeneratePredictions?: boolean;
     groupName?: string;
     startInMinutes?: number;
+    intervalMinutes?: number;
   }): Promise<SandboxSetupResponse> =>
     apiPost<SandboxSetupResponse>("/admin/sandbox/setup", args),
 
@@ -177,6 +178,29 @@ export const sandboxService = {
     startTime: string;
   }): Promise<SandboxSimulateResponse> =>
     apiPost<SandboxSimulateResponse>("/admin/sandbox/update-start-time", args),
+
+  batchUpdateStartTimes: (
+    updates: { fixtureId: number; startTime: string }[]
+  ): Promise<SandboxSimulateResponse> =>
+    apiPost<SandboxSimulateResponse>(
+      "/admin/sandbox/batch-update-start-times",
+      { updates }
+    ),
+
+  bulkKickoff: (fixtureIds: number[]): Promise<SandboxSimulateResponse> =>
+    apiPost<SandboxSimulateResponse>(
+      "/admin/sandbox/simulate/bulk-kickoff",
+      { fixtureIds }
+    ),
+
+  setState: (args: {
+    fixtureId: number;
+    state: string;
+  }): Promise<SandboxSimulateResponse> =>
+    apiPost<SandboxSimulateResponse>(
+      "/admin/sandbox/simulate/set-state",
+      args
+    ),
 
   deleteGroup: (groupId: number): Promise<SandboxDeleteGroupResponse> =>
     apiDelete<SandboxDeleteGroupResponse>(`/admin/sandbox/group/${groupId}`),

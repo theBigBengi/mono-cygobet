@@ -14,6 +14,7 @@
  */
 import React, { useCallback } from "react";
 import { View, TextInput } from "react-native";
+import type { SharedValue } from "react-native-reanimated";
 import { isFinished } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
@@ -54,6 +55,10 @@ export type GroupFixtureCardProps = {
   isFirstInTimeline?: boolean;
   /** Timeline: last card in the list */
   isLastInTimeline?: boolean;
+  /** When true, this is the next game the user should predict */
+  isNextToPredict?: boolean;
+  /** Scroll position for reveal animation */
+  scrollY?: SharedValue<number>;
   onFieldFocus: (fixtureId: number, type: "home" | "away") => void;
   onFieldBlur: (fixtureId: number) => void;
   onCardChange: (
@@ -88,6 +93,8 @@ function GroupFixtureCardInner({
   timelineConnectorFilled,
   isFirstInTimeline,
   isLastInTimeline,
+  isNextToPredict,
+  scrollY,
   onFieldFocus,
   onFieldBlur,
   onCardChange,
@@ -188,6 +195,8 @@ function GroupFixtureCardInner({
       timelineConnectorFilled={timelineConnectorFilled}
       isFirstInTimeline={isFirstInTimeline}
       isLastInTimeline={isLastInTimeline}
+      isNextToPredict={isNextToPredict}
+      scrollY={scrollY}
     />
   );
 }
@@ -225,6 +234,7 @@ function arePropsEqual(
   if (prevProps.timelineConnectorFilled !== nextProps.timelineConnectorFilled) return false;
   if (prevProps.isFirstInTimeline !== nextProps.isFirstInTimeline) return false;
   if (prevProps.isLastInTimeline !== nextProps.isLastInTimeline) return false;
+  if (prevProps.isNextToPredict !== nextProps.isNextToPredict) return false;
 
   // Callbacks and refs are stable (from useCallback/useRef), no need to compare
   return true;

@@ -6,9 +6,11 @@ import { assertGroupMember } from "../permissions";
 import { repository as repo } from "../repository";
 import { nowUnixSeconds } from "../../../../utils/dates";
 import { getLogger } from "../../../../logger";
+import { getCache } from "../../../../lib/cache";
 import type { RankingItem, RankingResponse } from "../types";
 
 const log = getLogger("Ranking");
+const rankingCache = getCache("ranking");
 
 type RawRankRow = {
   user_id: number;
@@ -31,20 +33,12 @@ function toNumber(value: string | number | bigint): number {
 }
 
 /**
- * Get group ranking: all joined members with aggregated points and stats.
- * - Verifies that the user is a group member (creator or joined).
- * - Uses raw SQL because points is stored as String; Prisma groupBy cannot SUM it.
- * - Members with 0 predictions are included with zeros.
- * - Ranks are 1-based; ties (same totalPoints and correctScoreCount) get the same rank.
+ * Compute core ranking data: SQL aggregation, member assembly, sorting,
+ * rank assignment, and snapshot rank-change enrichment.
+ * This is the expensive, user-independent part that can be cached.
  */
-export async function getGroupRanking(
-  groupId: number,
-  userId: number
-): Promise<RankingResponse> {
-  log.debug({ groupId, userId }, "getGroupRanking - start");
-  await assertGroupMember(groupId, userId);
-
-  const [rawRows, membersWithUsers, rules] = await Promise.all([
+async function computeCoreRanking(groupId: number): Promise<RankingItem[]> {
+  const [rawRows, membersWithUsers] = await Promise.all([
     prisma.$queryRaw<RawRankRow[]>`
       SELECT
         gp.user_id,
@@ -63,7 +57,6 @@ export async function getGroupRanking(
       ORDER BY total_points DESC, correct_score_count DESC, correct_difference_count DESC, u.username ASC
     `,
     repo.findGroupMembersWithUsers(groupId),
-    repo.findGroupRules(groupId),
   ]);
 
   const userById = new Map(
@@ -157,69 +150,115 @@ export async function getGroupRanking(
     });
   }
 
-  // Nudge enrichment: when nudge is enabled, add nudgeable, nudgeFixtureId, nudgedByMe per item
-  if (rules?.nudgeEnabled) {
-    const now = nowUnixSeconds();
-    const windowMinutes = rules.nudgeWindowMinutes ?? 60;
-    const windowEnd = now + windowMinutes * 60;
+  return items;
+}
 
-    const allGroupFixtures =
-      await repo.findGroupFixturesWithFixtureDetails(groupId);
-    const fixturesInWindow = allGroupFixtures
-      .filter(
-        (gf) =>
-          gf.state === "NS" && gf.startTs >= now && gf.startTs <= windowEnd
-      )
-      .sort((a, b) => a.startTs - b.startTs);
+/**
+ * Enrich ranking items with nudge data. This is per-user and time-sensitive,
+ * so it must never be cached.
+ */
+async function enrichWithNudgeData(
+  items: RankingItem[],
+  groupId: number,
+  userId: number,
+  rules: { nudgeEnabled: boolean; nudgeWindowMinutes: number | null }
+): Promise<RankingItem[]> {
+  if (!rules.nudgeEnabled) return items;
 
-    let predictedByGroupFixture: Map<number, Set<number>> = new Map();
-    if (fixturesInWindow.length > 0) {
-      const groupFixtureIds = fixturesInWindow.map((gf) => gf.id);
-      const predictionRows =
-        await repo.findGroupPredictionUserIdsByGroupFixtureIds(
-          groupId,
-          groupFixtureIds
-        );
-      for (const { groupFixtureId, userId } of predictionRows) {
-        let set = predictedByGroupFixture.get(groupFixtureId);
-        if (!set) {
-          set = new Set();
-          predictedByGroupFixture.set(groupFixtureId, set);
-        }
-        set.add(userId);
+  const now = nowUnixSeconds();
+  const windowMinutes = rules.nudgeWindowMinutes ?? 60;
+  const windowEnd = now + windowMinutes * 60;
+
+  const allGroupFixtures =
+    await repo.findGroupFixturesWithFixtureDetails(groupId);
+  const fixturesInWindow = allGroupFixtures
+    .filter(
+      (gf) =>
+        gf.state === "NS" && gf.startTs >= now && gf.startTs <= windowEnd
+    )
+    .sort((a, b) => a.startTs - b.startTs);
+
+  let predictedByGroupFixture: Map<number, Set<number>> = new Map();
+  if (fixturesInWindow.length > 0) {
+    const groupFixtureIds = fixturesInWindow.map((gf) => gf.id);
+    const predictionRows =
+      await repo.findGroupPredictionUserIdsByGroupFixtureIds(
+        groupId,
+        groupFixtureIds
+      );
+    for (const { groupFixtureId, userId } of predictionRows) {
+      let set = predictedByGroupFixture.get(groupFixtureId);
+      if (!set) {
+        set = new Set();
+        predictedByGroupFixture.set(groupFixtureId, set);
+      }
+      set.add(userId);
+    }
+  }
+
+  // For each item: earliest fixture in window for which this user has no prediction
+  const nudgedByMeSet = new Set<string>();
+  const fixtureIdsInWindow = fixturesInWindow.map((gf) => gf.fixtureId);
+  const nudgesByMe = await repo.findNudgesByNudgerInGroup(
+    groupId,
+    userId,
+    fixtureIdsInWindow
+  );
+  for (const { targetUserId, fixtureId } of nudgesByMe) {
+    nudgedByMeSet.add(`${targetUserId}_${fixtureId}`);
+  }
+
+  return items.map((item) => {
+    let nudgeFixtureId: number | undefined;
+    for (const gf of fixturesInWindow) {
+      const predicted = predictedByGroupFixture.get(gf.id);
+      if (!predicted?.has(item.userId)) {
+        nudgeFixtureId = gf.fixtureId;
+        break;
       }
     }
+    const nudgeable = nudgeFixtureId != null;
+    const nudgedByMe =
+      nudgeFixtureId != null &&
+      nudgedByMeSet.has(`${item.userId}_${nudgeFixtureId}`);
+    return {
+      ...item,
+      ...(nudgeable && { nudgeable, nudgeFixtureId }),
+      ...(nudgeable && { nudgedByMe }),
+    };
+  });
+}
 
-    // For each item: earliest fixture in window for which this user has no prediction
-    const nudgedByMeSet = new Set<string>();
-    const fixtureIdsInWindow = fixturesInWindow.map((gf) => gf.fixtureId);
-    const nudgesByMe = await repo.findNudgesByNudgerInGroup(
-      groupId,
-      userId,
-      fixtureIdsInWindow
+/**
+ * Get group ranking: all joined members with aggregated points and stats.
+ * - Verifies that the user is a group member (creator or joined).
+ * - Uses raw SQL because points is stored as String; Prisma groupBy cannot SUM it.
+ * - Members with 0 predictions are included with zeros.
+ * - Ranks are 1-based; ties (same totalPoints and correctScoreCount) get the same rank.
+ */
+export async function getGroupRanking(
+  groupId: number,
+  userId: number
+): Promise<RankingResponse> {
+  log.debug({ groupId, userId }, "getGroupRanking - start");
+  await assertGroupMember(groupId, userId);
+
+  // Core ranking: cached when Redis is available (2 min TTL)
+  let items: RankingItem[];
+  if (rankingCache) {
+    items = await rankingCache.getOrSet(String(groupId), 120, () =>
+      computeCoreRanking(groupId)
     );
-    for (const { targetUserId, fixtureId } of nudgesByMe) {
-      nudgedByMeSet.add(`${targetUserId}_${fixtureId}`);
-    }
+  } else {
+    items = await computeCoreRanking(groupId);
+  }
 
-    items = items.map((item) => {
-      let nudgeFixtureId: number | undefined;
-      for (const gf of fixturesInWindow) {
-        const predicted = predictedByGroupFixture.get(gf.id);
-        if (!predicted?.has(item.userId)) {
-          nudgeFixtureId = gf.fixtureId;
-          break;
-        }
-      }
-      const nudgeable = nudgeFixtureId != null;
-      const nudgedByMe =
-        nudgeFixtureId != null &&
-        nudgedByMeSet.has(`${item.userId}_${nudgeFixtureId}`);
-      return {
-        ...item,
-        ...(nudgeable && { nudgeable, nudgeFixtureId }),
-        ...(nudgeable && { nudgedByMe }),
-      };
+  // Nudge enrichment: per-user, time-sensitive, never cached
+  const rules = await repo.findGroupRules(groupId);
+  if (rules?.nudgeEnabled) {
+    items = await enrichWithNudgeData(items, groupId, userId, {
+      nudgeEnabled: true,
+      nudgeWindowMinutes: rules.nudgeWindowMinutes ?? null,
     });
   }
 

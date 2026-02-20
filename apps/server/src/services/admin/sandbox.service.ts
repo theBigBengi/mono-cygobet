@@ -153,6 +153,7 @@ export async function sandboxSetup(args: {
   autoGeneratePredictions?: boolean;
   groupName?: string;
   startInMinutes?: number;
+  intervalMinutes?: number;
 }) {
   const selectionMode = args.selectionMode ?? "games";
   const {
@@ -245,10 +246,11 @@ export async function sandboxSetup(args: {
     let nextExtId = await nextSandboxExternalId();
     const offsetSec =
       args.startInMinutes != null ? args.startInMinutes * 60 : null;
+    const intervalSec = (args.intervalMinutes ?? 15) * 60;
 
     return prisma.$transaction(async (tx) => {
       const fixtureData = realFixtures.map((src, i) => {
-        const startTs = offsetSec != null ? nowTs + offsetSec + i : src.startTs;
+        const startTs = offsetSec != null ? nowTs + offsetSec + (i * intervalSec) : src.startTs;
         const startIso =
           offsetSec != null
             ? new Date(startTs * 1000).toISOString()
@@ -318,10 +320,11 @@ export async function sandboxSetup(args: {
   const nowTs = Math.floor(Date.now() / 1000);
 
   const offsetSec = (args.startInMinutes ?? 60) * 60;
+  const intervalSec = (args.intervalMinutes ?? 15) * 60;
   const fixtureData = Array.from({ length: count }, (_, i) => {
     const home = teams[i * 2]!;
     const away = teams[i * 2 + 1]!;
-    const startTs = nowTs + offsetSec + i;
+    const startTs = nowTs + offsetSec + (i * intervalSec);
     const startIso = new Date(startTs * 1000).toISOString();
     return {
       externalId: nextExtId - BigInt(i),
@@ -898,6 +901,86 @@ export async function sandboxSendMessage(
     messageId: message.id,
     body: message.body,
     createdAt: message.createdAt.toISOString(),
+  };
+}
+
+// ───── 5d. batch update start times ─────
+
+export async function sandboxBatchUpdateStartTimes(
+  updates: { fixtureId: number; startTime: string }[]
+) {
+  return prisma.$transaction(async (tx) => {
+    const results = [];
+    for (const u of updates) {
+      const f = await tx.fixtures.findUnique({
+        where: { id: u.fixtureId },
+        select: { id: true, externalId: true, state: true },
+      });
+      if (!f) throw new Error(`Fixture ${u.fixtureId} not found`);
+      if (f.externalId >= 0) throw new Error(`Fixture ${u.fixtureId} is not a sandbox fixture`);
+      if (f.state !== "NS") throw new Error(`Fixture ${u.fixtureId} must be NS`);
+      const date = new Date(u.startTime);
+      const startTs = Math.floor(date.getTime() / 1000);
+      const startIso = date.toISOString();
+      await tx.fixtures.update({
+        where: { id: u.fixtureId },
+        data: { startTs, startIso },
+      });
+      results.push({ fixtureId: u.fixtureId, startTs, startIso });
+    }
+    return results;
+  });
+}
+
+// ───── 5e. bulk kickoff ─────
+
+export async function sandboxBulkKickoff(
+  fixtureIds: number[],
+  io?: TypedIOServer
+) {
+  const results = [];
+  for (const fixtureId of fixtureIds) {
+    const result = await sandboxSimulateKickoff(fixtureId, io);
+    results.push(result);
+  }
+  return results;
+}
+
+// ───── 5f. set state (cancelled/postponed) ─────
+
+const CANCELLED_STATES = [
+  "CANCELLED",
+  "POSTPONED",
+  "SUSPENDED",
+  "ABANDONED",
+  "INTERRUPTED",
+  "WO",
+  "AWARDED",
+] as const;
+
+export async function sandboxSetState(args: {
+  fixtureId: number;
+  state: (typeof CANCELLED_STATES)[number];
+}) {
+  const fixture = await assertSandboxFixture(args.fixtureId);
+  const liveStates = [...LIVE_STATES] as string[];
+  if (fixture.state !== "NS" && !liveStates.includes(fixture.state)) {
+    throw new Error(
+      `Fixture state is ${fixture.state}, must be NS or LIVE to set cancelled state`
+    );
+  }
+
+  await prisma.fixtures.update({
+    where: { id: args.fixtureId },
+    data: {
+      state: args.state as FixtureState,
+    },
+  });
+
+  return {
+    fixtureId: args.fixtureId,
+    state: args.state,
+    name: fixture.name,
   };
 }
 

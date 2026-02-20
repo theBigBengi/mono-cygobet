@@ -7,6 +7,7 @@ import { repository as repo } from "../repository";
 import { validateFixtureIdsBelongToGroup } from "../validators/group-validators";
 import { getLogger } from "../../../../logger";
 import { hasMatchStarted } from "../helpers";
+import { invalidateRankingCache } from "../../../../lib/cache-invalidation";
 
 const log = getLogger("groups.predictions");
 
@@ -68,6 +69,7 @@ export async function saveGroupPrediction(
     groupId,
     prediction: predictionString,
   });
+  await invalidateRankingCache([groupId]);
   log.info({ groupId, fixtureId, userId }, "saveGroupPrediction - success");
   return {
     status: "success",
@@ -165,6 +167,7 @@ export async function saveGroupPredictionsBatch(
       userId,
       predictionsToUpsert
     );
+    await invalidateRankingCache([groupId]);
   }
 
   log.info(

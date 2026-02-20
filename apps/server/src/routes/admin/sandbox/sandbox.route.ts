@@ -154,6 +154,70 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  // POST /admin/sandbox/batch-update-start-times
+  fastify.post(
+    "/batch-update-start-times",
+    {
+      schema: {
+        body: schemas.sandboxBatchUpdateStartTimesBodySchema,
+        response: { 200: schemas.sandboxResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const { updates } = req.body as {
+        updates: { fixtureId: number; startTime: string }[];
+      };
+      const result = await sandbox.sandboxBatchUpdateStartTimes(updates);
+      return reply.send({
+        status: "success",
+        data: result,
+        message: "Start times updated",
+      });
+    }
+  );
+
+  // POST /admin/sandbox/simulate/bulk-kickoff
+  fastify.post(
+    "/simulate/bulk-kickoff",
+    {
+      schema: {
+        body: schemas.sandboxBulkKickoffBodySchema,
+        response: { 200: schemas.sandboxResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const { fixtureIds } = req.body as { fixtureIds: number[] };
+      const result = await sandbox.sandboxBulkKickoff(fixtureIds, fastify.io);
+      return reply.send({
+        status: "success",
+        data: result,
+        message: `${result.length} fixtures kicked off`,
+      });
+    }
+  );
+
+  // POST /admin/sandbox/simulate/set-state
+  fastify.post(
+    "/simulate/set-state",
+    {
+      schema: {
+        body: schemas.sandboxSetStateBodySchema,
+        response: { 200: schemas.sandboxResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const body = req.body as { fixtureId: number; state: string };
+      const result = await sandbox.sandboxSetState(
+        body as Parameters<typeof sandbox.sandboxSetState>[0]
+      );
+      return reply.send({
+        status: "success",
+        data: result,
+        message: `Fixture state set to ${body.state}`,
+      });
+    }
+  );
+
   // DELETE /admin/sandbox/group/:groupId
   fastify.delete(
     "/group/:groupId",

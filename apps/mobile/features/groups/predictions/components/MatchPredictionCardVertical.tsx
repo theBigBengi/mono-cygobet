@@ -1,5 +1,13 @@
-import React from "react";
-import { View, StyleSheet, TextInput, Pressable, Text } from "react-native";
+import React, { useCallback } from "react";
+import { View, StyleSheet, TextInput, Pressable, Text, Dimensions } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedReaction,
+  withSpring,
+  interpolate,
+} from "react-native-reanimated";
+import type { SharedValue } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { formatKickoffTime, formatKickoffDate } from "@/utils/fixture";
@@ -13,6 +21,7 @@ import type { FixtureItem, PositionInGroup } from "@/types/common";
 import type { FocusedField, PredictionMode } from "../types";
 import { useMatchCardState } from "../hooks/useMatchCardState";
 import { getOutcomeFromPrediction } from "../utils/utils";
+import { TIMELINE } from "../utils/constants";
 import { ScoreInput } from "./ScoreInput";
 import { OutcomePicker } from "./OutcomePicker";
 import { TeamRow } from "./TeamRow";
@@ -55,6 +64,10 @@ type Props = {
   isFirstInTimeline?: boolean;
   /** Timeline: last card in the list (no line below) */
   isLastInTimeline?: boolean;
+  /** When true, this is the next game to predict — gets a subtle primary glow */
+  isNextToPredict?: boolean;
+  /** Scroll position for reveal animation (content only, timeline stays visible) */
+  scrollY?: SharedValue<number>;
 };
 
 /**
@@ -84,6 +97,8 @@ export function MatchPredictionCardVertical({
   timelineConnectorFilled = false,
   isFirstInTimeline = false,
   isLastInTimeline = false,
+  isNextToPredict = false,
+  scrollY,
 }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -91,6 +106,50 @@ export function MatchPredictionCardVertical({
   const { theme } = useTheme();
   const fixtureIdStr = String(fixture.id);
   const [isCardPressed, setIsCardPressed] = React.useState(false);
+
+  // Scroll-reveal animation: content fades in when card scrolls into viewport
+  const VIEWPORT_H = Dimensions.get("window").height;
+  const cardY = useSharedValue(-1);
+  const revealed = useSharedValue(scrollY ? 0 : 1); // no scrollY → always visible
+
+  const handleCardLayout = useCallback(
+    (e: any) => {
+      cardY.value = e.nativeEvent.layout.y;
+    },
+    [cardY]
+  );
+
+  useAnimatedReaction(
+    () => {
+      if (!scrollY || cardY.value < 0) return -1;
+      // How far past the card top the viewport bottom is
+      return scrollY.value + VIEWPORT_H - cardY.value;
+    },
+    (dist) => {
+      if (dist === -1 || revealed.value === 1) return;
+      // Reveal when card is 60px into the viewport
+      if (dist > 60) {
+        // Cards in initial viewport appear instantly; below-fold cards bounce in
+        if (scrollY && scrollY.value < 50) {
+          revealed.value = 1;
+        } else {
+          revealed.value = withSpring(1, {
+            damping: 14,
+            stiffness: 220,
+            mass: 0.6,
+          });
+        }
+      }
+    }
+  );
+
+  const contentRevealStyle = useAnimatedStyle(() => ({
+    // Invisible until animation starts, then snaps to visible immediately
+    opacity: revealed.value > 0 ? 1 : 0,
+    transform: [
+      { scale: interpolate(revealed.value, [0, 1], [0.8, 1]) },
+    ],
+  }));
 
   const onPressCard = () => {
     if (onPressCardProp) {
@@ -145,51 +204,40 @@ export function MatchPredictionCardVertical({
   // Prediction success based on points (for finished games)
   const predictionSuccess = isFinished ? hasPoints : undefined;
 
-  // Timeline line colors
-  const trackColor = theme.colors.border;
+  // Timeline colors
   const filledColor = theme.colors.primary;
-  const topLineColor = isFirstInTimeline ? "transparent" : timelineFilled ? filledColor : trackColor;
-  const bottomLineColor = isLastInTimeline ? "transparent" : timelineConnectorFilled ? filledColor : trackColor;
+  const fillLeft = (TIMELINE.TRACK_WIDTH - TIMELINE.LINE_WIDTH) / 2;
 
   return (
-    <View ref={cardRef} style={styles.outerRow}>
-      {/* ── Timeline column ── */}
+    <View ref={cardRef} style={styles.outerRow} onLayout={handleCardLayout}>
+      {/* ── Timeline column — track is rendered once in parent ── */}
       <View style={styles.timelineColumn}>
-        {/* Line above waypoint */}
-        <View style={[styles.timelineLine, { backgroundColor: topLineColor }]} />
-        {/* Waypoint node */}
+        {/* Fill (solid blue) — opaque, so -1px overlap is fine */}
+        {timelineFilled && (
+          <View
+            style={{
+              position: "absolute",
+              left: fillLeft,
+              width: TIMELINE.LINE_WIDTH,
+              backgroundColor: filledColor,
+              top: isFirstInTimeline ? "50%" : -1,
+              bottom: isLastInTimeline || !timelineConnectorFilled ? "50%" : -1,
+            }}
+          />
+        )}
+        {/* Waypoint dash */}
         <View
           style={[
-            styles.waypointNode,
+            styles.waypointDash,
             {
-              backgroundColor: timelineFilled
-                ? filledColor + "18"
-                : theme.colors.background,
-              borderColor: timelineFilled
-                ? filledColor + "60"
-                : trackColor,
+              backgroundColor: filledColor + "30",
             },
           ]}
-        >
-          <Text
-            style={[
-              styles.waypointText,
-              {
-                color: timelineFilled
-                  ? filledColor
-                  : theme.colors.textSecondary,
-              },
-            ]}
-          >
-            {matchNumber || ""}
-          </Text>
-        </View>
-        {/* Line below waypoint */}
-        <View style={[styles.timelineLine, { backgroundColor: bottomLineColor }]} />
+        />
       </View>
 
       {/* ── Content column ── */}
-      <View style={[styles.contentColumn, isLastInTimeline && { paddingBottom: 0 }]}>
+      <Animated.View style={[styles.contentColumn, isLastInTimeline && { paddingBottom: 0 }, contentRevealStyle]}>
         {/* League info row */}
         {showLeagueInfo && (
           <View style={styles.leagueInfoRow}>
@@ -226,6 +274,11 @@ export function MatchPredictionCardVertical({
                 shadowColor: hasPoints ? successColor : missedColor,
                 shadowOpacity: 0.2,
               },
+              isNextToPredict && !isCardPressed && {
+                shadowColor: theme.colors.primary,
+                shadowOpacity: 0.25,
+                shadowRadius: 12,
+              },
               isCardPressed && styles.cardShadowWrapperPressed,
             ]}
           >
@@ -233,9 +286,17 @@ export function MatchPredictionCardVertical({
               style={[
                 styles.matchCard,
                 {
-                  backgroundColor: isHighlighted ? theme.colors.primary + "15" : theme.colors.cardBackground,
-                  borderColor: theme.colors.border,
-                  borderBottomColor: theme.colors.textSecondary + "40",
+                  backgroundColor: isHighlighted
+                    ? theme.colors.primary + "15"
+                    : isNextToPredict
+                      ? theme.colors.primary + "08"
+                      : theme.colors.cardBackground,
+                  borderColor: isNextToPredict
+                    ? theme.colors.primary + "40"
+                    : theme.colors.border,
+                  borderBottomColor: isNextToPredict
+                    ? theme.colors.primary + "60"
+                    : theme.colors.textSecondary + "40",
                 },
                 isFinished && !isCancelled && {
                   borderColor: (hasPoints ? successColor : missedColor) + "30",
@@ -350,7 +411,7 @@ export function MatchPredictionCardVertical({
             <View style={styles.rightSpacer} />
           )}
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -361,27 +422,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   timelineColumn: {
-    width: 36,
-    alignItems: "center",
+    width: TIMELINE.COLUMN_WIDTH,
+    alignItems: "flex-start",
+    justifyContent: "center",
     alignSelf: "stretch",
   },
-  timelineLine: {
-    width: 2,
-    flex: 1,
+  waypointDash: {
+    width: TIMELINE.TRACK_WIDTH + 8,
+    height: 2,
     borderRadius: 1,
-  },
-  waypointNode: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  waypointText: {
-    fontSize: 9,
-    fontWeight: "700",
-    letterSpacing: 0.2,
+    zIndex: 2,
   },
   contentColumn: {
     flex: 1,
@@ -411,7 +461,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   rightAlignSpacer: {
-    width: 36,
+    width: TIMELINE.COLUMN_WIDTH,
   },
 
   /* ── Card + points row ── */
@@ -459,7 +509,7 @@ const styles = StyleSheet.create({
 
   /* ── Points / right side ── */
   pointsContainer: {
-    width: 36,
+    width: TIMELINE.COLUMN_WIDTH,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -475,6 +525,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   rightSpacer: {
-    width: 36,
+    width: TIMELINE.COLUMN_WIDTH,
   },
 });

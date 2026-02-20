@@ -78,6 +78,10 @@ export function createRedisClient(options: RedisClientOptions = {}): Redis {
  * Get the shared Redis client singleton.
  * Creates the client on first call. Subsequent calls return the same instance.
  * Throws if REDIS_URL is not set.
+ *
+ * **Note:** Only the first call's options (besides `url`) are used.
+ * Subsequent calls with the same URL reuse the existing instance
+ * and ignore any differing options.
  */
 export function getRedisClient(options: RedisClientOptions = {}): Redis {
   const url = options.url ?? process.env.REDIS_URL;
@@ -110,7 +114,10 @@ export function isRedisConfigured(): boolean {
  */
 export async function disconnectRedis(): Promise<void> {
   if (!instance) return;
-  await instance.quit();
-  instance = null;
-  instanceUrl = undefined;
+  try {
+    await instance.quit();
+  } finally {
+    instance = null;
+    instanceUrl = undefined;
+  }
 }

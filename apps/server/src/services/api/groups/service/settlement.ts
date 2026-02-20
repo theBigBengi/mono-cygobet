@@ -9,6 +9,11 @@ import { parseScores } from "../../../../etl/transform/fixtures.transform";
 import { calculateScore, type ScoringRules } from "../scoring";
 import { getGroupRanking } from "./ranking";
 import { emitSystemEvent } from "./chat-events";
+import {
+  invalidateRankingCache,
+  invalidateUserStatsCache,
+  invalidateH2HCache,
+} from "../../../../lib/cache-invalidation";
 import type { TypedIOServer } from "../../../../types/socket";
 
 const log = getLogger("Settlement");
@@ -158,6 +163,7 @@ export async function settlePredictionsForFixtures(
     },
     select: {
       id: true,
+      userId: true,
       groupId: true,
       groupFixtureId: true,
       prediction: true,
@@ -316,6 +322,9 @@ export async function settlePredictionsForFixtures(
     // Step 7: Transition completed groups to "ended"
     const groupsEnded = await transitionCompletedGroups(uniqueGroupIds);
 
+    // Invalidate ranking cache so "after" snapshots are fresh
+    await invalidateRankingCache(uniqueGroupIds);
+
     // Detect ranking changes and emit ranking_change chat events (top 3 only)
     const afterResults = await Promise.allSettled(
       groupsWithCreator.map((g) => getGroupRanking(g.id, g.creatorId))
@@ -427,6 +436,15 @@ export async function settlePredictionsForFixtures(
         log.warn({ err: snapshotError }, "Failed to save ranking snapshots");
       }
     }
+
+    // Invalidate user-stats and H2H caches for affected users
+    const affectedUserIds = [
+      ...new Set(predictions.map((p) => p.userId)),
+    ];
+    await Promise.all([
+      invalidateUserStatsCache(affectedUserIds),
+      invalidateH2HCache(affectedUserIds),
+    ]);
 
     log.info(
       { settled: updates.length, skipped, groupsEnded },

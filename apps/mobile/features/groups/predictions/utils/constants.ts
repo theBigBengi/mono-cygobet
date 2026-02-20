@@ -38,6 +38,27 @@ export const INPUT_STYLE = {
 /** Card border radius value */
 export const CARD_BORDER_RADIUS = 12;
 
+/**
+ * Timeline constants — single source of truth for the vertical timeline.
+ * Used by both MatchPredictionCardVertical (cards) and GroupGamesScreen (section headers).
+ */
+export const TIMELINE = {
+  /** Width of the timeline column (same for cards and headers) */
+  COLUMN_WIDTH: 48,
+  /** Width of the fill line (inner) */
+  LINE_WIDTH: 8,
+  /** Width of the track line (outer container) */
+  TRACK_WIDTH: 16,
+  /** Border radius on the fill line */
+  LINE_BORDER_RADIUS: 3,
+  /** Border radius on the track line */
+  TRACK_BORDER_RADIUS: 8,
+  /** Waypoint circle size */
+  WAYPOINT_SIZE: 28,
+  /** Waypoint circle border width */
+  WAYPOINT_BORDER_WIDTH: 1.5,
+} as const;
+
 /** Live result text color */
 export const LIVE_RESULT_COLOR = "#EF4444";
 

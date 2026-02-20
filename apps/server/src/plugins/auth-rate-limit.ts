@@ -7,6 +7,7 @@
 import fp from "fastify-plugin";
 import rateLimit from "@fastify/rate-limit";
 import type { FastifyInstance } from "fastify";
+import { getRedisClient, isRedisConfigured } from "@repo/redis";
 
 const AUTH_RATE_LIMIT_PATHS = new Set([
   "/auth/login",
@@ -21,10 +22,12 @@ export default fp(async function rateLimitPlugin(fastify: FastifyInstance) {
     parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS ?? "60000", 10) || 60_000;
 
   // Global rate limit: applies to all routes
+  // Use Redis store when available for multi-instance consistency
   await fastify.register(rateLimit, {
     max: globalMax,
     timeWindow: windowMs,
     keyGenerator: (request) => request.ip ?? "unknown",
+    ...(isRedisConfigured() && { redis: getRedisClient() }),
     errorResponseBuilder: (_request, context) => ({
       code: "TOO_MANY_REQUESTS",
       message: "Too many requests. Try again later.",

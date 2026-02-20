@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { HEADER_HEIGHT } from "../utils/constants";
@@ -18,56 +19,103 @@ interface GroupGamesHeaderProps {
 /**
  * Header for Group Games screen.
  * Back button on the left, optional content (tabs) fills the rest.
+ * Uses BlurView for translucent background on iOS, solid fallback on Android.
  */
-export function GroupGamesHeader({ onBack, children, backOnly, rightContent }: GroupGamesHeaderProps) {
-  const { theme } = useTheme();
+export function GroupGamesHeader({
+  onBack,
+  children,
+  backOnly,
+  rightContent,
+}: GroupGamesHeaderProps) {
+  const { theme, colorScheme } = useTheme();
   const insets = useSafeAreaInsets();
+  const isDark = colorScheme === "dark";
 
   return (
     <View
       style={[
         styles.container,
-        Platform.OS === "android" && { elevation: 0 },
         {
-          backgroundColor: theme.colors.background,
           paddingTop: insets.top,
           height: HEADER_HEIGHT + insets.top,
         },
       ]}
       pointerEvents="box-none"
     >
-      <Pressable onPress={onBack} style={styles.backButton}>
-        <View
-          style={[
-            styles.iconButton,
-            {
-              backgroundColor: theme.colors.background,
-              borderColor: theme.colors.border,
-              borderBottomColor: theme.colors.textSecondary + "40",
-            },
-          ]}
-        >
-          <Ionicons
-            name="chevron-back"
-            size={20}
-            color={theme.colors.textSecondary}
-          />
-        </View>
-      </Pressable>
-      {!backOnly && children && <View style={styles.content}>{children}</View>}
-      {backOnly && <View style={styles.spacer} />}
-      {rightContent && <View style={styles.rightContent}>{rightContent}</View>}
+      {/* Blur background */}
+      <BlurView
+        intensity={60}
+        tint={isDark ? "dark" : "light"}
+        style={[
+          StyleSheet.absoluteFill,
+          Platform.OS === "android" && {
+            backgroundColor: isDark
+              ? "rgba(16, 16, 20, 0.92)"
+              : "rgba(246, 246, 246, 0.92)",
+          },
+        ]}
+      />
+      {/* Bottom fade for smooth transition */}
+      <View
+        style={[
+          styles.bottomFade,
+          {
+            borderBottomColor: isDark
+              ? "rgba(255,255,255,0.06)"
+              : "rgba(0,0,0,0.06)",
+          },
+        ]}
+      />
+
+      {/* Content */}
+      <View style={styles.content} pointerEvents="box-none">
+        <Pressable onPress={onBack} style={styles.backButton}>
+          <View
+            style={[
+              styles.iconButton,
+              {
+                backgroundColor: theme.colors.cardBackground,
+                borderColor: theme.colors.border,
+                borderBottomColor: theme.colors.textSecondary + "40",
+              },
+            ]}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={20}
+              color={theme.colors.textSecondary}
+            />
+          </View>
+        </Pressable>
+        {!backOnly && children && (
+          <View style={styles.childrenArea}>{children}</View>
+        )}
+        {backOnly && <View style={styles.spacer} />}
+        {rightContent && (
+          <View style={styles.rightContent}>{rightContent}</View>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    overflow: "hidden",
+  },
+  bottomFade: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  content: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     paddingEnd: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(128, 128, 128, 0.3)",
   },
   backButton: {
     paddingHorizontal: 4,
@@ -81,7 +129,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderBottomWidth: 2,
   },
-  content: {
+  childrenArea: {
     flex: 1,
   },
   spacer: {

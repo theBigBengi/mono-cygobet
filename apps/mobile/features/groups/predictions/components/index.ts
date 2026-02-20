@@ -20,3 +20,4 @@ export { SmartFilterChips } from "./SmartFilterChips";
 export { ScoreInputNavigationBar } from "./ScoreInputNavigationBar";
 export { FixtureGroupSection } from "./FixtureGroupSection";
 export { VerticalTimelineWrapper } from "./VerticalTimelineWrapper";
+export { GamesSummaryCard } from "./GamesSummaryCard";

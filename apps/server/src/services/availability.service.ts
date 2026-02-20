@@ -1,10 +1,14 @@
 import { prisma } from "@repo/db";
 import { adapter, currentProviderLabel } from "../utils/adapter";
 import type { AvailableSeason, AdminAvailabilityResponse } from "@repo/types";
+import { getCache } from "../lib/cache";
 
-const CACHE_KEY = "sync:availability";
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL_SECONDS = 1800; // 30 minutes (for Redis)
 
+const redisCache = getCache("availability");
+
+// In-memory fallback when Redis is not configured
 interface CacheEntry {
   data: AdminAvailabilityResponse["data"];
   expiresAt: number;
@@ -22,7 +26,11 @@ export const availabilityService = {
     const skipFixtureCheck = opts?.skipFixtureCheck ?? false;
     const baseCacheKey = includeHistorical ? "full" : "recent";
 
-    if (
+    // Try Redis cache first, then in-memory fallback
+    if (redisCache && !skipFixtureCheck) {
+      const cached = await redisCache.get<AdminAvailabilityResponse["data"]>(baseCacheKey);
+      if (cached) return cached;
+    } else if (
       availabilityCache &&
       availabilityCache.expiresAt > Date.now() &&
       availabilityCache.cacheKey === baseCacheKey
@@ -154,6 +162,9 @@ export const availabilityService = {
 
     // Only cache full results (with fixture checks) — fast results are cheap to recompute
     if (!skipFixtureCheck) {
+      if (redisCache) {
+        await redisCache.set(baseCacheKey, result, CACHE_TTL_SECONDS);
+      }
       availabilityCache = {
         data: result,
         expiresAt: Date.now() + CACHE_TTL_MS,
@@ -166,5 +177,8 @@ export const availabilityService = {
 
   async invalidateCache(): Promise<void> {
     availabilityCache = null;
+    if (redisCache) {
+      await Promise.all([redisCache.del("full"), redisCache.del("recent")]);
+    }
   },
 };
