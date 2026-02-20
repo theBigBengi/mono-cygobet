@@ -196,6 +196,7 @@ function GroupFixtureCardInner({
       predictionMode={predictionMode}
       onSelectOutcome={onSelectOutcome ? onSelectOutcomeLocal : undefined}
       onPressCard={onPressCard ? onPressCardLocal : undefined}
+      showLeagueInfo={false}
       timelineFilled={timelineFilled}
       timelineConnectorFilled={timelineConnectorFilled}
       isFirstInTimeline={isFirstInTimeline}

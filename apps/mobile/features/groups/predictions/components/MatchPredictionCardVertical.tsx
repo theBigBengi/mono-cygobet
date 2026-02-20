@@ -10,7 +10,7 @@ import Animated, {
 import type { SharedValue } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { formatKickoffTime, formatKickoffDate } from "@/utils/fixture";
+import { formatKickoffTime } from "@/utils/fixture";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { Card } from "@/components/ui";
@@ -21,6 +21,7 @@ import type { FixtureItem, PositionInGroup } from "@/types/common";
 import type { FocusedField, PredictionMode } from "../types";
 import { useMatchCardState } from "../hooks/useMatchCardState";
 import { getOutcomeFromPrediction } from "../utils/utils";
+import { formatLiveDisplay } from "../utils/fixture-helpers";
 import { TIMELINE } from "../utils/constants";
 import { ScoreInput } from "./ScoreInput";
 import { OutcomePicker } from "./OutcomePicker";
@@ -108,7 +109,6 @@ export function MatchPredictionCardVertical({
   const { translateTeam } = useEntityTranslation();
   const { theme } = useTheme();
   const fixtureIdStr = String(fixture.id);
-  const [isCardPressed, setIsCardPressed] = React.useState(false);
 
   // Scroll-reveal animation: content fades in when card scrolls into viewport
   const cardY = useSharedValue(-1);
@@ -123,15 +123,14 @@ export function MatchPredictionCardVertical({
 
   useAnimatedReaction(
     () => {
+      // Stop tracking once revealed
+      if (revealed.value >= 1) return -1;
       if (!scrollY || cardY.value < 0) return -1;
-      // How far past the card top the viewport bottom is
       return scrollY.value + VIEWPORT_H - cardY.value;
     },
     (dist) => {
-      if (dist === -1 || revealed.value === 1) return;
-      // Reveal when card is 60px into the viewport
+      if (dist === -1) return;
       if (dist > 60) {
-        // Cards in initial viewport appear instantly; below-fold cards bounce in
         if (scrollY && scrollY.value < 50) {
           revealed.value = 1;
         } else {
@@ -146,7 +145,6 @@ export function MatchPredictionCardVertical({
   );
 
   const contentRevealStyle = useAnimatedStyle(() => ({
-    // Invisible until animation starts, then snaps to visible immediately
     opacity: revealed.value > 0 ? 1 : 0,
     transform: [
       { scale: interpolate(revealed.value, [0, 1], [0.8, 1]) },
@@ -222,7 +220,7 @@ export function MatchPredictionCardVertical({
   const fillLeft = (TIMELINE.TRACK_WIDTH - TIMELINE.LINE_WIDTH) / 2;
 
   return (
-    <View ref={cardRef} style={styles.outerRow} onLayout={handleCardLayout}>
+    <View ref={cardRef} style={[styles.outerRow, !isLastInTimeline && styles.outerRowSpacing]} onLayout={handleCardLayout}>
       {/* ── Timeline column — track is rendered once in parent ── */}
       <View style={styles.timelineColumn}>
         {/* Fill (solid blue) — opaque, so -1px overlap is fine */}
@@ -233,24 +231,48 @@ export function MatchPredictionCardVertical({
               left: fillLeft,
               width: TIMELINE.LINE_WIDTH,
               backgroundColor: filledColor,
-              top: isFirstInTimeline ? "50%" : -1,
-              bottom: isLastInTimeline || !timelineConnectorFilled ? "50%" : -1,
+              top: -21,
+              bottom: isLastInTimeline || !timelineConnectorFilled ? "50%" : -21,
             }}
           />
         )}
-        {/* Waypoint dash */}
-        <View
-          style={[
-            styles.waypointDash,
-            {
-              backgroundColor: filledColor + "30",
-            },
-          ]}
-        />
+        {isNextToPredict ? (
+          /* "NEXT" badge with time — floats on the timeline */
+          <View style={[styles.nextBadge, { backgroundColor: theme.colors.primary }]}>
+            <Text style={styles.nextBadgeText}>NEXT</Text>
+            <Text style={styles.nextBadgeTime}>
+              {formatKickoffTime(fixture.kickoffAt)}
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* Waypoint dash */}
+            <View
+              style={[
+                styles.waypointDash,
+                { backgroundColor: theme.colors.textSecondary + "30" },
+              ]}
+            />
+            {/* Text centered in the full gap (track → card) */}
+            <View style={styles.timelineTextArea}>
+              <Text style={[
+                styles.timelineTime,
+                (isLive || isCancelled) && styles.timelineLive,
+                { color: isLive ? "#EF4444" : theme.colors.textSecondary + "90" },
+              ]}>
+                {isLive
+                  ? formatLiveDisplay(fixture.state, fixture.liveMinute ?? null)
+                  : isCancelled
+                    ? fixture.state?.slice(0, 4).toUpperCase() ?? "CANC"
+                    : formatKickoffTime(fixture.kickoffAt)}
+              </Text>
+            </View>
+          </>
+        )}
       </View>
 
       {/* ── Content column ── */}
-      <Animated.View style={[styles.contentColumn, isLastInTimeline && { paddingBottom: 0 }, contentRevealStyle]}>
+      <Animated.View style={[styles.contentColumn, contentRevealStyle]}>
         {/* League info row */}
         {showLeagueInfo && (
           <View style={styles.leagueInfoRow}>
@@ -271,7 +293,7 @@ export function MatchPredictionCardVertical({
               )}
             </View>
             <Text style={[styles.leagueText, { color: theme.colors.textSecondary }]}>
-              {formatKickoffDate(fixture.kickoffAt)} {formatKickoffTime(fixture.kickoffAt)}
+              {formatKickoffTime(fixture.kickoffAt)}
             </Text>
             {/* Spacer to align with points column */}
             <View style={styles.rightAlignSpacer} />
@@ -280,19 +302,23 @@ export function MatchPredictionCardVertical({
 
         {/* Card + points row */}
         <View style={styles.cardContentRow}>
-          <View
-            style={[
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onPressCard();
+            }}
+            style={({ pressed }) => [
               styles.cardShadowWrapper,
-              isFinished && !isCancelled && !isCardPressed && {
+              isFinished && !isCancelled && !pressed && {
                 shadowColor: hasPoints ? successColor : missedColor,
                 shadowOpacity: 0.2,
               },
-              isCardFocused && !isCardPressed && {
+              isCardFocused && !pressed && {
                 shadowColor: theme.colors.primary,
                 shadowOpacity: 0.25,
                 shadowRadius: 12,
               },
-              isCardPressed && styles.cardShadowWrapperPressed,
+              pressed && styles.cardShadowWrapperPressed,
             ]}
           >
             <Card
@@ -317,13 +343,7 @@ export function MatchPredictionCardVertical({
                 },
               ]}
             >
-            <Pressable
-              onPress={onPressCard}
-              onPressIn={() => {
-                setIsCardPressed(true);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              onPressOut={() => setIsCardPressed(false)}
+            <View
               style={[
                 styles.matchContent,
                 isCancelled && { opacity: 0.6 },
@@ -407,9 +427,9 @@ export function MatchPredictionCardVertical({
                   onSelect={onSelectOutcome}
                 />
               )}
-            </Pressable>
+            </View>
           </Card>
-          </View>
+          </Pressable>
           {/* Right side: points for finished games, empty otherwise */}
           {isFinished && !isCancelled ? (
             <Pressable onPress={onPressCard} style={styles.pointsContainer}>
@@ -434,21 +454,70 @@ const styles = StyleSheet.create({
   outerRow: {
     flexDirection: "row",
   },
+  outerRowSpacing: {
+    marginBottom: 20,
+  },
   timelineColumn: {
     width: TIMELINE.COLUMN_WIDTH,
-    alignItems: "flex-start",
-    justifyContent: "center",
     alignSelf: "stretch",
+    justifyContent: "center",
   },
   waypointDash: {
-    width: TIMELINE.TRACK_WIDTH + 8,
+    width: TIMELINE.TRACK_WIDTH + 2,
     height: 2,
     borderRadius: 1,
     zIndex: 2,
   },
+  timelineTextArea: {
+    position: "absolute",
+    left: TIMELINE.TRACK_WIDTH,
+    right: -10, // extend into contentColumn paddingLeft
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
+  },
+  timelineTime: {
+    fontSize: 10,
+    fontWeight: "600",
+    letterSpacing: -0.3,
+  },
+  timelineLive: {
+    fontWeight: "800",
+  },
+  nextBadge: {
+    position: "absolute",
+    left: 2,
+    top: "50%",
+    marginTop: -18,
+    zIndex: 3,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    alignItems: "center",
+    // 3D floating effect
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  nextBadgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#fff",
+    letterSpacing: 1,
+  },
+  nextBadgeTime: {
+    fontSize: 8,
+    fontWeight: "600",
+    color: "#ffffffCC",
+    marginTop: 1,
+  },
   contentColumn: {
     flex: 1,
-    paddingBottom: 20,
+    paddingLeft: 10,
   },
 
   /* ── League info ── */

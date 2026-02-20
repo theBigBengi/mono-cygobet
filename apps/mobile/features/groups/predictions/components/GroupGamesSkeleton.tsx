@@ -56,7 +56,7 @@ export function GroupGamesSkeleton() {
               ]}
             />
             <View
-              style={[styles.dash, { backgroundColor: skeletonColorStrong }]}
+              style={[styles.timePlaceholder, { backgroundColor: skeletonColorStrong }]}
             />
           </View>
           <View style={styles.contentCol}>
@@ -116,10 +116,10 @@ const styles = StyleSheet.create({
     left: (TIMELINE.TRACK_WIDTH - TIMELINE.LINE_WIDTH) / 2,
     width: TIMELINE.LINE_WIDTH,
   },
-  dash: {
-    width: TIMELINE.TRACK_WIDTH + 8,
-    height: 2,
-    borderRadius: 1,
+  timePlaceholder: {
+    width: 28,
+    height: 10,
+    borderRadius: 3,
     zIndex: 2,
   },
   contentCol: {

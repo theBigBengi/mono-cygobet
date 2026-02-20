@@ -1,8 +1,9 @@
 import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager } from "react-native";
-import Animated, { useSharedValue, useAnimatedScrollHandler } from "react-native-reanimated";
+import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, Pressable, Dimensions } from "react-native";
+import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, runOnJS } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { AppText, Screen } from "@/components/ui";
@@ -24,7 +25,7 @@ import type { PredictionMode, FixtureItem } from "../types";
 import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { GroupGamesSkeleton } from "../components/GroupGamesSkeleton";
-import { isFinished as isFinishedState, isLive as isLiveState } from "@repo/utils";
+import { isFinished as isFinishedState, isLive as isLiveState, isCancelled as isCancelledState } from "@repo/utils";
 import { HEADER_HEIGHT, FOOTER_PADDING, SAVE_PENDING_DELAY_MS, SCROLL_OFFSET, TIMELINE } from "../utils/constants";
 
 type Props = {
@@ -218,6 +219,7 @@ export function GroupGamesScreen({
         label: string;
         level?: "date" | "league";
         isLive?: boolean;
+        round?: string | number;
         /** Show the track line (false = before first card) */
         showTrack: boolean;
         /** Fill the line with primary color */
@@ -239,21 +241,36 @@ export function GroupGamesScreen({
     const allFixtures: FixtureItem[] = [];
     fixtureGroups.forEach((g) => g.fixtures.forEach((f) => allFixtures.push(f)));
 
-    let lastFilledIdx = -1;
+    let lastFinishedIdx = -1;
     for (let i = allFixtures.length - 1; i >= 0; i--) {
       const state = allFixtures[i].state;
-      if (state && (isFinishedState(state) || isLiveState(state))) {
-        lastFilledIdx = i;
+      if (state && isFinishedState(state)) {
+        lastFinishedIdx = i;
         break;
       }
     }
+
+    // Extend fill to the first live match (line reaches it but doesn't fill through)
+    let firstLiveIdx = -1;
+    if (lastFinishedIdx >= 0) {
+      const nextIdx = lastFinishedIdx + 1;
+      if (nextIdx < allFixtures.length) {
+        const nextState = allFixtures[nextIdx].state;
+        if (nextState && isLiveState(nextState)) {
+          firstLiveIdx = nextIdx;
+        }
+      }
+    }
+
+    const lastFilledIdx = firstLiveIdx >= 0 ? firstLiveIdx : lastFinishedIdx;
 
     // Per-fixture timeline state
     const filled: Record<number, boolean> = {};
     const connector: Record<number, boolean> = {};
     allFixtures.forEach((f, i) => {
       filled[f.id] = i <= lastFilledIdx;
-      connector[f.id] = i < lastFilledIdx;
+      // Connector fills between cards, but NOT after the first live match
+      connector[f.id] = i < lastFilledIdx && i < (firstLiveIdx >= 0 ? firstLiveIdx : lastFilledIdx + 1);
     });
 
     // 2. Build flat render list
@@ -278,6 +295,7 @@ export function GroupGamesScreen({
           label: group.label,
           level: group.level ?? "league",
           isLive: group.isLive,
+          round: group.fixtures[0]?.round,
           showTrack: false,
           isFilled: false,
         });
@@ -297,7 +315,8 @@ export function GroupGamesScreen({
     }
 
     // 3. Compute timeline state for every item (single O(n) pass)
-    let seenFirstCard = false;
+    // Start as true since the summary card is always above the first card
+    let seenFirstCard = true;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
 
@@ -320,6 +339,11 @@ export function GroupGamesScreen({
 
     return items;
   }, [fixtureGroups]);
+
+  /** Whether any card in the timeline has a fill (for summary card connector). */
+  const hasFilledCards = renderItems.some(
+    (item) => item.type === "card" && item.timelineFilled
+  );
 
   /** Summary stats for the summary card. */
   const summaryStats = useMemo(() => {
@@ -344,7 +368,7 @@ export function GroupGamesScreen({
     return { totalPoints, accuracy };
   }, [filteredFixtures]);
 
-  /** Next fixture to predict — first upcoming game without a complete prediction. */
+  /** Next fixture — first upcoming game that hasn't started yet. */
   const nextToPredictId = useMemo(() => {
     const allFixtures: FixtureItem[] = [];
     fixtureGroups.forEach((g) =>
@@ -352,14 +376,11 @@ export function GroupGamesScreen({
     );
     for (const f of allFixtures) {
       const state = f.state;
-      if (state && (isFinishedState(state) || isLiveState(state))) continue;
-      const pred = predictionsMap[f.id];
-      if (!pred || pred.home === null || pred.away === null) {
-        return f.id;
-      }
+      if (state && (isFinishedState(state) || isLiveState(state) || isCancelledState(state))) continue;
+      return f.id;
     }
     return null;
-  }, [fixtureGroups, predictionsMap]);
+  }, [fixtureGroups]);
 
   /** For MatchWinner mode: set 1/X/2 and trigger a save shortly after. */
   const handleSelectOutcome = React.useCallback(
@@ -397,6 +418,59 @@ export function GroupGamesScreen({
       scrollY.value = event.contentOffset.y;
     },
   });
+
+  /** Track next-to-predict card visibility for floating scroll button. */
+  const VIEWPORT_H = Dimensions.get("window").height;
+  const nextCardY = useSharedValue(-1);
+  const [scrollBtnDir, setScrollBtnDir] = React.useState<"up" | "down" | null>(null);
+
+  // Measure the next-to-predict card position after layout
+  React.useEffect(() => {
+    if (!nextToPredictId || !isReady) {
+      nextCardY.value = -1;
+      setScrollBtnDir(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      const cardRef = matchCardRefs.current[String(nextToPredictId)];
+      if (cardRef?.current && scrollViewRef.current) {
+        cardRef.current.measureLayout(
+          scrollViewRef.current as any,
+          (_x: number, y: number) => { nextCardY.value = y; },
+          () => {}
+        );
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [nextToPredictId, isReady, matchCardRefs, scrollViewRef, nextCardY]);
+
+  // Check visibility on every scroll frame
+  useAnimatedReaction(
+    () => ({ scroll: scrollY.value, cardY: nextCardY.value }),
+    ({ scroll, cardY }) => {
+      if (cardY < 0) {
+        runOnJS(setScrollBtnDir)(null);
+        return;
+      }
+      const CARD_HEIGHT = 140;
+      const viewportTop = scroll + HEADER_HEIGHT + insets.top;
+      const viewportBottom = scroll + VIEWPORT_H;
+      if (cardY + CARD_HEIGHT < viewportTop) {
+        runOnJS(setScrollBtnDir)("up");
+      } else if (cardY > viewportBottom) {
+        runOnJS(setScrollBtnDir)("down");
+      } else {
+        runOnJS(setScrollBtnDir)(null);
+      }
+    }
+  );
+
+  const handleScrollToNext = useCallback(() => {
+    if (nextToPredictId) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      scrollToMatchCard(nextToPredictId);
+    }
+  }, [nextToPredictId, scrollToMatchCard]);
 
   const keyboardHeight = useKeyboardHeight();
 
@@ -481,8 +555,7 @@ export function GroupGamesScreen({
     // Small delay to ensure cards are laid out after isReady
     setTimeout(() => {
       scrollToMatchCard(scrollToFixtureId);
-      setHighlightedFixtureId(scrollToFixtureId);
-      setTimeout(() => setHighlightedFixtureId(null), 2000);
+      // Just scroll, no highlight
     }, 100);
   }, [scrollToFixtureId, isReady, scrollToMatchCard]);
 
@@ -542,6 +615,7 @@ export function GroupGamesScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+
       {/* Timeline track — full screen height, hidden during skeleton */}
       {isReady && (
         <View
@@ -552,21 +626,11 @@ export function GroupGamesScreen({
             bottom: 0,
             width: TIMELINE.TRACK_WIDTH,
             backgroundColor: theme.colors.primary + "18",
+            zIndex: 1,
           }}
           pointerEvents="none"
         />
       )}
-
-      {/* Background ambient gradient */}
-      <LinearGradient
-        colors={[
-          theme.colors.primary + "0C",
-          theme.colors.primary + "04",
-          "transparent",
-        ]}
-        style={styles.backgroundGradient}
-        pointerEvents="none"
-      />
 
       <View style={{ flex: 1 }}>
         <Animated.ScrollView
@@ -616,6 +680,7 @@ export function GroupGamesScreen({
                 predictedCount={savedPredictionsCount}
                 totalCount={totalPredictionsCount}
                 accuracy={summaryStats.accuracy}
+                hasFilledTimeline={hasFilledCards}
               />
 
               {renderItems.map((item) => {
@@ -643,25 +708,31 @@ export function GroupGamesScreen({
                             <Text style={styles.sectionLiveText}>LIVE</Text>
                           </View>
                         ) : item.level === "date" ? (
-                          <Text
-                            style={[
-                              styles.sectionDateLabel,
-                              { color: theme.colors.textSecondary },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {item.label}
-                          </Text>
+                          <View style={styles.sectionDateRow}>
+                            <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.textSecondary + "18" }]} />
+                            <Text
+                              style={[
+                                styles.sectionDateLabel,
+                                { color: theme.colors.textSecondary + "95" },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {item.label}
+                            </Text>
+                            <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.textSecondary + "18" }]} />
+                          </View>
                         ) : (
-                          <Text
-                            style={[
-                              styles.sectionLeagueLabel,
-                              { color: theme.colors.textSecondary },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {item.label}
-                          </Text>
+                          <View style={[styles.sectionLeaguePill, { backgroundColor: theme.colors.textSecondary + "0C", borderColor: theme.colors.textSecondary + "15" }]}>
+                            <Text
+                              style={[
+                                styles.sectionLeagueLabel,
+                                { color: theme.colors.textSecondary + "B0" },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {item.label}{item.round ? `  ·  R${item.round}` : ""}
+                            </Text>
+                          </View>
                         )}
                       </View>
                     </View>
@@ -740,6 +811,28 @@ export function GroupGamesScreen({
             )}
           </GroupGamesHeader>
         </View>
+
+        {/* Floating scroll-to-next button */}
+        {scrollBtnDir && (
+          <Pressable
+            style={[
+              styles.scrollToNextBtn,
+              { backgroundColor: theme.colors.primary },
+              scrollBtnDir === "up"
+                ? { top: HEADER_HEIGHT + insets.top + 12 }
+                : { bottom: keyboardHeight > 0 ? keyboardHeight + 40 : insets.bottom + 8 },
+            ]}
+            onPress={handleScrollToNext}
+          >
+            <View
+              style={[
+                styles.scrollToNextArrow,
+                { borderTopColor: "#fff" },
+                scrollBtnDir === "up" && { transform: [{ rotate: "180deg" }] },
+              ]}
+            />
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -748,16 +841,8 @@ export function GroupGamesScreen({
 /** Layout: full-screen container, scroll content with padding, floating header overlay. */
 const styles = StyleSheet.create({
   container: { flex: 1, overflow: "hidden" },
-  backgroundGradient: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 300,
-    zIndex: 0,
-  },
   scrollView: { flex: 1 },
-  contentContainer: { paddingHorizontal: 0, paddingVertical: 16 },
+  contentContainer: { paddingHorizontal: 0 },
   headerOverlay: {
     position: "absolute",
     left: 0,
@@ -775,20 +860,40 @@ const styles = StyleSheet.create({
   },
   sectionHeaderContent: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingLeft: 10, // match contentColumn paddingLeft
     justifyContent: "center",
+  },
+  sectionDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 16,
+    paddingRight: TIMELINE.COLUMN_WIDTH, // match card right spacer for centering
+  },
+  sectionDateLine: {
+    flex: 1,
+    height: 1,
   },
   sectionDateLabel: {
     fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.3,
+    fontWeight: "800",
+    letterSpacing: 1.2,
     textTransform: "uppercase",
   },
+  sectionLeaguePill: {
+    alignSelf: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    marginBottom: 12,
+    marginRight: TIMELINE.COLUMN_WIDTH, // center relative to cards
+  },
   sectionLeagueLabel: {
-    fontSize: 11,
-    fontWeight: "500",
-    opacity: 0.7,
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   sectionLiveBadge: {
     flexDirection: "row",
@@ -829,5 +934,35 @@ const styles = StyleSheet.create({
   },
   emptyStateSuggestion: {
     fontWeight: "600",
+  },
+  /* ── Floating scroll-to-next button ── */
+  scrollToNextBtn: {
+    position: "absolute",
+    left: (TIMELINE.TRACK_WIDTH + TIMELINE.COLUMN_WIDTH + 4) / 2 - 15,
+    zIndex: 20,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    // backgroundColor set inline with theme.colors.primary
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+    // 3D floating effect
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  scrollToNextArrow: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    // borderTopColor set inline (#fff)
   },
 });

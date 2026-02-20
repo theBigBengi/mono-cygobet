@@ -9,6 +9,8 @@ type Props = {
   predictedCount: number;
   totalCount: number;
   accuracy: number;
+  /** Whether the timeline fill line should extend down from this card. */
+  hasFilledTimeline?: boolean;
 };
 
 export function GamesSummaryCard({
@@ -16,13 +18,25 @@ export function GamesSummaryCard({
   predictedCount,
   totalCount,
   accuracy,
+  hasFilledTimeline = false,
 }: Props) {
   const { theme } = useTheme();
 
   return (
     <View style={styles.wrapper}>
-      {/* Timeline spacer to align with cards */}
-      <View style={styles.timelineSpacer} />
+      {/* Timeline spacer with fill line — always starts from the top */}
+      <View style={styles.timelineSpacer}>
+        <View
+          style={{
+            position: "absolute",
+            left: (TIMELINE.TRACK_WIDTH - TIMELINE.LINE_WIDTH) / 2,
+            width: TIMELINE.LINE_WIDTH,
+            backgroundColor: theme.colors.primary,
+            top: -500,
+            bottom: hasFilledTimeline ? -21 : "50%",
+          }}
+        />
+      </View>
       <View
         style={[
           styles.card,
@@ -101,7 +115,8 @@ export function GamesSummaryCard({
 const styles = StyleSheet.create({
   wrapper: {
     flexDirection: "row",
-    marginBottom: 16,
+    marginTop: 28,
+    marginBottom: 20,
   },
   timelineSpacer: {
     width: TIMELINE.COLUMN_WIDTH,

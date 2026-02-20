@@ -175,6 +175,7 @@ const styles = StyleSheet.create({
   },
   liveResultText: {
     color: LIVE_RESULT_COLOR,
+    fontWeight: "700",
   },
   winnerResultText: {
     fontWeight: "700",
