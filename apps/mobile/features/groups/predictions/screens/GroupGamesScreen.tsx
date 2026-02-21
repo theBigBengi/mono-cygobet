@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, Pressable, Dimensions } from "react-native";
-import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, runOnJS } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedStyle, runOnJS, clamp, withTiming } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -413,11 +413,45 @@ export function GroupGamesScreen({
 
   /** Scroll position for card reveal animations. */
   const scrollY = useSharedValue(0);
+  /** Collapsing header: track previous scroll position and header offset. */
+  const previousScrollY = useSharedValue(0);
+  const headerOffset = useSharedValue(0);
+  const totalHeaderH = HEADER_HEIGHT + insets.top;
+
   const animatedScrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
+      const currentY = event.contentOffset.y;
+      const maxScrollY = event.contentSize.height - event.layoutMeasurement.height;
+
+      scrollY.value = currentY;
+
+      // Collapsing header: hide on scroll down, show on scroll up
+      headerOffset.value = clamp(
+        headerOffset.value + (previousScrollY.value - currentY),
+        -totalHeaderH,
+        0,
+      );
+
+      previousScrollY.value = clamp(currentY, 0, maxScrollY);
+    },
+    onMomentumEnd: () => {
+      // Snap to fully visible or fully hidden
+      if (headerOffset.value > -totalHeaderH / 2) {
+        headerOffset.value = withTiming(0, { duration: 200 });
+      } else {
+        headerOffset.value = withTiming(-totalHeaderH, { duration: 200 });
+      }
     },
   });
+
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: headerOffset.value }],
+  }));
+
+  /** Scroll button follows header but stops at status bar (insets.top + 12). */
+  const scrollBtnAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: clamp(headerOffset.value, -HEADER_HEIGHT, 0) }],
+  }));
 
   /** Track next-to-predict card visibility for floating scroll button. */
   const VIEWPORT_H = Dimensions.get("window").height;
@@ -791,9 +825,9 @@ export function GroupGamesScreen({
           teamLogo={focusedTeamInfo?.logo}
         />
 
-        {/* Header floats above list content. */}
-        <View
-          style={[styles.headerOverlay, { top: 0 }]}
+        {/* Header floats above list content — collapses on scroll down */}
+        <Animated.View
+          style={[styles.headerOverlay, headerAnimatedStyle]}
           pointerEvents="box-none"
         >
           <GroupGamesHeader onBack={handleBack}>
@@ -810,27 +844,32 @@ export function GroupGamesScreen({
               />
             )}
           </GroupGamesHeader>
-        </View>
+        </Animated.View>
 
         {/* Floating scroll-to-next button */}
-        {scrollBtnDir && (
+        {scrollBtnDir === "up" && (
+          <Animated.View
+            style={[
+              styles.scrollToNextBtn,
+              { backgroundColor: theme.colors.primary, top: HEADER_HEIGHT + insets.top + 12 },
+              scrollBtnAnimatedStyle,
+            ]}
+          >
+            <Pressable onPress={handleScrollToNext} style={styles.scrollToNextBtnInner}>
+              <View style={[styles.scrollToNextArrow, { borderTopColor: "#fff" }, { transform: [{ rotate: "180deg" }] }]} />
+            </Pressable>
+          </Animated.View>
+        )}
+        {scrollBtnDir === "down" && (
           <Pressable
             style={[
               styles.scrollToNextBtn,
               { backgroundColor: theme.colors.primary },
-              scrollBtnDir === "up"
-                ? { top: HEADER_HEIGHT + insets.top + 12 }
-                : { bottom: keyboardHeight > 0 ? keyboardHeight + 40 : insets.bottom + 8 },
+              { bottom: keyboardHeight > 0 ? keyboardHeight + 40 : insets.bottom + 8 },
             ]}
             onPress={handleScrollToNext}
           >
-            <View
-              style={[
-                styles.scrollToNextArrow,
-                { borderTopColor: "#fff" },
-                scrollBtnDir === "up" && { transform: [{ rotate: "180deg" }] },
-              ]}
-            />
+            <View style={[styles.scrollToNextArrow, { borderTopColor: "#fff" }]} />
           </Pressable>
         )}
       </View>
@@ -845,6 +884,7 @@ const styles = StyleSheet.create({
   contentContainer: { paddingHorizontal: 0 },
   headerOverlay: {
     position: "absolute",
+    top: 0,
     left: 0,
     right: 0,
     zIndex: 10,
@@ -955,6 +995,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
+  },
+  scrollToNextBtnInner: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
   },
   scrollToNextArrow: {
     width: 0,
