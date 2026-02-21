@@ -17,7 +17,12 @@ export function SessionExpiredModal({
 }) {
   return (
     <Dialog open={open}>
-      <DialogContent>
+      <DialogContent
+        showCloseButton={false}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Session expired</DialogTitle>
           <DialogDescription>

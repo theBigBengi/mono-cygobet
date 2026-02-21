@@ -71,7 +71,10 @@ export async function adminFetch<T>(
   if (!res.ok) {
     // If session expired / unauthorized, dispatch a global event so the UI can
     // surface a clear UX (modal) and clean local state.
-    if (typeof window !== "undefined" && res.status === 401) {
+    // Skip auth endpoints — a 401 on /admin/auth/me is the normal
+    // "not logged in" flow handled by bootstrap(), not a session expiry.
+    const isAuthPath = path.startsWith("/admin/auth/");
+    if (typeof window !== "undefined" && res.status === 401 && !isAuthPath) {
       try {
         window.dispatchEvent(new CustomEvent("admin-session-expired"));
       } catch {

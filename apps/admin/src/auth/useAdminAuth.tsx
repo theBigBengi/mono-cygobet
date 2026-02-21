@@ -23,6 +23,7 @@ import { AdminApiError } from "@/lib/adminApi";
 import * as adminAuth from "./adminAuth";
 import SessionExpiredModal from "@/components/SessionExpiredModal";
 import { useNavigate } from "react-router-dom";
+import { queryClient } from "@/providers/query-provider";
 
 /**
  * Authentication status states
@@ -85,6 +86,8 @@ const AdminAuthContext = React.createContext<AdminAuthContextValue | null>(
  */
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = React.useState<AdminAuthStatus>("idle");
+  const statusRef = React.useRef(status);
+  statusRef.current = status;
   const [me, setMe] = React.useState<AdminMeResponse["data"] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [showSessionExpiredModal, setShowSessionExpiredModal] = React.useState(false);
@@ -180,6 +183,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   // Listen for global session-expired events dispatched by adminFetch.
   React.useEffect(() => {
     function onExpired() {
+      // Only show the modal when there was an active session.
+      // A 401 while already guest/idle is not a "session expired" scenario.
+      if (statusRef.current !== "authed") return;
+
+      // Immediately mark as guest and wipe all cached server data so stale
+      // UI cannot mislead the user into thinking actions succeed.
+      setMe(null);
+      setStatus("guest");
+      queryClient.cancelQueries();
+      queryClient.clear();
       setShowSessionExpiredModal(true);
     }
     window.addEventListener("admin-session-expired", onExpired as EventListener);

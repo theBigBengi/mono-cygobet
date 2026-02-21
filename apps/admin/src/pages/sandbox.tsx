@@ -832,11 +832,16 @@ export default function SandboxPage() {
     },
   });
 
+  const [bulkKickoffDialogOpen, setBulkKickoffDialogOpen] = React.useState(false);
+  const [selectedKickoffIds, setSelectedKickoffIds] = React.useState<Set<number>>(new Set());
+
   const bulkKickoffMutation = useMutation({
     mutationFn: (fixtureIds: number[]) => sandboxService.bulkKickoff(fixtureIds),
-    onSuccess: () => {
-      toast.success("All fixtures kicked off!");
+    onSuccess: (_, variables) => {
+      toast.success(`${variables.length} fixtures kicked off!`);
       queryClient.invalidateQueries({ queryKey: ["sandbox", "list"] });
+      setBulkKickoffDialogOpen(false);
+      setSelectedKickoffIds(new Set());
     },
     onError: (error: Error) => {
       toast.error("Bulk kickoff failed", { description: error.message });
@@ -855,10 +860,8 @@ export default function SandboxPage() {
     },
   });
 
-  const nsFixtureIds = React.useMemo(() => {
-    return filteredFixtures
-      .filter((f) => f.state === "NS")
-      .map((f) => f.id);
+  const nsFixtures = React.useMemo(() => {
+    return filteredFixtures.filter((f) => f.state === "NS");
   }, [filteredFixtures]);
 
   const [deleteGroupDialogOpen, setDeleteGroupDialogOpen] = React.useState(false);
@@ -1099,19 +1102,19 @@ export default function SandboxPage() {
                       <Plus className="h-3 w-3 sm:mr-1" />
                       <span className="hidden sm:inline">Add Fixture</span>
                     </Button>
-                    {nsFixtureIds.length >= 2 && (
+                    {nsFixtures.length >= 2 && (
                       <Button
                         size="sm"
                         variant="outline"
                         className="h-8 text-xs shrink-0"
-                        onClick={() => bulkKickoffMutation.mutate(nsFixtureIds)}
-                        disabled={bulkKickoffMutation.isPending}
+                        onClick={() => {
+                          setSelectedKickoffIds(new Set(nsFixtures.map((f) => f.id)));
+                          setBulkKickoffDialogOpen(true);
+                        }}
                       >
                         <Play className="h-3 w-3 sm:mr-1" />
                         <span className="hidden sm:inline">
-                          {bulkKickoffMutation.isPending
-                            ? "Kicking off..."
-                            : `Kickoff All (${nsFixtureIds.length})`}
+                          Kickoff ({nsFixtures.length})
                         </span>
                       </Button>
                     )}
@@ -1508,6 +1511,96 @@ export default function SandboxPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Bulk Kickoff Dialog ── */}
+      <Dialog open={bulkKickoffDialogOpen} onOpenChange={setBulkKickoffDialogOpen}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">Kickoff Fixtures</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              Select which fixtures to kick off.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1 max-h-[300px] overflow-y-auto">
+            {nsFixtures.map((f) => {
+              const checked = selectedKickoffIds.has(f.id);
+              const matchName =
+                f.homeTeam && f.awayTeam
+                  ? `${f.homeTeam} vs ${f.awayTeam}`
+                  : f.name;
+              return (
+                <label
+                  key={f.id}
+                  className="flex items-center gap-2.5 rounded-md px-2 py-2 hover:bg-muted/50 cursor-pointer"
+                >
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(v) => {
+                      setSelectedKickoffIds((prev) => {
+                        const next = new Set(prev);
+                        if (v) next.add(f.id);
+                        else next.delete(f.id);
+                        return next;
+                      });
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm truncate">{matchName}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {formatDateTimeShort(f.startTs)}
+                    </p>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+          {nsFixtures.length > 1 && (
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() =>
+                  setSelectedKickoffIds(new Set(nsFixtures.map((f) => f.id)))
+                }
+              >
+                Select All
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => setSelectedKickoffIds(new Set())}
+              >
+                Clear
+              </Button>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkKickoffDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() =>
+                bulkKickoffMutation.mutate([...selectedKickoffIds])
+              }
+              disabled={
+                bulkKickoffMutation.isPending || selectedKickoffIds.size === 0
+              }
+            >
+              <Play className="mr-1.5 h-3 w-3" />
+              {bulkKickoffMutation.isPending
+                ? "Kicking off..."
+                : `Kickoff (${selectedKickoffIds.size})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Full-Time Dialog ── */}
       <Dialog
