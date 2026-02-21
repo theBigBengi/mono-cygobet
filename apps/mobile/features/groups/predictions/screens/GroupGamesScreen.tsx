@@ -709,17 +709,17 @@ export function GroupGamesScreen({
                           </View>
                         ) : item.level === "date" ? (
                           <View style={styles.sectionDateRow}>
-                            <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.textSecondary + "18" }]} />
+                            <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.primary + "30" }]} />
                             <Text
                               style={[
                                 styles.sectionDateLabel,
-                                { color: theme.colors.textSecondary + "95" },
+                                { color: theme.colors.primary },
                               ]}
                               numberOfLines={1}
                             >
                               {item.label}
                             </Text>
-                            <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.textSecondary + "18" }]} />
+                            <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.primary + "30" }]} />
                           </View>
                         ) : (
                           <View style={[styles.sectionLeaguePill, { backgroundColor: theme.colors.textSecondary + "0C", borderColor: theme.colors.textSecondary + "15" }]}>
@@ -867,12 +867,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 16,
+    paddingVertical: 15,
     paddingRight: TIMELINE.COLUMN_WIDTH, // match card right spacer for centering
   },
   sectionDateLine: {
     flex: 1,
-    height: 1,
+    height: 1.5,
   },
   sectionDateLabel: {
     fontSize: 11,
@@ -886,7 +886,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 6,
     borderWidth: 1,
-    marginBottom: 12,
+    marginTop: 0,
+    marginBottom: 15,
     marginRight: TIMELINE.COLUMN_WIDTH, // center relative to cards
   },
   sectionLeagueLabel: {

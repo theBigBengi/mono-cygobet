@@ -33,7 +33,7 @@ export function GamesSummaryCard({
             width: TIMELINE.LINE_WIDTH,
             backgroundColor: theme.colors.primary,
             top: -500,
-            bottom: hasFilledTimeline ? -21 : "50%",
+            bottom: hasFilledTimeline ? -31 : "50%",
           }}
         />
       </View>

@@ -231,8 +231,8 @@ export function MatchPredictionCardVertical({
               left: fillLeft,
               width: TIMELINE.LINE_WIDTH,
               backgroundColor: filledColor,
-              top: -21,
-              bottom: isLastInTimeline || !timelineConnectorFilled ? "50%" : -21,
+              top: -31,
+              bottom: isLastInTimeline || !timelineConnectorFilled ? "50%" : -31,
             }}
           />
         )}
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   outerRowSpacing: {
-    marginBottom: 20,
+    marginBottom: 30,
   },
   timelineColumn: {
     width: TIMELINE.COLUMN_WIDTH,
@@ -571,7 +571,8 @@ const styles = StyleSheet.create({
   matchCard: {
     marginHorizontal: 0,
     marginBottom: 0,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
     borderBottomWidth: 3,
@@ -591,7 +592,7 @@ const styles = StyleSheet.create({
 
   /* ── Points / right side ── */
   pointsContainer: {
-    width: TIMELINE.COLUMN_WIDTH,
+    width: TIMELINE.COLUMN_WIDTH - 6,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -607,6 +608,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   rightSpacer: {
-    width: TIMELINE.COLUMN_WIDTH,
+    width: TIMELINE.COLUMN_WIDTH - 6,
   },
 });
