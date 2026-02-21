@@ -2,14 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // --- מוקים ---
 
-const mockInvalidateRanking = vi.fn(async () => {});
-const mockInvalidateUserStats = vi.fn(async () => {});
-const mockInvalidateH2H = vi.fn(async () => {});
+const { mockInvalidateRanking, mockInvalidateUserStats, mockInvalidateH2H } = vi.hoisted(() => ({
+  mockInvalidateRanking: vi.fn(async () => {}),
+  mockInvalidateUserStats: vi.fn(async () => {}),
+  mockInvalidateH2H: vi.fn(async () => {}),
+}));
 
 vi.mock("../../../../../lib/cache-invalidation", () => ({
-  invalidateRankingCache: (...args: unknown[]) => mockInvalidateRanking(...args),
-  invalidateUserStatsCache: (...args: unknown[]) => mockInvalidateUserStats(...args),
-  invalidateH2HCache: (...args: unknown[]) => mockInvalidateH2H(...args),
+  invalidateRankingCache: mockInvalidateRanking,
+  invalidateUserStatsCache: mockInvalidateUserStats,
+  invalidateH2HCache: mockInvalidateH2H,
 }));
 
 // מוק פשוט לדירוג — מחזיר תוצאה בסיסית

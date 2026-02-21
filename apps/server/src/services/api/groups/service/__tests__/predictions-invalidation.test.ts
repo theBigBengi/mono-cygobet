@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // --- מוקים ---
 
-const mockInvalidateRanking = vi.fn(async () => {});
+const { mockInvalidateRanking } = vi.hoisted(() => ({
+  mockInvalidateRanking: vi.fn(async () => {}),
+}));
 
 vi.mock("../../../../../lib/cache-invalidation", () => ({
-  invalidateRankingCache: (...args: unknown[]) => mockInvalidateRanking(...args),
+  invalidateRankingCache: mockInvalidateRanking,
 }));
 
 vi.mock("../../permissions", () => ({
