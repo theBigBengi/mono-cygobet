@@ -2,10 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // --- Mocks (hoisted so vi.mock factories can access them) ---
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const { mockUpsert, mockFindMany, mockAuditCreate } = vi.hoisted(() => ({
-  mockUpsert: vi.fn(async () => ({ id: 1 })),
-  mockFindMany: vi.fn(async () => [] as unknown[]),
-  mockAuditCreate: vi.fn(async () => ({})),
+  mockUpsert: vi.fn(async () => ({ id: 1 })) as any,
+  mockFindMany: vi.fn(async () => []) as any,
+  mockAuditCreate: vi.fn(async () => ({})) as any,
 }));
 
 vi.mock("@repo/db", () => ({

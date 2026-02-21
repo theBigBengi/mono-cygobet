@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // --- Mocks ---
 
-const mockJobsFindMany = vi.fn(async () => []);
-const mockJobRunsFindMany = vi.fn(async () => []);
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const mockJobsFindMany = vi.fn(async () => []) as any;
+const mockJobRunsFindMany = vi.fn(async () => []) as any;
 
 vi.mock("@repo/db", () => ({
   RunStatus: { success: "success", failed: "failed", running: "running", queued: "queued", skipped: "skipped" },
@@ -32,7 +33,7 @@ async function callSchedulerEndpoint() {
     },
   };
 
-  const mod = await import("../health.route");
+  const mod = await import("../../routes/health.route");
   await mod.default(fakeFastify as never, {} as never);
 
   const handler = routes["/health/scheduler"];
@@ -102,7 +103,6 @@ describe("GET /health/scheduler", () => {
     ]);
     mockJobRunsFindMany.mockResolvedValueOnce([
       { jobKey: "upsert-live-fixtures", startedAt: new Date("2026-02-21T10:00:00Z"), status: "success" },
-      // disabled-job never ran — should NOT cause "error"
     ]);
 
     const result = await callSchedulerEndpoint();
@@ -136,7 +136,6 @@ describe("GET /health/scheduler", () => {
       { key: "job-b", enabled: true, scheduleCron: "*/5 * * * *" },
     ]);
     mockJobRunsFindMany.mockResolvedValueOnce([
-      // job-a failed (→ degraded), job-b never ran (→ error)
       { jobKey: "job-a", startedAt: new Date(), status: "failed" },
     ]);
 

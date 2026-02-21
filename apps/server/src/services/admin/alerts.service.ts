@@ -349,28 +349,40 @@ async function detectUnsettledFixtures(): Promise<AlertInput[]> {
 
   if (finishedFixtures.length === 0) return [];
 
-  // Count predictions per fixture
+  // Build groupFixtureId → fixtureId mapping for finished fixtures
   const finishedFixtureIds = finishedFixtures.map((f) => f.id);
   const gfRows = await prisma.groupFixtures.findMany({
     where: { fixtureId: { in: finishedFixtureIds } },
     select: { id: true, fixtureId: true },
   });
-  const gfIdsByFixture = new Map<number, number[]>();
+
+  const gfIdToFixtureId = new Map<number, number>();
   for (const gf of gfRows) {
-    const arr = gfIdsByFixture.get(gf.fixtureId) ?? [];
-    arr.push(gf.id);
-    gfIdsByFixture.set(gf.fixtureId, arr);
+    gfIdToFixtureId.set(gf.id, gf.fixtureId);
+  }
+
+  // Single groupBy query instead of N count() calls
+  const allGfIds = gfRows.map((gf) => gf.id);
+  const countsPerGf = allGfIds.length > 0
+    ? await prisma.groupPredictions.groupBy({
+        by: ["groupFixtureId"],
+        where: { groupFixtureId: { in: allGfIds }, settledAt: null },
+        _count: true,
+      })
+    : [];
+
+  // Aggregate counts by fixtureId
+  const countsByFixture = new Map<number, number>();
+  for (const row of countsPerGf) {
+    const fixtureId = gfIdToFixtureId.get(row.groupFixtureId);
+    if (fixtureId != null) {
+      countsByFixture.set(fixtureId, (countsByFixture.get(fixtureId) ?? 0) + row._count);
+    }
   }
 
   const alerts: AlertInput[] = [];
   for (const fixture of finishedFixtures) {
-    const gfIds = gfIdsByFixture.get(fixture.id) ?? [];
-    const predCount = gfIds.length > 0
-      ? await prisma.groupPredictions.count({
-          where: { groupFixtureId: { in: gfIds }, settledAt: null },
-        })
-      : 0;
-
+    const predCount = countsByFixture.get(fixture.id) ?? 0;
     if (predCount === 0) continue;
 
     alerts.push({

@@ -6,7 +6,7 @@ const {
   mockFixturesCount,
   mockFixturesFindMany,
   mockGroupPredictionsFindMany,
-  mockGroupPredictionsCount,
+  mockGroupPredictionsGroupBy,
   mockGroupFixturesFindMany,
   mockAdminAlertsFindMany,
   mockAdminAlertsFindUnique,
@@ -18,7 +18,7 @@ const {
   mockFixturesCount: vi.fn(async () => 0),
   mockFixturesFindMany: vi.fn(async () => [] as unknown[]),
   mockGroupPredictionsFindMany: vi.fn(async () => [] as unknown[]),
-  mockGroupPredictionsCount: vi.fn(async () => 0),
+  mockGroupPredictionsGroupBy: vi.fn(async () => [] as unknown[]),
   mockGroupFixturesFindMany: vi.fn(async () => [] as unknown[]),
   mockAdminAlertsFindMany: vi.fn(async () => [] as unknown[]),
   mockAdminAlertsFindUnique: vi.fn(async () => null as unknown),
@@ -52,7 +52,7 @@ const {
 vi.mock("@repo/db", () => ({
   prisma: {
     fixtures: { count: mockFixturesCount, findMany: mockFixturesFindMany },
-    groupPredictions: { findMany: mockGroupPredictionsFindMany, count: mockGroupPredictionsCount },
+    groupPredictions: { findMany: mockGroupPredictionsFindMany, groupBy: mockGroupPredictionsGroupBy },
     groupFixtures: { findMany: mockGroupFixturesFindMany },
     adminAlerts: {
       findMany: mockAdminAlertsFindMany,
@@ -95,37 +95,37 @@ beforeEach(() => {
   mockFixturesFindMany.mockResolvedValue([]);
   mockFixturesCount.mockResolvedValue(0);
   mockAdminAlertsFindMany.mockResolvedValue([]);
+  mockGroupPredictionsGroupBy.mockResolvedValue([]);
 });
 
 describe("detectUnsettledFixtures — per-fixture fingerprints", () => {
   it("returns one alert per finished fixture with unsettled predictions", async () => {
-    // 2 group fixtures with unsettled predictions, mapping to 2 different fixtures
+    // 2 group fixtures with unsettled predictions
     mockGroupPredictionsFindMany
-      .mockResolvedValueOnce([{ groupFixtureId: 10 }, { groupFixtureId: 20 }]) // detectUnsettledFixtures
-      .mockResolvedValue([]); // autoResolveAlerts and other paths
+      .mockResolvedValueOnce([{ groupFixtureId: 10 }, { groupFixtureId: 20 }])
+      .mockResolvedValue([]);
     mockGroupFixturesFindMany
-      .mockResolvedValueOnce([{ fixtureId: 100 }, { fixtureId: 200 }])  // groupFixtures by groupFixtureId
-      .mockResolvedValueOnce([                                            // groupFixtures by fixtureId
+      .mockResolvedValueOnce([{ fixtureId: 100 }, { fixtureId: 200 }])  // by groupFixtureId
+      .mockResolvedValueOnce([                                            // by fixtureId
         { id: 10, fixtureId: 100 },
         { id: 20, fixtureId: 200 },
       ])
       .mockResolvedValue([]);
 
-    // Finished fixtures with unsettled predictions
     mockFixturesFindMany
       .mockResolvedValueOnce([]) // detectStuckFixtures
-      .mockResolvedValueOnce([   // detectOverdueNs
-      ])
-      .mockResolvedValueOnce([   // detectUnsettledFixtures: finished fixtures query
+      .mockResolvedValueOnce([]) // detectOverdueNs
+      .mockResolvedValueOnce([   // detectUnsettledFixtures: finished fixtures
         { id: 100, name: "Match A", state: "FT" },
         { id: 200, name: "Match B", state: "AET" },
       ])
       .mockResolvedValue([]);
 
-    // Prediction counts per fixture
-    mockGroupPredictionsCount
-      .mockResolvedValueOnce(3)  // fixture 100
-      .mockResolvedValueOnce(5); // fixture 200
+    // Single groupBy query: counts per groupFixtureId
+    mockGroupPredictionsGroupBy.mockResolvedValueOnce([
+      { groupFixtureId: 10, _count: 3 },
+      { groupFixtureId: 20, _count: 5 },
+    ]);
 
     const alerts = await generateAlerts();
 
@@ -136,6 +136,12 @@ describe("detectUnsettledFixtures — per-fixture fingerprints", () => {
     expect(fingerprints).toContain("fixture_unsettled:100");
     expect(fingerprints).toContain("fixture_unsettled:200");
     expect(fingerprints).not.toContain("fixture_unsettled:batch");
+
+    // Verify per-fixture prediction counts in metadata
+    const matchA = unsettledAlerts.find((a) => a.fingerprint === "fixture_unsettled:100");
+    const matchB = unsettledAlerts.find((a) => a.fingerprint === "fixture_unsettled:200");
+    expect(matchA!.metadata.predictionCount).toBe(3);
+    expect(matchB!.metadata.predictionCount).toBe(5);
   });
 
   it("skips fixtures with 0 unsettled predictions", async () => {
@@ -150,10 +156,11 @@ describe("detectUnsettledFixtures — per-fixture fingerprints", () => {
     mockFixturesFindMany
       .mockResolvedValueOnce([]) // detectStuckFixtures
       .mockResolvedValueOnce([]) // detectOverdueNs
-      .mockResolvedValueOnce([{ id: 100, name: "Match A", state: "FT" }]) // detectUnsettledFixtures
+      .mockResolvedValueOnce([{ id: 100, name: "Match A", state: "FT" }])
       .mockResolvedValue([]);
 
-    mockGroupPredictionsCount.mockResolvedValueOnce(0);
+    // groupBy returns no rows (0 unsettled predictions)
+    mockGroupPredictionsGroupBy.mockResolvedValueOnce([]);
 
     const alerts = await generateAlerts();
 
@@ -227,7 +234,6 @@ describe("detectOverdueNs — per-fixture fingerprints", () => {
 
 describe("autoResolveAlerts — per-fixture resolution", () => {
   it("resolves alert for fixture that is no longer overdue", async () => {
-    // Active alert for fixture 500
     mockAdminAlertsFindMany.mockResolvedValueOnce([
       {
         id: 1,
