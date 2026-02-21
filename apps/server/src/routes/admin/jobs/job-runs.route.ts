@@ -226,6 +226,7 @@ const adminJobRunsDbRoutes: FastifyPluginAsync = async (fastify) => {
       perPage?: number;
       status?: string;
       action?: string;
+      search?: string;
     };
     Reply: AdminBatchItemsResponse;
   }>(
@@ -244,6 +245,7 @@ const adminJobRunsDbRoutes: FastifyPluginAsync = async (fastify) => {
             perPage: { type: "number", default: 50 },
             status: { type: "string" },
             action: { type: "string" },
+            search: { type: "string" },
           },
         },
         response: { 200: { type: "object" } },
@@ -315,18 +317,22 @@ const adminJobRunsDbRoutes: FastifyPluginAsync = async (fastify) => {
           ? (RunStatus as Record<string, RunStatus>)[statusParam]
           : undefined;
       const actionFilter = req.query?.action;
+      const searchTerm = req.query?.search?.trim();
 
-      const whereClause: {
-        batchId: number;
-        status?: RunStatus;
-        meta?: { path: string[]; equals: string };
-      } = {
+      const whereClause: Record<string, unknown> = {
         batchId,
         ...(statusEnum ? { status: statusEnum } : {}),
         ...(actionFilter
           ? { meta: { path: ["action"], equals: actionFilter } }
           : {}),
       };
+
+      if (searchTerm && searchTerm.length >= 3) {
+        whereClause.OR = [
+          { itemKey: { contains: searchTerm, mode: "insensitive" } },
+          { meta: { path: ["name"], string_contains: searchTerm } },
+        ];
+      }
 
       const [items, totalItems] = await Promise.all([
         prisma.seedItems.findMany({

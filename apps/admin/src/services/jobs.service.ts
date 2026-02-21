@@ -29,6 +29,7 @@ export type GetRunItemsParams = {
   perPage?: number;
   status?: string;
   action?: string;
+  search?: string;
 };
 
 export const jobsService = {
@@ -71,6 +72,7 @@ export const jobsService = {
       sp.set("perPage", String(params.perPage));
     if (params.status) sp.set("status", params.status);
     if (params.action) sp.set("action", params.action);
+    if (params.search) sp.set("search", params.search);
     const qs = sp.toString();
     return apiGet<AdminBatchItemsResponse>(
       `/admin/jobs/runs/${runId}/items${qs ? `?${qs}` : ""}`

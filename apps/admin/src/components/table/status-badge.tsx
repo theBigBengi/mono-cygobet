@@ -78,6 +78,21 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     );
   }
 
+  // Action statuses (job run items)
+  const actionColors: Record<string, string> = {
+    inserted: "bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:hover:bg-blue-950/50 dark:text-blue-400",
+    updated: "bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 dark:text-amber-400",
+    skipped: "bg-zinc-100 hover:bg-zinc-200 text-zinc-600 dark:bg-zinc-800/50 dark:hover:bg-zinc-800/70 dark:text-zinc-400",
+    failed: "bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/30 dark:hover:bg-red-950/50 dark:text-red-400",
+  };
+  if (status in actionColors) {
+    return (
+      <Badge className={`${actionColors[status]} ${className || ""}`}>
+        {status}
+      </Badge>
+    );
+  }
+
   // Fallback for unknown statuses
   return (
     <Badge variant="secondary" className={className}>

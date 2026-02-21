@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
   jobsService,
   type GetJobRunsParams,
@@ -68,6 +68,7 @@ export function useRunItems(
     queryFn: () => jobsService.getRunItems(runId!, params),
     enabled: runId != null && Number.isFinite(runId),
     staleTime: Infinity,
+    placeholderData: keepPreviousData,
   });
 }
 

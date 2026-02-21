@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { Fragment, useEffect, useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -33,7 +33,8 @@ import { useMarketsFromProvider } from "@/hooks/use-markets";
 import { jobsService } from "@/services/jobs.service";
 import type { AdminJobDetailResponse } from "@repo/types";
 import type { MultiSelectOption } from "@/components/filters/multi-select-combobox";
-import { ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, ChevronRight, Search } from "lucide-react";
 import {
   formatDateTime,
   formatRelativeTime,
@@ -58,21 +59,9 @@ export default function JobDetailPage() {
 
   // Run detail sheet
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
-  const [itemsPage, setItemsPage] = useState(1);
-  const [itemsStatusFilter, setItemsStatusFilter] = useState<string>("all");
-  const [itemsActionFilter, setItemsActionFilter] = useState<string>("all");
 
   const selectedRunQuery = useRun(selectedRunId);
   const selectedRun = selectedRunQuery.data?.data ?? null;
-
-  const runItemsQuery = useRunItems(selectedRunId, {
-    page: itemsPage,
-    perPage: 50,
-    status: itemsStatusFilter === "all" ? undefined : itemsStatusFilter,
-    action: itemsActionFilter === "all" ? undefined : itemsActionFilter,
-  });
-  const runItems = runItemsQuery.data?.data ?? [];
-  const runItemsPagination = runItemsQuery.data?.pagination;
 
   const jobQuery = useJobFromDb(jobKey ?? null);
   const job = jobQuery.data?.data ?? null;
@@ -296,9 +285,6 @@ export default function JobDetailPage() {
                     className="px-3 py-3 space-y-1.5 cursor-pointer hover:bg-muted/50 active:bg-muted/70"
                     onClick={() => {
                       setSelectedRunId(r.id);
-                      setItemsPage(1);
-                      setItemsStatusFilter("all");
-                      setItemsActionFilter("all");
                     }}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -352,9 +338,6 @@ export default function JobDetailPage() {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => {
                         setSelectedRunId(r.id);
-                        setItemsPage(1);
-                        setItemsStatusFilter("all");
-                        setItemsActionFilter("all");
                       }}
                     >
                       <TableCell className="whitespace-nowrap">
@@ -452,20 +435,13 @@ export default function JobDetailPage() {
             </div>
             <SheetDescription className="sr-only">Run details</SheetDescription>
           </SheetHeader>
-          <div className="flex-1 min-h-0 overflow-auto p-4 space-y-3">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col p-4 gap-3">
             <RunDetailSheetContent
+              key={selectedRunId}
+              runId={selectedRunId}
               run={selectedRun}
               isLoading={selectedRunQuery.isLoading}
               isError={selectedRunQuery.isError}
-              items={runItems}
-              itemsLoading={runItemsQuery.isLoading}
-              itemsPagination={runItemsPagination}
-              itemsPage={itemsPage}
-              setItemsPage={setItemsPage}
-              itemsStatusFilter={itemsStatusFilter}
-              setItemsStatusFilter={setItemsStatusFilter}
-              itemsActionFilter={itemsActionFilter}
-              setItemsActionFilter={setItemsActionFilter}
             />
           </div>
         </SheetContent>
@@ -484,19 +460,12 @@ type RunItem = {
 };
 
 function RunDetailSheetContent({
+  runId,
   run,
   isLoading,
   isError,
-  items,
-  itemsLoading,
-  itemsPagination,
-  itemsPage,
-  setItemsPage,
-  itemsStatusFilter,
-  setItemsStatusFilter,
-  itemsActionFilter,
-  setItemsActionFilter,
 }: {
+  runId: number | null;
   run: {
     id: number;
     jobKey: string;
@@ -511,16 +480,40 @@ function RunDetailSheetContent({
   } | null;
   isLoading: boolean;
   isError: boolean;
-  items: RunItem[];
-  itemsLoading: boolean;
-  itemsPagination?: { page: number; totalPages: number; totalItems: number };
-  itemsPage: number;
-  setItemsPage: (fn: (p: number) => number) => void;
-  itemsStatusFilter: string;
-  setItemsStatusFilter: (v: string) => void;
-  itemsActionFilter: string;
-  setItemsActionFilter: (v: string) => void;
 }) {
+  // All sheet-internal state – changes here do NOT re-render the parent page
+  const [itemsPage, setItemsPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [actionFilter, setActionFilter] = useState("all");
+  const [localSearch, setLocalSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
+
+  // Debounce search: 300ms, min 3 chars
+  useEffect(() => {
+    const val = localSearch.trim();
+    const next = val.length >= 3 ? val : "";
+    const timer = setTimeout(() => {
+      setDebouncedSearch((prev) => {
+        if (prev === next) return prev;
+        setItemsPage(1);
+        return next;
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localSearch]);
+
+  const runItemsQuery = useRunItems(runId, {
+    page: itemsPage,
+    perPage: 50,
+    status: statusFilter === "all" ? undefined : statusFilter,
+    action: actionFilter === "all" ? undefined : actionFilter,
+    search: debouncedSearch || undefined,
+  });
+  const items = runItemsQuery.data?.data ?? [];
+  const itemsPagination = runItemsQuery.data?.pagination;
+  const itemsLoading = runItemsQuery.isLoading;
+
   if (isLoading) {
     return <p className="text-sm text-muted-foreground py-4">Loading run...</p>;
   }
@@ -558,64 +551,77 @@ function RunDetailSheetContent({
     return item.status;
   }
 
+  function getChanges(item: RunItem): Record<string, string> | null {
+    const m = (item.meta ?? {}) as Record<string, unknown>;
+    const changes = m["changes"];
+    if (changes && typeof changes === "object" && !Array.isArray(changes)) {
+      return changes as Record<string, string>;
+    }
+    return null;
+  }
+
   return (
     <>
       {/* Run info */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] sm:text-xs">
-        <div>
-          <div className="text-muted-foreground">Started</div>
-          <div className="font-medium">
+      <div className="shrink-0 grid grid-cols-4 gap-2 text-[11px] sm:text-xs">
+        <div className="bg-muted/40 rounded-md px-2.5 py-1.5">
+          <div className="text-muted-foreground mb-0.5">Started</div>
+          <div className="font-medium truncate">
             <span className="sm:hidden">{formatRelativeTime(run.startedAt)}</span>
             <span className="hidden sm:inline">{formatDateTime(run.startedAt)}</span>
           </div>
         </div>
-        <div>
-          <div className="text-muted-foreground">Finished</div>
-          <div className="font-medium">
+        <div className="bg-muted/40 rounded-md px-2.5 py-1.5">
+          <div className="text-muted-foreground mb-0.5">Finished</div>
+          <div className="font-medium truncate">
             <span className="sm:hidden">{formatRelativeTime(run.finishedAt)}</span>
             <span className="hidden sm:inline">{formatDateTime(run.finishedAt)}</span>
           </div>
         </div>
-        <div>
-          <div className="text-muted-foreground">Duration</div>
+        <div className="bg-muted/40 rounded-md px-2.5 py-1.5">
+          <div className="text-muted-foreground mb-0.5">Duration</div>
           <div className="font-medium">{formatDurationMs(run.durationMs)}</div>
         </div>
-        <div>
-          <div className="text-muted-foreground">Trigger</div>
+        <div className="bg-muted/40 rounded-md px-2.5 py-1.5">
+          <div className="text-muted-foreground mb-0.5">Trigger</div>
           <div className="font-medium">{run.trigger}</div>
         </div>
       </div>
 
       {/* Summary */}
-      <div className="border-t pt-3">
-        <div className="text-xs font-semibold mb-2">Summary</div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1.5">
+      {(hasStandard || dynamicSummaryEntries.length > 0) && (
+        <div className="shrink-0 flex flex-wrap gap-2 text-[11px] sm:text-xs">
           {hasStandard ? (
             <>
-              <div className="min-w-0 overflow-hidden">
-                <div className="text-[11px] text-muted-foreground">Inserted</div>
-                <div className="font-semibold text-xs">{inserted ?? "—"}</div>
-              </div>
-              <div className="min-w-0 overflow-hidden">
-                <div className="text-[11px] text-muted-foreground">Updated</div>
-                <div className="font-semibold text-xs">{updated ?? "—"}</div>
-              </div>
-              <div className="min-w-0 overflow-hidden">
-                <div className="text-[11px] text-muted-foreground">Skipped</div>
-                <div className="font-semibold text-xs">{skipped ?? "—"}</div>
-              </div>
-              <div className="min-w-0 overflow-hidden">
-                <div className="text-[11px] text-muted-foreground">Failed</div>
-                <div className="font-semibold text-xs">{failed ?? "—"}</div>
-              </div>
+              {inserted != null && (
+                <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 rounded-md px-2.5 py-1">
+                  <span className="font-semibold">{inserted}</span>
+                  <span className="opacity-70">inserted</span>
+                </div>
+              )}
+              {updated != null && (
+                <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-md px-2.5 py-1">
+                  <span className="font-semibold">{updated}</span>
+                  <span className="opacity-70">updated</span>
+                </div>
+              )}
+              {skipped != null && (
+                <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 rounded-md px-2.5 py-1">
+                  <span className="font-semibold">{skipped}</span>
+                  <span className="opacity-70">skipped</span>
+                </div>
+              )}
+              {failed != null && (
+                <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded-md px-2.5 py-1">
+                  <span className="font-semibold">{failed}</span>
+                  <span className="opacity-70">failed</span>
+                </div>
+              )}
             </>
           ) : (
             dynamicSummaryEntries.map(([key, value]) => (
-              <div key={key} className="min-w-0 overflow-hidden">
-                <div className="text-[11px] text-muted-foreground truncate">
-                  {titleCaseWords(camelToHuman(key))}
-                </div>
-                <div className="font-semibold text-xs truncate">
+              <div key={key} className="flex items-center gap-1.5 bg-muted/40 rounded-md px-2.5 py-1">
+                <span className="font-semibold">
                   {typeof value === "boolean"
                     ? String(value)
                     : value == null
@@ -623,21 +629,30 @@ function RunDetailSheetContent({
                       : typeof value === "object"
                         ? JSON.stringify(value)
                         : String(value)}
-                </div>
+                </span>
+                <span className="text-muted-foreground">{camelToHuman(key)}</span>
               </div>
             ))
           )}
         </div>
-      </div>
+      )}
 
       {/* Items */}
-      <div className="border-t pt-3 space-y-2">
-        <div className="text-xs font-semibold">Items</div>
-        <div className="grid grid-cols-2 gap-2">
+      <div className="border-t pt-3 flex-1 min-h-0 flex flex-col gap-2">
+        <div className="shrink-0 relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search by name (min 3 chars)..."
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            className="h-8 text-xs pl-7"
+          />
+        </div>
+        <div className="shrink-0 grid grid-cols-2 gap-2">
           <Select
-            value={itemsStatusFilter}
+            value={statusFilter}
             onValueChange={(v) => {
-              setItemsStatusFilter(v);
+              setStatusFilter(v);
               setItemsPage(() => 1);
             }}
           >
@@ -652,9 +667,9 @@ function RunDetailSheetContent({
             </SelectContent>
           </Select>
           <Select
-            value={itemsActionFilter}
+            value={actionFilter}
             onValueChange={(v) => {
-              setItemsActionFilter(v);
+              setActionFilter(v);
               setItemsPage(() => 1);
             }}
           >
@@ -670,13 +685,13 @@ function RunDetailSheetContent({
             </SelectContent>
           </Select>
         </div>
-        <div className="overflow-auto border rounded-md">
+        <div className="overflow-auto border rounded-md flex-1 min-h-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs">Entity</TableHead>
                 <TableHead className="text-xs">Action</TableHead>
-                <TableHead className="hidden sm:table-cell text-xs">Reason</TableHead>
+                <TableHead className="text-xs">Reason</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -684,18 +699,46 @@ function RunDetailSheetContent({
                 const m = (item.meta ?? {}) as Record<string, unknown>;
                 const name = typeof m["name"] === "string" ? m["name"] : item.itemKey;
                 const reason = typeof m["reason"] === "string" ? (m["reason"] as string) : "—";
+                const changes = getChanges(item);
+                const isExpanded = expandedItemId === item.id;
                 return (
-                  <TableRow key={item.id}>
-                    <TableCell className="py-2 font-medium max-w-[140px] truncate text-xs">
-                      {name ?? "—"}
-                    </TableCell>
-                    <TableCell className="py-2 whitespace-nowrap">
-                      <StatusBadge status={getActionLabel(item)} />
-                    </TableCell>
-                    <TableCell className="py-2 hidden sm:table-cell text-muted-foreground text-xs max-w-[160px] truncate">
-                      {reason}
-                    </TableCell>
-                  </TableRow>
+                  <Fragment key={item.id}>
+                    <TableRow
+                      className={changes ? "cursor-pointer hover:bg-muted/50" : ""}
+                      onClick={() => {
+                        if (changes) setExpandedItemId(isExpanded ? null : item.id);
+                      }}
+                    >
+                      <TableCell className="py-2 font-medium max-w-[140px] truncate text-xs">
+                        <span className="flex items-center gap-1">
+                          {changes && (
+                            <ChevronRight className={`h-3 w-3 shrink-0 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                          )}
+                          {name ?? "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-2 whitespace-nowrap">
+                        <StatusBadge status={getActionLabel(item)} />
+                      </TableCell>
+                      <TableCell className="py-2 text-muted-foreground text-xs max-w-[160px] truncate">
+                        {reason}
+                      </TableCell>
+                    </TableRow>
+                    {isExpanded && changes && (
+                      <TableRow key={`${item.id}-changes`}>
+                        <TableCell colSpan={3} className="py-0 px-0">
+                          <div className="bg-muted/30 px-3 py-2 text-[11px] space-y-0.5">
+                            {Object.entries(changes).map(([field, value]) => (
+                              <div key={field} className="flex items-center gap-1.5">
+                                <span className="text-muted-foreground">{camelToHuman(field)}:</span>
+                                <span className="font-mono">{String(value)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                 );
               })}
               {!items.length && (
@@ -704,7 +747,7 @@ function RunDetailSheetContent({
                     colSpan={3}
                     className="text-center text-xs text-muted-foreground py-6"
                   >
-                    {itemsLoading ? "Loading..." : "No items for this run."}
+                    {itemsLoading ? "Loading..." : localSearch.trim().length >= 3 ? "No matching items." : "No items for this run."}
                   </TableCell>
                 </TableRow>
               )}
@@ -742,7 +785,7 @@ function RunDetailSheetContent({
 
       {/* Error */}
       {run.status === "failed" && (
-        <div className="border-t pt-3 space-y-2">
+        <div className="shrink-0 border-t pt-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="text-xs font-semibold text-destructive">Error</div>
             <Button
