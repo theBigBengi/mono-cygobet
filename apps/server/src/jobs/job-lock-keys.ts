@@ -13,6 +13,7 @@ const JOB_KEY_TO_LOCK_KEY: Record<string, string> = {
   "cleanup-expired-sessions": "cleanup-expired-sessions",
   "sync-group-fixtures": "sync:group-fixtures",
   "prediction-reminders": "prediction-reminders",
+  "recovery-overdue-fixtures": "sync:recovery-overdue",
 };
 
 /**

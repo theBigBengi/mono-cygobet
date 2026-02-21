@@ -166,6 +166,7 @@ export const PREDICTION_REMINDERS_JOB = {
  * RECOVERY_OVERDUE_FIXTURES_JOB
  * -----------------------------
  * Purpose: Recover fixtures stuck in NS state after their start time has passed.
+ * Sole owner of overdue NS recovery — live-fixtures job only handles LIVE state sync.
  * Handles cases where server was down during match or live-fixtures job missed transitions.
  */
 export const RECOVERY_OVERDUE_FIXTURES_JOB = {
@@ -173,10 +174,10 @@ export const RECOVERY_OVERDUE_FIXTURES_JOB = {
   description:
     "Recover fixtures stuck in NS state after their start time passed",
   enabled: true,
-  // Every 30 min (safety net — live-fixtures job handles overdue every 5 min).
-  scheduleCron: "22,52 * * * *",
+  // Every 10 min — sole owner of overdue recovery (previously shared with live-fixtures).
+  scheduleCron: "*/10 * * * *",
   meta: {
-    graceMinutes: 15, // Reduced from 30 — live-fixtures already handles the first pass
+    graceMinutes: 10, // Match detection gap: 10 min grace + 10 min schedule ≈ 20 min max
     maxOverdueHours: 48, // Don't try to recover very old fixtures
   } satisfies RecoveryOverdueFixturesJobMeta,
 } as const satisfies JobDefinition;

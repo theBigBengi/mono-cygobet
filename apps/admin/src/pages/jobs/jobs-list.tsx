@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { RefreshCw } from "lucide-react";
+import { HeaderActions } from "@/contexts/header-actions";
 import { useJobsFromDb } from "@/hooks/use-jobs";
 import { jobsService } from "@/services/jobs.service";
 import type { AdminJobsListResponse } from "@repo/types";
@@ -145,8 +147,18 @@ export default function JobsListPage() {
     return { total, healthy, failing };
   }, [jobs]);
 
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    queryClient.invalidateQueries({ queryKey: ["job-runs"] });
+  };
+
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
+      <HeaderActions>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={refreshAll} disabled={jobsQuery.isFetching}>
+          <RefreshCw className={`h-4 w-4 ${jobsQuery.isFetching ? "animate-spin" : ""}`} />
+        </Button>
+      </HeaderActions>
       <div className="flex-shrink-0 mb-3 space-y-2">
         {/* Health summary bar */}
         {jobs.length > 0 && (

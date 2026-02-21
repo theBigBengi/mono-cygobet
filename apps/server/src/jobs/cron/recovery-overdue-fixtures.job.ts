@@ -41,7 +41,7 @@ import { runJob } from "../run-job";
 
 export const recoveryOverdueFixturesJob = RECOVERY_OVERDUE_FIXTURES_JOB;
 
-const DEFAULT_GRACE_MINUTES = 30;
+const DEFAULT_GRACE_MINUTES = 10;
 const DEFAULT_MAX_OVERDUE_HOURS = 48;
 
 export async function runRecoveryOverdueFixturesJob(

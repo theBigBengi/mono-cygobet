@@ -34,7 +34,7 @@ import { jobsService } from "@/services/jobs.service";
 import type { AdminJobDetailResponse } from "@repo/types";
 import type { MultiSelectOption } from "@/components/filters/multi-select-combobox";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ChevronRight, Search } from "lucide-react";
+import { ArrowLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
 import {
   formatDateTime,
   formatRelativeTime,
@@ -47,6 +47,7 @@ import {
   camelToHuman,
 } from "./jobs.utils";
 import { JobConfigForm } from "./job-config-form";
+import { HeaderActions } from "@/contexts/header-actions";
 import { useAlerts } from "@/hooks/use-dashboard";
 
 export default function JobDetailPage() {
@@ -196,8 +197,21 @@ export default function JobDetailPage() {
 
   const jobForForm: AdminJobDetailResponse["data"] = job;
 
+  const isAnyFetching = jobQuery.isFetching || runsQuery.isFetching;
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    queryClient.invalidateQueries({ queryKey: ["job-runs"] });
+    queryClient.invalidateQueries({ queryKey: ["job-run"] });
+    queryClient.invalidateQueries({ queryKey: ["run-items"] });
+  };
+
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
+      <HeaderActions>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={refreshAll} disabled={isAnyFetching}>
+          <RefreshCw className={`h-4 w-4 ${isAnyFetching ? "animate-spin" : ""}`} />
+        </Button>
+      </HeaderActions>
       <div className="flex-shrink-0 pb-3 sm:pb-4 flex items-center gap-2">
         <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => navigate("/jobs")}>
           <ArrowLeft className="h-4 w-4" />

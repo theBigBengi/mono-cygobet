@@ -320,7 +320,7 @@ async function detectStuckFixtures(): Promise<AlertInput[]> {
 }
 
 async function detectUnsettledFixtures(): Promise<AlertInput[]> {
-  // Get unsettled prediction count
+  // Get unsettled prediction count per groupFixture
   const unsettledGroups = await prisma.groupPredictions.findMany({
     where: { settledAt: null },
     select: { groupFixtureId: true },
@@ -337,32 +337,55 @@ async function detectUnsettledFixtures(): Promise<AlertInput[]> {
 
   const fixtureIds = [...new Set(groupFixtures.map((gf) => gf.fixtureId))];
 
-  const finishedUnsettled = await prisma.fixtures.count({
+  // Get actual finished fixtures with unsettled predictions
+  const finishedFixtures = await prisma.fixtures.findMany({
     where: {
       id: { in: fixtureIds },
       externalId: { gte: 0 },
       state: { in: FINISHED_STATES_ARR },
     },
+    select: { id: true, name: true, state: true },
   });
 
-  if (finishedUnsettled === 0) return [];
+  if (finishedFixtures.length === 0) return [];
 
-  const predictionCount = await prisma.groupPredictions.count({
-    where: { settledAt: null },
+  // Count predictions per fixture
+  const finishedFixtureIds = finishedFixtures.map((f) => f.id);
+  const gfRows = await prisma.groupFixtures.findMany({
+    where: { fixtureId: { in: finishedFixtureIds } },
+    select: { id: true, fixtureId: true },
   });
+  const gfIdsByFixture = new Map<number, number[]>();
+  for (const gf of gfRows) {
+    const arr = gfIdsByFixture.get(gf.fixtureId) ?? [];
+    arr.push(gf.id);
+    gfIdsByFixture.set(gf.fixtureId, arr);
+  }
 
-  return [
-    {
+  const alerts: AlertInput[] = [];
+  for (const fixture of finishedFixtures) {
+    const gfIds = gfIdsByFixture.get(fixture.id) ?? [];
+    const predCount = gfIds.length > 0
+      ? await prisma.groupPredictions.count({
+          where: { groupFixtureId: { in: gfIds }, settledAt: null },
+        })
+      : 0;
+
+    if (predCount === 0) continue;
+
+    alerts.push({
       severity: "warning",
       category: "fixture_unsettled",
-      title: `${finishedUnsettled} finished fixture${finishedUnsettled > 1 ? "s" : ""} with unsettled predictions`,
-      description: `${predictionCount} prediction${predictionCount > 1 ? "s" : ""} across ${finishedUnsettled} finished fixture${finishedUnsettled > 1 ? "s" : ""} haven't been settled yet.`,
-      fingerprint: "fixture_unsettled:batch",
-      actionUrl: "/fixtures?issue=unsettled",
-      actionLabel: "View Unsettled",
-      metadata: { fixtureCount: finishedUnsettled, predictionCount },
-    },
-  ];
+      title: `Unsettled predictions for "${fixture.name}"`,
+      description: `${predCount} unsettled prediction${predCount > 1 ? "s" : ""} for finished fixture "${fixture.name}" (${fixture.state}).`,
+      fingerprint: `fixture_unsettled:${fixture.id}`,
+      actionUrl: `/fixtures/${fixture.id}`,
+      actionLabel: "View Fixture",
+      metadata: { fixtureId: fixture.id, fixtureName: fixture.name, predictionCount: predCount, state: fixture.state },
+    });
+  }
+
+  return alerts;
 }
 
 async function detectDataQualityIssues(): Promise<AlertInput[]> {
@@ -392,55 +415,45 @@ async function detectDataQualityIssues(): Promise<AlertInput[]> {
 
 async function detectOverdueNs(): Promise<AlertInput[]> {
   const nowTs = nowUnixSeconds();
+  const FOUR_HOURS_S = 4 * 60 * 60;
 
   const overdueFixtures = await prisma.fixtures.findMany({
     where: { externalId: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
-    select: { startTs: true, lastProviderState: true, lastProviderCheckAt: true },
+    select: { id: true, name: true, startTs: true, lastProviderState: true, lastProviderCheckAt: true },
     orderBy: { startTs: "asc" },
   });
 
   if (overdueFixtures.length === 0) return [];
 
-  const count = overdueFixtures.length;
+  const alerts: AlertInput[] = [];
 
-  // Breakdown by provider state
-  let providerDelayed = 0;   // provider also shows NS
-  let providerUpdated = 0;   // provider shows non-NS (LIVE, FT, etc.)
-  let neverChecked = 0;      // never checked against provider
   for (const f of overdueFixtures) {
+    const overdueSeconds = nowTs - f.startTs;
+    const hoursOverdue = Math.round(overdueSeconds / 3600);
+    const severity: AdminAlertSeverity = overdueSeconds >= FOUR_HOURS_S ? "critical" : "warning";
+
+    let providerNote = "";
     if (!f.lastProviderCheckAt) {
-      neverChecked++;
+      providerNote = " Never checked against provider.";
     } else if (f.lastProviderState === "NS") {
-      providerDelayed++;
-    } else {
-      providerUpdated++;
+      providerNote = " Provider also shows NS (delayed).";
+    } else if (f.lastProviderState) {
+      providerNote = ` Provider shows ${f.lastProviderState}.`;
     }
-  }
 
-  const oldestHoursOverdue = Math.round((nowTs - overdueFixtures[0]!.startTs) / 3600);
-
-  // Escalate to critical if oldest is overdue > 4 hours
-  const FOUR_HOURS = 4;
-  const severity: AdminAlertSeverity = oldestHoursOverdue >= FOUR_HOURS ? "critical" : "warning";
-
-  // Build description with breakdown
-  const parts: string[] = [`${count} overdue`];
-  if (providerDelayed > 0) parts.push(`${providerDelayed} provider-delayed`);
-  if (neverChecked > 0) parts.push(`${neverChecked} never checked`);
-  if (providerUpdated > 0) parts.push(`${providerUpdated} provider shows LIVE`);
-
-  return [
-    {
+    alerts.push({
       severity,
       category: "overdue_ns",
-      title: `${count} fixture${count > 1 ? "s" : ""} overdue (still NS)`,
-      description: `${parts.join(". ")}. Oldest is ${oldestHoursOverdue}h overdue.`,
-      fingerprint: "overdue_ns:batch",
-      actionUrl: "/fixtures?issue=overdue",
-      actionLabel: "View Overdue",
-      metadata: { count, oldestHoursOverdue, providerDelayed, neverChecked, providerUpdated },
-    },
-  ];
+      title: `"${f.name}" overdue (still NS)`,
+      description: `Started ${hoursOverdue}h ago, still in NS.${providerNote}`,
+      fingerprint: `overdue_ns:${f.id}`,
+      actionUrl: `/fixtures/${f.id}`,
+      actionLabel: "View Fixture",
+      metadata: { fixtureId: f.id, fixtureName: f.name, hoursOverdue, lastProviderState: f.lastProviderState },
+    });
+  }
+
+  return alerts;
 }
 
 // ─── Helpers ───
