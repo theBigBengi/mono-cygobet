@@ -1065,6 +1065,10 @@ export interface AdminFixtureAttentionItem {
   groupCount: number;
   /** Number of predictions for this fixture */
   predictionCount: number;
+  /** Last state reported by the provider (e.g. "NS", "INPLAY_1ST_HALF") */
+  lastProviderState: string | null;
+  /** When the system last checked this fixture against the provider */
+  lastProviderCheckAt: string | null;
 }
 
 export interface AdminFixturesAttentionResponse {

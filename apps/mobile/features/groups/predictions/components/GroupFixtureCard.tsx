@@ -57,6 +57,8 @@ export type GroupFixtureCardProps = {
   isLastInTimeline?: boolean;
   /** When true, this is the next game the user should predict */
   isNextToPredict?: boolean;
+  /** When true, this fixture earned maximum points (perfect prediction) */
+  isMaxPoints?: boolean;
   /** Scroll position for reveal animation */
   scrollY?: SharedValue<number>;
   onFieldFocus: (fixtureId: number, type: "home" | "away") => void;
@@ -94,6 +96,7 @@ function GroupFixtureCardInner({
   isFirstInTimeline,
   isLastInTimeline,
   isNextToPredict,
+  isMaxPoints,
   scrollY,
   onFieldFocus,
   onFieldBlur,
@@ -202,6 +205,7 @@ function GroupFixtureCardInner({
       isFirstInTimeline={isFirstInTimeline}
       isLastInTimeline={isLastInTimeline}
       isNextToPredict={isNextToPredict}
+      isMaxPoints={isMaxPoints}
       scrollY={scrollY}
     />
   );
@@ -241,6 +245,7 @@ function arePropsEqual(
   if (prevProps.isFirstInTimeline !== nextProps.isFirstInTimeline) return false;
   if (prevProps.isLastInTimeline !== nextProps.isLastInTimeline) return false;
   if (prevProps.isNextToPredict !== nextProps.isNextToPredict) return false;
+  if (prevProps.isMaxPoints !== nextProps.isMaxPoints) return false;
 
   // Callbacks and refs are stable (from useCallback/useRef), no need to compare
   return true;

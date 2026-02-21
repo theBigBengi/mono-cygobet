@@ -70,6 +70,8 @@ type Props = {
   isLastInTimeline?: boolean;
   /** When true, this is the next game to predict — gets a subtle primary glow */
   isNextToPredict?: boolean;
+  /** When true, this fixture earned maximum points (perfect prediction) */
+  isMaxPoints?: boolean;
   /** Scroll position for reveal animation (content only, timeline stays visible) */
   scrollY?: SharedValue<number>;
 };
@@ -102,6 +104,7 @@ export function MatchPredictionCardVertical({
   isFirstInTimeline = false,
   isLastInTimeline = false,
   isNextToPredict = false,
+  isMaxPoints = false,
   scrollY,
 }: Props) {
   const { t } = useTranslation("common");
@@ -433,11 +436,21 @@ export function MatchPredictionCardVertical({
           {/* Right side: points for finished games, empty otherwise */}
           {isFinished && !isCancelled ? (
             <Pressable onPress={onPressCard} style={styles.pointsContainer}>
-              <Text style={[styles.pointsNumber, { color: hasPoints ? successColor : missedColor }]}>
+              {isMaxPoints && (
+                <Text style={styles.maxPointsStar}>★</Text>
+              )}
+              <Text style={[
+                styles.pointsNumber,
+                { color: hasPoints ? successColor : missedColor },
+                isMaxPoints && styles.maxPointsNumber,
+              ]}>
                 {hasPoints ? `+${fixturePoints}` : "0"}
               </Text>
-              <Text style={[styles.pointsLabel, { color: theme.colors.textSecondary }]}>
-                pts
+              <Text style={[
+                styles.pointsLabel,
+                { color: isMaxPoints ? "#D4A017" : theme.colors.textSecondary },
+              ]}>
+                {isMaxPoints ? "perfect" : "pts"}
               </Text>
             </Pressable>
           ) : (
@@ -599,6 +612,14 @@ const styles = StyleSheet.create({
   pointsNumber: {
     fontSize: 24,
     fontWeight: "800",
+  },
+  maxPointsNumber: {
+    color: "#D4A017",
+  },
+  maxPointsStar: {
+    fontSize: 16,
+    color: "#FFD700",
+    marginBottom: -2,
   },
   pointsLabel: {
     fontSize: 10,

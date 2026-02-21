@@ -173,10 +173,10 @@ export const RECOVERY_OVERDUE_FIXTURES_JOB = {
   description:
     "Recover fixtures stuck in NS state after their start time passed",
   enabled: true,
-  // Every hour at minute 45 (offset from other jobs).
-  scheduleCron: "45 * * * *",
+  // Every 30 min (safety net — live-fixtures job handles overdue every 5 min).
+  scheduleCron: "22,52 * * * *",
   meta: {
-    graceMinutes: 30, // Don't fetch fixtures that just started
+    graceMinutes: 15, // Reduced from 30 — live-fixtures already handles the first pass
     maxOverdueHours: 48, // Don't try to recover very old fixtures
   } satisfies RecoveryOverdueFixturesJobMeta,
 } as const satisfies JobDefinition;

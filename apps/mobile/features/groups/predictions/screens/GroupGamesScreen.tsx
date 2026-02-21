@@ -207,6 +207,18 @@ export function GroupGamesScreen({
     return map;
   }, [fixtureGroups]);
 
+  /** Max points awarded across all finished fixtures (for highlighting perfect scores). */
+  const maxPoints = useMemo(() => {
+    let max = 0;
+    fixtureGroups.forEach((g) =>
+      g.fixtures.forEach((f) => {
+        const pts = f.prediction?.points ?? 0;
+        if (pts > max) max = pts;
+      })
+    );
+    return max;
+  }, [fixtureGroups]);
+
   /**
    * Flat render list — ALL elements (headers + cards) in display order.
    * Each element carries its own timeline state so the timeline is always
@@ -792,6 +804,7 @@ export function GroupGamesScreen({
                     isFirstInTimeline={item.isFirstInTimeline}
                     isLastInTimeline={item.isLastInTimeline}
                     isNextToPredict={fixture.id === nextToPredictId}
+                    isMaxPoints={maxPoints > 0 && (fixture.prediction?.points ?? 0) === maxPoints}
                     onFieldFocus={handleFieldFocus}
                     onFieldBlur={handleFieldBlur}
                     onCardChange={handleCardChange}

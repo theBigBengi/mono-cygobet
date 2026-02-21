@@ -19,7 +19,7 @@ import { nowUnixSeconds } from "../../utils/dates";
 const LIVE_STATES_ARR = [...LIVE_STATES] as FixtureState[];
 const FINISHED_STATES_ARR = [...FINISHED_STATES] as FixtureState[];
 
-const STUCK_THRESHOLD_MS = 3 * 60 * 60 * 1000; // 3 hours
+const STUCK_THRESHOLD_SECONDS = 3 * 60 * 60; // 3 hours — game started > 3h ago and still LIVE
 
 // Shared select shape for fixture queries
 const FIXTURE_SELECT = {
@@ -33,6 +33,8 @@ const FIXTURE_SELECT = {
   homeScore90: true,
   awayScore90: true,
   updatedAt: true,
+  lastProviderState: true,
+  lastProviderCheckAt: true,
   homeTeam: { select: { id: true, name: true, imagePath: true } },
   awayTeam: { select: { id: true, name: true, imagePath: true } },
   league: { select: { id: true, name: true, imagePath: true } },
@@ -49,6 +51,8 @@ type FixtureRow = {
   homeScore90: number | null;
   awayScore90: number | null;
   updatedAt: Date;
+  lastProviderState: string | null;
+  lastProviderCheckAt: Date | null;
   homeTeam: { id: number; name: string; imagePath: string | null } | null;
   awayTeam: { id: number; name: string; imagePath: string | null } | null;
   league: { id: number; name: string; imagePath: string | null } | null;
@@ -61,8 +65,12 @@ type LightItem = FixtureRow & {
   issueSince: string;
 };
 
+export type AttentionTimeframe = "1h" | "3h" | "6h" | "12h" | "24h" | "24h+" | "all";
+
 export interface FixturesAttentionParams {
   issueType?: FixtureIssueType | "all";
+  search?: string;
+  timeframe?: AttentionTimeframe;
   page?: number;
   perPage?: number;
 }
@@ -70,7 +78,8 @@ export interface FixturesAttentionParams {
 export async function getFixturesNeedingAttention(
   params: FixturesAttentionParams = {}
 ): Promise<AdminFixturesAttentionResponse> {
-  const { issueType = "all", page = 1, perPage = 25 } = params;
+  const { issueType = "all", search, timeframe = "all", page = 1, perPage = 25 } = params;
+  const searchLower = search?.trim().toLowerCase();
 
   // 1. Fetch ALL lightweight rows from every category (parallel, no take limit)
   const allCategories: FixtureIssueType[] = ["stuck", "unsettled", "overdue", "noScores"];
@@ -91,17 +100,56 @@ export async function getFixturesNeedingAttention(
     }
   }
 
-  // 3. Compute issue counts from the COMPLETE deduplicated list
+  // 3. Compute issue counts from the COMPLETE deduplicated list (before search filter)
   const issueCounts = { stuck: 0, overdue: 0, noScores: 0, unsettled: 0 };
   for (const item of allItems) {
     issueCounts[item.issueType]++;
   }
 
   // 4. Filter to requested category
-  const filtered =
+  let filtered =
     issueType === "all"
       ? allItems
       : allItems.filter((item) => item.issueType === issueType);
+
+  // 4b. Apply text search filter (fixture name, team names, externalId)
+  if (searchLower) {
+    filtered = filtered.filter((item) => {
+      const name = item.name.toLowerCase();
+      const home = item.homeTeam?.name.toLowerCase() ?? "";
+      const away = item.awayTeam?.name.toLowerCase() ?? "";
+      const extId = item.externalId.toString();
+      return (
+        name.includes(searchLower) ||
+        home.includes(searchLower) ||
+        away.includes(searchLower) ||
+        extId.includes(searchLower)
+      );
+    });
+  }
+
+  // 4c. Apply timeframe filter (based on issueSince)
+  if (timeframe !== "all") {
+    const now = Date.now();
+    const HOUR = 60 * 60 * 1000;
+    const thresholds: Record<string, { min?: number; max?: number }> = {
+      "1h": { max: 1 * HOUR },
+      "3h": { max: 3 * HOUR },
+      "6h": { max: 6 * HOUR },
+      "12h": { max: 12 * HOUR },
+      "24h": { max: 24 * HOUR },
+      "24h+": { min: 24 * HOUR },
+    };
+    const range = thresholds[timeframe];
+    if (range) {
+      filtered = filtered.filter((item) => {
+        const age = now - new Date(item.issueSince).getTime();
+        if (range.min != null && age < range.min) return false;
+        if (range.max != null && age > range.max) return false;
+        return true;
+      });
+    }
+  }
 
   // 5. Sort: critical issues first (stuck > unsettled > overdue > noScores), then oldest first
   const priorityOrder: Record<FixtureIssueType, number> = {
@@ -152,21 +200,22 @@ async function fetchLightRows(
 }
 
 async function fetchStuckLight(): Promise<LightItem[]> {
-  const stuckCutoff = new Date(Date.now() - STUCK_THRESHOLD_MS);
+  const nowTs = nowUnixSeconds();
+  const stuckStartTs = nowTs - STUCK_THRESHOLD_SECONDS;
   const rows = await prisma.fixtures.findMany({
     where: {
       externalId: { gte: 0 },
       state: { in: LIVE_STATES_ARR },
-      updatedAt: { lt: stuckCutoff },
+      startTs: { lt: stuckStartTs },
     },
     select: FIXTURE_SELECT,
-    orderBy: { updatedAt: "asc" },
+    orderBy: { startTs: "asc" },
   });
   return rows.map((r) => ({
     ...r,
     issueType: "stuck" as const,
     issueLabel: "Stuck LIVE",
-    issueSince: r.updatedAt.toISOString(),
+    issueSince: r.startIso,
   }));
 }
 
@@ -276,5 +325,7 @@ async function hydrateItem(
     league: row.league,
     groupCount,
     predictionCount,
+    lastProviderState: row.lastProviderState,
+    lastProviderCheckAt: row.lastProviderCheckAt?.toISOString() ?? null,
   };
 }

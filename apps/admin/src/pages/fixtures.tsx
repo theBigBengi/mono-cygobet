@@ -1,12 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, Loader2, Radio, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, Loader2, Radio, RefreshCw, Search, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -30,6 +31,7 @@ import {
   useFixturesAttention,
   useFixtureSearch,
 } from "@/hooks/use-fixtures";
+import { HeaderActions } from "@/contexts/header-actions";
 import { fixturesService } from "@/services/fixtures.service";
 import type {
   AdminSyncFixturesResponse,
@@ -58,13 +60,32 @@ export default function FixturesPage() {
   );
   const [attentionPage, setAttentionPage] = useState(1);
   const [attentionPerPage, setAttentionPerPage] = useState(25);
+  const [attentionTimeframe, setAttentionTimeframe] = useState<string>("all");
+  const [attentionSearch, setAttentionSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(attentionSearch);
+      setAttentionPage(1);
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [attentionSearch]);
 
   const {
     data: attentionData,
     isLoading: attentionLoading,
     isFetching: attentionFetching,
   } = useFixturesAttention(
-    { issueType: issueFilter, page: attentionPage, perPage: attentionPerPage },
+    {
+      issueType: issueFilter,
+      search: debouncedSearch || undefined,
+      timeframe: attentionTimeframe !== "all" ? attentionTimeframe : undefined,
+      page: attentionPage,
+      perPage: attentionPerPage,
+    },
     { enabled: tab === "attention" }
   );
 
@@ -159,8 +180,18 @@ export default function FixturesPage() {
   const totalAttention = attentionData?.pagination.totalItems ?? 0;
   const issueCounts = attentionData?.issueCounts;
 
+  const isAnyFetching = liveFetching || attentionFetching || searchFetching;
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["fixtures"] });
+  };
+
   return (
     <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
+      <HeaderActions>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={refreshAll} disabled={isAnyFetching}>
+          <RefreshCw className={`h-4 w-4 ${isAnyFetching ? "animate-spin" : ""}`} />
+        </Button>
+      </HeaderActions>
       {/* Header */}
       <div className="flex-shrink-0 mb-3 sm:mb-4">
         <div className="flex items-center justify-between gap-2">
@@ -203,7 +234,7 @@ export default function FixturesPage() {
 
         {/* Attention tab filters */}
         {tab === "attention" && (
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
             <Select
               value={issueFilter}
               onValueChange={(v) => {
@@ -222,6 +253,44 @@ export default function FixturesPage() {
                 <SelectItem value="unsettled">Unsettled ({issueCounts?.unsettled ?? 0})</SelectItem>
               </SelectContent>
             </Select>
+            <Select
+              value={attentionTimeframe}
+              onValueChange={(v) => {
+                setAttentionTimeframe(v);
+                setAttentionPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[120px] h-8 text-xs">
+                <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All time</SelectItem>
+                <SelectItem value="1h">Last 1h</SelectItem>
+                <SelectItem value="3h">Last 3h</SelectItem>
+                <SelectItem value="6h">Last 6h</SelectItem>
+                <SelectItem value="12h">Last 12h</SelectItem>
+                <SelectItem value="24h">Last 24h</SelectItem>
+                <SelectItem value="24h+">Over 24h</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={attentionSearch}
+                onChange={(e) => setAttentionSearch(e.target.value)}
+                placeholder="Team, fixture, or ID..."
+                className="h-8 w-[200px] pl-7 pr-7 text-xs"
+              />
+              {attentionSearch && (
+                <button
+                  type="button"
+                  onClick={() => setAttentionSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
             {attentionFetching && !attentionLoading && (
               <span className="text-xs text-muted-foreground">
                 Refreshing...

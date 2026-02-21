@@ -184,6 +184,8 @@ model fixtures {
   aggregateId         BigInt?      @map("aggregate_id") // Links two-legged fixtures together
   externalId          BigInt       @unique @map("external_id")
   hasOdds             Boolean      @default(false) @map("has_odds")
+  lastProviderState     String?      @map("last_provider_state")
+  lastProviderCheckAt   DateTime?    @map("last_provider_check_at") @db.Timestamptz(6)
   scoreOverriddenAt   DateTime?    @map("score_overridden_at") @db.Timestamptz(6)
   scoreOverriddenById Int?         @map("score_overridden_by_id")
   awayTeam            teams        @relation("fixtures_away_team_idToteams", fields: [awayTeamId], references: [id], onUpdate: NoAction)
@@ -868,6 +870,7 @@ model seedItems {
   meta         Json        @default("{}")
 
   @@index([batchId])
+  @@index([itemKey])
   @@map("seed_items")
 }
 

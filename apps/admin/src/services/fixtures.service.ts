@@ -223,11 +223,16 @@ export const fixturesService = {
 
   async getAttention(params?: {
     issueType?: FixtureIssueType | "all";
+    search?: string;
+    timeframe?: string;
     page?: number;
     perPage?: number;
   }): Promise<AdminFixturesAttentionResponse> {
     const searchParams = new URLSearchParams();
     if (params?.issueType) searchParams.append("issueType", params.issueType);
+    if (params?.search) searchParams.append("search", params.search);
+    if (params?.timeframe && params.timeframe !== "all")
+      searchParams.append("timeframe", params.timeframe);
     if (params?.page) searchParams.append("page", params.page.toString());
     if (params?.perPage)
       searchParams.append("perPage", params.perPage.toString());

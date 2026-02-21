@@ -211,6 +211,19 @@ export function AttentionFixturesTable({
                   {fixture.groupCount} group{fixture.groupCount !== 1 ? "s" : ""}, {fixture.predictionCount} pred.
                 </p>
               )}
+              {(fixture.issueType === "overdue" || fixture.issueType === "stuck") && fixture.lastProviderCheckAt && (
+                <span className={`text-[11px] font-medium ${
+                  fixture.lastProviderState === fixture.state
+                    ? "text-orange-600 dark:text-orange-400"
+                    : "text-green-600 dark:text-green-400"
+                }`}>
+                  Provider: {fixture.lastProviderState ?? "?"}
+                  {" "}
+                  <span className="text-muted-foreground font-normal">
+                    ({formatDistanceToNow(new Date(fixture.lastProviderCheckAt), { addSuffix: true })})
+                  </span>
+                </span>
+              )}
               <div className="flex items-center gap-1.5 pt-1">
                 {onSync && (
                   <Button
@@ -252,6 +265,7 @@ export function AttentionFixturesTable({
               <TableHead>Fixture</TableHead>
               <TableHead className="hidden md:table-cell">State</TableHead>
               <TableHead className="hidden md:table-cell">Since</TableHead>
+              <TableHead className="hidden lg:table-cell">Provider</TableHead>
               <TableHead className="hidden lg:table-cell">Impact</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -293,6 +307,26 @@ export function AttentionFixturesTable({
                     {formatDistanceToNow(new Date(fixture.issueSince), {
                       addSuffix: true,
                     })}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {(fixture.issueType === "overdue" || fixture.issueType === "stuck") && fixture.lastProviderCheckAt ? (
+                      <div className="space-y-0.5">
+                        <span className={`text-xs font-medium ${
+                          fixture.lastProviderState === fixture.state
+                            ? "text-orange-600 dark:text-orange-400"
+                            : "text-green-600 dark:text-green-400"
+                        }`}>
+                          {fixture.lastProviderState ?? "Unknown"}
+                        </span>
+                        <p className="text-[10px] text-muted-foreground">
+                          {formatDistanceToNow(new Date(fixture.lastProviderCheckAt), { addSuffix: true })}
+                        </p>
+                      </div>
+                    ) : (fixture.issueType === "overdue" || fixture.issueType === "stuck") ? (
+                      <span className="text-xs text-muted-foreground">Not checked</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">&mdash;</span>
+                    )}
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
                     {fixture.groupCount > 0

@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { fixturesService } from "@/services/fixtures.service";
 import type {
   AdminFixturesAttentionResponse,
@@ -40,20 +41,44 @@ export function useLiveFixtures() {
   return { db, provider };
 }
 
+type AttentionParams = {
+  issueType?: FixtureIssueType | "all";
+  search?: string;
+  timeframe?: string;
+  page?: number;
+  perPage?: number;
+};
+
 export function useFixturesAttention(
-  params?: {
-    issueType?: FixtureIssueType | "all";
-    page?: number;
-    perPage?: number;
-  },
+  params?: AttentionParams,
   options?: { enabled?: boolean }
 ) {
-  return useQuery<AdminFixturesAttentionResponse>({
+  const queryClient = useQueryClient();
+  const page = params?.page ?? 1;
+  const enabled = options?.enabled ?? true;
+
+  const query = useQuery<AdminFixturesAttentionResponse>({
     queryKey: ["fixtures", "attention", params],
     queryFn: () => fixturesService.getAttention(params),
     staleTime: 15 * 60 * 1000, // 15 min — invalidated on sync/resettle
-    enabled: options?.enabled ?? true,
+    enabled,
   });
+
+  // Prefetch next page when current page loads
+  useEffect(() => {
+    if (!enabled || !query.data) return;
+    const totalPages = query.data.pagination.totalPages;
+    if (page < totalPages) {
+      const nextParams: AttentionParams = { ...params, page: page + 1 };
+      void queryClient.prefetchQuery({
+        queryKey: ["fixtures", "attention", nextParams],
+        queryFn: () => fixturesService.getAttention(nextParams),
+        staleTime: 15 * 60 * 1000,
+      });
+    }
+  }, [enabled, query.data, page, params, queryClient]);
+
+  return query;
 }
 
 export function useFixtureSearch(

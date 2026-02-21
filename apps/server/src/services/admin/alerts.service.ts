@@ -284,32 +284,35 @@ async function detectJobFailures(): Promise<AlertInput[]> {
 
 async function detectStuckFixtures(): Promise<AlertInput[]> {
   const alerts: AlertInput[] = [];
-  const now = new Date();
-  const warningCutoff = new Date(now.getTime() - THREE_HOURS_MS);
-  const criticalCutoff = new Date(now.getTime() - SIX_HOURS_MS);
+  const nowTs = nowUnixSeconds();
+  const warningThreshold = 3 * 60 * 60; // 3 hours
+  const criticalThreshold = 6 * 60 * 60; // 6 hours
 
   const stuckFixtures = await prisma.fixtures.findMany({
     where: {
       externalId: { gte: 0 },
       state: { in: LIVE_STATES_ARR },
-      updatedAt: { lt: warningCutoff },
+      startTs: { lt: nowTs - warningThreshold },
     },
-    select: { id: true, name: true, state: true, updatedAt: true },
+    select: { id: true, name: true, state: true, startTs: true, lastProviderState: true },
   });
 
   for (const f of stuckFixtures) {
-    const hoursStuck = Math.round((now.getTime() - f.updatedAt.getTime()) / (60 * 60 * 1000));
-    const severity: AdminAlertSeverity = f.updatedAt < criticalCutoff ? "critical" : "warning";
+    const hoursStuck = Math.round((nowTs - f.startTs) / 3600);
+    const severity: AdminAlertSeverity = (nowTs - f.startTs) >= criticalThreshold ? "critical" : "warning";
+    const providerNote = f.lastProviderState
+      ? ` Provider: ${f.lastProviderState}.`
+      : "";
 
     alerts.push({
       severity,
       category: "fixture_stuck",
       title: `Fixture stuck in ${f.state}`,
-      description: `"${f.name}" has been in ${f.state} for ${hoursStuck}h without updates.`,
+      description: `"${f.name}" started ${hoursStuck}h ago, still in ${f.state}.${providerNote}`,
       fingerprint: `fixture_stuck:${f.id}`,
       actionUrl: `/fixtures/${f.id}`,
       actionLabel: "View Fixture",
-      metadata: { fixtureId: f.id, fixtureName: f.name, state: f.state, hoursStuck },
+      metadata: { fixtureId: f.id, fixtureName: f.name, state: f.state, hoursStuck, lastProviderState: f.lastProviderState },
     });
   }
 
@@ -390,33 +393,52 @@ async function detectDataQualityIssues(): Promise<AlertInput[]> {
 async function detectOverdueNs(): Promise<AlertInput[]> {
   const nowTs = nowUnixSeconds();
 
-  const count = await prisma.fixtures.count({
+  const overdueFixtures = await prisma.fixtures.findMany({
     where: { externalId: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
-  });
-
-  if (count === 0) return [];
-
-  // Find oldest overdue fixture for context
-  const oldest = await prisma.fixtures.findFirst({
-    where: { externalId: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
+    select: { startTs: true, lastProviderState: true, lastProviderCheckAt: true },
     orderBy: { startTs: "asc" },
-    select: { startTs: true },
   });
 
-  const oldestHoursOverdue = oldest
-    ? Math.round((nowTs - oldest.startTs) / 3600)
-    : 0;
+  if (overdueFixtures.length === 0) return [];
+
+  const count = overdueFixtures.length;
+
+  // Breakdown by provider state
+  let providerDelayed = 0;   // provider also shows NS
+  let providerUpdated = 0;   // provider shows non-NS (LIVE, FT, etc.)
+  let neverChecked = 0;      // never checked against provider
+  for (const f of overdueFixtures) {
+    if (!f.lastProviderCheckAt) {
+      neverChecked++;
+    } else if (f.lastProviderState === "NS") {
+      providerDelayed++;
+    } else {
+      providerUpdated++;
+    }
+  }
+
+  const oldestHoursOverdue = Math.round((nowTs - overdueFixtures[0]!.startTs) / 3600);
+
+  // Escalate to critical if oldest is overdue > 4 hours
+  const FOUR_HOURS = 4;
+  const severity: AdminAlertSeverity = oldestHoursOverdue >= FOUR_HOURS ? "critical" : "warning";
+
+  // Build description with breakdown
+  const parts: string[] = [`${count} overdue`];
+  if (providerDelayed > 0) parts.push(`${providerDelayed} provider-delayed`);
+  if (neverChecked > 0) parts.push(`${neverChecked} never checked`);
+  if (providerUpdated > 0) parts.push(`${providerUpdated} provider shows LIVE`);
 
   return [
     {
-      severity: "warning",
+      severity,
       category: "overdue_ns",
       title: `${count} fixture${count > 1 ? "s" : ""} overdue (still NS)`,
-      description: `${count} fixture${count > 1 ? "s" : ""} past their start time are still in NS state. Oldest is ${oldestHoursOverdue}h overdue.`,
+      description: `${parts.join(". ")}. Oldest is ${oldestHoursOverdue}h overdue.`,
       fingerprint: "overdue_ns:batch",
       actionUrl: "/fixtures?issue=overdue",
       actionLabel: "View Overdue",
-      metadata: { count, oldestHoursOverdue },
+      metadata: { count, oldestHoursOverdue, providerDelayed, neverChecked, providerUpdated },
     },
   ];
 }

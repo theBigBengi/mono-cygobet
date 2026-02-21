@@ -236,6 +236,33 @@ export async function runRecoveryOverdueFixturesJob(
 
         const fetchedExternalIds = fetched.map((f) => BigInt(f.externalId));
 
+        // Update provider tracking columns for all checked fixtures
+        const fetchedExternalIdSet = new Set(fetched.map((f) => String(f.externalId)));
+        await prisma.$transaction(
+          fetched.map((dto) =>
+            prisma.fixtures.updateMany({
+              where: { externalId: BigInt(dto.externalId) },
+              data: {
+                lastProviderCheckAt: new Date(),
+                lastProviderState: dto.state,
+              },
+            })
+          )
+        );
+        // Mark fixtures NOT returned by provider (deleted/missing)
+        const notReturned = candidates.filter(
+          (c) => !fetchedExternalIdSet.has(String(c.externalId))
+        );
+        if (notReturned.length > 0) {
+          await prisma.fixtures.updateMany({
+            where: { id: { in: notReturned.map((c) => c.id) } },
+            data: {
+              lastProviderCheckAt: new Date(),
+              lastProviderState: null,
+            },
+          });
+        }
+
         // Find fixtures that transitioned NS → LIVE
         const nowLive = await prisma.fixtures.findMany({
           where: {

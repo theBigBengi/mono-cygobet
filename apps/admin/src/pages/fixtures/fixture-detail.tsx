@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, subDays, addDays } from "date-fns";
@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { fixturesService } from "@/services/fixtures.service";
 import { normalizeResult } from "@/utils/fixtures";
+import { useHeaderTitle } from "@/contexts/header-title";
+import { HeaderActions } from "@/contexts/header-actions";
 import type { AdminFixtureAuditLogEntry } from "@repo/types";
 
 /** Parse start time string as UTC for comparison (provider often sends "YYYY-MM-DD HH:mm:ss" without Z). */
@@ -94,18 +96,14 @@ export default function FixtureDetailPage() {
   const [resettling, setResettling] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncDialogOpen, setSyncDialogOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    setIsScrolled(e.currentTarget.scrollTop > 0);
-  }, []);
-
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, isFetching: fetchingFixture } = useQuery({
     queryKey: ["fixture", fixtureId],
     queryFn: () => fixturesService.getById(fixtureId),
     enabled: Number.isFinite(fixtureId),
     staleTime: 5 * 60 * 1000, // 5 min
   });
+
+  useHeaderTitle(data?.data?.name ?? "Fixture Detail", -1);
 
   const dateRange = useMemo(() => {
     const startIso = data?.data?.startIso;
@@ -117,14 +115,14 @@ export default function FixtureDetailPage() {
     };
   }, [data?.data?.startIso]);
 
-  const { data: auditLogData } = useQuery({
+  const { data: auditLogData, isFetching: fetchingAudit } = useQuery({
     queryKey: ["fixture", fixtureId, "audit-log"],
     queryFn: () => fixturesService.getAuditLog(fixtureId),
     enabled: Number.isFinite(fixtureId),
     staleTime: 5 * 60 * 1000, // 5 min
   });
 
-  const { data: providerData, isLoading: providerLoading } = useQuery({
+  const { data: providerData, isLoading: providerLoading, isFetching: fetchingProvider } = useQuery({
     queryKey: ["fixture", fixtureId, "provider", dateRange.from, dateRange.to],
     queryFn: () =>
       fixturesService.getFromProvider(dateRange.from, dateRange.to),
@@ -140,21 +138,21 @@ export default function FixtureDetailPage() {
     return list.find((f) => String(f.externalId) === String(extId));
   }, [data?.data?.externalId, providerData?.data]);
 
-  const { data: groupsSummaryData } = useQuery({
+  const { data: groupsSummaryData, isFetching: fetchingGroups } = useQuery({
     queryKey: ["fixture", fixtureId, "groups-summary"],
     queryFn: () => fixturesService.getGroupsSummary(fixtureId),
     enabled: Number.isFinite(fixtureId) && !!data?.data,
     staleTime: 5 * 60 * 1000, // 5 min
   });
 
+  const isRefreshing = fetchingFixture || fetchingAudit || fetchingProvider || fetchingGroups;
+
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["fixture", fixtureId] });
+  };
+
   const handleSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["fixture", fixtureId] });
-    queryClient.invalidateQueries({
-      queryKey: ["fixture", fixtureId, "groups-summary"],
-    });
-    queryClient.invalidateQueries({
-      queryKey: ["fixture", fixtureId, "audit-log"],
-    });
   };
 
   const handleResettle = async () => {
@@ -166,12 +164,6 @@ export default function FixtureDetailPage() {
         description: `${result.predictionsRecalculated} predictions in ${result.groupsAffected} group(s)`,
       });
       queryClient.invalidateQueries({ queryKey: ["fixture", fixtureId] });
-      queryClient.invalidateQueries({
-        queryKey: ["fixture", fixtureId, "groups-summary"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["fixture", fixtureId, "audit-log"],
-      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Re-settlement failed");
     } finally {
@@ -297,20 +289,12 @@ export default function FixtureDetailPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      {/* Back + title — shadow appears on scroll */}
-      <div className={`flex-shrink-0 pb-3 relative z-10 transition-shadow duration-200 -mx-2 px-2 sm:-mx-3 sm:px-3 md:-mx-6 md:px-6 ${isScrolled ? "shadow-[0_4px_6px_-1px_rgba(0,0,0,0.08)]" : ""}`}>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="text-base sm:text-lg font-medium -ml-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          {f.name}
+      <HeaderActions>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={refreshAll} disabled={isRefreshing}>
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
         </Button>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-auto space-y-3 sm:space-y-4" onScroll={handleScroll}>
+      </HeaderActions>
+      <div className="flex-1 min-h-0 overflow-auto space-y-3 sm:space-y-4">
         {/* Issue banner (if any) */}
         {f.issue && (
           <div className="rounded-lg border border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20 px-3 py-2.5 sm:px-4">

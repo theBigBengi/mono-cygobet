@@ -569,6 +569,9 @@ export async function syncFixtures(
             ...(v.outcome === "skipped" && v.reason
               ? { reason: v.reason }
               : {}),
+            ...(v.outcome === "skipped" && v.reason === "no-change" && v.resolvedPayload
+              ? { providerState: v.resolvedPayload.state }
+              : {}),
             ...(v.outcome === "updated" && v.existing && v.resolvedPayload
               ? { changes: buildFixtureChanges(v.existing, v.resolvedPayload) }
               : {}),

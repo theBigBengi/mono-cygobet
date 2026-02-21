@@ -282,30 +282,42 @@ export default function JobDetailPage() {
                 return (
                   <div
                     key={r.id}
-                    className="px-3 py-3 space-y-1.5 cursor-pointer hover:bg-muted/50 active:bg-muted/70"
+                    className="px-3 py-2.5 cursor-pointer hover:bg-muted/50 active:bg-muted/70 space-y-1"
                     onClick={() => {
                       setSelectedRunId(r.id);
                     }}
                   >
+                    {/* Primary: Status + Time — what happened & when */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <StatusBadge status={r.status} />
-                        {r.status === "success" && reason && (
-                          <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">
-                            {reason}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground">
+                      <StatusBadge status={r.status} />
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
                         {formatRelativeTime(r.startedAt)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <span>{formatDurationMs(r.durationMs)}</span>
-                      <span className="truncate text-right max-w-[60%]">{summary}</span>
+                    {/* Secondary: ID · Duration · Summary — supporting details */}
+                    <div className="flex items-baseline gap-1.5 text-[11px] text-muted-foreground">
+                      <span
+                        className="font-mono tabular-nums hover:text-foreground cursor-copy"
+                        onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(String(r.id)); toast.success("Copied ID"); }}
+                      >#{r.id}</span>
+                      <span className="text-muted-foreground/30">·</span>
+                      <span className="tabular-nums">{formatDurationMs(r.durationMs)}</span>
+                      {summary && (
+                        <>
+                          <span className="text-muted-foreground/30">·</span>
+                          <span className="truncate">{summary}</span>
+                        </>
+                      )}
+                      {reason && (
+                        <>
+                          <span className="text-muted-foreground/30">·</span>
+                          <span className="text-amber-600 dark:text-amber-400">{reason}</span>
+                        </>
+                      )}
                     </div>
+                    {/* Error: only when failed — stands out on its own */}
                     {r.errorMessage && (
-                      <p className="text-xs text-destructive truncate">
+                      <p className="text-[11px] text-destructive truncate">
                         {truncate(r.errorMessage, 100)}
                       </p>
                     )}
@@ -323,6 +335,7 @@ export default function JobDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>ID</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Started</TableHead>
                     <TableHead>Duration</TableHead>
@@ -340,6 +353,12 @@ export default function JobDetailPage() {
                         setSelectedRunId(r.id);
                       }}
                     >
+                      <TableCell
+                        className="text-xs text-muted-foreground font-mono whitespace-nowrap hover:text-foreground cursor-copy"
+                        onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(String(r.id)); toast.success("Copied ID"); }}
+                      >
+                        #{r.id}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <StatusBadge status={r.status} />
@@ -375,7 +394,7 @@ export default function JobDetailPage() {
                   {!runs.length && (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={7}
                         className="text-center text-sm text-muted-foreground py-8"
                       >
                         No runs yet.

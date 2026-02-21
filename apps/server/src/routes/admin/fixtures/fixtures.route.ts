@@ -26,6 +26,11 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               type: "string",
               enum: ["all", "stuck", "overdue", "noScores", "unsettled"],
             },
+            search: { type: "string" },
+            timeframe: {
+              type: "string",
+              enum: ["all", "1h", "3h", "6h", "12h", "24h", "24h+"],
+            },
             page: { type: "number", minimum: 1 },
             perPage: { type: "number", minimum: 1, maximum: 100 },
           },
@@ -35,11 +40,15 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply) => {
       const query = req.query as {
         issueType?: FixtureIssueType | "all";
+        search?: string;
+        timeframe?: string;
         page?: number;
         perPage?: number;
       };
       const result = await getFixturesNeedingAttention({
         issueType: query.issueType,
+        search: query.search,
+        timeframe: query.timeframe as any,
         page: query.page,
         perPage: query.perPage,
       });
