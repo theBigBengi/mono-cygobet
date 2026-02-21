@@ -63,7 +63,7 @@ export default function FixturesPage() {
   const [attentionTimeframe, setAttentionTimeframe] = useState<string>("all");
   const [attentionSearch, setAttentionSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -234,74 +234,69 @@ export default function FixturesPage() {
 
         {/* Attention tab filters */}
         {tab === "attention" && (
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
-            <Select
-              value={issueFilter}
-              onValueChange={(v) => {
-                setIssueFilter(v as FixtureIssueType | "all");
-                setAttentionPage(1);
-              }}
-            >
-              <SelectTrigger className="w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Issue type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Issues ({totalAttention})</SelectItem>
-                <SelectItem value="stuck">Stuck LIVE ({issueCounts?.stuck ?? 0})</SelectItem>
-                <SelectItem value="overdue">Overdue NS ({issueCounts?.overdue ?? 0})</SelectItem>
-                <SelectItem value="noScores">No Scores ({issueCounts?.noScores ?? 0})</SelectItem>
-                <SelectItem value="unsettled">Unsettled ({issueCounts?.unsettled ?? 0})</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={attentionTimeframe}
-              onValueChange={(v) => {
-                setAttentionTimeframe(v);
-                setAttentionPage(1);
-              }}
-            >
-              <SelectTrigger className="w-[120px] h-8 text-xs">
-                <SelectValue placeholder="Timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All time</SelectItem>
-                <SelectItem value="1h">Last 1h</SelectItem>
-                <SelectItem value="3h">Last 3h</SelectItem>
-                <SelectItem value="6h">Last 6h</SelectItem>
-                <SelectItem value="12h">Last 12h</SelectItem>
-                <SelectItem value="24h">Last 24h</SelectItem>
-                <SelectItem value="24h+">Over 24h</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                value={attentionSearch}
-                onChange={(e) => setAttentionSearch(e.target.value)}
-                placeholder="Team, fixture, or ID..."
-                className="h-8 w-[200px] pl-7 pr-7 text-xs"
-              />
-              {attentionSearch && (
-                <button
-                  type="button"
-                  onClick={() => setAttentionSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-            {attentionFetching && !attentionLoading && (
-              <span className="text-xs text-muted-foreground">
-                Refreshing...
-              </span>
-            )}
+          <div className="mt-3 grid grid-cols-2 sm:flex sm:items-center gap-2">
+              <Select
+                value={issueFilter}
+                onValueChange={(v) => {
+                  setIssueFilter(v as FixtureIssueType | "all");
+                  setAttentionPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs sm:w-[160px]">
+                  <SelectValue placeholder="Issue type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Issues ({totalAttention})</SelectItem>
+                  <SelectItem value="stuck">Stuck LIVE ({issueCounts?.stuck ?? 0})</SelectItem>
+                  <SelectItem value="overdue">Overdue NS ({issueCounts?.overdue ?? 0})</SelectItem>
+                  <SelectItem value="noScores">No Scores ({issueCounts?.noScores ?? 0})</SelectItem>
+                  <SelectItem value="unsettled">Unsettled ({issueCounts?.unsettled ?? 0})</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={attentionTimeframe}
+                onValueChange={(v) => {
+                  setAttentionTimeframe(v);
+                  setAttentionPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs sm:w-[120px]">
+                  <SelectValue placeholder="Timeframe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="1h">Last 1h</SelectItem>
+                  <SelectItem value="3h">Last 3h</SelectItem>
+                  <SelectItem value="6h">Last 6h</SelectItem>
+                  <SelectItem value="12h">Last 12h</SelectItem>
+                  <SelectItem value="24h">Last 24h</SelectItem>
+                  <SelectItem value="24h+">Over 24h</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="relative col-span-2 sm:col-span-1">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={attentionSearch}
+                  onChange={(e) => setAttentionSearch(e.target.value)}
+                  placeholder="Team, fixture, or ID..."
+                  className="h-8 sm:w-[240px] pl-7 pr-7 text-xs"
+                />
+                {attentionSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setAttentionSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
           </div>
         )}
 
         {/* Search tab bar */}
         {tab === "search" && (
-          <div className="mt-3 max-w-md">
+          <div className="mt-3 sm:max-w-md">
             <FixtureSearchBar
               value={searchQuery}
               onChange={(v) => {

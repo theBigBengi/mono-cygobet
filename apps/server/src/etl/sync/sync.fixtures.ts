@@ -491,6 +491,9 @@ export async function syncFixtures(
                 insertChanges[k] = { old: "null", new: newVal };
               }
             }
+            if (opts?.bypassStateValidation) {
+              insertChanges._bypassedValidation = { old: "false", new: "true" };
+            }
             if (Object.keys(insertChanges).length > 0) {
               await prisma.fixtureAuditLog.create({
                 data: {
@@ -530,6 +533,9 @@ export async function syncFixtures(
           // Record what changed: diff existing vs resolvedPayload, convert to { old, new } per field, then one audit row (source "job", jobRunId set so Timeline can show which run did it)
           const rawChanges = buildFixtureChanges(existing, resolvedPayload);
           const changes = changesToAuditShape(rawChanges);
+          if (opts?.bypassStateValidation) {
+            changes._bypassedValidation = { old: "false", new: "true" };
+          }
           if (Object.keys(changes).length > 0) {
             await prisma.fixtureAuditLog.create({
               data: {
