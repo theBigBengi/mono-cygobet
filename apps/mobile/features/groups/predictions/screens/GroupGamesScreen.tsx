@@ -252,13 +252,11 @@ export function GroupGamesScreen({
 
     // Extend fill to the first live match (line reaches it but doesn't fill through)
     let firstLiveIdx = -1;
-    if (lastFinishedIdx >= 0) {
-      const nextIdx = lastFinishedIdx + 1;
-      if (nextIdx < allFixtures.length) {
-        const nextState = allFixtures[nextIdx].state;
-        if (nextState && isLiveState(nextState)) {
-          firstLiveIdx = nextIdx;
-        }
+    const searchFrom = lastFinishedIdx >= 0 ? lastFinishedIdx + 1 : 0;
+    if (searchFrom < allFixtures.length) {
+      const nextState = allFixtures[searchFrom].state;
+      if (nextState && isLiveState(nextState)) {
+        firstLiveIdx = searchFrom;
       }
     }
 
