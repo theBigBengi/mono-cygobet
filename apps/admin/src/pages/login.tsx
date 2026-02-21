@@ -18,7 +18,7 @@
  */
 
 import * as React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AdminApiError } from "@/lib/adminApi";
 import { useAdminAuth } from "@/auth";
 import { Button } from "@/components/ui/button";
@@ -41,10 +41,10 @@ export default function LoginPage() {
   // Get return path from navigation state (set by AdminGuard)
   const from = (location.state as { from?: string } | null)?.from ?? "/";
 
-  // Auto-redirect if already authenticated (e.g., user navigated directly to /login)
-  React.useEffect(() => {
-    if (status === "authed") navigate(from, { replace: true });
-  }, [status, navigate, from]);
+  // Already authenticated — redirect immediately (no flash of login form)
+  if (status === "authed") {
+    return <Navigate to={from} replace />;
+  }
 
   /**
    * Handle login form submission
