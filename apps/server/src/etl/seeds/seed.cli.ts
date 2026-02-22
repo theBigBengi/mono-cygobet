@@ -1,4 +1,5 @@
 // src/etl/seeds/seed.cli.ts
+import "@repo/env";
 import { adapter } from "../../utils/adapter";
 import { seedBookmakers } from "./seed.bookmakers";
 import { seedCountries } from "./seed.countries";
