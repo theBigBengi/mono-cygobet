@@ -32,6 +32,14 @@ const SEVERITY_COLOR: Record<string, string> = {
   info: "#3b82f6",
 };
 
+const CATEGORY_LABEL: Record<string, string> = {
+  job_failure: "Job Failure",
+  fixture_stuck: "Stuck Fixture",
+  fixture_unsettled: "Unsettled",
+  data_quality: "Data Quality",
+  overdue_ns: "Overdue NS",
+};
+
 /**
  * Send an alert notification to Slack.
  * Returns true if sent successfully, false otherwise.
@@ -52,8 +60,10 @@ export async function sendAlertToSlack(alert: AdminAlertItem): Promise<boolean> 
 
   const emoji = SEVERITY_EMOJI[alert.severity] ?? ":grey_question:";
   const color = SEVERITY_COLOR[alert.severity] ?? "#6b7280";
+  const categoryLabel = CATEGORY_LABEL[alert.category] ?? alert.category;
+  const timestamp = Math.floor(new Date(alert.createdAt).getTime() / 1000);
 
-  const adminBaseUrl = process.env.ADMIN_APP_URL ?? "http://localhost:5174";
+  const adminBaseUrl = process.env.ADMIN_APP_URL ?? "http://localhost:5173";
   const actionUrl = alert.actionUrl ? `${adminBaseUrl}${alert.actionUrl}` : undefined;
 
   const blocks: unknown[] = [
@@ -63,6 +73,15 @@ export async function sendAlertToSlack(alert: AdminAlertItem): Promise<boolean> 
         type: "mrkdwn",
         text: `${emoji} *${alert.title}*\n${alert.description}`,
       },
+    },
+    {
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: `*${categoryLabel}* · ${alert.severity.toUpperCase()} · <!date^${timestamp}^{date_short_pretty} at {time}|${alert.createdAt}>`,
+        },
+      ],
     },
   ];
 
@@ -84,7 +103,7 @@ export async function sendAlertToSlack(alert: AdminAlertItem): Promise<boolean> 
       {
         color,
         blocks,
-        fallback: `[${alert.severity.toUpperCase()}] ${alert.title}: ${alert.description}`,
+        fallback: `[${alert.severity.toUpperCase()}] [${categoryLabel}] ${alert.title}: ${alert.description}`,
       },
     ],
   };
