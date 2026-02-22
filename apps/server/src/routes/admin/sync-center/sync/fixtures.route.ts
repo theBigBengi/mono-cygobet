@@ -264,13 +264,10 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply) => {
-      const fixtureId = Number(req.params.id);
-      if (isNaN(fixtureId)) {
-        return reply.status(400).send({ status: "error", message: "Invalid fixture ID" });
-      }
+      const fixtureId = req.params.id;
 
       const dbFixture = await prisma.fixtures.findFirst({
-        where: { externalId: String(fixtureId) },
+        where: { externalId: fixtureId },
         select: DB_FIXTURE_SELECT,
       });
       if (!dbFixture) {
@@ -465,21 +462,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       const { id } = req.params;
       const { dryRun = false } = req.body ?? {};
 
-      const fixtureId = Number(id);
-      if (isNaN(fixtureId)) {
-        return reply.status(400).send({
-          status: "error",
-          data: {
-            batchId: null,
-            ok: 0,
-            fail: 1,
-            total: 1,
-          },
-          message: `Invalid fixture ID: ${id}`,
-        });
-      }
-
-      const fixtureDto = await adapter.fetchFixtureById(fixtureId);
+      const fixtureDto = await adapter.fetchFixtureById(id);
       if (!fixtureDto) {
         return reply.code(404).send({
           status: "error",
@@ -489,7 +472,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
             fail: 1,
             total: 1,
           },
-          message: `Fixture with ID ${fixtureId} not found in provider`,
+          message: `Fixture with ID ${id} not found in provider`,
         });
       }
 
@@ -515,8 +498,8 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
                 }),
               },
               message: dryRun
-                ? `Fixture sync dry-run completed for ID ${fixtureId}`
-                : `Fixture synced successfully from provider to database (ID: ${fixtureId})`,
+                ? `Fixture sync dry-run completed for ID ${id}`
+                : `Fixture synced successfully from provider to database (ID: ${id})`,
             });
           },
           { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
