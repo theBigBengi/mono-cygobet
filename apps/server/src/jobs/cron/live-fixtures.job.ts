@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { RunStatus, prisma } from "@repo/db";
-import type { FixtureState } from "@repo/db";
 import { NOT_STARTED_STATES, LIVE_STATES } from "@repo/utils";
+import { FixtureState } from "@repo/types/sport-data/common";
 import { adapter } from "../../utils/adapter";
 import { syncFixtures } from "../../etl/sync/sync.fixtures";
 import { finishSeedBatch } from "../../etl/seeds/seed.utils";
@@ -48,14 +48,18 @@ export async function runLiveFixturesJob(
     }),
     run: async ({ jobRunId, log }) => {
       // --- Step 1: Fetch live fixtures from sports-data provider ---
-      // SportMonks state IDs for LIVE states only:
-      // 2=INPLAY_1ST_HALF, 3=HT, 4=BREAK, 6=INPLAY_ET,
-      // 9=INPLAY_PENALTIES, 21=EXTRA_TIME_BREAK, 22=INPLAY_2ND_HALF, 25=PEN_BREAK
-      const LIVE_STATE_IDS = "2,3,4,6,9,21,22,25";
-
       const fixtures = await adapter.fetchLiveFixtures({
         includeScores: true,
-        filters: { fixtureStates: LIVE_STATE_IDS },
+        states: [
+          FixtureState.INPLAY_1ST_HALF,
+          FixtureState.HT,
+          FixtureState.BREAK,
+          FixtureState.INPLAY_ET,
+          FixtureState.INPLAY_PENALTIES,
+          FixtureState.EXTRA_TIME_BREAK,
+          FixtureState.INPLAY_2ND_HALF,
+          FixtureState.PEN_BREAK,
+        ],
       });
 
       // Early exit: dryRun mode skips DB writes and returns fetch stats only
@@ -81,7 +85,7 @@ export async function runLiveFixturesJob(
 
       // ── Live fixtures sync (Steps 2-6) ──
       let batchId: number | null = null;
-      let fetchedExternalIds: bigint[] = [];
+      let fetchedExternalIds: string[] = [];
       let liveSyncMeta = {
         fetched: fixtures.length,
         ok: 0,
@@ -99,15 +103,7 @@ export async function runLiveFixturesJob(
           batchId = batch.id;
 
           // --- Step 3: Snapshot fixtures that are NOT_STARTED before sync ---
-          fetchedExternalIds = fixtures
-            .map((f) => {
-              try {
-                return BigInt(f.externalId);
-              } catch {
-                return null;
-              }
-            })
-            .filter((id): id is bigint => id !== null);
+          fetchedExternalIds = fixtures.map((f) => String(f.externalId));
           const preStates =
             fetchedExternalIds.length > 0
               ? await prisma.fixtures.findMany({
@@ -158,7 +154,7 @@ export async function runLiveFixturesJob(
             await prisma.$transaction(
               fixtures.map((dto) =>
                 prisma.fixtures.updateMany({
-                  where: { externalId: BigInt(dto.externalId) },
+                  where: { externalId: String(dto.externalId) },
                   data: {
                     lastProviderCheckAt: new Date(),
                     lastProviderState: dto.state,

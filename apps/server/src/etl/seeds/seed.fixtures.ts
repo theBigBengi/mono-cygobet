@@ -5,7 +5,6 @@ import {
   trackSeedItem,
   finishSeedBatch,
   chunk,
-  safeBigInt,
   computeChanges,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
@@ -133,14 +132,14 @@ export async function seedFixtures(
   // Batch lookup leagues
   const leagueExternalIds = uniqueFixtures
     .map((f) => f.leagueExternalId)
-    .filter((id): id is number => id != null);
+    .filter((id) => id != null);
   const uniqueLeagueIds = [...new Set(leagueExternalIds.map(String))];
   const leagueMap = new Map<string, number>();
 
   if (uniqueLeagueIds.length > 0) {
     const leagues = await prisma.leagues.findMany({
       where: {
-        externalId: { in: uniqueLeagueIds.map((id) => safeBigInt(id)) },
+        externalId: { in: uniqueLeagueIds.map((id) => String(id)) },
       },
       select: { id: true, externalId: true },
     });
@@ -158,14 +157,14 @@ export async function seedFixtures(
   // Batch lookup seasons
   const seasonExternalIds = uniqueFixtures
     .map((f) => f.seasonExternalId)
-    .filter((id): id is number => id != null);
+    .filter((id) => id != null);
   const uniqueSeasonIds = [...new Set(seasonExternalIds.map(String))];
   const seasonMap = new Map<string, number>();
 
   if (uniqueSeasonIds.length > 0) {
     const seasons = await prisma.seasons.findMany({
       where: {
-        externalId: { in: uniqueSeasonIds.map((id) => safeBigInt(id)) },
+        externalId: { in: uniqueSeasonIds.map((id) => String(id)) },
       },
       select: { id: true, externalId: true },
     });
@@ -189,7 +188,7 @@ export async function seedFixtures(
   if (allTeamIds.length > 0) {
     const teams = await prisma.teams.findMany({
       where: {
-        externalId: { in: allTeamIds.map((id) => safeBigInt(id)) },
+        externalId: { in: allTeamIds.map((id) => String(id)) },
       },
       select: { id: true, externalId: true },
     });
@@ -213,7 +212,7 @@ export async function seedFixtures(
   try {
     for (const group of chunk(uniqueFixtures, CHUNK_SIZE)) {
       // Pre-fetch which fixtures already exist (with all tracked fields for change detection).
-      const groupExternalIds = group.map((f) => safeBigInt(f.externalId));
+      const groupExternalIds = group.map((f) => String(f.externalId));
       const existingRows = await prisma.fixtures.findMany({
         where: { externalId: { in: groupExternalIds } },
         select: {
@@ -245,7 +244,7 @@ export async function seedFixtures(
       const chunkResults = await Promise.allSettled(
         group.map(async (fixture) => {
           try {
-            const extIdKey = String(safeBigInt(fixture.externalId));
+            const extIdKey = String(fixture.externalId);
             const action = existingSet.has(extIdKey) ? "updated" : "inserted";
 
             if (!fixture.name) {
@@ -335,11 +334,11 @@ export async function seedFixtures(
               stage: payload.stage,
               round: payload.round,
               leg: payload.leg,
-              aggregateId: payload.aggregateId ? BigInt(payload.aggregateId) : null,
+              aggregateId: payload.aggregateId ? String(payload.aggregateId) : null,
               updatedAt: new Date(),
             };
             const createPayload = {
-              externalId: safeBigInt(payload.externalId),
+              externalId: String(payload.externalId),
               name: payload.name,
               leagueId: leagueId ?? null,
               seasonId: seasonId ?? null,
@@ -358,10 +357,10 @@ export async function seedFixtures(
               stage: payload.stage,
               round: payload.round,
               leg: payload.leg,
-              aggregateId: payload.aggregateId ? BigInt(payload.aggregateId) : null,
+              aggregateId: payload.aggregateId ? String(payload.aggregateId) : null,
             };
             await prisma.fixtures.upsert({
-              where: { externalId: safeBigInt(payload.externalId) },
+              where: { externalId: String(payload.externalId) },
               update: updatePayload,
               create: createPayload,
             });
@@ -391,7 +390,7 @@ export async function seedFixtures(
 
             return { success: true, fixture, action };
           } catch (e: unknown) {
-            const extIdKey = String(safeBigInt(fixture.externalId));
+            const extIdKey = String(fixture.externalId);
             const action = existingSet.has(extIdKey) ? "update_failed" : "insert_failed";
             const errorCode = getErrorCode(e);
             const errorMessage = getErrorMessage(e);

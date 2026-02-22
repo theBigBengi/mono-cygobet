@@ -98,7 +98,7 @@ const adminOddsDbRoutes: FastifyPluginAsync = async (fastify) => {
         const fixtures = await prisma.fixtures.findMany({
           where: {
             externalId: {
-              in: fixtureExternalIds.map((id) => BigInt(id)),
+              in: fixtureExternalIds,
             },
           },
           select: { id: true },
@@ -110,7 +110,7 @@ const adminOddsDbRoutes: FastifyPluginAsync = async (fastify) => {
       if (bookmakerExternalIds.length > 0) {
         const bookmakers = await prisma.bookmakers.findMany({
           where: {
-            externalId: { in: bookmakerExternalIds.map((id) => BigInt(id)) },
+            externalId: { in: bookmakerExternalIds },
           },
           select: { id: true },
         });

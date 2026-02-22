@@ -44,20 +44,14 @@ function parseLeagueIds(value: unknown): number[] {
   return Array.from(new Set(ids));
 }
 
-function parseBigIntIds(value: unknown): bigint[] {
+function parseStringIds(value: unknown): string[] {
   const parts = parseCsvOrArray(value)
     .map((s) => s.trim())
     .filter(Boolean);
-  const ids: bigint[] = [];
+  const ids: string[] = [];
   for (const p of parts) {
-    // Disallow decimals/scientific notation
     if (!/^\d+$/.test(p)) continue;
-    try {
-      const n = BigInt(p);
-      if (n > 0n) ids.push(n);
-    } catch {
-      // ignore invalid
-    }
+    ids.push(p);
   }
   return Array.from(new Set(ids));
 }
@@ -142,7 +136,7 @@ const mobileFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      const marketExternalIds = parseBigIntIds(q.markets);
+      const marketExternalIds = parseStringIds(q.markets);
       if (q.markets != null && marketExternalIds.length === 0) {
         return reply.status(400).send({
           status: "error",

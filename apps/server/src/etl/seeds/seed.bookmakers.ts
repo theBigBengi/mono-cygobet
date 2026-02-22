@@ -5,7 +5,6 @@ import {
   trackSeedItem,
   finishSeedBatch,
   chunk,
-  safeBigInt,
   computeChanges,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
@@ -111,7 +110,7 @@ export async function seedBookmakers(
   }
 
   // Pre-fetch which bookmakers already exist (with all tracked fields for change detection)
-  const allExternalIds = uniqueBookmakers.map((b) => safeBigInt(b.externalId));
+  const allExternalIds = uniqueBookmakers.map((b) => String(b.externalId));
   const existingRows = await prisma.bookmakers.findMany({
     where: { externalId: { in: allExternalIds } },
     select: {
@@ -139,11 +138,11 @@ export async function seedBookmakers(
             };
 
             await prisma.bookmakers.upsert({
-              where: { externalId: safeBigInt(bookmaker.externalId) },
+              where: { externalId: String(bookmaker.externalId) },
               update: updatePayload,
               create: {
                 name: bookmaker.name,
-                externalId: safeBigInt(bookmaker.externalId),
+                externalId: String(bookmaker.externalId),
               },
             });
 

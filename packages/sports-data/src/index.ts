@@ -3,7 +3,9 @@ export type {
   FixtureFetchOptions,
   FixturesBySeasonOptions,
   OddsFetchOptions,
+  ProviderCapabilities,
 } from "./adapter.interface";
+export { BaseSportsDataAdapter } from "./base-adapter";
 export {
   createSportsDataAdapter,
   type AdapterConfig,

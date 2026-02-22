@@ -54,7 +54,7 @@ const adminSyncCenterOverviewRoutes: FastifyPluginAsync = async (fastify) => {
         prisma.leagues.count(),
         prisma.seasons.count(),
         prisma.teams.count(),
-        prisma.fixtures.count({ where: { externalId: { gte: 0 } } }),
+        prisma.fixtures.count({ where: { externalId: { gte: "0" } } }),
         prisma.bookmakers.count(),
         Promise.all(
           SEED_NAMES.map((name) =>
@@ -67,7 +67,7 @@ const adminSyncCenterOverviewRoutes: FastifyPluginAsync = async (fastify) => {
         ),
         prisma.fixtures.groupBy({
           by: ["state"],
-          where: { externalId: { gte: 0 } },
+          where: { externalId: { gte: "0" } },
           _count: { state: true },
         }),
         prisma.seasons.count({ where: { isCurrent: true } }),

@@ -9,12 +9,10 @@ import { UPCOMING_FIXTURES_JOB } from "../jobs.definitions";
 import { createBatchForJob, getJobRowOrThrow } from "../jobs.db";
 import { clampInt, getMeta, isUpcomingFixturesJobMeta } from "../jobs.meta";
 import { runJob } from "../run-job";
+import { FixtureState } from "@repo/types/sport-data/common";
 
 // Days ahead to fetch fixtures for
 const DAYS_AHEAD = 3;
-
-// NS(1) + cancelled states: CAN(6), INT(7), ABAN(8), SUSP(9), AWARDED(10), WO(11), POSTPONED(14)
-const UPCOMING_STATE_IDS = "1,6,7,8,9,10,11,14";
 
 /**
  * upcoming-fixtures job
@@ -85,7 +83,16 @@ export async function runUpcomingFixturesJob(
       const to = format(addDays(new Date(), daysAhead), "yyyy-MM-dd");
 
       const fetched = await adapter.fetchFixturesBetween(from, to, {
-        filters: { fixtureStates: UPCOMING_STATE_IDS },
+        states: [
+          FixtureState.NS,
+          FixtureState.INPLAY_ET,
+          FixtureState.CANCELLED,
+          FixtureState.ABANDONED,
+          FixtureState.SUSPENDED,
+          FixtureState.AWARDED,
+          FixtureState.WO,
+          FixtureState.POSTPONED,
+        ],
       });
 
       if (!fetched.length) {

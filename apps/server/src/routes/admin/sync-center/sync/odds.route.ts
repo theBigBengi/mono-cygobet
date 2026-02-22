@@ -11,6 +11,7 @@ import {
 import { getLogger } from "../../../../logger";
 import { format, addDays, subDays } from "date-fns";
 import { syncBodySchema } from "../../../../schemas/admin/admin.schemas";
+import type { OddsFetchOptions } from "@repo/sports-data";
 
 const log = getLogger("SyncOddsRoute");
 const LOCK_KEY = "sync:odds";
@@ -42,31 +43,6 @@ function parseDateOnly(value: string | undefined): string | null {
   const date = new Date(trimmed);
   if (Number.isNaN(date.getTime())) return null;
   return format(date, "yyyy-MM-dd");
-}
-
-function buildOddsFilters(body: {
-  bookmakerIds?: string;
-  marketIds?: string;
-  fixtureStates?: string;
-}): string | undefined {
-  const parts: string[] = [];
-  const bookmakerIds = body.bookmakerIds
-    ?.split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const marketIds = body.marketIds
-    ?.split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const fixtureStates = body.fixtureStates
-    ?.split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (bookmakerIds?.length) parts.push(`bookmakers:${bookmakerIds.join(",")}`);
-  if (marketIds?.length) parts.push(`markets:${marketIds.join(",")}`);
-  if (fixtureStates?.length)
-    parts.push(`fixtureStates:${fixtureStates.join(",")}`);
-  return parts.length > 0 ? parts.join(";") : undefined;
 }
 
 const adminSyncOddsRoutes: FastifyPluginAsync = async (fastify) => {
@@ -110,11 +86,11 @@ const adminSyncOddsRoutes: FastifyPluginAsync = async (fastify) => {
       const now = new Date();
       const from = format(subDays(now, 30), "yyyy-MM-dd");
       const to = format(addDays(now, 7), "yyyy-MM-dd");
-      const filters = `fixtures:${fixtureExternalId}`;
+      const oddsOpts: OddsFetchOptions = { fixtureIds: [fixtureExternalId] };
 
       let oddsDto: Awaited<ReturnType<typeof adapter.fetchOddsBetween>>;
       try {
-        oddsDto = await adapter.fetchOddsBetween(from, to, { filters });
+        oddsDto = await adapter.fetchOddsBetween(from, to, oddsOpts);
       } catch (err) {
         log.error({ err, fixtureExternalId, from, to }, "fetchOddsBetween failed");
         throw err;
@@ -240,11 +216,15 @@ const adminSyncOddsRoutes: FastifyPluginAsync = async (fastify) => {
         to = format(addDays(now, 7), "yyyy-MM-dd");
       }
 
-      const filters = buildOddsFilters(body);
+      const oddsOpts: OddsFetchOptions = {};
+      const bIds = body.bookmakerIds?.split(",").map((s) => s.trim()).filter(Boolean);
+      const mIds = body.marketIds?.split(",").map((s) => s.trim()).filter(Boolean);
+      if (bIds?.length) oddsOpts.bookmakerIds = bIds;
+      if (mIds?.length) oddsOpts.marketIds = mIds;
 
       let oddsDto: Awaited<ReturnType<typeof adapter.fetchOddsBetween>>;
       try {
-        oddsDto = await adapter.fetchOddsBetween(from, to, { filters });
+        oddsDto = await adapter.fetchOddsBetween(from, to, oddsOpts);
       } catch (err) {
         log.error({ err, from, to }, "fetchOddsBetween failed");
         throw err;

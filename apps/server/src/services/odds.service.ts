@@ -26,7 +26,7 @@ export class OddsService {
       where.bookmakerId = { in: args.bookmakerIds };
     }
     if (args.marketIds?.length) {
-      where.marketExternalId = { in: args.marketIds.map((m) => BigInt(m)) };
+      where.marketExternalId = { in: args.marketIds.map((m) => String(m)) };
     }
     if (args.winning !== undefined) {
       where.winning = args.winning;

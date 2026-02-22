@@ -9,25 +9,27 @@
 // This adapter implements the SportsDataAdapter interface to provide a unified
 // way to fetch sports data regardless of the underlying provider.
 
-import type {
-  BookmakerDTO,
-  CountryDTO,
-  MarketDTO,
-  OddsDTO,
-  FixtureDTO,
+import {
   FixtureState,
-  LeagueDTO,
-  SeasonDTO,
-  SeasonPreviewDTO,
-  StandingDTO,
-  TeamDTO,
+  type BookmakerDTO,
+  type CountryDTO,
+  type ExternalId,
+  type MarketDTO,
+  type OddsDTO,
+  type FixtureDTO,
+  type LeagueDTO,
+  type SeasonDTO,
+  type SeasonPreviewDTO,
+  type StandingDTO,
+  type TeamDTO,
 } from "@repo/types/sport-data/common";
 import type {
   FixtureFetchOptions,
   FixturesBySeasonOptions,
   OddsFetchOptions,
+  ProviderCapabilities,
 } from "../../adapter.interface";
-import type { ISportsDataAdapter } from "../../adapter.interface";
+import { BaseSportsDataAdapter } from "../../base-adapter";
 import type { FixtureSportmonks, StandingSportmonks } from "./sportmonks.types";
 import { validateConfig } from "./sportmonks.config";
 import type { SportMonksConfig } from "./sportmonks.config";
@@ -57,7 +59,55 @@ import type {
  * Main adapter class that implements SportsDataAdapter interface
  * Provides unified access to SportMonks football and core APIs
  */
-export class SportMonksAdapter implements ISportsDataAdapter {
+export class SportMonksAdapter extends BaseSportsDataAdapter {
+  readonly capabilities: ProviderCapabilities = {
+    odds: true,
+    standings: true,
+    dateRange: true,
+    singleEntity: true,
+  };
+
+  /**
+   * Maps app-level FixtureState enums to SportMonks state type_id values.
+   * Used to translate typed filters into provider-specific API params.
+   */
+  private static readonly STATE_TO_SM_ID: Partial<Record<FixtureState, string>> = {
+    [FixtureState.NS]: "1",
+    [FixtureState.INPLAY_1ST_HALF]: "2",
+    [FixtureState.HT]: "3",
+    [FixtureState.BREAK]: "4",
+    [FixtureState.FT]: "5",
+    [FixtureState.INPLAY_ET]: "6",
+    [FixtureState.CANCELLED]: "7",
+    [FixtureState.ABANDONED]: "8",
+    [FixtureState.SUSPENDED]: "9",
+    [FixtureState.AWARDED]: "10",
+    [FixtureState.WO]: "11",
+    [FixtureState.INTERRUPTED]: "12",
+    [FixtureState.TBA]: "13",
+    [FixtureState.POSTPONED]: "14",
+    [FixtureState.DELAYED]: "15",
+    [FixtureState.AU]: "16",
+    [FixtureState.DELETED]: "17",
+    [FixtureState.INPLAY_2ND_HALF]: "22",
+    [FixtureState.AET]: "23",
+    [FixtureState.FT_PEN]: "24",
+    [FixtureState.PEN_BREAK]: "25",
+    [FixtureState.EXTRA_TIME_BREAK]: "21",
+    [FixtureState.INPLAY_PENALTIES]: "9",
+    [FixtureState.PENDING]: "1",
+  };
+
+  /** Convert FixtureState[] to SportMonks fixtureStates filter string. */
+  private statesToSmFilter(states?: FixtureState[]): string | undefined {
+    if (!states?.length) return undefined;
+    const ids = states
+      .map((s) => SportMonksAdapter.STATE_TO_SM_ID[s])
+      .filter((id): id is string => id != null);
+    if (!ids.length) return undefined;
+    return [...new Set(ids)].join(",");
+  }
+
   private readonly config: SportMonksConfig;
   private httpFootball: SMHttp;
   private httpCore: SMHttp;
@@ -65,6 +115,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
   private logger: SportsDataLogger;
 
   constructor(opts: Partial<SportMonksConfig> = {}) {
+    super();
     this.config = validateConfig(opts);
     this.logger = this.config.logger;
 
@@ -91,6 +142,19 @@ export class SportMonksAdapter implements ISportsDataAdapter {
 
     const baseV3Url = new URL(footballBaseUrl).origin + "/v3";
     this.httpBase = new SMHttp(token, baseV3Url, authMode, smHttpOptions);
+  }
+
+  /** Translate typed OddsFetchOptions to SportMonks filter string. */
+  private buildOddsFilters(opts?: OddsFetchOptions): string | undefined {
+    if (!opts) return undefined;
+    const parts: string[] = [];
+    if (opts.bookmakerIds?.length)
+      parts.push(`bookmakers:${opts.bookmakerIds.join(",")}`);
+    if (opts.marketIds?.length)
+      parts.push(`markets:${opts.marketIds.join(",")}`);
+    if (opts.fixtureIds?.length)
+      parts.push(`fixtures:${opts.fixtureIds.join(",")}`);
+    return parts.length > 0 ? parts.join(";") : undefined;
   }
 
   getStats(): {
@@ -180,7 +244,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * so we don't use sortBy/order here
    */
   async fetchFixturesBySeason(
-    seasonExternalId: number,
+    seasonExternalId: ExternalId,
     options: FixturesBySeasonOptions = {}
   ): Promise<FixtureDTO[]> {
     const startMs = performance.now();
@@ -197,8 +261,8 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       `seasons/${seasonExternalId}`,
       {
         include: [{ name: "fixtures", include: baseFixturesInclude }],
-        filters: options.fixtureStates
-          ? { fixtureStates: options.fixtureStates }
+        filters: options.states
+          ? { fixtureStates: this.statesToSmFilter(options.states) ?? "" }
           : undefined,
       }
     );
@@ -243,10 +307,12 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       `fixtures/between/${encodedFrom}/${encodedTo}`,
       {
         include,
-        filters: options.filters,
+        filters: options.states
+          ? { fixtureStates: this.statesToSmFilter(options.states) ?? "" }
+          : undefined,
         perPage: options.perPage ?? this.config.defaultPerPage,
-        sortBy: options.sortBy ?? "starting_at",
-        order: options.order ?? "asc",
+        sortBy: "starting_at",
+        order: "asc",
       }
     );
 
@@ -285,7 +351,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
             include: [{ name: "bookmaker" }, { name: "market" }],
           },
         ],
-        filters: options.filters,
+        filters: this.buildOddsFilters(options),
         perPage: this.config.defaultPerPage,
         sortBy: "starting_at",
         order: "asc",
@@ -322,7 +388,9 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       {
         include,
         perPage: options?.perPage ?? this.config.defaultPerPage,
-        filters: options?.filters,
+        filters: options?.states
+          ? { fixtureStates: this.statesToSmFilter(options.states) ?? "" }
+          : undefined,
       }
     );
 
@@ -360,7 +428,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * }
    * ```
    */
-  async fetchFixtureById(id: number): Promise<FixtureDTO | null> {
+  async fetchFixtureById(id: ExternalId): Promise<FixtureDTO | null> {
     const startMs = performance.now();
     this.logger.info("fetchFixtureById", { id });
     try {
@@ -391,7 +459,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    */
 
   async fetchFixturesByIds(
-    externalIds: number[],
+    externalIds: ExternalId[],
     options?: FixtureFetchOptions
   ): Promise<FixtureDTO[]> {
     const startMs = performance.now();
@@ -411,7 +479,6 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       `fixtures/multi/${externalIds.join(",")}`,
       {
         include,
-        filters: options?.filters,
         perPage: options?.perPage,
       }
     );
@@ -462,7 +529,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * @param id - The SportMonks country ID
    * @returns CountryDTO or null if not found
    */
-  async fetchCountryById(id: number): Promise<CountryDTO | null> {
+  async fetchCountryById(id: ExternalId): Promise<CountryDTO | null> {
     return this.fetchOneById<SmCountryRaw, CountryDTO>(
       "fetchCountryById",
       this.httpCore,
@@ -519,7 +586,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * @param id - The SportMonks league ID
    * @returns LeagueDTO or null if not found
    */
-  async fetchLeagueById(id: number): Promise<LeagueDTO | null> {
+  async fetchLeagueById(id: ExternalId): Promise<LeagueDTO | null> {
     return this.fetchOneById<SmLeagueRaw, LeagueDTO>(
       "fetchLeagueById",
       this.httpFootball,
@@ -603,7 +670,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * @param id - The SportMonks season ID
    * @returns SeasonDTO or null if not found
    */
-  async fetchSeasonById(id: number): Promise<SeasonDTO | null> {
+  async fetchSeasonById(id: ExternalId): Promise<SeasonDTO | null> {
     return this.fetchOneById<SmSeasonRaw, SeasonDTO>(
       "fetchSeasonById",
       this.httpFootball,
@@ -685,53 +752,6 @@ export class SportMonksAdapter implements ISportsDataAdapter {
       })
     );
     this.logger.info("fetchAllSeasons", { count: out.length });
-    return out;
-  }
-
-  /**
-   * Search seasons by name (e.g. "2026/2027" or numeric id string).
-   * Uses GET /v3/football/seasons/search/{name}
-   */
-  async searchSeasons(name: string): Promise<SeasonDTO[]> {
-    this.logger.info("searchSeasons", { name });
-    const encoded = encodeURIComponent(name);
-    const rows = await this.httpFootball.get<SmSeasonRaw>(
-      `seasons/search/${encoded}`,
-      {
-        select: [
-          "id",
-          "league_id",
-          "name",
-          "starting_at",
-          "ending_at",
-          "is_current",
-          "finished",
-        ],
-        include: [
-          {
-            name: "league",
-            fields: ["id", "name"],
-            include: [{ name: "country", fields: ["id", "name"] }],
-          },
-        ],
-        perPage: this.config.defaultPerPage,
-        paginate: true,
-      }
-    );
-
-    const out = rows.map(
-      (s: SmSeasonRaw): SeasonDTO => ({
-        externalId: s.id,
-        leagueExternalId: s.league_id ?? 0,
-        name: s.name ?? "",
-        startDate: s.starting_at ?? "",
-        endDate: s.ending_at ?? "",
-        isCurrent: Boolean(s.is_current),
-        leagueName: s.league?.name ?? "",
-        countryName: s.league?.country?.name ?? "",
-      })
-    );
-    this.logger.info("searchSeasons", { name, count: out.length });
     return out;
   }
 
@@ -865,7 +885,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * @param id - The SportMonks team ID
    * @returns TeamDTO or null if not found
    */
-  async fetchTeamById(id: number): Promise<TeamDTO | null> {
+  async fetchTeamById(id: ExternalId): Promise<TeamDTO | null> {
     return this.fetchOneById<SmTeamRaw, TeamDTO>(
       "fetchTeamById",
       this.httpFootball,
@@ -902,7 +922,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * Fetches all teams for a specific season.
    * Uses GET /v3/football/teams/seasons/{seasonId}
    */
-  async fetchTeamsBySeason(seasonExternalId: number): Promise<TeamDTO[]> {
+  async fetchTeamsBySeason(seasonExternalId: ExternalId): Promise<TeamDTO[]> {
     this.logger.info("fetchTeamsBySeason", { seasonExternalId });
     const rows = await this.httpFootball.get<SmTeamRaw>(
       `teams/seasons/${seasonExternalId}`,
@@ -951,7 +971,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * Uses GET /v3/football/standings/seasons/{seasonId}
    * Returns sorted standings with team info and statistics.
    */
-  async fetchStandingsBySeason(seasonExternalId: number): Promise<StandingDTO[]> {
+  async fetchStandingsBySeason(seasonExternalId: ExternalId): Promise<StandingDTO[]> {
     const startMs = performance.now();
     this.logger.info("fetchStandingsBySeason", { seasonExternalId });
 
@@ -986,7 +1006,7 @@ export class SportMonksAdapter implements ISportsDataAdapter {
    * Uses includes to get league, country, teams, and fixtures counts.
    */
   async fetchSeasonPreview(
-    seasonExternalId: number
+    seasonExternalId: ExternalId
   ): Promise<SeasonPreviewDTO | null> {
     const startMs = performance.now();
     this.logger.info("fetchSeasonPreview", { seasonExternalId });

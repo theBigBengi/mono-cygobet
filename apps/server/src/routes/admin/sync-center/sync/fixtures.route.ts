@@ -4,6 +4,7 @@ import { syncFixtures } from "../../../../etl/sync/sync.fixtures";
 import { adapter } from "../../../../utils/adapter";
 import { availabilityService } from "../../../../services/availability.service";
 import { AdminSyncFixturesResponse } from "@repo/types";
+import { FixtureState } from "@repo/types/sport-data/common";
 import {
   syncBodySchema,
   syncResponseSchema,
@@ -116,14 +117,14 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       let dbSeasonsCount = 0;
 
       if (seasonId) {
-        const fixturesDto = await adapter.fetchFixturesBySeason(seasonId, {
-          fixtureStates: fetchAllFixtureStates ? undefined : "1",
-        });
+        const fixturesDto = await adapter.fetchFixturesBySeason(seasonId,
+          fetchAllFixtureStates ? undefined : { states: [FixtureState.NS] }
+        );
         batchesToSync = [{ fixturesDto }];
       } else if (from && to) {
-        const fixturesDto = await adapter.fetchFixturesBetween(from, to, {
-          filters: fetchAllFixtureStates ? undefined : { fixtureStates: "1" },
-        });
+        const fixturesDto = await adapter.fetchFixturesBetween(from, to,
+          fetchAllFixtureStates ? {} : { states: [FixtureState.NS] }
+        );
         batchesToSync = [{ fixturesDto }];
       } else {
         const dbSeasons = await prisma.seasons.findMany({
@@ -148,10 +149,8 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         for (const season of dbSeasons) {
           try {
             const fixturesDto = await adapter.fetchFixturesBySeason(
-              Number(season.externalId),
-              {
-                fixtureStates: fetchAllFixtureStates ? undefined : "1",
-              }
+              season.externalId,
+              fetchAllFixtureStates ? undefined : { states: [FixtureState.NS] }
             );
             if (fixturesDto.length > 0) {
               batchesToSync.push({ fixturesDto });
@@ -271,7 +270,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const dbFixture = await prisma.fixtures.findFirst({
-        where: { externalId: fixtureId },
+        where: { externalId: String(fixtureId) },
         select: DB_FIXTURE_SELECT,
       });
       if (!dbFixture) {
@@ -313,7 +312,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
 
       // Fetch all DB fixtures in one query
       const dbFixtures = await prisma.fixtures.findMany({
-        where: { externalId: { in: externalIds } },
+        where: { externalId: { in: externalIds.map(String) } },
         select: { externalId: true, ...DB_FIXTURE_SELECT },
       });
       const dbMap = new Map(dbFixtures.map((f) => [Number(f.externalId), f]));

@@ -5,7 +5,6 @@ import {
   trackSeedItem,
   finishSeedBatch,
   chunk,
-  safeBigInt,
   normalizeDate,
   computeChanges,
 } from "./seed.utils";
@@ -111,7 +110,7 @@ export async function seedSeasons(
   if (uniqueLeagueIds.length > 0) {
     const leagues = await prisma.leagues.findMany({
       where: {
-        externalId: { in: uniqueLeagueIds.map((id) => safeBigInt(id)) },
+        externalId: { in: uniqueLeagueIds.map((id) => String(id)) },
       },
       select: { id: true, externalId: true },
     });
@@ -127,7 +126,7 @@ export async function seedSeasons(
   }
 
   // Pre-fetch which seasons already exist (with all tracked fields for change detection)
-  const allExternalIds = uniqueSeasons.map((s) => safeBigInt(s.externalId));
+  const allExternalIds = uniqueSeasons.map((s) => String(s.externalId));
   const existingRows = await prisma.seasons.findMany({
     where: { externalId: { in: allExternalIds } },
     select: {
@@ -179,10 +178,10 @@ export async function seedSeasons(
             };
 
             await prisma.seasons.upsert({
-              where: { externalId: safeBigInt(season.externalId) },
+              where: { externalId: String(season.externalId) },
               update: updatePayload,
               create: {
-                externalId: safeBigInt(season.externalId),
+                externalId: String(season.externalId),
                 name: season.name,
                 startDate,
                 endDate,

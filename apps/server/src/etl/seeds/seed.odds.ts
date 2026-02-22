@@ -5,7 +5,6 @@ import {
   trackSeedItem,
   finishSeedBatch,
   chunk,
-  safeBigInt,
 } from "./seed.utils";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
 import { transformOddsDto } from "../transform/odds.transform";
@@ -106,7 +105,7 @@ export async function seedOdds(
       const duplicatePromises = duplicates.map((duplicate) =>
         trackSeedItem(
           batchId!,
-          String(safeBigInt(duplicate.externalId)),
+          String(duplicate.externalId),
           RunStatus.skipped,
           undefined,
           {
@@ -124,7 +123,7 @@ export async function seedOdds(
       const promises = uniqueOdds.map((odd) =>
         trackSeedItem(
           batchId!,
-          String(safeBigInt(odd.externalId)),
+          String(odd.externalId),
           RunStatus.skipped,
           undefined,
           {
@@ -178,7 +177,7 @@ export async function seedOdds(
     if (uniqueFixtureIds.length > 0) {
       const fixtures = await prisma.fixtures.findMany({
         where: {
-          externalId: { in: uniqueFixtureIds.map((id) => safeBigInt(id)) },
+          externalId: { in: uniqueFixtureIds },
         },
         select: { id: true, externalId: true },
       });
@@ -192,7 +191,7 @@ export async function seedOdds(
     if (uniqueBookmakerIds.length > 0) {
       const bookmakers = await prisma.bookmakers.findMany({
         where: {
-          externalId: { in: uniqueBookmakerIds.map((id) => safeBigInt(id)) },
+          externalId: { in: uniqueBookmakerIds },
         },
         select: { id: true, externalId: true },
       });
@@ -232,7 +231,7 @@ export async function seedOdds(
       // Determine insert vs update for this chunk with one DB query.
       const existingInChunk = await prisma.odds.findMany({
         where: {
-          externalId: { in: group.map((o) => safeBigInt(o.externalId)) },
+          externalId: { in: group.map((o) => String(o.externalId)) },
         },
         select: { externalId: true },
       });
@@ -242,7 +241,7 @@ export async function seedOdds(
 
       for (const odd of group) {
         try {
-          const extIdKey = String(safeBigInt(odd.externalId));
+          const extIdKey = String(odd.externalId);
           const action: "insert" | "update" = existingSet.has(extIdKey)
             ? "update"
             : "insert";
@@ -317,7 +316,7 @@ export async function seedOdds(
 
           chunkResults.push({ success: true, odd, action });
         } catch (e: unknown) {
-          const extIdKey = String(safeBigInt(odd.externalId));
+          const extIdKey = String(odd.externalId);
           const action: "insert" | "update" = existingSet.has(extIdKey)
             ? "update"
             : "insert";
@@ -337,7 +336,7 @@ export async function seedOdds(
       const trackingPromises = chunkResults.map((result) =>
         trackSeedItem(
           batchId!,
-          String(safeBigInt(result.odd.externalId)),
+          String(result.odd.externalId),
           result.success ? RunStatus.success : RunStatus.failed,
           result.success
             ? undefined

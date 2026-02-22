@@ -2,7 +2,7 @@
  * Pure transform layer for fixtures. No Prisma, DB, fetch, or side effects.
  * Used by both seed (bulk) and sync (incremental).
  */
-import type { FixtureDTO } from "@repo/types/sport-data/common";
+import type { FixtureDTO, ExternalId } from "@repo/types/sport-data/common";
 import {
   NOT_STARTED_STATES,
   IN_PLAY_STATES,
@@ -15,12 +15,12 @@ import { FixtureState as DbFixtureState } from "@repo/db";
 const DB_STATES = new Set<string>(Object.values(DbFixtureState));
 
 export type FixtureTransformResult = {
-  externalId: number;
+  externalId: ExternalId;
   name: string;
-  leagueExternalId: number | null;
-  seasonExternalId: number | null;
-  homeTeamExternalId: number;
-  awayTeamExternalId: number;
+  leagueExternalId: ExternalId | null;
+  seasonExternalId: ExternalId | null;
+  homeTeamExternalId: ExternalId;
+  awayTeamExternalId: ExternalId;
   startIso: string;
   startTs: number;
   state: (typeof DbFixtureState)[keyof typeof DbFixtureState];
@@ -34,7 +34,7 @@ export type FixtureTransformResult = {
   stage: string | null;
   round: string | null;
   leg: string | null;
-  aggregateId: number | null;
+  aggregateId: ExternalId | null;
   liveMinute: number | null;
 };
 

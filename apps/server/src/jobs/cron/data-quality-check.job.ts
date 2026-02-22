@@ -44,7 +44,7 @@ export async function runDataQualityCheckJob(
 
       const finishedWithoutScores = await prisma.fixtures.count({
         where: {
-          externalId: { gte: 0 },
+          externalId: { gte: "0" },
           state: { in: FINISHED_STATES_ARR },
           OR: [{ homeScore90: null }, { awayScore90: null }],
         },

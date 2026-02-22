@@ -10,7 +10,7 @@ import {
   isValidFixtureStateTransition,
 } from "../transform/fixtures.transform";
 import { trackSeedItem } from "../seeds/seed.utils";
-import { chunk, safeBigInt } from "../utils";
+import { chunk } from "../utils";
 import { getLogger } from "../../logger";
 
 type DbFixtureState = (typeof FixtureState)[keyof typeof FixtureState];
@@ -27,7 +27,7 @@ export type SyncFixturesResult = {
 };
 
 type ExistingRow = {
-  externalId: bigint;
+  externalId: string;
   name: string;
   leagueId: number | null;
   seasonId: number | null;
@@ -47,7 +47,7 @@ type ExistingRow = {
   stage: string | null;
   round: string | null;
   leg: string | null;
-  aggregateId: bigint | null;
+  aggregateId: string | null;
 };
 
 function isSameFixture(
@@ -72,7 +72,7 @@ function isSameFixture(
     stage: string | null;
     round: string | null;
     leg: string | null;
-    aggregateId: bigint | null;
+    aggregateId: string | null;
   }
 ): boolean {
   return (
@@ -119,7 +119,7 @@ type ResolvedPayload = {
   stage: string | null;
   round: string | null;
   leg: string | null;
-  aggregateId: bigint | null;
+  aggregateId: string | null;
 };
 
 function toChangeVal(v: string | number | null | undefined): string {
@@ -268,13 +268,13 @@ export async function syncFixtures(
   // Batch resolve leagues, seasons, teams
   const leagueExternalIds = uniqueFixtures
     .map((f) => f.leagueExternalId)
-    .filter((id): id is number => id != null);
+    .filter((id) => id != null);
   const uniqueLeagueIds = [...new Set(leagueExternalIds.map(String))];
   const leagueMap = new Map<string, number>();
   if (uniqueLeagueIds.length > 0) {
     const leagues = await prisma.leagues.findMany({
       where: {
-        externalId: { in: uniqueLeagueIds.map((id) => safeBigInt(id)) },
+        externalId: { in: uniqueLeagueIds.map((id) => String(id)) },
       },
       select: { id: true, externalId: true },
     });
@@ -285,13 +285,13 @@ export async function syncFixtures(
 
   const seasonExternalIds = uniqueFixtures
     .map((f) => f.seasonExternalId)
-    .filter((id): id is number => id != null);
+    .filter((id) => id != null);
   const uniqueSeasonIds = [...new Set(seasonExternalIds.map(String))];
   const seasonMap = new Map<string, number>();
   if (uniqueSeasonIds.length > 0) {
     const seasons = await prisma.seasons.findMany({
       where: {
-        externalId: { in: uniqueSeasonIds.map((id) => safeBigInt(id)) },
+        externalId: { in: uniqueSeasonIds.map((id) => String(id)) },
       },
       select: { id: true, externalId: true },
     });
@@ -307,7 +307,7 @@ export async function syncFixtures(
   if (allTeamIds.length > 0) {
     const teams = await prisma.teams.findMany({
       where: {
-        externalId: { in: allTeamIds.map((id) => safeBigInt(id)) },
+        externalId: { in: allTeamIds.map((id) => String(id)) },
       },
       select: { id: true, externalId: true },
     });
@@ -321,7 +321,7 @@ export async function syncFixtures(
       log.warn("syncFixtures aborted by signal");
       break;
     }
-    const groupExternalIds = group.map((f) => safeBigInt(f.externalId));
+    const groupExternalIds = group.map((f) => String(f.externalId));
     const existingRows = await prisma.fixtures.findMany({
       where: { externalId: { in: groupExternalIds } },
       select: {
@@ -354,7 +354,7 @@ export async function syncFixtures(
 
     const results = await Promise.allSettled(
       group.map(async (fixture): Promise<FixtureOutcome> => {
-        const extIdKey = String(safeBigInt(fixture.externalId));
+        const extIdKey = String(fixture.externalId);
         const existing = existingByExtId.get(extIdKey);
 
         if (!fixture.name) {
@@ -441,7 +441,7 @@ export async function syncFixtures(
           stage: payload.stage,
           round: payload.round,
           leg: payload.leg,
-          aggregateId: payload.aggregateId ? BigInt(payload.aggregateId) : null,
+          aggregateId: payload.aggregateId ? String(payload.aggregateId) : null,
         };
 
         // State validation: disallow invalid transitions (unless bypassed, e.g. admin sync-by-id)
@@ -470,9 +470,9 @@ export async function syncFixtures(
         if (!existing) {
           if (!dryRun) {
             const upserted = await prisma.fixtures.upsert({
-              where: { externalId: safeBigInt(payload.externalId) },
+              where: { externalId: String(payload.externalId) },
               create: {
-                externalId: safeBigInt(payload.externalId),
+                externalId: String(payload.externalId),
                 ...resolvedPayload,
               },
               update: {
@@ -520,9 +520,9 @@ export async function syncFixtures(
 
         if (!dryRun) {
           const upserted = await prisma.fixtures.upsert({
-            where: { externalId: safeBigInt(payload.externalId) },
+            where: { externalId: String(payload.externalId) },
             create: {
-              externalId: safeBigInt(payload.externalId),
+              externalId: String(payload.externalId),
               ...resolvedPayload,
             },
             update: {

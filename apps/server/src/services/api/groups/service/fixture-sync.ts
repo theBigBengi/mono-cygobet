@@ -63,7 +63,7 @@ export async function syncNewFixturesToActiveGroups(opts?: {
       const baseWhere = {
         state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
         startTs: { gt: now },
-        externalId: { gte: 0 },
+        externalId: { gte: "0" },
       };
       const where = isLeagues
         ? buildFixturesByLeaguesWhere(baseWhere, leagueIds)

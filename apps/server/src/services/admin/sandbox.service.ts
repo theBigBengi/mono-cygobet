@@ -25,16 +25,16 @@ async function assertSandboxFixture(fixtureId: number) {
     },
   });
   if (!f) throw new Error("Fixture not found");
-  if (f.externalId >= 0) throw new Error("Not a sandbox fixture");
+  if (Number(f.externalId) >= 0) throw new Error("Not a sandbox fixture");
   return f;
 }
 
-async function nextSandboxExternalId(): Promise<bigint> {
+async function nextSandboxExternalId(): Promise<string> {
   const min = await prisma.fixtures.aggregate({
     _min: { externalId: true },
-    where: { externalId: { lt: 0 } },
+    where: { externalId: { lt: "0" } },
   });
-  return (min._min.externalId ?? BigInt(0)) - BigInt(1);
+  return String(Number(min._min.externalId ?? "0") - 1);
 }
 
 const RANDOM_SCORES = [
@@ -198,7 +198,7 @@ export async function sandboxSetup(args: {
               leagueId: { in: leagueIds },
               state: "NS",
               startTs: { gt: nowTs },
-              externalId: { gte: 0 },
+              externalId: { gte: "0" },
             },
             select: {
               id: true,
@@ -216,7 +216,7 @@ export async function sandboxSetup(args: {
             where: {
               state: "NS",
               startTs: { gt: nowTs },
-              externalId: { gte: 0 },
+              externalId: { gte: "0" },
               OR: [
                 { homeTeamId: { in: teamIds } },
                 { awayTeamId: { in: teamIds } },
@@ -256,7 +256,7 @@ export async function sandboxSetup(args: {
             ? new Date(startTs * 1000).toISOString()
             : src.startIso;
         return {
-          externalId: nextExtId - BigInt(i),
+          externalId: String(Number(nextExtId) - i),
           homeTeamId: src.homeTeamId,
           awayTeamId: src.awayTeamId,
           leagueId: src.leagueId,
@@ -327,7 +327,7 @@ export async function sandboxSetup(args: {
     const startTs = nowTs + offsetSec + (i * intervalSec);
     const startIso = new Date(startTs * 1000).toISOString();
     return {
-      externalId: nextExtId - BigInt(i),
+      externalId: String(Number(nextExtId) - i),
       homeTeamId: home.id,
       awayTeamId: away.id,
       name: `${home.name} vs ${away.name}`,
@@ -709,7 +709,7 @@ export async function sandboxDeleteGroup(groupId: number) {
 
     if (exclusiveIds.length > 0) {
       const res = await prisma.fixtures.deleteMany({
-        where: { id: { in: exclusiveIds }, externalId: { lt: 0 } },
+        where: { id: { in: exclusiveIds }, externalId: { lt: "0" } },
       });
       deletedFixtures = res.count;
     }
@@ -730,7 +730,7 @@ export async function sandboxDeleteGroup(groupId: number) {
 
 export async function sandboxCleanup() {
   const sandboxFixtures = await prisma.fixtures.findMany({
-    where: { externalId: { lt: 0 } },
+    where: { externalId: { lt: "0" } },
     select: { id: true },
   });
   const fixtureIds = sandboxFixtures.map((f) => f.id);
@@ -758,7 +758,7 @@ export async function sandboxCleanup() {
   }
 
   const delFixtures = await prisma.fixtures.deleteMany({
-    where: { externalId: { lt: 0 } },
+    where: { externalId: { lt: "0" } },
   });
 
   log.info(
@@ -917,7 +917,7 @@ export async function sandboxBatchUpdateStartTimes(
         select: { id: true, externalId: true, state: true },
       });
       if (!f) throw new Error(`Fixture ${u.fixtureId} not found`);
-      if (f.externalId >= 0) throw new Error(`Fixture ${u.fixtureId} is not a sandbox fixture`);
+      if (Number(f.externalId) >= 0) throw new Error(`Fixture ${u.fixtureId} is not a sandbox fixture`);
       if (f.state !== "NS") throw new Error(`Fixture ${u.fixtureId} must be NS`);
       const date = new Date(u.startTime);
       const startTs = Math.floor(date.getTime() / 1000);
@@ -988,7 +988,7 @@ export async function sandboxSetState(args: {
 
 export async function sandboxList() {
   const fixtures = await prisma.fixtures.findMany({
-    where: { externalId: { lt: 0 } },
+    where: { externalId: { lt: "0" } },
     select: {
       id: true,
       externalId: true,

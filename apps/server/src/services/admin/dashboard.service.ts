@@ -58,17 +58,17 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
 
   // ── Fixtures data ──
   const stuckWhere = {
-    externalId: { gte: 0 } as const,
+    externalId: { gte: "0" } as const,
     state: { in: LIVE_STATES_ARR },
     updatedAt: { lt: stuckCutoff },
   };
   const overdueNsWhere = {
-    externalId: { gte: 0 } as const,
+    externalId: { gte: "0" } as const,
     state: "NS" as const,
     startTs: { lt: nowTs },
   };
   const noScoresWhere = {
-    externalId: { gte: 0 } as const,
+    externalId: { gte: "0" } as const,
     state: { in: FINISHED_STATES_ARR },
     OR: [{ homeScore90: null }, { awayScore90: null }],
   };
@@ -85,14 +85,14 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
     noScoresCount,
   ] = await Promise.all([
     prisma.fixtures.count({
-      where: { externalId: { gte: 0 }, state: { in: LIVE_STATES_ARR } },
+      where: { externalId: { gte: "0" }, state: { in: LIVE_STATES_ARR } },
     }),
     unsettledFixtureIds.length === 0
       ? 0
       : prisma.fixtures.count({
           where: {
             id: { in: unsettledFixtureIds },
-            externalId: { gte: 0 },
+            externalId: { gte: "0" },
             state: { in: FINISHED_STATES_ARR },
           },
         }),
@@ -115,7 +115,7 @@ export async function getDashboardData(): Promise<AdminDashboardResponse> {
       : prisma.fixtures.findMany({
           where: {
             id: { in: unsettledFixtureIds },
-            externalId: { gte: 0 },
+            externalId: { gte: "0" },
             state: { in: FINISHED_STATES_ARR },
           },
           orderBy: { updatedAt: "desc" },

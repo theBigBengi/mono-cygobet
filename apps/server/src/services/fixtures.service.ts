@@ -24,7 +24,7 @@ export class FixturesService {
       args.orderBy?.length ? args.orderBy : [{ startTs: "desc" }]
     ) as Prisma.fixturesOrderByWithRelationInput[];
 
-    const where: Prisma.fixturesWhereInput = { externalId: { gte: 0 } };
+    const where: Prisma.fixturesWhereInput = {};
 
     if (args.leagueId !== undefined) {
       where.leagueId = args.leagueId;
@@ -104,13 +104,12 @@ export class FixturesService {
   }
 
   async getByExternalId(
-    externalId: number | bigint,
+    externalId: string | number,
     include?: Prisma.fixturesInclude
   ) {
     const fixture = await prisma.fixtures.findUnique({
       where: {
-        externalId:
-          typeof externalId === "bigint" ? externalId : BigInt(externalId),
+        externalId: String(externalId),
       },
       include,
     });

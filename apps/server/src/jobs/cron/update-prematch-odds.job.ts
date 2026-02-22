@@ -11,6 +11,7 @@ import { createBatchForJob, getJobRowOrThrow } from "../jobs.db";
 import { getMeta } from "../jobs.meta";
 import { UpdatePrematchOddsJobMeta } from "@repo/types";
 import { runJob } from "../run-job";
+import type { OddsFetchOptions } from "@repo/sports-data";
 
 /**
  * update-prematch-odds job
@@ -31,7 +32,7 @@ const DEFAULT_DAYS_AHEAD = UPDATE_PREMATCH_ODDS_JOB.meta?.daysAhead ?? 7;
 
 export async function runUpdatePrematchOddsJob(
   fastify: FastifyInstance,
-  opts: JobRunOpts & { daysAhead?: number; filters?: string } = {}
+  opts: JobRunOpts & { daysAhead?: number } = {}
 ): Promise<
   StandardJobRunStats & {
     window: { from: string; to: string };
@@ -46,10 +47,10 @@ export async function runUpdatePrematchOddsJob(
   const bookmakerExternalIds = meta.odds.bookmakerExternalIds;
   const marketExternalIds = meta.odds.marketExternalIds;
   const daysAhead = opts.daysAhead ?? meta.daysAhead ?? DEFAULT_DAYS_AHEAD;
-  const filtersFromMeta = `bookmakers:${bookmakerExternalIds.join(
-    ","
-  )};markets:${marketExternalIds.join(",")};`;
-  const filters = opts.filters ?? filtersFromMeta;
+  const oddsOpts: OddsFetchOptions = {
+    bookmakerIds: bookmakerExternalIds.map(String),
+    marketIds: marketExternalIds.map(String),
+  };
   const from = format(new Date(), "yyyy-MM-dd");
   const to = format(addDays(new Date(), daysAhead), "yyyy-MM-dd");
 
@@ -68,7 +69,6 @@ export async function runUpdatePrematchOddsJob(
     jobRow,
     meta: {
       daysAhead,
-      filters,
       bookmakerExternalIds,
       marketExternalIds,
       window: { from, to },
@@ -83,7 +83,7 @@ export async function runUpdatePrematchOddsJob(
     run: async ({ jobRunId, log }) => {
       let odds: OddsDTO[] = [];
       try {
-        odds = await adapter.fetchOddsBetween(from, to, { filters });
+        odds = await adapter.fetchOddsBetween(from, to, oddsOpts);
       } catch (err: unknown) {
         log.error({ err, from, to }, "fetchOddsBetween failed");
         throw err;
@@ -102,7 +102,6 @@ export async function runUpdatePrematchOddsJob(
           meta: {
             window: { from, to },
             daysAhead,
-            filters,
             dryRun: !!opts.dryRun,
             fetched: 0,
             reason: "no-odds",
@@ -123,7 +122,6 @@ export async function runUpdatePrematchOddsJob(
           meta: {
             window: { from, to },
             daysAhead,
-            filters,
             dryRun: true,
             fetched: odds.length,
           },
@@ -171,7 +169,6 @@ export async function runUpdatePrematchOddsJob(
             batchId,
             window: { from, to },
             daysAhead,
-            filters,
             dryRun: false,
             fetched: odds.length,
             inserted: result.inserted,

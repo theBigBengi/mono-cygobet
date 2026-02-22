@@ -168,7 +168,7 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
           const leagues = await prisma.leagues.findMany({
             where: {
               externalId: {
-                in: leagueExternalIds.map((id) => BigInt(id)),
+                in: leagueExternalIds,
               },
             },
             select: { id: true },
@@ -187,7 +187,7 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
           const countries = await prisma.countries.findMany({
             where: {
               externalId: {
-                in: countryExternalIds.map((id) => BigInt(id)),
+                in: countryExternalIds,
               },
             },
             select: { id: true },

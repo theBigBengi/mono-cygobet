@@ -40,13 +40,6 @@ const seedSeasonRoutes: FastifyPluginAsync = async (fastify) => {
 
       try {
         // Fetch all preview data in a single optimized API call
-        if (typeof adapter.fetchSeasonPreview !== "function") {
-          return reply.status(501).send({
-            status: "error",
-            message: "Provider does not support fetchSeasonPreview",
-          } as unknown as AdminSeedSeasonPreviewResponse);
-        }
-
         const preview = await adapter.fetchSeasonPreview(seasonExternalId);
         if (!preview) {
           return reply.status(404).send({
@@ -59,16 +52,16 @@ const seedSeasonRoutes: FastifyPluginAsync = async (fastify) => {
         const [existingSeason, existingLeague, existingCountry] =
           await Promise.all([
             prisma.seasons.findUnique({
-              where: { externalId: BigInt(preview.season.externalId) },
+              where: { externalId: String(preview.season.externalId) },
             }),
             preview.league.externalId
               ? prisma.leagues.findUnique({
-                  where: { externalId: BigInt(preview.league.externalId) },
+                  where: { externalId: String(preview.league.externalId) },
                 })
               : null,
             preview.country.externalId
               ? prisma.countries.findUnique({
-                  where: { externalId: BigInt(preview.country.externalId) },
+                  where: { externalId: String(preview.country.externalId) },
                 })
               : null,
           ]);

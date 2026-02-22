@@ -76,10 +76,7 @@ const fixturesSeasonArg = args.find((arg) =>
   arg.startsWith("--fixtures-season=")
 );
 const fixturesSeasonId = fixturesSeasonArg
-  ? (() => {
-      const parsed = parseInt(fixturesSeasonArg.split("=")[1] || "", 10);
-      return isNaN(parsed) ? undefined : parsed;
-    })()
+  ? fixturesSeasonArg.split("=")[1] || undefined
   : undefined;
 
 // Parse fixtures-states argument if provided (e.g., --fixtures-states=1,2,3 or --fixtures-states=1)
@@ -94,16 +91,12 @@ const fixtureStates = fixturesStatesArg
 // Parse odds arguments if provided
 const oddsFromArg = args.find((arg) => arg.startsWith("--odds-from="));
 const oddsToArg = args.find((arg) => arg.startsWith("--odds-to="));
-const oddsFiltersArg = args.find((arg) => arg.startsWith("--odds-filters="));
 const oddsFrom: string = oddsFromArg
   ? oddsFromArg.split("=")[1]!
   : format(new Date(), "yyyy-MM-dd");
 const oddsTo: string = oddsToArg
   ? oddsToArg.split("=")[1]!
   : format(addDays(new Date(), 7), "yyyy-MM-dd");
-const oddsFilters: string = oddsFiltersArg
-  ? oddsFiltersArg.split("=")[1]!
-  : "bookmakers:1;markets:1,57;fixtureStates:1";
 
 (async () => {
   try {
@@ -173,10 +166,7 @@ const oddsFilters: string = oddsFiltersArg
       }
       if (fixturesSeasonId) {
         const fixturesDto = await adapter.fetchFixturesBySeason(
-          fixturesSeasonId,
-          {
-            fixtureStates: fixtureStates,
-          }
+          fixturesSeasonId
         );
         await seedFixtures(fixturesDto, { dryRun });
       } else {
@@ -184,10 +174,7 @@ const oddsFilters: string = oddsFiltersArg
         const seasonsDto = await adapter.fetchSeasons();
         for (const season of seasonsDto) {
           const fixturesDto = await adapter.fetchFixturesBySeason(
-            Number(season.externalId),
-            {
-              fixtureStates: fixtureStates,
-            }
+            season.externalId
           );
           if (fixturesDto.length > 0) {
             await seedFixtures(fixturesDto, { dryRun });
@@ -198,9 +185,7 @@ const oddsFilters: string = oddsFiltersArg
 
     if (runAll || hasOdds) {
       log.info({}, "Starting odds seeding");
-      const oddsDto = await adapter.fetchOddsBetween(oddsFrom, oddsTo, {
-        filters: oddsFilters,
-      });
+      const oddsDto = await adapter.fetchOddsBetween(oddsFrom, oddsTo);
       await seedOdds(oddsDto, { dryRun });
     }
 

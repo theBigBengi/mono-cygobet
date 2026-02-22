@@ -290,7 +290,7 @@ async function detectStuckFixtures(): Promise<AlertInput[]> {
 
   const stuckFixtures = await prisma.fixtures.findMany({
     where: {
-      externalId: { gte: 0 },
+      externalId: { gte: "0" },
       state: { in: LIVE_STATES_ARR },
       startTs: { lt: nowTs - warningThreshold },
     },
@@ -341,7 +341,7 @@ async function detectUnsettledFixtures(): Promise<AlertInput[]> {
   const finishedFixtures = await prisma.fixtures.findMany({
     where: {
       id: { in: fixtureIds },
-      externalId: { gte: 0 },
+      externalId: { gte: "0" },
       state: { in: FINISHED_STATES_ARR },
     },
     select: { id: true, name: true, state: true },
@@ -403,7 +403,7 @@ async function detectUnsettledFixtures(): Promise<AlertInput[]> {
 async function detectDataQualityIssues(): Promise<AlertInput[]> {
   const count = await prisma.fixtures.count({
     where: {
-      externalId: { gte: 0 },
+      externalId: { gte: "0" },
       state: { in: FINISHED_STATES_ARR },
       OR: [{ homeScore90: null }, { awayScore90: null }],
     },
@@ -430,7 +430,7 @@ async function detectOverdueNs(): Promise<AlertInput[]> {
   const FOUR_HOURS_S = 4 * 60 * 60;
 
   const overdueFixtures = await prisma.fixtures.findMany({
-    where: { externalId: { gte: 0 }, state: "NS", startTs: { lt: nowTs } },
+    where: { externalId: { gte: "0" }, state: "NS", startTs: { lt: nowTs } },
     select: { id: true, name: true, startTs: true, lastProviderState: true, lastProviderCheckAt: true },
     orderBy: { startTs: "asc" },
   });

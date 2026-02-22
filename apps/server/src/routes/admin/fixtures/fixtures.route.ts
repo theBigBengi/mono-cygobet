@@ -87,7 +87,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         perPage?: number;
       };
 
-      const where: any = { externalId: { gte: 0 } };
+      const where: any = { externalId: { gte: "0" } };
       if (q) where.name = { contains: q, mode: "insensitive" };
       if (leagueId) where.leagueId = leagueId;
       if (fromTs || toTs) {

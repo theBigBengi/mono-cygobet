@@ -122,8 +122,8 @@ export async function runRecoveryOverdueFixturesJob(
       }
 
       const ids = candidates
-        .map((c) => Number(c.externalId))
-        .filter((n) => Number.isFinite(n));
+        .map((c) => c.externalId)
+        .filter((id) => id != null && id !== "");
 
       if (!ids.length) {
         return {
@@ -234,14 +234,14 @@ export async function runRecoveryOverdueFixturesJob(
           },
         });
 
-        const fetchedExternalIds = fetched.map((f) => BigInt(f.externalId));
+        const fetchedExternalIds = fetched.map((f) => String(f.externalId));
 
         // Update provider tracking columns for all checked fixtures
         const fetchedExternalIdSet = new Set(fetched.map((f) => String(f.externalId)));
         await prisma.$transaction(
           fetched.map((dto) =>
             prisma.fixtures.updateMany({
-              where: { externalId: BigInt(dto.externalId) },
+              where: { externalId: String(dto.externalId) },
               data: {
                 lastProviderCheckAt: new Date(),
                 lastProviderState: dto.state,

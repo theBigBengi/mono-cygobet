@@ -1,10 +1,12 @@
 // Sync Center – availability, seed season, job status
 
+import type { ExternalId } from "../sport-data/common";
+
 export interface AvailableSeason {
-  externalId: number;
+  externalId: ExternalId;
   name: string;
   league: {
-    externalId: number;
+    externalId: ExternalId;
     name: string;
     country: string;
   };
@@ -68,17 +70,17 @@ export interface AdminSeedSeasonPreviewResponse {
   status: "ok";
   data: {
     season: {
-      externalId: number;
+      externalId: ExternalId;
       name: string;
       exists: boolean;
     };
     league: {
-      externalId: number;
+      externalId: ExternalId;
       name: string;
       exists: boolean;
     };
     country: {
-      externalId: number;
+      externalId: ExternalId;
       name: string;
       exists: boolean;
     };

@@ -3,11 +3,10 @@
  * Used by sync (incremental). Seed uses DTO directly; sync uses this + resolved FKs.
  */
 import type { OddsDTO } from "@repo/types/sport-data/common";
-import { safeBigInt } from "../utils";
 
 export type OddsTransformResult = {
-  externalId: bigint;
-  marketExternalId: bigint;
+  externalId: string;
+  marketExternalId: string;
   marketDescription: string;
   marketName: string;
   sortOrder: number;
@@ -62,8 +61,8 @@ export function transformOddsDto(dto: OddsDTO): OddsTransformResult {
   const startingAt = startingAtFromTs(dto.startingAtTs);
 
   return {
-    externalId: safeBigInt(dto.externalId),
-    marketExternalId: safeBigInt(dto.marketExternalId),
+    externalId: String(dto.externalId),
+    marketExternalId: String(dto.marketExternalId),
     marketDescription: dto.marketDescription,
     marketName: dto.marketName,
     sortOrder: dto.sortOrder,

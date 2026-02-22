@@ -10,7 +10,7 @@ import {
   type OddsTransformResult,
 } from "../transform/odds.transform";
 import { trackSeedItem } from "../seeds/seed.utils";
-import { chunk, safeBigInt } from "../utils";
+import { chunk } from "../utils";
 import { getLogger } from "../../logger";
 
 const log = getLogger("SyncOdds");
@@ -25,10 +25,10 @@ export type SyncOddsResult = {
 };
 
 type ExistingRow = {
-  externalId: bigint;
+  externalId: string;
   fixtureId: number;
   bookmakerId: number | null;
-  marketExternalId: bigint;
+  marketExternalId: string;
   marketDescription: string;
   marketName: string;
   sortOrder: number;
@@ -156,13 +156,13 @@ export async function syncOdds(
   // Batch resolve fixtures
   const fixtureExternalIds = uniqueOdds
     .map((o) => o.fixtureExternalId)
-    .filter((id): id is number => id != null);
+    .filter((id) => id != null);
   const uniqueFixtureIds = [...new Set(fixtureExternalIds.map(String))];
   const fixtureMap = new Map<string, number>();
   if (uniqueFixtureIds.length > 0) {
     const fixtures = await prisma.fixtures.findMany({
       where: {
-        externalId: { in: uniqueFixtureIds.map((id) => safeBigInt(id)) },
+        externalId: { in: uniqueFixtureIds.map((id) => String(id)) },
       },
       select: { id: true, externalId: true },
     });
@@ -174,13 +174,13 @@ export async function syncOdds(
   // Batch resolve bookmakers (do not create missing)
   const bookmakerExternalIds = uniqueOdds
     .map((o) => o.bookmakerExternalId)
-    .filter((id): id is number => id != null);
+    .filter((id) => id != null);
   const uniqueBookmakerIds = [...new Set(bookmakerExternalIds.map(String))];
   const bookmakerMap = new Map<string, number>();
   if (uniqueBookmakerIds.length > 0) {
     const bookmakers = await prisma.bookmakers.findMany({
       where: {
-        externalId: { in: uniqueBookmakerIds.map((id) => safeBigInt(id)) },
+        externalId: { in: uniqueBookmakerIds.map((id) => String(id)) },
       },
       select: { id: true, externalId: true },
     });
@@ -196,7 +196,7 @@ export async function syncOdds(
       log.warn("syncOdds aborted by signal");
       break;
     }
-    const groupExternalIds = group.map((o) => safeBigInt(o.externalId));
+    const groupExternalIds = group.map((o) => String(o.externalId));
     const existingRows = await prisma.odds.findMany({
       where: { externalId: { in: groupExternalIds } },
       select: {
@@ -224,7 +224,7 @@ export async function syncOdds(
 
     const results = await Promise.allSettled(
       group.map(async (odd) => {
-        const extIdKey = String(safeBigInt(odd.externalId));
+        const extIdKey = String(odd.externalId);
 
         // Bookmaker required but not in DB -> do not create; fail this odd
         if (
@@ -334,9 +334,7 @@ export async function syncOdds(
   }
 
   if (batchId && !dryRun && fixtureStats.size > 0) {
-    const fixtureExternalIds = Array.from(fixtureStats.keys()).map((id) =>
-      safeBigInt(id)
-    );
+    const fixtureExternalIds = Array.from(fixtureStats.keys());
     const fixtures = await prisma.fixtures.findMany({
       where: { externalId: { in: fixtureExternalIds } },
       select: { id: true, externalId: true, name: true },

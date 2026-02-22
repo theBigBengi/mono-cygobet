@@ -1,5 +1,7 @@
 export type ID = number; // or string if you prefer
 
+export type ExternalId = string | number;
+
 export const MatchState = {
   Scheduled: "SCHEDULED",
   Inplay: "INPLAY",
@@ -29,12 +31,12 @@ export type LeagueDTO = {
 };
 
 export type BookmakerDTO = {
-  externalId: number; // BigInt in Prisma schema
+  externalId: ExternalId; // BigInt in Prisma schema
   name: string;
 };
 
 export type MarketDTO = {
-  externalId: number;
+  externalId: ExternalId;
   name: string;
   description?: string | null;
   developerName?: string | null;
@@ -64,14 +66,14 @@ export type TeamDTO = {
 };
 
 export type SeasonDTO = {
-  externalId: number; // provider season id
+  externalId: ExternalId; // provider season id
   name: string; // e.g. "2024/2025"
   startDate: string; // ISO date string (YYYY-MM-DD)
   endDate: string; // ISO date string (YYYY-MM-DD)
   isCurrent: boolean; // provider flag if available
   isFinished?: boolean; // provider flag if season has ended
   isPending?: boolean; // provider flag if season not started yet
-  leagueExternalId: number | string; // to resolve FK -> leagues via league_mappings
+  leagueExternalId: ExternalId; // to resolve FK -> leagues via league_mappings
   leagueName: string;
   countryName: string;
 };
@@ -79,15 +81,15 @@ export type SeasonDTO = {
 /** Preview data for seeding a season - fetched in a single optimized call */
 export type SeasonPreviewDTO = {
   season: {
-    externalId: number;
+    externalId: ExternalId;
     name: string;
   };
   league: {
-    externalId: number;
+    externalId: ExternalId;
     name: string;
   };
   country: {
-    externalId: number;
+    externalId: ExternalId;
     name: string;
   };
   teamsCount: number;
@@ -140,22 +142,22 @@ export type FixtureScoreBreakdown = {
 
 export type FixtureDTO = {
   /** Provider fixture id to map into fixture_mappings */
-  externalId: number;
+  externalId: ExternalId;
 
   /** Display name of the fixture (we store it in fixtures.name) */
   name: string;
 
   /** Used only to resolve FK via league_mappings -> fixtures.league_id (nullable) */
-  leagueExternalId: number | null;
+  leagueExternalId: ExternalId | null;
 
   /** Used only to resolve FK via season_mappings -> fixtures.season_id (nullable) */
-  seasonExternalId: number | null;
+  seasonExternalId: ExternalId | null;
 
   /** Resolve via team_mappings -> fixtures.home_team_id */
-  homeTeamExternalId: number;
+  homeTeamExternalId: ExternalId;
 
   /** Resolve via team_mappings -> fixtures.away_team_id */
-  awayTeamExternalId: number;
+  awayTeamExternalId: ExternalId;
 
   /** ISO datetime string -> fixtures.start_iso */
   startIso: string;
@@ -206,7 +208,7 @@ export type FixtureDTO = {
   leg: string | null;
 
   /** Aggregate ID linking two-legged fixtures together -> fixtures.aggregate_id */
-  aggregateId: number | null;
+  aggregateId: ExternalId | null;
 
   hasOdds: boolean;
 
@@ -215,13 +217,13 @@ export type FixtureDTO = {
   countryName: string;
 
   /** Country external ID from league.country - useful for filtering */
-  countryExternalId: number | null;
+  countryExternalId: ExternalId | null;
 };
 
 export type OddsDTO = {
-  bookmakerId: number;
-  marketExternalId: number;
-  externalId: number;
+  bookmakerId: ExternalId;
+  marketExternalId: ExternalId;
+  externalId: ExternalId;
   name: string | null;
   value: string;
   marketDescription: string;
@@ -233,8 +235,8 @@ export type OddsDTO = {
   handicap: string | null;
   label: string;
   sortOrder: number;
-  fixtureExternalId: number;
-  bookmakerExternalId: number;
+  fixtureExternalId: ExternalId;
+  bookmakerExternalId: ExternalId;
   bookmakerName: string;
   marketName: string;
   fixtureName: string;
@@ -247,7 +249,7 @@ export type FixtureOddsDTO = FixtureDTO & {
 /** Standing row for a team in a league table */
 export type StandingDTO = {
   /** Team external ID */
-  teamExternalId: number;
+  teamExternalId: ExternalId;
   /** Team name */
   teamName: string;
   /** Team logo URL */
@@ -275,11 +277,11 @@ export type StandingDTO = {
   /** Recent form (e.g., "WWDLW") */
   form: string | null;
   /** Season external ID */
-  seasonExternalId: number;
+  seasonExternalId: ExternalId;
   /** League external ID */
-  leagueExternalId: number;
+  leagueExternalId: ExternalId;
   /** Stage external ID (for cups with multiple stages) */
-  stageExternalId: number | null;
+  stageExternalId: ExternalId | null;
   /** Group external ID (for group stages) */
-  groupExternalId: number | null;
+  groupExternalId: ExternalId | null;
 };

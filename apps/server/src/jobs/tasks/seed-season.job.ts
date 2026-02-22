@@ -1,5 +1,6 @@
 import { prisma } from "@repo/db";
 import { RunStatus, RunTrigger } from "@repo/db";
+import type { ExternalId } from "@repo/types/sport-data/common";
 import { adapter } from "../../utils/adapter";
 import { startSeedBatch, finishSeedBatch } from "../../etl/seeds/seed.utils";
 import { seedTeams } from "../../etl/seeds/seed.teams";
@@ -12,7 +13,7 @@ import { getLogger } from "../../logger";
 const log = getLogger("SeedSeason");
 
 export interface SeedSeasonParams {
-  seasonExternalId: number;
+  seasonExternalId: ExternalId;
   includeTeams: boolean;
   includeFixtures: boolean;
   /** Only seed fixtures with start date in the future (default: true) */
@@ -27,7 +28,7 @@ export interface SeedSeasonParams {
 export interface SeedSeasonResult {
   season: {
     id: number;
-    externalId: number;
+    externalId: ExternalId;
     name: string;
     league: string;
     created: boolean;
@@ -72,7 +73,7 @@ export async function processSeedSeason(
 
   try {
     let season = await prisma.seasons.findUnique({
-      where: { externalId: BigInt(seasonExternalId) },
+      where: { externalId: String(seasonExternalId) },
       include: { leagues: true },
     });
 
@@ -89,7 +90,7 @@ export async function processSeedSeason(
       }
 
       let league = await prisma.leagues.findUnique({
-        where: { externalId: BigInt(providerSeason.leagueExternalId) },
+        where: { externalId: String(providerSeason.leagueExternalId) },
       });
 
       // Auto-create league (and country) if missing
@@ -111,7 +112,7 @@ export async function processSeedSeason(
         // Check if country exists, create if not
         if (providerLeague.countryExternalId) {
           const existingCountry = await prisma.countries.findUnique({
-            where: { externalId: BigInt(providerLeague.countryExternalId) },
+            where: { externalId: String(providerLeague.countryExternalId) },
           });
 
           if (!existingCountry) {
@@ -139,7 +140,7 @@ export async function processSeedSeason(
 
         // Re-fetch the league
         league = await prisma.leagues.findUnique({
-          where: { externalId: BigInt(providerSeason.leagueExternalId) },
+          where: { externalId: String(providerSeason.leagueExternalId) },
         });
 
         if (!league) {
@@ -151,7 +152,7 @@ export async function processSeedSeason(
 
       season = await prisma.seasons.create({
         data: {
-          externalId: BigInt(providerSeason.externalId),
+          externalId: String(providerSeason.externalId),
           name: providerSeason.name,
           startDate: providerSeason.startDate,
           endDate: providerSeason.endDate,
@@ -175,14 +176,7 @@ export async function processSeedSeason(
     };
 
     if (includeTeams) {
-      const fetchTeamsBySeason =
-        typeof adapter.fetchTeamsBySeason === "function"
-          ? adapter.fetchTeamsBySeason.bind(adapter)
-          : null;
-      if (!fetchTeamsBySeason) {
-        throw new Error("Adapter does not support fetchTeamsBySeason");
-      }
-      const teamsDto = await fetchTeamsBySeason(seasonExternalId);
+      const teamsDto = await adapter.fetchTeamsBySeason(seasonExternalId);
       const teamsResult = await seedTeams(teamsDto, {
         batchId,
       });

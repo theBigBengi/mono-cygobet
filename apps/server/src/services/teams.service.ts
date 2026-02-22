@@ -74,13 +74,12 @@ export class TeamsService {
   }
 
   async getByExternalId(
-    externalId: number | bigint,
+    externalId: string | number,
     include?: Prisma.teamsInclude
   ) {
     const team = await prisma.teams.findUnique({
       where: {
-        externalId:
-          typeof externalId === "bigint" ? externalId : BigInt(externalId),
+        externalId: String(externalId),
       },
       include: include || {
         countries: true,

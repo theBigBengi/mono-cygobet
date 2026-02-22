@@ -98,13 +98,12 @@ export class SeasonsService {
   }
 
   async getByExternalId(
-    externalId: number | bigint,
+    externalId: string | number,
     include?: Prisma.seasonsInclude
   ) {
     const season = await prisma.seasons.findUnique({
       where: {
-        externalId:
-          typeof externalId === "bigint" ? externalId : BigInt(externalId),
+        externalId: String(externalId),
       },
       include: include || {
         leagues: {

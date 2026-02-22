@@ -43,7 +43,7 @@ const FIXTURE_SELECT = {
 type FixtureRow = {
   id: number;
   name: string;
-  externalId: bigint;
+  externalId: string;
   startIso: string;
   startTs: number;
   state: string;
@@ -224,7 +224,7 @@ async function fetchStuckLight(): Promise<LightItem[]> {
   const stuckStartTs = nowTs - STUCK_THRESHOLD_SECONDS;
   const rows = await prisma.fixtures.findMany({
     where: {
-      externalId: { gte: 0 },
+      externalId: { gte: "0" },
       state: { in: LIVE_STATES_ARR },
       startTs: { lt: stuckStartTs },
     },
@@ -243,7 +243,7 @@ async function fetchOverdueLight(): Promise<LightItem[]> {
   const nowTs = nowUnixSeconds();
   const rows = await prisma.fixtures.findMany({
     where: {
-      externalId: { gte: 0 },
+      externalId: { gte: "0" },
       state: "NS",
       startTs: { lt: nowTs },
     },
@@ -261,7 +261,7 @@ async function fetchOverdueLight(): Promise<LightItem[]> {
 async function fetchNoScoresLight(): Promise<LightItem[]> {
   const rows = await prisma.fixtures.findMany({
     where: {
-      externalId: { gte: 0 },
+      externalId: { gte: "0" },
       state: { in: FINISHED_STATES_ARR },
       OR: [{ homeScore90: null }, { awayScore90: null }],
     },
@@ -295,7 +295,7 @@ async function fetchUnsettledLight(): Promise<LightItem[]> {
   const rows = await prisma.fixtures.findMany({
     where: {
       id: { in: fixtureIds },
-      externalId: { gte: 0 },
+      externalId: { gte: "0" },
       state: { in: FINISHED_STATES_ARR },
     },
     select: FIXTURE_SELECT,

@@ -40,12 +40,9 @@ export const availabilityService = {
 
     // By default, use fetchSeasons (current/future only) for faster response
     // Only fetch all historical seasons when explicitly requested
-    const fetchSeasons = includeHistorical
-      ? typeof adapter.fetchAllSeasons === "function"
-        ? adapter.fetchAllSeasons.bind(adapter)
-        : adapter.fetchSeasons.bind(adapter)
-      : adapter.fetchSeasons.bind(adapter);
-    const providerSeasons = await fetchSeasons();
+    const providerSeasons = includeHistorical
+      ? await adapter.fetchAllSeasons()
+      : await adapter.fetchSeasons();
 
     const dbSeasons = await prisma.seasons.findMany({
       include: {
@@ -106,9 +103,9 @@ export const availabilityService = {
         await Promise.allSettled(
           batch.map(async (season) => {
             try {
-              if (adapter.fetchSeasonPreview) {
-                const preview = await adapter.fetchSeasonPreview(season.externalId);
-                season.hasFixturesAvailable = (preview?.fixturesCount ?? 0) > 0;
+              const preview = await adapter.fetchSeasonPreview(season.externalId);
+              if (preview) {
+                season.hasFixturesAvailable = (preview.fixturesCount ?? 0) > 0;
               } else {
                 const fixtures = await adapter.fetchFixturesBySeason(season.externalId);
                 season.hasFixturesAvailable = fixtures.length > 0;

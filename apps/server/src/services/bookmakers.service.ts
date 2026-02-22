@@ -41,11 +41,10 @@ export class BookmakersService {
     return bookmaker;
   }
 
-  async getByExternalId(externalId: number | bigint) {
+  async getByExternalId(externalId: string | number) {
     const bookmaker = await prisma.bookmakers.findUnique({
       where: {
-        externalId:
-          typeof externalId === "bigint" ? externalId : BigInt(externalId),
+        externalId: String(externalId),
       },
     });
 

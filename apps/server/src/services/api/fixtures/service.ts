@@ -47,7 +47,7 @@ export type GetUpcomingFixturesParams = {
   page: number;
   perPage: number;
   leagueIds?: number[];
-  marketExternalIds?: bigint[];
+  marketExternalIds?: string[];
   hasOdds?: boolean;
   include?: Set<ApiUpcomingFixturesInclude>;
 };

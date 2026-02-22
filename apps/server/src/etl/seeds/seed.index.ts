@@ -1,3 +1,4 @@
+import type { ExternalId } from "@repo/types/sport-data/common";
 import { adapter } from "../../utils/adapter";
 import { getLogger } from "../../logger";
 import { seedBookmakers } from "./seed.bookmakers";
@@ -125,7 +126,7 @@ export async function runSeasonsSeed(opts?: { dryRun?: boolean }) {
  * - Otherwise, it fetches all seasons and then fixtures for each season.
  */
 export async function runFixturesSeed(
-  seasonExternalId?: number,
+  seasonExternalId?: ExternalId,
   opts?: { dryRun?: boolean }
 ) {
   if (seasonExternalId) {
@@ -147,7 +148,7 @@ export async function runFixturesSeed(
         "Fetching fixtures for season"
       );
       const fixturesDto = await adapter.fetchFixturesBySeason(
-        Number(season.externalId)
+        season.externalId
       );
       if (fixturesDto.length > 0) {
         log.info({ count: fixturesDto.length }, "Found fixtures to seed");
@@ -175,16 +176,13 @@ export async function runOddsSeed(
   endIso: string,
   opts?: {
     dryRun?: boolean;
-    filters?: string;
   }
 ) {
   log.info(
     { startIso, endIso },
     "Fetching odds from provider"
   );
-  const oddsDto = await adapter.fetchOddsBetween(startIso, endIso, {
-    filters: opts?.filters,
-  });
+  const oddsDto = await adapter.fetchOddsBetween(startIso, endIso);
 
   log.info({ count: oddsDto.length }, "Found odds to seed");
   const result = await seedOdds(oddsDto, opts);

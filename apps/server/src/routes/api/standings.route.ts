@@ -11,7 +11,7 @@ interface StandingsParams {
 interface StandingsResponse {
   standings: Array<{
     position: number;
-    teamExternalId: number;
+    teamExternalId: string | number;
     teamName: string;
     teamImagePath: string | null;
     teamShortCode: string | null;
@@ -53,10 +53,6 @@ const standingsRoutes: FastifyPluginAsync = async (fastify) => {
 
       if (isNaN(seasonIdNum)) {
         return reply.code(400).send({ standings: [] });
-      }
-
-      if (!adapter.fetchStandingsBySeason) {
-        return reply.code(501).send({ standings: [] });
       }
 
       const standings = await adapter.fetchStandingsBySeason(seasonIdNum);

@@ -21,7 +21,7 @@ export function buildUpcomingFixturesWhere(params: {
 
   const where: Prisma.fixturesWhereInput = {
     state,
-    externalId: { gte: 0 },
+    externalId: { gte: "0" },
     leagueId: { not: null },
   };
 

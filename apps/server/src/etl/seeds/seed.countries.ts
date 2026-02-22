@@ -5,7 +5,6 @@ import {
   trackSeedItem,
   finishSeedBatch,
   chunk,
-  safeBigInt,
   normIso,
   computeChanges,
 } from "./seed.utils";
@@ -104,7 +103,7 @@ export async function seedCountries(
   }
 
   // Pre-fetch which countries already exist (with all tracked fields for change detection)
-  const allExternalIds = uniqueCountries.map((c) => safeBigInt(c.externalId));
+  const allExternalIds = uniqueCountries.map((c) => String(c.externalId));
   const existingRows = await prisma.countries.findMany({
     where: { externalId: { in: allExternalIds } },
     select: {
@@ -148,10 +147,10 @@ export async function seedCountries(
             };
 
             await prisma.countries.upsert({
-              where: { externalId: safeBigInt(country.externalId) },
+              where: { externalId: String(country.externalId) },
               update: updatePayload,
               create: {
-                externalId: safeBigInt(country.externalId),
+                externalId: String(country.externalId),
                 name: country.name,
                 imagePath: country.imagePath ?? null,
                 iso2,

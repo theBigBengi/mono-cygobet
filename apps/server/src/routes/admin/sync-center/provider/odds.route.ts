@@ -3,6 +3,7 @@ import { FastifyPluginAsync } from "fastify";
 import { adapter, currentProviderLabel } from "../../../../utils/adapter";
 import { AdminProviderOddsResponse } from "@repo/types";
 import { providerResponseSchema } from "../../../../schemas/admin/admin.schemas";
+import type { OddsFetchOptions } from "@repo/sports-data";
 
 const adminOddsProviderRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/provider/odds - Get odds from sports-data provider
@@ -49,8 +50,6 @@ const adminOddsProviderRoutes: FastifyPluginAsync = async (fastify) => {
         toDate = to.toISOString().split("T")[0]!;
       }
 
-      // Build provider odds filters string
-      const parts: string[] = [];
       const bookmakerIds = query.bookmakerIds
         ?.split(",")
         .map((s) => s.trim())
@@ -59,27 +58,16 @@ const adminOddsProviderRoutes: FastifyPluginAsync = async (fastify) => {
         ?.split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      const fixtureStates = query.fixtureStates
-        ?.split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
 
-      if (bookmakerIds?.length)
-        parts.push(`bookmakers:${bookmakerIds.join(",")}`);
-      if (marketIds?.length) parts.push(`markets:${marketIds.join(",")}`);
-      // Only add fixtureStates filter if explicitly provided, otherwise return all statuses
-      if (fixtureStates?.length) {
-        parts.push(`fixtureStates:${fixtureStates.join(",")}`);
-      }
-      const filters = parts.length > 0 ? parts.join(";") : undefined;
+      const oddsOpts: OddsFetchOptions = {};
+      if (bookmakerIds?.length) oddsOpts.bookmakerIds = bookmakerIds;
+      if (marketIds?.length) oddsOpts.marketIds = marketIds;
 
-      const odds = await adapter.fetchOddsBetween(fromDate, toDate, {
-        filters,
-      });
+      const odds = await adapter.fetchOddsBetween(fromDate, toDate, oddsOpts);
 
       return reply.send({
         status: "success",
-        data: odds,
+        data: odds as any,
         message: "Odds fetched from provider successfully",
         provider: currentProviderLabel,
       });
