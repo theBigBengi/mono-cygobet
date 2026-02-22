@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 
 /**
  * Load environment variables with NODE_ENV awareness.
@@ -9,13 +10,22 @@ import path from "path";
  *   2. `.env.{NODE_ENV}` — environment-specific overrides (e.g. .env.development)
  *   3. `.env` — shared defaults / fallback
  *
- * Usage:
- *   - Local dev:  put DATABASE_URL in `.env` (or `.env.development`)
- *   - Production: set DATABASE_URL on the hosting platform (Render, Vercel, etc.)
- *   - The `.env` file is always loaded as a fallback for non-sensitive defaults.
+ * The monorepo root is resolved by walking up from cwd until
+ * pnpm-workspace.yaml is found, so this works regardless of
+ * which package triggers the import.
  */
+function findMonorepoRoot(from: string): string {
+  let dir = from;
+  while (true) {
+    if (fs.existsSync(path.join(dir, "pnpm-workspace.yaml"))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return from; // reached filesystem root, fallback to cwd
+    dir = parent;
+  }
+}
+
 const NODE_ENV = process.env.NODE_ENV || "development";
-const root = process.cwd();
+const root = findMonorepoRoot(process.cwd());
 
 dotenv.config({ path: path.join(root, `.env.${NODE_ENV}`) });
 dotenv.config({ path: path.join(root, ".env") });
