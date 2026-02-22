@@ -239,7 +239,6 @@ export async function sandboxSetup(args: {
       );
     }
 
-    let nextExtId = await nextSandboxExternalId();
     const offsetSec =
       args.startInMinutes != null ? args.startInMinutes * 60 : null;
     const intervalSec = (args.intervalMinutes ?? 15) * 60;
@@ -313,7 +312,6 @@ export async function sandboxSetup(args: {
     throw new Error(`Need ${count * 2} teams, only ${teams.length} available`);
   }
 
-  let nextExtId = await nextSandboxExternalId();
   const nowTs = Math.floor(Date.now() / 1000);
 
   const offsetSec = (args.startInMinutes ?? 60) * 60;
@@ -652,6 +650,7 @@ export async function sandboxResetFixture(fixtureId: number) {
         settledAt: null,
         points: "0",
         winningCorrectScore: false,
+        winningCorrectDifference: false,
         winningMatchWinner: false,
       },
     });

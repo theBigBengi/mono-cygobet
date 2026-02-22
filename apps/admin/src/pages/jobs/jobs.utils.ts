@@ -231,9 +231,11 @@ export function getRunReason(meta: Record<string, unknown>): string | null {
 
 export function isNoOp(
   meta: Record<string, unknown>,
-  _rowsAffected: number | null
+  rowsAffected: number | null
 ): boolean {
-  return !!meta["reason"];
+  if (meta["reason"]) return true;
+  if (rowsAffected === 0) return true;
+  return false;
 }
 
 /** camelCase → human readable, e.g. "groupsProcessed" → "groups processed" */
