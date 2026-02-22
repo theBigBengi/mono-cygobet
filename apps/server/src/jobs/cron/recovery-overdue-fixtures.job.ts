@@ -97,6 +97,7 @@ export async function runRecoveryOverdueFixturesJob(
         where: {
           state: { in: [...NOT_STARTED_STATES] as FixtureState[] },
           startTs: { lt: maxStartTs, gt: minStartTs },
+          isSandbox: false,
         },
         select: { externalId: true, id: true },
       });

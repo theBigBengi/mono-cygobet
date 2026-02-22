@@ -44,8 +44,9 @@ export async function runUpdatePrematchOddsJob(
 > {
   const jobRow = await getJobRowOrThrow(updatePrematchOddsJob.key);
   const meta = getMeta<UpdatePrematchOddsJobMeta>(jobRow.meta);
-  const bookmakerExternalIds = meta.odds.bookmakerExternalIds;
-  const marketExternalIds = meta.odds.marketExternalIds;
+  const oddsConfig = meta.odds ?? {} as Partial<UpdatePrematchOddsJobMeta["odds"]>;
+  const bookmakerExternalIds = oddsConfig.bookmakerExternalIds ?? [2];
+  const marketExternalIds = oddsConfig.marketExternalIds ?? [1, 57];
   const daysAhead = opts.daysAhead ?? meta.daysAhead ?? DEFAULT_DAYS_AHEAD;
   const oddsOpts: OddsFetchOptions = {
     bookmakerIds: bookmakerExternalIds.map(String),

@@ -5,6 +5,7 @@ import Fastify from "fastify";
 import app from "./app";
 import { logger, getLogger } from "./logger";
 import { disconnectRedis } from "@repo/redis";
+import { prisma } from "@repo/db";
 
 // Create Fastify instance
 const fastify = Fastify({
@@ -42,7 +43,7 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
   serverLogger.info({ signal }, "Received signal, shutting down server");
   try {
     await fastify.close();
-    await disconnectRedis();
+    await Promise.allSettled([disconnectRedis(), prisma.$disconnect()]);
     process.exit(0);
   } catch (err) {
     serverLogger.error({ err }, "Error during shutdown");

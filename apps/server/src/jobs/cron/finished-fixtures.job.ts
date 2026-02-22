@@ -63,6 +63,7 @@ export async function runFinishedFixturesJob(
         where: {
           state: { in: [...LIVE_STATES] as FixtureState[] },
           startTs: { lte: cutoffTs },
+          isSandbox: false,
         },
         select: { externalId: true },
       });
@@ -116,7 +117,7 @@ export async function runFinishedFixturesJob(
         }
         const part = await adapter.fetchFixturesByIds(group, {
           includeScores: true,
-          states: [FixtureState.FT],
+          states: [FixtureState.FT, FixtureState.AET, FixtureState.FT_PEN],
           perPage: 50,
         });
         if (part?.length) fetched = fetched.concat(part);

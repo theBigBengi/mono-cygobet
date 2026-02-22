@@ -85,7 +85,6 @@ export async function runUpcomingFixturesJob(
       const fetched = await adapter.fetchFixturesBetween(from, to, {
         states: [
           FixtureState.NS,
-          FixtureState.INPLAY_ET,
           FixtureState.CANCELLED,
           FixtureState.ABANDONED,
           FixtureState.SUSPENDED,
