@@ -39,7 +39,7 @@ interface ChangePasswordBody {
   confirmPassword: string;
 }
 
-export default function UserSettingsPage() {
+export function UserSettingsContent() {
   const { me } = useAdminAuth();
   const queryClient = useQueryClient();
 
@@ -177,19 +177,16 @@ export default function UserSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="h-full w-full p-3 sm:p-6">
-        <div className="max-w-2xl mx-auto space-y-4">
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-40 w-full" />
-        </div>
+      <div className="max-w-2xl mx-auto space-y-4">
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full overflow-y-auto p-3 sm:p-6">
-      <div className="max-w-2xl mx-auto space-y-6 pb-8">
+    <div className="max-w-2xl mx-auto space-y-6 pb-8">
         {/* ── Profile ── */}
         <section className="rounded-lg border">
           <div className="flex items-center gap-2 border-b px-4 py-3">
@@ -420,6 +417,5 @@ export default function UserSettingsPage() {
           </div>
         </section>
       </div>
-    </div>
   );
 }

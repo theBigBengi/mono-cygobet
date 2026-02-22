@@ -11,9 +11,7 @@ import SandboxPage from "@/pages/sandbox";
 import UsersPage from "@/pages/users";
 import TeamsPage from "@/pages/teams";
 import AnalyticsPage from "@/pages/analytics";
-import UserSettingsPage from "@/pages/settings/user";
-import LeagueOrderSettingsPage from "@/pages/settings/league-order";
-import TeamOrderSettingsPage from "@/pages/settings/team-order";
+import SettingsPage from "@/pages/settings";
 import LoginPage from "@/pages/login";
 import { AdminLayout } from "@/components/layout";
 
@@ -43,9 +41,7 @@ export const routes: RouteObject[] = [
       { path: "/sandbox", element: <SandboxPage /> },
       { path: "/analytics", element: <AnalyticsPage /> },
       { path: "/users", element: <UsersPage /> },
-      { path: "/settings", element: <UserSettingsPage /> },
-      { path: "/settings/league-order", element: <LeagueOrderSettingsPage /> },
-      { path: "/settings/team-order", element: <TeamOrderSettingsPage /> },
+      { path: "/settings", element: <SettingsPage /> },
       {
         path: "*",
         element: (

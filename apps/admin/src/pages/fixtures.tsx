@@ -1537,10 +1537,11 @@ function DateRangePickerButton({
   const hasRange = from && to;
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal>
+    <Popover open={open}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          onClick={() => setOpen((v) => !v)}
           className={cn(
             "justify-start font-normal",
             !hasRange && "text-muted-foreground",
@@ -1569,8 +1570,9 @@ function DateRangePickerButton({
       <PopoverContent
         className="w-auto p-0"
         align="start"
+        onPointerDownOutside={() => setOpen(false)}
+        onEscapeKeyDown={() => setOpen(false)}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <Calendar
           mode="range"

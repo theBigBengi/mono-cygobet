@@ -99,7 +99,7 @@ function AvailableLeagueItem({ league, isSelected, onToggle }: { league: League;
   );
 }
 
-export default function LeagueOrderSettingsPage() {
+export function LeagueOrderContent() {
   const { data: settingsData, isLoading: settingsLoading } = useLeagueOrderSettings();
   const updateMutation = useUpdateLeagueOrderSettings();
 
@@ -219,22 +219,19 @@ export default function LeagueOrderSettingsPage() {
 
   if (settingsLoading) {
     return (
-      <div className="w-full p-4 sm:p-6">
-        <div className="max-w-5xl mx-auto space-y-4">
-          <Skeleton className="h-7 w-40" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Skeleton className="h-72" />
-            <Skeleton className="h-72" />
-          </div>
+      <div className="max-w-5xl mx-auto space-y-4">
+        <Skeleton className="h-7 w-40" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Skeleton className="h-72" />
+          <Skeleton className="h-72" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full p-4 pb-8 sm:p-6">
-      <div className="max-w-5xl mx-auto space-y-4">
-        <HeaderActions>
+    <div className="max-w-5xl mx-auto space-y-4">
+      <HeaderActions>
           <Button size="sm" onClick={handleSave} disabled={!hasChanges || updateMutation.isPending}>
             {updateMutation.isPending ? "Saving..." : "Save"}
           </Button>
@@ -341,7 +338,6 @@ export default function LeagueOrderSettingsPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
       </div>
     </div>
   );
