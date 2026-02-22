@@ -113,8 +113,6 @@ export function AttentionFixturesTable({
     onSelectionChange(next);
   }, [selectedIds, onSelectionChange]);
 
-  const pageExternalIds = data.map((f) => f.externalId);
-
   // ─── Background prefetch of provider previews for current page ───
   const previewCache = useRef<Map<string, SyncPreviewChange[]>>(new Map());
   const lastFetchedIds = useRef<string>("");
