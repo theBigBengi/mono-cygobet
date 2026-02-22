@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { syncService } from "@/services/sync.service";
 
-export function useSeedSeasonPreview(seasonExternalId: number | null) {
+import type { ExternalId } from "@repo/types/sport-data/common";
+
+export function useSeedSeasonPreview(seasonExternalId: ExternalId | null) {
   return useQuery({
     queryKey: ["seed-season-preview", seasonExternalId],
     queryFn: () =>

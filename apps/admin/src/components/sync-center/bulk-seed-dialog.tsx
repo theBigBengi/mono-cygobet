@@ -25,6 +25,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { AvailableSeason } from "@repo/types";
+import type { ExternalId } from "@repo/types/sport-data/common";
 
 interface BulkSeedDialogProps {
   open: boolean;
@@ -38,7 +39,7 @@ interface PreviewGroup {
   countryExists: boolean;
   leagues: {
     name: string;
-    leagueExternalId: number;
+    leagueExternalId: ExternalId;
     leagueExists: boolean;
     seasons: AvailableSeason[];
   }[];
@@ -49,7 +50,7 @@ function computePreview(
   allSeasons: AvailableSeason[]
 ): { groups: PreviewGroup[]; newCountries: number; newLeagues: number; totalTeams: number; totalFixtures: number } {
   // A league exists in DB if any season from that league is "in_db"
-  const existingLeagues = new Set<number>();
+  const existingLeagues = new Set<ExternalId>();
   const existingCountries = new Set<string>();
   for (const s of allSeasons) {
     if (s.status === "in_db") {
@@ -61,7 +62,7 @@ function computePreview(
   // Group selected seasons by country → league
   const countryMap = new Map<
     string,
-    Map<string, { externalId: number; seasons: AvailableSeason[] }>
+    Map<string, { externalId: ExternalId; seasons: AvailableSeason[] }>
   >();
   for (const s of selected) {
     if (!countryMap.has(s.league.country)) {

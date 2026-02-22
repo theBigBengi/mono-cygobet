@@ -1,9 +1,10 @@
 import { useState, useCallback, useMemo } from "react";
+import type { ExternalId } from "@repo/types/sport-data/common";
 
 export function useSeasonSelection() {
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<Set<ExternalId>>(new Set());
 
-  const toggle = useCallback((id: number) => {
+  const toggle = useCallback((id: ExternalId) => {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -15,7 +16,7 @@ export function useSeasonSelection() {
     });
   }, []);
 
-  const selectAll = useCallback((ids: number[]) => {
+  const selectAll = useCallback((ids: ExternalId[]) => {
     setSelected((prev) => {
       const next = new Set(prev);
       for (const id of ids) next.add(id);
@@ -23,7 +24,7 @@ export function useSeasonSelection() {
     });
   }, []);
 
-  const deselectAll = useCallback((ids?: number[]) => {
+  const deselectAll = useCallback((ids?: ExternalId[]) => {
     if (!ids) {
       setSelected(new Set());
       return;
@@ -36,7 +37,7 @@ export function useSeasonSelection() {
   }, []);
 
   const isSelected = useCallback(
-    (id: number) => selected.has(id),
+    (id: ExternalId) => selected.has(id),
     [selected]
   );
 

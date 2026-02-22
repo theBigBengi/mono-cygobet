@@ -553,7 +553,7 @@ export interface AdminProviderTeamsResponse {
     imagePath?: string | null;
     countryExternalId?: number | string | null;
     country?: {
-      id: number;
+      id: number | string;
       name: string;
       imagePath: string | null;
       iso2: string | null;

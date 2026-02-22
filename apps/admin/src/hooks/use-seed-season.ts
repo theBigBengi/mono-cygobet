@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { syncService } from "@/services/sync.service";
 import { toast } from "sonner";
+import type { ExternalId } from "@repo/types/sport-data/common";
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_ATTEMPTS = 150; // ~5 minutes at 2s
@@ -82,7 +83,7 @@ export function useSeedSeason() {
   }, [jobId, jobStatus, queryClient]);
 
   const seedSeason = (
-    seasonExternalId: number,
+    seasonExternalId: ExternalId,
     options?: { futureOnly?: boolean }
   ) => {
     setJobStatus("idle");

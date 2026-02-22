@@ -48,6 +48,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import type { AvailableSeason } from "@repo/types";
+import type { ExternalId } from "@repo/types/sport-data/common";
 
 type TabValue = "new" | "in_db" | "all";
 type StatusFilterValue = "active" | "upcoming" | "finished" | "all";
@@ -56,12 +57,12 @@ interface CountryGroup {
   country: string;
   leagues: LeagueGroup[];
   newCount: number;
-  seasonIds: number[];
+  seasonIds: ExternalId[];
 }
 
 interface LeagueGroup {
   leagueName: string;
-  leagueExternalId: number;
+  leagueExternalId: ExternalId;
   seasons: AvailableSeason[];
   newCount: number;
 }
