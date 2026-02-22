@@ -3,7 +3,9 @@ set -euo pipefail
 
 # ─── Sync production data → development database ─────────────
 #
-# Usage:  pnpm --filter @repo/db sync-from-prod
+# Usage:
+#   pnpm --filter @repo/db sync-from-prod              # sync all tables
+#   pnpm --filter @repo/db sync-from-prod -- -t fixtures -t odds   # specific tables
 #
 # Reads PRODUCTION_DATABASE_URL and DATABASE_URL from root .env
 # Uses pg_dump (data-only) so schema stays managed by Prisma.
@@ -11,6 +13,22 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 DUMP_FILE="$SCRIPT_DIR/.dump.pgdata"
+
+# ─── Parse arguments ────────────────────────────────────────
+TABLES=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -t|--table)
+      TABLES+=("$2")
+      shift 2
+      ;;
+    *)
+      echo "❌ Unknown option: $1"
+      echo "Usage: sync-from-prod [-- -t table1 -t table2]"
+      exit 1
+      ;;
+  esac
+done
 
 # ─── Load env vars from root .env ─────────────────────────────
 if [ -f "$ROOT_DIR/.env" ]; then
@@ -37,25 +55,45 @@ if [ "$DATABASE_URL" = "$PRODUCTION_DATABASE_URL" ]; then
   exit 1
 fi
 
-echo "📥 Dumping data from production..."
+# ─── Build table flags for pg_dump ──────────────────────────
+DUMP_TABLE_FLAGS=()
+if [ ${#TABLES[@]} -gt 0 ]; then
+  for t in "${TABLES[@]}"; do
+    DUMP_TABLE_FLAGS+=("-t" "public.$t")
+  done
+  echo "📥 Dumping tables from production: ${TABLES[*]}"
+else
+  echo "📥 Dumping ALL tables from production..."
+fi
+
 pg_dump "$PRODUCTION_DATABASE_URL" \
   --data-only \
   --no-owner \
   --no-privileges \
   --format=custom \
+  "${DUMP_TABLE_FLAGS[@]}" \
   -f "$DUMP_FILE"
 
-echo "🗑️  Truncating dev tables..."
-psql "$DATABASE_URL" -c "
-  DO \$\$
-  DECLARE r RECORD;
-  BEGIN
-    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
-      EXECUTE 'TRUNCATE TABLE public.' || quote_ident(r.tablename) || ' CASCADE';
-    END LOOP;
-  END \$\$;
-" > /dev/null
+# ─── Truncate target tables in dev ──────────────────────────
+if [ ${#TABLES[@]} -gt 0 ]; then
+  echo "🗑️  Truncating tables: ${TABLES[*]}"
+  for t in "${TABLES[@]}"; do
+    psql "$DATABASE_URL" -c "TRUNCATE TABLE public.${t} CASCADE;" > /dev/null 2>&1
+  done
+else
+  echo "🗑️  Truncating all dev tables..."
+  psql "$DATABASE_URL" -c "
+    DO \$\$
+    DECLARE r RECORD;
+    BEGIN
+      FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'TRUNCATE TABLE public.' || quote_ident(r.tablename) || ' CASCADE';
+      END LOOP;
+    END \$\$;
+  " > /dev/null
+fi
 
+# ─── Restore ────────────────────────────────────────────────
 echo "📤 Restoring data to development..."
 pg_restore \
   --data-only \
@@ -69,4 +107,8 @@ pg_restore \
 rm -f "$DUMP_FILE"
 
 echo ""
-echo "✅ Sync complete. Development database now has production data."
+if [ ${#TABLES[@]} -gt 0 ]; then
+  echo "✅ Sync complete: ${TABLES[*]}"
+else
+  echo "✅ Sync complete. All tables synced."
+fi
