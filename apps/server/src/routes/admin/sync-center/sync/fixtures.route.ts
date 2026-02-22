@@ -330,12 +330,12 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         const providerDto = providerMap.get(extId);
 
         if (!dbFixture || !providerDto) {
-          results[String(extId)] = [];
+          results[extId] = [];
           continue;
         }
 
         const incoming = transformFixtureDto(providerDto);
-        results[String(extId)] = computeChanges(
+        results[extId] = computeChanges(
           dbFixture as unknown as Record<string, unknown>,
           incoming as Record<string, unknown>
         );

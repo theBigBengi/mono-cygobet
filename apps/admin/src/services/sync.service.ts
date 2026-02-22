@@ -74,7 +74,7 @@ export const syncService = {
   ): Promise<AdminSeedSeasonResponse> {
     return apiPost<AdminSeedSeasonResponse>(
       "/admin/sync-center/sync/seed-season",
-      params
+      { ...params, seasonExternalId: String(params.seasonExternalId) }
     );
   },
 
@@ -97,7 +97,7 @@ export const syncService = {
   ): Promise<AdminBatchSeedSeasonsResponse> {
     return apiPost<AdminBatchSeedSeasonsResponse>(
       "/admin/sync-center/sync/batch-seed-seasons",
-      params
+      { ...params, seasonExternalIds: params.seasonExternalIds.map(String) }
     );
   },
 

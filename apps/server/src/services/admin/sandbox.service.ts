@@ -30,11 +30,7 @@ async function assertSandboxFixture(fixtureId: number) {
 }
 
 async function nextSandboxExternalId(): Promise<string> {
-  const max = await prisma.fixtures.aggregate({
-    _max: { id: true },
-    where: { isSandbox: true },
-  });
-  return `sandbox-${(max._max.id ?? 0) + 1}-${Date.now()}`;
+  return `sandbox-${crypto.randomUUID()}`;
 }
 
 const RANDOM_SCORES = [

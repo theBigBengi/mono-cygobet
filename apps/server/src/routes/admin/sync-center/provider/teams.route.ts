@@ -61,7 +61,7 @@ const adminTeamsProviderRoutes: FastifyPluginAsync = async (fastify) => {
             countryExternalId: t.countryExternalId ?? null,
             country: providerCountry
               ? {
-                  id: Number(providerCountry.externalId),
+                  id: providerCountry.externalId,
                   name: providerCountry.name,
                   imagePath: providerCountry.imagePath ?? null,
                   iso2: providerCountry.iso2 ?? null,

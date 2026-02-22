@@ -11,7 +11,7 @@ export const MatchState = {
 export type MatchState = (typeof MatchState)[keyof typeof MatchState];
 
 export type CountryDTO = {
-  externalId: number | string;
+  externalId: ExternalId;
   name: string;
   imagePath?: string | null;
   iso2?: string | null;
@@ -19,7 +19,7 @@ export type CountryDTO = {
 };
 
 export type LeagueDTO = {
-  externalId: number | string;
+  externalId: ExternalId;
   name: string;
   imagePath?: string | null;
   countryExternalId?: ExternalId | null;
@@ -42,7 +42,7 @@ export type MarketDTO = {
 
 export type TeamDTO = {
   /** Provider’s team id -> goes to team_mappings.external_id (as string) */
-  externalId: number | string;
+  externalId: ExternalId;
 
   /** teams.name */
   name: string;
@@ -54,7 +54,7 @@ export type TeamDTO = {
   imagePath?: string | null;
 
   /** teams.country_id is resolved via country_mappings on this provider id (nullable) */
-  countryExternalId?: string | number | null;
+  countryExternalId?: ExternalId | null;
 
   /** teams.founded (nullable) */
   founded?: number | null;
