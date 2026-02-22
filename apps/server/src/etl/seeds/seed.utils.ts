@@ -1,10 +1,10 @@
 // src/etl/seeds/seed.utils.ts
 import type { Prisma } from "@repo/db";
 import { RunStatus, RunTrigger, prisma } from "@repo/db";
-import { chunk, safeBigInt } from "../utils";
+import { chunk } from "../utils";
 
 // Re-export for seeds that import from seed.utils
-export { chunk, safeBigInt };
+export { chunk };
 
 // Safely coerce unknown JSON to an object for merging
 function toJsonObject(v: unknown): Prisma.InputJsonObject {

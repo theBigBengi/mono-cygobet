@@ -346,7 +346,7 @@ export default function FixturesPage() {
           if (chunks.length > 1) {
             setBulkProgress(`Syncing batch ${i + 1}/${chunks.length}...`);
           }
-          const result = await fixturesService.syncBulk(chunks[i].map(Number));
+          const result = await fixturesService.syncBulk(chunks[i]);
           totalOk += result.data.ok;
           totalFail += result.data.fail;
           totalCount += result.data.total;

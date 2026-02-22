@@ -85,7 +85,7 @@ export const syncService = {
   },
 
   async getSeedSeasonPreview(
-    seasonExternalId: number
+    seasonExternalId: string | number
   ): Promise<AdminSeedSeasonPreviewResponse> {
     return apiGet<AdminSeedSeasonPreviewResponse>(
       `/admin/sync-center/sync/seed-season/preview?seasonExternalId=${seasonExternalId}`

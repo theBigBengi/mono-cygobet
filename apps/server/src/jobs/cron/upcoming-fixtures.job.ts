@@ -9,7 +9,7 @@ import { UPCOMING_FIXTURES_JOB } from "../jobs.definitions";
 import { createBatchForJob, getJobRowOrThrow } from "../jobs.db";
 import { clampInt, getMeta, isUpcomingFixturesJobMeta } from "../jobs.meta";
 import { runJob } from "../run-job";
-import { FixtureState } from "@repo/types/sport-data/common";
+import { FixtureState } from "@repo/db";
 
 // Days ahead to fetch fixtures for
 const DAYS_AHEAD = 3;

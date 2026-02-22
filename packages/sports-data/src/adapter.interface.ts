@@ -26,12 +26,8 @@ export type FixtureFetchOptions = {
   states?: FixtureState[];
 };
 
-/** fetchFixturesBySeason has an additional option */
-export type FixturesBySeasonOptions = {
-  includeScores?: boolean;
-  includeOdds?: boolean;
-  states?: FixtureState[];
-};
+/** fetchFixturesBySeason options (no perPage — seasons return all fixtures). */
+export type FixturesBySeasonOptions = Omit<FixtureFetchOptions, "perPage">;
 
 /** Options for fetchOddsBetween */
 export type OddsFetchOptions = {

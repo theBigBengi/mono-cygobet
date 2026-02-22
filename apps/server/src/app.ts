@@ -137,13 +137,8 @@ const app: FastifyPluginAsync<AppOptions> = async (
     await fastify.register(fastifyCompress, { threshold: 1024 });
 
     fastify.setReplySerializer((payload) => {
-      // Keep strings as-is (Fastify may already give a string)
       if (typeof payload === "string") return payload;
-
-      // Convert BigInt values to strings to avoid precision loss
-      return JSON.stringify(payload, (_key, value) =>
-        typeof value === "bigint" ? value.toString() : value
-      );
+      return JSON.stringify(payload);
     });
 
     // Load plugins

@@ -1,5 +1,3 @@
-export type ID = number; // or string if you prefer
-
 export type ExternalId = string | number;
 
 export const MatchState = {
@@ -24,14 +22,14 @@ export type LeagueDTO = {
   externalId: number | string;
   name: string;
   imagePath?: string | null;
-  countryExternalId?: ID | string | null;
+  countryExternalId?: ExternalId | null;
   shortCode?: string | null;
   type?: string | null;
   subType?: string | null;
 };
 
 export type BookmakerDTO = {
-  externalId: ExternalId; // BigInt in Prisma schema
+  externalId: ExternalId;
   name: string;
 };
 
@@ -99,6 +97,10 @@ export type SeasonPreviewDTO = {
   fixturesCountFuture: number;
 };
 
+/**
+ * Mirrors the Prisma `FixtureState` enum in packages/db.
+ * Keep in sync — this copy exists so @repo/types stays dependency-free.
+ */
 export const FixtureState = {
   NS: "NS",
   TBA: "TBA",

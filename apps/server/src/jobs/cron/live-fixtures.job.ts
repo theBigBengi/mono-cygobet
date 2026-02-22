@@ -1,7 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { RunStatus, prisma } from "@repo/db";
+import { RunStatus, prisma, FixtureState } from "@repo/db";
 import { NOT_STARTED_STATES, LIVE_STATES } from "@repo/utils";
-import { FixtureState } from "@repo/types/sport-data/common";
 import { adapter } from "../../utils/adapter";
 import { syncFixtures } from "../../etl/sync/sync.fixtures";
 import { finishSeedBatch } from "../../etl/seeds/seed.utils";

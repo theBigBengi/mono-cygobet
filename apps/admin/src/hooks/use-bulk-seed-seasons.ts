@@ -129,7 +129,7 @@ export function useBulkSeedSeasons() {
 
   const startBatch = useCallback(
     async (params: {
-      seasonExternalIds: number[];
+      seasonExternalIds: (string | number)[];
       futureOnly?: boolean;
     }) => {
       setState({

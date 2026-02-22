@@ -8,8 +8,10 @@ import { getLogger } from "../../logger";
 
 const log = getLogger("BatchSeedSeasons");
 
+import type { ExternalId } from "@repo/types/sport-data/common";
+
 interface SeasonStatus {
-  seasonExternalId: number;
+  seasonExternalId: ExternalId;
   status: "pending" | "processing" | "done" | "failed";
   error?: string;
   result?: {
@@ -21,7 +23,7 @@ interface SeasonStatus {
 
 export interface BatchSeedParams {
   batchId: number;
-  seasonExternalIds: number[];
+  seasonExternalIds: ExternalId[];
   includeTeams: boolean;
   includeFixtures: boolean;
   futureOnly: boolean;

@@ -47,7 +47,7 @@ export interface AdminAvailabilityResponse {
 }
 
 export interface AdminSeedSeasonRequest {
-  seasonExternalId: number;
+  seasonExternalId: ExternalId;
   includeTeams?: boolean;
   includeFixtures?: boolean;
   /** Seed only future fixtures (default: true) */
@@ -63,7 +63,7 @@ export interface AdminSeedSeasonResponse {
 }
 
 export interface AdminSeedSeasonPreviewRequest {
-  seasonExternalId: number;
+  seasonExternalId: ExternalId;
 }
 
 export interface AdminSeedSeasonPreviewResponse {
@@ -93,7 +93,7 @@ export interface AdminSeedSeasonPreviewResponse {
 }
 
 export interface AdminBatchSeedSeasonsRequest {
-  seasonExternalIds: number[];
+  seasonExternalIds: ExternalId[];
   includeTeams?: boolean;
   includeFixtures?: boolean;
   futureOnly?: boolean;
@@ -108,7 +108,7 @@ export interface AdminBatchSeedSeasonsResponse {
 }
 
 export interface BatchSeedSeasonResult {
-  seasonExternalId: number;
+  seasonExternalId: ExternalId;
   status: "pending" | "processing" | "done" | "failed";
   error?: string;
   result?: {

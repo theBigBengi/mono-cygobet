@@ -139,7 +139,7 @@ export const fixturesService = {
   },
 
   async syncBulk(
-    externalIds: number[],
+    externalIds: string[],
     dryRun = false
   ): Promise<AdminSyncFixturesResponse> {
     return apiPost<AdminSyncFixturesResponse>(
@@ -164,7 +164,7 @@ export const fixturesService = {
     }>(`/admin/sync-center/sync/fixtures/${externalId}/preview`);
   },
 
-  async syncPreviewBatch(externalIds: number[]) {
+  async syncPreviewBatch(externalIds: string[]) {
     return apiPost<{
       status: string;
       data: Record<string, Array<{

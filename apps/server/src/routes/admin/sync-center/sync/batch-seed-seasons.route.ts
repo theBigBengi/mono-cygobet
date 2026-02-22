@@ -23,7 +23,7 @@ const batchSeedSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
           properties: {
             seasonExternalIds: {
               type: "array",
-              items: { type: "number" },
+              items: { type: "string" },
               minItems: 1,
               maxItems: MAX_SEASONS_PER_BATCH,
             },

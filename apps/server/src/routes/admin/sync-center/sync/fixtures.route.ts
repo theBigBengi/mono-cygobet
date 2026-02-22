@@ -4,7 +4,7 @@ import { syncFixtures } from "../../../../etl/sync/sync.fixtures";
 import { adapter } from "../../../../utils/adapter";
 import { availabilityService } from "../../../../services/availability.service";
 import { AdminSyncFixturesResponse } from "@repo/types";
-import { FixtureState } from "@repo/types/sport-data/common";
+import { FixtureState } from "@repo/db";
 import {
   syncBodySchema,
   syncResponseSchema,
@@ -293,13 +293,13 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   // POST /admin/sync/fixtures/preview-batch - Preview changes for multiple fixtures at once
-  fastify.post<{ Body: { externalIds: number[] } }>(
+  fastify.post<{ Body: { externalIds: string[] } }>(
     "/fixtures/preview-batch",
     {
       schema: {
         body: {
           type: "object",
-          properties: { externalIds: { type: "array", items: { type: "number" }, maxItems: 50 } },
+          properties: { externalIds: { type: "array", items: { type: "string" }, maxItems: 50 } },
           required: ["externalIds"],
         },
       },
@@ -312,16 +312,16 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
 
       // Fetch all DB fixtures in one query
       const dbFixtures = await prisma.fixtures.findMany({
-        where: { externalId: { in: externalIds.map(String) } },
+        where: { externalId: { in: externalIds } },
         select: { externalId: true, ...DB_FIXTURE_SELECT },
       });
-      const dbMap = new Map(dbFixtures.map((f) => [Number(f.externalId), f]));
+      const dbMap = new Map(dbFixtures.map((f) => [f.externalId, f]));
 
       // Fetch all from provider in ONE call using fetchFixturesByIds
       const providerDtos = await adapter.fetchFixturesByIds(externalIds, {
         includeScores: true,
       });
-      const providerMap = new Map(providerDtos.map((dto) => [dto.externalId, dto]));
+      const providerMap = new Map(providerDtos.map((dto) => [String(dto.externalId), dto]));
 
       // Compare each fixture
       const results: Record<string, SyncPreviewChange[]> = {};
@@ -347,7 +347,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
 
   // POST /admin/sync/fixtures/bulk - Sync multiple fixtures by external IDs
   fastify.post<{
-    Body: { externalIds: number[]; dryRun?: boolean };
+    Body: { externalIds: string[]; dryRun?: boolean };
     Reply: AdminSyncFixturesResponse;
   }>(
     "/fixtures/bulk",
@@ -358,7 +358,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           properties: {
             externalIds: {
               type: "array",
-              items: { type: "number" },
+              items: { type: "string" },
               minItems: 1,
               maxItems: 100,
             },

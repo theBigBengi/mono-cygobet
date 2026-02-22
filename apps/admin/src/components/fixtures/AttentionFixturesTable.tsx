@@ -119,7 +119,7 @@ export function AttentionFixturesTable({
 
   useEffect(() => {
     if (!data.length) return;
-    const externalIds = data.map((f) => Number(f.externalId));
+    const externalIds = data.map((f) => f.externalId);
     const cacheKey = externalIds.join(",");
     // Don't refetch if same set of IDs
     if (cacheKey === lastFetchedIds.current) return;

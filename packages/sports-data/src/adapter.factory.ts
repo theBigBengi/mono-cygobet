@@ -24,14 +24,15 @@ export function createSportsDataAdapter(
         require("./adapters/sportmonks/sportmonks.adapter");
       return new SportMonksAdapter(opts?.config);
     }
-    // Future providers:
-    // case "api-football": {
-    //   const { ApiFootballAdapter } = require("./adapters/api-football/api-football.adapter");
-    //   return new ApiFootballAdapter(opts?.config);
-    // }
+    case "api-football": {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ApiFootballAdapter } =
+        require("./adapters/api-football/api-football.adapter");
+      return new ApiFootballAdapter(opts?.config);
+    }
     default:
       throw new Error(
-        `Unknown provider: ${provider}. Supported: sportmonks`
+        `Unknown provider: ${provider}. Supported: sportmonks, api-football`
       );
   }
 }

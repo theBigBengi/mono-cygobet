@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { LIVE_STATES, FINISHED_STATES } from "@repo/utils";
 import { adapter } from "../../utils/adapter";
-import { RunStatus, prisma } from "@repo/db";
+import { RunStatus, prisma, FixtureState } from "@repo/db";
 import { syncFixtures } from "../../etl/sync/sync.fixtures";
 import { finishSeedBatch } from "../../etl/seeds/seed.utils";
 import { chunk } from "../../etl/utils";
@@ -10,7 +10,6 @@ import { FINISHED_FIXTURES_JOB } from "../jobs.definitions";
 import { createBatchForJob, getJobRowOrThrow } from "../jobs.db";
 import { clampInt, getMeta, isFinishedFixturesJobMeta } from "../jobs.meta";
 import { runJob } from "../run-job";
-import { FixtureState } from "@repo/types/sport-data/common";
 import { settlePredictionsForFixtures } from "../../services/api/groups/service/settlement";
 import { emitFixtureFTEvents } from "../../services/api/groups/service/chat-events";
 

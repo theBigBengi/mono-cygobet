@@ -23,15 +23,15 @@ const seedSeasonRoutes: FastifyPluginAsync = async (fastify) => {
           type: "object",
           required: ["seasonExternalId"],
           properties: {
-            seasonExternalId: { type: "number" },
+            seasonExternalId: { type: "string" },
           },
         },
       },
     },
     async (req, reply) => {
-      const seasonExternalId = Number(req.query.seasonExternalId);
+      const seasonExternalId = req.query.seasonExternalId;
 
-      if (!seasonExternalId || isNaN(seasonExternalId)) {
+      if (!seasonExternalId) {
         return reply.status(400).send({
           status: "error",
           message: "seasonExternalId is required",
@@ -113,7 +113,7 @@ const seedSeasonRoutes: FastifyPluginAsync = async (fastify) => {
           type: "object",
           required: ["seasonExternalId"],
           properties: {
-            seasonExternalId: { type: "number" },
+            seasonExternalId: { type: "string" },
             includeTeams: { type: "boolean" },
             includeFixtures: { type: "boolean" },
             futureOnly: { type: "boolean" },
@@ -151,7 +151,7 @@ const seedSeasonRoutes: FastifyPluginAsync = async (fastify) => {
         futureOnly = true,
       } = (req.body ?? {}) as AdminSeedSeasonRequest;
 
-      if (seasonExternalId == null || typeof seasonExternalId !== "number") {
+      if (seasonExternalId == null || typeof seasonExternalId !== "string") {
         return reply.status(400).send({
           status: "error",
           message: "seasonExternalId is required",

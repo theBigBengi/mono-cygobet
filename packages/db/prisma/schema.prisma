@@ -183,6 +183,7 @@ model fixtures {
   leg                 String?      @db.VarChar(5) // "1/1", "1/2", "2/2" for two-legged ties
   aggregateId         String?      @map("aggregate_id") // Links two-legged fixtures together
   externalId          String       @unique @map("external_id")
+  isSandbox           Boolean      @default(false) @map("is_sandbox")
   hasOdds             Boolean      @default(false) @map("has_odds")
   lastProviderState     String?      @map("last_provider_state")
   lastProviderCheckAt   DateTime?    @map("last_provider_check_at") @db.Timestamptz(6)
