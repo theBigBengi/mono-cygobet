@@ -1533,15 +1533,28 @@ function DateRangePickerButton({
   onChange: (from: Date | undefined, to: Date | undefined) => void;
   className?: string;
 }) {
-  const [open, setOpen] = useState(false);
   const hasRange = from && to;
+  const [open, setOpen] = useState(false);
+  const [pendingRange, setPendingRange] = useState<{
+    from?: Date;
+    to?: Date;
+  }>({ from, to });
+
+  const pendingComplete = !!pendingRange.from && !!pendingRange.to;
 
   return (
-    <Popover open={open}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) {
+          setPendingRange({ from, to });
+        }
+        setOpen(next);
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          onClick={() => setOpen((v) => !v)}
           className={cn(
             "justify-start font-normal",
             !hasRange && "text-muted-foreground",
@@ -1558,8 +1571,16 @@ function DateRangePickerButton({
             <span
               role="button"
               tabIndex={0}
-              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onChange(undefined, undefined); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); onChange(undefined, undefined); } }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange(undefined, undefined);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  onChange(undefined, undefined);
+                }
+              }}
               className="ml-auto shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <X className="h-3 w-3" />
@@ -1570,20 +1591,45 @@ function DateRangePickerButton({
       <PopoverContent
         className="w-auto p-0"
         align="start"
-        onPointerDownOutside={() => setOpen(false)}
-        onEscapeKeyDown={() => setOpen(false)}
-        onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <Calendar
           mode="range"
-          selected={hasRange ? { from, to } : from ? { from } : undefined}
-          onSelect={(range) => {
-            onChange(range?.from, range?.to);
-            if (range?.from && range?.to) setOpen(false);
-          }}
           defaultMonth={from}
+          selected={
+            pendingRange.from
+              ? { from: pendingRange.from, to: pendingRange.to }
+              : undefined
+          }
+          onSelect={(range) => setPendingRange(range ?? {})}
           numberOfMonths={2}
         />
+        <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            className="h-7 text-xs"
+            disabled={!pendingComplete}
+            onClick={() => {
+              if (pendingRange.from && pendingRange.to) {
+                onChange(pendingRange.from, pendingRange.to);
+              }
+              setOpen(false);
+            }}
+          >
+            Apply
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
