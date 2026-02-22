@@ -186,6 +186,15 @@ const adminTeamsDbRoutes: FastifyPluginAsync = async (fastify) => {
           ],
         });
       }
+      if ((query as any).ids) {
+        const ids = ((query as any).ids as string)
+          .split(",")
+          .map(Number)
+          .filter((n) => Number.isFinite(n));
+        if (ids.length > 0) {
+          filters.push({ id: { in: ids } });
+        }
+      }
       const where: Prisma.teamsWhereInput =
         filters.length > 0 ? { AND: filters } : {};
 

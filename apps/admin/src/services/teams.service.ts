@@ -16,6 +16,7 @@ export const teamsService = {
     leagueId?: number;
     type?: string;
     search?: string;
+    ids?: number[];
     include?: string;
   }) {
     const searchParams = new URLSearchParams();
@@ -28,6 +29,7 @@ export const teamsService = {
       searchParams.append("leagueId", params.leagueId.toString());
     if (params?.type) searchParams.append("type", params.type);
     if (params?.search) searchParams.append("search", params.search);
+    if (params?.ids?.length) searchParams.append("ids", params.ids.join(","));
     if (params?.include) searchParams.append("include", params.include);
 
     const queryString = searchParams.toString();

@@ -81,6 +81,15 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
       if (query.search) {
         where.name = { contains: query.search, mode: "insensitive" };
       }
+      if ((query as any).ids) {
+        const ids = ((query as any).ids as string)
+          .split(",")
+          .map(Number)
+          .filter((n) => Number.isFinite(n));
+        if (ids.length > 0) {
+          where.id = { in: ids };
+        }
+      }
 
       const { leagues, count } = await service.get({
         take,

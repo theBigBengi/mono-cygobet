@@ -9,6 +9,7 @@ export const listLeaguesQuerystringSchema = {
     countryId: { type: "number" },
     type: { type: "string" },
     search: { type: "string" },
+    ids: { type: "string" }, // comma-separated IDs, e.g. "1,2,3"
     include: { type: "string" }, // e.g., "country,seasons,fixtures"
   },
 };

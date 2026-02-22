@@ -157,8 +157,8 @@ export function LeagueOrderContent() {
     queryKey: ["leagues-selected", selectedIds],
     queryFn: async () => {
       if (selectedIds.length === 0) return { data: [] };
-      const response = await leaguesService.getFromDb({ perPage: 100 });
-      return { data: response.data.filter((l) => selectedIds.includes(l.id)) };
+      const response = await leaguesService.getFromDb({ perPage: selectedIds.length, ids: selectedIds });
+      return { data: response.data };
     },
     enabled: selectedIds.length > 0 && !settingsLoading,
     staleTime: Infinity,

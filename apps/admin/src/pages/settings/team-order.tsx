@@ -157,8 +157,8 @@ export function TeamOrderContent() {
     queryKey: ["teams-selected", selectedIds],
     queryFn: async () => {
       if (selectedIds.length === 0) return { data: [] };
-      const response = await teamsService.getFromDb({ perPage: 200 });
-      return { data: response.data.filter((t) => selectedIds.includes(t.id)) };
+      const response = await teamsService.getFromDb({ perPage: selectedIds.length, ids: selectedIds });
+      return { data: response.data };
     },
     enabled: selectedIds.length > 0 && !settingsLoading,
     staleTime: Infinity,

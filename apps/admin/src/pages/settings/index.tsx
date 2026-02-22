@@ -17,10 +17,12 @@ const TABS = {
 type TabValue = (typeof TABS)[keyof typeof TABS];
 
 const DEFAULT_TAB: TabValue = TABS.general;
+const VALID_TABS = new Set<string>(Object.values(TABS));
 
 export default function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = (searchParams.get("tab") as TabValue) || DEFAULT_TAB;
+  const rawTab = searchParams.get("tab");
+  const currentTab: TabValue = rawTab && VALID_TABS.has(rawTab) ? (rawTab as TabValue) : DEFAULT_TAB;
 
   const handleTabChange = (value: string) => {
     if (value === DEFAULT_TAB) {
