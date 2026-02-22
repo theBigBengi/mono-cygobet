@@ -1537,7 +1537,7 @@ function DateRangePickerButton({
   const hasRange = from && to;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -1554,17 +1554,24 @@ function DateRangePickerButton({
               : "Date range"}
           </span>
           {hasRange && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onChange(undefined, undefined); }}
-              className="ml-auto shrink-0 text-muted-foreground hover:text-foreground"
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onChange(undefined, undefined); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); onChange(undefined, undefined); } }}
+              className="ml-auto shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <X className="h-3 w-3" />
-            </button>
+            </span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent
+        className="w-auto p-0"
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <Calendar
           mode="range"
           selected={hasRange ? { from, to } : from ? { from } : undefined}
