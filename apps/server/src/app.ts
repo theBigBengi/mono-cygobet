@@ -53,7 +53,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
     const options = {
       confKey: "config", // config will be available at fastify.config
       schema,
-      dotenv: true, // Load from .env automatically
+      dotenv: false, // Env already loaded by @repo/env in server.ts
     };
 
     await fastify.register(fastifyEnv, options);

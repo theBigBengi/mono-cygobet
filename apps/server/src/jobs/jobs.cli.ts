@@ -13,7 +13,7 @@
  * - Dry-run:
  *   tsx src/jobs/jobs.cli.ts --job=upcoming-fixtures --dry-run
  */
-import "dotenv/config";
+import "@repo/env";
 import Fastify, { type FastifyInstance } from "fastify";
 import { JobTriggerBy, RunTrigger, prisma } from "@repo/db";
 import type { JobRunOpts } from "../types/jobs";

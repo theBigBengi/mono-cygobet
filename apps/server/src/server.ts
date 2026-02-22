@@ -1,3 +1,4 @@
+import "@repo/env";
 import Fastify from "fastify";
 
 // import qs from "qs";

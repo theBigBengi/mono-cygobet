@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "@repo/env";
 import * as bcrypt from "bcrypt";
 import { prisma } from "@repo/db";
 import { getLogger } from "../logger";
