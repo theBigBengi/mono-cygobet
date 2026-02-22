@@ -49,7 +49,7 @@ export function transformOddsDto(dto: OddsDTO): OddsTransformResult {
       `Odd value must be a valid number >= 1, got: ${dto.value}`
     );
   }
-  if (dto.fixtureExternalId == null || !Number.isFinite(Number(dto.fixtureExternalId))) {
+  if (dto.fixtureExternalId == null || String(dto.fixtureExternalId).trim() === "") {
     throw new Error("Fixture external ID is required");
   }
   if (dto.startingAtTs == null || !Number.isFinite(dto.startingAtTs)) {

@@ -646,7 +646,7 @@ export interface AdminProviderSeasonsResponse {
     isCurrent: boolean;
     leagueExternalId: number | string | null;
     league?: {
-      id: number;
+      id: number | string;
       name: string;
     } | null;
     leagueInDb?: boolean;

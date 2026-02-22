@@ -65,7 +65,7 @@ export const availabilityService = {
         externalId: ps.externalId,
         name: ps.name,
         league: {
-          externalId: Number(ps.leagueExternalId),
+          externalId: ps.leagueExternalId ?? 0,
           name: ps.leagueName,
           country: ps.countryName ?? "",
         },

@@ -74,8 +74,7 @@ const adminSyncOddsRoutes: FastifyPluginAsync = async (fastify) => {
       const { fixtureExternalId } = req.params;
       const { dryRun = false } = req.body ?? {};
 
-      const fixtureId = Number(fixtureExternalId);
-      if (Number.isNaN(fixtureId) || fixtureExternalId.trim() === "") {
+      if (!fixtureExternalId || fixtureExternalId.trim() === "") {
         return reply.status(400).send({
           status: "error",
           data: { ok: 0, fail: 0, total: 0, inserted: 0, updated: 0, skipped: 0 },

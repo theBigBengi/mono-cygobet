@@ -101,7 +101,7 @@ export async function processSeedSeason(
         );
 
         const providerLeague = await adapter.fetchLeagueById(
-          Number(providerSeason.leagueExternalId)
+          providerSeason.leagueExternalId!
         );
         if (!providerLeague) {
           throw new Error(
@@ -122,7 +122,7 @@ export async function processSeedSeason(
             );
 
             const providerCountry = await adapter.fetchCountryById(
-              Number(providerLeague.countryExternalId)
+              providerLeague.countryExternalId!
             );
             if (providerCountry) {
               await seedCountries([providerCountry], { batchId });

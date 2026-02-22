@@ -48,7 +48,7 @@ const adminSeasonsProviderRoutes: FastifyPluginAsync = async (fastify) => {
             // League data already included in season response
             league: s.leagueExternalId
               ? {
-                  id: Number(s.leagueExternalId),
+                  id: s.leagueExternalId,
                   name: s.leagueName ?? "",
                 }
               : null,
