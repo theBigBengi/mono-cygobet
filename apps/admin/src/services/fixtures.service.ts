@@ -256,17 +256,27 @@ export const fixturesService = {
   },
 
   async search(params: {
-    q: string;
+    q?: string;
+    leagueId?: number;
+    fromTs?: number;
+    toTs?: number;
     page?: number;
     perPage?: number;
   }): Promise<AdminFixtureSearchResponse> {
     const searchParams = new URLSearchParams();
-    searchParams.append("q", params.q);
+    if (params.q) searchParams.append("q", params.q);
+    if (params.leagueId)
+      searchParams.append("leagueId", params.leagueId.toString());
+    if (params.fromTs !== undefined)
+      searchParams.append("fromTs", params.fromTs.toString());
+    if (params.toTs !== undefined)
+      searchParams.append("toTs", params.toTs.toString());
     if (params.page) searchParams.append("page", params.page.toString());
     if (params.perPage)
       searchParams.append("perPage", params.perPage.toString());
+    const qs = searchParams.toString();
     return apiGet<AdminFixtureSearchResponse>(
-      `/admin/fixtures/search?${searchParams.toString()}`
+      `/admin/fixtures/search${qs ? `?${qs}` : ""}`
     );
   },
 };

@@ -68,25 +68,37 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           type: "object",
           properties: {
             q: { type: "string", minLength: 2 },
+            leagueId: { type: "number" },
+            fromTs: { type: "number" },
+            toTs: { type: "number" },
             page: { type: "number", minimum: 1 },
             perPage: { type: "number", minimum: 1, maximum: 100 },
           },
-          required: ["q"],
         },
       },
     },
     async (req, reply) => {
-      const { q, page = 1, perPage = 25 } = req.query as {
-        q: string;
+      const { q, leagueId, fromTs, toTs, page = 1, perPage = 25 } = req.query as {
+        q?: string;
+        leagueId?: number;
+        fromTs?: number;
+        toTs?: number;
         page?: number;
         perPage?: number;
       };
 
+      const where: any = { externalId: { gte: 0 } };
+      if (q) where.name = { contains: q, mode: "insensitive" };
+      if (leagueId) where.leagueId = leagueId;
+      if (fromTs || toTs) {
+        where.startTs = {
+          ...(fromTs && { gte: fromTs }),
+          ...(toTs && { lte: toTs }),
+        };
+      }
+
       const matchedFixtures = await prisma.fixtures.findMany({
-        where: {
-          name: { contains: q, mode: "insensitive" },
-          externalId: { gte: 0 },
-        },
+        where,
         select: {
           id: true,
           name: true,
@@ -107,12 +119,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         skip: (page - 1) * perPage,
       });
 
-      const totalCount = await prisma.fixtures.count({
-        where: {
-          name: { contains: q, mode: "insensitive" },
-          externalId: { gte: 0 },
-        },
-      });
+      const totalCount = await prisma.fixtures.count({ where });
 
       const data = await Promise.all(
         matchedFixtures.map(async (f) => {
@@ -144,7 +151,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           totalItems: totalCount,
           totalPages: Math.max(1, Math.ceil(totalCount / perPage)),
         },
-        message: `Found ${totalCount} fixture(s) matching "${q}"`,
+        message: `Found ${totalCount} fixture(s)${q ? ` matching "${q}"` : ""}`,
       });
     }
   );

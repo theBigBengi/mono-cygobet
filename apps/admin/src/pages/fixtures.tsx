@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, Check, ChevronsUpDown, Filter, Loader2, Radio, RefreshCw, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { AlertTriangle, CalendarIcon, Check, ChevronsUpDown, Filter, Loader2, Radio, RefreshCw, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
+import { format, formatDistanceToNow, startOfDay, endOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,8 +47,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Calendar } from "@/components/ui/calendar";
 import { AttentionFixturesTable } from "@/components/fixtures/AttentionFixturesTable";
-import { FixtureSearchBar } from "@/components/fixtures/FixtureSearchBar";
 import {
   useLiveFixtures,
   useFixturesAttention,
@@ -56,6 +56,7 @@ import {
 } from "@/hooks/use-fixtures";
 import { HeaderActions } from "@/contexts/header-actions";
 import { fixturesService } from "@/services/fixtures.service";
+import { leaguesService } from "@/services/leagues.service";
 import type {
   AdminSyncFixturesResponse,
   AdminFixturesListResponse,
@@ -174,17 +175,84 @@ export default function FixturesPage() {
     });
   }, [allPageSelected, pageExternalIds]);
 
-  // ─── Search tab state ───
-  const [searchQuery, setSearchQuery] = useState("");
+  // ─── Search tab state (pending / applied filters) ───
+  type SearchFilters = {
+    query: string;
+    leagueId: number | undefined;
+    leagueName: string;
+    fromDate: Date | undefined;
+    toDate: Date | undefined;
+  };
+  const defaultSearchFilters: SearchFilters = {
+    query: "",
+    leagueId: undefined,
+    leagueName: "",
+    fromDate: undefined,
+    toDate: undefined,
+  };
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>(defaultSearchFilters);
+  const [appliedSearchFilters, setAppliedSearchFilters] = useState<SearchFilters>(defaultSearchFilters);
+  const [searchFilterDrawerOpen, setSearchFilterDrawerOpen] = useState(false);
   const [searchPage, setSearchPage] = useState(1);
+
+  const searchFiltersAreDirty =
+    searchFilters.query !== appliedSearchFilters.query ||
+    searchFilters.leagueId !== appliedSearchFilters.leagueId ||
+    searchFilters.fromDate?.getTime() !== appliedSearchFilters.fromDate?.getTime() ||
+    searchFilters.toDate?.getTime() !== appliedSearchFilters.toDate?.getTime();
+
+  const hasDateRange =
+    searchFilters.fromDate !== undefined && searchFilters.toDate !== undefined;
+  const hasAppliedDateRange =
+    appliedSearchFilters.fromDate !== undefined && appliedSearchFilters.toDate !== undefined;
+
+  const hasActiveSearchFilters =
+    appliedSearchFilters.query !== "" ||
+    appliedSearchFilters.leagueId !== undefined ||
+    hasAppliedDateRange;
+
+  const activeSearchFilterCount =
+    (appliedSearchFilters.query !== "" ? 1 : 0) +
+    (appliedSearchFilters.leagueId !== undefined ? 1 : 0) +
+    (hasAppliedDateRange ? 1 : 0);
+
+  // Pending filters would produce a valid query
+  const pendingFiltersAreValid =
+    searchFilters.query.length >= 2 ||
+    searchFilters.leagueId !== undefined ||
+    hasDateRange;
+
+  const applySearchFilters = useCallback(() => {
+    setAppliedSearchFilters(searchFilters);
+    setSearchPage(1);
+    setSearchFilterDrawerOpen(false);
+  }, [searchFilters]);
+
+  const resetSearchFilters = useCallback(() => {
+    setSearchFilters(defaultSearchFilters);
+    setAppliedSearchFilters(defaultSearchFilters);
+    setSearchPage(1);
+  }, []);
 
   const {
     data: searchData,
     isLoading: searchLoading,
     isFetching: searchFetching,
-  } = useFixtureSearch(searchQuery, { page: searchPage, perPage: 25 }, {
-    enabled: tab === "search",
-  });
+  } = useFixtureSearch(
+    {
+      q: appliedSearchFilters.query || undefined,
+      leagueId: appliedSearchFilters.leagueId,
+      fromTs: appliedSearchFilters.fromDate
+        ? Math.floor(startOfDay(appliedSearchFilters.fromDate).getTime() / 1000)
+        : undefined,
+      toTs: appliedSearchFilters.toDate
+        ? Math.floor(endOfDay(appliedSearchFilters.toDate).getTime() / 1000)
+        : undefined,
+      page: searchPage,
+      perPage: 25,
+    },
+    { enabled: tab === "search" }
+  );
 
   // ─── Sync fixture mutation ───
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
@@ -652,18 +720,162 @@ export default function FixturesPage() {
           </>
         )}
 
-        {/* Search tab bar */}
+        {/* Search tab filters */}
         {tab === "search" && (
-          <div className="mt-3 sm:max-w-md">
-            <FixtureSearchBar
-              value={searchQuery}
-              onChange={(v) => {
-                setSearchQuery(v);
-                setSearchPage(1);
-              }}
-              placeholder="Search by fixture name (min 2 characters)..."
-            />
-          </div>
+          <>
+            {/* ── Mobile: filter button ── */}
+            <div className="mt-3 flex items-center gap-2 sm:hidden">
+              <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  onClick={() => setSearchFilterDrawerOpen(true)}
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  Filters
+                  {activeSearchFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-0.5 h-4 min-w-4 px-1 text-[10px]">
+                      {activeSearchFilterCount}
+                    </Badge>
+                  )}
+                </Button>
+                {hasActiveSearchFilters && (
+                  <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={resetSearchFilters}>
+                    <RotateCcw className="mr-1 h-3 w-3" />
+                    Reset
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* ── Mobile: search filter drawer ── */}
+            <Drawer open={searchFilterDrawerOpen} onOpenChange={setSearchFilterDrawerOpen}>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Search Filters</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 space-y-4 pb-2">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Search</label>
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        value={searchFilters.query}
+                        onChange={(e) => setSearchFilters((f) => ({ ...f, query: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === "Enter" && pendingFiltersAreValid) applySearchFilters(); }}
+                        placeholder="Team or fixture name..."
+                        className="h-9 pl-8 pr-8 text-sm"
+                      />
+                      {searchFilters.query && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchFilters((f) => ({ ...f, query: "" }))}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">League</label>
+                    <LeagueSearchCombobox
+                      value={searchFilters.leagueId}
+                      displayName={searchFilters.leagueName}
+                      onChange={(id, name) => setSearchFilters((f) => ({ ...f, leagueId: id, leagueName: name }))}
+                      className="h-9 text-sm w-full"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Date range</label>
+                    <DateRangePickerButton
+                      from={searchFilters.fromDate}
+                      to={searchFilters.toDate}
+                      onChange={(from, to) => setSearchFilters((f) => ({ ...f, fromDate: from, toDate: to }))}
+                      className="h-9 text-sm w-full"
+                    />
+                  </div>
+                </div>
+                <DrawerFooter>
+                  <Button onClick={applySearchFilters} disabled={!pendingFiltersAreValid}>
+                    <Search className="mr-2 h-4 w-4" />
+                    Search
+                  </Button>
+                  {hasActiveSearchFilters && (
+                    <DrawerClose asChild>
+                      <Button variant="outline" onClick={resetSearchFilters}>
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reset All
+                      </Button>
+                    </DrawerClose>
+                  )}
+                  <DrawerClose asChild>
+                    <Button variant="ghost">Cancel</Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+
+            {/* ── Desktop: single row of filters ── */}
+            <div className="mt-3 hidden sm:flex sm:items-center sm:gap-2 sm:flex-wrap">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={searchFilters.query}
+                  onChange={(e) => setSearchFilters((f) => ({ ...f, query: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === "Enter" && pendingFiltersAreValid) applySearchFilters(); }}
+                  placeholder="Search..."
+                  className="h-8 w-[160px] pl-7 pr-7 text-xs"
+                />
+                {searchFilters.query && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchFilters((f) => ({ ...f, query: "" }))}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <LeagueSearchCombobox
+                value={searchFilters.leagueId}
+                displayName={searchFilters.leagueName}
+                onChange={(id, name) => setSearchFilters((f) => ({ ...f, leagueId: id, leagueName: name }))}
+                className="h-8 w-[170px] text-xs"
+              />
+              <DateRangePickerButton
+                from={searchFilters.fromDate}
+                to={searchFilters.toDate}
+                onChange={(from, to) => setSearchFilters((f) => ({ ...f, fromDate: from, toDate: to }))}
+                className="h-8 w-[240px] text-xs"
+              />
+              <Button
+                size="sm"
+                className="h-8 px-2.5 text-xs"
+                onClick={applySearchFilters}
+                disabled={!searchFiltersAreDirty || searchFetching || !pendingFiltersAreValid}
+              >
+                <Search className="mr-1 h-3 w-3" />
+                Search
+              </Button>
+              {hasActiveSearchFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={resetSearchFilters}
+                >
+                  <RotateCcw className="h-3 w-3" />
+                </Button>
+              )}
+              {searchFiltersAreDirty && pendingFiltersAreValid && (
+                <span className="text-[11px] text-amber-600 dark:text-amber-400">
+                  Click Search to apply
+                </span>
+              )}
+            </div>
+          </>
         )}
       </div>
 
@@ -701,11 +913,11 @@ export default function FixturesPage() {
 
         {tab === "search" && (
           <>
-            {searchQuery.length < 2 ? (
+            {!hasActiveSearchFilters ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Search className="h-8 w-8 text-muted-foreground/50" />
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Type at least 2 characters to search fixtures
+                  Use the filters above to search fixtures
                 </p>
               </div>
             ) : searchLoading ? (
@@ -717,7 +929,7 @@ export default function FixturesPage() {
             ) : !searchData?.data.length ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No fixtures found for "{searchQuery}"
+                  No fixtures found matching your filters
                 </p>
               </div>
             ) : (
@@ -849,15 +1061,6 @@ export default function FixturesPage() {
                     </TableBody>
                   </Table>
                 </div>
-                {searchData.pagination.totalPages > 1 && (
-                  <SimplePagination
-                    page={searchData.pagination.page}
-                    totalPages={searchData.pagination.totalPages}
-                    totalItems={searchData.pagination.totalItems}
-                    perPage={25}
-                    onPageChange={setSearchPage}
-                  />
-                )}
               </>
             )}
           </>
@@ -879,6 +1082,19 @@ export default function FixturesPage() {
                 setAttentionPerPage(v);
                 setAttentionPage(1);
               }}
+            />
+          </div>
+        )}
+      {tab === "search" &&
+        searchData &&
+        searchData.pagination.totalPages > 1 && (
+          <div className="flex-shrink-0">
+            <SimplePagination
+              page={searchData.pagination.page}
+              totalPages={searchData.pagination.totalPages}
+              totalItems={searchData.pagination.totalItems}
+              perPage={25}
+              onPageChange={setSearchPage}
             />
           </div>
         )}
@@ -1205,6 +1421,160 @@ function LeagueCombobox({
             </CommandGroup>
           </CommandList>
         </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ─── DB-backed League Search Combobox ───
+function LeagueSearchCombobox({
+  value,
+  displayName,
+  onChange,
+  className,
+}: {
+  value: number | undefined;
+  displayName: string;
+  onChange: (id: number | undefined, name: string) => void;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const { data, isFetching } = useQuery({
+    queryKey: ["leagues", "search", debouncedSearch],
+    queryFn: () => leaguesService.search(debouncedSearch, 20),
+    enabled: open && debouncedSearch.length >= 2,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const leagues = data?.data ?? [];
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn("justify-between font-normal", className)}
+        >
+          <span className="truncate">{displayName || "All Leagues"}</span>
+          <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[250px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search league..."
+            className="h-8 text-xs"
+            value={search}
+            onValueChange={setSearch}
+          />
+          <CommandList>
+            {isFetching && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {!isFetching && search.length >= 2 && leagues.length === 0 && (
+              <CommandEmpty>No league found.</CommandEmpty>
+            )}
+            {!isFetching && search.length < 2 && !value && (
+              <div className="py-3 text-center text-xs text-muted-foreground">
+                Type at least 2 characters
+              </div>
+            )}
+            <CommandGroup>
+              {value !== undefined && (
+                <CommandItem
+                  onSelect={() => { onChange(undefined, ""); setSearch(""); setOpen(false); }}
+                >
+                  <Check className={cn("mr-2 h-3.5 w-3.5 opacity-0")} />
+                  All Leagues
+                </CommandItem>
+              )}
+              {leagues.map((league) => (
+                <CommandItem
+                  key={league.id}
+                  value={String(league.id)}
+                  onSelect={() => { onChange(league.id, league.name); setSearch(""); setOpen(false); }}
+                >
+                  <Check className={cn("mr-2 h-3.5 w-3.5", value === league.id ? "opacity-100" : "opacity-0")} />
+                  <span className="truncate">{league.name}</span>
+                  {league.country && (
+                    <span className="ml-auto text-[10px] text-muted-foreground">{league.country.name}</span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ─── Date Range Picker Button ───
+function DateRangePickerButton({
+  from,
+  to,
+  onChange,
+  className,
+}: {
+  from: Date | undefined;
+  to: Date | undefined;
+  onChange: (from: Date | undefined, to: Date | undefined) => void;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasRange = from && to;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "justify-start font-normal",
+            !hasRange && "text-muted-foreground",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">
+            {hasRange
+              ? `${format(from, "dd/MM/yyyy")} – ${format(to, "dd/MM/yyyy")}`
+              : "Date range"}
+          </span>
+          {hasRange && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onChange(undefined, undefined); }}
+              className="ml-auto shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="range"
+          selected={hasRange ? { from, to } : from ? { from } : undefined}
+          onSelect={(range) => {
+            onChange(range?.from, range?.to);
+            if (range?.from && range?.to) setOpen(false);
+          }}
+          defaultMonth={from}
+          numberOfMonths={2}
+        />
       </PopoverContent>
     </Popover>
   );

@@ -82,16 +82,49 @@ export function useFixturesAttention(
   return query;
 }
 
+type SearchParams = {
+  q?: string;
+  leagueId?: number;
+  fromTs?: number;
+  toTs?: number;
+  page?: number;
+  perPage?: number;
+};
+
 export function useFixtureSearch(
-  query: string,
-  params?: { page?: number; perPage?: number },
+  params: SearchParams,
   options?: { enabled?: boolean }
 ) {
-  return useQuery<AdminFixtureSearchResponse>({
-    queryKey: ["fixtures", "search", query, params],
-    queryFn: () =>
-      fixturesService.search({ q: query, ...params }),
+  const queryClient = useQueryClient();
+  const page = params.page ?? 1;
+
+  const hasFilter =
+    (params.q !== undefined && params.q.length >= 2) ||
+    params.leagueId !== undefined ||
+    (params.fromTs !== undefined && params.toTs !== undefined);
+
+  const enabled = hasFilter && (options?.enabled ?? true);
+
+  const query = useQuery<AdminFixtureSearchResponse>({
+    queryKey: ["fixtures", "search", params],
+    queryFn: () => fixturesService.search(params),
     staleTime: 15 * 60 * 1000, // 15 min — invalidated on sync/resettle
-    enabled: query.length >= 2 && (options?.enabled ?? true),
+    enabled,
   });
+
+  // Prefetch next page when current page loads
+  useEffect(() => {
+    if (!enabled || !query.data) return;
+    const totalPages = query.data.pagination.totalPages;
+    if (page < totalPages) {
+      const nextParams: SearchParams = { ...params, page: page + 1 };
+      void queryClient.prefetchQuery({
+        queryKey: ["fixtures", "search", nextParams],
+        queryFn: () => fixturesService.search(nextParams),
+        staleTime: 15 * 60 * 1000,
+      });
+    }
+  }, [enabled, query.data, page, params, queryClient]);
+
+  return query;
 }
