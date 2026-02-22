@@ -296,42 +296,35 @@ export default function JobDetailPage() {
                 return (
                   <div
                     key={r.id}
-                    className="px-3 py-2.5 cursor-pointer hover:bg-muted/50 active:bg-muted/70 space-y-1"
-                    onClick={() => {
-                      setSelectedRunId(r.id);
-                    }}
+                    className="px-3 py-2 cursor-pointer active:bg-muted/70"
+                    onClick={() => setSelectedRunId(r.id)}
                   >
-                    {/* Primary: Status + Time — what happened & when */}
-                    <div className="flex items-center justify-between gap-2">
+                    {/* Row 1: Status badge + time + id */}
+                    <div className="flex items-center gap-2">
                       <StatusBadge status={r.status} />
                       <span className="text-[11px] text-muted-foreground tabular-nums">
                         {formatRelativeTime(r.startedAt)}
                       </span>
-                    </div>
-                    {/* Secondary: ID · Duration · Summary — supporting details */}
-                    <div className="flex items-baseline gap-1.5 text-[11px] text-muted-foreground">
+                      <span className="text-[11px] text-muted-foreground/50">·</span>
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                        {formatDurationMs(r.durationMs)}
+                      </span>
                       <span
-                        className="font-mono tabular-nums hover:text-foreground cursor-copy"
+                        className="ml-auto text-[11px] font-mono text-muted-foreground/60 tabular-nums cursor-copy"
                         onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(String(r.id)); toast.success("Copied ID"); }}
                       >#{r.id}</span>
-                      <span className="text-muted-foreground/30">·</span>
-                      <span className="tabular-nums">{formatDurationMs(r.durationMs)}</span>
-                      {summary && (
-                        <>
-                          <span className="text-muted-foreground/30">·</span>
-                          <span className="truncate">{summary}</span>
-                        </>
-                      )}
-                      {reason && (
-                        <>
-                          <span className="text-muted-foreground/30">·</span>
-                          <span className="text-amber-600 dark:text-amber-400">{reason}</span>
-                        </>
-                      )}
                     </div>
-                    {/* Error: only when failed — stands out on its own */}
+                    {/* Row 2: Summary + reason (only if exists) */}
+                    {(summary || reason) && (
+                      <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
+                        {summary}
+                        {summary && reason && <span className="text-muted-foreground/30"> · </span>}
+                        {reason && <span className="text-amber-600 dark:text-amber-400">{reason}</span>}
+                      </div>
+                    )}
+                    {/* Row 3: Error (only if failed) */}
                     {r.errorMessage && (
-                      <p className="text-[11px] text-destructive truncate">
+                      <p className="mt-0.5 text-[11px] text-destructive truncate">
                         {truncate(r.errorMessage, 100)}
                       </p>
                     )}
@@ -468,7 +461,7 @@ export default function JobDetailPage() {
             </div>
             <SheetDescription className="sr-only">Run details</SheetDescription>
           </SheetHeader>
-          <div className="flex-1 min-h-0 overflow-hidden flex flex-col p-4 gap-3">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-3 py-3 sm:p-4 gap-3">
             <RunDetailSheetContent
               key={selectedRunId}
               runId={selectedRunId}
@@ -596,26 +589,26 @@ function RunDetailSheetContent({
   return (
     <>
       {/* Run info */}
-      <div className="shrink-0 grid grid-cols-4 gap-2 text-[11px] sm:text-xs">
-        <div className="bg-muted/40 rounded-md px-2.5 py-1.5">
+      <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 text-[11px] sm:text-xs">
+        <div className="bg-muted/40 rounded-md px-2 py-1.5 sm:px-2.5">
           <div className="text-muted-foreground mb-0.5">Started</div>
           <div className="font-medium truncate">
             <span className="sm:hidden">{formatRelativeTime(run.startedAt)}</span>
             <span className="hidden sm:inline">{formatDateTime(run.startedAt)}</span>
           </div>
         </div>
-        <div className="bg-muted/40 rounded-md px-2.5 py-1.5">
+        <div className="bg-muted/40 rounded-md px-2 py-1.5 sm:px-2.5">
           <div className="text-muted-foreground mb-0.5">Finished</div>
           <div className="font-medium truncate">
             <span className="sm:hidden">{formatRelativeTime(run.finishedAt)}</span>
             <span className="hidden sm:inline">{formatDateTime(run.finishedAt)}</span>
           </div>
         </div>
-        <div className="bg-muted/40 rounded-md px-2.5 py-1.5">
+        <div className="bg-muted/40 rounded-md px-2 py-1.5 sm:px-2.5">
           <div className="text-muted-foreground mb-0.5">Duration</div>
           <div className="font-medium">{formatDurationMs(run.durationMs)}</div>
         </div>
-        <div className="bg-muted/40 rounded-md px-2.5 py-1.5">
+        <div className="bg-muted/40 rounded-md px-2 py-1.5 sm:px-2.5">
           <div className="text-muted-foreground mb-0.5">Trigger</div>
           <div className="font-medium">{run.trigger}</div>
         </div>
@@ -671,17 +664,17 @@ function RunDetailSheetContent({
       )}
 
       {/* Items */}
-      <div className="border-t pt-3 flex-1 min-h-0 flex flex-col gap-2">
-        <div className="shrink-0 relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search by name (min 3 chars)..."
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
-            className="h-8 text-xs pl-7"
-          />
-        </div>
-        <div className="shrink-0 grid grid-cols-2 gap-2">
+      <div className="border-t pt-2 sm:pt-3 flex-1 min-h-0 flex flex-col gap-1.5 sm:gap-2">
+        <div className="shrink-0 flex items-center gap-1.5 sm:gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search (min 3)..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className="h-7 sm:h-8 text-xs pl-7"
+            />
+          </div>
           <Select
             value={statusFilter}
             onValueChange={(v) => {
@@ -689,7 +682,7 @@ function RunDetailSheetContent({
               setItemsPage(() => 1);
             }}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-7 sm:h-8 text-xs w-[90px] sm:w-[110px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -706,7 +699,7 @@ function RunDetailSheetContent({
               setItemsPage(() => 1);
             }}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-7 sm:h-8 text-xs w-[90px] sm:w-[110px]">
               <SelectValue placeholder="Action" />
             </SelectTrigger>
             <SelectContent>
@@ -718,7 +711,55 @@ function RunDetailSheetContent({
             </SelectContent>
           </Select>
         </div>
-        <div className="overflow-auto border rounded-md flex-1 min-h-0">
+        {/* Mobile: compact list */}
+        <div className="sm:hidden overflow-auto border rounded-md flex-1 min-h-0 divide-y">
+          {items.map((item) => {
+            const m = (item.meta ?? {}) as Record<string, unknown>;
+            const name = typeof m["name"] === "string" ? m["name"] : item.itemKey;
+            const reason = typeof m["reason"] === "string" ? (m["reason"] as string) : null;
+            const changes = getChanges(item);
+            const isExpanded = expandedItemId === item.id;
+            return (
+              <div
+                key={item.id}
+                className={changes ? "cursor-pointer active:bg-muted/50" : ""}
+                onClick={() => {
+                  if (changes) setExpandedItemId(isExpanded ? null : item.id);
+                }}
+              >
+                <div className="flex items-center gap-1.5 px-2.5 py-2">
+                  {changes && (
+                    <ChevronRight className={`h-3 w-3 shrink-0 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                  )}
+                  <span className="flex-1 min-w-0 text-xs font-medium truncate">{name ?? "—"}</span>
+                  <StatusBadge status={getActionLabel(item)} />
+                </div>
+                {reason && (
+                  <div className="px-2.5 pb-1.5 -mt-0.5 text-[11px] text-muted-foreground truncate">
+                    {reason}
+                  </div>
+                )}
+                {isExpanded && changes && (
+                  <div className="bg-muted/30 px-2.5 py-1.5 text-[11px] space-y-0.5">
+                    {Object.entries(changes).map(([field, value]) => (
+                      <div key={field} className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground">{camelToHuman(field)}:</span>
+                        <span className="font-mono">{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {!items.length && (
+            <div className="text-center text-xs text-muted-foreground py-6">
+              {itemsLoading ? "Loading..." : localSearch.trim().length >= 3 ? "No matching items." : "No items for this run."}
+            </div>
+          )}
+        </div>
+        {/* Desktop: table */}
+        <div className="hidden sm:block overflow-auto border rounded-md flex-1 min-h-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -742,7 +783,7 @@ function RunDetailSheetContent({
                         if (changes) setExpandedItemId(isExpanded ? null : item.id);
                       }}
                     >
-                      <TableCell className="py-2 font-medium max-w-[140px] truncate text-xs">
+                      <TableCell className="py-2 font-medium max-w-[200px] truncate text-xs">
                         <span className="flex items-center gap-1">
                           {changes && (
                             <ChevronRight className={`h-3 w-3 shrink-0 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} />
@@ -753,7 +794,7 @@ function RunDetailSheetContent({
                       <TableCell className="py-2 whitespace-nowrap">
                         <StatusBadge status={getActionLabel(item)} />
                       </TableCell>
-                      <TableCell className="py-2 text-muted-foreground text-xs max-w-[160px] truncate">
+                      <TableCell className="py-2 text-muted-foreground text-xs max-w-[180px] truncate">
                         {reason}
                       </TableCell>
                     </TableRow>
@@ -788,15 +829,15 @@ function RunDetailSheetContent({
           </Table>
         </div>
         {itemsPagination && itemsPagination.totalPages > 1 && (
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="shrink-0 flex items-center justify-between text-[11px] text-muted-foreground">
             <span>
               {itemsPagination.page}/{itemsPagination.totalPages} ({itemsPagination.totalItems})
             </span>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1">
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-7 px-2 text-xs"
+                className="h-6 sm:h-7 px-2 text-[11px]"
                 disabled={itemsPage <= 1}
                 onClick={() => setItemsPage((p) => p - 1)}
               >
@@ -805,7 +846,7 @@ function RunDetailSheetContent({
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-7 px-2 text-xs"
+                className="h-6 sm:h-7 px-2 text-[11px]"
                 disabled={itemsPage >= itemsPagination.totalPages}
                 onClick={() => setItemsPage((p) => p + 1)}
               >
@@ -818,7 +859,7 @@ function RunDetailSheetContent({
 
       {/* Error */}
       {run.status === "failed" && (
-        <div className="shrink-0 border-t pt-3 space-y-2">
+        <div className="shrink-0 border-t pt-2 sm:pt-3 space-y-1.5 sm:space-y-2">
           <div className="flex items-center justify-between">
             <div className="text-xs font-semibold text-destructive">Error</div>
             <Button

@@ -9,7 +9,11 @@ export const ROUTE_LABELS: Record<string, string> = {
   "/jobs": "Jobs",
   "/sandbox": "Sandbox",
   "/users": "Users",
+  "/analytics": "Analytics",
+  "/teams": "Teams",
   "/settings": "Settings",
+  "/settings/league-order": "League Order",
+  "/settings/team-order": "Team Order",
 };
 
 /**

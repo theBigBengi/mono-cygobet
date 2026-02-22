@@ -1,11 +1,13 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, Loader2, Radio, RefreshCw, Search, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronsUpDown, Filter, Loader2, Radio, RefreshCw, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +18,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Table,
   TableBody,
@@ -54,25 +77,57 @@ export default function FixturesPage() {
   const liveCount = Math.max(dbFixtures.length, providerFixtures.length);
   const refetchLive = () => { void liveDb.refetch(); void liveProvider.refetch(); };
 
-  // ─── Attention tab state ───
-  const [issueFilter, setIssueFilter] = useState<FixtureIssueType | "all">(
-    "all"
-  );
+  // ─── Attention tab state (pending / applied filters) ───
+  type AttentionFilters = {
+    issueType: FixtureIssueType | "all";
+    timeframe: string;
+    leagueId: number | undefined;
+    search: string;
+  };
+  const defaultFilters: AttentionFilters = {
+    issueType: "all",
+    timeframe: "all",
+    leagueId: undefined,
+    search: "",
+  };
+  const [filters, setFilters] = useState<AttentionFilters>(defaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState<AttentionFilters>(defaultFilters);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [attentionPage, setAttentionPage] = useState(1);
   const [attentionPerPage, setAttentionPerPage] = useState(25);
-  const [attentionTimeframe, setAttentionTimeframe] = useState<string>("all");
-  const [attentionSearch, setAttentionSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  useEffect(() => {
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setDebouncedSearch(attentionSearch);
-      setAttentionPage(1);
-    }, 300);
-    return () => clearTimeout(debounceRef.current);
-  }, [attentionSearch]);
+  // ─── Selection state (lifted from table for unified toolbar) ───
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const filtersAreDirty =
+    filters.issueType !== appliedFilters.issueType ||
+    filters.timeframe !== appliedFilters.timeframe ||
+    filters.leagueId !== appliedFilters.leagueId ||
+    filters.search !== appliedFilters.search;
+
+  const hasActiveFilters =
+    appliedFilters.issueType !== "all" ||
+    appliedFilters.timeframe !== "all" ||
+    appliedFilters.leagueId !== undefined ||
+    appliedFilters.search !== "";
+
+  const activeFilterCount =
+    (appliedFilters.issueType !== "all" ? 1 : 0) +
+    (appliedFilters.timeframe !== "all" ? 1 : 0) +
+    (appliedFilters.leagueId !== undefined ? 1 : 0) +
+    (appliedFilters.search !== "" ? 1 : 0);
+
+  const applyFilters = useCallback(() => {
+    setAppliedFilters(filters);
+    setAttentionPage(1);
+    setFilterDrawerOpen(false);
+  }, [filters]);
+
+  const resetFilters = useCallback(() => {
+    setFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
+    setAttentionPage(1);
+  }, []);
 
   const {
     data: attentionData,
@@ -80,14 +135,44 @@ export default function FixturesPage() {
     isFetching: attentionFetching,
   } = useFixturesAttention(
     {
-      issueType: issueFilter,
-      search: debouncedSearch || undefined,
-      timeframe: attentionTimeframe !== "all" ? attentionTimeframe : undefined,
+      issueType: appliedFilters.issueType,
+      search: appliedFilters.search || undefined,
+      timeframe: appliedFilters.timeframe !== "all" ? appliedFilters.timeframe : undefined,
+      leagueId: appliedFilters.leagueId,
       page: attentionPage,
       perPage: attentionPerPage,
     },
     { enabled: tab === "attention" }
   );
+
+  // ─── Selection derived values ───
+  const allExternalIds = attentionData?.allExternalIds;
+  const prevAllIdsRef = useRef<string>("");
+
+  useEffect(() => {
+    const key = allExternalIds?.join(",") ?? "";
+    if (prevAllIdsRef.current !== "" && prevAllIdsRef.current !== key) {
+      setSelectedIds(new Set());
+    }
+    prevAllIdsRef.current = key;
+  }, [allExternalIds]);
+
+  const pageItems = attentionData?.data ?? [];
+  const pageExternalIds = pageItems.map((f) => f.externalId);
+  const allPageSelected = pageItems.length > 0 && pageExternalIds.every((id) => selectedIds.has(id));
+  const somePageSelected = !allPageSelected && pageExternalIds.some((id) => selectedIds.has(id));
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) {
+        for (const id of pageExternalIds) next.delete(id);
+      } else {
+        for (const id of pageExternalIds) next.add(id);
+      }
+      return next;
+    });
+  }, [allPageSelected, pageExternalIds]);
 
   // ─── Search tab state ───
   const [searchQuery, setSearchQuery] = useState("");
@@ -169,6 +254,51 @@ export default function FixturesPage() {
     },
   });
 
+  // ─── Bulk sync (chunked) ───
+  const [bulkSyncing, setBulkSyncing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState("");
+
+  const handleBulkSync = useCallback(
+    async (externalIds: string[]) => {
+      setBulkSyncing(true);
+      setBulkProgress("");
+
+      const CHUNK_SIZE = 100;
+      const chunks: string[][] = [];
+      for (let i = 0; i < externalIds.length; i += CHUNK_SIZE) {
+        chunks.push(externalIds.slice(i, i + CHUNK_SIZE));
+      }
+
+      let totalOk = 0;
+      let totalFail = 0;
+      let totalCount = 0;
+
+      try {
+        for (let i = 0; i < chunks.length; i++) {
+          if (chunks.length > 1) {
+            setBulkProgress(`Syncing batch ${i + 1}/${chunks.length}...`);
+          }
+          const result = await fixturesService.syncBulk(chunks[i].map(Number));
+          totalOk += result.data.ok;
+          totalFail += result.data.fail;
+          totalCount += result.data.total;
+        }
+        queryClient.invalidateQueries({ queryKey: ["fixtures"] });
+        toast.success("Bulk sync complete", {
+          description: `${totalOk} synced, ${totalFail} failed (${totalCount} total)`,
+        });
+      } catch (error: unknown) {
+        toast.error("Bulk sync failed", {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+      } finally {
+        setBulkSyncing(false);
+        setBulkProgress("");
+      }
+    },
+    [queryClient]
+  );
+
   const handleResettle = useCallback(
     (fixtureId: number) => {
       setResettlingIds((prev) => new Set(prev).add(fixtureId));
@@ -234,64 +364,292 @@ export default function FixturesPage() {
 
         {/* Attention tab filters */}
         {tab === "attention" && (
-          <div className="mt-3 grid grid-cols-2 sm:flex sm:items-center gap-2">
-              <Select
-                value={issueFilter}
-                onValueChange={(v) => {
-                  setIssueFilter(v as FixtureIssueType | "all");
-                  setAttentionPage(1);
-                }}
-              >
-                <SelectTrigger className="h-8 text-xs sm:w-[160px]">
-                  <SelectValue placeholder="Issue type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Issues ({totalAttention})</SelectItem>
-                  <SelectItem value="stuck">Stuck LIVE ({issueCounts?.stuck ?? 0})</SelectItem>
-                  <SelectItem value="overdue">Overdue NS ({issueCounts?.overdue ?? 0})</SelectItem>
-                  <SelectItem value="noScores">No Scores ({issueCounts?.noScores ?? 0})</SelectItem>
-                  <SelectItem value="unsettled">Unsettled ({issueCounts?.unsettled ?? 0})</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={attentionTimeframe}
-                onValueChange={(v) => {
-                  setAttentionTimeframe(v);
-                  setAttentionPage(1);
-                }}
-              >
-                <SelectTrigger className="h-8 text-xs sm:w-[120px]">
-                  <SelectValue placeholder="Timeframe" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All time</SelectItem>
-                  <SelectItem value="1h">Last 1h</SelectItem>
-                  <SelectItem value="3h">Last 3h</SelectItem>
-                  <SelectItem value="6h">Last 6h</SelectItem>
-                  <SelectItem value="12h">Last 12h</SelectItem>
-                  <SelectItem value="24h">Last 24h</SelectItem>
-                  <SelectItem value="24h+">Over 24h</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="relative col-span-2 sm:col-span-1">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  value={attentionSearch}
-                  onChange={(e) => setAttentionSearch(e.target.value)}
-                  placeholder="Team, fixture, or ID..."
-                  className="h-8 sm:w-[240px] pl-7 pr-7 text-xs"
-                />
-                {attentionSearch && (
-                  <button
-                    type="button"
-                    onClick={() => setAttentionSearch("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+          <>
+            {/* ── Mobile: checkbox + badges (scrollable) + filters button ── */}
+            <div className="mt-3 flex items-center gap-2 sm:hidden">
+              <Checkbox
+                checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
+                onCheckedChange={toggleSelectAll}
+                disabled={bulkSyncing || pageItems.length === 0}
+                className="shrink-0"
+                aria-label="Select all"
+              />
+              <span className="text-xs text-muted-foreground shrink-0">
+                {selectedIds.size > 0
+                  ? `${selectedIds.size} selected`
+                  : `Page (${pageItems.length})`}
+              </span>
+              {issueCounts && (
+                <div className="flex items-center gap-1 overflow-x-auto min-w-0 shrink">
+                  {issueCounts.stuck > 0 && (
+                    <Badge className="text-[10px] py-0 shrink-0 bg-red-100 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900">
+                      {issueCounts.stuck} Stuck
+                    </Badge>
+                  )}
+                  {issueCounts.unsettled > 0 && (
+                    <Badge className="text-[10px] py-0 shrink-0 bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900">
+                      {issueCounts.unsettled} Unsettled
+                    </Badge>
+                  )}
+                  {issueCounts.overdue > 0 && (
+                    <Badge className="text-[10px] py-0 shrink-0 bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-900">
+                      {issueCounts.overdue} Overdue
+                    </Badge>
+                  )}
+                  {issueCounts.noScores > 0 && (
+                    <Badge className="text-[10px] py-0 shrink-0 bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950/50 dark:text-yellow-400 dark:border-yellow-900">
+                      {issueCounts.noScores} No Scores
+                    </Badge>
+                  )}
+                </div>
+              )}
+              <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  onClick={() => setFilterDrawerOpen(true)}
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-0.5 h-4 min-w-4 px-1 text-[10px]">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </Button>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={resetFilters}>
+                    <RotateCcw className="mr-1 h-3 w-3" />
+                    Reset
+                  </Button>
                 )}
               </div>
-          </div>
+            </div>
+
+            {/* ── Mobile: filter drawer ── */}
+            <Drawer open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Filters</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 space-y-4 pb-2">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Issue Type</label>
+                    <Select
+                      value={filters.issueType}
+                      onValueChange={(v) => setFilters((f) => ({ ...f, issueType: v as FixtureIssueType | "all" }))}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Issues ({issueCounts ? Object.values(issueCounts).reduce((a, b) => a + b, 0) : 0})</SelectItem>
+                        <SelectItem value="stuck">Stuck LIVE ({issueCounts?.stuck ?? 0})</SelectItem>
+                        <SelectItem value="overdue">Overdue NS ({issueCounts?.overdue ?? 0})</SelectItem>
+                        <SelectItem value="noScores">No Scores ({issueCounts?.noScores ?? 0})</SelectItem>
+                        <SelectItem value="unsettled">Unsettled ({issueCounts?.unsettled ?? 0})</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Timeframe</label>
+                    <Select
+                      value={filters.timeframe}
+                      onValueChange={(v) => setFilters((f) => ({ ...f, timeframe: v }))}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All time</SelectItem>
+                        <SelectItem value="1h">Last 1h</SelectItem>
+                        <SelectItem value="3h">Last 3h</SelectItem>
+                        <SelectItem value="6h">Last 6h</SelectItem>
+                        <SelectItem value="12h">Last 12h</SelectItem>
+                        <SelectItem value="24h">Last 24h</SelectItem>
+                        <SelectItem value="24h+">Over 24h</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">League</label>
+                    <LeagueCombobox
+                      leagues={attentionData?.availableLeagues ?? []}
+                      value={filters.leagueId}
+                      onChange={(v) => setFilters((f) => ({ ...f, leagueId: v }))}
+                      className="h-9 text-sm w-full"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Search</label>
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        value={filters.search}
+                        onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
+                        placeholder="Team, fixture, or ID..."
+                        className="h-9 pl-8 pr-8 text-sm"
+                      />
+                      {filters.search && (
+                        <button
+                          type="button"
+                          onClick={() => setFilters((f) => ({ ...f, search: "" }))}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <DrawerFooter>
+                  <Button onClick={applyFilters} disabled={!filtersAreDirty && !hasActiveFilters}>
+                    <Filter className="mr-2 h-4 w-4" />
+                    Apply Filters
+                  </Button>
+                  {hasActiveFilters && (
+                    <DrawerClose asChild>
+                      <Button variant="outline" onClick={resetFilters}>
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reset All
+                      </Button>
+                    </DrawerClose>
+                  )}
+                  <DrawerClose asChild>
+                    <Button variant="ghost">Cancel</Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+
+            {/* ── Desktop: single row — checkbox + badges | filters ── */}
+            <div className="mt-3 hidden sm:flex sm:items-center sm:gap-2 sm:flex-wrap">
+              {/* Left: select-all + issue badges */}
+              <Checkbox
+                checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
+                onCheckedChange={toggleSelectAll}
+                disabled={bulkSyncing || pageItems.length === 0}
+                className="shrink-0"
+                aria-label="Select all"
+              />
+              <span className="text-xs text-muted-foreground shrink-0">
+                {selectedIds.size > 0
+                  ? `${selectedIds.size} selected`
+                  : `Page (${pageItems.length})`}
+              </span>
+              {issueCounts && (
+                <>
+                  <span className="text-muted-foreground/30">|</span>
+                  {issueCounts.stuck > 0 && (
+                    <Badge className="text-[10px] py-0 shrink-0 bg-red-100 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900">
+                      {issueCounts.stuck} Stuck
+                    </Badge>
+                  )}
+                  {issueCounts.unsettled > 0 && (
+                    <Badge className="text-[10px] py-0 shrink-0 bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900">
+                      {issueCounts.unsettled} Unsettled
+                    </Badge>
+                  )}
+                  {issueCounts.overdue > 0 && (
+                    <Badge className="text-[10px] py-0 shrink-0 bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-900">
+                      {issueCounts.overdue} Overdue
+                    </Badge>
+                  )}
+                  {issueCounts.noScores > 0 && (
+                    <Badge className="text-[10px] py-0 shrink-0 bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950/50 dark:text-yellow-400 dark:border-yellow-900">
+                      {issueCounts.noScores} No Scores
+                    </Badge>
+                  )}
+                </>
+              )}
+              {/* Right: filters */}
+              <div className="flex items-center gap-2 ml-auto">
+                <Select
+                  value={filters.issueType}
+                  onValueChange={(v) => setFilters((f) => ({ ...f, issueType: v as FixtureIssueType | "all" }))}
+                >
+                  <SelectTrigger className="h-8 w-[140px] text-xs">
+                    <SelectValue placeholder="Issue type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Issues</SelectItem>
+                    <SelectItem value="stuck">Stuck LIVE</SelectItem>
+                    <SelectItem value="overdue">Overdue NS</SelectItem>
+                    <SelectItem value="noScores">No Scores</SelectItem>
+                    <SelectItem value="unsettled">Unsettled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={filters.timeframe}
+                  onValueChange={(v) => setFilters((f) => ({ ...f, timeframe: v }))}
+                >
+                  <SelectTrigger className="h-8 w-[110px] text-xs">
+                    <SelectValue placeholder="Timeframe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All time</SelectItem>
+                    <SelectItem value="1h">Last 1h</SelectItem>
+                    <SelectItem value="3h">Last 3h</SelectItem>
+                    <SelectItem value="6h">Last 6h</SelectItem>
+                    <SelectItem value="12h">Last 12h</SelectItem>
+                    <SelectItem value="24h">Last 24h</SelectItem>
+                    <SelectItem value="24h+">Over 24h</SelectItem>
+                  </SelectContent>
+                </Select>
+                <LeagueCombobox
+                  leagues={attentionData?.availableLeagues ?? []}
+                  value={filters.leagueId}
+                  onChange={(v) => setFilters((f) => ({ ...f, leagueId: v }))}
+                  className="h-8 w-[150px] text-xs"
+                />
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={filters.search}
+                    onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === "Enter" && filtersAreDirty) applyFilters(); }}
+                    placeholder="Search..."
+                    className="h-8 w-[140px] pl-7 pr-7 text-xs"
+                  />
+                  {filters.search && (
+                    <button
+                      type="button"
+                      onClick={() => setFilters((f) => ({ ...f, search: "" }))}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  className="h-8 px-2.5 text-xs"
+                  onClick={applyFilters}
+                  disabled={!filtersAreDirty || attentionFetching}
+                >
+                  <Filter className="mr-1 h-3 w-3" />
+                  Apply
+                </Button>
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs"
+                    onClick={resetFilters}
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+              {filtersAreDirty && (
+                <span className="text-[11px] text-amber-600 dark:text-amber-400 w-full text-right">
+                  Filters changed — click Apply
+                </span>
+              )}
+            </div>
+          </>
         )}
 
         {/* Search tab bar */}
@@ -325,44 +683,6 @@ export default function FixturesPage() {
 
         {tab === "attention" && (
           <>
-            {!attentionLoading && totalAttention > 0 && issueCounts && (
-              <div className="flex-shrink-0 mb-3 rounded-lg border bg-muted/30 px-3 py-2.5 sm:px-4 sm:py-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm font-semibold">
-                    {totalAttention} fixture{totalAttention !== 1 ? "s" : ""} need attention
-                  </p>
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    {issueCounts.stuck > 0 && (
-                      <Badge className="text-[10px] sm:text-xs bg-red-100 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900">
-                        {issueCounts.stuck} Stuck
-                      </Badge>
-                    )}
-                    {issueCounts.unsettled > 0 && (
-                      <Badge className="text-[10px] sm:text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900">
-                        {issueCounts.unsettled} Unsettled
-                      </Badge>
-                    )}
-                    {issueCounts.overdue > 0 && (
-                      <Badge className="text-[10px] sm:text-xs bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-900">
-                        {issueCounts.overdue} Overdue
-                      </Badge>
-                    )}
-                    {issueCounts.noScores > 0 && (
-                      <Badge className="text-[10px] sm:text-xs bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950/50 dark:text-yellow-400 dark:border-yellow-900">
-                        {issueCounts.noScores} No Scores
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            {!attentionLoading && totalAttention === 0 && (
-              <div className="flex-shrink-0 mb-3 rounded-lg border border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20 px-4 py-3">
-                <p className="text-sm text-green-700 dark:text-green-400">
-                  No fixtures need attention — all clear.
-                </p>
-              </div>
-            )}
             <AttentionFixturesTable
               data={attentionData?.data ?? []}
               isLoading={attentionLoading}
@@ -370,6 +690,11 @@ export default function FixturesPage() {
               onResettle={handleResettle}
               syncingIds={syncingIds}
               resettlingIds={resettlingIds}
+              onBulkSync={handleBulkSync}
+              bulkSyncing={bulkSyncing}
+              bulkProgress={bulkProgress}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
             />
           </>
         )}
@@ -824,6 +1149,64 @@ function LiveFixturesSection({
         })}
       </div>
     </div>
+  );
+}
+
+// ─── League Combobox (searchable) ───
+function LeagueCombobox({
+  leagues,
+  value,
+  onChange,
+  className,
+}: {
+  leagues: { id: number; name: string }[];
+  value: number | undefined;
+  onChange: (value: number | undefined) => void;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedName = leagues.find((l) => l.id === value)?.name;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn("justify-between font-normal", className)}
+        >
+          <span className="truncate">{selectedName ?? "All Leagues"}</span>
+          <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[220px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search league..." className="h-8 text-xs" />
+          <CommandList>
+            <CommandEmpty>No league found.</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                onSelect={() => { onChange(undefined); setOpen(false); }}
+              >
+                <Check className={cn("mr-2 h-3.5 w-3.5", value === undefined ? "opacity-100" : "opacity-0")} />
+                All Leagues
+              </CommandItem>
+              {leagues.map((league) => (
+                <CommandItem
+                  key={league.id}
+                  value={league.name}
+                  onSelect={() => { onChange(league.id); setOpen(false); }}
+                >
+                  <Check className={cn("mr-2 h-3.5 w-3.5", value === league.id ? "opacity-100" : "opacity-0")} />
+                  {league.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 

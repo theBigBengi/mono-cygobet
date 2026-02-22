@@ -71,6 +71,7 @@ export interface FixturesAttentionParams {
   issueType?: FixtureIssueType | "all";
   search?: string;
   timeframe?: AttentionTimeframe;
+  leagueId?: number;
   page?: number;
   perPage?: number;
 }
@@ -78,7 +79,7 @@ export interface FixturesAttentionParams {
 export async function getFixturesNeedingAttention(
   params: FixturesAttentionParams = {}
 ): Promise<AdminFixturesAttentionResponse> {
-  const { issueType = "all", search, timeframe = "all", page = 1, perPage = 25 } = params;
+  const { issueType = "all", search, timeframe = "all", leagueId, page = 1, perPage = 25 } = params;
   const searchLower = search?.trim().toLowerCase();
 
   // 1. Fetch ALL lightweight rows from every category (parallel, no take limit)
@@ -100,7 +101,16 @@ export async function getFixturesNeedingAttention(
     }
   }
 
-  // 3. Compute issue counts from the COMPLETE deduplicated list (before search filter)
+  // 3. Extract available leagues from the COMPLETE list (before any filters)
+  const leagueMap = new Map<number, string>();
+  for (const item of allItems) {
+    if (item.league) leagueMap.set(item.league.id, item.league.name);
+  }
+  const availableLeagues = [...leagueMap.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // 3b. Compute issue counts from the COMPLETE deduplicated list (before search filter)
   const issueCounts = { stuck: 0, overdue: 0, noScores: 0, unsettled: 0 };
   for (const item of allItems) {
     issueCounts[item.issueType]++;
@@ -151,6 +161,11 @@ export async function getFixturesNeedingAttention(
     }
   }
 
+  // 4d. Apply league filter
+  if (leagueId) {
+    filtered = filtered.filter((item) => item.league?.id === leagueId);
+  }
+
   // 5. Sort: critical issues first (stuck > unsettled > overdue > noScores), then oldest first
   const priorityOrder: Record<FixtureIssueType, number> = {
     stuck: 0,
@@ -164,13 +179,16 @@ export async function getFixturesNeedingAttention(
     return new Date(a.issueSince).getTime() - new Date(b.issueSince).getTime();
   });
 
-  // 6. Paginate
+  // 6. Extract allExternalIds from the full filtered array (before pagination)
+  const allExternalIds = filtered.map((item) => item.externalId.toString());
+
+  // 7. Paginate
   const totalItems = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / perPage));
   const offset = (page - 1) * perPage;
   const pageSlice = filtered.slice(offset, offset + perPage);
 
-  // 7. Hydrate ONLY the current page items with group/prediction counts
+  // 8. Hydrate ONLY the current page items with group/prediction counts
   const pageItems = await Promise.all(pageSlice.map(hydrateItem));
 
   return {
@@ -178,6 +196,8 @@ export async function getFixturesNeedingAttention(
     data: pageItems,
     issueCounts,
     pagination: { page, perPage, totalItems, totalPages },
+    allExternalIds,
+    availableLeagues,
     message: `Found ${totalItems} fixture(s) needing attention`,
   };
 }

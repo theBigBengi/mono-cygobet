@@ -45,6 +45,7 @@ type AttentionParams = {
   issueType?: FixtureIssueType | "all";
   search?: string;
   timeframe?: string;
+  leagueId?: number;
   page?: number;
   perPage?: number;
 };

@@ -31,6 +31,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               type: "string",
               enum: ["all", "1h", "3h", "6h", "12h", "24h", "24h+"],
             },
+            leagueId: { type: "number" },
             page: { type: "number", minimum: 1 },
             perPage: { type: "number", minimum: 1, maximum: 100 },
           },
@@ -42,6 +43,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         issueType?: FixtureIssueType | "all";
         search?: string;
         timeframe?: string;
+        leagueId?: number;
         page?: number;
         perPage?: number;
       };
@@ -49,6 +51,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         issueType: query.issueType,
         search: query.search,
         timeframe: query.timeframe as any,
+        leagueId: query.leagueId,
         page: query.page,
         perPage: query.perPage,
       });

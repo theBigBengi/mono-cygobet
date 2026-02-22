@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { AlertTriangle, Clock, FileWarning, Scale, RefreshCw, ArrowRight } from "lucide-react";
+import { AlertTriangle, Clock, FileWarning, Scale, RefreshCw, ArrowRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { fixturesService } from "@/services/fixtures.service";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -72,6 +73,11 @@ interface AttentionFixturesTableProps {
   onResettle?: (fixtureId: number) => void;
   syncingIds?: Set<string>;
   resettlingIds?: Set<number>;
+  onBulkSync?: (externalIds: string[]) => void;
+  bulkSyncing?: boolean;
+  bulkProgress?: string;
+  selectedIds: Set<string>;
+  onSelectionChange: (ids: Set<string>) => void;
 }
 
 type SyncPreviewChange = {
@@ -92,8 +98,23 @@ export function AttentionFixturesTable({
   onResettle,
   syncingIds,
   resettlingIds,
+  onBulkSync,
+  bulkSyncing,
+  bulkProgress,
+  selectedIds,
+  onSelectionChange,
 }: AttentionFixturesTableProps) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+
+  const toggleSelect = useCallback((externalId: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(externalId)) next.delete(externalId);
+    else next.add(externalId);
+    onSelectionChange(next);
+  }, [selectedIds, onSelectionChange]);
+
+  const pageExternalIds = data.map((f) => f.externalId);
+  const allPageSelected = data.length > 0 && pageExternalIds.every((id) => selectedIds.has(id));
 
   // ─── Background prefetch of provider previews for current page ───
   const previewCache = useRef<Map<string, SyncPreviewChange[]>>(new Map());
@@ -186,10 +207,19 @@ export function AttentionFixturesTable({
           const Icon = config.icon;
           const isSyncing = syncingIds?.has(fixture.externalId);
           const isResettling = resettlingIds?.has(fixture.id);
+          const isSelected = selectedIds.has(fixture.externalId);
 
           return (
-            <div key={fixture.id} className="rounded-lg border p-3 space-y-2">
+            <div key={fixture.id} className={`rounded-lg border p-3 space-y-2 ${isSelected ? "border-primary bg-primary/5" : ""}`}>
               <div className="flex items-start justify-between gap-2">
+                {onBulkSync && (
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleSelect(fixture.externalId)}
+                    className="mt-0.5 shrink-0"
+                    disabled={bulkSyncing}
+                  />
+                )}
                 <Link
                   to={`/fixtures/${fixture.id}`}
                   className="text-sm font-medium hover:underline leading-tight flex-1 min-w-0"
@@ -261,6 +291,9 @@ export function AttentionFixturesTable({
         <Table>
           <TableHeader>
             <TableRow>
+              {onBulkSync && (
+                <TableHead className="w-[40px]" />
+              )}
               <TableHead className="w-[100px]">Issue</TableHead>
               <TableHead>Fixture</TableHead>
               <TableHead className="hidden md:table-cell">State</TableHead>
@@ -277,8 +310,20 @@ export function AttentionFixturesTable({
               const isSyncing = syncingIds?.has(fixture.externalId);
               const isResettling = resettlingIds?.has(fixture.id);
     
+              const isSelected = selectedIds.has(fixture.externalId);
+
               return (
-                <TableRow key={fixture.id}>
+                <TableRow key={fixture.id} className={isSelected ? "bg-primary/5" : ""}>
+                  {onBulkSync && (
+                    <TableCell>
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelect(fixture.externalId)}
+                        disabled={bulkSyncing}
+                        aria-label={`Select ${fixture.name}`}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Badge variant="outline" className={config.badgeClass}>
                       <Icon className="mr-1 h-3 w-3" />
@@ -374,6 +419,42 @@ export function AttentionFixturesTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* Bulk action bar */}
+      {onBulkSync && selectedIds.size > 0 && (
+        <div className="sticky bottom-0 z-10 mt-3 rounded-lg border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-2.5 flex items-center gap-3 shadow-lg">
+          <span className="text-sm font-medium">
+            {selectedIds.size} selected
+          </span>
+          <Button
+            size="sm"
+            className="h-7 px-3 text-xs"
+            onClick={() => onBulkSync(Array.from(selectedIds))}
+            disabled={bulkSyncing}
+          >
+            {bulkSyncing ? (
+              <>
+                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                {bulkProgress || "Syncing..."}
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-1.5 h-3 w-3" />
+                Sync Selected
+              </>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => onSelectionChange(new Set())}
+            disabled={bulkSyncing}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
 
       {/* Confirmation Dialog — opens only after data is ready */}
       {pendingAction && (() => {

@@ -1086,6 +1086,8 @@ export interface AdminFixturesAttentionResponse {
     totalItems: number;
     totalPages: number;
   };
+  allExternalIds: string[];
+  availableLeagues: { id: number; name: string }[];
   message: string;
 }
 

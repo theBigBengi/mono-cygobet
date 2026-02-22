@@ -346,6 +346,98 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  // POST /admin/sync/fixtures/bulk - Sync multiple fixtures by external IDs
+  fastify.post<{
+    Body: { externalIds: number[]; dryRun?: boolean };
+    Reply: AdminSyncFixturesResponse;
+  }>(
+    "/fixtures/bulk",
+    {
+      schema: {
+        body: {
+          type: "object",
+          properties: {
+            externalIds: {
+              type: "array",
+              items: { type: "number" },
+              minItems: 1,
+              maxItems: 100,
+            },
+            dryRun: { type: "boolean" },
+          },
+          required: ["externalIds"],
+        },
+        response: {
+          200: syncResponseSchema,
+          409: { type: "object" },
+          408: { type: "object" },
+        },
+      },
+    },
+    async (req, reply): Promise<AdminSyncFixturesResponse> => {
+      const { externalIds, dryRun = false } = req.body;
+
+      // Fetch all fixtures from provider in one API call (outside the lock)
+      const fixturesDtos = await adapter.fetchFixturesByIds(externalIds, {
+        includeScores: true,
+      });
+
+      if (fixturesDtos.length === 0) {
+        return reply.code(404).send({
+          status: "error",
+          data: { batchId: null, ok: 0, fail: 0, total: externalIds.length },
+          message: "No fixtures found in provider for the given IDs",
+        });
+      }
+
+      try {
+        return await withAdvisoryLock(
+          LOCK_KEY,
+          async () => {
+            const result = await syncFixtures(fixturesDtos, {
+              dryRun,
+              bypassStateValidation: !dryRun,
+            });
+            await availabilityService.invalidateCache().catch(() => {});
+            const ok = result.inserted + result.updated;
+            return reply.send({
+              status: "success",
+              data: {
+                batchId: null,
+                ok,
+                fail: result.failed,
+                total: result.total,
+                ...(result.failed > 0 && {
+                  firstError: "One or more fixtures failed to sync",
+                }),
+              },
+              message: dryRun
+                ? `Bulk fixture sync dry-run completed (${externalIds.length} requested)`
+                : `Bulk fixture sync completed (${ok} synced, ${result.failed} failed)`,
+            });
+          },
+          { timeoutMs: DEFAULT_LOCK_TIMEOUT_MS }
+        );
+      } catch (err) {
+        if (err instanceof AdvisoryLockNotAcquiredError) {
+          return reply.status(409).send({
+            status: "error",
+            data: { batchId: null, ok: 0, fail: 0, total: 0 },
+            message: "Fixtures sync already running",
+          } as AdminSyncFixturesResponse);
+        }
+        if (err instanceof AdvisoryLockTimeoutError) {
+          return reply.status(408).send({
+            status: "error",
+            data: { batchId: null, ok: 0, fail: 0, total: 0 },
+            message: "Fixtures sync timed out",
+          } as AdminSyncFixturesResponse);
+        }
+        throw err;
+      }
+    }
+  );
+
   // POST /admin/sync/fixtures/:id - Sync a single fixture by ID from provider to database
   fastify.post<{
     Params: { id: string };

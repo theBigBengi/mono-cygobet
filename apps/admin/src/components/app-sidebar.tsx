@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronRight, Bell, LogOut } from "lucide-react";
+import { ChevronRight, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAdminAuth } from "@/auth";
 
@@ -27,34 +27,26 @@ import { useAlerts } from "@/hooks/use-dashboard";
 const data = {
   navMain: [
     {
-      title: "Dashboard",
+      title: "Content",
       items: [
-        { title: "Home", url: "/" },
-        { title: "Analytics", url: "/analytics" },
+        { title: "Fixtures", url: "/fixtures" },
+        { title: "Teams", url: "/teams" },
       ],
     },
     {
       title: "Operations",
       items: [
-        { title: "Fixtures", url: "/fixtures" },
-        { title: "Teams", url: "/teams" },
         { title: "Jobs", url: "/jobs" },
-      ],
-    },
-    {
-      title: "Tools",
-      items: [
         { title: "Sync Center", url: "/sync-center" },
-        { title: "Sandbox", url: "/sandbox" },
       ],
     },
     {
-      title: "Admin",
+      title: "System",
       items: [
+        { title: "Analytics", url: "/analytics" },
         { title: "Users", url: "/users" },
         { title: "Settings", url: "/settings" },
-        { title: "League Order", url: "/settings/league-order" },
-        { title: "Team Order", url: "/settings/team-order" },
+        { title: "Sandbox", url: "/sandbox" },
       ],
     },
   ],
@@ -101,29 +93,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return counts;
   }, [alertsData?.data]);
 
-  const totalAlerts = alertsData?.data?.length ?? 0;
-
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <div className="flex items-center justify-between px-2 py-2">
+        <div className="px-2 py-2">
           <h2 className="text-lg font-semibold">Admin</h2>
-          {totalAlerts > 0 && (
-            <Link
-              to="/"
-              className="relative p-1.5 rounded-md hover:bg-sidebar-accent transition-colors"
-              onClick={handleLinkClick}
-              title={`${totalAlerts} active alert${totalAlerts !== 1 ? "s" : ""}`}
-            >
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                {totalAlerts}
-              </span>
-            </Link>
-          )}
         </div>
       </SidebarHeader>
       <SidebarContent className="gap-0">
+        {/* Dashboard — standalone at top */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.pathname === "/"}>
+                  <Link to="/" onClick={handleLinkClick}>
+                    Dashboard
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
         {data.navMain.map((item) => (
           <Collapsible
             key={item.title}

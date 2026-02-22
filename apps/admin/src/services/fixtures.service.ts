@@ -138,6 +138,16 @@ export const fixturesService = {
     return apiPost(`/admin/sync-center/sync/fixtures/${id}`, { dryRun });
   },
 
+  async syncBulk(
+    externalIds: number[],
+    dryRun = false
+  ): Promise<AdminSyncFixturesResponse> {
+    return apiPost<AdminSyncFixturesResponse>(
+      "/admin/sync-center/sync/fixtures/bulk",
+      { externalIds, dryRun }
+    );
+  },
+
   async syncPreview(externalId: number | string) {
     return apiGet<{
       status: string;
@@ -225,6 +235,7 @@ export const fixturesService = {
     issueType?: FixtureIssueType | "all";
     search?: string;
     timeframe?: string;
+    leagueId?: number;
     page?: number;
     perPage?: number;
   }): Promise<AdminFixturesAttentionResponse> {
@@ -233,6 +244,8 @@ export const fixturesService = {
     if (params?.search) searchParams.append("search", params.search);
     if (params?.timeframe && params.timeframe !== "all")
       searchParams.append("timeframe", params.timeframe);
+    if (params?.leagueId)
+      searchParams.append("leagueId", params.leagueId.toString());
     if (params?.page) searchParams.append("page", params.page.toString());
     if (params?.perPage)
       searchParams.append("perPage", params.perPage.toString());
