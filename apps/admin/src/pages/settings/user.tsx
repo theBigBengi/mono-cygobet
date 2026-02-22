@@ -1,32 +1,21 @@
 /**
  * User Settings Page
- *
- * Allows users to:
- * - View and edit their name
- * - Change password
- * - View account information (email, role, last login)
- * - Configure notification preferences (Slack webhook, severity threshold)
  */
 
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { AdminMeResponse, AdminNotificationSettings } from "@repo/types/http/admin";
+import type {
+  AdminMeResponse,
+  AdminNotificationSettings,
+} from "@repo/types/http/admin";
 import { useAdminAuth } from "@/auth";
 import { apiGet, apiPost } from "@/lib/adminApi";
 import { useNotificationSettings } from "@/hooks/use-settings";
 import { settingsService } from "@/services/settings.service";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -36,8 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { User, Bell, Lock } from "lucide-react";
 
-// Use the shared type from @repo/types
 type UserProfile = AdminMeResponse["data"];
 
 interface UpdateProfileBody {
@@ -54,7 +43,6 @@ export default function UserSettingsPage() {
   const { me } = useAdminAuth();
   const queryClient = useQueryClient();
 
-  // Fetch full user profile (including lastLoginAt)
   const { data: profile, isLoading } = useQuery<UserProfile>({
     queryKey: ["user-profile"],
     queryFn: async () => {
@@ -76,7 +64,8 @@ export default function UserSettingsPage() {
   }, [profile]);
 
   // Notification settings
-  const { data: notifData, isLoading: notifLoading } = useNotificationSettings();
+  const { data: notifData, isLoading: notifLoading } =
+    useNotificationSettings();
   const notifSettings = notifData?.data ?? null;
 
   const [slackWebhookUrl, setSlackWebhookUrl] = React.useState("");
@@ -101,9 +90,8 @@ export default function UserSettingsPage() {
       );
     },
     onSuccess: () => {
-      toast.success("Profile updated successfully");
+      toast.success("Profile updated");
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-      // Refresh auth context to update user name
       queryClient.invalidateQueries({ queryKey: ["admin-auth"] });
     },
     onError: (error: Error) => {
@@ -116,7 +104,9 @@ export default function UserSettingsPage() {
       settingsService.updateNotificationSettings(data),
     onSuccess: () => {
       toast.success("Notification settings updated");
-      queryClient.invalidateQueries({ queryKey: ["admin-settings", "notifications"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-settings", "notifications"],
+      });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to update notification settings");
@@ -134,7 +124,7 @@ export default function UserSettingsPage() {
       );
     },
     onSuccess: () => {
-      toast.success("Password changed successfully");
+      toast.success("Password changed");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -144,30 +134,25 @@ export default function UserSettingsPage() {
     },
   });
 
-  const handleUpdateName = async (e: React.FormEvent) => {
+  const handleUpdateName = (e: React.FormEvent) => {
     e.preventDefault();
     if (name === profile?.name) {
       toast.info("No changes to save");
       return;
     }
-    updateProfileMutation.mutate({
-      name: name.trim() || undefined,
-    });
+    updateProfileMutation.mutate({ name: name.trim() || undefined });
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
+  const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (newPassword !== confirmPassword) {
       toast.error("New passwords do not match");
       return;
     }
-
     if (newPassword.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
     }
-
     changePasswordMutation.mutate({
       currentPassword,
       newPassword,
@@ -175,7 +160,7 @@ export default function UserSettingsPage() {
     });
   };
 
-  const handleSaveNotifications = async (e: React.FormEvent) => {
+  const handleSaveNotifications = (e: React.FormEvent) => {
     e.preventDefault();
     updateNotifMutation.mutate({
       slackWebhookUrl: slackWebhookUrl.trim() || null,
@@ -192,118 +177,121 @@ export default function UserSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="h-full w-full p-4 sm:p-6 md:p-8">
-        <div className="max-w-4xl mx-auto space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
+      <div className="h-full w-full p-3 sm:p-6">
+        <div className="max-w-2xl mx-auto space-y-4">
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full p-4 sm:p-6 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="space-y-6">
-          {/* Profile Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
-                View your account information and activity
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label>Email</Label>
-                <Input value={profile?.email ?? me?.email ?? ""} disabled />
-                <p className="text-sm text-muted-foreground">
-                  Email cannot be changed
+    <div className="h-full w-full overflow-y-auto p-3 sm:p-6">
+      <div className="max-w-2xl mx-auto space-y-6 pb-8">
+        {/* ── Profile ── */}
+        <section className="rounded-lg border">
+          <div className="flex items-center gap-2 border-b px-4 py-3">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Profile</h2>
+          </div>
+          <div className="p-4 space-y-4">
+            {/* Read-only info */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div>
+                <span className="text-muted-foreground text-xs">Email</span>
+                <p className="font-medium truncate">
+                  {profile?.email ?? me?.email ?? "—"}
                 </p>
               </div>
-
-              <div className="grid gap-2">
-                <Label>Role</Label>
-                <Input value={profile?.role ?? me?.role ?? ""} disabled />
+              <div>
+                <span className="text-muted-foreground text-xs">Role</span>
+                <p className="font-medium capitalize">
+                  {profile?.role ?? me?.role ?? "—"}
+                </p>
               </div>
-
               {profile?.lastLoginAt && (
-                <div className="grid gap-2">
-                  <Label>Last Login</Label>
-                  <Input
-                    value={
-                      profile.lastLoginAt
-                        ? new Date(profile.lastLoginAt).toLocaleString()
-                        : "Never"
-                    }
-                    disabled
-                  />
+                <div>
+                  <span className="text-muted-foreground text-xs">
+                    Last login
+                  </span>
+                  <p className="font-medium">
+                    {new Date(profile.lastLoginAt).toLocaleDateString(
+                      undefined,
+                      { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+                    )}
+                  </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Update Name */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Update Name</CardTitle>
-              <CardDescription>Change your display name</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleUpdateName} className="space-y-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your name"
+            {/* Editable name */}
+            <form onSubmit={handleUpdateName} className="flex items-end gap-2">
+              <div className="flex-1 grid gap-1.5">
+                <Label htmlFor="name" className="text-xs">
+                  Display name
+                </Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  className="h-9"
+                />
+              </div>
+              <Button
+                type="submit"
+                size="sm"
+                className="h-9"
+                disabled={
+                  updateProfileMutation.isPending || name === profile?.name
+                }
+              >
+                {updateProfileMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </form>
+          </div>
+        </section>
+
+        {/* ── Notifications ── */}
+        <section className="rounded-lg border">
+          <div className="flex items-center gap-2 border-b px-4 py-3">
+            <Bell className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Notifications</h2>
+          </div>
+          <div className="p-4">
+            {notifLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+              </div>
+            ) : (
+              <form
+                onSubmit={handleSaveNotifications}
+                className="space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="slack-enabled" className="text-sm">
+                      Slack alerts
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Send notifications to a Slack channel
+                    </p>
+                  </div>
+                  <Switch
+                    id="slack-enabled"
+                    checked={slackEnabled}
+                    onCheckedChange={setSlackEnabled}
                   />
                 </div>
-                <Button
-                  type="submit"
-                  disabled={updateProfileMutation.isPending || name === profile?.name}
-                >
-                  {updateProfileMutation.isPending ? "Saving..." : "Save Name"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
 
-          <Separator />
-
-          {/* Notification Preferences */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>
-                Configure Slack notifications for system alerts
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {notifLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ) : (
-                <form onSubmit={handleSaveNotifications} className="space-y-5">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="slack-enabled">Slack Notifications</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Send alert notifications to a Slack channel
-                      </p>
-                    </div>
-                    <Switch
-                      id="slack-enabled"
-                      checked={slackEnabled}
-                      onCheckedChange={setSlackEnabled}
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="slack-webhook">Webhook URL</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="slack-webhook" className="text-xs">
+                      Webhook URL
+                    </Label>
                     <Input
                       id="slack-webhook"
                       type="url"
@@ -311,14 +299,13 @@ export default function UserSettingsPage() {
                       onChange={(e) => setSlackWebhookUrl(e.target.value)}
                       placeholder="https://hooks.slack.com/services/..."
                       disabled={!slackEnabled}
+                      className="h-9 text-sm"
                     />
-                    <p className="text-sm text-muted-foreground">
-                      Create a Slack Incoming Webhook and paste the URL here
-                    </p>
                   </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="severity-threshold">Severity Threshold</Label>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="severity-threshold" className="text-xs">
+                      Severity
+                    </Label>
                     <Select
                       value={slackSeverityThreshold}
                       onValueChange={(v) =>
@@ -328,53 +315,51 @@ export default function UserSettingsPage() {
                       }
                       disabled={!slackEnabled}
                     >
-                      <SelectTrigger id="severity-threshold" className="w-full">
+                      <SelectTrigger
+                        id="severity-threshold"
+                        className="h-9 w-full sm:w-[160px] text-sm"
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="critical">
-                          Critical only
-                        </SelectItem>
+                        <SelectItem value="critical">Critical only</SelectItem>
                         <SelectItem value="warning">
                           Critical + Warning
                         </SelectItem>
-                        <SelectItem value="all">
-                          All (Critical + Warning + Info)
-                        </SelectItem>
+                        <SelectItem value="all">All levels</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-sm text-muted-foreground">
-                      Choose which alert severity levels trigger Slack notifications
-                    </p>
                   </div>
+                </div>
 
+                <div className="flex justify-end">
                   <Button
                     type="submit"
+                    size="sm"
+                    className="h-9"
                     disabled={updateNotifMutation.isPending || !notifDirty}
                   >
-                    {updateNotifMutation.isPending
-                      ? "Saving..."
-                      : "Save Notifications"}
+                    {updateNotifMutation.isPending ? "Saving..." : "Save"}
                   </Button>
-                </form>
-              )}
-            </CardContent>
-          </Card>
+                </div>
+              </form>
+            )}
+          </div>
+        </section>
 
-          <Separator />
-
-          {/* Change Password */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Change Password</CardTitle>
-              <CardDescription>
-                Update your password to keep your account secure
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleChangePassword} className="space-y-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="current-password">Current Password</Label>
+        {/* ── Security ── */}
+        <section className="rounded-lg border">
+          <div className="flex items-center gap-2 border-b px-4 py-3">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Security</h2>
+          </div>
+          <div className="p-4">
+            <form onSubmit={handleChangePassword} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="current-password" className="text-xs">
+                    Current password
+                  </Label>
                   <Input
                     id="current-password"
                     type="password"
@@ -382,11 +367,13 @@ export default function UserSettingsPage() {
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     required
                     autoComplete="current-password"
+                    className="h-9"
                   />
                 </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="new-password">New Password</Label>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="new-password" className="text-xs">
+                    New password
+                  </Label>
                   <Input
                     id="new-password"
                     type="password"
@@ -395,14 +382,13 @@ export default function UserSettingsPage() {
                     required
                     autoComplete="new-password"
                     minLength={8}
+                    className="h-9"
                   />
-                  <p className="text-sm text-muted-foreground">
-                    Password must be at least 8 characters
-                  </p>
                 </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="confirm-password" className="text-xs">
+                    Confirm password
+                  </Label>
                   <Input
                     id="confirm-password"
                     type="password"
@@ -411,22 +397,28 @@ export default function UserSettingsPage() {
                     required
                     autoComplete="new-password"
                     minLength={8}
+                    className="h-9"
                   />
                 </div>
-
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Minimum 8 characters
+              </p>
+              <div className="flex justify-end">
                 <Button
                   type="submit"
+                  size="sm"
+                  className="h-9"
                   disabled={changePasswordMutation.isPending}
-                  variant="default"
                 >
                   {changePasswordMutation.isPending
-                    ? "Changing Password..."
+                    ? "Changing..."
                     : "Change Password"}
                 </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+            </form>
+          </div>
+        </section>
       </div>
     </div>
   );
