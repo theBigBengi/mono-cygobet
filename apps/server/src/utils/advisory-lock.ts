@@ -1,6 +1,9 @@
 /**
- * Advisory locking only. pg is used solely for pg_try_advisory_lock / pg_advisory_unlock;
- * all other DB access stays in Prisma.
+ * Advisory locking using transaction-level locks (pg_try_advisory_xact_lock).
+ * The lock is held inside a BEGIN/COMMIT transaction on a dedicated pg.Client.
+ * It auto-releases when the transaction ends — even on crash or connection drop.
+ *
+ * All other DB access stays in Prisma; pg is used solely for the advisory lock.
  */
 import pg from "pg";
 
@@ -42,19 +45,20 @@ export class AdvisoryLockTimeoutError extends Error {
 }
 
 /**
- * Session-scoped advisory lock: acquire with pg_try_advisory_lock, run fn(), then
- * release with pg_advisory_unlock in finally. The lock is never released before fn() completes.
+ * Transaction-scoped advisory lock: opens a dedicated pg connection, BEGINs a
+ * transaction, acquires the lock with pg_try_advisory_xact_lock, runs fn(),
+ * then COMMITs (releasing the lock). If anything goes wrong the transaction is
+ * rolled back and the lock is released automatically.
  *
  * If options.timeoutMs is set, the caller's Promise is rejected after that many ms
- * (AdvisoryLockTimeoutError), but the lock is released only after fn() actually finishes.
- * clearTimeout is always performed so the timer does not leak.
+ * (AdvisoryLockTimeoutError), but the lock is released only after fn() finishes.
  *
  * @param jobKey - Logical lock key (e.g. "sync:fixtures", "sync:odds")
  * @param fn - Work to run while holding the lock
- * @param options.timeoutMs - If set, caller gets AdvisoryLockTimeoutError after this many ms; lock still held until fn() completes.
+ * @param options.timeoutMs - If set, caller gets AdvisoryLockTimeoutError after this many ms
  * @returns The result of `fn()`
- * @throws AdvisoryLockNotAcquiredError if the lock is already held by another session
- * @throws AdvisoryLockTimeoutError if options.timeoutMs elapsed before fn() completed (lock not released until fn() finishes)
+ * @throws AdvisoryLockNotAcquiredError if the lock is already held
+ * @throws AdvisoryLockTimeoutError if options.timeoutMs elapsed before fn() completed
  */
 export async function withAdvisoryLock<T>(
   jobKey: string,
@@ -70,35 +74,41 @@ export async function withAdvisoryLock<T>(
 
   const timeoutMs = options?.timeoutMs;
   const client = new Client({ connectionString });
-  let timedOut = false;
 
-  async function releaseLockAndClose(): Promise<void> {
+  async function endTransaction(): Promise<void> {
     try {
-      await client.query("SELECT pg_advisory_unlock(hashtext($1))", [
-        jobKey,
-      ]);
+      await client.query("COMMIT");
     } catch {
-      // Ignore unlock errors (e.g. connection already closed)
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // Connection is likely dead — lock auto-releases with the transaction
+      }
     }
     try {
       await client.end();
     } catch {
-      // Ignore end errors; ensure we don't leak the client
+      // Ignore; connection may already be closed
     }
   }
 
+  await client.connect();
+
   try {
-    await client.connect();
+    await client.query("BEGIN");
+
     const lockResult = await client.query<{ ok: boolean }>(
-      "SELECT pg_try_advisory_lock(hashtext($1)) as ok",
+      "SELECT pg_try_advisory_xact_lock(hashtext($1)) as ok",
       [jobKey]
     );
     const acquired = lockResult.rows[0]?.ok;
     if (!acquired) {
+      await endTransaction();
       throw new AdvisoryLockNotAcquiredError(jobKey);
     }
 
     if (timeoutMs != null && timeoutMs > 0) {
+      let timedOut = false;
       const controller = new AbortController();
       const workPromise = fn(controller.signal);
       let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -106,21 +116,26 @@ export async function withAdvisoryLock<T>(
         timeoutId = setTimeout(() => {
           timedOut = true;
           controller.abort();
-          workPromise.catch(() => {}).finally(() => releaseLockAndClose());
+          workPromise
+            .catch(() => {})
+            .finally(() => endTransaction());
           reject(new AdvisoryLockTimeoutError(jobKey, timeoutMs));
         }, timeoutMs);
       });
       try {
-        return await Promise.race([workPromise, timerPromise]);
+        const result = await Promise.race([workPromise, timerPromise]);
+        if (!timedOut) await endTransaction();
+        return result;
       } finally {
         if (timeoutId != null) clearTimeout(timeoutId);
       }
     }
 
-    return await fn();
-  } finally {
-    if (!timedOut) {
-      await releaseLockAndClose();
-    }
+    const result = await fn();
+    await endTransaction();
+    return result;
+  } catch (err) {
+    await endTransaction();
+    throw err;
   }
 }
