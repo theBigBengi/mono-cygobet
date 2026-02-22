@@ -196,13 +196,17 @@ export class AFHttp {
     const out: T[] = [];
 
     do {
-      const url = this.buildUrl(path, { ...params, page: currentPage });
+      const url = this.buildUrl(path, {
+        ...params,
+        ...(currentPage > 1 ? { page: currentPage } : {}),
+      });
       let totalPages = 1;
-
       let attempt = 0;
-      let res!: Response;
 
-      while (attempt <= retries) {
+      // Retry loop covers both fetch and JSON-body errors (e.g. in-body rate limits)
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        let res: Response;
         try {
           this.circuitBreaker.assertClosed();
           res = await this.opts.semaphore.run(() =>
@@ -214,126 +218,88 @@ export class AFHttp {
               signal: AbortSignal.timeout(30_000),
             })
           );
-
-          if (!res.ok) {
-            await res.text();
-            if (res.status === 429 || res.status >= 500) {
-              this.circuitBreaker.recordFailure();
-              attempt++;
-              if (attempt > retries) {
-                if (res.status === 429) {
-                  this.logger.error("AFHttp get failed", {
-                    code: "RATE_LIMIT",
-                    statusCode: 429,
-                  });
-                  throw new SportsDataError(
-                    "RATE_LIMIT",
-                    "Rate limit exceeded",
-                    429
-                  );
-                }
-                this.logger.error("AFHttp get failed", {
-                  code: "SERVER_ERROR",
-                  statusCode: res.status,
-                });
-                throw new SportsDataError(
-                  "SERVER_ERROR",
-                  "Server error",
-                  res.status
-                );
-              }
-              if (res.status === 429) {
-                const retryAfter = res.headers.get("Retry-After");
-                if (retryAfter) {
-                  const retryAfterMs = parseInt(retryAfter, 10) * 1000;
-                  if (Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
-                    this.logger.warn("AFHttp get retry (Retry-After)", {
-                      attempt,
-                      status: 429,
-                      delayMs: retryAfterMs,
-                    });
-                    await sleep(retryAfterMs);
-                    continue;
-                  }
-                }
-              }
-              const jitter = Math.floor(Math.random() * 200);
-              const delayMs =
-                this.opts.retryDelayMs * Math.pow(2, attempt - 1) + jitter;
-              this.logger.warn("AFHttp get retry", {
-                attempt,
-                status: res.status,
-                delayMs,
-              });
-              await sleep(delayMs);
-              continue;
-            }
-            this.logger.error("AFHttp get failed", {
-              code: "UNKNOWN",
-              statusCode: res.status,
-            });
-            throw new SportsDataError("UNKNOWN", "Request failed", res.status);
-          }
-          this.circuitBreaker.recordSuccess();
-          break;
         } catch (err) {
           if (err instanceof SportsDataError && err.code === "CIRCUIT_OPEN") {
             throw err;
           }
-          if (
-            !(err instanceof SportsDataError) ||
-            (err.code !== "SERVER_ERROR" && err.code !== "RATE_LIMIT")
-          ) {
-            this.circuitBreaker.recordFailure();
-          }
+          this.circuitBreaker.recordFailure();
           attempt++;
           if (attempt > retries) {
-            if (err instanceof SportsDataError) {
-              this.logger.error("AFHttp get failed", {
-                code: err.code,
-                statusCode: err.statusCode,
-              });
-              throw err;
-            }
-            this.logger.error("AFHttp get failed", {
-              code: "NETWORK_ERROR",
-              statusCode: undefined,
-            });
-            throw new SportsDataError(
-              "NETWORK_ERROR",
-              "Network request failed",
-              undefined,
-              err
-            );
+            this.logger.error("AFHttp get failed", { code: "NETWORK_ERROR" });
+            throw new SportsDataError("NETWORK_ERROR", "Network request failed", undefined, err);
           }
-          const jitter = Math.floor(Math.random() * 200);
-          const delayMs =
-            this.opts.retryDelayMs * Math.pow(2, attempt - 1) + jitter;
-          this.logger.warn("AFHttp get retry", {
-            attempt,
-            status: undefined,
-            delayMs,
-          });
+          const delayMs = this.opts.retryDelayMs * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 200);
+          this.logger.warn("AFHttp get retry (network)", { attempt, delayMs });
           await sleep(delayMs);
+          continue;
         }
+
+        // HTTP-level errors
+        if (!res.ok) {
+          await res.text();
+          const retryable = res.status === 429 || res.status >= 500;
+          if (retryable) {
+            this.circuitBreaker.recordFailure();
+            attempt++;
+            if (attempt > retries) {
+              const code = res.status === 429 ? "RATE_LIMIT" : "SERVER_ERROR";
+              this.logger.error("AFHttp get failed", { code, statusCode: res.status });
+              throw new SportsDataError(code, code === "RATE_LIMIT" ? "Rate limit exceeded" : "Server error", res.status);
+            }
+            // Respect Retry-After header on 429
+            let delayMs = this.opts.retryDelayMs * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 200);
+            if (res.status === 429) {
+              const retryAfter = res.headers.get("Retry-After");
+              if (retryAfter) {
+                const retryAfterMs = parseInt(retryAfter, 10) * 1000;
+                if (Number.isFinite(retryAfterMs) && retryAfterMs > 0) delayMs = retryAfterMs;
+              }
+            }
+            this.logger.warn("AFHttp get retry", { attempt, status: res.status, delayMs });
+            await sleep(delayMs);
+            continue;
+          }
+          this.logger.error("AFHttp get failed", { code: "UNKNOWN", statusCode: res.status });
+          throw new SportsDataError("UNKNOWN", "Request failed", res.status);
+        }
+
+        this.circuitBreaker.recordSuccess();
+
+        // Parse JSON body
+        const json = (await res.json()) as AFResponse<T>;
+
+        // API-Football returns errors inside a 200 response (including rate limits)
+        const hasErrors = Array.isArray(json.errors)
+          ? json.errors.length > 0
+          : Object.keys(json.errors ?? {}).length > 0;
+
+        if (hasErrors) {
+          const errorMsg = Array.isArray(json.errors)
+            ? json.errors.join("; ")
+            : Object.values(json.errors).join("; ");
+          const isRateLimit = /rate.?limit|too many requests/i.test(errorMsg);
+
+          if (isRateLimit) {
+            attempt++;
+            if (attempt > retries) {
+              this.logger.error("AFHttp rate limited (in-body)", { errors: errorMsg });
+              throw new SportsDataError("RATE_LIMIT", `API error: ${errorMsg}`, 429);
+            }
+            const delayMs = this.opts.retryDelayMs * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 200);
+            this.logger.warn("AFHttp rate limited (in-body), retrying", { attempt, delayMs });
+            await sleep(delayMs);
+            continue;
+          }
+
+          this.logger.error("AFHttp API error in response", { errors: errorMsg });
+          throw new SportsDataError("UNKNOWN", `API error: ${errorMsg}`);
+        }
+
+        // Success — collect results and handle pagination
+        out.push(...json.response);
+        totalPages = json.paging?.total ?? 1;
+        break;
       }
-
-      const json = (await res.json()) as AFResponse<T>;
-
-      // API-Football returns errors inside a 200 response
-      const hasErrors = Array.isArray(json.errors)
-        ? json.errors.length > 0
-        : Object.keys(json.errors ?? {}).length > 0;
-      if (hasErrors) {
-        const errorMsg = Array.isArray(json.errors)
-          ? json.errors.join("; ")
-          : Object.values(json.errors).join("; ");
-        this.logger.error("AFHttp API error in response", { errors: errorMsg });
-        throw new SportsDataError("UNKNOWN", `API error: ${errorMsg}`);
-      }
-
-      out.push(...json.response);
-      totalPages = json.paging?.total ?? 1;
 
       if (!paginate || currentPage >= totalPages) break;
       currentPage++;
