@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo, useSyncExternalStore } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -62,6 +62,15 @@ import type {
   FixtureIssueType,
   FixtureDTO,
 } from "@repo/types";
+
+// Media query for calendar numberOfMonths (2 on md+, 1 on mobile)
+const mdQuery = typeof window !== "undefined" ? window.matchMedia("(min-width: 768px)") : null;
+function subscribeMdQuery(cb: () => void) {
+  mdQuery?.addEventListener("change", cb);
+  return () => mdQuery?.removeEventListener("change", cb);
+}
+function getMdSnapshot() { return mdQuery?.matches ?? false; }
+function getMdServerSnapshot() { return false; }
 
 type FixturesTab = "live" | "attention" | "search";
 
@@ -1580,6 +1589,11 @@ function DateRangePickerButton({
 }) {
   const hasRange = from && to;
   const [open, setOpen] = useState(false);
+  const isWide = useSyncExternalStore(
+    subscribeMdQuery,
+    getMdSnapshot,
+    getMdServerSnapshot,
+  );
   const [pendingRange, setPendingRange] = useState<{
     from?: Date;
     to?: Date;
@@ -1650,7 +1664,7 @@ function DateRangePickerButton({
               : undefined
           }
           onSelect={(range) => setPendingRange(range ?? {})}
-          numberOfMonths={2}
+          numberOfMonths={isWide ? 2 : 1}
         />
         <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
           <Button
