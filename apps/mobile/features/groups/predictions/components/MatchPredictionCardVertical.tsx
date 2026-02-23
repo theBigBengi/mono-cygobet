@@ -5,11 +5,16 @@ import Animated, {
   useAnimatedStyle,
   useAnimatedReaction,
   withSpring,
+  withRepeat,
+  withTiming,
+  withSequence,
   interpolate,
+  interpolateColor,
+  Easing,
 } from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { formatKickoffTime } from "@/utils/fixture";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
@@ -27,6 +32,85 @@ import { ScoreInput } from "./ScoreInput";
 import { OutcomePicker } from "./OutcomePicker";
 import { TeamRow } from "./TeamRow";
 import { ResultDisplay } from "./ResultDisplay";
+
+/** Isolated max-points badge — animations only mount when this component renders. */
+function MaxPointsBadge({ points }: { points: number }) {
+  const glowPulse = useSharedValue(0);
+  React.useEffect(() => {
+    glowPulse.value = withRepeat(
+      withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true
+    );
+  }, [glowPulse]);
+  const glowStyle = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      glowPulse.value,
+      [0, 0.5, 1],
+      ["rgba(255,176,32,0.7)", "rgba(255,220,100,0.9)", "rgba(255,176,32,0.7)"]
+    );
+    const blurRadius = interpolate(glowPulse.value, [0, 0.5, 1], [6, 16, 6]);
+    const spreadDistance = interpolate(glowPulse.value, [0, 0.5, 1], [1, 5, 1]);
+    return {
+      borderColor: color,
+      boxShadow: [
+        { offsetX: 0, offsetY: 0, blurRadius, spreadDistance, color },
+      ],
+    };
+  });
+
+  const shimmer = useSharedValue(0);
+  React.useEffect(() => {
+    shimmer.value = withRepeat(
+      withSequence(
+        withTiming(0, { duration: 0 }),
+        withTiming(0, { duration: 2500 }),
+        withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+  }, [shimmer]);
+  const shimmerStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: interpolate(shimmer.value, [0, 1], [-80, 80]) },
+      { skewX: "-20deg" },
+    ],
+    opacity: interpolate(shimmer.value, [0, 0.15, 0.5, 0.85, 1], [0, 0.6, 1, 0.6, 0]),
+  }));
+
+  return (
+    <Animated.View style={[styles.maxBadgeOuter, glowStyle]}>
+      <LinearGradient
+        colors={["#FFB020", "#E8750A"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.maxBadgeGradient}
+      >
+        <Animated.View
+          style={[styles.maxBadgeShimmer, shimmerStyle]}
+          pointerEvents="none"
+        >
+          <LinearGradient
+            colors={[
+              "transparent",
+              "rgba(255,255,255,0.08)",
+              "rgba(255,255,255,0.35)",
+              "rgba(255,255,255,0.08)",
+              "transparent",
+            ]}
+            locations={[0, 0.25, 0.5, 0.75, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+        <Text style={styles.maxBadgeNumber}>+{points}</Text>
+        <Text style={styles.maxBadgePts}>pts</Text>
+      </LinearGradient>
+    </Animated.View>
+  );
+}
 
 /** Cached viewport height — constant for the lifetime of the app. */
 const VIEWPORT_H = Dimensions.get("window").height;
@@ -216,7 +300,7 @@ export function MatchPredictionCardVertical({
   const missedColor = "#EF4444"; // red
 
   // Prediction success based on points (for finished games)
-  const predictionSuccess = isFinished ? hasPoints : undefined;
+  const predictionSuccess = isFinished ? (isMaxPoints ? "max" as const : hasPoints) : undefined;
 
   // Timeline colors
   const filledColor = theme.colors.primary;
@@ -313,8 +397,8 @@ export function MatchPredictionCardVertical({
             style={({ pressed }) => [
               styles.cardShadowWrapper,
               isFinished && !isCancelled && !pressed && {
-                shadowColor: hasPoints ? successColor : missedColor,
-                shadowOpacity: 0.2,
+                shadowColor: isMaxPoints ? "#FFB020" : hasPoints ? successColor : missedColor,
+                shadowOpacity: 0.25,
               },
               isCardFocused && !pressed && {
                 shadowColor: theme.colors.primary,
@@ -341,8 +425,8 @@ export function MatchPredictionCardVertical({
                     : theme.colors.textSecondary + "40",
                 },
                 isFinished && !isCancelled && {
-                  borderColor: (hasPoints ? successColor : missedColor) + "30",
-                  borderBottomColor: (hasPoints ? successColor : missedColor) + "50",
+                  borderColor: (isMaxPoints ? "#FFB020" : hasPoints ? successColor : missedColor) + "30",
+                  borderBottomColor: (isMaxPoints ? "#FFB020" : hasPoints ? successColor : missedColor) + "50",
                 },
               ]}
             >
@@ -433,27 +517,28 @@ export function MatchPredictionCardVertical({
             </View>
           </Card>
           </Pressable>
-          {/* Right side: points for finished games, empty otherwise */}
-          {isFinished && !isCancelled ? (
+          {/* Points badge — shown for finished games */}
+          {isFinished && !isCancelled && (
             <Pressable onPress={onPressCard} style={styles.pointsContainer}>
-              {isMaxPoints && (
-                <Text style={styles.maxPointsStar}>★</Text>
+              {isMaxPoints ? (
+                <MaxPointsBadge points={fixturePoints} />
+              ) : (
+                <View style={[
+                  styles.pointsBadge,
+                  hasPoints
+                    ? { backgroundColor: "#10B981", borderColor: "#34D399", borderBottomColor: "#059669" }
+                    : { backgroundColor: "#EF4444", borderColor: "#F87171", borderBottomColor: "#DC2626" },
+                ]}>
+                  <Text style={styles.pointsBadgeNumber}>
+                    {hasPoints ? `+${fixturePoints}` : "0"}
+                  </Text>
+                  <Text style={styles.pointsBadgePts}>pts</Text>
+                </View>
               )}
-              <Text style={[
-                styles.pointsNumber,
-                { color: hasPoints ? successColor : missedColor },
-                isMaxPoints && styles.maxPointsNumber,
-              ]}>
-                {hasPoints ? `+${fixturePoints}` : "0"}
-              </Text>
-              <Text style={[
-                styles.pointsLabel,
-                { color: isMaxPoints ? "#D4A017" : theme.colors.textSecondary },
-              ]}>
-                {isMaxPoints ? "perfect" : "pts"}
-              </Text>
             </Pressable>
-          ) : (
+          )}
+          {/* Spacer when no points shown */}
+          {(!isFinished || isCancelled) && (
             <View style={styles.rightSpacer} />
           )}
         </View>
@@ -471,7 +556,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   timelineColumn: {
-    width: TIMELINE.COLUMN_WIDTH,
+    width: TIMELINE.COLUMN_WIDTH + 8,
     alignSelf: "stretch",
     justifyContent: "center",
   },
@@ -605,30 +690,92 @@ const styles = StyleSheet.create({
 
   /* ── Points / right side ── */
   pointsContainer: {
-    width: TIMELINE.COLUMN_WIDTH - 6,
+    width: TIMELINE.COLUMN_WIDTH + 2,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "visible",
   },
   pointsNumber: {
     fontSize: 24,
     fontWeight: "800",
   },
-  maxPointsNumber: {
-    color: "#D4A017",
+  pointsBadge: {
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 36,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  maxPointsStar: {
-    fontSize: 16,
-    color: "#FFD700",
-    marginBottom: -2,
+  pointsBadgeNumber: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#fff",
+  },
+  pointsBadgePts: {
+    fontSize: 8,
+    fontWeight: "900",
+    color: "#ffffffCC",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginTop: -2,
+  },
+  maxBadgeOuter: {
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,176,32,0.7)",
+  },
+  maxBadgeGradient: {
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 36,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    borderColor: "#FFD060",
+    borderBottomColor: "#C45E08",
+    overflow: "hidden",
+  },
+  maxBadgeShimmer: {
+    position: "absolute",
+    top: -6,
+    bottom: -6,
+    width: 50,
+    borderRadius: 6,
+  },
+  maxBadgeNumber: {
+    fontSize: 15,
+    fontWeight: "900",
+    color: "#fff",
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  maxBadgePts: {
+    fontSize: 8,
+    fontWeight: "900",
+    color: "#ffffffDD",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginTop: -2,
   },
   pointsLabel: {
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     opacity: 0.8,
   },
   rightSpacer: {
-    width: TIMELINE.COLUMN_WIDTH - 6,
+    width: TIMELINE.COLUMN_WIDTH + 2,
   },
 });

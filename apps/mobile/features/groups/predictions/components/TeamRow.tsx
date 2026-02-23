@@ -16,7 +16,7 @@ function TeamRowInner({ team, teamName, isWinner }: TeamRowProps) {
   return (
     <View style={styles.teamRow}>
       <View style={styles.teamSection}>
-        <TeamLogo imagePath={team?.imagePath} teamName={teamName} size={32} rounded={false} />
+        <TeamLogo imagePath={team?.imagePath} teamName={teamName} size={28} rounded={false} />
         <AppText
           variant="body"
           style={[styles.teamName, isWinner && styles.winnerTeamName]}
@@ -50,10 +50,9 @@ const styles = StyleSheet.create({
   teamName: {
     flex: 1,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
     minWidth: 0,
+    color: "#6B7280",
   },
-  winnerTeamName: {
-    fontWeight: "700",
-  },
+  winnerTeamName: {},
 });

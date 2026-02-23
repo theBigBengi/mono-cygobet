@@ -168,18 +168,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   resultText: {
-    fontSize: 17,
-    fontWeight: "400",
+    fontSize: 15,
+    fontWeight: "500",
     lineHeight: 36,
     textAlignVertical: "center",
+    color: "#6B7280",
   },
   liveResultText: {
     color: LIVE_RESULT_COLOR,
     fontWeight: "700",
   },
-  winnerResultText: {
-    fontWeight: "700",
-  },
+  winnerResultText: {},
   cancelledText: {
     fontSize: 10,
     fontWeight: "500",

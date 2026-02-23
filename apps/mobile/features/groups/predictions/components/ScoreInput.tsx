@@ -16,8 +16,8 @@ type ScoreInputProps = {
   onFocus: () => void;
   onBlur?: () => void;
   onAutoNext?: () => void;
-  /** Whether the prediction for this field was correct (for finished games) */
-  isCorrect?: boolean;
+  /** Whether the prediction for this field was correct (for finished games). "max" = perfect prediction. */
+  isCorrect?: boolean | "max";
 };
 
 /**
@@ -120,23 +120,29 @@ function ScoreInputInner({
   }
 
   // Finished game - show result with correct/incorrect styling
-  const bgColor = isCorrect === true
-    ? "#10B981" + "20" // green tint
-    : isCorrect === false
-      ? "#EF4444" + "15" // red tint
-      : theme.colors.surface;
+  const bgColor = isCorrect === "max"
+    ? "#FFB020" + "20"
+    : isCorrect === true
+      ? "#10B981" + "20" // green tint
+      : isCorrect === false
+        ? "#EF4444" + "15" // red tint
+        : theme.colors.surface;
 
-  const borderColor = isCorrect === true
-    ? "#10B981" + "60"
-    : isCorrect === false
-      ? "#EF4444" + "40"
-      : theme.colors.border;
+  const borderColor = isCorrect === "max"
+    ? "#FFB020" + "60"
+    : isCorrect === true
+      ? "#10B981" + "60"
+      : isCorrect === false
+        ? "#EF4444" + "40"
+        : theme.colors.border;
 
-  const textColor = isCorrect === true
-    ? "#10B981"
-    : isCorrect === false
-      ? "#EF4444"
-      : theme.colors.textSecondary;
+  const textColor = isCorrect === "max"
+    ? "#D4920A"
+    : isCorrect === true
+      ? "#10B981"
+      : isCorrect === false
+        ? "#EF4444"
+        : theme.colors.textSecondary;
 
   return (
     <View
