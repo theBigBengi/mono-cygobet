@@ -230,9 +230,6 @@ function AttentionTabContent({
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
 
-  // ─── Selection state ───
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
   // ─── Filter derived values ───
   const hasAppliedDateRange =
     appliedFilters.fromDate !== undefined && appliedFilters.toDate !== undefined;
@@ -293,37 +290,8 @@ function AttentionTabContent({
     onCountChange(attentionData?.pagination.totalItems ?? 0);
   }, [attentionData?.pagination.totalItems, onCountChange]);
 
-  // ─── Selection derived values ───
-  const allExternalIds = attentionData?.allExternalIds;
-  const prevAllIdsRef = useRef<string>("");
-
-  useEffect(() => {
-    const key = allExternalIds?.join(",") ?? "";
-    if (prevAllIdsRef.current !== "" && prevAllIdsRef.current !== key) {
-      setSelectedIds(new Set());
-    }
-    prevAllIdsRef.current = key;
-  }, [allExternalIds]);
-
   const pageItems = attentionData?.data ?? [];
-  const pageExternalIds = useMemo(() => pageItems.map((f) => f.externalId), [pageItems]);
   const totalMatchingCount = attentionData?.pagination.totalItems ?? 0;
-
-  const allPageSelected = pageItems.length > 0 && pageExternalIds.every((id) => selectedIds.has(id));
-  const somePageSelected = !allPageSelected && pageExternalIds.some((id) => selectedIds.has(id));
-
-  const togglePageSelect = useCallback(() => {
-    setSelectedIds((prev) => {
-      if (allPageSelected) {
-        const next = new Set(prev);
-        for (const id of pageExternalIds) next.delete(id);
-        return next;
-      }
-      const next = new Set(prev);
-      for (const id of pageExternalIds) next.add(id);
-      return next;
-    });
-  }, [allPageSelected, pageExternalIds]);
 
   // ─── Sync mutation ───
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
@@ -418,31 +386,7 @@ function AttentionTabContent({
   return (
     <div>
       {/* Sticky filters */}
-      <div className="sticky top-0 z-10 bg-background pb-2">
-        {/* ── Mobile: select all + filters ── */}
-        <div className="flex items-center gap-2 sm:hidden">
-          <Button
-            variant={allPageSelected ? "secondary" : "outline"}
-            size="sm"
-            className="h-8 text-xs gap-1.5"
-            onClick={togglePageSelect}
-            disabled={bulkSyncing || pageItems.length === 0}
-          >
-            {allPageSelected ? `${selectedIds.size} selected` : "Select all"}
-          </Button>
-          <AttentionMobileFilterDrawer
-            filters={filters}
-            setFilters={setFilters}
-            issueCounts={issueCounts}
-            availableLeagues={attentionData?.availableLeagues ?? []}
-            applyFilters={applyFilters}
-            resetFilters={resetFilters}
-            hasActiveFilters={hasActiveFilters}
-            filtersAreDirty={filtersAreDirty}
-            activeFilterCount={activeFilterCount}
-          />
-        </div>
-
+      <div className="sticky top-0 z-10 bg-background sm:pb-2">
         {/* ── Desktop: filters ── */}
         <div className="hidden sm:flex sm:items-center sm:gap-2">
           <div className="relative min-w-0 flex-[3]">
@@ -522,13 +466,21 @@ function AttentionTabContent({
         onBulkSync={handleBulkSync}
         bulkSyncing={bulkSyncing}
         bulkProgress={bulkProgress}
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
-        allScopeSelected={allPageSelected}
-        someScopeSelected={somePageSelected}
-        onToggleSelectAll={togglePageSelect}
-        allExternalIds={allExternalIds}
+        allExternalIds={attentionData?.allExternalIds}
         totalMatchingCount={totalMatchingCount}
+        mobileFilterSlot={
+          <AttentionMobileFilterDrawer
+            filters={filters}
+            setFilters={setFilters}
+            issueCounts={issueCounts}
+            availableLeagues={attentionData?.availableLeagues ?? []}
+            applyFilters={applyFilters}
+            resetFilters={resetFilters}
+            hasActiveFilters={hasActiveFilters}
+            filtersAreDirty={filtersAreDirty}
+            activeFilterCount={activeFilterCount}
+          />
+        }
       />
 
       {/* Pagination */}

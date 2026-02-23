@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { AlertTriangle, Clock, FileWarning, Scale, RefreshCw, ArrowRight, Loader2 } from "lucide-react";
@@ -34,6 +34,15 @@ import type {
   FixtureIssueType,
 } from "@repo/types";
 
+// Only render the visible layout (mobile OR desktop), not both — halves React work
+const smQuery = typeof window !== "undefined" ? window.matchMedia("(min-width: 640px)") : null;
+function subscribeSmQuery(cb: () => void) {
+  smQuery?.addEventListener("change", cb);
+  return () => smQuery?.removeEventListener("change", cb);
+}
+function getSmSnapshot() { return smQuery?.matches ?? false; }
+function getSmServerSnapshot() { return false; }
+
 function BulkActionBar({
   selectedIds,
   allExternalIds,
@@ -56,7 +65,7 @@ function BulkActionBar({
   const syncCount = syncIds.length;
 
   return (
-    <div className="sticky bottom-0 z-10 mt-3 rounded-lg border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-2.5 flex items-center gap-3 shadow-lg">
+    <div className="sticky bottom-0 z-10 mt-3 rounded-lg border bg-background px-4 py-2.5 flex items-center gap-3 shadow-lg">
       <Select value={scope} onValueChange={(v) => setScope(v as "page" | "all")}>
         <SelectTrigger className="h-7 min-h-[28px] w-auto gap-1 text-xs px-2.5 py-0 shrink-0">
           <SelectValue />
@@ -146,13 +155,9 @@ interface AttentionFixturesTableProps {
   onBulkSync?: (externalIds: string[]) => void;
   bulkSyncing?: boolean;
   bulkProgress?: string;
-  selectedIds: Set<string>;
-  onSelectionChange: (ids: Set<string>) => void;
-  allScopeSelected?: boolean;
-  someScopeSelected?: boolean;
-  onToggleSelectAll?: () => void;
   allExternalIds?: string[];
   totalMatchingCount?: number;
+  mobileFilterSlot?: React.ReactNode;
 }
 
 type SyncPreviewChange = {
@@ -176,22 +181,53 @@ export function AttentionFixturesTable({
   onBulkSync,
   bulkSyncing,
   bulkProgress,
-  selectedIds,
-  onSelectionChange,
-  allScopeSelected,
-  someScopeSelected,
-  onToggleSelectAll,
   allExternalIds,
   totalMatchingCount,
+  mobileFilterSlot,
 }: AttentionFixturesTableProps) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
+  const isDesktop = useSyncExternalStore(subscribeSmQuery, getSmSnapshot, getSmServerSnapshot);
+
+  // ─── Internal selection state (isolated to avoid parent re-renders) ───
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const pageExternalIds = useMemo(() => data.map((f) => f.externalId), [data]);
+  const allPageSelected = data.length > 0 && pageExternalIds.every((id) => selectedIds.has(id));
+  const somePageSelected = !allPageSelected && pageExternalIds.some((id) => selectedIds.has(id));
+
+  // Clear selection when underlying data changes (filter/page change)
+  const prevAllIdsRef = useRef<string>("");
+  useEffect(() => {
+    const key = allExternalIds?.join(",") ?? "";
+    if (prevAllIdsRef.current !== "" && prevAllIdsRef.current !== key) {
+      setSelectedIds(new Set());
+    }
+    prevAllIdsRef.current = key;
+  }, [allExternalIds]);
+
+  // Stable callback — no dependency on selectedIds
   const toggleSelect = useCallback((externalId: string) => {
-    const next = new Set(selectedIds);
-    if (next.has(externalId)) next.delete(externalId);
-    else next.add(externalId);
-    onSelectionChange(next);
-  }, [selectedIds, onSelectionChange]);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(externalId)) next.delete(externalId);
+      else next.add(externalId);
+      return next;
+    });
+  }, []);
+
+  const togglePageSelect = useCallback(() => {
+    setSelectedIds((prev) => {
+      const allSelected = pageExternalIds.every((id) => prev.has(id));
+      const next = new Set(prev);
+      if (allSelected) {
+        for (const id of pageExternalIds) next.delete(id);
+      } else {
+        for (const id of pageExternalIds) next.add(id);
+      }
+      return next;
+    });
+  }, [pageExternalIds]);
 
   // ─── Background prefetch of provider previews for current page ───
   const previewCache = useRef<Map<string, SyncPreviewChange[]>>(new Map());
@@ -277,8 +313,24 @@ export function AttentionFixturesTable({
 
   return (
     <div>
+      {/* Mobile: select all + filter slot */}
+      {onBulkSync && !isDesktop && (
+        <div className="flex items-center gap-2 mb-2">
+          <Button
+            variant={allPageSelected ? "secondary" : "outline"}
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={togglePageSelect}
+            disabled={bulkSyncing || data.length === 0}
+          >
+            {allPageSelected ? `${selectedIds.size} selected` : "Select all"}
+          </Button>
+          {mobileFilterSlot}
+        </div>
+      )}
+
       {/* Mobile: Card layout */}
-      <div className="space-y-2 sm:hidden">
+      {!isDesktop && <div className="space-y-2">
         {data.map((fixture) => {
           const config = ISSUE_CONFIG[fixture.issueType];
           const Icon = config.icon;
@@ -371,18 +423,18 @@ export function AttentionFixturesTable({
             </div>
           );
         })}
-      </div>
+      </div>}
 
       {/* Desktop: Table layout */}
-      <div className="hidden sm:block rounded-md border">
+      {isDesktop && <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               {onBulkSync && (
                 <TableHead className="w-[40px]">
                   <Checkbox
-                    checked={allScopeSelected ? true : someScopeSelected ? "indeterminate" : false}
-                    onCheckedChange={() => onToggleSelectAll?.()}
+                    checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
+                    onCheckedChange={togglePageSelect}
                     disabled={bulkSyncing}
                     aria-label="Select all on page"
                   />
@@ -512,7 +564,7 @@ export function AttentionFixturesTable({
             })}
           </TableBody>
         </Table>
-      </div>
+      </div>}
 
       {/* Bulk action bar */}
       {onBulkSync && selectedIds.size > 0 && (
@@ -520,7 +572,7 @@ export function AttentionFixturesTable({
           selectedIds={selectedIds}
           allExternalIds={allExternalIds}
           onBulkSync={onBulkSync}
-          onClear={() => onSelectionChange(new Set())}
+          onClear={() => setSelectedIds(new Set())}
           totalMatchingCount={totalMatchingCount}
           bulkSyncing={bulkSyncing}
           bulkProgress={bulkProgress}
