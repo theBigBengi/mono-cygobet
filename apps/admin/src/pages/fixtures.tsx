@@ -1444,7 +1444,7 @@ function LeagueCombobox({
           <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[220px] p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[220px] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search league..." className="h-8 text-xs" />
           <CommandList>
@@ -1520,7 +1520,7 @@ function LeagueSearchCombobox({
           <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[250px] p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[250px] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search league..."
