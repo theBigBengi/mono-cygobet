@@ -16,7 +16,7 @@ export async function findFixtures(
   return await prisma.fixtures.findMany({
     where,
     select: select ?? { id: true },
-    orderBy: orderBy ?? { startTs: "asc" },
+    orderBy: orderBy ?? [{ startTs: "asc" }, { id: "asc" }],
   });
 }
 
@@ -32,7 +32,7 @@ export async function findFixturesTx(
   return await tx.fixtures.findMany({
     where,
     select: select ?? { id: true },
-    orderBy: orderBy ?? { startTs: "asc" },
+    orderBy: orderBy ?? [{ startTs: "asc" }, { id: "asc" }],
   });
 }
 
@@ -44,7 +44,7 @@ export async function findFixturesTx(
 export async function findUpcomingFixturesByLeagues(
   where: Prisma.fixturesWhereInput
 ) {
-  return await findFixtures(where, { id: true }, { startTs: "asc" });
+  return await findFixtures(where);
 }
 
 /**
@@ -55,7 +55,7 @@ export async function findUpcomingFixturesByLeagues(
 export async function findUpcomingFixturesByTeams(
   where: Prisma.fixturesWhereInput
 ) {
-  return await findFixtures(where, { id: true }, { startTs: "asc" });
+  return await findFixtures(where);
 }
 
 /**
@@ -67,7 +67,7 @@ export async function findUpcomingFixturesByLeaguesTx(
   tx: Prisma.TransactionClient,
   where: Prisma.fixturesWhereInput
 ) {
-  return await findFixturesTx(tx, where, { id: true }, { startTs: "asc" });
+  return await findFixturesTx(tx, where);
 }
 
 /**
@@ -79,5 +79,5 @@ export async function findUpcomingFixturesByTeamsTx(
   tx: Prisma.TransactionClient,
   where: Prisma.fixturesWhereInput
 ) {
-  return await findFixturesTx(tx, where, { id: true }, { startTs: "asc" });
+  return await findFixturesTx(tx, where);
 }

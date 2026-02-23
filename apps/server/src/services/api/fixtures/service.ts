@@ -105,7 +105,7 @@ export async function getUpcomingFixtures(
 
   const rows = await prisma.fixtures.findMany({
     where,
-    orderBy: { startTs: "asc" },
+    orderBy: [{ startTs: "asc" }, { id: "asc" }],
     skip,
     take,
     select: {
