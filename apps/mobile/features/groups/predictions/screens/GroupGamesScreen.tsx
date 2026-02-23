@@ -1,11 +1,12 @@
 import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, Pressable, Dimensions } from "react-native";
-import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedStyle, runOnJS, clamp, withTiming } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedStyle, runOnJS, clamp, withTiming, withSpring, interpolate, Easing } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
@@ -415,6 +416,9 @@ export function GroupGamesScreen({
     scrollToMatchCard,
   } = usePredictionNavigation(fixtureGroups);
 
+  /** Filter panel animation value. */
+  const filterAnim = useSharedValue(0);
+
   /** Scroll position for card reveal animations. */
   const scrollY = useSharedValue(0);
   /** Collapsing header: track previous scroll position and header offset. */
@@ -429,6 +433,13 @@ export function GroupGamesScreen({
 
       scrollY.value = currentY;
 
+      // Lock header in place when filter panel is open
+      if (filterAnim.value > 0.5) {
+        headerOffset.value = 0;
+        previousScrollY.value = clamp(currentY, 0, maxScrollY);
+        return;
+      }
+
       // Collapsing header: hide on scroll down, show on scroll up
       headerOffset.value = clamp(
         headerOffset.value + (previousScrollY.value - currentY),
@@ -439,6 +450,8 @@ export function GroupGamesScreen({
       previousScrollY.value = clamp(currentY, 0, maxScrollY);
     },
     onMomentumEnd: () => {
+      if (filterAnim.value > 0.5) return;
+
       // Snap to fully visible or fully hidden
       if (headerOffset.value > -totalHeaderH / 2) {
         headerOffset.value = withTiming(0, { duration: 200 });
@@ -452,9 +465,12 @@ export function GroupGamesScreen({
     transform: [{ translateY: headerOffset.value }],
   }));
 
-  /** Scroll button follows header but stops at status bar (insets.top + 12). */
+  /** Scroll button follows header and panel expansion. */
   const scrollBtnAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: clamp(headerOffset.value, -HEADER_HEIGHT, 0) }],
+    transform: [{
+      translateY: clamp(headerOffset.value, -HEADER_HEIGHT, 0) +
+        interpolate(filterAnim.value, [0, 1], [0, 120]),
+    }],
   }));
 
   /** Track next-to-predict card visibility for floating scroll button. */
@@ -604,6 +620,11 @@ export function GroupGamesScreen({
   }, [handleSaveAllChanged]);
 
   const handleBack = useCallback(() => router.back(), [router]);
+
+  /** Expandable filters panel. */
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const FILTER_PANEL_H = 120;
+
 
   /** Save pending then navigate to dedicated single game screen. */
   const handlePressCard = useCallback(
@@ -835,20 +856,29 @@ export function GroupGamesScreen({
           style={[styles.headerOverlay, headerAnimatedStyle]}
           pointerEvents="box-none"
         >
-          <GroupGamesHeader onBack={handleBack}>
-            {hasAnyChips && (
-              <SmartFilterChips
-                actionChips={actionChips}
-                selectedAction={selectedAction}
-                onSelectAction={selectAction}
-                structuralFilter={structuralFilter}
-                onSelectTeam={selectTeam}
-                onSelectCompetition={selectCompetition}
-                onSelectRound={selectRound}
-                onNavigateRound={navigateRound}
-              />
-            )}
-          </GroupGamesHeader>
+          <GroupGamesHeader
+            onBack={handleBack}
+            backOnly
+            title={groupName}
+            expandAnim={hasAnyChips ? filterAnim : undefined}
+            expandHeight={FILTER_PANEL_H}
+            isExpanded={filtersOpen}
+            onToggleExpand={setFiltersOpen}
+            expandedContent={
+              <View style={{ position: "absolute", left: 10, right: 10, top: 0, bottom: 0, justifyContent: "center", alignItems: "center" }}>
+                <SmartFilterChips
+                  actionChips={actionChips}
+                  selectedAction={selectedAction}
+                  onSelectAction={selectAction}
+                  structuralFilter={structuralFilter}
+                  onSelectTeam={selectTeam}
+                  onSelectCompetition={selectCompetition}
+                  onSelectRound={selectRound}
+                  onNavigateRound={navigateRound}
+                />
+              </View>
+            }
+          />
         </Animated.View>
 
         {/* Floating scroll-to-next button */}
