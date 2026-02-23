@@ -106,5 +106,6 @@ export interface ISportsDataAdapter {
 
   // ── Observability ──
 
+  healthCheck(): Promise<{ reachable: boolean; latencyMs: number; error?: string }>;
   getStats(): Record<string, unknown>;
 }

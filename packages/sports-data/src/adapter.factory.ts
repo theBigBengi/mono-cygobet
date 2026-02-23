@@ -5,12 +5,13 @@
 
 import type { ISportsDataAdapter } from "./adapter.interface";
 import type { SportMonksConfig } from "./adapters/sportmonks/sportmonks.config";
+import type { ApiFootballConfig } from "./adapters/api-football/api-football.config";
 import { PROVIDER_CONFIG, type SportsDataProvider } from "./config/provider.config";
 
-export type AdapterConfig = {
-  provider?: SportsDataProvider;
-  config?: unknown;
-};
+export type AdapterConfig =
+  | { provider: "sportmonks"; config?: Partial<SportMonksConfig> }
+  | { provider: "api-football"; config?: Partial<ApiFootballConfig> }
+  | { provider?: undefined; config?: Partial<SportMonksConfig> | Partial<ApiFootballConfig> };
 
 export function createSportsDataAdapter(
   opts?: AdapterConfig

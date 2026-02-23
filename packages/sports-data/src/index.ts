@@ -25,6 +25,8 @@ export {
   type SportsDataErrorCode,
 } from "./errors";
 export { noopLogger, type SportsDataLogger } from "./logger";
+export type { SportMonksConfig } from "./adapters/sportmonks/sportmonks.config";
+export type { ApiFootballConfig } from "./adapters/api-football/api-football.config";
 
 // NOTE:
 // This file is a library entrypoint. Do NOT run network calls at import time.

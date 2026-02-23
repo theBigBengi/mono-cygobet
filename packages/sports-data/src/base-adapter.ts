@@ -133,6 +133,20 @@ export abstract class BaseSportsDataAdapter implements ISportsDataAdapter {
     return [];
   }
 
+  async healthCheck(): Promise<{ reachable: boolean; latencyMs: number; error?: string }> {
+    const start = Date.now();
+    try {
+      await this.fetchCountries();
+      return { reachable: true, latencyMs: Date.now() - start };
+    } catch (error) {
+      return {
+        reachable: false,
+        latencyMs: Date.now() - start,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
   getStats(): Record<string, unknown> {
     return {};
   }
