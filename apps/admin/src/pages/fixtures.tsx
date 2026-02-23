@@ -427,6 +427,7 @@ function AttentionTabContent({
               {(issueCounts?.overdue ?? 0) > 0 && <SelectItem value="overdue">Overdue NS ({issueCounts!.overdue})</SelectItem>}
               {(issueCounts?.noScores ?? 0) > 0 && <SelectItem value="noScores">No Scores ({issueCounts!.noScores})</SelectItem>}
               {(issueCounts?.unsettled ?? 0) > 0 && <SelectItem value="unsettled">Unsettled ({issueCounts!.unsettled})</SelectItem>}
+              {(issueCounts?.scoreMismatch ?? 0) > 0 && <SelectItem value="scoreMismatch">Score Mismatch ({issueCounts!.scoreMismatch})</SelectItem>}
             </SelectContent>
           </Select>
           <LeagueCombobox
@@ -1286,7 +1287,7 @@ function AttentionMobileFilterDrawer({
 }: {
   filters: AttentionFilters;
   setFilters: React.Dispatch<React.SetStateAction<AttentionFilters>>;
-  issueCounts: { stuck: number; unsettled: number; overdue: number; noScores: number } | undefined;
+  issueCounts: { stuck: number; unsettled: number; overdue: number; noScores: number; scoreMismatch: number } | undefined;
   availableLeagues: { id: number; name: string }[];
   applyFilters: () => void;
   resetFilters: () => void;

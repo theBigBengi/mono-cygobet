@@ -3,29 +3,24 @@
  * --------------------
  * Generates, auto-resolves, and manages admin alerts.
  *
+ * Fixture-related alerts now read from the fixture_issues table
+ * (populated by fixture-issues-detector.service.ts).
+ *
  * Alert categories:
  * - job_failure: Jobs failing consecutively (critical if 3+, warning if 1-2)
- * - fixture_stuck: Live fixtures not updated (critical >6h, warning 3-6h)
- * - fixture_unsettled: Finished fixtures with unsettled predictions (warning)
- * - data_quality: Finished fixtures missing scores (warning)
- * - sync_needed: New seasons available from provider (info)
- * - overdue_ns: Fixtures past start time still in NS state (warning)
+ * - fixture_stuck: From fixture_issues (critical >6h, warning 3-6h)
+ * - fixture_unsettled: From fixture_issues (warning)
+ * - data_quality: From fixture_issues — noScores (warning)
+ * - overdue_ns: From fixture_issues (warning/critical)
+ * - score_mismatch: From fixture_issues (warning)
  */
 
 import { prisma, Prisma, RunStatus } from "@repo/db";
-import type { FixtureState } from "@repo/db";
 import type { AdminAlertItem, AdminAlertSeverity, AdminAlertCategory } from "@repo/types";
-import { LIVE_STATES, FINISHED_STATES } from "@repo/utils";
-import { nowUnixSeconds } from "../../utils/dates";
 import { getLogger } from "../../logger";
 
 const log = getLogger("AlertsService");
 
-const LIVE_STATES_ARR = [...LIVE_STATES] as FixtureState[];
-const FINISHED_STATES_ARR = [...FINISHED_STATES] as FixtureState[];
-
-const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
-const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
 type AlertInput = {
@@ -45,30 +40,12 @@ type AlertInput = {
  * Returns list of newly created alerts (for Slack/Socket notifications).
  */
 export async function generateAlerts(): Promise<AdminAlertItem[]> {
-  const alerts: AlertInput[] = [];
-
-  const [
-    jobFailureAlerts,
-    stuckFixtureAlerts,
-    unsettledAlerts,
-    dataQualityAlerts,
-    overdueNsAlerts,
-  ] = await Promise.all([
+  const [jobFailureAlerts, fixtureIssueAlerts] = await Promise.all([
     detectJobFailures(),
-    detectStuckFixtures(),
-    detectUnsettledFixtures(),
-    detectDataQualityIssues(),
-    detectOverdueNs(),
+    detectFixtureIssueAlerts(),
   ]);
 
-  alerts.push(
-    ...jobFailureAlerts,
-    ...stuckFixtureAlerts,
-    ...unsettledAlerts,
-    ...dataQualityAlerts,
-    ...overdueNsAlerts,
-  );
-
+  const alerts: AlertInput[] = [...jobFailureAlerts, ...fixtureIssueAlerts];
   const newAlerts: AdminAlertItem[] = [];
 
   for (const alert of alerts) {
@@ -139,27 +116,12 @@ export async function autoResolveAlerts(): Promise<number> {
   const currentFingerprints = new Set<string>();
 
   // Rebuild fingerprints from current system state
-  const [
-    jobFailureAlerts,
-    stuckFixtureAlerts,
-    unsettledAlerts,
-    dataQualityAlerts,
-    overdueNsAlerts,
-  ] = await Promise.all([
+  const [jobFailureAlerts, fixtureIssueAlerts] = await Promise.all([
     detectJobFailures(),
-    detectStuckFixtures(),
-    detectUnsettledFixtures(),
-    detectDataQualityIssues(),
-    detectOverdueNs(),
+    detectFixtureIssueAlerts(),
   ]);
 
-  for (const a of [
-    ...jobFailureAlerts,
-    ...stuckFixtureAlerts,
-    ...unsettledAlerts,
-    ...dataQualityAlerts,
-    ...overdueNsAlerts,
-  ]) {
+  for (const a of [...jobFailureAlerts, ...fixtureIssueAlerts]) {
     currentFingerprints.add(a.fingerprint);
   }
 
@@ -282,187 +244,84 @@ async function detectJobFailures(): Promise<AlertInput[]> {
   return alerts;
 }
 
-async function detectStuckFixtures(): Promise<AlertInput[]> {
-  const alerts: AlertInput[] = [];
-  const nowTs = nowUnixSeconds();
-  const warningThreshold = 3 * 60 * 60; // 3 hours
-  const criticalThreshold = 6 * 60 * 60; // 6 hours
-
-  const stuckFixtures = await prisma.fixtures.findMany({
-    where: {
-      isSandbox: false,
-      state: { in: LIVE_STATES_ARR },
-      startTs: { lt: nowTs - warningThreshold },
+/**
+ * Read active fixture issues from fixture_issues table
+ * and convert them to admin alert inputs.
+ */
+async function detectFixtureIssueAlerts(): Promise<AlertInput[]> {
+  const activeIssues = await prisma.fixtureIssues.findMany({
+    where: { resolvedAt: null },
+    select: {
+      fixtureId: true,
+      issueType: true,
+      severity: true,
+      metadata: true,
+      fixture: {
+        select: { id: true, name: true, state: true },
+      },
     },
-    select: { id: true, name: true, state: true, startTs: true, lastProviderState: true },
   });
-
-  for (const f of stuckFixtures) {
-    const hoursStuck = Math.round((nowTs - f.startTs) / 3600);
-    const severity: AdminAlertSeverity = (nowTs - f.startTs) >= criticalThreshold ? "critical" : "warning";
-    const providerNote = f.lastProviderState
-      ? ` Provider: ${f.lastProviderState}.`
-      : "";
-
-    alerts.push({
-      severity,
-      category: "fixture_stuck",
-      title: `Fixture stuck in ${f.state}`,
-      description: `"${f.name}" started ${hoursStuck}h ago, still in ${f.state}.${providerNote}`,
-      fingerprint: `fixture_stuck:${f.id}`,
-      actionUrl: `/fixtures/${f.id}`,
-      actionLabel: "View Fixture",
-      metadata: { fixtureId: f.id, fixtureName: f.name, state: f.state, hoursStuck, lastProviderState: f.lastProviderState },
-    });
-  }
-
-  return alerts;
-}
-
-async function detectUnsettledFixtures(): Promise<AlertInput[]> {
-  // Get unsettled prediction count per groupFixture
-  const unsettledGroups = await prisma.groupPredictions.findMany({
-    where: { settledAt: null },
-    select: { groupFixtureId: true },
-    distinct: ["groupFixtureId"],
-  });
-
-  if (unsettledGroups.length === 0) return [];
-
-  const groupFixtureIds = unsettledGroups.map((r) => r.groupFixtureId);
-  const groupFixtures = await prisma.groupFixtures.findMany({
-    where: { id: { in: groupFixtureIds } },
-    select: { fixtureId: true },
-  });
-
-  const fixtureIds = [...new Set(groupFixtures.map((gf) => gf.fixtureId))];
-
-  // Get actual finished fixtures with unsettled predictions
-  const finishedFixtures = await prisma.fixtures.findMany({
-    where: {
-      id: { in: fixtureIds },
-      isSandbox: false,
-      state: { in: FINISHED_STATES_ARR },
-    },
-    select: { id: true, name: true, state: true },
-  });
-
-  if (finishedFixtures.length === 0) return [];
-
-  // Build groupFixtureId → fixtureId mapping for finished fixtures
-  const finishedFixtureIds = finishedFixtures.map((f) => f.id);
-  const gfRows = await prisma.groupFixtures.findMany({
-    where: { fixtureId: { in: finishedFixtureIds } },
-    select: { id: true, fixtureId: true },
-  });
-
-  const gfIdToFixtureId = new Map<number, number>();
-  for (const gf of gfRows) {
-    gfIdToFixtureId.set(gf.id, gf.fixtureId);
-  }
-
-  // Single groupBy query instead of N count() calls
-  const allGfIds = gfRows.map((gf) => gf.id);
-  const countsPerGf = allGfIds.length > 0
-    ? await prisma.groupPredictions.groupBy({
-        by: ["groupFixtureId"],
-        where: { groupFixtureId: { in: allGfIds }, settledAt: null },
-        _count: true,
-      })
-    : [];
-
-  // Aggregate counts by fixtureId
-  const countsByFixture = new Map<number, number>();
-  for (const row of countsPerGf) {
-    const fixtureId = gfIdToFixtureId.get(row.groupFixtureId);
-    if (fixtureId != null) {
-      countsByFixture.set(fixtureId, (countsByFixture.get(fixtureId) ?? 0) + row._count);
-    }
-  }
 
   const alerts: AlertInput[] = [];
-  for (const fixture of finishedFixtures) {
-    const predCount = countsByFixture.get(fixture.id) ?? 0;
-    if (predCount === 0) continue;
 
+  // Group noScores into a single aggregate alert
+  const noScoresIssues = activeIssues.filter((i) => i.issueType === "noScores");
+  if (noScoresIssues.length > 0) {
+    const count = noScoresIssues.length;
     alerts.push({
-      severity: "warning",
-      category: "fixture_unsettled",
-      title: `Unsettled predictions for "${fixture.name}"`,
-      description: `${predCount} unsettled prediction${predCount > 1 ? "s" : ""} for finished fixture "${fixture.name}" (${fixture.state}).`,
-      fingerprint: `fixture_unsettled:${fixture.id}`,
-      actionUrl: `/fixtures/${fixture.id}`,
-      actionLabel: "View Fixture",
-      metadata: { fixtureId: fixture.id, fixtureName: fixture.name, predictionCount: predCount, state: fixture.state },
-    });
-  }
-
-  return alerts;
-}
-
-async function detectDataQualityIssues(): Promise<AlertInput[]> {
-  const count = await prisma.fixtures.count({
-    where: {
-      isSandbox: false,
-      state: { in: FINISHED_STATES_ARR },
-      OR: [{ homeScore90: null }, { awayScore90: null }],
-    },
-  });
-
-  if (count === 0) return [];
-
-  return [
-    {
       severity: "warning",
       category: "data_quality",
       title: `${count} finished fixture${count > 1 ? "s" : ""} without scores`,
-      description: `${count} fixture${count > 1 ? "s" : ""} in a finished state (FT/AET/FT_PEN) are missing score data.`,
+      description: `${count} fixture${count > 1 ? "s" : ""} in a finished state are missing score data.`,
       fingerprint: "data_quality:no_scores",
       actionUrl: "/fixtures?dataQuality=noScores",
       actionLabel: "View Fixtures",
       metadata: { count },
-    },
-  ];
-}
-
-async function detectOverdueNs(): Promise<AlertInput[]> {
-  const nowTs = nowUnixSeconds();
-  const FOUR_HOURS_S = 4 * 60 * 60;
-
-  const overdueFixtures = await prisma.fixtures.findMany({
-    where: { isSandbox: false, state: "NS", startTs: { lt: nowTs } },
-    select: { id: true, name: true, startTs: true, lastProviderState: true, lastProviderCheckAt: true },
-    orderBy: { startTs: "asc" },
-  });
-
-  if (overdueFixtures.length === 0) return [];
-
-  const alerts: AlertInput[] = [];
-
-  for (const f of overdueFixtures) {
-    const overdueSeconds = nowTs - f.startTs;
-    const hoursOverdue = Math.round(overdueSeconds / 3600);
-    const severity: AdminAlertSeverity = overdueSeconds >= FOUR_HOURS_S ? "critical" : "warning";
-
-    let providerNote = "";
-    if (!f.lastProviderCheckAt) {
-      providerNote = " Never checked against provider.";
-    } else if (f.lastProviderState === "NS") {
-      providerNote = " Provider also shows NS (delayed).";
-    } else if (f.lastProviderState) {
-      providerNote = ` Provider shows ${f.lastProviderState}.`;
-    }
-
-    alerts.push({
-      severity,
-      category: "overdue_ns",
-      title: `"${f.name}" overdue (still NS)`,
-      description: `Started ${hoursOverdue}h ago, still in NS.${providerNote}`,
-      fingerprint: `overdue_ns:${f.id}`,
-      actionUrl: `/fixtures/${f.id}`,
-      actionLabel: "View Fixture",
-      metadata: { fixtureId: f.id, fixtureName: f.name, hoursOverdue, lastProviderState: f.lastProviderState },
     });
+  }
+
+  // Individual alerts for stuck, overdue, unsettled, scoreMismatch
+  for (const issue of activeIssues) {
+    const meta = (typeof issue.metadata === "object" && issue.metadata && !Array.isArray(issue.metadata)
+      ? issue.metadata
+      : {}) as Record<string, unknown>;
+
+    if (issue.issueType === "stuck") {
+      alerts.push({
+        severity: issue.severity as AdminAlertSeverity,
+        category: "fixture_stuck",
+        title: `Fixture stuck in ${issue.fixture.state}`,
+        description: `"${issue.fixture.name}" stuck in ${issue.fixture.state}. ${meta.hoursStuck ?? "?"}h since start.`,
+        fingerprint: `fixture_stuck:${issue.fixtureId}`,
+        actionUrl: `/fixtures/${issue.fixtureId}`,
+        actionLabel: "View Fixture",
+        metadata: { fixtureId: issue.fixtureId, ...meta },
+      });
+    } else if (issue.issueType === "overdue") {
+      alerts.push({
+        severity: issue.severity as AdminAlertSeverity,
+        category: "overdue_ns",
+        title: `"${issue.fixture.name}" overdue (still NS)`,
+        description: `Started ${meta.hoursOverdue ?? "?"}h ago, still in NS.`,
+        fingerprint: `overdue_ns:${issue.fixtureId}`,
+        actionUrl: `/fixtures/${issue.fixtureId}`,
+        actionLabel: "View Fixture",
+        metadata: { fixtureId: issue.fixtureId, ...meta },
+      });
+    } else if (issue.issueType === "unsettled") {
+      const predCount = (meta.predictionCount as number) ?? 0;
+      alerts.push({
+        severity: "warning",
+        category: "fixture_unsettled",
+        title: `Unsettled predictions for "${issue.fixture.name}"`,
+        description: `${predCount} unsettled prediction${predCount > 1 ? "s" : ""} for finished fixture "${issue.fixture.name}" (${issue.fixture.state}).`,
+        fingerprint: `fixture_unsettled:${issue.fixtureId}`,
+        actionUrl: `/fixtures/${issue.fixtureId}`,
+        actionLabel: "View Fixture",
+        metadata: { fixtureId: issue.fixtureId, ...meta },
+      });
+    }
+    // scoreMismatch issues don't generate admin alerts (shown only on attention page)
   }
 
   return alerts;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { AlertTriangle, Clock, FileWarning, Scale, RefreshCw, ArrowRight, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, Clock, FileWarning, Scale, RefreshCw, ArrowRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { fixturesService } from "@/services/fixtures.service";
 import { Button } from "@/components/ui/button";
@@ -142,6 +142,13 @@ const ISSUE_CONFIG: Record<
     color: "text-yellow-600 dark:text-yellow-400",
     badgeClass:
       "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950/50 dark:text-yellow-400 dark:border-yellow-900",
+  },
+  scoreMismatch: {
+    icon: ArrowLeftRight,
+    label: "Score Mismatch",
+    color: "text-purple-600 dark:text-purple-400",
+    badgeClass:
+      "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-400 dark:border-purple-900",
   },
 };
 
@@ -387,6 +394,11 @@ export function AttentionFixturesTable({
                     Prov: {fixture.lastProviderState ?? "?"}
                   </span>
                 )}
+                {fixture.issueType === "scoreMismatch" && fixture.providerHomeScore90 != null && (
+                  <span className="font-medium text-purple-600 dark:text-purple-400">
+                    DB: {fixture.homeScore90 ?? "?"}-{fixture.awayScore90 ?? "?"} / Prov: {fixture.providerHomeScore90}-{fixture.providerAwayScore90 ?? "?"}
+                  </span>
+                )}
               </div>
 
               {/* Row 4: Actions — separated */}
@@ -511,6 +523,15 @@ export function AttentionFixturesTable({
                         </span>
                         <p className="text-[10px] text-muted-foreground">
                           {formatDistanceToNow(new Date(fixture.lastProviderCheckAt), { addSuffix: true })}
+                        </p>
+                      </div>
+                    ) : fixture.issueType === "scoreMismatch" && fixture.providerHomeScore90 != null ? (
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] text-muted-foreground">
+                          DB: <span className="font-medium text-foreground">{fixture.homeScore90 ?? "?"}-{fixture.awayScore90 ?? "?"}</span>
+                        </p>
+                        <p className="text-[10px] text-purple-600 dark:text-purple-400">
+                          Prov: <span className="font-medium">{fixture.providerHomeScore90 ?? "?"}-{fixture.providerAwayScore90 ?? "?"}</span>
                         </p>
                       </div>
                     ) : (fixture.issueType === "overdue" || fixture.issueType === "stuck") ? (

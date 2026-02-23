@@ -23,6 +23,7 @@ import {
   RECOVERY_OVERDUE_FIXTURES_JOB,
   DATA_QUALITY_CHECK_JOB,
   ADMIN_ALERTS_JOB,
+  DETECT_FIXTURE_ISSUES_JOB,
 } from "./jobs.definitions";
 
 export type RunnableJobDefinition = {
@@ -102,6 +103,11 @@ const RUNNERS: Record<string, Runner> = {
       await import("./cron/admin-alerts.job");
     return runAdminAlertsJob(fastify, opts);
   },
+  [DETECT_FIXTURE_ISSUES_JOB.key]: async (fastify, opts) => {
+    const { runDetectFixtureIssuesJob } =
+      await import("./cron/detect-fixture-issues.job");
+    return runDetectFixtureIssuesJob(fastify, opts);
+  },
 };
 
 /**
@@ -175,6 +181,12 @@ export const RUNNABLE_JOBS: RunnableJobDefinition[] = [
     description: ADMIN_ALERTS_JOB.description,
     scheduleCron: ADMIN_ALERTS_JOB.scheduleCron ?? null,
     run: RUNNERS[ADMIN_ALERTS_JOB.key]!,
+  },
+  {
+    key: DETECT_FIXTURE_ISSUES_JOB.key,
+    description: DETECT_FIXTURE_ISSUES_JOB.description,
+    scheduleCron: DETECT_FIXTURE_ISSUES_JOB.scheduleCron ?? null,
+    run: RUNNERS[DETECT_FIXTURE_ISSUES_JOB.key]!,
   },
 ];
 

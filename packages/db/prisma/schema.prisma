@@ -204,6 +204,7 @@ model fixtures {
   fixtureJobEvents fixtureJobEvents[] // job events that have been processed for this fixture
   fixtureAuditLog  fixtureAuditLog[] // audit log for this fixture
   rankingSnapshots rankingSnapshots[] // ranking snapshots triggered by this fixture
+  fixtureIssues    fixtureIssues[] // detected issues for this fixture
 
   @@unique([homeTeamId, awayTeamId, startTs], map: "fixtures_home_away_start_uniq")
   @@index([id, startTs])
@@ -941,5 +942,23 @@ model adminSettings {
   updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("admin_settings")
+}
+
+model fixtureIssues {
+  id         Int       @id @default(autoincrement())
+  fixtureId  Int       @map("fixture_id")
+  issueType  String    @map("issue_type") @db.VarChar(30) // stuck | overdue | noScores | unsettled | scoreMismatch
+  severity   String    @db.VarChar(20) // critical | warning | info
+  metadata   Json      @default("{}") @db.JsonB
+  detectedAt DateTime  @default(now()) @map("detected_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  resolvedAt DateTime? @map("resolved_at") @db.Timestamptz(6)
+
+  fixture fixtures @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+
+  @@unique([fixtureId, issueType], map: "fixture_issues_fixture_type_uniq")
+  @@index([resolvedAt, issueType], map: "fixture_issues_active_idx")
+  @@index([fixtureId], map: "fixture_issues_fixture_idx")
+  @@map("fixture_issues")
 }
 

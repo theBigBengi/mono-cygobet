@@ -9,6 +9,7 @@ import {
   getGroupsSummary,
 } from "../../../services/admin/fixtures.service";
 import { getFixturesNeedingAttention } from "../../../services/admin/fixtures-attention.service";
+import { resolveIssuesForFixture } from "../../../services/admin/fixture-issues-detector.service";
 import { getFixtureIssue } from "../../../services/admin/dashboard.service";
 import { prisma } from "@repo/db";
 import type { FixtureIssueType } from "@repo/types";
@@ -24,7 +25,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           properties: {
             issueType: {
               type: "string",
-              enum: ["all", "stuck", "overdue", "noScores", "unsettled"],
+              enum: ["all", "stuck", "overdue", "noScores", "unsettled", "scoreMismatch"],
             },
             search: { type: "string" },
             timeframe: {
@@ -207,6 +208,8 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       }
       try {
         const result = await resettleFixture(fixtureId);
+        // Immediately resolve the unsettled issue so it doesn't linger until next cron
+        await resolveIssuesForFixture(fixtureId, ["unsettled"]);
         return reply.send(result);
       } catch (error: unknown) {
         const code =

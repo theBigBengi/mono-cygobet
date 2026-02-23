@@ -1043,7 +1043,8 @@ export type FixtureIssueType =
   | "stuck"
   | "overdue"
   | "noScores"
-  | "unsettled";
+  | "unsettled"
+  | "scoreMismatch";
 
 export interface AdminFixtureAttentionItem {
   id: number;
@@ -1070,6 +1071,14 @@ export interface AdminFixtureAttentionItem {
   lastProviderState: string | null;
   /** When the system last checked this fixture against the provider */
   lastProviderCheckAt: string | null;
+  /** Provider home score at 90min (for scoreMismatch display) */
+  providerHomeScore90?: number | null;
+  /** Provider away score at 90min (for scoreMismatch display) */
+  providerAwayScore90?: number | null;
+  /** Provider home score at extra time (for scoreMismatch display) */
+  providerHomeScoreET?: number | null;
+  /** Provider away score at extra time (for scoreMismatch display) */
+  providerAwayScoreET?: number | null;
 }
 
 export interface AdminFixturesAttentionResponse {
@@ -1080,6 +1089,7 @@ export interface AdminFixturesAttentionResponse {
     overdue: number;
     noScores: number;
     unsettled: number;
+    scoreMismatch: number;
   };
   pagination: {
     page: number;

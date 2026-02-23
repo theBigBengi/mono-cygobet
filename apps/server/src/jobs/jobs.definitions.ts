@@ -215,6 +215,23 @@ export const ADMIN_ALERTS_JOB = {
 } as const satisfies JobDefinition;
 
 /**
+ * DETECT_FIXTURE_ISSUES_JOB
+ * -------------------------
+ * Purpose: Detect fixture issues (stuck, overdue, noScores, unsettled,
+ * scoreMismatch) and persist them in the fixture_issues table.
+ * Screens and alerts read from this table instead of running heavy queries.
+ */
+export const DETECT_FIXTURE_ISSUES_JOB = {
+  key: "detect-fixture-issues",
+  description:
+    "Detect fixture issues and persist to fixture_issues table for admin screens and alerts",
+  enabled: true,
+  // Every 3 minutes.
+  scheduleCron: "*/3 * * * *",
+  meta: {},
+} as const satisfies JobDefinition;
+
+/**
  * JOB_DEFINITIONS
  * --------------
  * List of all "known jobs" and their default DB config.
@@ -233,6 +250,7 @@ export const JOB_DEFINITIONS = [
   RECOVERY_OVERDUE_FIXTURES_JOB,
   DATA_QUALITY_CHECK_JOB,
   ADMIN_ALERTS_JOB,
+  DETECT_FIXTURE_ISSUES_JOB,
 ] as const satisfies readonly JobDefinition[];
 
 export type JobKey = (typeof JOB_DEFINITIONS)[number]["key"];

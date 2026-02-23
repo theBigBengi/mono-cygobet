@@ -14,6 +14,7 @@ const JOB_KEY_TO_LOCK_KEY: Record<string, string> = {
   "sync-group-fixtures": "sync:group-fixtures",
   "prediction-reminders": "prediction-reminders",
   "recovery-overdue-fixtures": "sync:recovery-overdue",
+  "detect-fixture-issues": "detect-fixture-issues",
 };
 
 /**
