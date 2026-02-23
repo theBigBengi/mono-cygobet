@@ -74,6 +74,7 @@ function GroupGamesContent() {
       groupTeamsIds={group.groupTeamsIds}
       scrollToIndex={scrollIndex}
       scrollToFixtureId={scrollToFixtureId}
+      maxPossiblePoints={group.onTheNosePoints}
     />
   );
 }

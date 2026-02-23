@@ -133,7 +133,7 @@ function GroupsContent() {
 
   // Loading state — skeleton
   if (isLoading) {
-    const skeletonColor = theme.colors.textSecondary + "18";
+    const skeletonColor = theme.colors.border;
     return (
       <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
         <Screen

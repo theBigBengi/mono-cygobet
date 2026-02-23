@@ -40,6 +40,8 @@ type Props = {
   scrollToIndex?: number;
   /** Fixture ID to scroll to on mount (preferred over scrollToIndex) */
   scrollToFixtureId?: number;
+  /** Maximum points for a perfect prediction (from group rules). */
+  maxPossiblePoints?: number;
 };
 
 /**
@@ -62,6 +64,7 @@ export function GroupGamesScreen({
   groupTeamsIds,
   scrollToIndex,
   scrollToFixtureId,
+  maxPossiblePoints,
 }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -207,17 +210,8 @@ export function GroupGamesScreen({
     return map;
   }, [fixtureGroups]);
 
-  /** Max points awarded across all finished fixtures (for highlighting perfect scores). */
-  const maxPoints = useMemo(() => {
-    let max = 0;
-    fixtureGroups.forEach((g) =>
-      g.fixtures.forEach((f) => {
-        const pts = f.prediction?.points ?? 0;
-        if (pts > max) max = pts;
-      })
-    );
-    return max;
-  }, [fixtureGroups]);
+  /** Max possible points for a perfect prediction (from group rules). */
+  const maxPoints = maxPossiblePoints ?? 0;
 
   /**
    * Flat render list — ALL elements (headers + cards) in display order.
