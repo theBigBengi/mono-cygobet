@@ -168,12 +168,15 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
     };
   }, [queryParams, filters.queryParams, selectedDate]);
 
-  const { data, isLoading, error, refetch } =
+  const { data, isLoading: fixturesLoading, error, refetch } =
     useUpcomingFixturesQuery(mergedParams);
 
   // Fetch user's league order preferences
-  const { data: prefsData } = useLeaguePreferences();
+  const { data: prefsData, isLoading: prefsLoading } = useLeaguePreferences();
   const effectiveLeagueOrder = prefsData?.data?.leagueOrder ?? undefined;
+
+  // Wait for both fixtures and preferences to avoid list reorder jump
+  const isLoading = fixturesLoading || prefsLoading;
 
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = useCallback(async () => {

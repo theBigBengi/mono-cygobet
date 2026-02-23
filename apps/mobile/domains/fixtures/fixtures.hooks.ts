@@ -2,7 +2,7 @@
 // React Query hooks for fixtures domain.
 // - Feature-agnostic: can be used by any feature that needs fixtures data.
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import type {
   ApiFixturesListResponse,
   ApiUpcomingFixturesQuery,
@@ -30,6 +30,7 @@ export function useUpcomingFixturesQuery(
     queryKey: fixturesKeys.upcoming(params),
     queryFn: () => fetchUpcomingFixtures(params),
     enabled,
+    placeholderData: keepPreviousData,
     meta: { scope: "user" },
   });
 }
