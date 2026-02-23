@@ -231,6 +231,7 @@ export async function syncFixtures(
   let updated = 0;
   let skipped = 0;
   let failed = 0;
+  const syncedFixtureDbIds: number[] = [];
 
   if (!fixtures?.length) {
     return { inserted: 0, updated: 0, skipped: 0, failed: 0, total: 0 };
@@ -504,6 +505,7 @@ export async function syncFixtures(
                 },
               });
             }
+            syncedFixtureDbIds.push(upserted.id);
           }
           return { outcome: "inserted", fixture, resolvedPayload };
         }
@@ -546,6 +548,7 @@ export async function syncFixtures(
               },
             });
           }
+          syncedFixtureDbIds.push(upserted.id);
         }
         return { outcome: "updated", fixture, existing, resolvedPayload };
       })
@@ -606,6 +609,22 @@ export async function syncFixtures(
           );
         }
       }
+    }
+  }
+
+  // Resolve fixture issues for all synced fixtures (non-blocking)
+  if (syncedFixtureDbIds.length > 0 && !dryRun) {
+    try {
+      await prisma.fixtureIssues.updateMany({
+        where: {
+          fixtureId: { in: syncedFixtureDbIds },
+          resolvedAt: null,
+          issueType: { in: ["stuck", "overdue", "scoreMismatch", "noScores"] },
+        },
+        data: { resolvedAt: new Date() },
+      });
+    } catch (err) {
+      log.warn({ err }, "Failed to resolve fixture issues after sync (non-fatal)");
     }
   }
 

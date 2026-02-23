@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from "react";
 import { Link } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { AlertTriangle, ArrowLeftRight, Clock, FileWarning, Scale, RefreshCw, ArrowRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { fixturesService } from "@/services/fixtures.service";
@@ -361,7 +361,7 @@ export function AttentionFixturesTable({
                   <Icon className="mr-1 h-3 w-3" />
                   {config.label}
                 </Badge>
-                <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
+                <span className="ml-auto text-[11px] text-muted-foreground shrink-0" title={format(new Date(fixture.issueSince), "dd/MM/yyyy HH:mm:ss")}>
                   {formatDistanceToNow(new Date(fixture.issueSince), { addSuffix: true })}
                 </span>
               </div>
@@ -506,7 +506,7 @@ export function AttentionFixturesTable({
                       {fixture.state}
                     </Badge>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
+                  <TableCell className="hidden md:table-cell text-xs text-muted-foreground" title={format(new Date(fixture.issueSince), "dd/MM/yyyy HH:mm:ss")}>
                     {formatDistanceToNow(new Date(fixture.issueSince), {
                       addSuffix: true,
                     })}
@@ -521,7 +521,7 @@ export function AttentionFixturesTable({
                         }`}>
                           {fixture.lastProviderState ?? "Unknown"}
                         </span>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-[10px] text-muted-foreground" title={format(new Date(fixture.lastProviderCheckAt), "dd/MM/yyyy HH:mm:ss")}>
                           {formatDistanceToNow(new Date(fixture.lastProviderCheckAt), { addSuffix: true })}
                         </p>
                       </div>

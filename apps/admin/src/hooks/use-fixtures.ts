@@ -29,12 +29,14 @@ export function useLiveFixtures() {
         perPage: 100,
         include: "homeTeam,awayTeam,league",
       }),
+    staleTime: 0, // always refetch on demand — live data must be fresh
     refetchInterval: 30_000,
   });
 
   const provider = useQuery<AdminProviderFixturesResponse>({
     queryKey: ["fixtures", "live", "provider"],
     queryFn: () => fixturesService.getLiveFromProvider(),
+    staleTime: 0,
     refetchInterval: 30_000,
   });
 

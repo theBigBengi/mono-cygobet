@@ -1118,8 +1118,7 @@ function LiveFixturesSection({
       </div>
 
       {/* Header row - desktop */}
-      <div className="hidden sm:grid sm:grid-cols-[50px_1fr_140px_140px_80px_100px] gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 px-3">
-        <span>Min</span>
+      <div className="hidden sm:grid sm:grid-cols-[1fr_160px_160px_80px_100px] gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 px-3">
         <span>Fixture</span>
         <span>Database</span>
         <span>Provider</span>
@@ -1154,11 +1153,6 @@ function LiveFixturesSection({
                   <Link to={db ? `/fixtures/${db.id}` : "#"} className="text-xs font-medium hover:underline truncate">
                     {m.name}
                   </Link>
-                  {prov?.liveMinute != null && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-green-300 text-green-700 dark:border-green-800 dark:text-green-400 tabular-nums">
-                      {prov.liveMinute}'
-                    </Badge>
-                  )}
                 </div>
                 <div className="text-[11px] text-muted-foreground truncate">
                   {db?.league?.name ?? prov?.leagueName ?? ""}
@@ -1170,6 +1164,8 @@ function LiveFixturesSection({
                       <>
                         <span className="font-bold tabular-nums">{db.homeScore90 ?? "–"}-{db.awayScore90 ?? "–"}</span>
                         <span className="text-muted-foreground">{formatState(db.state)}</span>
+                        {db.liveMinute != null && <span className="tabular-nums text-muted-foreground">{db.liveMinute}'</span>}
+                        <span className="text-[10px] text-muted-foreground/70" title={format(new Date(db.updatedAt), "dd/MM/yyyy HH:mm:ss")}>{format(new Date(db.updatedAt), "HH:mm:ss")}</span>
                       </>
                     ) : (
                       <span className="text-muted-foreground">—</span>
@@ -1181,6 +1177,7 @@ function LiveFixturesSection({
                       <>
                         <span className="font-bold tabular-nums">{prov.homeScore ?? "–"}-{prov.awayScore ?? "–"}</span>
                         <span className="text-muted-foreground">{formatState(prov.state)}</span>
+                        {prov.liveMinute != null && <span className="tabular-nums text-green-600 dark:text-green-400">{prov.liveMinute}'</span>}
                       </>
                     ) : (
                       <span className="text-muted-foreground">—</span>
@@ -1207,14 +1204,7 @@ function LiveFixturesSection({
               </div>
 
               {/* Desktop: fixture-centric row */}
-              <div className="hidden sm:grid sm:grid-cols-[50px_1fr_140px_140px_80px_100px] gap-2 items-center">
-                <div className="text-center">
-                  {prov?.liveMinute != null && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-300 text-green-700 dark:border-green-800 dark:text-green-400 tabular-nums">
-                      {prov.liveMinute}'
-                    </Badge>
-                  )}
-                </div>
+              <div className="hidden sm:grid sm:grid-cols-[1fr_160px_160px_80px_100px] gap-2 items-center">
                 <div className="min-w-0">
                   <Link
                     to={db ? `/fixtures/${db.id}` : "#"}
@@ -1223,21 +1213,28 @@ function LiveFixturesSection({
                     {m.name}
                   </Link>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs min-w-0">
+                <div className="min-w-0">
                   {db ? (
                     <>
-                      <span className="font-bold tabular-nums shrink-0">{db.homeScore90 ?? "–"}-{db.awayScore90 ?? "–"}</span>
-                      <Badge variant="outline" className="text-[10px] shrink-0">{formatState(db.state)}</Badge>
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="font-bold tabular-nums shrink-0">{db.homeScore90 ?? "–"}-{db.awayScore90 ?? "–"}</span>
+                        <Badge variant="outline" className="text-[10px] shrink-0">{formatState(db.state)}</Badge>
+                        {db.liveMinute != null && <span className="text-[10px] tabular-nums text-muted-foreground shrink-0">{db.liveMinute}'</span>}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground/70 tabular-nums" title={format(new Date(db.updatedAt), "dd/MM/yyyy HH:mm:ss")}>{format(new Date(db.updatedAt), "HH:mm:ss")}</p>
                     </>
                   ) : (
                     <span className="text-muted-foreground text-[11px]">—</span>
                   )}
                 </div>
-                <div className="flex items-center gap-1.5 text-xs min-w-0">
+                <div className="min-w-0">
                   {prov ? (
                     <>
-                      <span className="font-bold tabular-nums shrink-0">{prov.homeScore ?? "–"}-{prov.awayScore ?? "–"}</span>
-                      <Badge variant="outline" className="text-[10px] shrink-0">{formatState(prov.state)}</Badge>
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="font-bold tabular-nums shrink-0">{prov.homeScore ?? "–"}-{prov.awayScore ?? "–"}</span>
+                        <Badge variant="outline" className="text-[10px] shrink-0">{formatState(prov.state)}</Badge>
+                        {prov.liveMinute != null && <span className="text-[10px] tabular-nums text-green-600 dark:text-green-400 shrink-0">{prov.liveMinute}'</span>}
+                      </div>
                     </>
                   ) : (
                     <span className="text-muted-foreground text-[11px]">Not live</span>

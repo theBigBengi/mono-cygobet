@@ -3,7 +3,6 @@ import { FastifyPluginAsync } from "fastify";
 import { syncFixtures } from "../../../../etl/sync/sync.fixtures";
 import { adapter } from "../../../../utils/adapter";
 import { availabilityService } from "../../../../services/availability.service";
-import { resolveIssuesForFixture } from "../../../../services/admin/fixture-issues-detector.service";
 import { AdminSyncFixturesResponse } from "@repo/types";
 import { FixtureState } from "@repo/db";
 import {
@@ -396,18 +395,6 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               bypassStateValidation: !dryRun,
             });
             await availabilityService.invalidateCache().catch(() => {});
-            // Resolve fixture issues for synced fixtures
-            if (!dryRun && (result.inserted + result.updated) > 0) {
-              const dbFixtures = await prisma.fixtures.findMany({
-                where: { externalId: { in: externalIds } },
-                select: { id: true },
-              });
-              for (const f of dbFixtures) {
-                await resolveIssuesForFixture(f.id, [
-                  "stuck", "overdue", "scoreMismatch", "noScores",
-                ]).catch(() => {});
-              }
-            }
             const ok = result.inserted + result.updated;
             return reply.send({
               status: "success",
@@ -498,18 +485,6 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               bypassStateValidation: !dryRun,
             });
             await availabilityService.invalidateCache().catch(() => {});
-            // Resolve fixture issues after sync
-            if (!dryRun && result.updated > 0) {
-              const dbFixture = await prisma.fixtures.findFirst({
-                where: { externalId: id },
-                select: { id: true },
-              });
-              if (dbFixture) {
-                await resolveIssuesForFixture(dbFixture.id, [
-                  "stuck", "overdue", "scoreMismatch", "noScores",
-                ]).catch(() => {});
-              }
-            }
             const ok = result.inserted + result.updated;
             return reply.send({
               status: "success",

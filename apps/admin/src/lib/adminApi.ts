@@ -64,6 +64,7 @@ export async function adminFetch<T>(
     ...init,
     headers,
     credentials: "include",
+    cache: "no-store",
   });
 
   const body = await readBodyBestEffort(res);
