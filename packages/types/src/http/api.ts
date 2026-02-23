@@ -1108,4 +1108,37 @@ export type ApiUserLeaguePreferencesResponse = {
   message: string;
 };
 
+// ─── Group Activity Log ─────────────────────────────────────────────────────
+
+/**
+ * Single activity event in a group's activity feed.
+ */
+export type ApiGroupActivityItem = {
+  id: number;
+  createdAt: string;
+  eventType: string;
+  body: string;
+  meta: Record<string, unknown> | null;
+  actor: { id: number; username: string | null } | null;
+};
+
+/**
+ * Response from GET /api/groups/:id/activity.
+ */
+export type ApiGroupActivityResponse = {
+  status: "success";
+  data: {
+    items: ApiGroupActivityItem[];
+    hasMore: boolean;
+  };
+};
+
+/**
+ * Query parameters for GET /api/groups/:id/activity.
+ */
+export type ApiGroupActivityQuery = {
+  before?: string;
+  limit?: number;
+};
+
 export * from "./gamification";

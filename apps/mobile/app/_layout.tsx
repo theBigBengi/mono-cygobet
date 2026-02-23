@@ -166,6 +166,10 @@ function AppContent() {
                 options={{ headerShown: false }}
               />
               <Stack.Screen
+                name="groups/[id]/activity"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="groups/[id]/member/[userId]"
                 options={{
                   title: t("groups.memberProfile"),

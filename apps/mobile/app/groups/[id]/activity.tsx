@@ -1,0 +1,30 @@
+// app/groups/[id]/activity.tsx
+// Route wrapper for group activity screen.
+
+import React from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
+import { ScreenWithHeader } from "@/components/ui";
+import { GroupActivityScreen } from "@/features/groups/activity";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+export default function GroupActivityRoute() {
+  return (
+    <ErrorBoundary feature="group-activity">
+      <GroupActivityContent />
+    </ErrorBoundary>
+  );
+}
+
+function GroupActivityContent() {
+  const params = useLocalSearchParams<{ id: string }>();
+  const groupId =
+    params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
+
+  const { t } = useTranslation("common");
+  return (
+    <ScreenWithHeader title={t("groups.activity")}>
+      <GroupActivityScreen groupId={groupId} />
+    </ScreenWithHeader>
+  );
+}

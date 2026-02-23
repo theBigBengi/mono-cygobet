@@ -149,7 +149,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
         correctDifferencePoints: body.correctDifferencePoints,
         outcomePoints: body.outcomePoints,
         creatorId,
-      });
+      }, fastify.io);
 
       return reply.send(result);
     }
@@ -176,7 +176,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply) => {
       const id = Number(req.params.id);
       const userId = req.userAuth!.user.id;
-      const result = await leaveGroup(id, userId);
+      const result = await leaveGroup(id, userId, fastify.io);
       return reply.send(result);
     }
   );
@@ -212,7 +212,7 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
         inviteAccess: body.inviteAccess,
         maxMembers: body.maxMembers,
         creatorId,
-      });
+      }, fastify.io);
 
       return reply.send(result);
     }

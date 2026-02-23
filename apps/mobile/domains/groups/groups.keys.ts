@@ -30,6 +30,10 @@ export const groupsKeys = {
     [...groupsKeys.details(), id, "invite-code"] as const,
   messages: (groupId: number) =>
     [...groupsKeys.details(), groupId, "messages"] as const,
+  activity: (groupId: number) =>
+    [...groupsKeys.details(), groupId, "activity"] as const,
+  unreadActivityCounts: () =>
+    [...groupsKeys.all, "unread-activity-counts"] as const,
   unreadCounts: () => [...groupsKeys.all, "unread-counts"] as const,
   chatPreview: () => [...groupsKeys.all, "chat-preview"] as const,
   preview: (body: ApiGroupPreviewBody) =>

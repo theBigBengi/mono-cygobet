@@ -24,4 +24,7 @@ export {
   generateInviteCode,
   getInviteCode,
   getGroupPreview,
+  getGroupActivity,
+  markActivityAsRead,
+  getUnreadActivityCounts,
 } from "./service/index";

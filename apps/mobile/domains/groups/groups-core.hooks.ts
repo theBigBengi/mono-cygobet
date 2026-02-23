@@ -172,6 +172,10 @@ export function useUpdateGroupMutation(groupId: number | null) {
           queryKey: groupsKeys.lists(),
           refetchType: "none",
         });
+        // Refresh activity unread counts (other users' events may have arrived)
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.unreadActivityCounts(),
+        });
       }
     },
   });
@@ -201,6 +205,10 @@ export function usePublishGroupMutation(groupId: number | null) {
         queryClient.invalidateQueries({
           queryKey: groupsKeys.lists(),
           refetchType: "none",
+        });
+        // Refresh activity unread counts (publish emits activity event)
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.unreadActivityCounts(),
         });
       }
     },

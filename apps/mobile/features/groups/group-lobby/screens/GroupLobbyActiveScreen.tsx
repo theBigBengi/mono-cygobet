@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth/useAuth";
 import {
   useGroupRankingQuery,
   useGroupChatPreviewQuery,
+  useUnreadActivityCountsQuery,
 } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
 import type { FixtureItem } from "../types";
@@ -58,6 +59,8 @@ export function GroupLobbyActiveScreen({
     useGroupRankingQuery(group.id);
   const { data: chatPreviewData } = useGroupChatPreviewQuery();
   const chatPreview = chatPreviewData?.data?.[String(group.id)];
+  const { data: unreadActivityData } = useUnreadActivityCountsQuery();
+  const unreadActivityCount = unreadActivityData?.data?.[String(group.id)] ?? 0;
 
   const fixtures = Array.isArray((group as any).fixtures)
     ? ((group as any).fixtures as FixtureItem[])
@@ -108,12 +111,22 @@ export function GroupLobbyActiveScreen({
     router.push(`/groups/${group.id}/predictions-overview` as any);
   };
 
+  const handleViewActivity = () => {
+    router.push(`/groups/${group.id}/activity` as any);
+  };
+
   const quickActions = [
     {
       icon: "chat" as const,
       label: t("lobby.chat"),
       badge: chatPreview?.unreadCount,
       onPress: handleViewChat,
+    },
+    {
+      icon: "activity" as const,
+      label: t("lobby.activity"),
+      badge: unreadActivityCount || undefined,
+      onPress: handleViewActivity,
     },
     ...(group.inviteAccess !== "admin_only" || isCreator
       ? [

@@ -20,6 +20,14 @@ import { buildGroupItem } from "../builders";
 import { assertGroupCreator } from "../permissions";
 import { repository as repo } from "../repository";
 import { getLogger } from "../../../../logger";
+import type { TypedIOServer } from "../../../../types/socket";
+import {
+  emitGamesAddedEvent,
+  emitGamesRemovedEvent,
+  emitRulesChangedEvent,
+  emitGroupInfoChangedEvent,
+  emitGroupPublishedEvent,
+} from "./chat-events";
 
 const log = getLogger("groups.update");
 
@@ -31,7 +39,8 @@ const log = getLogger("groups.update");
  */
 export async function updateGroup(
   id: number,
-  args: ApiUpdateGroupBody & { creatorId: number }
+  args: ApiUpdateGroupBody & { creatorId: number },
+  io?: TypedIOServer
 ): Promise<ApiGroupResponse> {
   log.debug(
     { id, args: { ...args, fixtureIds: undefined } },
@@ -114,6 +123,22 @@ export async function updateGroup(
   if (outcomePoints !== undefined)
     rulesUpdateData.outcomePoints = outcomePoints;
 
+  // Capture current fixture IDs before the update (for change detection)
+  let oldFixtureIds: Set<number> | undefined;
+  if (fixtureIds !== undefined) {
+    const current = await prisma.groupFixtures.findMany({
+      where: { groupId: id },
+      select: { fixtureId: true },
+    });
+    oldFixtureIds = new Set(current.map((gf) => gf.fixtureId));
+  }
+
+  // Capture old group data for info-change detection
+  const oldGroup = await prisma.groups.findUnique({
+    where: { id },
+    select: { name: true, description: true, privacy: true },
+  });
+
   // Update group, groupFixtures, and optionally groupRules in a single transaction
   const group = await prisma.$transaction(async (tx) => {
     const g = await repo.updateGroupWithFixtures(
@@ -130,6 +155,35 @@ export async function updateGroup(
     }
     return g;
   });
+
+  // ── Emit activity events (fire-and-forget) ──
+  // Fixture changes
+  if (fixtureIds !== undefined && oldFixtureIds) {
+    const newIds = new Set(fixtureIds);
+    const added = fixtureIds.filter((fid) => !oldFixtureIds!.has(fid));
+    const removed = Array.from(oldFixtureIds).filter((fid) => !newIds.has(fid));
+    if (added.length > 0) emitGamesAddedEvent(id, added.length, creatorId, io);
+    if (removed.length > 0) emitGamesRemovedEvent(id, removed.length, creatorId, io);
+  }
+
+  // Rules changes
+  if (hasRulesUpdate) {
+    const changedRuleFields = Object.keys(rulesUpdateData);
+    if (changedRuleFields.length > 0) {
+      emitRulesChangedEvent(id, changedRuleFields, creatorId, io);
+    }
+  }
+
+  // Group info changes (name, description, privacy)
+  if (oldGroup) {
+    const infoChanges: string[] = [];
+    if (name !== undefined && name.trim() !== oldGroup.name) infoChanges.push("name");
+    if (description !== undefined && description !== oldGroup.description) infoChanges.push("description");
+    if (privacy !== undefined && privacy !== oldGroup.privacy) infoChanges.push("privacy");
+    if (infoChanges.length > 0) {
+      emitGroupInfoChangedEvent(id, infoChanges, creatorId, io);
+    }
+  }
 
   const data = buildGroupItem(group);
   log.info({ id, creatorId }, "updateGroup - success");
@@ -150,7 +204,8 @@ export async function updateGroup(
  */
 export async function publishGroup(
   id: number,
-  args: ApiPublishGroupBody & { creatorId: number }
+  args: ApiPublishGroupBody & { creatorId: number },
+  io?: TypedIOServer
 ): Promise<ApiGroupResponse> {
   log.debug(
     {
@@ -225,7 +280,10 @@ export async function publishGroup(
   // 3. Call repository to perform all updates in a single transaction
   const group = await repo.publishGroupInternal(publishData);
 
-  // 4. Build and return response
+  // 4. Emit activity event
+  emitGroupPublishedEvent(id, creatorId, io);
+
+  // 5. Build and return response
   const data = buildGroupItem(group);
   log.info({ id, creatorId }, "publishGroup - success");
 

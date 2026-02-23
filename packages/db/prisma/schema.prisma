@@ -78,6 +78,7 @@ model users {
   userActivityEvents      userActivityEvents[]
   fixturesScoreOverridden fixtures[]           @relation("FixtureScoreOverriddenBy")
   rankingSnapshots        rankingSnapshots[]
+  groupActivityLog        groupActivityLog[]
 
   // groups groups[]
 
@@ -320,6 +321,7 @@ model groups {
   groupMessageReads  groupMessageReads[]
   userActivityEvents userActivityEvents[]
   rankingSnapshots   rankingSnapshots[]
+  activityLog        groupActivityLog[]
 
   // relations
   groupRules   groupRules?    @relation("groupRulesRelation")
@@ -426,8 +428,9 @@ model groupMembers {
   updatedAt DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
   groupId   Int                @map("group_id")
   userId    Int                @map("user_id")
-  role      groupMemberRoles   @default(member)
-  status    groupMembersStatus @default(joined)
+  role                groupMemberRoles   @default(member)
+  status              groupMembersStatus @default(joined)
+  lastReadActivityId  Int?               @map("last_read_activity_id")
   // invitedBy   Int?          @map("invited_by")
   // joinedAt    DateTime?     @map("joined_at") @db.Timestamptz(6)
   // leftAt      DateTime?     @map("left_at") @db.Timestamptz(6)
@@ -583,6 +586,22 @@ model groupMessageReads {
 
   @@unique([groupId, userId])
   @@map("group_message_reads")
+}
+
+model groupActivityLog {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  groupId   Int      @map("group_id")
+  actorId   Int?     @map("actor_id")
+  eventType String   @map("event_type")
+  body      String
+  meta      Json?
+
+  group groups @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  actor users? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([groupId, createdAt(sort: Desc)])
+  @@map("group_activity_log")
 }
 
 model userActivityEvents {

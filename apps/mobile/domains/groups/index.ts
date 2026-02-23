@@ -53,6 +53,14 @@ export {
   regenerateInviteCode,
 } from "./groups-invite.api";
 
+// --- Activity ---
+export {
+  useGroupActivityQuery,
+  useUnreadActivityCountsQuery,
+  useMarkActivityAsRead,
+} from "./groups-activity.hooks";
+export { fetchGroupActivity } from "./groups-activity.api";
+
 // --- Chat ---
 export {
   useGroupMessagesQuery,

@@ -14,7 +14,7 @@ import Animated, {
 import { useTheme } from "@/lib/theme";
 
 export interface QuickAction {
-  icon: "chat" | "link" | "stats";
+  icon: "chat" | "link" | "stats" | "activity";
   label: string;
   badge?: number;
   onPress: () => void;
@@ -37,6 +37,8 @@ function renderIcon(
       return <Ionicons name="link-outline" size={size} color={color} />;
     case "stats":
       return <Fontisto name="list-1" size={size - 4} color={color} />;
+    case "activity":
+      return <Ionicons name="newspaper-outline" size={size} color={color} />;
   }
 }
 
@@ -87,7 +89,7 @@ export function LobbyQuickActions({ actions, isLoading = false }: LobbyQuickActi
 
           {/* Skeleton Cards Grid */}
           <View style={styles.grid}>
-            {[0, 1, 2].map((index) => (
+            {[0, 1, 2, 3].map((index) => (
               <View
                 key={index}
                 style={[

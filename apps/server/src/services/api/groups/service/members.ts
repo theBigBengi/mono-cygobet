@@ -7,6 +7,8 @@ import { repository as repo } from "../repository";
 import { MEMBER_STATUS } from "../constants";
 import { NotFoundError, ForbiddenError } from "../../../../utils/errors";
 import { getLogger } from "../../../../logger";
+import type { TypedIOServer } from "../../../../types/socket";
+import { emitMemberLeftEvent } from "./chat-events";
 
 const log = getLogger("groups.members");
 
@@ -48,7 +50,8 @@ export async function getGroupMembers(
  */
 export async function leaveGroup(
   groupId: number,
-  userId: number
+  userId: number,
+  io?: TypedIOServer
 ): Promise<{ success: boolean }> {
   log.debug({ groupId, userId }, "leaveGroup - start");
 
@@ -67,6 +70,10 @@ export async function leaveGroup(
   }
 
   await repo.updateGroupMember(member.id, { status: MEMBER_STATUS.LEFT });
+
+  // Emit activity event (fire-and-forget)
+  emitMemberLeftEvent(groupId, userId, io);
+
   log.info({ groupId, userId }, "leaveGroup - success");
   return { success: true };
 }

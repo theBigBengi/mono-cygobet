@@ -20,3 +20,9 @@ export {
   getInviteCode,
 } from "./join";
 export { getGroupPreview } from "./preview";
+export {
+  logActivity,
+  getGroupActivity,
+  markActivityAsRead,
+  getUnreadActivityCounts,
+} from "./activity-log";
