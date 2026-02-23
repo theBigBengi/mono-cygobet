@@ -34,7 +34,7 @@ import { jobsService } from "@/services/jobs.service";
 import type { AdminJobDetailResponse } from "@repo/types";
 import type { MultiSelectOption } from "@/components/filters/multi-select-combobox";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
+import { ChevronRight, RefreshCw, Search } from "lucide-react";
 import {
   formatDateTime,
   formatRelativeTime,
@@ -48,6 +48,7 @@ import {
 } from "./jobs.utils";
 import { JobConfigForm } from "./job-config-form";
 import { HeaderActions } from "@/contexts/header-actions";
+import { useHeaderTitle } from "@/contexts/header-title";
 import { useAlerts } from "@/hooks/use-dashboard";
 
 export default function JobDetailPage() {
@@ -162,6 +163,9 @@ export default function JobDetailPage() {
     };
   }, [job]);
 
+  const jobTitle = job ? titleCaseWords(jobNameFromKey(job.key)) : "Job Detail";
+  useHeaderTitle(jobTitle, "/jobs");
+
   const canGoPrev = cursorStack.length > 1;
   const canGoNext = runs.length === 50 && nextCursor != null;
 
@@ -212,18 +216,6 @@ export default function JobDetailPage() {
           <RefreshCw className={`h-4 w-4 ${isAnyFetching ? "animate-spin" : ""}`} />
         </Button>
       </HeaderActions>
-      <div className="flex-shrink-0 pb-3 sm:pb-4 flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => navigate("/jobs")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-2xl font-semibold truncate">
-            {titleCaseWords(jobNameFromKey(job.key))}
-          </h1>
-          <p className="text-xs text-muted-foreground font-mono truncate">{job.key}</p>
-        </div>
-      </div>
-
       <div className="flex-1 min-h-0 flex flex-col gap-3 sm:gap-4 overflow-hidden">
         {/* Failure Pattern (shown when job is currently failing) */}
         {failurePattern && (

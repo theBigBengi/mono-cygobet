@@ -35,6 +35,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* TODO: Temporarily hidden — restore when ready
       <Tabs.Screen
         name="activity"
         options={{
@@ -45,6 +46,8 @@ export default function TabsLayout() {
           ),
         }}
       />
+      */}
+      <Tabs.Screen name="activity" options={{ href: null }} />
       <Tabs.Screen
         name="home"
         options={{
@@ -55,6 +58,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* TODO: Temporarily hidden — restore when ready
       <Tabs.Screen
         name="profile"
         options={{
@@ -65,6 +69,8 @@ export default function TabsLayout() {
           ),
         }}
       />
+      */}
+      <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen
         name="settings"
         options={{

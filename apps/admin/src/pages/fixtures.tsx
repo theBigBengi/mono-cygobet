@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -7,7 +7,6 @@ import { format, formatDistanceToNow, startOfDay, endOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -66,85 +65,233 @@ import type {
 
 type FixturesTab = "live" | "attention" | "search";
 
+type AttentionFilters = {
+  issueType: FixtureIssueType | "all";
+  fromDate: Date | undefined;
+  toDate: Date | undefined;
+  leagueId: number | undefined;
+  search: string;
+};
+const defaultAttentionFilters: AttentionFilters = {
+  issueType: "all",
+  fromDate: undefined,
+  toDate: undefined,
+  leagueId: undefined,
+  search: "",
+};
+
+type SearchFilters = {
+  query: string;
+  leagueId: number | undefined;
+  leagueName: string;
+  state: string;
+  fromDate: Date | undefined;
+  toDate: Date | undefined;
+};
+const defaultSearchFilters: SearchFilters = {
+  query: "",
+  leagueId: undefined,
+  leagueName: "",
+  state: "",
+  fromDate: undefined,
+  toDate: undefined,
+};
+
+// ═══════════════════════════════════════════════════════════════
+// Main Page — only owns tab state + live data for badge counts
+// ═══════════════════════════════════════════════════════════════
+
 export default function FixturesPage() {
   const [tab, setTab] = useState<FixturesTab>("attention");
   const queryClient = useQueryClient();
 
-  // ─── Live fixtures ───
+  // Live data — always active for badge count
   const { db: liveDb, provider: liveProvider } = useLiveFixtures();
-  const dbFixtures = liveDb.data?.data ?? [];
-  const providerFixtures = liveProvider.data?.data ?? [];
+  const liveCount = Math.max(
+    liveDb.data?.data?.length ?? 0,
+    liveProvider.data?.data?.length ?? 0
+  );
   const liveFetching = liveDb.isFetching || liveProvider.isFetching;
-  const liveCount = Math.max(dbFixtures.length, providerFixtures.length);
-  const refetchLive = () => { void liveDb.refetch(); void liveProvider.refetch(); };
 
-  // ─── Attention tab state (pending / applied filters) ───
-  type AttentionFilters = {
-    issueType: FixtureIssueType | "all";
-    timeframe: string;
-    leagueId: number | undefined;
-    search: string;
-  };
-  const defaultFilters: AttentionFilters = {
-    issueType: "all",
-    timeframe: "all",
-    leagueId: undefined,
-    search: "",
-  };
-  const [filters, setFilters] = useState<AttentionFilters>(defaultFilters);
-  const [appliedFilters, setAppliedFilters] = useState<AttentionFilters>(defaultFilters);
-  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
-  const [attentionPage, setAttentionPage] = useState(1);
-  const [attentionPerPage, setAttentionPerPage] = useState(25);
+  // Attention count — set by child via callback
+  const [attentionCount, setAttentionCount] = useState(0);
 
-  // ─── Selection state (lifted from table for unified toolbar) ───
+  // Preserve applied filters across tab switches (refs don't cause re-renders)
+  const attentionFiltersRef = useRef<AttentionFilters>(defaultAttentionFilters);
+  const searchFiltersRef = useRef<SearchFilters>(defaultSearchFilters);
+
+  const refetchLive = useCallback(() => {
+    void liveDb.refetch();
+    void liveProvider.refetch();
+  }, [liveDb, liveProvider]);
+
+  return (
+    <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
+      <HeaderActions>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => queryClient.invalidateQueries({ queryKey: ["fixtures"] })}
+          disabled={liveFetching}
+        >
+          <RefreshCw className={`h-4 w-4 ${liveFetching ? "animate-spin" : ""}`} />
+        </Button>
+      </HeaderActions>
+
+      {/* Tabs */}
+      <div className="flex-shrink-0 mb-3 sm:mb-4">
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setTab(v as FixturesTab)}
+          className="w-full sm:w-auto"
+        >
+          <TabsList className="flex w-full sm:inline-flex sm:w-auto">
+            <TabsTrigger value="live" className="gap-1.5 flex-1 sm:flex-initial">
+              <Radio className="h-3.5 w-3.5" />
+              Live
+              {liveCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="ml-1 h-5 min-w-5 px-1.5 text-[10px] border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400"
+                >
+                  {liveCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="attention" className="gap-1.5 flex-1 sm:flex-initial">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Attention
+              {attentionCount > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="ml-1 h-5 min-w-5 px-1.5 text-[10px]"
+                >
+                  {attentionCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="search" className="gap-1.5 flex-1 sm:flex-initial">
+              <Search className="h-3.5 w-3.5" />
+              Search
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Content — each tab is its own component with isolated state */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {tab === "live" && (
+          <LiveFixturesSection
+            dbFixtures={liveDb.data?.data ?? []}
+            providerFixtures={liveProvider.data?.data ?? []}
+            trackedLeagueExternalIds={liveProvider.data?.trackedLeagueExternalIds ?? []}
+            isLoading={liveDb.isLoading || liveProvider.isLoading}
+            isFetching={liveFetching}
+            onRefresh={refetchLive}
+          />
+        )}
+        {tab === "attention" && (
+          <AttentionTabContent
+            initialFilters={attentionFiltersRef.current}
+            onFiltersChange={(f) => { attentionFiltersRef.current = f; }}
+            onCountChange={setAttentionCount}
+          />
+        )}
+        {tab === "search" && (
+          <SearchTabContent
+            initialFilters={searchFiltersRef.current}
+            onFiltersChange={(f) => { searchFiltersRef.current = f; }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Attention Tab — owns ALL attention state, mutations, rendering
+// ═══════════════════════════════════════════════════════════════
+
+function AttentionTabContent({
+  initialFilters,
+  onFiltersChange,
+  onCountChange,
+}: {
+  initialFilters: AttentionFilters;
+  onFiltersChange: (f: AttentionFilters) => void;
+  onCountChange: (n: number) => void;
+}) {
+  const queryClient = useQueryClient();
+
+  // ─── Filter state ───
+  const [filters, setFilters] = useState<AttentionFilters>(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<AttentionFilters>(initialFilters);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
+
+  // ─── Selection state ───
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // ─── Filter derived values ───
+  const hasAppliedDateRange =
+    appliedFilters.fromDate !== undefined && appliedFilters.toDate !== undefined;
 
   const filtersAreDirty =
     filters.issueType !== appliedFilters.issueType ||
-    filters.timeframe !== appliedFilters.timeframe ||
+    filters.fromDate?.getTime() !== appliedFilters.fromDate?.getTime() ||
+    filters.toDate?.getTime() !== appliedFilters.toDate?.getTime() ||
     filters.leagueId !== appliedFilters.leagueId ||
     filters.search !== appliedFilters.search;
 
   const hasActiveFilters =
     appliedFilters.issueType !== "all" ||
-    appliedFilters.timeframe !== "all" ||
+    hasAppliedDateRange ||
     appliedFilters.leagueId !== undefined ||
     appliedFilters.search !== "";
 
   const activeFilterCount =
     (appliedFilters.issueType !== "all" ? 1 : 0) +
-    (appliedFilters.timeframe !== "all" ? 1 : 0) +
+    (hasAppliedDateRange ? 1 : 0) +
     (appliedFilters.leagueId !== undefined ? 1 : 0) +
     (appliedFilters.search !== "" ? 1 : 0);
 
   const applyFilters = useCallback(() => {
     setAppliedFilters(filters);
-    setAttentionPage(1);
-    setFilterDrawerOpen(false);
-  }, [filters]);
+    setPage(1);
+    onFiltersChange(filters);
+  }, [filters, onFiltersChange]);
 
   const resetFilters = useCallback(() => {
-    setFilters(defaultFilters);
-    setAppliedFilters(defaultFilters);
-    setAttentionPage(1);
-  }, []);
+    setFilters(defaultAttentionFilters);
+    setAppliedFilters(defaultAttentionFilters);
+    setPage(1);
+    onFiltersChange(defaultAttentionFilters);
+  }, [onFiltersChange]);
 
+  // ─── Data fetching ───
   const {
     data: attentionData,
     isLoading: attentionLoading,
     isFetching: attentionFetching,
-  } = useFixturesAttention(
-    {
-      issueType: appliedFilters.issueType,
-      search: appliedFilters.search || undefined,
-      timeframe: appliedFilters.timeframe !== "all" ? appliedFilters.timeframe : undefined,
-      leagueId: appliedFilters.leagueId,
-      page: attentionPage,
-      perPage: attentionPerPage,
-    },
-    { enabled: tab === "attention" }
-  );
+  } = useFixturesAttention({
+    issueType: appliedFilters.issueType,
+    search: appliedFilters.search || undefined,
+    fromTs: appliedFilters.fromDate
+      ? Math.floor(startOfDay(appliedFilters.fromDate).getTime() / 1000)
+      : undefined,
+    toTs: appliedFilters.toDate
+      ? Math.floor(endOfDay(appliedFilters.toDate).getTime() / 1000)
+      : undefined,
+    leagueId: appliedFilters.leagueId,
+    page,
+    perPage,
+  });
+
+  // ─── Update parent badge count ───
+  useEffect(() => {
+    onCountChange(attentionData?.pagination.totalItems ?? 0);
+  }, [attentionData?.pagination.totalItems, onCountChange]);
 
   // ─── Selection derived values ───
   const allExternalIds = attentionData?.allExternalIds;
@@ -159,143 +306,45 @@ export default function FixturesPage() {
   }, [allExternalIds]);
 
   const pageItems = attentionData?.data ?? [];
-  const pageExternalIds = pageItems.map((f) => f.externalId);
+  const pageExternalIds = useMemo(() => pageItems.map((f) => f.externalId), [pageItems]);
+  const totalMatchingCount = attentionData?.pagination.totalItems ?? 0;
+
   const allPageSelected = pageItems.length > 0 && pageExternalIds.every((id) => selectedIds.has(id));
   const somePageSelected = !allPageSelected && pageExternalIds.some((id) => selectedIds.has(id));
 
-  const toggleSelectAll = useCallback(() => {
+  const togglePageSelect = useCallback(() => {
     setSelectedIds((prev) => {
-      const next = new Set(prev);
       if (allPageSelected) {
+        const next = new Set(prev);
         for (const id of pageExternalIds) next.delete(id);
-      } else {
-        for (const id of pageExternalIds) next.add(id);
+        return next;
       }
+      const next = new Set(prev);
+      for (const id of pageExternalIds) next.add(id);
       return next;
     });
   }, [allPageSelected, pageExternalIds]);
 
-  // ─── Search tab state (pending / applied filters) ───
-  type SearchFilters = {
-    query: string;
-    leagueId: number | undefined;
-    leagueName: string;
-    fromDate: Date | undefined;
-    toDate: Date | undefined;
-  };
-  const defaultSearchFilters: SearchFilters = {
-    query: "",
-    leagueId: undefined,
-    leagueName: "",
-    fromDate: undefined,
-    toDate: undefined,
-  };
-  const [searchFilters, setSearchFilters] = useState<SearchFilters>(defaultSearchFilters);
-  const [appliedSearchFilters, setAppliedSearchFilters] = useState<SearchFilters>(defaultSearchFilters);
-  const [searchFilterDrawerOpen, setSearchFilterDrawerOpen] = useState(false);
-  const [searchPage, setSearchPage] = useState(1);
-
-  const searchFiltersAreDirty =
-    searchFilters.query !== appliedSearchFilters.query ||
-    searchFilters.leagueId !== appliedSearchFilters.leagueId ||
-    searchFilters.fromDate?.getTime() !== appliedSearchFilters.fromDate?.getTime() ||
-    searchFilters.toDate?.getTime() !== appliedSearchFilters.toDate?.getTime();
-
-  const hasDateRange =
-    searchFilters.fromDate !== undefined && searchFilters.toDate !== undefined;
-  const hasAppliedDateRange =
-    appliedSearchFilters.fromDate !== undefined && appliedSearchFilters.toDate !== undefined;
-
-  const hasActiveSearchFilters =
-    appliedSearchFilters.query !== "" ||
-    appliedSearchFilters.leagueId !== undefined ||
-    hasAppliedDateRange;
-
-  const activeSearchFilterCount =
-    (appliedSearchFilters.query !== "" ? 1 : 0) +
-    (appliedSearchFilters.leagueId !== undefined ? 1 : 0) +
-    (hasAppliedDateRange ? 1 : 0);
-
-  // Pending filters would produce a valid query
-  const pendingFiltersAreValid =
-    searchFilters.query.length >= 2 ||
-    searchFilters.leagueId !== undefined ||
-    hasDateRange;
-
-  const applySearchFilters = useCallback(() => {
-    setAppliedSearchFilters(searchFilters);
-    setSearchPage(1);
-    setSearchFilterDrawerOpen(false);
-  }, [searchFilters]);
-
-  const resetSearchFilters = useCallback(() => {
-    setSearchFilters(defaultSearchFilters);
-    setAppliedSearchFilters(defaultSearchFilters);
-    setSearchPage(1);
-  }, []);
-
-  const {
-    data: searchData,
-    isLoading: searchLoading,
-    isFetching: searchFetching,
-  } = useFixtureSearch(
-    {
-      q: appliedSearchFilters.query || undefined,
-      leagueId: appliedSearchFilters.leagueId,
-      fromTs: appliedSearchFilters.fromDate
-        ? Math.floor(startOfDay(appliedSearchFilters.fromDate).getTime() / 1000)
-        : undefined,
-      toTs: appliedSearchFilters.toDate
-        ? Math.floor(endOfDay(appliedSearchFilters.toDate).getTime() / 1000)
-        : undefined,
-      page: searchPage,
-      perPage: 25,
-    },
-    { enabled: tab === "search" }
-  );
-
-  // ─── Sync fixture mutation ───
+  // ─── Sync mutation ───
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   const syncMutation = useMutation({
     mutationFn: ({ id }: { id: string; name: string }) =>
       fixturesService.syncById(id, false) as Promise<AdminSyncFixturesResponse>,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["fixtures"] });
-      toast.success("Fixture synced", {
-        description: `Synced ${variables.name}`,
-      });
-      setSyncingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(variables.id);
-        return next;
-      });
+      toast.success("Fixture synced", { description: `Synced ${variables.name}` });
+      setSyncingIds((prev) => { const next = new Set(prev); next.delete(variables.id); return next; });
     },
     onError: (error: Error, variables) => {
       toast.error("Sync failed", { description: error.message });
-      setSyncingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(variables.id);
-        return next;
-      });
+      setSyncingIds((prev) => { const next = new Set(prev); next.delete(variables.id); return next; });
     },
   });
 
-  const handleSync = useCallback(
-    (externalId: string, fixtureName?: string) => {
-      if (!fixtureName) {
-        const fixture = attentionData?.data.find(
-          (f) => f.externalId === externalId
-        );
-        fixtureName = fixture?.name ?? externalId;
-      }
-      setSyncingIds((prev) => new Set(prev).add(externalId));
-      syncMutation.mutate({
-        id: externalId,
-        name: fixtureName,
-      });
-    },
-    [syncMutation, attentionData]
-  );
+  const handleSync = useCallback((externalId: string, name: string) => {
+    setSyncingIds((prev) => new Set(prev).add(externalId));
+    syncMutation.mutate({ id: externalId, name });
+  }, [syncMutation]);
 
   // ─── Resettle mutation ───
   const [resettlingIds, setResettlingIds] = useState<Set<number>>(new Set());
@@ -306,21 +355,18 @@ export default function FixturesPage() {
       toast.success("Re-settlement complete", {
         description: `${result.groupsAffected} group(s), ${result.predictionsRecalculated} prediction(s)`,
       });
-      setResettlingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(fixtureId);
-        return next;
-      });
+      setResettlingIds((prev) => { const next = new Set(prev); next.delete(fixtureId); return next; });
     },
     onError: (error: Error, fixtureId) => {
       toast.error("Re-settle failed", { description: error.message });
-      setResettlingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(fixtureId);
-        return next;
-      });
+      setResettlingIds((prev) => { const next = new Set(prev); next.delete(fixtureId); return next; });
     },
   });
+
+  const handleResettle = useCallback((fixtureId: number) => {
+    setResettlingIds((prev) => new Set(prev).add(fixtureId));
+    resettleMutation.mutate(fixtureId);
+  }, [resettleMutation]);
 
   // ─── Bulk sync (chunked) ───
   const [bulkSyncing, setBulkSyncing] = useState(false);
@@ -367,742 +413,570 @@ export default function FixturesPage() {
     [queryClient]
   );
 
-  const handleResettle = useCallback(
-    (fixtureId: number) => {
-      setResettlingIds((prev) => new Set(prev).add(fixtureId));
-      resettleMutation.mutate(fixtureId);
-    },
-    [resettleMutation]
-  );
-
-  const totalAttention = attentionData?.pagination.totalItems ?? 0;
   const issueCounts = attentionData?.issueCounts;
 
-  const isAnyFetching = liveFetching || attentionFetching || searchFetching;
-  const refreshAll = () => {
-    queryClient.invalidateQueries({ queryKey: ["fixtures"] });
-  };
-
   return (
-    <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden p-2 sm:p-3 md:p-6">
-      <HeaderActions>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={refreshAll} disabled={isAnyFetching}>
-          <RefreshCw className={`h-4 w-4 ${isAnyFetching ? "animate-spin" : ""}`} />
-        </Button>
-      </HeaderActions>
-      {/* Header */}
-      <div className="flex-shrink-0 mb-3 sm:mb-4">
-        <div className="flex items-center justify-between gap-2">
-          <Tabs
-            value={tab}
-            onValueChange={(v) => setTab(v as FixturesTab)}
+    <div>
+      {/* Sticky filters */}
+      <div className="sticky top-0 z-10 bg-background pb-2">
+        {/* ── Mobile: select all + filters ── */}
+        <div className="flex items-center gap-2 sm:hidden">
+          <Button
+            variant={allPageSelected ? "secondary" : "outline"}
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={togglePageSelect}
+            disabled={bulkSyncing || pageItems.length === 0}
           >
-            <TabsList>
-              <TabsTrigger value="live" className="gap-1.5">
-                <Radio className="h-3.5 w-3.5" />
-                Live
-                {liveCount > 0 && (
-                  <Badge
-                    variant="outline"
-                    className="ml-1 h-5 min-w-5 px-1.5 text-[10px] border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400"
-                  >
-                    {liveCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="attention" className="gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                Attention
-                {totalAttention > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="ml-1 h-5 min-w-5 px-1.5 text-[10px]"
-                  >
-                    {totalAttention}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="search" className="gap-1.5">
-                <Search className="h-3.5 w-3.5" />
-                Search
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+            {allPageSelected ? `${selectedIds.size} selected` : "Select all"}
+          </Button>
+          <AttentionMobileFilterDrawer
+            filters={filters}
+            setFilters={setFilters}
+            issueCounts={issueCounts}
+            availableLeagues={attentionData?.availableLeagues ?? []}
+            applyFilters={applyFilters}
+            resetFilters={resetFilters}
+            hasActiveFilters={hasActiveFilters}
+            filtersAreDirty={filtersAreDirty}
+            activeFilterCount={activeFilterCount}
+          />
         </div>
 
-        {/* Attention tab filters */}
-        {tab === "attention" && (
-          <>
-            {/* ── Mobile: checkbox + badges (scrollable) + filters button ── */}
-            <div className="mt-3 flex items-center gap-2 sm:hidden">
-              <Checkbox
-                checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
-                onCheckedChange={toggleSelectAll}
-                disabled={bulkSyncing || pageItems.length === 0}
-                className="shrink-0"
-                aria-label="Select all"
-              />
-              <span className="text-xs text-muted-foreground shrink-0">
-                {selectedIds.size > 0
-                  ? `${selectedIds.size} selected`
-                  : `Page (${pageItems.length})`}
-              </span>
-              {issueCounts && (
-                <div className="flex items-center gap-1 overflow-x-auto min-w-0 shrink">
-                  {issueCounts.stuck > 0 && (
-                    <Badge className="text-[10px] py-0 shrink-0 bg-red-100 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900">
-                      {issueCounts.stuck} Stuck
-                    </Badge>
-                  )}
-                  {issueCounts.unsettled > 0 && (
-                    <Badge className="text-[10px] py-0 shrink-0 bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900">
-                      {issueCounts.unsettled} Unsettled
-                    </Badge>
-                  )}
-                  {issueCounts.overdue > 0 && (
-                    <Badge className="text-[10px] py-0 shrink-0 bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-900">
-                      {issueCounts.overdue} Overdue
-                    </Badge>
-                  )}
-                  {issueCounts.noScores > 0 && (
-                    <Badge className="text-[10px] py-0 shrink-0 bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950/50 dark:text-yellow-400 dark:border-yellow-900">
-                      {issueCounts.noScores} No Scores
-                    </Badge>
-                  )}
-                </div>
-              )}
-              <div className="ml-auto flex items-center gap-1.5 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs gap-1.5"
-                  onClick={() => setFilterDrawerOpen(true)}
-                >
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                  Filters
-                  {activeFilterCount > 0 && (
-                    <Badge variant="secondary" className="ml-0.5 h-4 min-w-4 px-1 text-[10px]">
-                      {activeFilterCount}
-                    </Badge>
-                  )}
-                </Button>
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={resetFilters}>
-                    <RotateCcw className="mr-1 h-3 w-3" />
-                    Reset
-                  </Button>
-                )}
-              </div>
-            </div>
+        {/* ── Desktop: filters ── */}
+        <div className="hidden sm:flex sm:items-center sm:gap-2">
+          <div className="relative min-w-0 flex-[3]">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={filters.search}
+              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+              onKeyDown={(e) => { if (e.key === "Enter" && filtersAreDirty) applyFilters(); }}
+              placeholder="Search..."
+              className="h-8 pl-7 pr-7 text-xs"
+            />
+            {filters.search && (
+              <button
+                type="button"
+                onClick={() => setFilters((f) => ({ ...f, search: "" }))}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          <DateRangePickerButton
+            from={filters.fromDate}
+            to={filters.toDate}
+            onChange={(from, to) => setFilters((f) => ({ ...f, fromDate: from, toDate: to }))}
+            className="h-8 min-w-0 flex-[2] text-xs"
+          />
+          <Select
+            value={filters.issueType}
+            onValueChange={(v) => setFilters((f) => ({ ...f, issueType: v as FixtureIssueType | "all" }))}
+          >
+            <SelectTrigger className="h-8 min-w-0 flex-[1.5] text-xs">
+              <SelectValue placeholder="Issue type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Issues{issueCounts ? ` (${Object.values(issueCounts).reduce((a, b) => a + b, 0)})` : ""}</SelectItem>
+              {(issueCounts?.stuck ?? 0) > 0 && <SelectItem value="stuck">Stuck LIVE ({issueCounts!.stuck})</SelectItem>}
+              {(issueCounts?.overdue ?? 0) > 0 && <SelectItem value="overdue">Overdue NS ({issueCounts!.overdue})</SelectItem>}
+              {(issueCounts?.noScores ?? 0) > 0 && <SelectItem value="noScores">No Scores ({issueCounts!.noScores})</SelectItem>}
+              {(issueCounts?.unsettled ?? 0) > 0 && <SelectItem value="unsettled">Unsettled ({issueCounts!.unsettled})</SelectItem>}
+            </SelectContent>
+          </Select>
+          <LeagueCombobox
+            leagues={attentionData?.availableLeagues ?? []}
+            value={filters.leagueId}
+            onChange={(v) => setFilters((f) => ({ ...f, leagueId: v }))}
+            className="h-8 min-w-0 flex-[1.5] text-xs"
+          />
+          <Button
+            size="sm"
+            className="h-8 px-2.5 text-xs shrink-0"
+            onClick={applyFilters}
+            disabled={!filtersAreDirty || attentionFetching}
+          >
+            <Filter className="mr-1 h-3 w-3" />
+            Apply
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-8 px-2 text-xs shrink-0", !hasActiveFilters && "invisible")}
+            onClick={resetFilters}
+          >
+            <RotateCcw className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
 
-            {/* ── Mobile: filter drawer ── */}
-            <Drawer open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
-              <DrawerContent>
-                <DrawerHeader>
-                  <DrawerTitle>Filters</DrawerTitle>
-                </DrawerHeader>
-                <div className="px-4 space-y-4 pb-2">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Issue Type</label>
-                    <Select
-                      value={filters.issueType}
-                      onValueChange={(v) => setFilters((f) => ({ ...f, issueType: v as FixtureIssueType | "all" }))}
-                    >
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Issues ({issueCounts ? Object.values(issueCounts).reduce((a, b) => a + b, 0) : 0})</SelectItem>
-                        <SelectItem value="stuck">Stuck LIVE ({issueCounts?.stuck ?? 0})</SelectItem>
-                        <SelectItem value="overdue">Overdue NS ({issueCounts?.overdue ?? 0})</SelectItem>
-                        <SelectItem value="noScores">No Scores ({issueCounts?.noScores ?? 0})</SelectItem>
-                        <SelectItem value="unsettled">Unsettled ({issueCounts?.unsettled ?? 0})</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Timeframe</label>
-                    <Select
-                      value={filters.timeframe}
-                      onValueChange={(v) => setFilters((f) => ({ ...f, timeframe: v }))}
-                    >
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All time</SelectItem>
-                        <SelectItem value="1h">Last 1h</SelectItem>
-                        <SelectItem value="3h">Last 3h</SelectItem>
-                        <SelectItem value="6h">Last 6h</SelectItem>
-                        <SelectItem value="12h">Last 12h</SelectItem>
-                        <SelectItem value="24h">Last 24h</SelectItem>
-                        <SelectItem value="24h+">Over 24h</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">League</label>
-                    <LeagueCombobox
-                      leagues={attentionData?.availableLeagues ?? []}
-                      value={filters.leagueId}
-                      onChange={(v) => setFilters((f) => ({ ...f, leagueId: v }))}
-                      className="h-9 text-sm w-full"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Search</label>
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        value={filters.search}
-                        onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-                        onKeyDown={(e) => { if (e.key === "Enter") applyFilters(); }}
-                        placeholder="Team, fixture, or ID..."
-                        className="h-9 pl-8 pr-8 text-sm"
-                      />
-                      {filters.search && (
-                        <button
-                          type="button"
-                          onClick={() => setFilters((f) => ({ ...f, search: "" }))}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <DrawerFooter>
-                  <Button onClick={applyFilters} disabled={!filtersAreDirty && !hasActiveFilters}>
-                    <Filter className="mr-2 h-4 w-4" />
-                    Apply Filters
-                  </Button>
-                  {hasActiveFilters && (
-                    <DrawerClose asChild>
-                      <Button variant="outline" onClick={resetFilters}>
-                        <RotateCcw className="mr-2 h-4 w-4" />
-                        Reset All
-                      </Button>
-                    </DrawerClose>
-                  )}
-                  <DrawerClose asChild>
-                    <Button variant="ghost">Cancel</Button>
-                  </DrawerClose>
-                </DrawerFooter>
-              </DrawerContent>
-            </Drawer>
+      {/* Table */}
+      <AttentionFixturesTable
+        data={pageItems}
+        isLoading={attentionLoading}
+        onSync={handleSync}
+        onResettle={handleResettle}
+        syncingIds={syncingIds}
+        resettlingIds={resettlingIds}
+        onBulkSync={handleBulkSync}
+        bulkSyncing={bulkSyncing}
+        bulkProgress={bulkProgress}
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        allScopeSelected={allPageSelected}
+        someScopeSelected={somePageSelected}
+        onToggleSelectAll={togglePageSelect}
+        allExternalIds={allExternalIds}
+        totalMatchingCount={totalMatchingCount}
+      />
 
-            {/* ── Desktop: single row — checkbox + badges | filters ── */}
-            <div className="mt-3 hidden sm:flex sm:items-center sm:gap-2 sm:flex-wrap">
-              {/* Left: select-all + issue badges */}
-              <Checkbox
-                checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
-                onCheckedChange={toggleSelectAll}
-                disabled={bulkSyncing || pageItems.length === 0}
-                className="shrink-0"
-                aria-label="Select all"
-              />
-              <span className="text-xs text-muted-foreground shrink-0">
-                {selectedIds.size > 0
-                  ? `${selectedIds.size} selected`
-                  : `Page (${pageItems.length})`}
-              </span>
-              {issueCounts && (
-                <>
-                  <span className="text-muted-foreground/30">|</span>
-                  {issueCounts.stuck > 0 && (
-                    <Badge className="text-[10px] py-0 shrink-0 bg-red-100 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900">
-                      {issueCounts.stuck} Stuck
-                    </Badge>
-                  )}
-                  {issueCounts.unsettled > 0 && (
-                    <Badge className="text-[10px] py-0 shrink-0 bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900">
-                      {issueCounts.unsettled} Unsettled
-                    </Badge>
-                  )}
-                  {issueCounts.overdue > 0 && (
-                    <Badge className="text-[10px] py-0 shrink-0 bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-900">
-                      {issueCounts.overdue} Overdue
-                    </Badge>
-                  )}
-                  {issueCounts.noScores > 0 && (
-                    <Badge className="text-[10px] py-0 shrink-0 bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950/50 dark:text-yellow-400 dark:border-yellow-900">
-                      {issueCounts.noScores} No Scores
-                    </Badge>
-                  )}
-                </>
+      {/* Pagination */}
+      {attentionData && attentionData.pagination.totalPages > 1 && (
+        <SimplePagination
+          page={attentionData.pagination.page}
+          totalPages={attentionData.pagination.totalPages}
+          totalItems={attentionData.pagination.totalItems}
+          perPage={perPage}
+          onPageChange={setPage}
+          onPerPageChange={(v) => {
+            setPerPage(v);
+            setPage(1);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Search Tab — owns ALL search state, rendering
+// ═══════════════════════════════════════════════════════════════
+
+function SearchTabContent({
+  initialFilters,
+  onFiltersChange,
+}: {
+  initialFilters: SearchFilters;
+  onFiltersChange: (f: SearchFilters) => void;
+}) {
+  // ─── Filter state ───
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<SearchFilters>(initialFilters);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const filtersAreDirty =
+    searchFilters.query !== appliedFilters.query ||
+    searchFilters.leagueId !== appliedFilters.leagueId ||
+    searchFilters.state !== appliedFilters.state ||
+    searchFilters.fromDate?.getTime() !== appliedFilters.fromDate?.getTime() ||
+    searchFilters.toDate?.getTime() !== appliedFilters.toDate?.getTime();
+
+  const hasDateRange =
+    searchFilters.fromDate !== undefined && searchFilters.toDate !== undefined;
+  const hasAppliedDateRange =
+    appliedFilters.fromDate !== undefined && appliedFilters.toDate !== undefined;
+
+  const hasActiveFilters =
+    appliedFilters.query !== "" ||
+    appliedFilters.leagueId !== undefined ||
+    appliedFilters.state !== "" ||
+    hasAppliedDateRange;
+
+  const activeFilterCount =
+    (appliedFilters.query !== "" ? 1 : 0) +
+    (appliedFilters.leagueId !== undefined ? 1 : 0) +
+    (appliedFilters.state !== "" ? 1 : 0) +
+    (hasAppliedDateRange ? 1 : 0);
+
+  const pendingFiltersAreValid =
+    searchFilters.query.length >= 2 ||
+    searchFilters.leagueId !== undefined ||
+    searchFilters.state !== "" ||
+    hasDateRange;
+
+  const applyFilters = useCallback(() => {
+    setAppliedFilters(searchFilters);
+    setPage(1);
+    setFilterDrawerOpen(false);
+    onFiltersChange(searchFilters);
+  }, [searchFilters, onFiltersChange]);
+
+  const resetFilters = useCallback(() => {
+    setSearchFilters(defaultSearchFilters);
+    setAppliedFilters(defaultSearchFilters);
+    setPage(1);
+    onFiltersChange(defaultSearchFilters);
+  }, [onFiltersChange]);
+
+  // ─── Data fetching ───
+  const {
+    data: searchData,
+    isLoading: searchLoading,
+    isFetching: searchFetching,
+  } = useFixtureSearch({
+    q: appliedFilters.query || undefined,
+    leagueId: appliedFilters.leagueId,
+    state: appliedFilters.state || undefined,
+    fromTs: appliedFilters.fromDate
+      ? Math.floor(startOfDay(appliedFilters.fromDate).getTime() / 1000)
+      : undefined,
+    toTs: appliedFilters.toDate
+      ? Math.floor(endOfDay(appliedFilters.toDate).getTime() / 1000)
+      : undefined,
+    page,
+    perPage: 25,
+  });
+
+  return (
+    <div>
+      {/* Sticky filters */}
+      <div className="sticky top-0 z-10 bg-background pb-2">
+        {/* ── Mobile: filter button ── */}
+        <div className="flex items-center gap-2 sm:hidden">
+          <div className="ml-auto flex items-center gap-1.5 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => setFilterDrawerOpen(true)}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Filters
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="ml-0.5 h-4 min-w-4 px-1 text-[10px]">
+                  {activeFilterCount}
+                </Badge>
               )}
-              {/* Right: filters */}
-              <div className="flex items-center gap-2 ml-auto">
-                <Select
-                  value={filters.issueType}
-                  onValueChange={(v) => setFilters((f) => ({ ...f, issueType: v as FixtureIssueType | "all" }))}
-                >
-                  <SelectTrigger className="h-8 w-[140px] text-xs">
-                    <SelectValue placeholder="Issue type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Issues</SelectItem>
-                    <SelectItem value="stuck">Stuck LIVE</SelectItem>
-                    <SelectItem value="overdue">Overdue NS</SelectItem>
-                    <SelectItem value="noScores">No Scores</SelectItem>
-                    <SelectItem value="unsettled">Unsettled</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={filters.timeframe}
-                  onValueChange={(v) => setFilters((f) => ({ ...f, timeframe: v }))}
-                >
-                  <SelectTrigger className="h-8 w-[110px] text-xs">
-                    <SelectValue placeholder="Timeframe" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All time</SelectItem>
-                    <SelectItem value="1h">Last 1h</SelectItem>
-                    <SelectItem value="3h">Last 3h</SelectItem>
-                    <SelectItem value="6h">Last 6h</SelectItem>
-                    <SelectItem value="12h">Last 12h</SelectItem>
-                    <SelectItem value="24h">Last 24h</SelectItem>
-                    <SelectItem value="24h+">Over 24h</SelectItem>
-                  </SelectContent>
-                </Select>
-                <LeagueCombobox
-                  leagues={attentionData?.availableLeagues ?? []}
-                  value={filters.leagueId}
-                  onChange={(v) => setFilters((f) => ({ ...f, leagueId: v }))}
-                  className="h-8 w-[150px] text-xs"
-                />
+            </Button>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={resetFilters}>
+                <RotateCcw className="mr-1 h-3 w-3" />
+                Reset
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* ── Mobile: search filter drawer ── */}
+        <Drawer open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen} shouldScaleBackground={false}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Search Filters</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 space-y-4 pb-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Search</label>
                 <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    value={filters.search}
-                    onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === "Enter" && filtersAreDirty) applyFilters(); }}
-                    placeholder="Search..."
-                    className="h-8 w-[140px] pl-7 pr-7 text-xs"
+                    value={searchFilters.query}
+                    onChange={(e) => setSearchFilters((f) => ({ ...f, query: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === "Enter" && pendingFiltersAreValid) applyFilters(); }}
+                    placeholder="Team or fixture name..."
+                    className="h-9 pl-8 pr-8 text-sm"
                   />
-                  {filters.search && (
+                  {searchFilters.query && (
                     <button
                       type="button"
-                      onClick={() => setFilters((f) => ({ ...f, search: "" }))}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setSearchFilters((f) => ({ ...f, query: "" }))}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
-                <Button
-                  size="sm"
-                  className="h-8 px-2.5 text-xs"
-                  onClick={applyFilters}
-                  disabled={!filtersAreDirty || attentionFetching}
-                >
-                  <Filter className="mr-1 h-3 w-3" />
-                  Apply
-                </Button>
-                {hasActiveFilters && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 text-xs"
-                    onClick={resetFilters}
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                  </Button>
-                )}
               </div>
-              {filtersAreDirty && (
-                <span className="text-[11px] text-amber-600 dark:text-amber-400 w-full text-right">
-                  Filters changed — click Apply
-                </span>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* Search tab filters */}
-        {tab === "search" && (
-          <>
-            {/* ── Mobile: filter button ── */}
-            <div className="mt-3 flex items-center gap-2 sm:hidden">
-              <div className="ml-auto flex items-center gap-1.5 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs gap-1.5"
-                  onClick={() => setSearchFilterDrawerOpen(true)}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">State</label>
+                <Select
+                  value={searchFilters.state || "__all__"}
+                  onValueChange={(v) => setSearchFilters((f) => ({ ...f, state: v === "__all__" ? "" : v }))}
                 >
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                  Filters
-                  {activeSearchFilterCount > 0 && (
-                    <Badge variant="secondary" className="ml-0.5 h-4 min-w-4 px-1 text-[10px]">
-                      {activeSearchFilterCount}
-                    </Badge>
-                  )}
-                </Button>
-                {hasActiveSearchFilters && (
-                  <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={resetSearchFilters}>
-                    <RotateCcw className="mr-1 h-3 w-3" />
-                    Reset
-                  </Button>
-                )}
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All States</SelectItem>
+                    <SelectItem value="NS">NS</SelectItem>
+                    <SelectItem value="INPLAY_1ST_HALF">1st Half</SelectItem>
+                    <SelectItem value="HT">HT</SelectItem>
+                    <SelectItem value="INPLAY_2ND_HALF">2nd Half</SelectItem>
+                    <SelectItem value="FT">FT</SelectItem>
+                    <SelectItem value="AET">AET</SelectItem>
+                    <SelectItem value="FT_PEN">FT Pen</SelectItem>
+                    <SelectItem value="POSTPONED">Postponed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                    <SelectItem value="ABANDONED">Abandoned</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-
-            {/* ── Mobile: search filter drawer ── */}
-            <Drawer open={searchFilterDrawerOpen} onOpenChange={setSearchFilterDrawerOpen}>
-              <DrawerContent>
-                <DrawerHeader>
-                  <DrawerTitle>Search Filters</DrawerTitle>
-                </DrawerHeader>
-                <div className="px-4 space-y-4 pb-2">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Search</label>
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        value={searchFilters.query}
-                        onChange={(e) => setSearchFilters((f) => ({ ...f, query: e.target.value }))}
-                        onKeyDown={(e) => { if (e.key === "Enter" && pendingFiltersAreValid) applySearchFilters(); }}
-                        placeholder="Team or fixture name..."
-                        className="h-9 pl-8 pr-8 text-sm"
-                      />
-                      {searchFilters.query && (
-                        <button
-                          type="button"
-                          onClick={() => setSearchFilters((f) => ({ ...f, query: "" }))}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">League</label>
-                    <LeagueSearchCombobox
-                      value={searchFilters.leagueId}
-                      displayName={searchFilters.leagueName}
-                      onChange={(id, name) => setSearchFilters((f) => ({ ...f, leagueId: id, leagueName: name }))}
-                      className="h-9 text-sm w-full"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Date range</label>
-                    <DateRangePickerButton
-                      from={searchFilters.fromDate}
-                      to={searchFilters.toDate}
-                      onChange={(from, to) => setSearchFilters((f) => ({ ...f, fromDate: from, toDate: to }))}
-                      className="h-9 text-sm w-full"
-                    />
-                  </div>
-                </div>
-                <DrawerFooter>
-                  <Button onClick={applySearchFilters} disabled={!pendingFiltersAreValid}>
-                    <Search className="mr-2 h-4 w-4" />
-                    Search
-                  </Button>
-                  {hasActiveSearchFilters && (
-                    <DrawerClose asChild>
-                      <Button variant="outline" onClick={resetSearchFilters}>
-                        <RotateCcw className="mr-2 h-4 w-4" />
-                        Reset All
-                      </Button>
-                    </DrawerClose>
-                  )}
-                  <DrawerClose asChild>
-                    <Button variant="ghost">Cancel</Button>
-                  </DrawerClose>
-                </DrawerFooter>
-              </DrawerContent>
-            </Drawer>
-
-            {/* ── Desktop: single row of filters ── */}
-            <div className="mt-3 hidden sm:flex sm:items-center sm:gap-2 sm:flex-wrap">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  value={searchFilters.query}
-                  onChange={(e) => setSearchFilters((f) => ({ ...f, query: e.target.value }))}
-                  onKeyDown={(e) => { if (e.key === "Enter" && pendingFiltersAreValid) applySearchFilters(); }}
-                  placeholder="Search..."
-                  className="h-8 w-[160px] pl-7 pr-7 text-xs"
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">League</label>
+                <LeagueSearchCombobox
+                  value={searchFilters.leagueId}
+                  displayName={searchFilters.leagueName}
+                  onChange={(id, name) => setSearchFilters((f) => ({ ...f, leagueId: id, leagueName: name }))}
+                  className="h-9 text-sm w-full"
                 />
-                {searchFilters.query && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchFilters((f) => ({ ...f, query: "" }))}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
               </div>
-              <LeagueSearchCombobox
-                value={searchFilters.leagueId}
-                displayName={searchFilters.leagueName}
-                onChange={(id, name) => setSearchFilters((f) => ({ ...f, leagueId: id, leagueName: name }))}
-                className="h-8 w-[170px] text-xs"
-              />
-              <DateRangePickerButton
-                from={searchFilters.fromDate}
-                to={searchFilters.toDate}
-                onChange={(from, to) => setSearchFilters((f) => ({ ...f, fromDate: from, toDate: to }))}
-                className="h-8 w-[240px] text-xs"
-              />
-              <Button
-                size="sm"
-                className="h-8 px-2.5 text-xs"
-                onClick={applySearchFilters}
-                disabled={!searchFiltersAreDirty || searchFetching || !pendingFiltersAreValid}
-              >
-                <Search className="mr-1 h-3 w-3" />
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Date range</label>
+                <DateRangePickerButton
+                  from={searchFilters.fromDate}
+                  to={searchFilters.toDate}
+                  onChange={(from, to) => setSearchFilters((f) => ({ ...f, fromDate: from, toDate: to }))}
+                  className="h-9 text-sm w-full"
+                />
+              </div>
+            </div>
+            <DrawerFooter>
+              <Button onClick={applyFilters} disabled={!pendingFiltersAreValid}>
+                <Search className="mr-2 h-4 w-4" />
                 Search
               </Button>
-              {hasActiveSearchFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 text-xs"
-                  onClick={resetSearchFilters}
-                >
-                  <RotateCcw className="h-3 w-3" />
-                </Button>
+              {hasActiveFilters && (
+                <DrawerClose asChild>
+                  <Button variant="outline" onClick={resetFilters}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset All
+                  </Button>
+                </DrawerClose>
               )}
-              {searchFiltersAreDirty && pendingFiltersAreValid && (
-                <span className="text-[11px] text-amber-600 dark:text-amber-400">
-                  Click Search to apply
-                </span>
-              )}
-            </div>
-          </>
-        )}
-      </div>
+              <DrawerClose asChild>
+                <Button variant="ghost">Cancel</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
 
-      {/* Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        {tab === "live" && (
-          <LiveFixturesSection
-            dbFixtures={dbFixtures}
-            providerFixtures={providerFixtures}
-            isLoading={liveDb.isLoading || liveProvider.isLoading}
-            isFetching={liveFetching}
-            syncingIds={syncingIds}
-            onSync={handleSync}
-            onRefresh={refetchLive}
-          />
-        )}
-
-        {tab === "attention" && (
-          <>
-            <AttentionFixturesTable
-              data={attentionData?.data ?? []}
-              isLoading={attentionLoading}
-              onSync={handleSync}
-              onResettle={handleResettle}
-              syncingIds={syncingIds}
-              resettlingIds={resettlingIds}
-              onBulkSync={handleBulkSync}
-              bulkSyncing={bulkSyncing}
-              bulkProgress={bulkProgress}
-              selectedIds={selectedIds}
-              onSelectionChange={setSelectedIds}
+        {/* ── Desktop: single row of filters ── */}
+        <div className="hidden sm:flex sm:items-center sm:gap-2">
+          <div className="relative min-w-0 flex-[3]">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={searchFilters.query}
+              onChange={(e) => setSearchFilters((f) => ({ ...f, query: e.target.value }))}
+              onKeyDown={(e) => { if (e.key === "Enter" && pendingFiltersAreValid) applyFilters(); }}
+              placeholder="Search..."
+              className="h-8 pl-7 pr-7 text-xs"
             />
-          </>
-        )}
-
-        {tab === "search" && (
-          <>
-            {!hasActiveSearchFilters ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Search className="h-8 w-8 text-muted-foreground/50" />
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Use the filters above to search fixtures
-                </p>
-              </div>
-            ) : searchLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-14 w-full" />
-                ))}
-              </div>
-            ) : !searchData?.data.length ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No fixtures found matching your filters
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="text-xs text-muted-foreground mb-2">
-                  {searchData.pagination.totalItems} result
-                  {searchData.pagination.totalItems !== 1 ? "s" : ""}
-                  {searchFetching && " (refreshing...)"}
-                </div>
-                {/* Mobile: Card layout */}
-                <div className="space-y-2 sm:hidden">
-                  {searchData.data.map((fixture) => (
-                    <Link
-                      key={fixture.id}
-                      to={`/fixtures/${fixture.id}`}
-                      className="block rounded-lg border p-3 hover:bg-muted/30 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-sm font-medium leading-tight">
-                          {fixture.name}
-                        </span>
-                        <Badge variant="outline" className="text-[10px] shrink-0">
-                          {fixture.state}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground flex-wrap">
-                        {fixture.homeScore90 != null && fixture.awayScore90 != null && (
-                          <span className="font-medium text-foreground">
-                            {fixture.homeScore90} - {fixture.awayScore90}
-                          </span>
-                        )}
-                        <span>
-                          {formatDistanceToNow(new Date(fixture.startIso), { addSuffix: true })}
-                        </span>
-                        {fixture.league && <span>{fixture.league.name}</span>}
-                        {fixture.issue && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900"
-                          >
-                            {fixture.issue}
-                          </Badge>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-
-                {/* Desktop: Table layout */}
-                <div className="hidden sm:block rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Fixture</TableHead>
-                        <TableHead>State</TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Score
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Start
-                        </TableHead>
-                        <TableHead className="hidden lg:table-cell">
-                          Issue
-                        </TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {searchData.data.map((fixture) => (
-                        <TableRow key={fixture.id}>
-                          <TableCell>
-                            <Link
-                              to={`/fixtures/${fixture.id}`}
-                              className="font-medium hover:underline"
-                            >
-                              {fixture.name}
-                            </Link>
-                            {fixture.league && (
-                              <p className="text-xs text-muted-foreground">
-                                {fixture.league.name}
-                              </p>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {fixture.state}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-xs">
-                            {fixture.homeScore90 != null &&
-                            fixture.awayScore90 != null
-                              ? `${fixture.homeScore90} - ${fixture.awayScore90}`
-                              : fixture.result ?? "—"}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
-                            {formatDistanceToNow(
-                              new Date(fixture.startIso),
-                              { addSuffix: true }
-                            )}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            {fixture.issue ? (
-                              <Badge
-                                variant="outline"
-                                className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900"
-                              >
-                                {fixture.issue}
-                              </Badge>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">
-                                —
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 text-xs"
-                              asChild
-                            >
-                              <Link to={`/fixtures/${fixture.id}`}>
-                                View
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
+            {searchFilters.query && (
+              <button
+                type="button"
+                onClick={() => setSearchFilters((f) => ({ ...f, query: "" }))}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             )}
-          </>
-        )}
+          </div>
+          <DateRangePickerButton
+            from={searchFilters.fromDate}
+            to={searchFilters.toDate}
+            onChange={(from, to) => setSearchFilters((f) => ({ ...f, fromDate: from, toDate: to }))}
+            className="h-8 min-w-0 flex-[2] text-xs"
+          />
+          <Select
+            value={searchFilters.state || "__all__"}
+            onValueChange={(v) => setSearchFilters((f) => ({ ...f, state: v === "__all__" ? "" : v }))}
+          >
+            <SelectTrigger className="h-8 min-w-0 flex-[1.5] text-xs">
+              <SelectValue placeholder="State" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All States</SelectItem>
+              <SelectItem value="NS">NS</SelectItem>
+              <SelectItem value="INPLAY_1ST_HALF">1st Half</SelectItem>
+              <SelectItem value="HT">HT</SelectItem>
+              <SelectItem value="INPLAY_2ND_HALF">2nd Half</SelectItem>
+              <SelectItem value="FT">FT</SelectItem>
+              <SelectItem value="AET">AET</SelectItem>
+              <SelectItem value="FT_PEN">FT Pen</SelectItem>
+              <SelectItem value="POSTPONED">Postponed</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              <SelectItem value="SUSPENDED">Suspended</SelectItem>
+              <SelectItem value="ABANDONED">Abandoned</SelectItem>
+            </SelectContent>
+          </Select>
+          <LeagueSearchCombobox
+            value={searchFilters.leagueId}
+            displayName={searchFilters.leagueName}
+            onChange={(id, name) => setSearchFilters((f) => ({ ...f, leagueId: id, leagueName: name }))}
+            className="h-8 min-w-0 flex-[1.5] text-xs"
+          />
+          <Button
+            size="sm"
+            className="h-8 px-2.5 text-xs shrink-0"
+            onClick={applyFilters}
+            disabled={!filtersAreDirty || searchFetching || !pendingFiltersAreValid}
+          >
+            <Filter className="mr-1 h-3 w-3" />
+            Apply
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-8 px-2 text-xs shrink-0", !hasActiveFilters && "invisible")}
+            onClick={resetFilters}
+          >
+            <RotateCcw className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
 
-      {/* Pagination — fixed at bottom, outside scroll area */}
-      {tab === "attention" &&
-        attentionData &&
-        attentionData.pagination.totalPages > 1 && (
-          <div className="flex-shrink-0">
-            <SimplePagination
-              page={attentionData.pagination.page}
-              totalPages={attentionData.pagination.totalPages}
-              totalItems={attentionData.pagination.totalItems}
-              perPage={attentionPerPage}
-              onPageChange={setAttentionPage}
-              onPerPageChange={(v) => {
-                setAttentionPerPage(v);
-                setAttentionPage(1);
-              }}
-            />
+      {/* Results */}
+      {!hasActiveFilters ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Search className="h-8 w-8 text-muted-foreground/50" />
+          <p className="mt-3 text-sm text-muted-foreground">
+            Use the filters above to search fixtures
+          </p>
+        </div>
+      ) : searchLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 w-full" />
+          ))}
+        </div>
+      ) : !searchData?.data.length ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            No fixtures found matching your filters
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="text-xs text-muted-foreground mb-2">
+            {searchData.pagination.totalItems} result
+            {searchData.pagination.totalItems !== 1 ? "s" : ""}
+            {searchFetching && " (refreshing...)"}
           </div>
-        )}
-      {tab === "search" &&
-        searchData &&
-        searchData.pagination.totalPages > 1 && (
-          <div className="flex-shrink-0">
+          {/* Mobile: Card layout */}
+          <div className="space-y-2 sm:hidden">
+            {searchData.data.map((fixture) => (
+              <Link
+                key={fixture.id}
+                to={`/fixtures/${fixture.id}`}
+                className="block rounded-lg border p-3 hover:bg-muted/30 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-sm font-medium leading-tight">
+                    {fixture.name}
+                  </span>
+                  <Badge variant="outline" className="text-[10px] shrink-0">
+                    {fixture.state}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground flex-wrap">
+                  {fixture.homeScore90 != null && fixture.awayScore90 != null && (
+                    <span className="font-medium text-foreground">
+                      {fixture.homeScore90} - {fixture.awayScore90}
+                    </span>
+                  )}
+                  <span>
+                    {formatDistanceToNow(new Date(fixture.startIso), { addSuffix: true })}
+                  </span>
+                  {fixture.league && <span>{fixture.league.name}</span>}
+                  {fixture.issue && (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900"
+                    >
+                      {fixture.issue}
+                    </Badge>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop: Table layout */}
+          <div className="hidden sm:block rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fixture</TableHead>
+                  <TableHead>State</TableHead>
+                  <TableHead className="hidden md:table-cell">Score</TableHead>
+                  <TableHead className="hidden md:table-cell">Start</TableHead>
+                  <TableHead className="hidden lg:table-cell">Issue</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {searchData.data.map((fixture) => (
+                  <TableRow key={fixture.id}>
+                    <TableCell>
+                      <Link
+                        to={`/fixtures/${fixture.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {fixture.name}
+                      </Link>
+                      {fixture.league && (
+                        <p className="text-xs text-muted-foreground">
+                          {fixture.league.name}
+                        </p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {fixture.state}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-xs">
+                      {fixture.homeScore90 != null && fixture.awayScore90 != null
+                        ? `${fixture.homeScore90} - ${fixture.awayScore90}`
+                        : fixture.result ?? "—"}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(fixture.startIso), { addSuffix: true })}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {fixture.issue ? (
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900"
+                        >
+                          {fixture.issue}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
+                        <Link to={`/fixtures/${fixture.id}`}>View</Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {searchData.pagination.totalPages > 1 && (
             <SimplePagination
               page={searchData.pagination.page}
               totalPages={searchData.pagination.totalPages}
               totalItems={searchData.pagination.totalItems}
               perPage={25}
-              onPageChange={setSearchPage}
+              onPageChange={setPage}
             />
-          </div>
-        )}
+          )}
+        </>
+      )}
     </div>
   );
 }
 
-// ─── Live Fixtures Section ───
+// ═══════════════════════════════════════════════════════════════
+// Live Fixtures Section — owns its own sync state + useMemo
+// ═══════════════════════════════════════════════════════════════
 
 type DbFixture = AdminFixturesListResponse["data"][number];
 
@@ -1117,36 +991,45 @@ function formatState(state: string) {
   return state.replace("INPLAY_", "").replace(/_/g, " ");
 }
 
+type TrackingStatus = "inDb" | "tracked" | "untracked";
+
 type MergedFixture = {
   externalId: string;
   name: string;
   dbFixture: DbFixture | null;
   provFixture: FixtureDTO | null;
   isDiff: boolean;
+  trackingStatus: TrackingStatus;
 };
 
-function mergeFixtures(dbFixtures: DbFixture[], providerFixtures: FixtureDTO[]): MergedFixture[] {
-  const provMap = new Map<string, FixtureDTO>();
-  for (const p of providerFixtures) provMap.set(String(p.externalId), p);
-
+function mergeFixtures(
+  dbFixtures: DbFixture[],
+  providerFixtures: FixtureDTO[],
+  trackedLeagueExternalIds: string[]
+): MergedFixture[] {
+  const trackedSet = new Set(trackedLeagueExternalIds);
   const seen = new Set<string>();
   const result: MergedFixture[] = [];
 
-  // Start with provider fixtures (source of truth for what's live)
   for (const p of providerFixtures) {
     const eid = String(p.externalId);
     seen.add(eid);
     const db = dbFixtures.find((d) => d.externalId === eid) ?? null;
+    const trackingStatus: TrackingStatus = db
+      ? "inDb"
+      : p.leagueExternalId && trackedSet.has(String(p.leagueExternalId))
+        ? "tracked"
+        : "untracked";
     result.push({
       externalId: eid,
       name: p.name,
       dbFixture: db,
       provFixture: p,
-      isDiff: db ? hasDiff(db, p) : true,
+      isDiff: db ? hasDiff(db, p) : trackingStatus === "tracked",
+      trackingStatus,
     });
   }
 
-  // Add DB fixtures not in provider (maybe finished in provider but still live in DB)
   for (const db of dbFixtures) {
     if (!seen.has(db.externalId)) {
       result.push({
@@ -1154,7 +1037,8 @@ function mergeFixtures(dbFixtures: DbFixture[], providerFixtures: FixtureDTO[]):
         name: db.name,
         dbFixture: db,
         provFixture: null,
-        isDiff: true, // provider doesn't have it as live anymore
+        isDiff: true,
+        trackingStatus: "inDb",
       });
     }
   }
@@ -1165,20 +1049,47 @@ function mergeFixtures(dbFixtures: DbFixture[], providerFixtures: FixtureDTO[]):
 function LiveFixturesSection({
   dbFixtures,
   providerFixtures,
+  trackedLeagueExternalIds,
   isLoading,
   isFetching,
-  syncingIds,
-  onSync,
   onRefresh,
 }: {
   dbFixtures: DbFixture[];
   providerFixtures: FixtureDTO[];
+  trackedLeagueExternalIds: string[];
   isLoading: boolean;
   isFetching: boolean;
-  syncingIds: Set<string>;
-  onSync: (externalId: string, name: string) => void;
   onRefresh: () => void;
 }) {
+  const queryClient = useQueryClient();
+
+  // ─── Own sync mutation (isolated from other tabs) ───
+  const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
+  const syncMutation = useMutation({
+    mutationFn: ({ id }: { id: string; name: string }) =>
+      fixturesService.syncById(id, false) as Promise<AdminSyncFixturesResponse>,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["fixtures"] });
+      toast.success("Fixture synced", { description: `Synced ${variables.name}` });
+      setSyncingIds((prev) => { const next = new Set(prev); next.delete(variables.id); return next; });
+    },
+    onError: (error: Error, variables) => {
+      toast.error("Sync failed", { description: error.message });
+      setSyncingIds((prev) => { const next = new Set(prev); next.delete(variables.id); return next; });
+    },
+  });
+
+  const handleSync = useCallback((externalId: string, name: string) => {
+    setSyncingIds((prev) => new Set(prev).add(externalId));
+    syncMutation.mutate({ id: externalId, name });
+  }, [syncMutation]);
+
+  // ─── Memoize merge to avoid recomputing on every render ───
+  const merged = useMemo(
+    () => mergeFixtures(dbFixtures, providerFixtures, trackedLeagueExternalIds),
+    [dbFixtures, providerFixtures, trackedLeagueExternalIds]
+  );
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -1188,8 +1099,6 @@ function LiveFixturesSection({
       </div>
     );
   }
-
-  const merged = mergeFixtures(dbFixtures, providerFixtures);
 
   if (merged.length === 0) {
     return (
@@ -1213,6 +1122,20 @@ function LiveFixturesSection({
   }
 
   const diffCount = merged.filter((m) => m.isDiff).length;
+  const untrackedCount = merged.filter((m) => m.trackingStatus === "untracked").length;
+
+  function statusInfo(m: MergedFixture): { label: string; className: string } {
+    if (m.trackingStatus === "inDb" && !m.isDiff) {
+      return { label: "OK", className: "text-green-600 dark:text-green-400 font-medium" };
+    }
+    if (m.trackingStatus === "inDb" && m.isDiff) {
+      return { label: "Out of sync", className: "text-amber-600 dark:text-amber-400 font-medium" };
+    }
+    if (m.trackingStatus === "tracked") {
+      return { label: "Not synced", className: "text-blue-600 dark:text-blue-400 font-medium" };
+    }
+    return { label: "Untracked", className: "text-muted-foreground" };
+  }
 
   return (
     <div>
@@ -1223,6 +1146,11 @@ function LiveFixturesSection({
         {diffCount > 0 && (
           <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400">
             {diffCount} out of sync
+          </Badge>
+        )}
+        {untrackedCount > 0 && (
+          <Badge variant="outline" className="text-[10px] border-muted text-muted-foreground">
+            {untrackedCount} untracked
           </Badge>
         )}
         <Button
@@ -1237,11 +1165,13 @@ function LiveFixturesSection({
       </div>
 
       {/* Header row - desktop */}
-      <div className="hidden sm:grid sm:grid-cols-[1fr_auto_1fr_auto] gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 px-3">
+      <div className="hidden sm:grid sm:grid-cols-[50px_1fr_140px_140px_80px_100px] gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 px-3">
+        <span>Min</span>
+        <span>Fixture</span>
         <span>Database</span>
-        <span />
         <span>Provider</span>
-        <span />
+        <span>Status</span>
+        <span>League</span>
       </div>
 
       <div className="space-y-1.5">
@@ -1249,114 +1179,133 @@ function LiveFixturesSection({
           const isSyncing = syncingIds.has(m.externalId);
           const db = m.dbFixture;
           const prov = m.provFixture;
+          const status = statusInfo(m);
+          const isUntracked = m.trackingStatus === "untracked";
+          const showSync = m.isDiff && !isUntracked;
 
           return (
             <div
               key={m.externalId}
-              className={`rounded-md border px-2.5 py-2 sm:px-3 ${m.isDiff ? "border-amber-200 bg-amber-50/30 dark:border-amber-900/50 dark:bg-amber-950/10" : ""}`}
+              className={cn(
+                "rounded-md border px-2.5 py-2 sm:px-3",
+                isUntracked
+                  ? "opacity-50"
+                  : m.isDiff
+                    ? "border-amber-200 bg-amber-50/30 dark:border-amber-900/50 dark:bg-amber-950/10"
+                    : ""
+              )}
             >
-              {/* Mobile: stacked layout */}
+              {/* Mobile: card layout */}
               <div className="sm:hidden space-y-1.5">
-                <Link to={db ? `/fixtures/${db.id}` : "#"} className="text-xs font-medium hover:underline truncate block">
-                  {m.name}
-                </Link>
-                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center text-[11px]">
-                  {/* DB column */}
-                  <div className="space-y-0.5">
-                    <div className="text-[10px] text-muted-foreground">DB</div>
+                <div className="flex items-center gap-1.5">
+                  <Link to={db ? `/fixtures/${db.id}` : "#"} className="text-xs font-medium hover:underline truncate">
+                    {m.name}
+                  </Link>
+                  {prov?.liveMinute != null && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-green-300 text-green-700 dark:border-green-800 dark:text-green-400 tabular-nums">
+                      {prov.liveMinute}'
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-[11px] text-muted-foreground truncate">
+                  {db?.league?.name ?? prov?.leagueName ?? ""}
+                </div>
+                <div className="flex items-center gap-2 text-[11px]">
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">DB:</span>
                     {db ? (
                       <>
-                        <div className="font-bold tabular-nums">{db.homeScore90 ?? "–"} - {db.awayScore90 ?? "–"}</div>
-                        <Badge variant="outline" className="text-[9px] px-1 py-0">{formatState(db.state)}</Badge>
+                        <span className="font-bold tabular-nums">{db.homeScore90 ?? "–"}-{db.awayScore90 ?? "–"}</span>
+                        <span className="text-muted-foreground">{formatState(db.state)}</span>
                       </>
                     ) : (
-                      <span className="text-muted-foreground">Not in DB</span>
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </div>
-                  {/* Sync button */}
-                  <div>
-                    {m.isDiff && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">Prov:</span>
+                    {prov ? (
+                      <>
+                        <span className="font-bold tabular-nums">{prov.homeScore ?? "–"}-{prov.awayScore ?? "–"}</span>
+                        <span className="text-muted-foreground">{formatState(prov.state)}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </div>
+                  <div className="ml-auto">
+                    {showSync ? (
                       <Button
-                        variant={m.isDiff ? "default" : "outline"}
+                        variant="default"
                         size="icon"
                         className="h-7 w-7"
                         disabled={isSyncing}
-                        onClick={() => onSync(m.externalId, m.name)}
+                        onClick={() => handleSync(m.externalId, m.name)}
                       >
                         {isSyncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                       </Button>
-                    )}
-                  </div>
-                  {/* Provider column */}
-                  <div className="space-y-0.5 text-right">
-                    <div className="text-[10px] text-muted-foreground">Provider</div>
-                    {prov ? (
-                      <>
-                        <div className="font-bold tabular-nums">{prov.homeScore ?? "–"} - {prov.awayScore ?? "–"}</div>
-                        <Badge variant="outline" className="text-[9px] px-1 py-0">{formatState(prov.state)}</Badge>
-                      </>
+                    ) : isUntracked ? (
+                      <span className="text-[10px] text-muted-foreground">Untracked</span>
                     ) : (
-                      <span className="text-muted-foreground">Not live</span>
+                      <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">OK</span>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Desktop: single row */}
-              <div className="hidden sm:grid sm:grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
-                {/* DB side */}
-                <div className="flex items-center gap-2 min-w-0">
-                  {db ? (
-                    <Link to={`/fixtures/${db.id}`} className="flex items-center gap-1.5 min-w-0 hover:opacity-70 transition-opacity">
-                      {db.homeTeam?.imagePath && <img src={db.homeTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />}
-                      <span className="text-xs font-medium truncate">{db.homeTeam?.name ?? "Home"}</span>
-                      <span className="text-sm font-bold tabular-nums shrink-0">{db.homeScore90 ?? "–"} - {db.awayScore90 ?? "–"}</span>
-                      <span className="text-xs font-medium truncate">{db.awayTeam?.name ?? "Away"}</span>
-                      {db.awayTeam?.imagePath && <img src={db.awayTeam.imagePath} alt="" className="h-5 w-5 object-contain shrink-0" />}
-                    </Link>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Not in DB</span>
-                  )}
-                  {db && (
-                    <Badge variant="outline" className="text-[10px] shrink-0">{formatState(db.state)}</Badge>
+              {/* Desktop: fixture-centric row */}
+              <div className="hidden sm:grid sm:grid-cols-[50px_1fr_140px_140px_80px_100px] gap-2 items-center">
+                <div className="text-center">
+                  {prov?.liveMinute != null && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-300 text-green-700 dark:border-green-800 dark:text-green-400 tabular-nums">
+                      {prov.liveMinute}'
+                    </Badge>
                   )}
                 </div>
-
-                {/* Sync button in the middle */}
-                <div className="flex items-center justify-center w-16">
-                  {m.isDiff ? (
+                <div className="min-w-0">
+                  <Link
+                    to={db ? `/fixtures/${db.id}` : "#"}
+                    className="text-xs font-medium hover:underline truncate block"
+                  >
+                    {m.name}
+                  </Link>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs min-w-0">
+                  {db ? (
+                    <>
+                      <span className="font-bold tabular-nums shrink-0">{db.homeScore90 ?? "–"}-{db.awayScore90 ?? "–"}</span>
+                      <Badge variant="outline" className="text-[10px] shrink-0">{formatState(db.state)}</Badge>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground text-[11px]">—</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 text-xs min-w-0">
+                  {prov ? (
+                    <>
+                      <span className="font-bold tabular-nums shrink-0">{prov.homeScore ?? "–"}-{prov.awayScore ?? "–"}</span>
+                      <Badge variant="outline" className="text-[10px] shrink-0">{formatState(prov.state)}</Badge>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground text-[11px]">Not live</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-center">
+                  {showSync ? (
                     <Button
                       variant="default"
                       size="sm"
                       className="h-7 px-2 text-xs"
                       disabled={isSyncing}
-                      onClick={() => onSync(m.externalId, m.name)}
+                      onClick={() => handleSync(m.externalId, m.name)}
                     >
                       {isSyncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <><RefreshCw className="h-3 w-3 mr-1" />Sync</>}
                     </Button>
                   ) : (
-                    <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">OK</span>
+                    <span className={`text-[10px] ${status.className}`}>{status.label}</span>
                   )}
                 </div>
-
-                {/* Provider side */}
-                <div className="flex items-center gap-2 min-w-0">
-                  {prov ? (
-                    <>
-                      <span className="text-xs font-medium truncate">{prov.name}</span>
-                      <span className="text-sm font-bold tabular-nums shrink-0">{prov.homeScore ?? "–"} - {prov.awayScore ?? "–"}</span>
-                      <Badge variant="outline" className="text-[10px] shrink-0">{formatState(prov.state)}</Badge>
-                      {prov.liveMinute != null && (
-                        <span className="text-[10px] text-muted-foreground shrink-0">{prov.liveMinute}'</span>
-                      )}
-                    </>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Not live in provider</span>
-                  )}
-                </div>
-
-                {/* League */}
-                <div className="hidden lg:block text-[11px] text-muted-foreground truncate max-w-[100px]">
+                <div className="text-[11px] text-muted-foreground truncate">
                   {db?.league?.name ?? prov?.leagueName ?? ""}
                 </div>
               </div>
@@ -1368,7 +1317,147 @@ function LiveFixturesSection({
   );
 }
 
-// ─── League Combobox (searchable) ───
+// ═══════════════════════════════════════════════════════════════
+// Attention Mobile Filter Drawer (isolated open state)
+// ═══════════════════════════════════════════════════════════════
+
+function AttentionMobileFilterDrawer({
+  filters,
+  setFilters,
+  issueCounts,
+  availableLeagues,
+  applyFilters,
+  resetFilters,
+  hasActiveFilters,
+  filtersAreDirty,
+  activeFilterCount,
+}: {
+  filters: AttentionFilters;
+  setFilters: React.Dispatch<React.SetStateAction<AttentionFilters>>;
+  issueCounts: { stuck: number; unsettled: number; overdue: number; noScores: number } | undefined;
+  availableLeagues: { id: number; name: string }[];
+  applyFilters: () => void;
+  resetFilters: () => void;
+  hasActiveFilters: boolean;
+  filtersAreDirty: boolean;
+  activeFilterCount: number;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs gap-1.5"
+          onClick={() => setOpen(true)}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Filters
+          {activeFilterCount > 0 && (
+            <Badge variant="secondary" className="ml-0.5 h-4 min-w-4 px-1 text-[10px]">
+              {activeFilterCount}
+            </Badge>
+          )}
+        </Button>
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={resetFilters}>
+            <RotateCcw className="mr-1 h-3 w-3" />
+            Reset
+          </Button>
+        )}
+      </div>
+      {open && (
+        <Drawer open onOpenChange={setOpen} shouldScaleBackground={false}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Filters</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 space-y-4 pb-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Issue Type</label>
+                <Select
+                  value={filters.issueType}
+                  onValueChange={(v) => setFilters((f) => ({ ...f, issueType: v as FixtureIssueType | "all" }))}
+                >
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Issues{issueCounts ? ` (${Object.values(issueCounts).reduce((a, b) => a + b, 0)})` : ""}</SelectItem>
+                    {(issueCounts?.stuck ?? 0) > 0 && <SelectItem value="stuck">Stuck LIVE ({issueCounts!.stuck})</SelectItem>}
+                    {(issueCounts?.overdue ?? 0) > 0 && <SelectItem value="overdue">Overdue NS ({issueCounts!.overdue})</SelectItem>}
+                    {(issueCounts?.noScores ?? 0) > 0 && <SelectItem value="noScores">No Scores ({issueCounts!.noScores})</SelectItem>}
+                    {(issueCounts?.unsettled ?? 0) > 0 && <SelectItem value="unsettled">Unsettled ({issueCounts!.unsettled})</SelectItem>}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Date range</label>
+                <DateRangePickerButton
+                  from={filters.fromDate}
+                  to={filters.toDate}
+                  onChange={(from, to) => setFilters((f) => ({ ...f, fromDate: from, toDate: to }))}
+                  className="h-9 text-sm w-full"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">League</label>
+                <LeagueCombobox
+                  leagues={availableLeagues}
+                  value={filters.leagueId}
+                  onChange={(v) => setFilters((f) => ({ ...f, leagueId: v }))}
+                  className="h-9 text-sm w-full"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={filters.search}
+                    onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+                    onKeyDown={(e) => { if (e.key === "Enter") { applyFilters(); setOpen(false); } }}
+                    placeholder="Team, fixture, or ID..."
+                    className="h-9 pl-8 pr-8 text-sm"
+                  />
+                  {filters.search && (
+                    <button
+                      type="button"
+                      onClick={() => setFilters((f) => ({ ...f, search: "" }))}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <DrawerFooter>
+              <Button onClick={() => { applyFilters(); setOpen(false); }} disabled={!filtersAreDirty && !hasActiveFilters}>
+                <Filter className="mr-2 h-4 w-4" />
+                Apply Filters
+              </Button>
+              {hasActiveFilters && (
+                <Button variant="outline" onClick={() => { resetFilters(); setOpen(false); }}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset All
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      )}
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// League Combobox (from available leagues list)
+// ═══════════════════════════════════════════════════════════════
+
 function LeagueCombobox({
   leagues,
   value,
@@ -1426,7 +1515,10 @@ function LeagueCombobox({
   );
 }
 
-// ─── DB-backed League Search Combobox ───
+// ═══════════════════════════════════════════════════════════════
+// DB-backed League Search Combobox
+// ═══════════════════════════════════════════════════════════════
+
 function LeagueSearchCombobox({
   value,
   displayName,
@@ -1521,7 +1613,10 @@ function LeagueSearchCombobox({
   );
 }
 
-// ─── Date Range Picker Button ───
+// ═══════════════════════════════════════════════════════════════
+// Date Range Picker Button
+// ═══════════════════════════════════════════════════════════════
+
 function DateRangePickerButton({
   from,
   to,
@@ -1635,7 +1730,10 @@ function DateRangePickerButton({
   );
 }
 
-// ─── Simple Pagination ───
+// ═══════════════════════════════════════════════════════════════
+// Simple Pagination
+// ═══════════════════════════════════════════════════════════════
+
 function SimplePagination({
   page,
   totalPages,

@@ -905,6 +905,7 @@ export interface AdminProviderFixturesResponse {
   data: Array<FixtureDTO>;
   message: string;
   provider: string;
+  trackedLeagueExternalIds?: string[];
 }
 
 export interface AdminProviderOddsResponse {

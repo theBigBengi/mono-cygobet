@@ -45,6 +45,8 @@ type AttentionParams = {
   issueType?: FixtureIssueType | "all";
   search?: string;
   timeframe?: string;
+  fromTs?: number;
+  toTs?: number;
   leagueId?: number;
   page?: number;
   perPage?: number;
@@ -85,6 +87,7 @@ export function useFixturesAttention(
 type SearchParams = {
   q?: string;
   leagueId?: number;
+  state?: string;
   fromTs?: number;
   toTs?: number;
   page?: number;
@@ -101,6 +104,7 @@ export function useFixtureSearch(
   const hasFilter =
     (params.q !== undefined && params.q.length >= 2) ||
     params.leagueId !== undefined ||
+    params.state !== undefined ||
     (params.fromTs !== undefined && params.toTs !== undefined);
 
   const enabled = hasFilter && (options?.enabled ?? true);

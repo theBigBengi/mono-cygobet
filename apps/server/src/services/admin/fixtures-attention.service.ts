@@ -71,6 +71,8 @@ export interface FixturesAttentionParams {
   issueType?: FixtureIssueType | "all";
   search?: string;
   timeframe?: AttentionTimeframe;
+  fromTs?: number;
+  toTs?: number;
   leagueId?: number;
   page?: number;
   perPage?: number;
@@ -79,7 +81,7 @@ export interface FixturesAttentionParams {
 export async function getFixturesNeedingAttention(
   params: FixturesAttentionParams = {}
 ): Promise<AdminFixturesAttentionResponse> {
-  const { issueType = "all", search, timeframe = "all", leagueId, page = 1, perPage = 25 } = params;
+  const { issueType = "all", search, timeframe = "all", fromTs, toTs, leagueId, page = 1, perPage = 25 } = params;
   const searchLower = search?.trim().toLowerCase();
 
   // 1. Fetch ALL lightweight rows from every category (parallel, no take limit)
@@ -159,6 +161,16 @@ export async function getFixturesNeedingAttention(
         return true;
       });
     }
+  }
+
+  // 4c2. Apply date range filter (fromTs / toTs on issueSince)
+  if (fromTs != null || toTs != null) {
+    filtered = filtered.filter((item) => {
+      const issueTs = Math.floor(new Date(item.issueSince).getTime() / 1000);
+      if (fromTs != null && issueTs < fromTs) return false;
+      if (toTs != null && issueTs > toTs) return false;
+      return true;
+    });
   }
 
   // 4d. Apply league filter

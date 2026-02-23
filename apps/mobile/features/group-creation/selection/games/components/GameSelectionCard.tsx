@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardConnected: {
-    borderTopWidth: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
     marginTop: -1,
   },
   cardWithBottomBorder: {

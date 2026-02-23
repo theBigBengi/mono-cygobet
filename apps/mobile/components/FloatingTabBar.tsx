@@ -72,9 +72,12 @@ export function FloatingTabBar({
           },
         ]}
       >
-        {state.routes.map((route, index) => {
+        {state.routes.filter((route) => {
+          // TODO: Temporarily hidden tabs — remove filter to restore
+          return route.name !== "activity" && route.name !== "profile";
+        }).map((route) => {
           const { options } = descriptors[route.key];
-          const isFocused = state.index === index;
+          const isFocused = state.index === state.routes.indexOf(route);
           const isHomeTab = route.name === "home";
           const showBadge = isHomeTab && hasSelection;
 
@@ -175,7 +178,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
+    paddingHorizontal: 80,
   },
   container: {
     flexDirection: "row",

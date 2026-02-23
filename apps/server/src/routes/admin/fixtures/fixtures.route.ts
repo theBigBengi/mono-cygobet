@@ -31,6 +31,8 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               type: "string",
               enum: ["all", "1h", "3h", "6h", "12h", "24h", "24h+"],
             },
+            fromTs: { type: "number" },
+            toTs: { type: "number" },
             leagueId: { type: "number" },
             page: { type: "number", minimum: 1 },
             perPage: { type: "number", minimum: 1, maximum: 100 },
@@ -43,6 +45,8 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         issueType?: FixtureIssueType | "all";
         search?: string;
         timeframe?: string;
+        fromTs?: number;
+        toTs?: number;
         leagueId?: number;
         page?: number;
         perPage?: number;
@@ -51,6 +55,8 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         issueType: query.issueType,
         search: query.search,
         timeframe: query.timeframe as any,
+        fromTs: query.fromTs,
+        toTs: query.toTs,
         leagueId: query.leagueId,
         page: query.page,
         perPage: query.perPage,
@@ -69,6 +75,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
           properties: {
             q: { type: "string", minLength: 2 },
             leagueId: { type: "number" },
+            state: { type: "string" },
             fromTs: { type: "number" },
             toTs: { type: "number" },
             page: { type: "number", minimum: 1 },
@@ -78,9 +85,10 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply) => {
-      const { q, leagueId, fromTs, toTs, page = 1, perPage = 25 } = req.query as {
+      const { q, leagueId, state, fromTs, toTs, page = 1, perPage = 25 } = req.query as {
         q?: string;
         leagueId?: number;
+        state?: string;
         fromTs?: number;
         toTs?: number;
         page?: number;
@@ -90,6 +98,7 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
       const where: any = { isSandbox: false };
       if (q) where.name = { contains: q, mode: "insensitive" };
       if (leagueId) where.leagueId = leagueId;
+      if (state) where.state = state;
       if (fromTs || toTs) {
         where.startTs = {
           ...(fromTs && { gte: fromTs }),

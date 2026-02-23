@@ -235,6 +235,8 @@ export const fixturesService = {
     issueType?: FixtureIssueType | "all";
     search?: string;
     timeframe?: string;
+    fromTs?: number;
+    toTs?: number;
     leagueId?: number;
     page?: number;
     perPage?: number;
@@ -244,6 +246,10 @@ export const fixturesService = {
     if (params?.search) searchParams.append("search", params.search);
     if (params?.timeframe && params.timeframe !== "all")
       searchParams.append("timeframe", params.timeframe);
+    if (params?.fromTs !== undefined)
+      searchParams.append("fromTs", params.fromTs.toString());
+    if (params?.toTs !== undefined)
+      searchParams.append("toTs", params.toTs.toString());
     if (params?.leagueId)
       searchParams.append("leagueId", params.leagueId.toString());
     if (params?.page) searchParams.append("page", params.page.toString());
@@ -258,6 +264,7 @@ export const fixturesService = {
   async search(params: {
     q?: string;
     leagueId?: number;
+    state?: string;
     fromTs?: number;
     toTs?: number;
     page?: number;
@@ -267,6 +274,7 @@ export const fixturesService = {
     if (params.q) searchParams.append("q", params.q);
     if (params.leagueId)
       searchParams.append("leagueId", params.leagueId.toString());
+    if (params.state) searchParams.append("state", params.state);
     if (params.fromTs !== undefined)
       searchParams.append("fromTs", params.fromTs.toString());
     if (params.toTs !== undefined)

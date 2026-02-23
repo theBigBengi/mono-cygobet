@@ -159,11 +159,11 @@ export default function JobsListPage() {
           <RefreshCw className={`h-4 w-4 ${jobsQuery.isFetching ? "animate-spin" : ""}`} />
         </Button>
       </HeaderActions>
-      <div className="flex-shrink-0 mb-3 space-y-2">
+      <div className="flex-1 min-h-0 overflow-auto">
         {/* Health summary bar */}
         {jobs.length > 0 && (
           <div
-            className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm ${
+            className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm mb-3 ${
               healthSummary.failing > 0
                 ? "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20"
                 : "border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20"
@@ -187,9 +187,6 @@ export default function JobsListPage() {
             )}
           </div>
         )}
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-auto">
         {jobsQuery.isLoading ? (
           <div className="py-10 text-center text-sm text-muted-foreground">
             Loading jobs…

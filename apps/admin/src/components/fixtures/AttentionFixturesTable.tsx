@@ -22,10 +22,80 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type {
   AdminFixtureAttentionItem,
   FixtureIssueType,
 } from "@repo/types";
+
+function BulkActionBar({
+  selectedIds,
+  allExternalIds,
+  onBulkSync,
+  onClear,
+  totalMatchingCount,
+  bulkSyncing,
+  bulkProgress,
+}: {
+  selectedIds: Set<string>;
+  allExternalIds?: string[];
+  onBulkSync: (ids: string[]) => void;
+  onClear: () => void;
+  totalMatchingCount?: number;
+  bulkSyncing?: boolean;
+  bulkProgress?: string;
+}) {
+  const [scope, setScope] = useState<"page" | "all">("page");
+  const syncIds = scope === "all" && allExternalIds ? allExternalIds : Array.from(selectedIds);
+  const syncCount = syncIds.length;
+
+  return (
+    <div className="sticky bottom-0 z-10 mt-3 rounded-lg border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-2.5 flex items-center gap-3 shadow-lg">
+      <Select value={scope} onValueChange={(v) => setScope(v as "page" | "all")}>
+        <SelectTrigger className="h-7 min-h-[28px] w-auto gap-1 text-xs px-2.5 py-0 shrink-0">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="page">Selected ({selectedIds.size})</SelectItem>
+          <SelectItem value="all">All matching ({totalMatchingCount ?? 0})</SelectItem>
+        </SelectContent>
+      </Select>
+      <Button
+        size="sm"
+        className="h-7 px-3 text-xs"
+        onClick={() => onBulkSync(syncIds)}
+        disabled={bulkSyncing}
+      >
+        {bulkSyncing ? (
+          <>
+            <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+            {bulkProgress || "Syncing..."}
+          </>
+        ) : (
+          <>
+            <RefreshCw className="mr-1.5 h-3 w-3" />
+            Sync {syncCount}
+          </>
+        )}
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 px-2 text-xs"
+        onClick={onClear}
+        disabled={bulkSyncing}
+      >
+        Clear
+      </Button>
+    </div>
+  );
+}
 
 const ISSUE_CONFIG: Record<
   FixtureIssueType,
@@ -69,7 +139,7 @@ const ISSUE_CONFIG: Record<
 interface AttentionFixturesTableProps {
   data: AdminFixtureAttentionItem[];
   isLoading: boolean;
-  onSync?: (externalId: string) => void;
+  onSync?: (externalId: string, name: string) => void;
   onResettle?: (fixtureId: number) => void;
   syncingIds?: Set<string>;
   resettlingIds?: Set<number>;
@@ -78,6 +148,11 @@ interface AttentionFixturesTableProps {
   bulkProgress?: string;
   selectedIds: Set<string>;
   onSelectionChange: (ids: Set<string>) => void;
+  allScopeSelected?: boolean;
+  someScopeSelected?: boolean;
+  onToggleSelectAll?: () => void;
+  allExternalIds?: string[];
+  totalMatchingCount?: number;
 }
 
 type SyncPreviewChange = {
@@ -103,6 +178,11 @@ export function AttentionFixturesTable({
   bulkProgress,
   selectedIds,
   onSelectionChange,
+  allScopeSelected,
+  someScopeSelected,
+  onToggleSelectAll,
+  allExternalIds,
+  totalMatchingCount,
 }: AttentionFixturesTableProps) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
@@ -146,7 +226,7 @@ export function AttentionFixturesTable({
   const confirmAction = () => {
     if (!pendingAction) return;
     if (pendingAction.type === "sync" && onSync) {
-      onSync(pendingAction.fixture.externalId);
+      onSync(pendingAction.fixture.externalId, pendingAction.fixture.name);
     } else if (pendingAction.type === "resettle" && onResettle) {
       onResettle(pendingAction.fixture.id);
     }
@@ -207,51 +287,58 @@ export function AttentionFixturesTable({
           const isSelected = selectedIds.has(fixture.externalId);
 
           return (
-            <div key={fixture.id} className={`rounded-lg border p-3 space-y-2 ${isSelected ? "border-primary bg-primary/5" : ""}`}>
-              <div className="flex items-start justify-between gap-2">
+            <div key={fixture.id} className={`rounded-lg border p-3 space-y-1.5 ${isSelected ? "border-primary bg-primary/5" : ""}`}>
+              {/* Row 1: Issue severity + age */}
+              <div className="flex items-center gap-2">
                 {onBulkSync && (
                   <Checkbox
                     checked={isSelected}
                     onCheckedChange={() => toggleSelect(fixture.externalId)}
-                    className="mt-0.5 shrink-0"
+                    className="shrink-0"
                     disabled={bulkSyncing}
                   />
                 )}
-                <Link
-                  to={`/fixtures/${fixture.id}`}
-                  className="text-sm font-medium hover:underline leading-tight flex-1 min-w-0"
-                >
-                  {fixture.name}
-                </Link>
                 <Badge variant="outline" className={`text-[10px] shrink-0 ${config.badgeClass}`}>
                   <Icon className="mr-1 h-3 w-3" />
                   {config.label}
                 </Badge>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                <Badge variant="outline" className="text-[10px]">{fixture.state}</Badge>
-                <span>{formatDistanceToNow(new Date(fixture.issueSince), { addSuffix: true })}</span>
-                {fixture.league && <span>{fixture.league.name}</span>}
-              </div>
-              {fixture.groupCount > 0 && (
-                <p className="text-[11px] text-muted-foreground">
-                  {fixture.groupCount} group{fixture.groupCount !== 1 ? "s" : ""}, {fixture.predictionCount} pred.
-                </p>
-              )}
-              {(fixture.issueType === "overdue" || fixture.issueType === "stuck") && fixture.lastProviderCheckAt && (
-                <span className={`text-[11px] font-medium ${
-                  fixture.lastProviderState === fixture.state
-                    ? "text-orange-600 dark:text-orange-400"
-                    : "text-green-600 dark:text-green-400"
-                }`}>
-                  Provider: {fixture.lastProviderState ?? "?"}
-                  {" "}
-                  <span className="text-muted-foreground font-normal">
-                    ({formatDistanceToNow(new Date(fixture.lastProviderCheckAt), { addSuffix: true })})
-                  </span>
+                <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
+                  {formatDistanceToNow(new Date(fixture.issueSince), { addSuffix: true })}
                 </span>
-              )}
-              <div className="flex items-center gap-1.5 pt-1">
+              </div>
+
+              {/* Row 2: Fixture name + league */}
+              <div className="flex items-baseline gap-1.5 min-w-0">
+                <Link
+                  to={`/fixtures/${fixture.id}`}
+                  className="text-sm font-medium hover:underline leading-tight truncate shrink min-w-0"
+                >
+                  {fixture.name}
+                </Link>
+                <span className="text-[11px] text-muted-foreground truncate shrink-0 max-w-[120px]">
+                  ({fixture.league?.name ?? "No league"})
+                </span>
+              </div>
+
+              {/* Row 3: Context — state + impact + provider */}
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                <Badge variant="outline" className="text-[10px]">{fixture.state}</Badge>
+                {fixture.groupCount > 0 && (
+                  <span>{fixture.groupCount} grp, {fixture.predictionCount} pred.</span>
+                )}
+                {(fixture.issueType === "overdue" || fixture.issueType === "stuck") && fixture.lastProviderCheckAt && (
+                  <span className={`font-medium ${
+                    fixture.lastProviderState === fixture.state
+                      ? "text-orange-600 dark:text-orange-400"
+                      : "text-green-600 dark:text-green-400"
+                  }`}>
+                    Prov: {fixture.lastProviderState ?? "?"}
+                  </span>
+                )}
+              </div>
+
+              {/* Row 4: Actions — separated */}
+              <div className="flex items-center gap-1.5 pt-1.5 border-t border-dashed">
                 {onSync && (
                   <Button
                     variant="outline"
@@ -274,8 +361,11 @@ export function AttentionFixturesTable({
                     {isResettling ? "Settling..." : "Re-settle"}
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs ml-auto" asChild>
-                  <Link to={`/fixtures/${fixture.id}`}>View</Link>
+                <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs ml-auto gap-1" asChild>
+                  <Link to={`/fixtures/${fixture.id}`}>
+                    View
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -289,7 +379,14 @@ export function AttentionFixturesTable({
           <TableHeader>
             <TableRow>
               {onBulkSync && (
-                <TableHead className="w-[40px]" />
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    checked={allScopeSelected ? true : someScopeSelected ? "indeterminate" : false}
+                    onCheckedChange={() => onToggleSelectAll?.()}
+                    disabled={bulkSyncing}
+                    aria-label="Select all on page"
+                  />
+                </TableHead>
               )}
               <TableHead className="w-[100px]">Issue</TableHead>
               <TableHead>Fixture</TableHead>
@@ -322,7 +419,7 @@ export function AttentionFixturesTable({
                     </TableCell>
                   )}
                   <TableCell>
-                    <Badge variant="outline" className={config.badgeClass}>
+                    <Badge variant="outline" className={`whitespace-nowrap ${config.badgeClass}`}>
                       <Icon className="mr-1 h-3 w-3" />
                       {config.label}
                     </Badge>
@@ -419,38 +516,15 @@ export function AttentionFixturesTable({
 
       {/* Bulk action bar */}
       {onBulkSync && selectedIds.size > 0 && (
-        <div className="sticky bottom-0 z-10 mt-3 rounded-lg border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-2.5 flex items-center gap-3 shadow-lg">
-          <span className="text-sm font-medium">
-            {selectedIds.size} selected
-          </span>
-          <Button
-            size="sm"
-            className="h-7 px-3 text-xs"
-            onClick={() => onBulkSync(Array.from(selectedIds))}
-            disabled={bulkSyncing}
-          >
-            {bulkSyncing ? (
-              <>
-                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                {bulkProgress || "Syncing..."}
-              </>
-            ) : (
-              <>
-                <RefreshCw className="mr-1.5 h-3 w-3" />
-                Sync Selected
-              </>
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={() => onSelectionChange(new Set())}
-            disabled={bulkSyncing}
-          >
-            Clear
-          </Button>
-        </div>
+        <BulkActionBar
+          selectedIds={selectedIds}
+          allExternalIds={allExternalIds}
+          onBulkSync={onBulkSync}
+          onClear={() => onSelectionChange(new Set())}
+          totalMatchingCount={totalMatchingCount}
+          bulkSyncing={bulkSyncing}
+          bulkProgress={bulkProgress}
+        />
       )}
 
       {/* Confirmation Dialog — opens only after data is ready */}
