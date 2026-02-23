@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef, useMemo, useSyncExternalStore
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, CalendarIcon, Check, ChevronsUpDown, Filter, Loader2, Radio, RefreshCw, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarIcon, Check, ChevronsUpDown, Filter, Loader2, Radio, RefreshCw, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import { format, formatDistanceToNow, startOfDay, endOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -116,13 +116,10 @@ export default function FixturesPage() {
 
   // Live data — always active for badge count
   const { db: liveDb, provider: liveProvider } = useLiveFixtures();
-  const liveCount = Math.max(
-    liveDb.data?.data?.length ?? 0,
-    liveProvider.data?.data?.length ?? 0
-  );
   const liveFetching = liveDb.isFetching || liveProvider.isFetching;
 
-  // Attention count — set by child via callback
+  // Counts — set by children via callbacks
+  const [liveCount, setLiveCount] = useState(0);
   const [attentionCount, setAttentionCount] = useState(0);
 
   // Preserve applied filters across tab switches (refs don't cause re-renders)
@@ -198,6 +195,7 @@ export default function FixturesPage() {
             isLoading={liveDb.isLoading || liveProvider.isLoading}
             isFetching={liveFetching}
             onRefresh={refetchLive}
+            onCountChange={setLiveCount}
           />
         )}
         {tab === "attention" && (
@@ -1015,6 +1013,7 @@ function LiveFixturesSection({
   isLoading,
   isFetching,
   onRefresh,
+  onCountChange,
 }: {
   dbFixtures: DbFixture[];
   providerFixtures: FixtureDTO[];
@@ -1022,6 +1021,7 @@ function LiveFixturesSection({
   isLoading: boolean;
   isFetching: boolean;
   onRefresh: () => void;
+  onCountChange: (n: number) => void;
 }) {
   const queryClient = useQueryClient();
 
@@ -1051,6 +1051,11 @@ function LiveFixturesSection({
     () => mergeFixtures(dbFixtures, providerFixtures, trackedLeagueExternalIds),
     [dbFixtures, providerFixtures, trackedLeagueExternalIds]
   );
+
+  // ─── Report count to parent for tab badge ───
+  useEffect(() => {
+    onCountChange(merged.length);
+  }, [merged.length, onCountChange]);
 
   if (isLoading) {
     return (
@@ -1135,7 +1140,7 @@ function LiveFixturesSection({
         <span>League</span>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {merged.map((m) => {
           const isSyncing = syncingIds.has(m.externalId);
           const db = m.dbFixture;
@@ -1148,7 +1153,7 @@ function LiveFixturesSection({
             <div
               key={m.externalId}
               className={cn(
-                "rounded-md border px-2.5 py-2 sm:px-3",
+                "rounded-lg border px-3 py-2.5 sm:px-3 sm:py-2",
                 isUntracked
                   ? "opacity-50"
                   : m.isDiff
@@ -1157,59 +1162,83 @@ function LiveFixturesSection({
               )}
             >
               {/* Mobile: card layout */}
-              <div className="sm:hidden space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Link to={db ? `/fixtures/${db.id}` : "#"} className="text-xs font-medium hover:underline truncate">
+              <div className="sm:hidden space-y-2">
+                {/* Row 1: Name */}
+                <div className="flex items-center gap-2">
+                  <Link to={db ? `/fixtures/${db.id}` : "#"} className="text-sm font-medium hover:underline truncate min-w-0">
                     {m.name}
                   </Link>
                 </div>
-                <div className="text-[11px] text-muted-foreground truncate">
-                  {db?.league?.name ?? prov?.leagueName ?? ""}
+
+                {/* Row 2: League + status */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground truncate">
+                    {db?.league?.name ?? prov?.leagueName ?? ""}
+                  </span>
+                  <span className={`ml-auto text-xs shrink-0 ${status.className}`}>{status.label}</span>
                 </div>
-                <div className="flex items-center gap-2 text-[11px]">
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground">DB:</span>
+
+                {/* Row 3: DB vs Provider comparison */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded border bg-muted/30 px-2.5 py-1.5">
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Database</span>
                     {db ? (
-                      <>
-                        <span className="font-bold tabular-nums">{db.homeScore90 ?? "–"}-{db.awayScore90 ?? "–"}</span>
-                        <span className="text-muted-foreground">{formatState(db.state)}</span>
-                        {db.liveMinute != null && <span className="tabular-nums text-muted-foreground">{db.liveMinute}'</span>}
-                        <span className="text-[10px] text-muted-foreground/70" title={format(new Date(db.updatedAt), "dd/MM/yyyy HH:mm:ss")}>{format(new Date(db.updatedAt), "HH:mm:ss")}</span>
-                      </>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="font-bold tabular-nums">{db.homeScore90 ?? "–"} - {db.awayScore90 ?? "–"}</span>
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">{formatState(db.state)}</Badge>
+                        {db.liveMinute != null && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-300 text-green-700 dark:border-green-800 dark:text-green-400 tabular-nums">
+                            {db.liveMinute}'
+                          </Badge>
+                        )}
+                      </div>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <p className="text-muted-foreground mt-0.5">Not in DB</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground">Prov:</span>
+                  <div className="rounded border bg-muted/30 px-2.5 py-1.5">
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Provider</span>
                     {prov ? (
-                      <>
-                        <span className="font-bold tabular-nums">{prov.homeScore ?? "–"}-{prov.awayScore ?? "–"}</span>
-                        <span className="text-muted-foreground">{formatState(prov.state)}</span>
-                        {prov.liveMinute != null && <span className="tabular-nums text-green-600 dark:text-green-400">{prov.liveMinute}'</span>}
-                      </>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="font-bold tabular-nums">{prov.homeScore ?? "–"} - {prov.awayScore ?? "–"}</span>
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">{formatState(prov.state)}</Badge>
+                        {prov.liveMinute != null && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-green-300 text-green-700 dark:border-green-800 dark:text-green-400 tabular-nums">
+                            {prov.liveMinute}'
+                          </Badge>
+                        )}
+                      </div>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <p className="text-muted-foreground mt-0.5">Not live</p>
                     )}
                   </div>
-                  <div className="ml-auto">
-                    {showSync ? (
+                </div>
+
+                {/* Row 4: Actions */}
+                {(showSync || db) && (
+                  <div className="flex items-center gap-1.5 pt-1.5 border-t border-dashed">
+                    {showSync && (
                       <Button
                         variant="default"
-                        size="icon"
-                        className="h-7 w-7"
+                        size="sm"
+                        className="h-8 text-xs"
                         disabled={isSyncing}
                         onClick={() => handleSync(m.externalId, m.name)}
                       >
-                        {isSyncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                        {isSyncing ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1.5 h-3 w-3" />}
+                        {isSyncing ? "Syncing..." : "Sync"}
                       </Button>
-                    ) : isUntracked ? (
-                      <span className="text-[10px] text-muted-foreground">Untracked</span>
-                    ) : (
-                      <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">OK</span>
+                    )}
+                    {db && (
+                      <Button variant="ghost" size="sm" className="h-8 text-xs ml-auto gap-1" asChild>
+                        <Link to={`/fixtures/${db.id}`}>
+                          View
+                          <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      </Button>
                     )}
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Desktop: fixture-centric row */}
