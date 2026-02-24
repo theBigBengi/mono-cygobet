@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useCallback } from "react";
-import type { ScrollView, TextInput, View } from "react-native";
+import type { FlatList, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { canPredict } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
@@ -38,7 +38,14 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
     {}
   );
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList>(null);
+
+  /** Maps fixtureId → index in the FlatList data array. Updated by the screen. */
+  const fixtureIndexMapRef = useRef<Map<number, number>>(new Map());
+
+  const updateFixtureIndexMap = useCallback((map: Map<number, number>) => {
+    fixtureIndexMapRef.current = map;
+  }, []);
 
   const allInputFields: Field[] = useMemo(() => {
     const fields: Field[] = [];
@@ -64,37 +71,32 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
   };
 
   const scrollToMatchCard = useCallback((fixtureId: number) => {
-    const fixtureIdStr = String(fixtureId);
-    const cardRef = matchCardRefs.current[fixtureIdStr];
-
-    if (cardRef?.current && scrollViewRef.current) {
-      cardRef.current?.measureLayout(
-        scrollViewRef.current as any,
-        (x, y) => {
-          scrollViewRef.current?.scrollTo({
-            y: Math.max(0, y - SCROLL_OFFSET),
-            animated: true,
-          });
-        },
-        () => {}
-      );
+    const index = fixtureIndexMapRef.current.get(fixtureId);
+    if (index != null && flatListRef.current) {
+      flatListRef.current.scrollToIndex({
+        index,
+        animated: true,
+        viewOffset: SCROLL_OFFSET,
+      });
     }
   }, []);
 
-  const navigateToField = (index: number) => {
+  const navigateToField = useCallback((index: number) => {
     if (index < 0 || index >= allInputFields.length) return;
 
     const field = allInputFields[index];
     const fixtureIdStr = String(field.fixtureId);
-    const ref = inputRefs.current[fixtureIdStr]?.[field.type];
 
-    if (ref?.current) {
-      ref.current.focus();
-      setCurrentFocusedField(field);
-      // Don't scroll here - let the useEffect in GroupGamesScreen handle it
-      // to avoid duplicate scroll calls
-    }
-  };
+    // Scroll first so FlatList renders the cell, then focus after a short delay
+    scrollToMatchCard(field.fixtureId);
+    setTimeout(() => {
+      const ref = inputRefs.current[fixtureIdStr]?.[field.type];
+      if (ref?.current) {
+        ref.current.focus();
+        setCurrentFocusedField(field);
+      }
+    }, 150);
+  }, [allInputFields, scrollToMatchCard]);
 
   const handlePrevious = () => {
     const currentIndex = getCurrentFieldIndex();
@@ -170,7 +172,10 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
     // refs
     inputRefs,
     matchCardRefs,
-    scrollViewRef,
+    flatListRef,
+
+    // fixture index map (for FlatList scrollToIndex)
+    updateFixtureIndexMap,
 
     // navigation
     handlePrevious,

@@ -10,6 +10,7 @@ import Animated, {
   withSequence,
   interpolate,
   interpolateColor,
+  runOnJS,
   Easing,
 } from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
@@ -115,6 +116,16 @@ function MaxPointsBadge({ points }: { points: number }) {
 /** Cached viewport height — constant for the lifetime of the app. */
 const VIEWPORT_H = Dimensions.get("window").height;
 
+/**
+ * Module-level Set that tracks which fixtures have already been revealed.
+ * When FlatList recycles a cell, the card remounts — we skip the spring
+ * animation for cards the user has already seen.
+ */
+const _revealedFixtures = new Set<number>();
+function markRevealed(id: number) {
+  _revealedFixtures.add(id);
+}
+
 type InputRefs = {
   home: React.RefObject<TextInput | null>;
   away: React.RefObject<TextInput | null>;
@@ -199,14 +210,21 @@ export function MatchPredictionCardVertical({
 
   // Scroll-reveal animation: content fades in when card scrolls into viewport
   const cardY = useSharedValue(-1);
-  const revealed = useSharedValue(scrollY ? 0 : 1); // no scrollY → always visible
+  const alreadyRevealed = !scrollY || _revealedFixtures.has(fixture.id);
+  const revealed = useSharedValue(alreadyRevealed ? 1 : 0);
 
-  const handleCardLayout = useCallback(
-    (e: any) => {
-      cardY.value = e.nativeEvent.layout.y;
-    },
-    [cardY]
-  );
+  const handleCardLayout = useCallback(() => {
+    // In FlatList, e.nativeEvent.layout.y is always 0 (relative to cell).
+    // Use measureInWindow to get the screen-space Y, then add scrollY to get
+    // the absolute content offset — same value ScrollView's layout.y gave us.
+    if (cardRef?.current) {
+      cardRef.current.measureInWindow((_x: number, screenY: number) => {
+        if (screenY != null) {
+          cardY.value = screenY + (scrollY?.value ?? 0);
+        }
+      });
+    }
+  }, [cardRef, cardY, scrollY]);
 
   useAnimatedReaction(
     () => {
@@ -227,6 +245,7 @@ export function MatchPredictionCardVertical({
             mass: 0.6,
           });
         }
+        runOnJS(markRevealed)(fixture.id);
       }
     }
   );

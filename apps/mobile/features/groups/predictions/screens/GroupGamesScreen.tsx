@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, Pressable, Dimensions } from "react-native";
+import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, Pressable, Dimensions, type ListRenderItemInfo } from "react-native";
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedStyle, runOnJS, clamp, withTiming, withSpring, interpolate, Easing } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -22,7 +22,7 @@ import { useCardFocusSaving } from "../hooks/useCardFocusSaving";
 import { useSmartFilters } from "../hooks/useSmartFilters";
 import { useGroupedFixtures } from "../hooks/useGroupedFixtures";
 import { usePredictionsStats } from "../hooks/usePredictionsStats";
-import type { PredictionMode, FixtureItem } from "../types";
+import type { PredictionMode, FixtureItem, RenderItem } from "../types";
 import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { GroupGamesSkeleton } from "../components/GroupGamesSkeleton";
@@ -52,7 +52,7 @@ type Props = {
  * - Normalises fixtures from props and applies filters (teams/rounds/actions).
  * - Groups fixtures by league/date and manages prediction state (local + save).
  * - Wires keyboard height, focus saving, and prev/next field navigation.
- * - Renders list view (ScrollView + GroupFixtureCard per fixture); card press
+ * - Renders list view (FlatList + GroupFixtureCard per fixture); card press
  *   navigates to dedicated single-game route. Handlers are memoized so fixture cards
  *   re-render only when their props change.
  */
@@ -214,35 +214,6 @@ export function GroupGamesScreen({
   /** Max possible points for a perfect prediction (from group rules). */
   const maxPoints = maxPossiblePoints ?? 0;
 
-  /**
-   * Flat render list — ALL elements (headers + cards) in display order.
-   * Each element carries its own timeline state so the timeline is always
-   * continuous regardless of what elements are in the list.
-   */
-  type RenderItem =
-    | {
-        type: "header";
-        key: string;
-        label: string;
-        level?: "date" | "league";
-        isLive?: boolean;
-        round?: string | number;
-        /** Show the track line (false = before first card) */
-        showTrack: boolean;
-        /** Fill the line with primary color */
-        isFilled: boolean;
-      }
-    | {
-        type: "card";
-        fixture: FixtureItem;
-        group: { fixtures: FixtureItem[] };
-        indexInGroup: number;
-        timelineFilled: boolean;
-        timelineConnectorFilled: boolean;
-        isFirstInTimeline: boolean;
-        isLastInTimeline: boolean;
-      };
-
   const renderItems = useMemo((): RenderItem[] => {
     // 1. Flatten all fixtures to compute progress front
     const allFixtures: FixtureItem[] = [];
@@ -345,6 +316,17 @@ export function GroupGamesScreen({
     return items;
   }, [fixtureGroups]);
 
+  /** Build fixture→index map so usePredictionNavigation can scrollToIndex. */
+  React.useEffect(() => {
+    const map = new Map<number, number>();
+    renderItems.forEach((item, i) => {
+      if (item.type === "card") {
+        map.set(item.fixture.id, i);
+      }
+    });
+    updateFixtureIndexMap(map);
+  }, [renderItems, updateFixtureIndexMap]);
+
   /** Whether any card in the timeline has a fill (for summary card connector). */
   const hasFilledCards = renderItems.some(
     (item) => item.type === "card" && item.timelineFilled
@@ -404,7 +386,8 @@ export function GroupGamesScreen({
   const {
     inputRefs,
     matchCardRefs,
-    scrollViewRef,
+    flatListRef,
+    updateFixtureIndexMap,
     currentFocusedField,
     setCurrentFocusedField,
     handlePrevious,
@@ -487,16 +470,16 @@ export function GroupGamesScreen({
     }
     const timer = setTimeout(() => {
       const cardRef = matchCardRefs.current[String(nextToPredictId)];
-      if (cardRef?.current && scrollViewRef.current) {
-        cardRef.current.measureLayout(
-          scrollViewRef.current as any,
-          (_x: number, y: number) => { nextCardY.value = y; },
-          () => {}
-        );
+      if (cardRef?.current) {
+        cardRef.current.measureInWindow((_x: number, screenY: number) => {
+          if (screenY != null) {
+            nextCardY.value = screenY + scrollY.value;
+          }
+        });
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [nextToPredictId, isReady, matchCardRefs, scrollViewRef, nextCardY]);
+  }, [nextToPredictId, isReady, matchCardRefs, scrollY, nextCardY]);
 
   // Check visibility on every scroll frame
   useAnimatedReaction(
@@ -657,6 +640,158 @@ export function GroupGamesScreen({
     [getNextFieldIndex, navigateToField]
   );
 
+  /** FlatList keyExtractor — stable key for each render item. */
+  const flatListKeyExtractor = useCallback((item: RenderItem) => {
+    return item.type === "header" ? item.key : String(item.fixture.id);
+  }, []);
+
+  /** FlatList renderItem — same JSX as the old .map() callback. */
+  const flatListRenderItem = useCallback(
+    ({ item }: ListRenderItemInfo<RenderItem>) => {
+      if (item.type === "header") {
+        return (
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionTimelineCol}>
+              {item.showTrack && item.isFilled && (
+                <View
+                  style={{
+                    position: "absolute",
+                    left: (TIMELINE.TRACK_WIDTH - TIMELINE.LINE_WIDTH) / 2,
+                    top: -1,
+                    bottom: -1,
+                    width: TIMELINE.LINE_WIDTH,
+                    backgroundColor: theme.colors.primary,
+                  }}
+                />
+              )}
+            </View>
+            <View style={styles.sectionHeaderContent}>
+              {item.isLive ? (
+                <View style={styles.sectionLiveBadge}>
+                  <View style={styles.sectionLiveDot} />
+                  <Text style={styles.sectionLiveText}>LIVE</Text>
+                </View>
+              ) : item.level === "date" ? (
+                <View style={styles.sectionDateRow}>
+                  <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.primary + "30" }]} />
+                  <Text
+                    style={[
+                      styles.sectionDateLabel,
+                      { color: theme.colors.primary },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.label}
+                  </Text>
+                  <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.primary + "30" }]} />
+                </View>
+              ) : (
+                <View style={[styles.sectionLeaguePill, { backgroundColor: theme.colors.textSecondary + "0C", borderColor: theme.colors.textSecondary + "15" }]}>
+                  <Text
+                    style={[
+                      styles.sectionLeagueLabel,
+                      { color: theme.colors.textSecondary + "B0" },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.label}{item.round ? `  ·  R${item.round}` : ""}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        );
+      }
+
+      const { fixture, group, indexInGroup } = item;
+      return (
+        <GroupFixtureCard
+          fixture={fixture}
+          index={indexInGroup}
+          totalInGroup={group.fixtures.length}
+          prediction={predictionsMap[fixture.id]}
+          inputRefs={inputRefs}
+          currentFocusedField={currentFocusedField}
+          isSaved={savedStatesMap[fixture.id]}
+          isHighlighted={highlightedFixtureId === fixture.id}
+          matchCardRefs={matchCardRefs}
+          predictionMode={predictionModeTyped}
+          groupName={groupName}
+          matchNumber={matchNumbersMap[fixture.id]}
+          timelineFilled={item.timelineFilled}
+          timelineConnectorFilled={item.timelineConnectorFilled}
+          isFirstInTimeline={item.isFirstInTimeline}
+          isLastInTimeline={item.isLastInTimeline}
+          isNextToPredict={fixture.id === nextToPredictId}
+          isMaxPoints={maxPoints > 0 && (fixture.prediction?.points ?? 0) === maxPoints}
+          onFieldFocus={handleFieldFocus}
+          onFieldBlur={handleFieldBlur}
+          onCardChange={handleCardChange}
+          onAutoNext={handleAutoNext}
+          onSelectOutcome={
+            predictionMode === "MatchWinner"
+              ? handleSelectOutcome
+              : undefined
+          }
+          onScrollToCard={scrollToMatchCard}
+          onPressCard={handlePressCard}
+          scrollY={scrollY}
+        />
+      );
+    },
+    [
+      theme, predictionsMap, inputRefs, currentFocusedField, savedStatesMap,
+      highlightedFixtureId, matchCardRefs, predictionModeTyped, groupName,
+      matchNumbersMap, nextToPredictId, maxPoints, handleFieldFocus,
+      handleFieldBlur, handleCardChange, handleAutoNext, predictionMode,
+      handleSelectOutcome, scrollToMatchCard, handlePressCard, scrollY,
+    ]
+  );
+
+  /** ListHeaderComponent — skeleton, empty state, or summary card. */
+  const listHeaderComponent = useMemo(() => {
+    if (!isReady) {
+      return <GroupGamesSkeleton />;
+    }
+    if (emptyState && filteredFixtures.length === 0) {
+      return (
+        <View style={styles.emptyStateContainer}>
+          <AppText
+            variant="body"
+            color="secondary"
+            style={styles.emptyStateMessage}
+          >
+            {emptyState.message}
+          </AppText>
+          {emptyState.suggestion && (
+            <AppText
+              variant="body"
+              style={[
+                styles.emptyStateSuggestion,
+                { color: theme.colors.primary },
+              ]}
+              onPress={emptyState.suggestion.action}
+            >
+              {emptyState.suggestion.label}
+            </AppText>
+          )}
+        </View>
+      );
+    }
+    return (
+      <GamesSummaryCard
+        totalPoints={summaryStats.totalPoints}
+        predictedCount={savedPredictionsCount}
+        totalCount={totalPredictionsCount}
+        accuracy={summaryStats.accuracy}
+        hasFilledTimeline={hasFilledCards}
+      />
+    );
+  }, [
+    isReady, emptyState, filteredFixtures.length, theme, summaryStats,
+    savedPredictionsCount, totalPredictionsCount, hasFilledCards,
+  ]);
+
   /** No fixtures at all (e.g. group has no games selected). */
   if (fixtures.length === 0) {
     return (
@@ -692,8 +827,11 @@ export function GroupGamesScreen({
       )}
 
       <View style={{ flex: 1 }}>
-        <Animated.ScrollView
-          ref={scrollViewRef}
+        <Animated.FlatList
+          ref={flatListRef}
+          data={isReady ? renderItems : []}
+          renderItem={flatListRenderItem}
+          keyExtractor={flatListKeyExtractor}
           style={styles.scrollView}
           contentContainerStyle={[
             styles.contentContainer,
@@ -702,142 +840,29 @@ export function GroupGamesScreen({
               paddingBottom: FOOTER_PADDING + keyboardHeight,
             },
           ]}
+          ListHeaderComponent={listHeaderComponent}
           onScroll={animatedScrollHandler}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-        >
-          {/* Skeleton placeholders until navigation animation completes */}
-          {!isReady ? (
-            <GroupGamesSkeleton />
-          ) : emptyState && filteredFixtures.length === 0 ? (
-            <View style={styles.emptyStateContainer}>
-              <AppText
-                variant="body"
-                color="secondary"
-                style={styles.emptyStateMessage}
-              >
-                {emptyState.message}
-              </AppText>
-              {emptyState.suggestion && (
-                <AppText
-                  variant="body"
-                  style={[
-                    styles.emptyStateSuggestion,
-                    { color: theme.colors.primary },
-                  ]}
-                  onPress={emptyState.suggestion.action}
-                >
-                  {emptyState.suggestion.label}
-                </AppText>
-              )}
-            </View>
-          ) : (
-            <>
-              <GamesSummaryCard
-                totalPoints={summaryStats.totalPoints}
-                predictedCount={savedPredictionsCount}
-                totalCount={totalPredictionsCount}
-                accuracy={summaryStats.accuracy}
-                hasFilledTimeline={hasFilledCards}
-              />
-
-              {renderItems.map((item) => {
-                if (item.type === "header") {
-                  return (
-                    <View key={item.key} style={styles.sectionHeaderRow}>
-                      <View style={styles.sectionTimelineCol}>
-                        {item.showTrack && item.isFilled && (
-                          <View
-                            style={{
-                              position: "absolute",
-                              left: (TIMELINE.TRACK_WIDTH - TIMELINE.LINE_WIDTH) / 2,
-                              top: -1,
-                              bottom: -1,
-                              width: TIMELINE.LINE_WIDTH,
-                              backgroundColor: theme.colors.primary,
-                            }}
-                          />
-                        )}
-                      </View>
-                      <View style={styles.sectionHeaderContent}>
-                        {item.isLive ? (
-                          <View style={styles.sectionLiveBadge}>
-                            <View style={styles.sectionLiveDot} />
-                            <Text style={styles.sectionLiveText}>LIVE</Text>
-                          </View>
-                        ) : item.level === "date" ? (
-                          <View style={styles.sectionDateRow}>
-                            <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.primary + "30" }]} />
-                            <Text
-                              style={[
-                                styles.sectionDateLabel,
-                                { color: theme.colors.primary },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {item.label}
-                            </Text>
-                            <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.primary + "30" }]} />
-                          </View>
-                        ) : (
-                          <View style={[styles.sectionLeaguePill, { backgroundColor: theme.colors.textSecondary + "0C", borderColor: theme.colors.textSecondary + "15" }]}>
-                            <Text
-                              style={[
-                                styles.sectionLeagueLabel,
-                                { color: theme.colors.textSecondary + "B0" },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {item.label}{item.round ? `  ·  R${item.round}` : ""}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  );
-                }
-
-                const { fixture, group, indexInGroup } = item;
-                return (
-                  <GroupFixtureCard
-                    key={fixture.id}
-                    fixture={fixture}
-                    index={indexInGroup}
-                    totalInGroup={group.fixtures.length}
-                    prediction={predictionsMap[fixture.id]}
-                    inputRefs={inputRefs}
-                    currentFocusedField={currentFocusedField}
-                    isSaved={savedStatesMap[fixture.id]}
-                    isHighlighted={highlightedFixtureId === fixture.id}
-                    matchCardRefs={matchCardRefs}
-                    predictionMode={predictionModeTyped}
-                    groupName={groupName}
-                    matchNumber={matchNumbersMap[fixture.id]}
-                    timelineFilled={item.timelineFilled}
-                    timelineConnectorFilled={item.timelineConnectorFilled}
-                    isFirstInTimeline={item.isFirstInTimeline}
-                    isLastInTimeline={item.isLastInTimeline}
-                    isNextToPredict={fixture.id === nextToPredictId}
-                    isMaxPoints={maxPoints > 0 && (fixture.prediction?.points ?? 0) === maxPoints}
-                    onFieldFocus={handleFieldFocus}
-                    onFieldBlur={handleFieldBlur}
-                    onCardChange={handleCardChange}
-                    onAutoNext={handleAutoNext}
-                    onSelectOutcome={
-                      predictionMode === "MatchWinner"
-                        ? handleSelectOutcome
-                        : undefined
-                    }
-                    onScrollToCard={scrollToMatchCard}
-                    onPressCard={handlePressCard}
-                    scrollY={scrollY}
-                  />
-                );
-              })}
-            </>
-          )}
-        </Animated.ScrollView>
+          windowSize={7}
+          initialNumToRender={12}
+          removeClippedSubviews={false}
+          onScrollToIndexFailed={(info) => {
+            // Fallback: scroll to approximate offset, then retry after layout
+            flatListRef.current?.scrollToOffset({
+              offset: info.averageItemLength * info.index,
+              animated: true,
+            });
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({
+                index: info.index,
+                animated: true,
+                viewOffset: SCROLL_OFFSET,
+              });
+            }, 200);
+          }}
+        />
 
         <ScoreInputNavigationBar
           onPrevious={handlePrevious}
