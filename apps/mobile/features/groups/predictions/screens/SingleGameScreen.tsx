@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from "react";
+import React, { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { View, StyleSheet, Keyboard, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/lib/theme";
@@ -45,6 +45,7 @@ export function SingleGameScreen({
     updateSliderValue,
     setOutcomePrediction,
     saveAllPending,
+    pending,
   } = useGroupPredictions({
     groupId,
     predictionMode,
@@ -69,12 +70,23 @@ export function SingleGameScreen({
       ? allFixtures.findIndex((f) => f.id === currentFixtureId)
       : -1;
 
-  const prediction =
-    currentFixtureId != null
-      ? getPrediction(currentFixtureId)
-      : { home: null, away: null };
-  const isSaved =
-    currentFixtureId != null ? isPredictionSaved(currentFixtureId) : false;
+  // `pending` in the dep array triggers recomputation when slider/input changes
+  // update the React Query pending cache — without it the component never re-renders
+  // because getPrediction/isPredictionSaved are stable (empty deps, read from refs).
+  const prediction = useMemo(
+    () =>
+      currentFixtureId != null
+        ? getPrediction(currentFixtureId)
+        : { home: null, away: null },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentFixtureId, pending]
+  );
+  const isSaved = useMemo(
+    () =>
+      currentFixtureId != null ? isPredictionSaved(currentFixtureId) : false,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentFixtureId, pending]
+  );
 
   const handleFieldFocus = useCallback((fId: number, type: "home" | "away") => {
     setCurrentFocusedField({ fixtureId: fId, type });

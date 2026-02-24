@@ -44,29 +44,51 @@ export function useGroupPredictions({
     enabled: groupId != null,
   });
 
+  // Ref-bridges: let getPrediction/isPredictionSaved read latest values
+  // without recreating the callback on every keystroke.
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
+  const fixturesRef = useRef(fixtures);
+  fixturesRef.current = fixtures;
+
+  // Cache server-side prediction objects so the same reference is returned
+  // when home/away haven't changed (avoids unnecessary GC pressure).
+  const serverPredictionCache = useRef<Map<string, GroupPrediction>>(new Map());
+
   const getPrediction = useCallback(
     (fixtureId: number): GroupPrediction => {
       const idStr = String(fixtureId);
-      if (pending[idStr]) {
-        return pending[idStr];
+      const currentPending = pendingRef.current;
+      if (currentPending[idStr]) {
+        return currentPending[idStr];
       }
-      const fixture = fixtures.find((f) => f.id === fixtureId);
+      const fixture = fixturesRef.current.find((f) => f.id === fixtureId);
       if (fixture?.prediction != null) {
-        return {
+        const cached = serverPredictionCache.current.get(idStr);
+        if (
+          cached &&
+          cached.home === fixture.prediction.home &&
+          cached.away === fixture.prediction.away
+        ) {
+          return cached;
+        }
+        const prediction: GroupPrediction = {
           home: fixture.prediction.home,
           away: fixture.prediction.away,
         };
+        serverPredictionCache.current.set(idStr, prediction);
+        return prediction;
       }
       return EMPTY_PREDICTION;
     },
-    [pending, fixtures]
+    []
   );
 
   const isPredictionSaved = useCallback(
     (fixtureId: number): boolean => {
-      return !pending[String(fixtureId)];
+      return !pendingRef.current[String(fixtureId)];
     },
-    [pending]
+    []
   );
 
   const setPendingPrediction = useCallback(
@@ -336,5 +358,7 @@ export function useGroupPredictions({
     isSaving: saveMutation.isPending,
     hasPendingChanges,
     pendingCount,
+    /** Raw pending map — used as extraData trigger in FlatList consumers. */
+    pending,
   };
 }

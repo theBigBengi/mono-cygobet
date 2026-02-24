@@ -108,9 +108,9 @@ function GroupsContent() {
     router.push("/groups/discover");
   };
 
-  const handleGroupPress = (groupId: number) => {
+  const handleGroupPress = useCallback((groupId: number) => {
     router.push(`/groups/${groupId}` as any);
-  };
+  }, [router]);
 
   const groups = data?.data || [];
   const { selectedFilter, setSelectedFilter, filteredGroups, counts } =
@@ -536,7 +536,7 @@ function GroupsContent() {
     return (
       <GroupCard
         group={item.data}
-        onPress={() => handleGroupPress(item.data.id)}
+        onPress={handleGroupPress}
         unreadCount={unreadCounts[String(item.data.id)] ?? 0}
       />
     );

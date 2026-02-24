@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, Pressable, Dimensions, type ListRenderItemInfo } from "react-native";
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedStyle, runOnJS, clamp, withTiming, withSpring, interpolate, Easing } from "react-native-reanimated";
@@ -137,6 +137,7 @@ export function GroupGamesScreen({
     fillRandomPredictions,
     saveAllPending,
     isSaving,
+    pending,
   } = useGroupPredictions({
     groupId,
     predictionMode,
@@ -176,24 +177,6 @@ export function GroupGamesScreen({
   }, [saveAllPending, t]);
 
   const predictionModeTyped = predictionMode ?? "CorrectScore";
-
-  /** Memoized map of predictions to avoid creating new objects on each render. */
-  const predictionsMap = useMemo(() => {
-    const map: Record<number, ReturnType<typeof getPrediction>> = {};
-    filteredFixtures.forEach((fixture) => {
-      map[fixture.id] = getPrediction(fixture.id);
-    });
-    return map;
-  }, [filteredFixtures, getPrediction]);
-
-  /** Memoized map of saved states. */
-  const savedStatesMap = useMemo(() => {
-    const map: Record<number, boolean> = {};
-    filteredFixtures.forEach((fixture) => {
-      map[fixture.id] = isPredictionSaved(fixture.id);
-    });
-    return map;
-  }, [filteredFixtures, isPredictionSaved]);
 
   /** Memoized map of global match numbers in "x/y" format. */
   const matchNumbersMap = useMemo(() => {
@@ -390,6 +373,7 @@ export function GroupGamesScreen({
     updateFixtureIndexMap,
     currentFocusedField,
     setCurrentFocusedField,
+    isNavigatingRef,
     handlePrevious,
     handleNext,
     canGoPrevious,
@@ -515,6 +499,7 @@ export function GroupGamesScreen({
   const { handleFieldFocus, handleFieldBlur } = useCardFocusSaving({
     currentFocusedField,
     setCurrentFocusedField,
+    isNavigatingRef,
   });
 
   /** Get focused team info for navigation bar. */
@@ -582,6 +567,22 @@ export function GroupGamesScreen({
   // Track highlighted fixture for visual feedback after scroll
   const [highlightedFixtureId, setHighlightedFixtureId] = React.useState<number | null>(null);
 
+  // ── Ref-bridges: renderItem reads from refs so its deps stay stable ──
+  const currentFocusedFieldRef = useRef(currentFocusedField);
+  currentFocusedFieldRef.current = currentFocusedField;
+  const highlightedFixtureIdRef = useRef(highlightedFixtureId);
+  highlightedFixtureIdRef.current = highlightedFixtureId;
+  const nextToPredictIdRef = useRef(nextToPredictId);
+  nextToPredictIdRef.current = nextToPredictId;
+
+  /** Extra-data trigger: when any hot value changes, FlatList re-calls renderItem
+   *  (which reads fresh values from refs). React.memo on GroupFixtureCard still
+   *  prevents unnecessary card re-renders. */
+  const flatListExtraData = useMemo(
+    () => ({ pending, currentFocusedField, highlightedFixtureId, nextToPredictId }),
+    [pending, currentFocusedField, highlightedFixtureId, nextToPredictId]
+  );
+
   // Scroll to specific fixture on mount (only once, after cards are rendered)
   React.useEffect(() => {
     if (scrollToFixtureId == null || !isReady) return;
@@ -620,15 +621,12 @@ export function GroupGamesScreen({
     [groupId, router, saveAllPending]
   );
 
-  /** Update prediction for a field and optionally move focus to next field. */
+  /** Update prediction for a field. Navigation is handled by handleAutoNext. */
   const handleCardChange = useCallback(
     (fixtureId: number, type: "home" | "away", text: string) => {
-      updatePrediction(fixtureId, type, text, (fId, t) => {
-        const nextIndex = getNextFieldIndex(fId, t);
-        if (nextIndex >= 0) navigateToField(nextIndex);
-      });
+      updatePrediction(fixtureId, type, text);
     },
-    [updatePrediction, getNextFieldIndex, navigateToField]
+    [updatePrediction]
   );
 
   /** Move focus to the next input (e.g. after max digits in score field). */
@@ -709,11 +707,11 @@ export function GroupGamesScreen({
           fixture={fixture}
           index={indexInGroup}
           totalInGroup={group.fixtures.length}
-          prediction={predictionsMap[fixture.id]}
+          prediction={getPrediction(fixture.id)}
           inputRefs={inputRefs}
-          currentFocusedField={currentFocusedField}
-          isSaved={savedStatesMap[fixture.id]}
-          isHighlighted={highlightedFixtureId === fixture.id}
+          currentFocusedField={currentFocusedFieldRef.current}
+          isSaved={isPredictionSaved(fixture.id)}
+          isHighlighted={highlightedFixtureIdRef.current === fixture.id}
           matchCardRefs={matchCardRefs}
           predictionMode={predictionModeTyped}
           groupName={groupName}
@@ -722,7 +720,7 @@ export function GroupGamesScreen({
           timelineConnectorFilled={item.timelineConnectorFilled}
           isFirstInTimeline={item.isFirstInTimeline}
           isLastInTimeline={item.isLastInTimeline}
-          isNextToPredict={fixture.id === nextToPredictId}
+          isNextToPredict={fixture.id === nextToPredictIdRef.current}
           isMaxPoints={maxPoints > 0 && (fixture.prediction?.points ?? 0) === maxPoints}
           onFieldFocus={handleFieldFocus}
           onFieldBlur={handleFieldBlur}
@@ -739,12 +737,13 @@ export function GroupGamesScreen({
         />
       );
     },
+    // Deps only contain values that change on data load / filter change — NOT on keystroke.
+    // Hot state (focus, predictions, highlight) is read from refs; extraData triggers re-calls.
     [
-      theme, predictionsMap, inputRefs, currentFocusedField, savedStatesMap,
-      highlightedFixtureId, matchCardRefs, predictionModeTyped, groupName,
-      matchNumbersMap, nextToPredictId, maxPoints, handleFieldFocus,
-      handleFieldBlur, handleCardChange, handleAutoNext, predictionMode,
-      handleSelectOutcome, scrollToMatchCard, handlePressCard, scrollY,
+      theme, inputRefs, matchCardRefs, predictionModeTyped, groupName,
+      matchNumbersMap, maxPoints, handleFieldFocus, handleFieldBlur,
+      handleCardChange, handleAutoNext, predictionMode, handleSelectOutcome,
+      scrollToMatchCard, handlePressCard, scrollY, getPrediction, isPredictionSaved,
     ]
   );
 
@@ -832,6 +831,7 @@ export function GroupGamesScreen({
           data={isReady ? renderItems : []}
           renderItem={flatListRenderItem}
           keyExtractor={flatListKeyExtractor}
+          extraData={flatListExtraData}
           style={styles.scrollView}
           contentContainerStyle={[
             styles.contentContainer,

@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text, Image, ScrollView } from "react-native";
 import * as Haptics from "expo-haptics";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useCountdown } from "@/features/groups/predictions/hooks";
@@ -39,13 +39,219 @@ function getInitials(name: string): string {
 
 export interface GroupCardProps {
   group: ApiGroupItem;
-  onPress: () => void;
+  onPress: (groupId: number) => void;
   unreadCount?: number;
 }
 
 const AVATAR_SIZE = 56;
 
-export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
+// ─── HUD Cell Sub-components ──────────────────────────────────────────
+
+interface RankingHudCellProps {
+  rankChange: number;
+  userRank: number | null | undefined;
+  textSecondary: string;
+}
+
+const RankingHudCell = React.memo(function RankingHudCellInner({
+  rankChange,
+  userRank,
+  textSecondary,
+}: RankingHudCellProps) {
+  const isLit = rankChange !== 0;
+  const isUp = rankChange > 0;
+  const rankColor = isUp ? "#10B981" : "#EF4444";
+  return (
+    <View
+      style={[
+        styles.hudCell,
+        {
+          backgroundColor: isLit ? rankColor + "15" : "transparent",
+        },
+      ]}
+    >
+      <Ionicons
+        name={isLit ? "trophy" : "trophy-outline"}
+        size={16}
+        color={isLit ? rankColor : textSecondary + "50"}
+      />
+      <Text
+        style={[
+          styles.hudValue,
+          {
+            color: isLit ? rankColor : textSecondary + "50",
+          },
+        ]}
+      >
+        {userRank ? `#${userRank}` : "–"}
+      </Text>
+      {isLit && (
+        <View style={styles.rankChangeIndicator}>
+          <Ionicons
+            name={isUp ? "caret-up" : "caret-down"}
+            size={12}
+            color={rankColor}
+          />
+        </View>
+      )}
+    </View>
+  );
+});
+
+interface PredictionsHudCellProps {
+  totalFixtures: number;
+  predictionsCount: number;
+  urgencyColor: string | null;
+  textSecondary: string;
+}
+
+const PredictionsHudCell = React.memo(function PredictionsHudCellInner({
+  totalFixtures,
+  predictionsCount,
+  urgencyColor,
+  textSecondary,
+}: PredictionsHudCellProps) {
+  const missingCount = totalFixtures - predictionsCount;
+  const isComplete = totalFixtures > 0 && missingCount === 0;
+  const hasUrgency = !isComplete && urgencyColor;
+  const litColor = urgencyColor;
+  return (
+    <View
+      style={[
+        styles.hudCell,
+        {
+          backgroundColor: hasUrgency ? litColor + "15" : "transparent",
+        },
+      ]}
+    >
+      <MaterialCommunityIcons
+        name={isComplete ? "notebook-check-outline" : "notebook-edit-outline"}
+        size={16}
+        color={
+          hasUrgency
+            ? litColor!
+            : isComplete
+              ? "#10B981"
+              : textSecondary + "50"
+        }
+      />
+      <Text
+        style={[
+          styles.hudValue,
+          {
+            color: hasUrgency
+              ? litColor!
+              : textSecondary + "50",
+          },
+        ]}
+      >
+        {hasUrgency ? `${missingCount}/${totalFixtures}` : `${predictionsCount}/${totalFixtures}`}
+      </Text>
+    </View>
+  );
+});
+
+interface GamesHudCellProps {
+  liveCount: number;
+  totalFixtures: number;
+  completedGames: number;
+  textSecondary: string;
+}
+
+const GamesHudCell = React.memo(function GamesHudCellInner({
+  liveCount,
+  totalFixtures,
+  completedGames,
+  textSecondary,
+}: GamesHudCellProps) {
+  const isLit = liveCount > 0;
+  const allCompleted = totalFixtures > 0 && completedGames === totalFixtures;
+  const liveColor = "#EC4899";
+  return (
+    <View
+      style={[
+        styles.hudCell,
+        {
+          backgroundColor: isLit ? liveColor + "15" : "transparent",
+        },
+      ]}
+    >
+      <MaterialCommunityIcons
+        name={
+          isLit
+            ? "timeline-alert-outline"
+            : allCompleted
+              ? "timeline-check-outline"
+              : "timeline-clock-outline"
+        }
+        size={16}
+        color={
+          isLit
+            ? liveColor
+            : allCompleted
+              ? "#10B981"
+              : textSecondary + "50"
+        }
+      />
+      <Text
+        style={[
+          styles.hudValue,
+          {
+            color: isLit ? liveColor : textSecondary + "50",
+          },
+        ]}
+      >
+        {isLit ? "LIVE" : `${completedGames}/${totalFixtures}`}
+      </Text>
+    </View>
+  );
+});
+
+interface ChatHudCellProps {
+  unreadCount: number;
+  lastMessageAt: string | undefined;
+  primaryColor: string;
+  textSecondary: string;
+}
+
+const ChatHudCell = React.memo(function ChatHudCellInner({
+  unreadCount,
+  lastMessageAt,
+  primaryColor,
+  textSecondary,
+}: ChatHudCellProps) {
+  const isLit = unreadCount > 0;
+  const lastMsgTime = formatLastMessageTime(lastMessageAt);
+  return (
+    <View
+      style={[
+        styles.hudCell,
+        {
+          backgroundColor: isLit ? primaryColor + "15" : "transparent",
+        },
+      ]}
+    >
+      <Ionicons
+        name={isLit ? "chatbubble" : "chatbubble-outline"}
+        size={16}
+        color={isLit ? primaryColor : textSecondary + "50"}
+      />
+      {isLit ? (
+        <Text style={[styles.hudValue, { color: primaryColor }]}>
+          {unreadCount > 99 ? "99+" : unreadCount}
+        </Text>
+      ) : (
+        <Text style={[styles.hudValue, { color: textSecondary + "50" }]}>
+          {lastMsgTime ?? "–"}
+        </Text>
+      )}
+    </View>
+  );
+});
+
+// ─── GroupCard ─────────────────────────────────────────────────────────
+
+function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [isPressed, setIsPressed] = useState(false);
@@ -114,7 +320,7 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onPress();
+    onPress(group.id);
   };
 
   const handlePressOut = () => {
@@ -374,157 +580,29 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
             {/* Alert HUD - always visible, items light up when there's an alert */}
             {!isDraft && !isEnded && (
               <View style={[styles.statsHud, { borderTopColor: theme.colors.border }]}>
-                {/* Ranking */}
-                {(() => {
-                  const rankChange = group.userRankChange ?? 0;
-                  const isLit = rankChange !== 0;
-                  const isUp = rankChange > 0;
-                  const rankColor = isUp ? "#10B981" : "#EF4444"; // green / red
-                  return (
-                    <View
-                      style={[
-                        styles.hudCell,
-                        {
-                          backgroundColor: isLit ? rankColor + "15" : "transparent",
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={isLit ? "trophy" : "trophy-outline"}
-                        size={16}
-                        color={isLit ? rankColor : theme.colors.textSecondary + "50"}
-                      />
-                      <Text
-                        style={[
-                          styles.hudValue,
-                          {
-                            color: isLit ? rankColor : theme.colors.textSecondary + "50",
-                          },
-                        ]}
-                      >
-                        {userRank ? `#${userRank}` : "–"}
-                      </Text>
-                      {isLit && (
-                        <View style={styles.rankChangeIndicator}>
-                          <Ionicons
-                            name={isUp ? "caret-up" : "caret-down"}
-                            size={12}
-                            color={rankColor}
-                          />
-                        </View>
-                      )}
-                    </View>
-                  );
-                })()}
-
-                {/* Predictions */}
-                {(() => {
-                  const missingCount = totalFixtures - predictionsCount;
-                  const isComplete = missingCount === 0;
-                  const hasUrgency = !isComplete && urgencyColor;
-                  const litColor = urgencyColor;
-                  return (
-                    <View
-                      style={[
-                        styles.hudCell,
-                        {
-                          backgroundColor: hasUrgency ? litColor + "15" : "transparent",
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={isComplete ? "checkmark-circle" : "create-outline"}
-                        size={16}
-                        color={
-                          hasUrgency
-                            ? litColor
-                            : isComplete
-                              ? "#10B981"
-                              : theme.colors.textSecondary + "50"
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.hudValue,
-                          {
-                            color: hasUrgency
-                              ? litColor
-                              : theme.colors.textSecondary + "50",
-                          },
-                        ]}
-                      >
-                        {hasUrgency ? `${missingCount}/${totalFixtures}` : `${predictionsCount}/${totalFixtures}`}
-                      </Text>
-                    </View>
-                  );
-                })()}
-
-                {/* LIVE / Games */}
-                {(() => {
-                  const isLit = liveCount > 0;
-                  const liveColor = "#EC4899"; // Pink/Magenta
-                  return (
-                    <View
-                      style={[
-                        styles.hudCell,
-                        {
-                          backgroundColor: isLit ? liveColor + "15" : "transparent",
-                        },
-                      ]}
-                    >
-                      {isLit ? (
-                        <View style={[styles.liveDot, { backgroundColor: liveColor }]} />
-                      ) : (
-                        <Ionicons
-                          name="football-outline"
-                          size={16}
-                          color={theme.colors.textSecondary + "50"}
-                        />
-                      )}
-                      <Text
-                        style={[
-                          styles.hudValue,
-                          {
-                            color: isLit ? liveColor : theme.colors.textSecondary + "50",
-                          },
-                        ]}
-                      >
-                        {isLit ? "LIVE" : `${completedGames}/${totalFixtures}`}
-                      </Text>
-                    </View>
-                  );
-                })()}
-
-                {/* Chat */}
-                {(() => {
-                  const isLit = unreadCount > 0;
-                  const lastMsgTime = formatLastMessageTime(group.lastMessageAt);
-                  return (
-                    <View
-                      style={[
-                        styles.hudCell,
-                        {
-                          backgroundColor: isLit ? theme.colors.primary + "15" : "transparent",
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={isLit ? "chatbubble" : "chatbubble-outline"}
-                        size={16}
-                        color={isLit ? theme.colors.primary : theme.colors.textSecondary + "50"}
-                      />
-                      {isLit ? (
-                        <Text style={[styles.hudValue, { color: theme.colors.primary }]}>
-                          {unreadCount > 99 ? "99+" : unreadCount}
-                        </Text>
-                      ) : (
-                        <Text style={[styles.hudValue, { color: theme.colors.textSecondary + "50" }]}>
-                          {lastMsgTime ?? "–"}
-                        </Text>
-                      )}
-                    </View>
-                  );
-                })()}
+                <RankingHudCell
+                  rankChange={group.userRankChange ?? 0}
+                  userRank={userRank}
+                  textSecondary={theme.colors.textSecondary}
+                />
+                <PredictionsHudCell
+                  totalFixtures={totalFixtures}
+                  predictionsCount={predictionsCount}
+                  urgencyColor={urgencyColor}
+                  textSecondary={theme.colors.textSecondary}
+                />
+                <GamesHudCell
+                  liveCount={liveCount}
+                  totalFixtures={totalFixtures}
+                  completedGames={completedGames}
+                  textSecondary={theme.colors.textSecondary}
+                />
+                <ChatHudCell
+                  unreadCount={unreadCount}
+                  lastMessageAt={group.lastMessageAt}
+                  primaryColor={theme.colors.primary}
+                  textSecondary={theme.colors.textSecondary}
+                />
               </View>
             )}
 
@@ -557,6 +635,14 @@ export function GroupCard({ group, onPress, unreadCount = 0 }: GroupCardProps) {
     </View>
   );
 }
+
+export const GroupCard = React.memo(GroupCardInner, (prev, next) => {
+  return (
+    prev.group === next.group &&
+    prev.unreadCount === next.unreadCount &&
+    prev.onPress === next.onPress
+  );
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -741,12 +827,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 4,
     overflow: "hidden",
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#EF4444",
   },
   rankChangeIndicator: {
     marginLeft: -2,
