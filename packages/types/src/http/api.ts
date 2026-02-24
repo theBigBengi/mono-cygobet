@@ -493,6 +493,13 @@ export type ApiGroupsResponse = {
 };
 
 /**
+ * Query parameters for GET /api/groups (my groups).
+ */
+export type ApiMyGroupsQuery = {
+  search?: string;
+};
+
+/**
  * Query parameters for GET /api/groups/public.
  */
 export type ApiPublicGroupsQuery = {

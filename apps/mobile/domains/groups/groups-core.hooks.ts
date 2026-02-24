@@ -2,7 +2,7 @@
 // React Query hooks for core group operations (CRUD, listing, fixtures).
 // - Feature-agnostic: can be used by any feature that needs groups data.
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type {
   ApiCreateGroupBody,
   ApiUpdateGroupBody,
@@ -40,15 +40,16 @@ import { groupsKeys } from "./groups.keys";
  * - Enabled only when authenticated and onboarding complete.
  * - Returns groups data with loading/error states.
  */
-export function useMyGroupsQuery() {
+export function useMyGroupsQuery(search?: string) {
   const { status, user } = useAuth();
 
   const enabled = isReadyForProtected(status, user);
 
   return useQuery<ApiGroupsResponse, ApiError>({
-    queryKey: groupsKeys.list(),
-    queryFn: () => fetchMyGroups(),
+    queryKey: groupsKeys.list(search),
+    queryFn: () => fetchMyGroups(search),
     enabled,
+    placeholderData: search ? keepPreviousData : undefined,
     meta: { scope: "user" },
   });
 }

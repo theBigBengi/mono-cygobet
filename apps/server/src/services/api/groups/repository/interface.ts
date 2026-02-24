@@ -20,7 +20,8 @@ type BatchPayload = { count: number };
 export interface GroupsRepository {
   // Core operations
   findGroupsByUserId(
-    userId: number
+    userId: number,
+    search?: string
   ): Promise<Array<Prisma.groupsGetPayload<{}>>>;
   findGroupById(id: number): Promise<Prisma.groupsGetPayload<{}> | null>;
   findPublicGroupsPaginated(params: {

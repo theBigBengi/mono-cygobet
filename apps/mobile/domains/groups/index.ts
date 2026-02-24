@@ -88,6 +88,7 @@ export type {
   ApiPublicGroupsQuery,
   ApiPublicGroupItem,
   ApiPublicGroupsResponse,
+  ApiMyGroupsQuery,
   ApiGroupPreviewBody,
   ApiGroupPreviewResponse,
 } from "@repo/types";

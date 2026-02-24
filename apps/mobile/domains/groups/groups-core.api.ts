@@ -38,9 +38,11 @@ export async function createGroup(
  * Fetch all groups created by the authenticated user.
  * - Requires authentication.
  * - Returns list of groups sorted by createdAt DESC.
+ * - Optionally filter by group name (server-side, case-insensitive).
  */
-export async function fetchMyGroups(): Promise<ApiGroupsResponse> {
-  return apiFetchWithAuthRetry<ApiGroupsResponse>("/api/groups", {
+export async function fetchMyGroups(search?: string): Promise<ApiGroupsResponse> {
+  const queryString = buildQuery({ search });
+  return apiFetchWithAuthRetry<ApiGroupsResponse>(`/api/groups${queryString}`, {
     method: "GET",
   });
 }

@@ -40,7 +40,7 @@ function MaxPointsBadge({ points }: { points: number }) {
   React.useEffect(() => {
     glowPulse.value = withRepeat(
       withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
-      -1,
+      6, // 3 full cycles (6 half-cycles), then stop — avoids infinite animation overhead
       true
     );
   }, [glowPulse]);
@@ -68,7 +68,7 @@ function MaxPointsBadge({ points }: { points: number }) {
         withTiming(0, { duration: 2500 }),
         withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) })
       ),
-      -1,
+      3, // 3 shimmer cycles then stop
       false
     );
   }, [shimmer]);
@@ -116,13 +116,21 @@ function MaxPointsBadge({ points }: { points: number }) {
 /** Cached viewport height — constant for the lifetime of the app. */
 const VIEWPORT_H = Dimensions.get("window").height;
 
+/** Static style for already-revealed cards — avoids per-frame animated evaluation. */
+const REVEALED_STYLE = { opacity: 1, transform: [{ scale: 1 }] } as const;
+
 /**
  * Module-level Set that tracks which fixtures have already been revealed.
  * When FlatList recycles a cell, the card remounts — we skip the spring
  * animation for cards the user has already seen.
+ * Capped to prevent unbounded growth across groups/sessions.
  */
 const _revealedFixtures = new Set<number>();
+const MAX_REVEALED_CACHE = 500;
 function markRevealed(id: number) {
+  if (_revealedFixtures.size >= MAX_REVEALED_CACHE) {
+    _revealedFixtures.clear();
+  }
   _revealedFixtures.add(id);
 }
 
@@ -208,15 +216,16 @@ export function MatchPredictionCardVertical({
   const { theme } = useTheme();
   const fixtureIdStr = String(fixture.id);
 
-  // Scroll-reveal animation: content fades in when card scrolls into viewport
-  const cardY = useSharedValue(-1);
+  // Scroll-reveal animation: content fades in when card scrolls into viewport.
+  // Once a card has been revealed, skip ALL animation infrastructure to avoid
+  // per-frame overhead (useAnimatedReaction, measureInWindow, useAnimatedStyle).
   const alreadyRevealed = !scrollY || _revealedFixtures.has(fixture.id);
+  const cardY = useSharedValue(-1);
   const revealed = useSharedValue(alreadyRevealed ? 1 : 0);
 
   const handleCardLayout = useCallback(() => {
-    // In FlatList, e.nativeEvent.layout.y is always 0 (relative to cell).
-    // Use measureInWindow to get the screen-space Y, then add scrollY to get
-    // the absolute content offset — same value ScrollView's layout.y gave us.
+    // Skip measurement for already-revealed cards — no need for cardY position.
+    if (alreadyRevealed) return;
     if (cardRef?.current) {
       cardRef.current.measureInWindow((_x: number, screenY: number) => {
         if (screenY != null) {
@@ -224,11 +233,13 @@ export function MatchPredictionCardVertical({
         }
       });
     }
-  }, [cardRef, cardY, scrollY]);
+  }, [alreadyRevealed, cardRef, cardY, scrollY]);
 
   useAnimatedReaction(
     () => {
-      // Stop tracking once revealed
+      // Already revealed at mount time — permanently skip this reaction.
+      if (alreadyRevealed) return -1;
+      // Stop tracking once revealed during this mount cycle.
       if (revealed.value >= 1) return -1;
       if (!scrollY || cardY.value < 0) return -1;
       return scrollY.value + VIEWPORT_H - cardY.value;
@@ -250,12 +261,19 @@ export function MatchPredictionCardVertical({
     }
   );
 
-  const contentRevealStyle = useAnimatedStyle(() => ({
-    opacity: revealed.value > 0 ? 1 : 0,
-    transform: [
-      { scale: interpolate(revealed.value, [0, 1], [0.8, 1]) },
-    ],
-  }));
+  const animatedRevealStyle = useAnimatedStyle(() => {
+    // Already-revealed cards: return constant — Reanimated detects no change, no-ops.
+    if (alreadyRevealed) return { opacity: 1, transform: [{ scale: 1 }] };
+    return {
+      opacity: revealed.value > 0 ? 1 : 0,
+      transform: [
+        { scale: interpolate(revealed.value, [0, 1], [0.8, 1]) },
+      ],
+    };
+  });
+
+  // Use static style object for already-revealed cards to skip animated style entirely.
+  const contentRevealStyle = alreadyRevealed ? REVEALED_STYLE : animatedRevealStyle;
 
   const onPressCard = useCallback(() => {
     if (onPressCardProp) {
@@ -419,11 +437,6 @@ export function MatchPredictionCardVertical({
                 shadowColor: isMaxPoints ? "#FFB020" : hasPoints ? successColor : missedColor,
                 shadowOpacity: 0.25,
               },
-              isCardFocused && !pressed && {
-                shadowColor: theme.colors.primary,
-                shadowOpacity: 0.25,
-                shadowRadius: 12,
-              },
               pressed && styles.cardShadowWrapperPressed,
             ]}
           >
@@ -433,15 +446,9 @@ export function MatchPredictionCardVertical({
                 {
                   backgroundColor: isHighlighted
                     ? theme.colors.primary + "15"
-                    : isCardFocused
-                      ? theme.colors.primary + "08"
-                      : theme.colors.cardBackground,
-                  borderColor: isCardFocused
-                    ? theme.colors.primary + "40"
-                    : theme.colors.border,
-                  borderBottomColor: isCardFocused
-                    ? theme.colors.primary + "60"
-                    : theme.colors.textSecondary + "40",
+                    : theme.colors.cardBackground,
+                  borderColor: theme.colors.border,
+                  borderBottomColor: theme.colors.textSecondary + "40",
                 },
                 isFinished && !isCancelled && {
                   borderColor: (isMaxPoints ? "#FFB020" : hasPoints ? successColor : missedColor) + "30",

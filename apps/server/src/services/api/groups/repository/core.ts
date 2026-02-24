@@ -24,22 +24,29 @@ import {
 
 /**
  * Find all groups where user is either creator or a joined member.
+ * Optionally filter by group name (case-insensitive).
  */
-export async function findGroupsByUserId(userId: number) {
-  return await prisma.groups.findMany({
-    where: {
-      OR: [
-        { creatorId: userId },
-        {
-          groupMembers: {
-            some: {
-              userId: userId,
-              status: MEMBER_STATUS.JOINED,
-            },
+export async function findGroupsByUserId(userId: number, search?: string) {
+  const where: Prisma.groupsWhereInput = {
+    OR: [
+      { creatorId: userId },
+      {
+        groupMembers: {
+          some: {
+            userId: userId,
+            status: MEMBER_STATUS.JOINED,
           },
         },
-      ],
-    },
+      },
+    ],
+  };
+
+  if (search != null && search.trim() !== "") {
+    where.name = { contains: search.trim(), mode: "insensitive" };
+  }
+
+  return await prisma.groups.findMany({
+    where,
     orderBy: {
       createdAt: "desc",
     },

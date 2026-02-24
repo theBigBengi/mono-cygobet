@@ -34,10 +34,10 @@ const log = getLogger("groups.read");
  *
  * Optimized with batch queries to avoid N+1 problem.
  */
-export async function getMyGroups(userId: number): Promise<ApiGroupsResponse> {
-  log.debug({ userId }, "getMyGroups - start");
+export async function getMyGroups(userId: number, search?: string): Promise<ApiGroupsResponse> {
+  log.debug({ userId, search }, "getMyGroups - start");
   // Find all groups where user is either creator or a joined member
-  const groups = await repo.findGroupsByUserId(userId);
+  const groups = await repo.findGroupsByUserId(userId, search);
 
   if (groups.length === 0) {
     return {

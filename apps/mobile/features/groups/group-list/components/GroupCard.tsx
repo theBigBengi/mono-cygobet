@@ -2,7 +2,7 @@
 // Unified card component for displaying groups in the groups list.
 // Styled to match the lobby and games screen design patterns.
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text, Image, ScrollView } from "react-native";
 import * as Haptics from "expo-haptics";
@@ -249,6 +249,121 @@ const ChatHudCell = React.memo(function ChatHudCellInner({
   );
 });
 
+// ─── NextGameRow Sub-component ────────────────────────────────────────
+
+interface NextGameRowProps {
+  nextGame: NonNullable<ApiGroupItem["nextGame"]>;
+  urgencyColor: string | null;
+  textSecondary: string;
+  textPrimary: string;
+  borderColor: string;
+  surfaceColor: string;
+}
+
+const NextGameRow = React.memo(function NextGameRowInner({
+  nextGame,
+  urgencyColor,
+  textSecondary,
+  textPrimary,
+  borderColor,
+  surfaceColor,
+}: NextGameRowProps) {
+  const { t } = useTranslation("common");
+  const countdown = useCountdown(nextGame.kickoffAt ?? null);
+
+  return (
+    <View
+      style={[
+        styles.nextGameRow,
+        { borderTopColor: borderColor },
+      ]}
+    >
+      <View style={styles.nextGameInfo}>
+        <Text
+          style={[
+            styles.nextGameLabel,
+            { color: textSecondary },
+          ]}
+        >
+          {t("groups.nextGame")} · {countdown}
+        </Text>
+        <Text
+          style={[
+            styles.nextGameText,
+            { color: textPrimary },
+          ]}
+          numberOfLines={1}
+        >
+          {nextGame.homeTeam?.name ?? "?"} - {nextGame.awayTeam?.name ?? "?"}
+        </Text>
+      </View>
+      {/* Mini score boxes with team logos */}
+      <View style={styles.predictionBoxes}>
+        {/* Home team */}
+        <View style={styles.teamPrediction}>
+          <Text style={[styles.teamCode, { color: textSecondary }]}>
+            {nextGame.homeTeam?.shortCode ?? "H"}
+          </Text>
+          <View
+            style={[
+              styles.scoreBox,
+              {
+                backgroundColor: urgencyColor
+                  ? urgencyColor + "15"
+                  : surfaceColor,
+                borderColor: urgencyColor
+                  ? urgencyColor + "40"
+                  : borderColor,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.scoreText,
+                {
+                  color: urgencyColor ?? textPrimary,
+                },
+              ]}
+            >
+              {nextGame.prediction?.home ?? "–"}
+            </Text>
+          </View>
+        </View>
+        {/* Away team */}
+        <View style={styles.teamPrediction}>
+          <Text style={[styles.teamCode, { color: textSecondary }]}>
+            {nextGame.awayTeam?.shortCode ?? "A"}
+          </Text>
+          <View
+            style={[
+              styles.scoreBox,
+              {
+                backgroundColor: urgencyColor
+                  ? urgencyColor + "15"
+                  : surfaceColor,
+                borderColor: urgencyColor
+                  ? urgencyColor + "40"
+                  : borderColor,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.scoreText,
+                {
+                  color: urgencyColor ?? textPrimary,
+                },
+              ]}
+            >
+              {nextGame.prediction?.away ?? "–"}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+});
+
 // ─── GroupCard ─────────────────────────────────────────────────────────
 
 function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
@@ -269,7 +384,6 @@ function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
   const userRank = group.userRank;
 
   const nextGameKickoff = group.nextGame?.kickoffAt ?? null;
-  const countdown = useCountdown(nextGameKickoff);
   const hasPrediction = !!group.nextGame?.prediction;
 
   // Prediction urgency levels based on time until kickoff
@@ -303,6 +417,25 @@ function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
   };
 
   const urgencyColor = URGENCY_COLORS[urgencyLevel];
+
+  // Memoize theme-dependent inline style objects
+  const cardStyles = useMemo(() => ({
+    card: {
+      backgroundColor: theme.colors.cardBackground,
+      borderColor: theme.colors.border,
+      borderBottomColor: theme.colors.textSecondary + "40",
+    },
+    avatar: {
+      backgroundColor: theme.colors.primary,
+      shadowColor: "#000",
+    },
+    initials: { color: theme.colors.primaryText },
+    name: { color: theme.colors.textPrimary },
+    statsHud: { borderTopColor: theme.colors.border },
+    badgeBg: { backgroundColor: theme.colors.textSecondary + "15" },
+    badgeText: { color: theme.colors.textSecondary },
+    draftHint: { borderTopColor: theme.colors.border },
+  }), [theme]);
 
   // Status color - same as lobby
   const getStatusColor = () => {
@@ -347,11 +480,7 @@ function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
           <View
             style={[
               styles.card,
-              {
-                backgroundColor: theme.colors.cardBackground,
-                borderColor: theme.colors.border,
-                borderBottomColor: theme.colors.textSecondary + "40",
-              },
+              cardStyles.card,
               isDraft && styles.cardDraft,
             ]}
           >
@@ -360,20 +489,17 @@ function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
               <View
                 style={[
                   styles.avatar,
-                  {
-                    backgroundColor: theme.colors.primary,
-                    shadowColor: "#000",
-                  },
+                  cardStyles.avatar,
                 ]}
               >
-                <Text style={[styles.initials, { color: theme.colors.primaryText }]}>
+                <Text style={[styles.initials, cardStyles.initials]}>
                   {initials}
                 </Text>
               </View>
 
               <View style={styles.info}>
                 <Text
-                  style={[styles.name, { color: theme.colors.textPrimary }]}
+                  style={[styles.name, cardStyles.name]}
                   numberOfLines={1}
                 >
                   {group.name}
@@ -452,13 +578,13 @@ function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                 <View
                   style={[
                     styles.roleBadge,
-                    { backgroundColor: theme.colors.textSecondary + "15" },
+                    cardStyles.badgeBg,
                   ]}
                 >
                   <Text
                     style={[
                       styles.roleText,
-                      { color: theme.colors.textSecondary },
+                      cardStyles.badgeText,
                     ]}
                   >
                     {group.userRole === "owner"
@@ -472,7 +598,7 @@ function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                 <View
                   style={[
                     styles.privacyBadge,
-                    { backgroundColor: theme.colors.textSecondary + "15" },
+                    cardStyles.badgeBg,
                   ]}
                 >
                   <Ionicons
@@ -486,100 +612,19 @@ function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
 
             {/* Next Game Row (for active groups) */}
             {!isDraft && !isEnded && group.nextGame && (
-              <View
-                style={[
-                  styles.nextGameRow,
-                  { borderTopColor: theme.colors.border },
-                ]}
-              >
-                <View style={styles.nextGameInfo}>
-                  <Text
-                    style={[
-                      styles.nextGameLabel,
-                      { color: theme.colors.textSecondary },
-                    ]}
-                  >
-                    {t("groups.nextGame")} · {countdown}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.nextGameText,
-                      { color: theme.colors.textPrimary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {group.nextGame.homeTeam?.name ?? "?"} - {group.nextGame.awayTeam?.name ?? "?"}
-                  </Text>
-                </View>
-                {/* Mini score boxes with team logos */}
-                <View style={styles.predictionBoxes}>
-                  {/* Home team */}
-                  <View style={styles.teamPrediction}>
-                    <Text style={[styles.teamCode, { color: theme.colors.textSecondary }]}>
-                      {group.nextGame.homeTeam?.shortCode ?? "H"}
-                    </Text>
-                    <View
-                      style={[
-                        styles.scoreBox,
-                        {
-                          backgroundColor: urgencyColor
-                            ? urgencyColor + "15"
-                            : theme.colors.surface,
-                          borderColor: urgencyColor
-                            ? urgencyColor + "40"
-                            : theme.colors.border,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.scoreText,
-                          {
-                            color: urgencyColor ?? theme.colors.textPrimary,
-                          },
-                        ]}
-                      >
-                        {group.nextGame.prediction?.home ?? "–"}
-                      </Text>
-                    </View>
-                  </View>
-                  {/* Away team */}
-                  <View style={styles.teamPrediction}>
-                    <Text style={[styles.teamCode, { color: theme.colors.textSecondary }]}>
-                      {group.nextGame.awayTeam?.shortCode ?? "A"}
-                    </Text>
-                    <View
-                      style={[
-                        styles.scoreBox,
-                        {
-                          backgroundColor: urgencyColor
-                            ? urgencyColor + "15"
-                            : theme.colors.surface,
-                          borderColor: urgencyColor
-                            ? urgencyColor + "40"
-                            : theme.colors.border,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.scoreText,
-                          {
-                            color: urgencyColor ?? theme.colors.textPrimary,
-                          },
-                        ]}
-                      >
-                        {group.nextGame.prediction?.away ?? "–"}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
+              <NextGameRow
+                nextGame={group.nextGame}
+                urgencyColor={urgencyColor}
+                textSecondary={theme.colors.textSecondary}
+                textPrimary={theme.colors.textPrimary}
+                borderColor={theme.colors.border}
+                surfaceColor={theme.colors.surface}
+              />
             )}
 
             {/* Alert HUD - always visible, items light up when there's an alert */}
             {!isDraft && !isEnded && (
-              <View style={[styles.statsHud, { borderTopColor: theme.colors.border }]}>
+              <View style={[styles.statsHud, cardStyles.statsHud]}>
                 <RankingHudCell
                   rankChange={group.userRankChange ?? 0}
                   userRank={userRank}
@@ -611,7 +656,7 @@ function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
               <View
                 style={[
                   styles.draftHint,
-                  { borderTopColor: theme.colors.border },
+                  cardStyles.draftHint,
                 ]}
               >
                 <Ionicons

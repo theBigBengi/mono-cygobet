@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, useCallback } from "react";
 import type { FlatList, TextInput, View } from "react-native";
-import * as Haptics from "expo-haptics";
+import { useSharedValue } from "react-native-reanimated";
 import { canPredict } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 import type { FocusedField } from "../types";
@@ -43,6 +43,8 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
   /** True while programmatic navigation is in progress (scroll + delayed focus).
    *  Prevents handleFieldBlur from clearing currentFocusedField mid-transition. */
   const isNavigatingRef = useRef(false);
+  /** Same flag as SharedValue — readable from Reanimated UI-thread scroll handlers. */
+  const isNavigatingSV = useSharedValue(0);
 
   /** Maps fixtureId → index in the FlatList data array. Updated by the screen. */
   const fixtureIndexMapRef = useRef<Map<number, number>>(new Map());
@@ -65,13 +67,22 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
     return fields;
   }, [groups]);
 
+  /** O(1) lookup: "fixtureId-home" | "fixtureId-away" → index in allInputFields. */
+  const fieldIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    allInputFields.forEach((f, i) => map.set(`${f.fixtureId}-${f.type}`, i));
+    return map;
+  }, [allInputFields]);
+
+  const getFieldIndex = useCallback(
+    (fixtureId: number, type: "home" | "away") =>
+      fieldIndexMap.get(`${fixtureId}-${type}`) ?? -1,
+    [fieldIndexMap]
+  );
+
   const getCurrentFieldIndex = () => {
     if (!currentFocusedField) return -1;
-    return allInputFields.findIndex(
-      (field) =>
-        field.fixtureId === currentFocusedField.fixtureId &&
-        field.type === currentFocusedField.type
-    );
+    return getFieldIndex(currentFocusedField.fixtureId, currentFocusedField.type);
   };
 
   const scrollToMatchCard = useCallback((fixtureId: number) => {
@@ -95,6 +106,7 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
     // isNavigatingRef prevents handleFieldBlur from clearing it when the old
     // input fires blur during the .focus() call below.
     isNavigatingRef.current = true;
+    isNavigatingSV.value = 1;
     setCurrentFocusedField(field);
 
     // Scroll so FlatList renders the cell, then focus after a short delay
@@ -105,6 +117,7 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
         ref.current.focus();
       }
       isNavigatingRef.current = false;
+      isNavigatingSV.value = 0;
     }, 150);
   }, [allInputFields, scrollToMatchCard]);
 
@@ -116,10 +129,7 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
 
     // If currently on "away", navigate to "home" in the same fixture
     if (currentField.type === "away") {
-      const targetIndex = allInputFields.findIndex(
-        (field) =>
-          field.fixtureId === currentField.fixtureId && field.type === "home"
-      );
+      const targetIndex = getFieldIndex(currentField.fixtureId, "home");
       if (targetIndex >= 0) {
         navigateToField(targetIndex);
       }
@@ -127,7 +137,6 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
     }
 
     // If currently on "home", navigate to "home" of the previous fixture
-    // Find the previous fixture (different fixtureId before current index)
     let previousFixtureId: number | null = null;
     for (let i = currentIndex - 1; i >= 0; i--) {
       if (allInputFields[i].fixtureId !== currentField.fixtureId) {
@@ -138,12 +147,7 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
 
     if (previousFixtureId === null) return;
 
-    // In the previous fixture, focus the "home" field
-    const targetIndex = allInputFields.findIndex(
-      (field) =>
-        field.fixtureId === previousFixtureId && field.type === "home"
-    );
-
+    const targetIndex = getFieldIndex(previousFixtureId, "home");
     if (targetIndex >= 0) {
       navigateToField(targetIndex);
     }
@@ -158,15 +162,12 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
 
   const getNextFieldIndex = useCallback(
     (currentFixtureId: number, currentType: "home" | "away") => {
-      const currentIndex = allInputFields.findIndex(
-        (field) =>
-          field.fixtureId === currentFixtureId && field.type === currentType
-      );
+      const currentIndex = getFieldIndex(currentFixtureId, currentType);
       return currentIndex >= 0 && currentIndex < allInputFields.length - 1
         ? currentIndex + 1
         : -1;
     },
-    [allInputFields]
+    [getFieldIndex, allInputFields.length]
   );
 
   const canGoPrevious = getCurrentFieldIndex() > 0;
@@ -184,6 +185,8 @@ export function usePredictionNavigation(groups: FixtureGroup[]) {
     matchCardRefs,
     flatListRef,
     isNavigatingRef,
+    /** SharedValue mirror of isNavigatingRef — for Reanimated UI-thread code. */
+    isNavigatingSV,
 
     // fixture index map (for FlatList scrollToIndex)
     updateFixtureIndexMap,

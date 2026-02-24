@@ -374,6 +374,7 @@ export function GroupGamesScreen({
     currentFocusedField,
     setCurrentFocusedField,
     isNavigatingRef,
+    isNavigatingSV,
     handlePrevious,
     handleNext,
     canGoPrevious,
@@ -392,8 +393,11 @@ export function GroupGamesScreen({
   const previousScrollY = useSharedValue(0);
   const headerOffset = useSharedValue(0);
   const totalHeaderH = HEADER_HEIGHT + insets.top;
+  /** True only while the user is physically dragging the list. */
+  const isUserDragging = useSharedValue(false);
 
   const animatedScrollHandler = useAnimatedScrollHandler({
+    onBeginDrag: () => { isUserDragging.value = true; },
     onScroll: (event) => {
       const currentY = event.contentOffset.y;
       const maxScrollY = event.contentSize.height - event.layoutMeasurement.height;
@@ -407,16 +411,25 @@ export function GroupGamesScreen({
         return;
       }
 
-      // Collapsing header: hide on scroll down, show on scroll up
-      headerOffset.value = clamp(
-        headerOffset.value + (previousScrollY.value - currentY),
-        -totalHeaderH,
-        0,
-      );
+      // Collapsing header: react to user drag normally (show/hide).
+      // During programmatic navigation: only allow HIDING (scroll up → hide header),
+      // never showing — so jumping to earlier fixtures collapses the header.
+      const delta = previousScrollY.value - currentY;
+      if (isUserDragging.value) {
+        headerOffset.value = clamp(
+          headerOffset.value + delta,
+          -totalHeaderH,
+          0,
+        );
+      } else if (delta > 0 && headerOffset.value > -totalHeaderH) {
+        // Programmatic scroll up — collapse header
+        headerOffset.value = withTiming(-totalHeaderH, { duration: 200 });
+      }
 
       previousScrollY.value = clamp(currentY, 0, maxScrollY);
     },
     onMomentumEnd: () => {
+      isUserDragging.value = false;
       if (filterAnim.value > 0.5) return;
 
       // Snap to fully visible or fully hidden
@@ -465,23 +478,28 @@ export function GroupGamesScreen({
     return () => clearTimeout(timer);
   }, [nextToPredictId, isReady, matchCardRefs, scrollY, nextCardY]);
 
-  // Check visibility on every scroll frame
+  // Track previous direction on UI thread to avoid redundant runOnJS bridge calls.
+  // 0 = null, 1 = "up", 2 = "down"
+  const prevBtnDir = useSharedValue(0);
+
+  // Check visibility on every scroll frame — only bridge when direction changes
   useAnimatedReaction(
     () => ({ scroll: scrollY.value, cardY: nextCardY.value }),
     ({ scroll, cardY }) => {
-      if (cardY < 0) {
-        runOnJS(setScrollBtnDir)(null);
-        return;
+      let nextDir = 0; // null
+      if (cardY >= 0) {
+        const CARD_HEIGHT = 140;
+        const viewportTop = scroll + HEADER_HEIGHT + insets.top;
+        const viewportBottom = scroll + VIEWPORT_H;
+        if (cardY + CARD_HEIGHT < viewportTop) {
+          nextDir = 1; // "up"
+        } else if (cardY > viewportBottom) {
+          nextDir = 2; // "down"
+        }
       }
-      const CARD_HEIGHT = 140;
-      const viewportTop = scroll + HEADER_HEIGHT + insets.top;
-      const viewportBottom = scroll + VIEWPORT_H;
-      if (cardY + CARD_HEIGHT < viewportTop) {
-        runOnJS(setScrollBtnDir)("up");
-      } else if (cardY > viewportBottom) {
-        runOnJS(setScrollBtnDir)("down");
-      } else {
-        runOnJS(setScrollBtnDir)(null);
+      if (nextDir !== prevBtnDir.value) {
+        prevBtnDir.value = nextDir;
+        runOnJS(setScrollBtnDir)(nextDir === 0 ? null : nextDir === 1 ? "up" : "down");
       }
     }
   );
@@ -502,17 +520,24 @@ export function GroupGamesScreen({
     isNavigatingRef,
   });
 
+  /** O(1) fixture lookup by id — rebuilt only when fixtures change (data load). */
+  const fixturesById = useMemo(() => {
+    const map = new Map<number, FixtureItem>();
+    fixtures.forEach((f) => map.set(f.id, f));
+    return map;
+  }, [fixtures]);
+
   /** Get focused team info for navigation bar. */
   const focusedTeamInfo = useMemo(() => {
     if (!currentFocusedField) return null;
-    const fixture = fixtures.find(f => f.id === currentFocusedField.fixtureId);
+    const fixture = fixturesById.get(currentFocusedField.fixtureId);
     if (!fixture) return null;
     const team = currentFocusedField.type === "home" ? fixture.homeTeam : fixture.awayTeam;
     return {
       name: team?.name ?? "",
       logo: team?.imagePath ?? null,
     };
-  }, [currentFocusedField, fixtures]);
+  }, [currentFocusedField, fixturesById]);
 
   /** Save pending predictions when keyboard hides (tap outside or system dismiss). */
   React.useEffect(() => {
@@ -526,25 +551,19 @@ export function GroupGamesScreen({
     };
   }, [handleSaveAllChanged]);
 
-  /** Scroll to focused card when fixture changes or keyboard appears. */
-  const lastScrolledFixtureRef = React.useRef<number | null>(null);
+  /** Scroll to focused card when keyboard first appears (user taps a field directly).
+   *  Programmatic navigation (prev/next/autoNext) already calls scrollToMatchCard,
+   *  so we only scroll here when the keyboard pops up for a fresh tap. */
   const lastKeyboardHeightRef = React.useRef<number>(0);
   React.useEffect(() => {
-    if (currentFocusedField) {
-      const fixtureId = currentFocusedField.fixtureId;
-      const fixtureChanged = lastScrolledFixtureRef.current !== fixtureId;
+    if (currentFocusedField && !isNavigatingRef.current) {
       const keyboardJustAppeared = lastKeyboardHeightRef.current === 0 && keyboardHeight > 0;
-
-      if (fixtureChanged || keyboardJustAppeared) {
-        lastScrolledFixtureRef.current = fixtureId;
-        scrollToMatchCard(fixtureId);
+      if (keyboardJustAppeared) {
+        scrollToMatchCard(currentFocusedField.fixtureId);
       }
-      lastKeyboardHeightRef.current = keyboardHeight;
-    } else {
-      lastScrolledFixtureRef.current = null;
-      lastKeyboardHeightRef.current = 0;
     }
-  }, [currentFocusedField, keyboardHeight, scrollToMatchCard]);
+    lastKeyboardHeightRef.current = currentFocusedField ? keyboardHeight : 0;
+  }, [currentFocusedField, keyboardHeight, scrollToMatchCard, isNavigatingRef]);
 
   /** Create input/card refs for each fixture so cards can focus and scroll. */
   React.useEffect(() => {
@@ -845,9 +864,11 @@ export function GroupGamesScreen({
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          windowSize={7}
-          initialNumToRender={12}
-          removeClippedSubviews={false}
+          windowSize={3}
+          initialNumToRender={10}
+          maxToRenderPerBatch={4}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews
           onScrollToIndexFailed={(info) => {
             // Fallback: scroll to approximate offset, then retry after layout
             flatListRef.current?.scrollToOffset({

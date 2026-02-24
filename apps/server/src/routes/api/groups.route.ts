@@ -17,12 +17,14 @@ import type {
   ApiPublishGroupBody,
   ApiGroupResponse,
   ApiGroupsResponse,
+  ApiMyGroupsQuery,
 } from "@repo/types";
 import {
   createGroupBodySchema,
   getGroupParamsSchema,
   groupResponseSchema,
   groupsResponseSchema,
+  myGroupsQuerystringSchema,
   groupFixturesFilterQuerystringSchema,
   publishGroupBodySchema,
   publishGroupResponseSchema,
@@ -61,16 +63,18 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   // GET /api/groups — list groups for the authenticated user
-  fastify.get<{ Reply: ApiGroupsResponse }>(
+  fastify.get<{ Querystring: ApiMyGroupsQuery; Reply: ApiGroupsResponse }>(
     "/groups",
     {
       schema: {
+        querystring: myGroupsQuerystringSchema,
         response: { 200: groupsResponseSchema },
       },
     },
     async (req, reply) => {
       const userId = req.userAuth!.user.id;
-      const result = await getMyGroups(userId);
+      const search = req.query.search;
+      const result = await getMyGroups(userId, search);
       return reply.send(result);
     }
   );

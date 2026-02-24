@@ -140,6 +140,7 @@
     "filterDrafts": "Drafts",
     "filterEnded": "Ended",
     "filterPublic": "Public",
+    "searchPlaceholder": "Search groups...",
     "noGroupsInFilter": "No groups in this category",
     "mode": {
       "games": "Games",

@@ -12,6 +12,8 @@ import {
   RefreshControl,
   Platform,
   FlatList,
+  TextInput,
+  ActivityIndicator,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from "react-native";
@@ -29,6 +31,7 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { Screen, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import {
@@ -53,7 +56,12 @@ function GroupsContent() {
   const router = useRouter();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { data, isLoading, error, refetch } = useMyGroupsQuery();
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 400);
+  const trimmedSearch = debouncedSearch.trim();
+  const searchParam = trimmedSearch.length >= 2 ? trimmedSearch : undefined;
+  const { data, isLoading, isFetching, error, refetch } = useMyGroupsQuery(searchParam);
+  const isSearching = !!searchParam && isFetching;
   const { data: unreadData, refetch: refetchUnread } = useUnreadCountsQuery();
   const unreadCounts = unreadData?.data ?? {};
   const [refreshing, setRefreshing] = useState(false);
@@ -100,13 +108,13 @@ function GroupsContent() {
     router.push("/(tabs)/home" as any);
   };
 
-  const handleJoinWithCode = () => {
+  const handleJoinWithCode = useCallback(() => {
     router.push("/groups/join");
-  };
+  }, [router]);
 
-  const handleBrowsePublic = () => {
+  const handleBrowsePublic = useCallback(() => {
     router.push("/groups/discover");
-  };
+  }, [router]);
 
   const handleGroupPress = useCallback((groupId: number) => {
     router.push(`/groups/${groupId}` as any);
@@ -130,6 +138,150 @@ function GroupsContent() {
     filteredGroups.forEach((g) => items.push({ type: "group", data: g }));
     return items;
   }, [filteredGroups]);
+
+  const renderListItem = useCallback(({ item }: { item: ListItem }) => {
+    if (item.type === "header") {
+      return (
+        <View
+          style={[styles.header, { backgroundColor: theme.colors.background }]}
+          onLayout={(e) => { headerHeightRef.current = e.nativeEvent.layout.height; }}
+        >
+          <View style={styles.headerTop}>
+            <AppText variant="title" style={styles.headerTitle}>
+              {t("groups.title")}
+            </AppText>
+            <Pressable
+              onPress={handleOpenInfo}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={({ pressed }) => [
+                styles.infoButton,
+                pressed && { opacity: 0.5 },
+              ]}
+            >
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={theme.colors.textSecondary}
+              />
+            </Pressable>
+          </View>
+          <View style={styles.headerChips}>
+            <Pressable
+              onPress={handleBrowsePublic}
+              style={({ pressed }) => [
+                styles.headerChip,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  borderBottomColor: pressed
+                    ? theme.colors.border
+                    : theme.colors.textSecondary + "40",
+                  transform: [{ scale: pressed ? 0.96 : 1 }],
+                },
+              ]}
+            >
+              <Ionicons
+                name="globe-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+              <AppText style={[styles.headerChipText, { color: theme.colors.textPrimary }]}>
+                {t("groups.browsePublic")}
+              </AppText>
+            </Pressable>
+            <Pressable
+              onPress={handleJoinWithCode}
+              style={({ pressed }) => [
+                styles.headerChip,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  borderBottomColor: pressed
+                    ? theme.colors.border
+                    : theme.colors.textSecondary + "40",
+                  transform: [{ scale: pressed ? 0.96 : 1 }],
+                },
+              ]}
+            >
+              <Ionicons
+                name="key-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+              <AppText style={[styles.headerChipText, { color: theme.colors.textPrimary }]}>
+                {t("groups.joinWithCode")}
+              </AppText>
+            </Pressable>
+          </View>
+          <View
+            style={[
+              styles.searchContainer,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
+            <TextInput
+              value={searchInput}
+              onChangeText={setSearchInput}
+              placeholder={t("groups.searchPlaceholder")}
+              placeholderTextColor={theme.colors.textSecondary}
+              returnKeyType="search"
+              autoCorrect={false}
+              style={[styles.searchInput, { color: theme.colors.textPrimary }]}
+            />
+            {isSearching && (
+              <ActivityIndicator
+                size="small"
+                color={theme.colors.textSecondary}
+                style={styles.searchAccessory}
+              />
+            )}
+            {searchInput.length > 0 && !isSearching && (
+              <Pressable
+                onPress={() => setSearchInput("")}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={styles.searchAccessory}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={18}
+                  color={theme.colors.textSecondary}
+                />
+              </Pressable>
+            )}
+          </View>
+        </View>
+      );
+    }
+
+    if (item.type === "tabs") {
+      return (
+        <View
+          style={[
+            { backgroundColor: theme.colors.background, paddingBottom: 8 },
+            isTabsSticky && styles.tabsStickyDropShadow,
+          ]}
+        >
+          <GroupFilterTabs
+            selectedFilter={selectedFilter}
+            onFilterChange={setSelectedFilter}
+            counts={counts}
+          />
+        </View>
+      );
+    }
+
+    // Group card
+    return (
+      <GroupCard
+        group={item.data}
+        onPress={handleGroupPress}
+        unreadCount={unreadCounts[String(item.data.id)] ?? 0}
+      />
+    );
+  }, [theme, handleOpenInfo, handleBrowsePublic, handleJoinWithCode, isTabsSticky, selectedFilter, setSelectedFilter, counts, handleGroupPress, unreadCounts, searchInput, isSearching]);
 
   // Loading state — skeleton
   if (isLoading) {
@@ -359,8 +511,8 @@ function GroupsContent() {
     );
   }
 
-  // Empty state
-  if (groups.length === 0) {
+  // Empty state — only when user truly has no groups (not when search returns nothing)
+  if (groups.length === 0 && !searchParam) {
     return (
       <View style={styles.root}>
         <Screen>
@@ -437,111 +589,6 @@ function GroupsContent() {
   const tabBarMarginBottom = theme.spacing.sm;
   const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
 
-  const renderListItem = ({ item }: { item: ListItem }) => {
-    if (item.type === "header") {
-      return (
-        <View
-          style={[styles.header, { backgroundColor: theme.colors.background }]}
-          onLayout={(e) => { headerHeightRef.current = e.nativeEvent.layout.height; }}
-        >
-          <View style={styles.headerTop}>
-            <AppText variant="title" style={styles.headerTitle}>
-              {t("groups.title")}
-            </AppText>
-            <Pressable
-              onPress={handleOpenInfo}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={({ pressed }) => [
-                styles.infoButton,
-                pressed && { opacity: 0.5 },
-              ]}
-            >
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color={theme.colors.textSecondary}
-              />
-            </Pressable>
-          </View>
-          <View style={styles.headerChips}>
-            <Pressable
-              onPress={handleBrowsePublic}
-              style={({ pressed }) => [
-                styles.headerChip,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
-                  borderBottomColor: pressed
-                    ? theme.colors.border
-                    : theme.colors.textSecondary + "40",
-                  transform: [{ scale: pressed ? 0.96 : 1 }],
-                },
-              ]}
-            >
-              <Ionicons
-                name="globe-outline"
-                size={14}
-                color={theme.colors.textSecondary}
-              />
-              <AppText style={[styles.headerChipText, { color: theme.colors.textPrimary }]}>
-                {t("groups.browsePublic")}
-              </AppText>
-            </Pressable>
-            <Pressable
-              onPress={handleJoinWithCode}
-              style={({ pressed }) => [
-                styles.headerChip,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
-                  borderBottomColor: pressed
-                    ? theme.colors.border
-                    : theme.colors.textSecondary + "40",
-                  transform: [{ scale: pressed ? 0.96 : 1 }],
-                },
-              ]}
-            >
-              <Ionicons
-                name="key-outline"
-                size={14}
-                color={theme.colors.textSecondary}
-              />
-              <AppText style={[styles.headerChipText, { color: theme.colors.textPrimary }]}>
-                {t("groups.joinWithCode")}
-              </AppText>
-            </Pressable>
-          </View>
-        </View>
-      );
-    }
-
-    if (item.type === "tabs") {
-      return (
-        <View
-          style={[
-            { backgroundColor: theme.colors.background, paddingBottom: 8 },
-            isTabsSticky && styles.tabsStickyDropShadow,
-          ]}
-        >
-          <GroupFilterTabs
-            selectedFilter={selectedFilter}
-            onFilterChange={setSelectedFilter}
-            counts={counts}
-          />
-        </View>
-      );
-    }
-
-    // Group card
-    return (
-      <GroupCard
-        group={item.data}
-        onPress={handleGroupPress}
-        unreadCount={unreadCounts[String(item.data.id)] ?? 0}
-      />
-    );
-  };
-
   const getItemKey = (item: ListItem, index: number) => {
     if (item.type === "header") return "header";
     if (item.type === "tabs") return "tabs";
@@ -562,6 +609,9 @@ function GroupsContent() {
           stickyHeaderIndices={[1]}
           onScroll={handleScroll}
           scrollEventThrottle={16}
+          windowSize={5}
+          maxToRenderPerBatch={5}
+          removeClippedSubviews={Platform.OS === "android"}
           ListFooterComponent={
             filteredGroups.length === 0 ? (
               <View style={styles.emptyFilter}>
@@ -637,6 +687,22 @@ const styles = StyleSheet.create({
   headerChipText: {
     fontSize: 13,
     fontWeight: "600",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 10,
+    marginTop: 10,
+    paddingHorizontal: 12,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 15,
+  },
+  searchAccessory: {
+    marginLeft: 8,
   },
   list: {
     flex: 1,

@@ -88,6 +88,14 @@ export const groupFixturesFilterQuerystringSchema = {
   },
 };
 
+/** Query params for GET /api/groups (my groups). */
+export const myGroupsQuerystringSchema = {
+  type: "object",
+  properties: {
+    search: { type: "string" },
+  },
+};
+
 /** Query params for GET /api/groups/public. */
 export const publicGroupsQuerystringSchema = {
   type: "object",
