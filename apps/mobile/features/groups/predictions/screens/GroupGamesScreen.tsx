@@ -421,9 +421,6 @@ export function GroupGamesScreen({
           -totalHeaderH,
           0,
         );
-      } else if (delta > 0 && headerOffset.value > -totalHeaderH) {
-        // Programmatic scroll up — collapse header
-        headerOffset.value = withTiming(-totalHeaderH, { duration: 200 });
       }
 
       previousScrollY.value = clamp(currentY, 0, maxScrollY);
@@ -550,6 +547,13 @@ export function GroupGamesScreen({
       keyboardDidHideListener.remove();
     };
   }, [handleSaveAllChanged]);
+
+  /** Collapse header whenever a field receives focus. */
+  React.useEffect(() => {
+    if (currentFocusedField) {
+      headerOffset.value = withTiming(-totalHeaderH, { duration: 200 });
+    }
+  }, [currentFocusedField, headerOffset, totalHeaderH]);
 
   /** Scroll to focused card when keyboard first appears (user taps a field directly).
    *  Programmatic navigation (prev/next/autoNext) already calls scrollToMatchCard,
