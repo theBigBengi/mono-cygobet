@@ -2,15 +2,12 @@ import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
-import { TIMELINE } from "../utils/constants";
 
 type Props = {
   totalPoints: number;
   predictedCount: number;
   totalCount: number;
   accuracy: number;
-  /** Whether the timeline fill line should extend down from this card. */
-  hasFilledTimeline?: boolean;
 };
 
 export function GamesSummaryCard({
@@ -18,32 +15,17 @@ export function GamesSummaryCard({
   predictedCount,
   totalCount,
   accuracy,
-  hasFilledTimeline = false,
 }: Props) {
   const { theme } = useTheme();
 
   return (
     <View style={styles.wrapper}>
-      {/* Timeline spacer with fill line — always starts from the top */}
-      <View style={styles.timelineSpacer}>
-        <View
-          style={{
-            position: "absolute",
-            left: (TIMELINE.TRACK_WIDTH - TIMELINE.LINE_WIDTH) / 2,
-            width: TIMELINE.LINE_WIDTH,
-            backgroundColor: theme.colors.primary,
-            top: -500,
-            bottom: hasFilledTimeline ? -31 : "50%",
-          }}
-        />
-      </View>
       <View
         style={[
           styles.card,
           {
             backgroundColor: theme.colors.cardBackground,
             borderColor: theme.colors.border,
-            borderBottomColor: theme.colors.textSecondary + "40",
           },
         ]}
       >
@@ -106,26 +88,19 @@ export function GamesSummaryCard({
           </View>
         </View>
       </View>
-      {/* Right spacer to match points column */}
-      <View style={styles.rightSpacer} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    flexDirection: "row",
-    marginTop: 28,
+    marginTop: 20,
     marginBottom: 20,
-  },
-  timelineSpacer: {
-    width: TIMELINE.COLUMN_WIDTH,
   },
   card: {
     flex: 1,
     borderRadius: 10,
     borderWidth: 1,
-    borderBottomWidth: 3,
     paddingVertical: 12,
     paddingHorizontal: 8,
   },
@@ -156,8 +131,5 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 28,
-  },
-  rightSpacer: {
-    width: TIMELINE.COLUMN_WIDTH,
   },
 });

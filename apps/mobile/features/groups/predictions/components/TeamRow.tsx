@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { AppText, TeamLogo } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import type { FixtureItem } from "@/types/common";
 
 type TeamRowProps = {
@@ -13,13 +14,18 @@ type TeamRowProps = {
  * Displays team logo and name in a row
  */
 function TeamRowInner({ team, teamName, isWinner }: TeamRowProps) {
+  const { theme } = useTheme();
   return (
     <View style={styles.teamRow}>
       <View style={styles.teamSection}>
-        <TeamLogo imagePath={team?.imagePath} teamName={teamName} size={28} rounded={false} />
+        <TeamLogo imagePath={team?.imagePath} teamName={teamName} size={30} rounded={false} />
         <AppText
           variant="body"
-          style={[styles.teamName, isWinner && styles.winnerTeamName]}
+          style={[
+            styles.teamName,
+            { color: theme.colors.textSecondary },
+            isWinner && { color: theme.colors.textPrimary },
+          ]}
           numberOfLines={1}
         >
           {teamName}
@@ -49,10 +55,8 @@ const styles = StyleSheet.create({
   },
   teamName: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
     minWidth: 0,
-    color: "#6B7280",
   },
-  winnerTeamName: {},
 });

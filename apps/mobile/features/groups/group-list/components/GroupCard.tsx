@@ -314,25 +314,24 @@ const NextGameRow = React.memo(function NextGameRowInner({
         { borderTopColor: borderColor },
       ]}
     >
-      <View style={styles.nextGameInfo}>
-        <Text
-          style={[
-            styles.nextGameLabel,
-            { color: textSecondary },
-          ]}
-        >
-          {t("groups.nextGame")} · {countdown}
-        </Text>
+      <Text
+        style={[
+          styles.nextGameLabel,
+          { color: textSecondary },
+        ]}
+      >
+        {t("groups.nextGame")} · {countdown}
+      </Text>
+      <View style={styles.nextGameMainRow}>
         <Text
           style={[
             styles.nextGameText,
-            { color: textPrimary },
+            { color: textPrimary, flex: 1 },
           ]}
           numberOfLines={1}
         >
           {nextGame.homeTeam?.name ?? "?"} - {nextGame.awayTeam?.name ?? "?"}
         </Text>
-      </View>
       {hasPrediction ? (
         <View style={styles.predictionBoxes}>
           {/* Home team */}
@@ -390,21 +389,11 @@ const NextGameRow = React.memo(function NextGameRowInner({
           style={({ pressed }) => [
             styles.predictButton,
             {
-              backgroundColor: urgencyColor
-                ? urgencyColor + "15"
-                : surfaceColor,
-              borderColor: urgencyColor
-                ? urgencyColor + "40"
-                : borderColor,
+              borderColor: borderColor,
               opacity: pressed ? 0.7 : 1,
             },
           ]}
         >
-          <Ionicons
-            name="pencil"
-            size={13}
-            color={urgencyColor ?? textPrimary}
-          />
           <Text
             style={[
               styles.predictButtonText,
@@ -415,6 +404,7 @@ const NextGameRow = React.memo(function NextGameRowInner({
           </Text>
         </Pressable>
       )}
+      </View>
     </View>
   );
 });
@@ -874,9 +864,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   nextGameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     marginTop: 14,
     marginHorizontal: -14,
     paddingHorizontal: 14,
@@ -884,8 +871,11 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderTopWidth: 1,
   },
-  nextGameInfo: {
-    flex: 1,
+  nextGameMainRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
   },
   nextGameLabel: {
     fontSize: 11,
@@ -899,16 +889,17 @@ const styles = StyleSheet.create({
   predictButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    justifyContent: "center",
+    gap: 4,
+    height: 30,
+    paddingHorizontal: 10,
+    borderRadius: 7,
     borderWidth: 1,
     borderBottomWidth: 3,
   },
   predictButtonText: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "900",
   },
   predictionBoxes: {
     flexDirection: "row",

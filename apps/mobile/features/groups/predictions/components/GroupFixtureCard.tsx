@@ -14,7 +14,6 @@
  */
 import React, { useCallback } from "react";
 import { View, TextInput } from "react-native";
-import type { SharedValue } from "react-native-reanimated";
 import { isFinished } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
@@ -59,8 +58,6 @@ export type GroupFixtureCardProps = {
   isNextToPredict?: boolean;
   /** When true, this fixture earned maximum points (perfect prediction) */
   isMaxPoints?: boolean;
-  /** Scroll position for reveal animation */
-  scrollY?: SharedValue<number>;
   onFieldFocus: (fixtureId: number, type: "home" | "away") => void;
   onFieldBlur: (fixtureId: number) => void;
   onCardChange: (
@@ -97,7 +94,6 @@ function GroupFixtureCardInner({
   isLastInTimeline,
   isNextToPredict,
   isMaxPoints,
-  scrollY,
   onFieldFocus,
   onFieldBlur,
   onCardChange,
@@ -199,14 +195,13 @@ function GroupFixtureCardInner({
       predictionMode={predictionMode}
       onSelectOutcome={onSelectOutcome ? onSelectOutcomeLocal : undefined}
       onPressCard={onPressCard ? onPressCardLocal : undefined}
-      showLeagueInfo={false}
+      showLeagueInfo
       timelineFilled={timelineFilled}
       timelineConnectorFilled={timelineConnectorFilled}
       isFirstInTimeline={isFirstInTimeline}
       isLastInTimeline={isLastInTimeline}
       isNextToPredict={isNextToPredict}
       isMaxPoints={isMaxPoints}
-      scrollY={scrollY}
     />
   );
 }

@@ -107,6 +107,7 @@ export async function getFixtureDetail(
     state: String(fixture.state),
     stage: fixture.stage ?? null,
     round: fixture.round ?? null,
+    leg: fixture.leg ?? null,
     liveMinute: fixture.liveMinute ?? null,
     result: fixture.result ?? null,
     homeScore90: fixture.homeScore90 ?? null,

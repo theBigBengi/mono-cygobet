@@ -67,6 +67,7 @@ export type ApiUpcomingFixturesResponse = {
     liveMinute?: number | null;
     stage: string | null;
     round: string | null;
+    leg?: string | null;
     league?: {
       id: number;
       name: string;
@@ -879,6 +880,7 @@ export type ApiFixtureDetailData = {
   state: string;
   stage: string | null;
   round: string | null;
+  leg: string | null;
   liveMinute: number | null;
   result: string | null;
   homeScore90: number | null;

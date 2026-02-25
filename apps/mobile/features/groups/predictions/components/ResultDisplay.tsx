@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { AppText } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import { LIVE_RESULT_COLOR } from "../utils/constants";
 import type { GameResultOrTime } from "../utils/fixture-helpers";
 
@@ -27,6 +28,7 @@ function ResultDisplayInner({
   isAwayWinner,
   type,
 }: ResultDisplayProps) {
+  const { theme } = useTheme();
   if (!result || (!isLive && !isFinished && !isCancelled)) {
     return null;
   }
@@ -84,6 +86,7 @@ function ResultDisplayInner({
           variant="caption"
           style={[
             styles.resultText,
+            { color: theme.colors.textSecondary },
             isLive && styles.liveResultText,
             isHomeWinner && styles.winnerResultText,
           ]}
@@ -101,6 +104,7 @@ function ResultDisplayInner({
           variant="caption"
           style={[
             styles.resultText,
+            { color: theme.colors.textSecondary },
             isLive && styles.liveResultText,
             isAwayWinner && styles.winnerResultText,
           ]}
@@ -168,11 +172,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   resultText: {
-    fontSize: 15,
-    fontWeight: "500",
+    fontSize: 18,
+    fontWeight: "700",
     lineHeight: 36,
     textAlignVertical: "center",
-    color: "#6B7280",
   },
   liveResultText: {
     color: LIVE_RESULT_COLOR,

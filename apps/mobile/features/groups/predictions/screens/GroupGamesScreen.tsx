@@ -27,7 +27,7 @@ import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFoot
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { GroupGamesSkeleton } from "../components/GroupGamesSkeleton";
 import { isFinished as isFinishedState, isLive as isLiveState, isCancelled as isCancelledState } from "@repo/utils";
-import { HEADER_HEIGHT, FOOTER_PADDING, SAVE_PENDING_DELAY_MS, SCROLL_OFFSET, TIMELINE } from "../utils/constants";
+import { HEADER_HEIGHT, FOOTER_PADDING, SAVE_PENDING_DELAY_MS, SCROLL_OFFSET } from "../utils/constants";
 
 type Props = {
   groupId: number | null;
@@ -309,11 +309,6 @@ export function GroupGamesScreen({
     });
     updateFixtureIndexMap(map);
   }, [renderItems, updateFixtureIndexMap]);
-
-  /** Whether any card in the timeline has a fill (for summary card connector). */
-  const hasFilledCards = renderItems.some(
-    (item) => item.type === "card" && item.timelineFilled
-  );
 
   /** Summary stats for the summary card. */
   const summaryStats = useMemo(() => {
@@ -672,20 +667,6 @@ export function GroupGamesScreen({
       if (item.type === "header") {
         return (
           <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionTimelineCol}>
-              {item.showTrack && item.isFilled && (
-                <View
-                  style={{
-                    position: "absolute",
-                    left: (TIMELINE.TRACK_WIDTH - TIMELINE.LINE_WIDTH) / 2,
-                    top: -1,
-                    bottom: -1,
-                    width: TIMELINE.LINE_WIDTH,
-                    backgroundColor: theme.colors.primary,
-                  }}
-                />
-              )}
-            </View>
             <View style={styles.sectionHeaderContent}>
               {item.isLive ? (
                 <View style={styles.sectionLiveBadge}>
@@ -694,7 +675,7 @@ export function GroupGamesScreen({
                 </View>
               ) : item.level === "date" ? (
                 <View style={styles.sectionDateRow}>
-                  <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.primary + "30" }]} />
+                  <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.border }]} />
                   <Text
                     style={[
                       styles.sectionDateLabel,
@@ -704,21 +685,9 @@ export function GroupGamesScreen({
                   >
                     {item.label}
                   </Text>
-                  <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.primary + "30" }]} />
+                  <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.border }]} />
                 </View>
-              ) : (
-                <View style={[styles.sectionLeaguePill, { backgroundColor: theme.colors.textSecondary + "0C", borderColor: theme.colors.textSecondary + "15" }]}>
-                  <Text
-                    style={[
-                      styles.sectionLeagueLabel,
-                      { color: theme.colors.textSecondary + "B0" },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {item.label}{item.round ? `  ·  R${item.round}` : ""}
-                  </Text>
-                </View>
-              )}
+              ) : null}
             </View>
           </View>
         );
@@ -756,7 +725,6 @@ export function GroupGamesScreen({
           }
           onScrollToCard={scrollToMatchCard}
           onPressCard={handlePressCard}
-          scrollY={scrollY}
         />
       );
     },
@@ -766,7 +734,7 @@ export function GroupGamesScreen({
       theme, inputRefs, matchCardRefs, predictionModeTyped, groupName,
       matchNumbersMap, maxPoints, handleFieldFocus, handleFieldBlur,
       handleCardChange, handleAutoNext, predictionMode, handleSelectOutcome,
-      scrollToMatchCard, handlePressCard, scrollY, getPrediction, isPredictionSaved,
+      scrollToMatchCard, handlePressCard, getPrediction, isPredictionSaved,
     ]
   );
 
@@ -806,12 +774,11 @@ export function GroupGamesScreen({
         predictedCount={savedPredictionsCount}
         totalCount={totalPredictionsCount}
         accuracy={summaryStats.accuracy}
-        hasFilledTimeline={hasFilledCards}
       />
     );
   }, [
     isReady, emptyState, filteredFixtures.length, theme, summaryStats,
-    savedPredictionsCount, totalPredictionsCount, hasFilledCards,
+    savedPredictionsCount, totalPredictionsCount,
   ]);
 
   /** No fixtures at all (e.g. group has no games selected). */
@@ -831,22 +798,6 @@ export function GroupGamesScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-
-      {/* Timeline track — full screen height, hidden during skeleton */}
-      {isReady && (
-        <View
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: TIMELINE.TRACK_WIDTH,
-            backgroundColor: theme.colors.primary + "18",
-            zIndex: 1,
-          }}
-          pointerEvents="none"
-        />
-      )}
 
       <View style={{ flex: 1 }}>
         <Animated.FlatList
@@ -964,7 +915,7 @@ export function GroupGamesScreen({
 const styles = StyleSheet.create({
   container: { flex: 1, overflow: "hidden" },
   scrollView: { flex: 1 },
-  contentContainer: { paddingHorizontal: 0 },
+  contentContainer: { paddingHorizontal: 12 },
   headerOverlay: {
     position: "absolute",
     top: 0,
@@ -974,24 +925,18 @@ const styles = StyleSheet.create({
   },
   /* ── Section headers (same timeline column as cards) ── */
   sectionHeaderRow: {
-    flexDirection: "row",
-  },
-  sectionTimelineCol: {
-    width: TIMELINE.COLUMN_WIDTH,
-    alignItems: "center",
-    alignSelf: "stretch",
   },
   sectionHeaderContent: {
     flex: 1,
-    paddingLeft: 10, // match contentColumn paddingLeft
+    paddingLeft: 4, // align with card leagueInfoRow
     justifyContent: "center",
   },
   sectionDateRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 15,
-    paddingRight: TIMELINE.COLUMN_WIDTH, // match card right spacer for centering
+    paddingTop: 8,
+    paddingBottom: 20,
   },
   sectionDateLine: {
     flex: 1,
@@ -1010,8 +955,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     marginTop: 0,
-    marginBottom: 15,
-    marginRight: TIMELINE.COLUMN_WIDTH, // center relative to cards
+    marginBottom: 12,
   },
   sectionLeagueLabel: {
     fontSize: 10,
@@ -1062,26 +1006,18 @@ const styles = StyleSheet.create({
   /* ── Floating scroll-to-next button ── */
   scrollToNextBtn: {
     position: "absolute",
-    left: (TIMELINE.TRACK_WIDTH + TIMELINE.COLUMN_WIDTH + 4) / 2 - 15,
+    left: 16,
     zIndex: 20,
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     // backgroundColor set inline with theme.colors.primary
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
-    // 3D floating effect
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
   },
   scrollToNextBtnInner: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -18,6 +18,7 @@ type ScoreInputProps = {
   onAutoNext?: () => void;
   /** Whether the prediction for this field was correct (for finished games). "max" = perfect prediction. */
   isCorrect?: boolean | "max";
+  isLive?: boolean;
 };
 
 /**
@@ -37,6 +38,7 @@ function ScoreInputInner({
   onBlur,
   onAutoNext,
   isCorrect,
+  isLive,
 }: ScoreInputProps) {
   const { theme } = useTheme();
 
@@ -70,12 +72,10 @@ function ScoreInputInner({
           style={[
             styles.input,
             {
-              backgroundColor: hasValue ? "#F1F5F9" : theme.colors.surface,
+              backgroundColor: theme.colors.surface,
               borderColor: isFocused
                 ? theme.colors.primary + "80"
-                : hasValue
-                  ? "#94A3B8"
-                  : theme.colors.border,
+                : theme.colors.border,
               borderWidth: 1,
               justifyContent: "center",
               alignItems: "center",
@@ -89,7 +89,7 @@ function ScoreInputInner({
               color: isFocused
                 ? theme.colors.primary
                 : hasValue
-                  ? theme.colors.textPrimary
+                  ? "#374151"
                   : theme.colors.textSecondary + "80",
             }}
           >
@@ -119,27 +119,54 @@ function ScoreInputInner({
     );
   }
 
+  // Live game - neutral dark tones
+  if (isLive) {
+    return (
+      <View
+        style={[
+          styles.finishedInput,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: "#6B7280",
+            borderWidth: 1,
+          },
+        ]}
+      >
+        <AppText
+          variant="body"
+          style={{
+            fontSize: 18,
+            fontWeight: "700",
+            color: "#374151",
+          }}
+        >
+          {toDisplay(value, !isEditable)}
+        </AppText>
+      </View>
+    );
+  }
+
   // Finished game - show result with correct/incorrect styling
   const bgColor = isCorrect === "max"
-    ? "#FFB020" + "20"
+    ? "#10B981" + "20"
     : isCorrect === true
-      ? "#10B981" + "20" // green tint
+      ? "#FFB020" + "20"
       : isCorrect === false
-        ? "#EF4444" + "15" // red tint
+        ? "#EF4444" + "15"
         : theme.colors.surface;
 
   const borderColor = isCorrect === "max"
-    ? "#FFB020" + "60"
+    ? "#10B981" + "60"
     : isCorrect === true
-      ? "#10B981" + "60"
+      ? "#FFB020" + "60"
       : isCorrect === false
         ? "#EF4444" + "40"
         : theme.colors.border;
 
   const textColor = isCorrect === "max"
-    ? "#D4920A"
+    ? "#10B981"
     : isCorrect === true
-      ? "#10B981"
+      ? "#D4920A"
       : isCorrect === false
         ? "#EF4444"
         : theme.colors.textSecondary;
@@ -174,34 +201,22 @@ export const ScoreInput = React.memo(ScoreInputInner);
 const styles = StyleSheet.create({
   inputWrapper: {
     borderRadius: 10,
-    // Subtle shadow for depth
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   inputWrapperFocused: {
-    // Glow effect when focused
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
   },
   input: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     fontSize: 18,
     fontWeight: "700",
     borderRadius: 10,
-    borderBottomWidth: 3,
     textAlignVertical: "center",
     includeFontPadding: false,
   },
   finishedInput: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: 10,
-    borderBottomWidth: 3,
     justifyContent: "center",
     alignItems: "center",
   },

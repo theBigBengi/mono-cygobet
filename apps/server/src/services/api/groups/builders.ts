@@ -195,6 +195,7 @@ export function formatFixtureFromDb(
     liveMinute: fixture.liveMinute ?? null,
     stage: fixture.stage ?? null,
     round: fixture.round ?? null,
+    leg: fixture.leg ?? null,
     league: fixture.league
       ? {
           id: fixture.league.id,
