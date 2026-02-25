@@ -41,6 +41,7 @@ export interface GroupCardProps {
   group: ApiGroupItem;
   onPress: (groupId: number) => void;
   unreadCount?: number;
+  unreadActivityCount?: number;
 }
 
 const AVATAR_SIZE = 56;
@@ -236,13 +237,44 @@ const ChatHudCell = React.memo(function ChatHudCellInner({
         size={16}
         color={isLit ? primaryColor : textSecondary + "50"}
       />
-      {isLit ? (
+      {isLit && (
         <Text style={[styles.hudValue, { color: primaryColor }]}>
           {unreadCount > 99 ? "99+" : unreadCount}
         </Text>
-      ) : (
-        <Text style={[styles.hudValue, { color: textSecondary + "50" }]}>
-          {lastMsgTime ?? "–"}
+      )}
+    </View>
+  );
+});
+
+interface ActivityHudCellProps {
+  unreadActivityCount: number;
+  primaryColor: string;
+  textSecondary: string;
+}
+
+const ActivityHudCell = React.memo(function ActivityHudCellInner({
+  unreadActivityCount,
+  primaryColor,
+  textSecondary,
+}: ActivityHudCellProps) {
+  const isLit = unreadActivityCount > 0;
+  return (
+    <View
+      style={[
+        styles.hudCell,
+        {
+          backgroundColor: isLit ? primaryColor + "15" : "transparent",
+        },
+      ]}
+    >
+      <Ionicons
+        name={isLit ? "notifications" : "notifications-outline"}
+        size={16}
+        color={isLit ? primaryColor : textSecondary + "50"}
+      />
+      {isLit && (
+        <Text style={[styles.hudValue, { color: primaryColor }]}>
+          {unreadActivityCount > 99 ? "99+" : unreadActivityCount}
         </Text>
       )}
     </View>
@@ -366,7 +398,7 @@ const NextGameRow = React.memo(function NextGameRowInner({
 
 // ─── GroupCard ─────────────────────────────────────────────────────────
 
-function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
+function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount = 0 }: GroupCardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [isPressed, setIsPressed] = useState(false);
@@ -642,6 +674,11 @@ function GroupCardInner({ group, onPress, unreadCount = 0 }: GroupCardProps) {
                   completedGames={completedGames}
                   textSecondary={theme.colors.textSecondary}
                 />
+                <ActivityHudCell
+                  unreadActivityCount={unreadActivityCount}
+                  primaryColor={theme.colors.primary}
+                  textSecondary={theme.colors.textSecondary}
+                />
                 <ChatHudCell
                   unreadCount={unreadCount}
                   lastMessageAt={group.lastMessageAt}
@@ -685,6 +722,7 @@ export const GroupCard = React.memo(GroupCardInner, (prev, next) => {
   return (
     prev.group === next.group &&
     prev.unreadCount === next.unreadCount &&
+    prev.unreadActivityCount === next.unreadActivityCount &&
     prev.onPress === next.onPress
   );
 });

@@ -32,7 +32,7 @@ import * as Haptics from "expo-haptics";
 import { Screen, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useMyGroupsQuery, useUnreadCountsQuery } from "@/domains/groups";
+import { useMyGroupsQuery, useUnreadCountsQuery, useUnreadActivityCountsQuery } from "@/domains/groups";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import {
   GroupCard,
@@ -64,6 +64,8 @@ function GroupsContent() {
   const isSearching = !!searchParam && isFetching;
   const { data: unreadData, refetch: refetchUnread } = useUnreadCountsQuery();
   const unreadCounts = unreadData?.data ?? {};
+  const { data: unreadActivityData } = useUnreadActivityCountsQuery();
+  const unreadActivityCounts = unreadActivityData?.data ?? {};
   const [refreshing, setRefreshing] = useState(false);
   const [isTabsSticky, setIsTabsSticky] = useState(false);
 
@@ -279,9 +281,10 @@ function GroupsContent() {
         group={item.data}
         onPress={handleGroupPress}
         unreadCount={unreadCounts[String(item.data.id)] ?? 0}
+        unreadActivityCount={unreadActivityCounts[String(item.data.id)] ?? 0}
       />
     );
-  }, [theme, handleOpenInfo, handleBrowsePublic, handleJoinWithCode, isTabsSticky, selectedFilter, setSelectedFilter, counts, handleGroupPress, unreadCounts, searchInput, isSearching]);
+  }, [theme, handleOpenInfo, handleBrowsePublic, handleJoinWithCode, isTabsSticky, selectedFilter, setSelectedFilter, counts, handleGroupPress, unreadCounts, unreadActivityCounts, searchInput, isSearching]);
 
   // Loading state — skeleton
   if (isLoading) {
