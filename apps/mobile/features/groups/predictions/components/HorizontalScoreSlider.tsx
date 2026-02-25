@@ -20,7 +20,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const TRACK_PADDING = 12;
 const TRACK_WIDTH = SCREEN_WIDTH - TRACK_PADDING * 2;
 const CELL_WIDTH = TRACK_WIDTH / 11;
-const THUMB_SIZE = 52;
+const THUMB_SIZE = 48;
 const TRACK_HEIGHT = 48;
 const MAX_X = 10 * CELL_WIDTH;
 
@@ -118,7 +118,7 @@ function AnimatedTeamLogo({
         position === "start" ? styles.cellStart : styles.cellEnd,
       ]}
     >
-      <TeamLogo imagePath={imagePath} teamName={teamName ?? ""} size={32} />
+      <TeamLogo imagePath={imagePath} teamName={teamName ?? ""} size={32} rounded={false} />
     </Animated.View>
   );
 }
@@ -281,6 +281,7 @@ export function HorizontalScoreSlider({
               imagePath={teamImagePath}
               teamName={teamName ?? ""}
               size={36}
+              rounded={false}
             />
           ) : (
             <Text style={[styles.thumbValue, { color: textColor }]}>
@@ -346,7 +347,7 @@ const styles = StyleSheet.create({
   },
   thumbValue: {
     color: "white",
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "800",
     textShadowColor: "rgba(0,0,0,0.2)",
     textShadowOffset: { width: 0, height: 1 },
