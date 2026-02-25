@@ -5,6 +5,7 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text, Image, ScrollView } from "react-native";
+import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
@@ -290,6 +291,7 @@ interface NextGameRowProps {
   textPrimary: string;
   borderColor: string;
   surfaceColor: string;
+  onPredictPress: () => void;
 }
 
 const NextGameRow = React.memo(function NextGameRowInner({
@@ -299,9 +301,11 @@ const NextGameRow = React.memo(function NextGameRowInner({
   textPrimary,
   borderColor,
   surfaceColor,
+  onPredictPress,
 }: NextGameRowProps) {
   const { t } = useTranslation("common");
   const countdown = useCountdown(nextGame.kickoffAt ?? null);
+  const hasPrediction = !!nextGame.prediction;
 
   return (
     <View
@@ -329,69 +333,88 @@ const NextGameRow = React.memo(function NextGameRowInner({
           {nextGame.homeTeam?.name ?? "?"} - {nextGame.awayTeam?.name ?? "?"}
         </Text>
       </View>
-      {/* Mini score boxes with team logos */}
-      <View style={styles.predictionBoxes}>
-        {/* Home team */}
-        <View style={styles.teamPrediction}>
-          <Text style={[styles.teamCode, { color: textSecondary }]}>
-            {nextGame.homeTeam?.shortCode ?? "H"}
-          </Text>
-          <View
-            style={[
-              styles.scoreBox,
-              {
-                backgroundColor: urgencyColor
-                  ? urgencyColor + "15"
-                  : surfaceColor,
-                borderColor: urgencyColor
-                  ? urgencyColor + "40"
-                  : borderColor,
-              },
-            ]}
-          >
-            <Text
+      {hasPrediction ? (
+        <View style={styles.predictionBoxes}>
+          {/* Home team */}
+          <View style={styles.teamPrediction}>
+            <Text style={[styles.teamCode, { color: textSecondary }]}>
+              {nextGame.homeTeam?.shortCode ?? "H"}
+            </Text>
+            <View
               style={[
-                styles.scoreText,
+                styles.scoreBox,
                 {
-                  color: urgencyColor ?? textPrimary,
+                  backgroundColor: surfaceColor,
+                  borderColor: borderColor,
                 },
               ]}
             >
-              {nextGame.prediction?.home ?? "–"}
-            </Text>
+              <Text
+                style={[
+                  styles.scoreText,
+                  { color: textPrimary },
+                ]}
+              >
+                {nextGame.prediction?.home}
+              </Text>
+            </View>
           </View>
-        </View>
-        {/* Away team */}
-        <View style={styles.teamPrediction}>
-          <Text style={[styles.teamCode, { color: textSecondary }]}>
-            {nextGame.awayTeam?.shortCode ?? "A"}
-          </Text>
-          <View
-            style={[
-              styles.scoreBox,
-              {
-                backgroundColor: urgencyColor
-                  ? urgencyColor + "15"
-                  : surfaceColor,
-                borderColor: urgencyColor
-                  ? urgencyColor + "40"
-                  : borderColor,
-              },
-            ]}
-          >
-            <Text
+          {/* Away team */}
+          <View style={styles.teamPrediction}>
+            <Text style={[styles.teamCode, { color: textSecondary }]}>
+              {nextGame.awayTeam?.shortCode ?? "A"}
+            </Text>
+            <View
               style={[
-                styles.scoreText,
+                styles.scoreBox,
                 {
-                  color: urgencyColor ?? textPrimary,
+                  backgroundColor: surfaceColor,
+                  borderColor: borderColor,
                 },
               ]}
             >
-              {nextGame.prediction?.away ?? "–"}
-            </Text>
+              <Text
+                style={[
+                  styles.scoreText,
+                  { color: textPrimary },
+                ]}
+              >
+                {nextGame.prediction?.away}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
+      ) : (
+        <Pressable
+          onPress={onPredictPress}
+          style={({ pressed }) => [
+            styles.predictButton,
+            {
+              backgroundColor: urgencyColor
+                ? urgencyColor + "15"
+                : surfaceColor,
+              borderColor: urgencyColor
+                ? urgencyColor + "40"
+                : borderColor,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <Ionicons
+            name="pencil"
+            size={13}
+            color={urgencyColor ?? textPrimary}
+          />
+          <Text
+            style={[
+              styles.predictButtonText,
+              { color: urgencyColor ?? textPrimary },
+            ]}
+          >
+            {t("predictions.predict")}
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 });
@@ -401,6 +424,7 @@ const NextGameRow = React.memo(function NextGameRowInner({
 function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount = 0 }: GroupCardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const router = useRouter();
   const [isPressed, setIsPressed] = useState(false);
 
   const initials = getInitials(group.name);
@@ -651,6 +675,10 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
                 textPrimary={theme.colors.textPrimary}
                 borderColor={theme.colors.border}
                 surfaceColor={theme.colors.surface}
+                onPredictPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/groups/${group.id}/fixtures/${group.nextGame!.id}` as any);
+                }}
               />
             )}
 
@@ -868,6 +896,20 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 2,
   },
+  predictButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+  },
+  predictButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
   predictionBoxes: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -897,8 +939,8 @@ const styles = StyleSheet.create({
   statsHud: {
     flexDirection: "row",
     marginTop: 14,
-    paddingVertical: 8,
-    gap: 4,
+    paddingVertical: 6,
+    gap: 2,
     borderTopWidth: 1,
   },
   hudCell: {
@@ -907,15 +949,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    gap: 4,
+    paddingVertical: 8,
+    gap: 3,
     overflow: "hidden",
   },
   rankChangeIndicator: {
     marginLeft: -2,
   },
   hudValue: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
   hudLabel: {
