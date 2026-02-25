@@ -18,7 +18,7 @@ import {
 import { useTheme } from "@/lib/theme";
 import { SentInvitesList } from "@/features/invites/components/SentInvitesList";
 
-const DEEP_LINK_BASE = "mobile://groups/join";
+const DEEP_LINK_BASE = "https://mono-cygobet.onrender.com/groups/join";
 
 interface GroupInviteScreenProps {
   groupId: number | null;
