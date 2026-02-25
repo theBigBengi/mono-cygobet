@@ -1,8 +1,19 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Dimensions, TextInput } from "react-native";
-import { Card, AppText, TeamLogo } from "@/components/ui";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  runOnJS,
+  Easing,
+} from "react-native-reanimated";
+import { AppText, TeamLogo } from "@/components/ui";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
+import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { ScoresInput } from "./ScoresInput";
 import { OutcomePicker } from "./OutcomePicker";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
@@ -29,6 +40,8 @@ type Props = {
   onAutoNext?: (type: "home" | "away") => void;
   predictionMode?: PredictionMode;
   onSelectOutcome?: (outcome: "home" | "draw" | "away") => void;
+  onSwipeLeft?: () => void;
+  onSwipeRight?: () => void;
 };
 
 /**
@@ -49,9 +62,12 @@ export function SingleGameMatchCard({
   onAutoNext,
   predictionMode = "CorrectScore",
   onSelectOutcome,
+  onSwipeLeft,
+  onSwipeRight,
 }: Props) {
   const { translateTeam } = useEntityTranslation();
   const { t } = useTranslation("common");
+  const { theme } = useTheme();
   const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
   const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
 
@@ -62,60 +78,163 @@ export function SingleGameMatchCard({
       currentFocusedField: null,
     });
 
-  const resultOrReasonText =
-    gameResultOrTime != null
-      ? gameResultOrTime.home != null && gameResultOrTime.away != null
-        ? `${gameResultOrTime.home}-${gameResultOrTime.away}`
-        : gameResultOrTime.home
-      : null;
+  const cardStyles = useMemo(
+    () => ({
+      card: {
+        backgroundColor: theme.colors.cardBackground,
+        borderColor: theme.colors.border,
+        borderBottomColor: theme.colors.textSecondary + "40",
+      } as const,
+    }),
+    [theme]
+  );
+
+  // League + DateTime combined into a compact info line
+  const leagueName = fixture.league?.name;
+  const kickoffText = fixture.kickoffAt
+    ? formatKickoffDateTime(fixture.kickoffAt)
+    : null;
+  const infoParts = [leagueName, kickoffText].filter(Boolean).join("  ·  ");
+
+  // Swipe gesture handling (same pattern as LobbyPredictionsCTA)
+  const translateX = useSharedValue(0);
+  const swipeThreshold = SCREEN_WIDTH * 0.15;
+  const cardWidth = SCREEN_WIDTH - 24; // matches marginHorizontal: 12 * 2
+  const SLIDE_DURATION = 150;
+
+  const canSwipeLeft = !!onSwipeLeft;
+  const canSwipeRight = !!onSwipeRight;
+
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-10, 10])
+        .onUpdate((event) => {
+          if (!canSwipeRight && event.translationX > 0) {
+            translateX.value = event.translationX * 0.3;
+          } else if (!canSwipeLeft && event.translationX < 0) {
+            translateX.value = event.translationX * 0.3;
+          } else {
+            translateX.value = event.translationX;
+          }
+        })
+        .onEnd((event) => {
+          const shouldGoNext = event.translationX < -swipeThreshold && canSwipeLeft;
+          const shouldGoPrevious = event.translationX > swipeThreshold && canSwipeRight;
+
+          if (shouldGoNext && onSwipeLeft) {
+            translateX.value = withTiming(
+              -cardWidth,
+              { duration: SLIDE_DURATION, easing: Easing.in(Easing.ease) },
+              () => {
+                runOnJS(onSwipeLeft)();
+                translateX.value = cardWidth;
+                translateX.value = withTiming(0, {
+                  duration: SLIDE_DURATION,
+                  easing: Easing.out(Easing.ease),
+                });
+              }
+            );
+          } else if (shouldGoPrevious && onSwipeRight) {
+            translateX.value = withTiming(
+              cardWidth,
+              { duration: SLIDE_DURATION, easing: Easing.in(Easing.ease) },
+              () => {
+                runOnJS(onSwipeRight)();
+                translateX.value = -cardWidth;
+                translateX.value = withTiming(0, {
+                  duration: SLIDE_DURATION,
+                  easing: Easing.out(Easing.ease),
+                });
+              }
+            );
+          } else {
+            translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+          }
+        }),
+    [canSwipeLeft, canSwipeRight, cardWidth, onSwipeLeft, onSwipeRight, translateX, swipeThreshold]
+  );
+
+  const swipeAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
 
   return (
     <View
       style={[!isEditable && !isLive && !isFinished && styles.dimmedContainer]}
     >
-      <Card style={styles.matchCard}>
-        {fixture.league?.name && (
-          <View style={styles.leagueRow}>
+      <GestureDetector gesture={panGesture}>
+      <Animated.View
+        style={[
+          styles.card,
+          cardStyles.card,
+          getShadowStyle("md"),
+          swipeAnimatedStyle,
+        ]}
+      >
+
+        {/* Live red tint overlay */}
+        {isLive && (
+          <View
+            style={[StyleSheet.absoluteFill, styles.liveTint]}
+            pointerEvents="none"
+          />
+        )}
+
+        {/* Info pill: League · DateTime */}
+        {infoParts.length > 0 && (
+          <View style={[styles.infoPill, { backgroundColor: theme.colors.surface }]}>
             <AppText variant="caption" color="secondary" numberOfLines={1}>
-              {fixture.league.name}
+              {infoParts}
             </AppText>
           </View>
         )}
-        {fixture.kickoffAt && (
-          <View style={styles.dateTimeRow}>
-            <AppText
-              variant="caption"
-              color="secondary"
-              style={styles.dateTime}
-            >
-              {formatKickoffDateTime(fixture.kickoffAt)}
-            </AppText>
+
+        {/* LIVE badge */}
+        {isLive && (
+          <View style={styles.liveBadgeRow}>
+            <View style={styles.liveBadge}>
+              <View style={styles.liveDot} />
+              <AppText
+                variant="caption"
+                style={styles.liveBadgeText}
+              >
+                LIVE
+              </AppText>
+            </View>
           </View>
         )}
+
+        {/* Main match content */}
         <View style={styles.matchContent}>
-          {/* Home Team - Logo above Name */}
+          {/* Home Team */}
           <View style={styles.teamSection}>
             <TeamLogo
               imagePath={fixture.homeTeam?.imagePath}
               teamName={homeTeamName}
-              size={48}
+              size={66}
+              rounded={false}
             />
-            <AppText variant="body" style={styles.teamName} numberOfLines={2}>
+            <AppText
+              variant="label"
+              style={styles.teamName}
+              numberOfLines={1}
+            >
               {homeTeamName}
             </AppText>
           </View>
 
-          {/* Score Section - Result or Prediction */}
-          {isEditable ? (
-            predictionMode === "MatchWinner" && onSelectOutcome ? (
-              <View style={styles.scoreSection}>
-                <OutcomePicker
-                  selectedOutcome={getOutcomeFromPrediction(prediction)}
-                  isEditable={isEditable}
-                  onSelect={onSelectOutcome}
-                />
-              </View>
-            ) : (
+          {/* Score Section - always shows prediction */}
+          {predictionMode === "MatchWinner" && onSelectOutcome ? (
+            <View style={styles.scoreSection}>
+              <OutcomePicker
+                selectedOutcome={getOutcomeFromPrediction(prediction)}
+                isEditable={isEditable}
+                onSelect={onSelectOutcome}
+              />
+            </View>
+          ) : (
+            <View style={styles.scoreSection}>
               <ScoresInput
                 prediction={prediction}
                 homeRef={homeRef}
@@ -129,60 +248,32 @@ export function SingleGameMatchCard({
                 onBlur={onBlur}
                 onChange={onChange}
                 onAutoNext={onAutoNext}
-                variant="medium"
-                containerStyle={styles.scoreSection}
+                variant="large"
               />
-            )
-          ) : isLive ? (
-            <View style={styles.resultScore}>
-              <AppText style={styles.resultScoreText}>
-                {gameResultOrTime?.home ?? "0"}
-              </AppText>
-              <AppText style={styles.resultScoreSeparator}>-</AppText>
-              <AppText style={styles.resultScoreText}>
-                {gameResultOrTime?.away ?? "0"}
-              </AppText>
-            </View>
-          ) : (
-            <View style={styles.resultScore}>
-              <AppText style={styles.resultScoreText}>
-                {gameResultOrTime?.home ?? "-"}
-              </AppText>
-              <AppText style={styles.resultScoreSeparator}>-</AppText>
-              <AppText style={styles.resultScoreText}>
-                {gameResultOrTime?.away ?? "-"}
-              </AppText>
             </View>
           )}
 
-          {/* Away Team - Logo above Name */}
-          <View style={styles.teamSectionAway}>
+          {/* Away Team */}
+          <View style={styles.teamSection}>
             <TeamLogo
               imagePath={fixture.awayTeam?.imagePath}
               teamName={awayTeamName}
-              size={48}
+              size={66}
+              rounded={false}
             />
             <AppText
-              variant="body"
-              style={styles.teamNameAway}
-              numberOfLines={2}
+              variant="label"
+              style={styles.teamName}
+              numberOfLines={1}
             >
               {awayTeamName}
             </AppText>
           </View>
         </View>
-        {isLive && resultOrReasonText && (
-          <View style={styles.resultContainer}>
-            <AppText
-              variant="caption"
-              color={isLive ? undefined : "secondary"}
-              style={[styles.resultText, isLive && styles.liveResultText]}
-            >
-              {resultOrReasonText}
-            </AppText>
-          </View>
-        )}
-      </Card>
+
+
+      </Animated.View>
+      </GestureDetector>
     </View>
   );
 }
@@ -190,111 +281,98 @@ export function SingleGameMatchCard({
 const styles = StyleSheet.create({
   dimmedContainer: {
     opacity: 0.6,
-    // backgroundColor: "red",
   },
-  leagueRow: {
+  card: {
+    marginHorizontal: 12,
+    marginTop: 12,
+    alignSelf: "stretch",
+    paddingTop: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  liveTint: {
+    backgroundColor: LIVE_RESULT_COLOR + "08",
+  },
+  infoPill: {
+    alignSelf: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  liveBadgeRow: {
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  liveBadge: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginBottom: 2,
+    gap: 5,
+    backgroundColor: LIVE_RESULT_COLOR + "18",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
-  matchCard: {
-    marginHorizontal: 0,
-    marginTop: 0,
-    // marginBottom: 16,
-    padding: 16,
-    borderRadius: 0,
-    alignSelf: "center",
-    width: SCREEN_WIDTH,
-    // backgroundColor: "red",
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: LIVE_RESULT_COLOR,
+  },
+  liveBadgeText: {
+    color: LIVE_RESULT_COLOR,
+    fontWeight: "700",
+    fontSize: 11,
   },
   matchContent: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 4,
+    gap: 8,
   },
   teamSection: {
     flex: 1,
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 10,
     minWidth: 0,
-    paddingHorizontal: 4,
-  },
-  teamSectionAway: {
-    flex: 1,
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    minWidth: 0,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   teamName: {
     fontSize: 12,
-    fontWeight: "500",
-    textAlign: "center",
-    width: "100%",
-  },
-  teamNameAway: {
-    fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
     textAlign: "center",
     width: "100%",
   },
   scoreSection: {
     justifyContent: "center",
+    alignItems: "center",
     writingDirection: "ltr",
     paddingHorizontal: 4,
     flexShrink: 0,
-    paddingTop: 6,
-  },
-  resultScore: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
     paddingTop: 12,
-    flexShrink: 0,
-    minWidth: 80,
-    minHeight: 40,
   },
-  resultScoreText: {
-    fontSize: 32,
-    fontWeight: "700",
-    lineHeight: 38,
-  },
-  resultScoreSeparator: {
-    fontSize: 32,
-    fontWeight: "700",
-    lineHeight: 38,
-  },
-  dateTimeRow: {
+  resultRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    marginBottom: 2,
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignSelf: "center",
   },
-  dateTime: {
-    textAlign: "center",
+  resultRowHidden: {
+    opacity: 0,
   },
-  resultContainer: {
-    alignItems: "center",
-    writingDirection: "ltr",
-    marginTop: 8,
-    paddingTop: 8,
-  },
-  resultText: {
-    fontSize: 11,
-  },
-  liveResultText: {
-    color: LIVE_RESULT_COLOR,
+  resultRowScore: {
     fontWeight: "700",
+    fontSize: 13,
   },
 });

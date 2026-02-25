@@ -45,6 +45,8 @@ export type SingleGameContentProps = {
     fixtureId: number,
     outcome: "home" | "draw" | "away"
   ) => void;
+  onSwipeLeft?: () => void;
+  onSwipeRight?: () => void;
 };
 
 /**
@@ -68,6 +70,8 @@ export const SingleGameContent = React.memo(function SingleGameContent({
   navigateToField,
   predictionMode,
   onSelectOutcome,
+  onSwipeLeft,
+  onSwipeRight,
 }: SingleGameContentProps) {
   const { t } = useTranslation("common");
 
@@ -124,6 +128,8 @@ export const SingleGameContent = React.memo(function SingleGameContent({
               ? (outcome) => onSelectOutcome(fixture.id, outcome)
               : undefined
           }
+          onSwipeLeft={onSwipeLeft}
+          onSwipeRight={onSwipeRight}
         />
         <GameDetailTabs
           tabs={tabs}

@@ -66,14 +66,15 @@ const variantStyles: Record<
   },
   large: {
     input: {
-      width: 48,
-      height: 48,
-      fontSize: 24,
+      width: 42,
+      height: 42,
+      fontSize: 22,
     },
     separator: {
-      fontSize: 24,
+      fontSize: 32,
+      lineHeight: 36,
       fontWeight: "700",
-      marginHorizontal: 2,
+      marginHorizontal: 1,
     },
   },
 };
@@ -145,6 +146,9 @@ export function ScoresInput({
 
   const separatorStyle: TextStyle = {
     ...variantStyle.separator,
+    height: variantStyle.input.height,
+    textAlignVertical: "center",
+    includeFontPadding: false,
   };
 
   return (

@@ -137,6 +137,18 @@ export function SingleGameScreen({
     [allFixtures, router, saveAllPending]
   );
 
+  const handleSwipeLeft = useCallback(() => {
+    if (currentFixtureIndex >= 0 && currentFixtureIndex < allFixtures.length - 1) {
+      handleSelectGame(currentFixtureIndex + 1);
+    }
+  }, [currentFixtureIndex, allFixtures.length, handleSelectGame]);
+
+  const handleSwipeRight = useCallback(() => {
+    if (currentFixtureIndex > 0) {
+      handleSelectGame(currentFixtureIndex - 1);
+    }
+  }, [currentFixtureIndex, handleSelectGame]);
+
   if (isLoading) {
     return <QueryLoadingView message={t("groups.loadingGroup")} />;
   }
@@ -190,6 +202,14 @@ export function SingleGameScreen({
           predictionMode={predictionMode}
           onSelectOutcome={
             predictionMode === "MatchWinner" ? handleSelectOutcome : undefined
+          }
+          onSwipeLeft={
+            currentFixtureIndex >= 0 && currentFixtureIndex < allFixtures.length - 1
+              ? handleSwipeLeft
+              : undefined
+          }
+          onSwipeRight={
+            currentFixtureIndex > 0 ? handleSwipeRight : undefined
           }
         />
       </View>
