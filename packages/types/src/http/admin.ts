@@ -1103,6 +1103,50 @@ export interface AdminFixturesAttentionResponse {
   message: string;
 }
 
+// ─── Admin Audit Log Types ───
+
+export interface AdminAuditLogEntry {
+  id: number;
+  createdAt: string;
+  actorId: number;
+  actorEmail: string;
+  actorName: string | null;
+  action: string;
+  category: string;
+  description: string;
+  targetType: string | null;
+  targetId: string | null;
+  method: string;
+  path: string;
+  statusCode: number;
+  ipAddress: string | null;
+  changes: Record<string, { old: unknown; new: unknown }> | null;
+  metadata: Record<string, unknown> | null;
+  autoCapture: boolean;
+}
+
+export interface AdminAuditLogListResponse {
+  status: string;
+  data: AdminAuditLogEntry[];
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
+export interface AdminAuditLogFilterOptionsResponse {
+  status: string;
+  data: {
+    categories: string[];
+    actions: string[];
+    actors: { id: number; email: string; name: string | null }[];
+  };
+  message: string;
+}
+
 export interface AdminProviderHealthResponse {
   status: string;
   data: {

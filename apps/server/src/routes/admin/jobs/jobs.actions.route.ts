@@ -13,6 +13,7 @@ import {
   getJobRunner,
   makeAdminRunOpts,
 } from "../../../jobs/jobs.registry";
+import { auditFromRequest } from "../../../services/admin/audit-log.service";
 
 /**
  * Admin Jobs Actions Routes
@@ -77,6 +78,15 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
         );
         const jobRunId =
           typeof result?.jobRunId === "number" ? result.jobRunId : null;
+
+        auditFromRequest(req, reply, {
+          action: "job.trigger",
+          category: "jobs",
+          description: `Triggered job "${jobId}"${req.body?.dryRun ? " (dry-run)" : ""}`,
+          targetType: "job",
+          targetId: jobId,
+          metadata: { dryRun: !!req.body?.dryRun, jobRunId },
+        });
 
         return reply.send({
           status: "success",
@@ -184,6 +194,13 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
           });
         }
       }
+
+      auditFromRequest(req, reply, {
+        action: "job.trigger-all",
+        category: "jobs",
+        description: `Triggered all ${RUNNABLE_JOBS.length} jobs (${ok} ok, ${fail} fail)`,
+        metadata: { dryRun: !!req.body?.dryRun, ok, fail, triggeredCount: RUNNABLE_JOBS.length },
+      });
 
       return reply.send({
         status: "success",

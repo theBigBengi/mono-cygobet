@@ -13,6 +13,7 @@ import {
   DEFAULT_LOCK_TIMEOUT_MS,
   withAdvisoryLock,
 } from "../../../../utils/advisory-lock";
+import { auditFromRequest } from "../../../../services/admin/audit-log.service";
 
 const LOCK_KEY = "sync:teams";
 
@@ -44,6 +45,7 @@ const adminSyncTeamsRoutes: FastifyPluginAsync = async (fastify) => {
               dryRun,
               triggeredBy: "admin-ui",
             });
+            auditFromRequest(req, reply, { action: "sync.teams", category: "sync", description: `Synced teams (${result.ok} ok, ${result.fail} fail)${dryRun ? " [dry-run]" : ""}`, metadata: { dryRun, ok: result.ok, fail: result.fail, total: result.total } });
             return reply.send({
               status: "success",
               data: {
@@ -140,6 +142,7 @@ const adminSyncTeamsRoutes: FastifyPluginAsync = async (fastify) => {
               dryRun,
               triggeredBy: "admin-ui",
             });
+            auditFromRequest(req, reply, { action: "sync.teams.single", category: "sync", description: `Synced team #${teamId}`, targetType: "team", targetId: String(teamId) });
             return reply.send({
               status: "success",
               data: {

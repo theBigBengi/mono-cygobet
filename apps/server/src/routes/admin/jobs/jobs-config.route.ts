@@ -11,6 +11,7 @@ import {
   updateJobParamsSchema,
   updateJobResponseSchema,
 } from "../../../schemas/admin/jobs.schemas";
+import { auditFromRequest } from "../../../services/admin/audit-log.service";
 
 /**
  * Admin Jobs DB Routes
@@ -71,6 +72,16 @@ const adminJobsDbRoutes: FastifyPluginAsync = async (fastify) => {
       const body = req.body ?? {};
       try {
         const data = await service.updateJob({ jobId, patch: body });
+
+        auditFromRequest(req, reply, {
+          action: "job.update",
+          category: "jobs",
+          description: `Updated job "${jobId}"`,
+          targetType: "job",
+          targetId: jobId,
+          metadata: { patch: body },
+        });
+
         return reply.send({
           status: "success",
           data,

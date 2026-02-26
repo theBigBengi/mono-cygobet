@@ -9,6 +9,7 @@ import type {
   AdminSeedSeasonPreviewRequest,
   AdminSeedSeasonPreviewResponse,
 } from "@repo/types";
+import { auditFromRequest } from "../../../../services/admin/audit-log.service";
 
 const seedSeasonRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /seed-season/preview - Check what will be created
@@ -195,6 +196,7 @@ const seedSeasonRoutes: FastifyPluginAsync = async (fastify) => {
           });
         });
 
+        auditFromRequest(req, reply, { action: "sync.seed-season", category: "sync", description: `Seed season queued for ${seasonExternalId}`, metadata: { seasonExternalId, includeTeams, includeFixtures, futureOnly, jobId } });
         return reply.send({
           status: "ok",
           data: {

@@ -46,6 +46,7 @@ const data = {
         { title: "Analytics", url: "/analytics" },
         { title: "Users", url: "/users" },
         { title: "Settings", url: "/settings" },
+        { title: "Activity Log", url: "/activity-log" },
         { title: "Sandbox", url: "/sandbox" },
       ],
     },

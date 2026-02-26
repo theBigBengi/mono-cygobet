@@ -13,6 +13,7 @@ import { resolveIssuesForFixture } from "../../../services/admin/fixture-issues-
 import { getFixtureIssue } from "../../../services/admin/dashboard.service";
 import { prisma } from "@repo/db";
 import type { FixtureIssueType } from "@repo/types";
+import { auditFromRequest } from "../../../services/admin/audit-log.service";
 
 const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/fixtures/attention - Fixtures needing admin attention
@@ -210,6 +211,16 @@ const adminFixturesRoutes: FastifyPluginAsync = async (fastify) => {
         const result = await resettleFixture(fixtureId);
         // Immediately resolve the unsettled issue so it doesn't linger until next cron
         await resolveIssuesForFixture(fixtureId, ["unsettled"]);
+
+        auditFromRequest(req, reply, {
+          action: "fixture.resettle",
+          category: "fixtures",
+          description: `Re-settled fixture #${fixtureId} (${result.groupsAffected} groups, ${result.predictionsRecalculated} predictions)`,
+          targetType: "fixture",
+          targetId: String(fixtureId),
+          metadata: { groupsAffected: result.groupsAffected, predictionsRecalculated: result.predictionsRecalculated },
+        });
+
         return reply.send(result);
       } catch (error: unknown) {
         const code =

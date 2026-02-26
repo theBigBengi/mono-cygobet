@@ -7,6 +7,7 @@ import {
   getAlertHistory,
   resolveAlert,
 } from "../../../services/admin/alerts.service";
+import { auditFromRequest } from "../../../services/admin/audit-log.service";
 
 const alertsRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/alerts — active (unresolved) alerts
@@ -34,6 +35,14 @@ const alertsRoutes: FastifyPluginAsync = async (fastify) => {
     if (!data) {
       return reply.status(404).send({ status: "error", data: null, message: "Alert not found" });
     }
+
+    auditFromRequest(req, reply, {
+      action: "alert.resolve",
+      category: "alerts",
+      description: `Resolved alert #${alertId}: ${data.title}`,
+      targetType: "alert",
+      targetId: String(alertId),
+    });
 
     return reply.send({ status: "success", data, message: "Alert resolved" });
   });

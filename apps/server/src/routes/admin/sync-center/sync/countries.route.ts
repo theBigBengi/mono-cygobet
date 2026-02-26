@@ -14,6 +14,7 @@ import {
   DEFAULT_LOCK_TIMEOUT_MS,
   withAdvisoryLock,
 } from "../../../../utils/advisory-lock";
+import { auditFromRequest } from "../../../../services/admin/audit-log.service";
 
 const LOCK_KEY = "sync:countries";
 
@@ -46,6 +47,7 @@ const adminSyncCountriesRoutes: FastifyPluginAsync = async (fastify) => {
               triggeredBy: "admin-ui",
             });
             await availabilityService.invalidateCache().catch(() => {});
+            auditFromRequest(req, reply, { action: "sync.countries", category: "sync", description: `Synced countries (${result.ok} ok, ${result.fail} fail)${dryRun ? " [dry-run]" : ""}`, metadata: { dryRun, ok: result.ok, fail: result.fail, total: result.total } });
             return reply.send({
               status: "success",
               data: {
@@ -143,6 +145,7 @@ const adminSyncCountriesRoutes: FastifyPluginAsync = async (fastify) => {
               triggeredBy: "admin-ui",
             });
             await availabilityService.invalidateCache().catch(() => {});
+            auditFromRequest(req, reply, { action: "sync.countries.single", category: "sync", description: `Synced country #${countryId}`, targetType: "country", targetId: String(countryId) });
             return reply.send({
               status: "success",
               data: {

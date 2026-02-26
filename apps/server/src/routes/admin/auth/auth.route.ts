@@ -2,6 +2,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "@repo/db";
 import { AdminAuthService } from "../../../services/admin/admin-auth.service";
+import { auditFromRequest } from "../../../services/admin/audit-log.service";
 import {
   setAdminSessionCookie,
   clearAdminSessionCookie,
@@ -64,9 +65,16 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminAuthOkResponse> => {
-      const { rawSessionToken, expires } = await service.login(req.body);
+      const { rawSessionToken, expires, userId } = await service.login(req.body);
 
       setAdminSessionCookie(reply, rawSessionToken, expires);
+
+      auditFromRequest(req, reply, {
+        action: "auth.login",
+        category: "auth",
+        description: `Admin login: ${req.body.email}`,
+        actor: { id: userId, email: req.body.email },
+      });
 
       return reply.send({ status: "success", message: "Logged in" });
     }
@@ -80,6 +88,8 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (req, reply): Promise<AdminAuthOkResponse> => {
+      // Capture actor before clearing auth context
+      const actor = req.adminAuth?.user;
       const rawToken = req.cookies?.[ADMIN_SESSION_COOKIE_NAME];
 
       // Idempotent: safe even if cookie/session is missing.
@@ -90,6 +100,15 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
       // Also clear memoized auth context for this request (if any downstream hooks run).
       req.adminAuthResolved = true;
       req.adminAuth = null;
+
+      if (actor) {
+        auditFromRequest(req, reply, {
+          action: "auth.logout",
+          category: "auth",
+          description: `Admin logout: ${actor.email}`,
+          actor,
+        });
+      }
 
       return reply.send({ status: "success", message: "Logged out" });
     }
@@ -107,6 +126,14 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
       if (!ctx) throw new Error("Admin auth context missing");
       await adminSessionDb.deleteAllByUserId(ctx.user.id);
       clearAdminSessionCookie(reply);
+
+      auditFromRequest(req, reply, {
+        action: "auth.revoke-sessions",
+        category: "auth",
+        description: `Revoked all sessions for ${ctx.user.email}`,
+        actor: ctx.user,
+      });
+
       req.adminAuthResolved = true;
       req.adminAuth = null;
       return reply.send({ revoked: true });
@@ -170,6 +197,15 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
 
       const updated = await service.updateProfile(ctx.user.id, req.body);
 
+      auditFromRequest(req, reply, {
+        action: "auth.update-profile",
+        category: "auth",
+        description: `Updated profile for ${ctx.user.email}`,
+        targetType: "user",
+        targetId: String(ctx.user.id),
+        metadata: { patch: req.body },
+      });
+
       return reply.send({
         status: "success",
         data: updated,
@@ -217,6 +253,14 @@ const adminAuthRoutes: FastifyPluginAsync = async (fastify) => {
           user: ctx.user,
           session: { id: sessionId, userId: ctx.user.id, expires },
         };
+      });
+
+      auditFromRequest(req, reply, {
+        action: "auth.change-password",
+        category: "auth",
+        description: `Changed password for ${ctx.user.email}`,
+        targetType: "user",
+        targetId: String(ctx.user.id),
       });
 
       return reply.send({

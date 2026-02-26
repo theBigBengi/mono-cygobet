@@ -12,6 +12,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   "/analytics": "Analytics",
   "/teams": "Teams",
   "/settings": "Settings",
+  "/activity-log": "Activity Log",
 };
 
 /**

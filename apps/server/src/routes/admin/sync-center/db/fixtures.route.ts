@@ -36,6 +36,7 @@ import type {
   GetFixtureParams,
   SearchFixturesQuerystring,
 } from "../../../../types";
+import { auditFromRequest } from "../../../../services/admin/audit-log.service";
 
 // Helper function to map fixture to response format
 function mapFixtureToResponse(f: any) {
@@ -465,6 +466,7 @@ const adminFixturesDbRoutes: FastifyPluginAsync = async (fastify) => {
           overriddenById,
         });
 
+        auditFromRequest(req, reply, { action: "fixture.update", category: "fixtures", description: `Updated fixture #${fixtureId}`, targetType: "fixture", targetId: String(fixtureId), metadata: body });
         return reply.send({
           status: "success",
           data: mapFixtureToResponse(fixture),

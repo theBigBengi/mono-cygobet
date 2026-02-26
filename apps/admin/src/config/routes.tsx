@@ -12,6 +12,7 @@ import UsersPage from "@/pages/users";
 import TeamsPage from "@/pages/teams";
 import AnalyticsPage from "@/pages/analytics";
 import SettingsPage from "@/pages/settings";
+import ActivityLogPage from "@/pages/activity-log";
 import LoginPage from "@/pages/login";
 import { AdminLayout } from "@/components/layout";
 
@@ -42,6 +43,7 @@ export const routes: RouteObject[] = [
       { path: "/analytics", element: <AnalyticsPage /> },
       { path: "/users", element: <UsersPage /> },
       { path: "/settings", element: <SettingsPage /> },
+      { path: "/activity-log", element: <ActivityLogPage /> },
       {
         path: "*",
         element: (

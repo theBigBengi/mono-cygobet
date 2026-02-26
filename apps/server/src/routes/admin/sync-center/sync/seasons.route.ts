@@ -14,6 +14,7 @@ import {
   DEFAULT_LOCK_TIMEOUT_MS,
   withAdvisoryLock,
 } from "../../../../utils/advisory-lock";
+import { auditFromRequest } from "../../../../services/admin/audit-log.service";
 
 const LOCK_KEY = "sync:seasons";
 
@@ -46,6 +47,7 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
               triggeredBy: "admin-ui",
             });
             await availabilityService.invalidateCache().catch(() => {});
+            auditFromRequest(req, reply, { action: "sync.seasons", category: "sync", description: `Synced seasons (${result.ok} ok, ${result.fail} fail)${dryRun ? " [dry-run]" : ""}`, metadata: { dryRun, ok: result.ok, fail: result.fail, total: result.total } });
             return reply.send({
               status: "success",
               data: {
@@ -143,6 +145,7 @@ const adminSyncSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
               triggeredBy: "admin-ui",
             });
             await availabilityService.invalidateCache().catch(() => {});
+            auditFromRequest(req, reply, { action: "sync.seasons.single", category: "sync", description: `Synced season #${seasonId}`, targetType: "season", targetId: String(seasonId) });
             return reply.send({
               status: "success",
               data: {

@@ -976,3 +976,30 @@ model fixtureIssues {
   @@map("fixture_issues")
 }
 
+model adminAuditLog {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  actorId     Int      @map("actor_id")
+  actorEmail  String   @map("actor_email") @db.VarChar(255)
+  actorName   String?  @map("actor_name") @db.VarChar(255)
+  action      String   @db.VarChar(100) // e.g. "job.trigger", "fixture.resettle"
+  category    String   @db.VarChar(50) // "jobs" | "sync" | "fixtures" | "settings" | "users" | "sandbox" | "alerts" | "auth"
+  description String // Human-readable summary
+  targetType  String?  @map("target_type") @db.VarChar(50)
+  targetId    String?  @map("target_id") @db.VarChar(100)
+  method      String   @db.VarChar(10) // HTTP method
+  path        String   @db.VarChar(500) // Request path
+  statusCode  Int      @map("status_code")
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  changes     Json?    @db.JsonB // { field: { old, new } }
+  metadata    Json?    @db.JsonB // Additional context
+  autoCapture Boolean  @default(false) @map("auto_capture")
+
+  @@index([createdAt(sort: Desc)], map: "admin_audit_log_created_idx")
+  @@index([actorId, createdAt(sort: Desc)], map: "admin_audit_log_actor_idx")
+  @@index([category, createdAt(sort: Desc)], map: "admin_audit_log_category_idx")
+  @@index([action, createdAt(sort: Desc)], map: "admin_audit_log_action_idx")
+  @@index([targetType, targetId], map: "admin_audit_log_target_idx")
+  @@map("admin_audit_log")
+}
+

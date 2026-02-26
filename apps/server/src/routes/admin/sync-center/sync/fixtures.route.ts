@@ -17,6 +17,7 @@ import {
   withAdvisoryLock,
 } from "../../../../utils/advisory-lock";
 import { transformFixtureDto } from "../../../../etl/transform/fixtures.transform";
+import { auditFromRequest } from "../../../../services/admin/audit-log.service";
 
 const LOCK_KEY = "sync:fixtures";
 
@@ -177,6 +178,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
               });
               await availabilityService.invalidateCache().catch(() => {});
               const ok = result.inserted + result.updated;
+              auditFromRequest(req, reply, { action: "sync.fixtures", category: "sync", description: `Synced fixtures (${ok} ok, ${result.failed} fail)${dryRun ? " [dry-run]" : ""}`, metadata: { dryRun, ok, fail: result.failed, total: result.total } });
               return reply.send({
                 status: "success",
                 data: {
@@ -218,6 +220,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
 
             await availabilityService.invalidateCache().catch(() => {});
 
+            auditFromRequest(req, reply, { action: "sync.fixtures", category: "sync", description: `Synced fixtures for ${dbSeasonsCount || batchesToSync.length} seasons (${totalOk} ok, ${totalFail} fail)${dryRun ? " [dry-run]" : ""}`, metadata: { dryRun, ok: totalOk, fail: totalFail, total: totalTotal } });
             return reply.send({
               status: "success",
               data: {
@@ -396,6 +399,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
             });
             await availabilityService.invalidateCache().catch(() => {});
             const ok = result.inserted + result.updated;
+            auditFromRequest(req, reply, { action: "sync.fixtures.bulk", category: "sync", description: `Bulk synced fixtures (${ok} ok, ${result.failed} fail)${dryRun ? " [dry-run]" : ""}`, metadata: { dryRun, ok, fail: result.failed, total: result.total, requested: externalIds.length } });
             return reply.send({
               status: "success",
               data: {
@@ -486,6 +490,7 @@ const adminSyncFixturesRoutes: FastifyPluginAsync = async (fastify) => {
             });
             await availabilityService.invalidateCache().catch(() => {});
             const ok = result.inserted + result.updated;
+            auditFromRequest(req, reply, { action: "sync.fixtures.single", category: "sync", description: `Synced fixture #${id}`, targetType: "fixture", targetId: id });
             return reply.send({
               status: "success",
               data: {

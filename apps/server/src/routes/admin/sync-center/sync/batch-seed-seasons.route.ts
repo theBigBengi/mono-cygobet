@@ -6,6 +6,7 @@ import type {
   AdminBatchSeedSeasonsRequest,
   AdminBatchSeedSeasonsResponse,
 } from "@repo/types";
+import { auditFromRequest } from "../../../../services/admin/audit-log.service";
 
 const MAX_SEASONS_PER_BATCH = 50;
 
@@ -99,6 +100,7 @@ const batchSeedSeasonsRoutes: FastifyPluginAsync = async (fastify) => {
           });
         });
 
+        auditFromRequest(req, reply, { action: "sync.batch-seed-seasons", category: "sync", description: `Batch seed seasons queued (${seasonExternalIds.length} seasons)`, metadata: { seasonExternalIds, includeTeams, includeFixtures, futureOnly, jobId } });
         return reply.send({
           status: "ok",
           data: {

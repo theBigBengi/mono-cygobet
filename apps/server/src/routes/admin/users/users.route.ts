@@ -2,6 +2,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { AdminUsersService } from "../../../services/admin/users.service";
 import { AppError } from "../../../utils/errors";
+import { auditFromRequest } from "../../../services/admin/audit-log.service";
 import {
   listUsersQuerySchema,
   userParamsSchema,
@@ -129,6 +130,16 @@ const adminUsersRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply): Promise<AdminCreateUserResponse> => {
       try {
         const user = await service.createUser(req.body);
+
+        auditFromRequest(req, reply, {
+          action: "user.create",
+          category: "users",
+          description: `Created user "${req.body.email}"`,
+          targetType: "user",
+          targetId: user ? String(user.id) : undefined,
+          metadata: { email: req.body.email, role: req.body.role ?? "user" },
+        });
+
         return reply.send({
           status: "success",
           data: user,
@@ -179,6 +190,16 @@ const adminUsersRoutes: FastifyPluginAsync = async (fastify) => {
 
       try {
         const user = await service.updateUser(userId, req.body);
+
+        auditFromRequest(req, reply, {
+          action: "user.update",
+          category: "users",
+          description: `Updated user #${userId}`,
+          targetType: "user",
+          targetId: String(userId),
+          metadata: { patch: req.body },
+        });
+
         return reply.send({
           status: "success",
           data: user,

@@ -13,6 +13,7 @@ import {
   DEFAULT_LOCK_TIMEOUT_MS,
   withAdvisoryLock,
 } from "../../../../utils/advisory-lock";
+import { auditFromRequest } from "../../../../services/admin/audit-log.service";
 
 const LOCK_KEY = "sync:bookmakers";
 
@@ -44,6 +45,7 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
               dryRun,
               triggeredBy: "admin-ui",
             });
+            auditFromRequest(req, reply, { action: "sync.bookmakers", category: "sync", description: `Synced bookmakers (${result.ok} ok, ${result.fail} fail)${dryRun ? " [dry-run]" : ""}`, metadata: { dryRun, ok: result.ok, fail: result.fail, total: result.total } });
             return reply.send({
               status: "success",
               data: {
@@ -143,6 +145,7 @@ const adminSyncBookmakersRoutes: FastifyPluginAsync = async (fastify) => {
               dryRun,
               triggeredBy: "admin-ui",
             });
+            auditFromRequest(req, reply, { action: "sync.bookmakers.single", category: "sync", description: `Synced bookmaker #${bookmakerId}`, targetType: "bookmaker", targetId: String(bookmakerId) });
             return reply.send({
               status: "success",
               data: {

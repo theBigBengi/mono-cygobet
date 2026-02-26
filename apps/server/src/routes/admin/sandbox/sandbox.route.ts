@@ -4,6 +4,7 @@
 import { FastifyPluginAsync } from "fastify";
 import * as sandbox from "../../../services/admin/sandbox.service";
 import * as schemas from "../../../schemas/admin/sandbox.schemas";
+import { auditFromRequest } from "../../../services/admin/audit-log.service";
 
 const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /admin/sandbox/setup
@@ -19,6 +20,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
       const result = await sandbox.sandboxSetup(
         req.body as Parameters<typeof sandbox.sandboxSetup>[0]
       );
+      auditFromRequest(req, reply, { action: "sandbox.setup", category: "sandbox", description: "Sandbox setup complete" });
       return reply.send({
         status: "success",
         data: result,
@@ -40,6 +42,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
       const result = await sandbox.sandboxAddFixture(
         req.body as Parameters<typeof sandbox.sandboxAddFixture>[0]
       );
+      auditFromRequest(req, reply, { action: "sandbox.add-fixture", category: "sandbox", description: "Added fixture to sandbox group" });
       return reply.send({
         status: "success",
         data: result,
@@ -63,6 +66,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
         fixtureId,
         fastify.io
       );
+      auditFromRequest(req, reply, { action: "sandbox.simulate-kickoff", category: "sandbox", description: `Simulated kickoff for fixture #${fixtureId}`, targetType: "fixture", targetId: String(fixtureId) });
       return reply.send({
         status: "success",
         data: result,
@@ -85,6 +89,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
         req.body as Parameters<typeof sandbox.sandboxSimulateFullTime>[0],
         fastify.io
       );
+      auditFromRequest(req, reply, { action: "sandbox.simulate-full-time", category: "sandbox", description: "Simulated full-time" });
       return reply.send({
         status: "success",
         data: result,
@@ -106,6 +111,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
       const result = await sandbox.sandboxUpdateLive(
         req.body as Parameters<typeof sandbox.sandboxUpdateLive>[0]
       );
+      auditFromRequest(req, reply, { action: "sandbox.update-live", category: "sandbox", description: "Updated live sandbox fixture" });
       return reply.send({
         status: "success",
         data: result,
@@ -126,6 +132,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply) => {
       const { fixtureId } = req.body as { fixtureId: number };
       const result = await sandbox.sandboxResetFixture(fixtureId);
+      auditFromRequest(req, reply, { action: "sandbox.reset-fixture", category: "sandbox", description: `Reset fixture #${fixtureId} to NS`, targetType: "fixture", targetId: String(fixtureId) });
       return reply.send({
         status: "success",
         data: result,
@@ -146,6 +153,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply) => {
       const body = req.body as { fixtureId: number; startTime: string };
       const result = await sandbox.sandboxUpdateStartTime(body);
+      auditFromRequest(req, reply, { action: "sandbox.update-start-time", category: "sandbox", description: `Updated start time for fixture #${body.fixtureId}`, targetType: "fixture", targetId: String(body.fixtureId) });
       return reply.send({
         status: "success",
         data: result,
@@ -168,6 +176,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
         updates: { fixtureId: number; startTime: string }[];
       };
       const result = await sandbox.sandboxBatchUpdateStartTimes(updates);
+      auditFromRequest(req, reply, { action: "sandbox.batch-update-start-times", category: "sandbox", description: `Batch updated start times for ${updates.length} fixtures` });
       return reply.send({
         status: "success",
         data: result,
@@ -188,6 +197,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply) => {
       const { fixtureIds } = req.body as { fixtureIds: number[] };
       const result = await sandbox.sandboxBulkKickoff(fixtureIds, fastify.io);
+      auditFromRequest(req, reply, { action: "sandbox.bulk-kickoff", category: "sandbox", description: `Bulk kicked off ${fixtureIds.length} fixtures` });
       return reply.send({
         status: "success",
         data: result,
@@ -210,6 +220,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
       const result = await sandbox.sandboxSetState(
         body as Parameters<typeof sandbox.sandboxSetState>[0]
       );
+      auditFromRequest(req, reply, { action: "sandbox.set-state", category: "sandbox", description: `Set fixture #${body.fixtureId} state to ${body.state}`, targetType: "fixture", targetId: String(body.fixtureId) });
       return reply.send({
         status: "success",
         data: result,
@@ -230,6 +241,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     async (req, reply) => {
       const groupId = Number((req.params as { groupId: string }).groupId);
       const result = await sandbox.sandboxDeleteGroup(groupId);
+      auditFromRequest(req, reply, { action: "sandbox.delete-group", category: "sandbox", description: `Deleted sandbox group #${groupId}`, targetType: "group", targetId: String(groupId) });
       return reply.send({
         status: "success",
         data: result,
@@ -248,6 +260,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (req, reply) => {
       const result = await sandbox.sandboxCleanup();
+      auditFromRequest(req, reply, { action: "sandbox.cleanup", category: "sandbox", description: "Cleaned up all sandbox data" });
       return reply.send({
         status: "success",
         data: result,
@@ -290,6 +303,7 @@ const sandboxRoutes: FastifyPluginAsync = async (fastify) => {
         req.body as Parameters<typeof sandbox.sandboxSendMessage>[0],
         fastify.io
       );
+      auditFromRequest(req, reply, { action: "sandbox.send-message", category: "sandbox", description: "Sent sandbox message" });
       return reply.send({
         status: "success",
         data: result,

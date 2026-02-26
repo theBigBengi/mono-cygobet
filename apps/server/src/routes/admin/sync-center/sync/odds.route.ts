@@ -12,6 +12,7 @@ import { getLogger } from "../../../../logger";
 import { format, addDays, subDays } from "date-fns";
 import { syncBodySchema } from "../../../../schemas/admin/admin.schemas";
 import type { OddsFetchOptions } from "@repo/sports-data";
+import { auditFromRequest } from "../../../../services/admin/audit-log.service";
 
 const log = getLogger("SyncOddsRoute");
 const LOCK_KEY = "sync:odds";
@@ -96,6 +97,7 @@ const adminSyncOddsRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       if (dryRun) {
+        auditFromRequest(req, reply, { action: "sync.odds", category: "sync", description: `Odds sync dry-run for fixture ${fixtureExternalId} (${oddsDto.length} odds)`, targetType: "fixture", targetId: fixtureExternalId });
         return reply.send({
           status: "success",
           data: {
@@ -116,6 +118,7 @@ const adminSyncOddsRoutes: FastifyPluginAsync = async (fastify) => {
           async () => {
             const result = await syncOdds(oddsDto, { dryRun: false });
             const ok = result.inserted + result.updated;
+            auditFromRequest(req, reply, { action: "sync.odds", category: "sync", description: `Synced odds for fixture ${fixtureExternalId} (${result.inserted} inserted, ${result.updated} updated)`, targetType: "fixture", targetId: fixtureExternalId, metadata: { ok, fail: result.failed, total: result.total, inserted: result.inserted, updated: result.updated, skipped: result.skipped } });
             return reply.send({
               status: "success",
               data: {
@@ -230,6 +233,7 @@ const adminSyncOddsRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       if (dryRun) {
+        auditFromRequest(req, reply, { action: "sync.odds.bulk", category: "sync", description: `Odds bulk sync dry-run (${oddsDto.length} odds)`, metadata: { dryRun: true, total: oddsDto.length } });
         return reply.send({
           status: "success",
           data: {
@@ -250,6 +254,7 @@ const adminSyncOddsRoutes: FastifyPluginAsync = async (fastify) => {
           async () => {
             const result = await syncOdds(oddsDto, { dryRun: false });
             const ok = result.inserted + result.updated;
+            auditFromRequest(req, reply, { action: "sync.odds.bulk", category: "sync", description: `Synced ${result.total} odds (${result.inserted} inserted, ${result.updated} updated, ${result.skipped} skipped)`, metadata: { ok, fail: result.failed, total: result.total, inserted: result.inserted, updated: result.updated, skipped: result.skipped } });
             return reply.send({
               status: "success",
               data: {

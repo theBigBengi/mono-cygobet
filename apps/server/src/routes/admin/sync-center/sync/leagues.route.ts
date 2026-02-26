@@ -14,6 +14,7 @@ import {
   DEFAULT_LOCK_TIMEOUT_MS,
   withAdvisoryLock,
 } from "../../../../utils/advisory-lock";
+import { auditFromRequest } from "../../../../services/admin/audit-log.service";
 
 const LOCK_KEY = "sync:leagues";
 
@@ -46,6 +47,7 @@ const adminSyncLeaguesRoutes: FastifyPluginAsync = async (fastify) => {
               triggeredBy: "admin-ui",
             });
             await availabilityService.invalidateCache().catch(() => {});
+            auditFromRequest(req, reply, { action: "sync.leagues", category: "sync", description: `Synced leagues (${result.ok} ok, ${result.fail} fail)${dryRun ? " [dry-run]" : ""}`, metadata: { dryRun, ok: result.ok, fail: result.fail, total: result.total } });
             return reply.send({
               status: "success",
               data: {
@@ -142,6 +144,7 @@ const adminSyncLeaguesRoutes: FastifyPluginAsync = async (fastify) => {
               triggeredBy: "admin-ui",
             });
             await availabilityService.invalidateCache().catch(() => {});
+            auditFromRequest(req, reply, { action: "sync.leagues.single", category: "sync", description: `Synced league #${leagueId}`, targetType: "league", targetId: String(leagueId) });
             return reply.send({
               status: "success",
               data: {

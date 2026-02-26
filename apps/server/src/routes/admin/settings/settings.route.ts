@@ -10,6 +10,7 @@ import {
   getTeamOrderSettings,
   updateTeamOrderSettings,
 } from "../../../services/admin/settings.service";
+import { auditFromRequest, computeChanges } from "../../../services/admin/audit-log.service";
 
 const settingsRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/settings/notifications — current notification settings
@@ -38,7 +39,19 @@ const settingsRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
+    const before = await getNotificationSettings();
     const data = await updateNotificationSettings(body);
+    const changes = computeChanges(before as any, data as any);
+
+    auditFromRequest(req, reply, {
+      action: "settings.update",
+      category: "settings",
+      description: "Updated notification settings",
+      targetType: "settings",
+      targetId: "notifications",
+      changes,
+    });
+
     return reply.send({
       status: "success",
       data,
@@ -75,7 +88,19 @@ const settingsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     try {
+      const before = await getLeagueOrderSettings();
       const data = await updateLeagueOrderSettings(body.leagueIds ?? []);
+      const changes = computeChanges(before as any, data as any);
+
+      auditFromRequest(req, reply, {
+        action: "settings.update",
+        category: "settings",
+        description: "Updated league order",
+        targetType: "settings",
+        targetId: "league-order",
+        changes,
+      });
+
       return reply.send({
         status: "success",
         data,
@@ -120,7 +145,19 @@ const settingsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     try {
+      const before = await getTeamOrderSettings();
       const data = await updateTeamOrderSettings(body.teamIds ?? []);
+      const changes = computeChanges(before as any, data as any);
+
+      auditFromRequest(req, reply, {
+        action: "settings.update",
+        category: "settings",
+        description: "Updated team order",
+        targetType: "settings",
+        targetId: "team-order",
+        changes,
+      });
+
       return reply.send({
         status: "success",
         data,
