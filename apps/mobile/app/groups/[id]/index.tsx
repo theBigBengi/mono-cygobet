@@ -18,7 +18,6 @@ import {
 } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, AppText } from "@/components/ui";
@@ -265,9 +264,6 @@ function GroupLobbyContent() {
   // For active groups, extend content into status bar area
   const isActive = group.status === "active";
 
-  // Status bar background color - matches gradient top
-  const statusBarColor = theme.colors.primary + "40";
-
   return (
     <View
       style={[
@@ -279,21 +275,6 @@ function GroupLobbyContent() {
         }
       ]}
     >
-      {/* Gradient starts at container top (now in status bar area) */}
-      {isActive && (
-        <LinearGradient
-          colors={[
-            statusBarColor,
-            theme.colors.primary + "25",
-            theme.colors.primary + "10",
-            "transparent",
-          ]}
-          locations={[0, 0.3, 0.6, 1]}
-          style={[styles.statusBarGradient, { height: insets.top + 280 }]}
-          pointerEvents="none"
-        />
-      )}
-
       {content}
 
       {/* Sticky header - only for active groups */}
@@ -302,9 +283,8 @@ function GroupLobbyContent() {
           scrollY={scrollY}
           title={group.name}
           fallbackRoute="/(tabs)/groups"
-          tintColor={statusBarColor}
+          tintColor="transparent"
           extendsIntoStatusBar
-          transparentIcons
           // Threshold: header appears when group name scrolls behind it
           threshold={160}
           rightActions={[
@@ -352,13 +332,6 @@ function GroupLobbyContent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  statusBarGradient: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 0,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

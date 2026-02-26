@@ -8,7 +8,6 @@ import { ScreenWithHeader } from "@/components/ui";
 import { GroupInviteScreen } from "@/features/groups/invite";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useGroupQuery } from "@/domains/groups";
-import { useAuth } from "@/lib/auth/useAuth";
 
 export default function GroupInviteRoute() {
   return (
@@ -23,15 +22,13 @@ function InviteContent() {
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
 
-  const { user } = useAuth();
   const { data: groupData } = useGroupQuery(groupId);
   const group = groupData?.data;
-  const isCreator = group?.creatorId === user?.id;
 
   const { t } = useTranslation("common");
   return (
-    <ScreenWithHeader title={t("groups.invite")}>
-      <GroupInviteScreen groupId={groupId} isCreator={isCreator} />
+    <ScreenWithHeader title={group?.name ?? t("groups.invite")}>
+      <GroupInviteScreen groupId={groupId} groupName={group?.name} />
     </ScreenWithHeader>
   );
 }

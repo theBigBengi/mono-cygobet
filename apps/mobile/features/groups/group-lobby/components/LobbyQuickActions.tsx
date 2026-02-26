@@ -89,7 +89,7 @@ function LobbyQuickActionsInner({ actions, isLoading = false }: LobbyQuickAction
 
           {/* Skeleton Cards Grid */}
           <View style={styles.grid}>
-            {[0, 1, 2, 3].map((index) => (
+            {[0, 1, 2].map((index) => (
               <View
                 key={index}
                 style={[

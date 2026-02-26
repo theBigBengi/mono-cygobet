@@ -105,7 +105,17 @@ export async function listByInvitee(
     where,
     orderBy: { createdAt: "desc" },
     include: {
-      groups: { select: { id: true, name: true } },
+      groups: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          status: true,
+          privacy: true,
+          groupRules: { select: { maxMembers: true, predictionMode: true } },
+          _count: { select: { groupMembers: true, groupFixtures: true } },
+        },
+      },
     },
   });
 }

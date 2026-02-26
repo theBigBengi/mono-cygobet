@@ -13,6 +13,8 @@ const AUTH_RATE_LIMIT_PATHS = new Set([
   "/auth/login",
   "/auth/register",
   "/auth/refresh",
+  "/auth/forgot-password",
+  "/auth/reset-password",
 ]);
 
 export default fp(async function rateLimitPlugin(fastify: FastifyInstance) {

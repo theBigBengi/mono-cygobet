@@ -56,7 +56,7 @@ if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
     environment: __DEV__ ? "development" : "production",
     sendDefaultPii: false,
     tracesSampleRate: __DEV__ ? 1.0 : 0.2,
-    debug: __DEV__,
+    debug: false,
   });
 }
 
@@ -185,6 +185,10 @@ function AppContent() {
                 options={{ title: t("groups.discover"), headerShown: false }}
               />
               <Stack.Screen
+                name="groups/search"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="profile/head-to-head"
                 options={{ headerShown: false }}
               />
@@ -219,7 +223,17 @@ function AppContent() {
             <Stack.Protected guard={isUnauthenticated(status)}>
               <Stack.Screen name="sign-in" options={{ headerShown: false }} />
               <Stack.Screen name="sign-up" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="forgot-password"
+                options={{ headerShown: false }}
+              />
             </Stack.Protected>
+
+            {/* Reset password - accessible regardless of auth state (user clicks email link) */}
+            <Stack.Screen
+              name="reset-password"
+              options={{ headerShown: false }}
+            />
           </Stack>
         </AppStartGate>
 

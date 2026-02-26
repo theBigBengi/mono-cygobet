@@ -18,6 +18,7 @@ import { assertGroupMember } from "../groups/permissions";
 import { repository as groupRepo } from "../groups/repository";
 import { buildGroupItem } from "../groups/builders";
 import { MEMBER_STATUS, GROUP_STATUS } from "../groups/constants";
+import { emitMemberJoinedEvent } from "../groups/service/chat-events";
 import * as inviteRepo from "./repository";
 import { getLogger } from "../../../logger";
 import type { TypedIOServer } from "../../../types/socket";
@@ -171,6 +172,15 @@ export async function getMyInvites(
     message: r.message,
     createdAt: r.createdAt.toISOString(),
     expiresAt: r.expiresAt.toISOString(),
+    groupPreview: {
+      description: r.groups.description ?? null,
+      status: r.groups.status,
+      privacy: r.groups.privacy,
+      memberCount: r.groups._count.groupMembers,
+      maxMembers: r.groups.groupRules?.maxMembers ?? 50,
+      totalFixtures: r.groups._count.groupFixtures,
+      predictionMode: r.groups.groupRules?.predictionMode ?? null,
+    },
   }));
 
   const pendingCount = await prisma.groupInvites.count({
@@ -260,6 +270,8 @@ export async function respondToInvite(
       data: { status: "accepted", respondedAt: new Date() },
     });
   });
+
+  await emitMemberJoinedEvent(groupId, userId, io);
 
   const invitee = await prisma.users.findUnique({
     where: { id: userId },

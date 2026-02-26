@@ -116,7 +116,11 @@ export function ChatNotificationToast() {
     const n = currentNotification.current;
     if (!n) return;
     dismiss();
-    router.push(`/groups/${n.groupId}/chat`);
+    if (n.type === "invite") {
+      router.push("/invites");
+    } else {
+      router.push(`/groups/${n.groupId}/chat`);
+    }
   }, [dismiss, router]);
 
   if (!notification) return null;

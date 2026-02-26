@@ -31,8 +31,8 @@ export function I18nBootstrap({ children }: I18nBootstrapProps) {
 
     async function bootstrap() {
       const persisted = await getPersistedLocale();
-      const device = getDeviceLocale();
-      const locale: Locale = isLocale(persisted ?? "") ? (persisted as Locale) : device;
+      // Force English for now — remove this override to restore device-based detection
+      const locale: Locale = isLocale(persisted ?? "") ? (persisted as Locale) : "en";
 
       if (cancelled) return;
 

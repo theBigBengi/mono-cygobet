@@ -1,7 +1,7 @@
 // features/invites/screens/InvitesInboxScreen.tsx
-// List pending invites with Accept/Decline.
+// List pending invites with Accept/Decline + group preview bottom sheet.
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -12,12 +12,14 @@ import {
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import {
   useMyInvitesQuery,
   useRespondToInviteMutation,
 } from "@/domains/invites";
 import { InviteCard } from "../components/InviteCard";
-import { Screen, AppText } from "@/components/ui";
+import { Screen, AppText, Button } from "@/components/ui";
+import { InfoSheet } from "@/components/ui/InfoSheet";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useTheme } from "@/lib/theme";
@@ -31,6 +33,12 @@ export function InvitesInboxScreen() {
   });
   const respondMutation = useRespondToInviteMutation();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Preview sheet state
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const [selectedInvite, setSelectedInvite] = useState<ApiInviteItem | null>(
+    null
+  );
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -57,29 +65,25 @@ export function InvitesInboxScreen() {
     [respondMutation]
   );
 
+  const handlePreview = useCallback((invite: ApiInviteItem) => {
+    setSelectedInvite(invite);
+    sheetRef.current?.present();
+  }, []);
+
+  const handleSheetAccept = useCallback(() => {
+    if (!selectedInvite) return;
+    sheetRef.current?.dismiss();
+    handleAccept(selectedInvite.id);
+  }, [selectedInvite, handleAccept]);
+
+  const handleSheetDecline = useCallback(() => {
+    if (!selectedInvite) return;
+    sheetRef.current?.dismiss();
+    handleDecline(selectedInvite.id);
+  }, [selectedInvite, handleDecline]);
+
   const invites = data?.data?.invites ?? [];
   const pendingCount = data?.data?.pendingCount ?? 0;
-
-  const renderHeader = () => (
-    <View style={styles.headerSection}>
-      <View
-        style={[
-          styles.iconCircle,
-          { backgroundColor: theme.colors.primary + "15" },
-        ]}
-      >
-        <Ionicons name="mail" size={32} color={theme.colors.primary} />
-      </View>
-      <AppText variant="title" style={styles.title}>
-        {t("invites.invitations")}
-      </AppText>
-      <AppText variant="body" color="secondary" style={styles.subtitle}>
-        {pendingCount > 0
-          ? t("invites.pendingInvitesCount", { count: pendingCount })
-          : t("invites.pendingInvitesDescription")}
-      </AppText>
-    </View>
-  );
 
   const renderItem: ListRenderItem<ApiInviteItem> = useCallback(
     ({ item }) => (
@@ -87,10 +91,11 @@ export function InvitesInboxScreen() {
         invite={item}
         onAccept={() => handleAccept(item.id)}
         onDecline={() => handleDecline(item.id)}
+        onPreview={() => handlePreview(item)}
         isResponding={respondMutation.isPending}
       />
     ),
-    [handleAccept, handleDecline, respondMutation.isPending]
+    [handleAccept, handleDecline, handlePreview, respondMutation.isPending]
   );
 
   const keyExtractor = useCallback(
@@ -121,7 +126,6 @@ export function InvitesInboxScreen() {
     return (
       <Screen>
         <View style={styles.emptyContainer}>
-          {renderHeader()}
           <View style={styles.emptyContent}>
             <View
               style={[
@@ -156,13 +160,14 @@ export function InvitesInboxScreen() {
     );
   }
 
+  const preview = selectedInvite?.groupPreview;
+
   return (
-    <Screen scroll={false}>
+    <>
       <FlatList
         data={invites}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
-        ListHeaderComponent={renderHeader}
         contentContainerStyle={[
           styles.container,
           { paddingHorizontal: theme.spacing.lg },
@@ -176,7 +181,139 @@ export function InvitesInboxScreen() {
         }
         showsVerticalScrollIndicator={false}
       />
-    </Screen>
+
+      {/* Group preview bottom sheet */}
+      <InfoSheet sheetRef={sheetRef} snapPoints={["55%"]}>
+        {selectedInvite && preview ? (
+          <View style={styles.sheetContent}>
+            {/* Sheet header */}
+            <AppText variant="title" style={styles.sheetTitle}>
+              {selectedInvite.groupName}
+            </AppText>
+            {preview.description ? (
+              <AppText
+                variant="body"
+                color="secondary"
+                style={styles.sheetDescription}
+                numberOfLines={3}
+              >
+                {preview.description}
+              </AppText>
+            ) : null}
+
+            {/* Stats list */}
+            <View
+              style={[
+                styles.sheetStats,
+                { backgroundColor: theme.colors.cardBackground },
+              ]}
+            >
+              <SheetStatRow
+                icon="people-outline"
+                label={t("groupInfo.members")}
+                value={t("invites.membersOfMax", {
+                  count: preview.memberCount,
+                  max: preview.maxMembers,
+                })}
+                theme={theme}
+              />
+              <View
+                style={[
+                  styles.sheetStatDivider,
+                  { backgroundColor: theme.colors.border },
+                ]}
+              />
+              <SheetStatRow
+                icon="football-outline"
+                label={t("lobby.games")}
+                value={t("invites.gamesCount", {
+                  count: preview.totalFixtures,
+                })}
+                theme={theme}
+              />
+              <View
+                style={[
+                  styles.sheetStatDivider,
+                  { backgroundColor: theme.colors.border },
+                ]}
+              />
+              <SheetStatRow
+                icon="game-controller-outline"
+                label={t("lobby.predictionMode")}
+                value={
+                  preview.predictionMode === "MatchWinner"
+                    ? t("lobby.matchWinner")
+                    : t("lobby.exactResult")
+                }
+                theme={theme}
+              />
+              <View
+                style={[
+                  styles.sheetStatDivider,
+                  { backgroundColor: theme.colors.border },
+                ]}
+              />
+              <SheetStatRow
+                icon={
+                  preview.privacy === "private"
+                    ? "lock-closed-outline"
+                    : "globe-outline"
+                }
+                label={t("lobby.privacy")}
+                value={
+                  preview.privacy === "private"
+                    ? t("lobby.private")
+                    : t("lobby.publicDescription")
+                }
+                theme={theme}
+              />
+            </View>
+
+            {/* Sheet actions */}
+            <View style={styles.sheetActions}>
+              <Button
+                label={t("invites.accept")}
+                onPress={handleSheetAccept}
+                disabled={respondMutation.isPending}
+                style={styles.acceptBtn}
+                icon="checkmark"
+              />
+              <Button
+                label={t("invites.decline")}
+                variant="secondary"
+                onPress={handleSheetDecline}
+                disabled={respondMutation.isPending}
+                style={styles.declineBtn}
+              />
+            </View>
+          </View>
+        ) : null}
+      </InfoSheet>
+    </>
+  );
+}
+
+function SheetStatRow({
+  icon,
+  label,
+  value,
+  theme,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  value: string;
+  theme: ReturnType<typeof useTheme>["theme"];
+}) {
+  return (
+    <View style={styles.sheetStatRow}>
+      <Ionicons name={icon} size={18} color={theme.colors.textSecondary} />
+      <AppText variant="body" color="secondary" style={styles.sheetStatLabel}>
+        {label}
+      </AppText>
+      <AppText variant="body" style={styles.sheetStatValue}>
+        {value}
+      </AppText>
+    </View>
   );
 }
 
@@ -184,29 +321,6 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingBottom: 32,
-  },
-  headerSection: {
-    alignItems: "center",
-    paddingTop: 8,
-    paddingBottom: 24,
-  },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  subtitle: {
-    textAlign: "center",
-    paddingHorizontal: 20,
   },
   emptyContainer: {
     flex: 1,
@@ -234,5 +348,49 @@ const styles = StyleSheet.create({
   emptySubtext: {
     textAlign: "center",
     paddingHorizontal: 40,
+  },
+  // Sheet styles
+  sheetContent: {
+    gap: 12,
+  },
+  sheetTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  sheetDescription: {
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  sheetStats: {
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 4,
+  },
+  sheetStatRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    gap: 10,
+  },
+  sheetStatLabel: {
+    flex: 1,
+  },
+  sheetStatValue: {
+    fontWeight: "600",
+  },
+  sheetStatDivider: {
+    height: StyleSheet.hairlineWidth,
+  },
+  sheetActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  acceptBtn: {
+    flex: 1,
+  },
+  declineBtn: {
+    flex: 1,
   },
 });

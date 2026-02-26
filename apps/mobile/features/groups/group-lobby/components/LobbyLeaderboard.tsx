@@ -77,27 +77,9 @@ function LobbyLeaderboardInner({
             },
           ]}
         >
-          {/* Skeleton Header */}
-          <View style={styles.sectionHeader}>
-            <Animated.View
-              style={[
-                styles.skeletonIcon,
-                { backgroundColor: theme.colors.border },
-                animatedStyle,
-              ]}
-            />
-            <Animated.View
-              style={[
-                styles.skeletonHeaderText,
-                { backgroundColor: theme.colors.border },
-                animatedStyle,
-              ]}
-            />
-          </View>
-
           {/* Skeleton Podium */}
           <View style={styles.podiumRow}>
-            {[90, 110, 80].map((height, index) => (
+            {PODIUM_HEIGHTS.map((height, index) => (
               <View key={index} style={styles.podiumSlot}>
                 <Animated.View
                   style={[
@@ -326,6 +308,7 @@ export const LobbyLeaderboard = React.memo(LobbyLeaderboardInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
+    marginBottom: 12,
   },
   wrapper: {
     borderRadius: 16,

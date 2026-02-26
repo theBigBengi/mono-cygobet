@@ -12,8 +12,6 @@ import {
   RefreshControl,
   Platform,
   FlatList,
-  TextInput,
-  ActivityIndicator,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from "react-native";
@@ -31,8 +29,8 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { Screen, AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { useDebounce } from "@/hooks/useDebounce";
 import { useMyGroupsQuery, useUnreadCountsQuery, useUnreadActivityCountsQuery } from "@/domains/groups";
+import { useMyInvitesQuery } from "@/domains/invites";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import {
   GroupCard,
@@ -56,16 +54,13 @@ function GroupsContent() {
   const router = useRouter();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const [searchInput, setSearchInput] = useState("");
-  const debouncedSearch = useDebounce(searchInput, 400);
-  const trimmedSearch = debouncedSearch.trim();
-  const searchParam = trimmedSearch.length >= 2 ? trimmedSearch : undefined;
-  const { data, isLoading, isFetching, error, refetch } = useMyGroupsQuery(searchParam);
-  const isSearching = !!searchParam && isFetching;
+  const { data, isLoading, error, refetch } = useMyGroupsQuery();
   const { data: unreadData, refetch: refetchUnread } = useUnreadCountsQuery();
   const unreadCounts = unreadData?.data ?? {};
   const { data: unreadActivityData } = useUnreadActivityCountsQuery();
   const unreadActivityCounts = unreadActivityData?.data ?? {};
+  const { data: invitesData } = useMyInvitesQuery({ status: "pending" });
+  const pendingInviteCount = invitesData?.data?.invites?.length ?? 0;
   const [refreshing, setRefreshing] = useState(false);
   const [isTabsSticky, setIsTabsSticky] = useState(false);
 
@@ -96,6 +91,14 @@ function GroupsContent() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     infoSheetRef.current?.present();
   }, []);
+
+  const handleOpenInvites = useCallback(() => {
+    router.push("/invites" as any);
+  }, [router]);
+
+  const handleOpenSearch = useCallback(() => {
+    router.push("/groups/search" as any);
+  }, [router]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -148,112 +151,72 @@ function GroupsContent() {
           style={[styles.header, { backgroundColor: theme.colors.background }]}
           onLayout={(e) => { headerHeightRef.current = e.nativeEvent.layout.height; }}
         >
+          {/* Row 1: Title + Invites badge + Info */}
           <View style={styles.headerTop}>
             <AppText variant="title" style={styles.headerTitle}>
               {t("groups.title")}
             </AppText>
-            <Pressable
-              onPress={handleOpenInfo}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={({ pressed }) => [
-                styles.infoButton,
-                pressed && { opacity: 0.5 },
-              ]}
-            >
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color={theme.colors.textSecondary}
-              />
-            </Pressable>
+            <View style={styles.headerActions}>
+              <Pressable
+                onPress={handleOpenInvites}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={({ pressed }) => [
+                  styles.infoButton,
+                  pressed && { opacity: 0.5 },
+                ]}
+              >
+                <Ionicons
+                  name={pendingInviteCount > 0 ? "mail" : "mail-outline"}
+                  size={22}
+                  color={pendingInviteCount > 0 ? theme.colors.primary : theme.colors.textSecondary}
+                />
+                {pendingInviteCount > 0 && (
+                  <View style={styles.inviteBadge}>
+                    <AppText style={styles.inviteBadgeText}>
+                      {pendingInviteCount > 9 ? "9+" : String(pendingInviteCount)}
+                    </AppText>
+                  </View>
+                )}
+              </Pressable>
+              <Pressable
+                onPress={handleOpenInfo}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={({ pressed }) => [
+                  styles.infoButton,
+                  pressed && { opacity: 0.5 },
+                ]}
+              >
+                <Ionicons
+                  name="information-circle-outline"
+                  size={22}
+                  color={theme.colors.textSecondary}
+                />
+              </Pressable>
+            </View>
           </View>
-          <View style={styles.headerChips}>
-            <Pressable
-              onPress={handleBrowsePublic}
-              style={({ pressed }) => [
-                styles.headerChip,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
-                  borderBottomColor: pressed
-                    ? theme.colors.border
-                    : theme.colors.textSecondary + "40",
-                  transform: [{ scale: pressed ? 0.96 : 1 }],
-                },
-              ]}
-            >
-              <Ionicons
-                name="globe-outline"
-                size={14}
-                color={theme.colors.textSecondary}
-              />
-              <AppText style={[styles.headerChipText, { color: theme.colors.textPrimary }]}>
-                {t("groups.browsePublic")}
-              </AppText>
-            </Pressable>
-            <Pressable
-              onPress={handleJoinWithCode}
-              style={({ pressed }) => [
-                styles.headerChip,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
-                  borderBottomColor: pressed
-                    ? theme.colors.border
-                    : theme.colors.textSecondary + "40",
-                  transform: [{ scale: pressed ? 0.96 : 1 }],
-                },
-              ]}
-            >
-              <Ionicons
-                name="key-outline"
-                size={14}
-                color={theme.colors.textSecondary}
-              />
-              <AppText style={[styles.headerChipText, { color: theme.colors.textPrimary }]}>
-                {t("groups.joinWithCode")}
-              </AppText>
-            </Pressable>
-          </View>
-          <View
-            style={[
-              styles.searchContainer,
+          {/* Row 2: Fake search bar */}
+          <Pressable
+            onPress={handleOpenSearch}
+            style={({ pressed }) => [
+              styles.searchPlaceholder,
               {
                 backgroundColor: theme.colors.surface,
                 borderColor: theme.colors.border,
               },
+              pressed && { opacity: 0.7 },
             ]}
           >
-            <TextInput
-              value={searchInput}
-              onChangeText={setSearchInput}
-              placeholder={t("groups.searchPlaceholder")}
-              placeholderTextColor={theme.colors.textSecondary}
-              returnKeyType="search"
-              autoCorrect={false}
-              style={[styles.searchInput, { color: theme.colors.textPrimary }]}
+            <Ionicons
+              name="search"
+              size={18}
+              color={theme.colors.textSecondary}
             />
-            {isSearching && (
-              <ActivityIndicator
-                size="small"
-                color={theme.colors.textSecondary}
-                style={styles.searchAccessory}
-              />
-            )}
-            {searchInput.length > 0 && !isSearching && (
-              <Pressable
-                onPress={() => setSearchInput("")}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={styles.searchAccessory}
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={18}
-                  color={theme.colors.textSecondary}
-                />
-              </Pressable>
-            )}
-          </View>
+            <AppText
+              style={[styles.searchPlaceholderText, { color: theme.colors.textSecondary }]}
+            >
+              {t("groups.searchPlaceholder")}
+            </AppText>
+          </Pressable>
         </View>
       );
     }
@@ -284,7 +247,7 @@ function GroupsContent() {
         unreadActivityCount={unreadActivityCounts[String(item.data.id)] ?? 0}
       />
     );
-  }, [theme, handleOpenInfo, handleBrowsePublic, handleJoinWithCode, isTabsSticky, selectedFilter, setSelectedFilter, counts, handleGroupPress, unreadCounts, unreadActivityCounts, searchInput, isSearching]);
+  }, [theme, handleOpenInfo, handleOpenInvites, handleOpenSearch, pendingInviteCount, isTabsSticky, selectedFilter, setSelectedFilter, counts, handleGroupPress, unreadCounts, unreadActivityCounts]);
 
   // Loading state — skeleton
   if (isLoading) {
@@ -304,32 +267,22 @@ function GroupsContent() {
           <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
             <View style={styles.headerTop}>
               <View style={{ width: 100, height: 28, backgroundColor: skeletonColor, borderRadius: 8 }} />
-              <View style={{ width: 28, height: 28, backgroundColor: skeletonColor, borderRadius: 14 }} />
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ width: 28, height: 28, backgroundColor: skeletonColor, borderRadius: 14 }} />
+                <View style={{ width: 28, height: 28, backgroundColor: skeletonColor, borderRadius: 14 }} />
+              </View>
             </View>
-            <View style={styles.headerChips}>
-              <View
-                style={{
-                  width: 100,
-                  height: 36,
-                  backgroundColor: skeletonColor,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderBottomWidth: 3,
-                  borderColor: theme.colors.border,
-                }}
-              />
-              <View
-                style={{
-                  width: 95,
-                  height: 36,
-                  backgroundColor: skeletonColor,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderBottomWidth: 3,
-                  borderColor: theme.colors.border,
-                }}
-              />
-            </View>
+            {/* Search bar skeleton */}
+            <View
+              style={{
+                height: 40,
+                backgroundColor: skeletonColor,
+                borderRadius: 10,
+                marginTop: 10,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+              }}
+            />
           </View>
 
           {/* Filter tabs skeleton */}
@@ -514,8 +467,8 @@ function GroupsContent() {
     );
   }
 
-  // Empty state — only when user truly has no groups (not when search returns nothing)
-  if (groups.length === 0 && !searchParam) {
+  // Empty state — user has no groups
+  if (groups.length === 0) {
     return (
       <View style={styles.root}>
         <Screen>
@@ -668,44 +621,44 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 24,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
   infoButton: {
     padding: 4,
   },
-  headerChips: {
+  inviteBadge: {
+    position: "absolute",
+    top: -2,
+    right: -4,
+    backgroundColor: "#EF4444",
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 3,
+  },
+  inviteBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700",
+    lineHeight: 14,
+  },
+  searchPlaceholder: {
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 10,
     marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     gap: 8,
   },
-  headerChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderBottomWidth: 3,
-  },
-  headerChipText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 10,
-    marginTop: 10,
-    paddingHorizontal: 12,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 10,
+  searchPlaceholderText: {
     fontSize: 15,
-  },
-  searchAccessory: {
-    marginLeft: 8,
   },
   list: {
     flex: 1,

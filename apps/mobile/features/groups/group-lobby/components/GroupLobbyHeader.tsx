@@ -220,7 +220,7 @@ export const GroupLobbyHeader = React.memo(GroupLobbyHeaderInner);
 const styles = StyleSheet.create({
   // HUD Styles
   hudContainer: {
-    paddingBottom: 12,
+    paddingBottom: 8,
     position: "relative",
   },
   hudGradient: {
@@ -279,9 +279,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   shield: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
+    width: 80,
+    height: 80,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   shieldInitials: {
     fontWeight: "800",
-    fontSize: 24,
+    fontSize: 30,
   },
   hudName: {
     fontSize: 22,

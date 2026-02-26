@@ -79,7 +79,33 @@
     "loginFailed": "ההתחברות נכשלה",
     "checkingUsername": "בודק זמינות...",
     "usernameAvailable": "שם המשתמש זמין",
-    "usernameTaken": "שם המשתמש תפוס"
+    "usernameTaken": "שם המשתמש תפוס",
+    "forgotPassword": "שכחת סיסמה?"
+  },
+  "forgotPassword": {
+    "title": "שכחת סיסמה",
+    "subtitle": "הזן את האימייל שלך ונשלח לך קישור לאיפוס",
+    "emailPlaceholder": "כתובת אימייל",
+    "sendResetLink": "שלח קישור איפוס",
+    "successTitle": "בדוק את האימייל",
+    "successMessage": "אם קיים חשבון עם האימייל הזה, שלחנו קישור לאיפוס סיסמה. בדוק את תיבת הדואר.",
+    "backToSignIn": "חזור להתחברות"
+  },
+  "resetPassword": {
+    "title": "איפוס סיסמה",
+    "subtitle": "הזן את הסיסמה החדשה שלך",
+    "newPassword": "סיסמה חדשה",
+    "confirmPassword": "אימות סיסמה",
+    "submit": "אפס סיסמה",
+    "successTitle": "הסיסמה אופסה",
+    "successMessage": "הסיסמה שלך אופסה בהצלחה. כעת תוכל להתחבר עם הסיסמה החדשה.",
+    "goToSignIn": "עבור להתחברות",
+    "invalidLink": "קישור לא תקין או שפג תוקפו",
+    "invalidLinkMessage": "קישור האיפוס אינו תקין או שפג תוקפו. בקש קישור חדש.",
+    "requestNewLink": "בקש קישור חדש",
+    "passwordsDontMatch": "הסיסמאות אינן תואמות",
+    "passwordTooShort": "הסיסמה חייבת להכיל לפחות 8 תווים",
+    "passwordHint": "לפחות 8 תווים"
   },
   "groups": {
     "title": "קבוצות",
@@ -141,6 +167,7 @@
     "filterEnded": "הסתיימו",
     "filterPublic": "ציבורי",
     "searchPlaceholder": "חיפוש קבוצות...",
+    "quickActions": "פעולות מהירות",
     "noGroupsInFilter": "אין קבוצות בקטגוריה זו",
     "mode": {
       "games": "משחקים",
@@ -279,6 +306,9 @@
     "deletingGroup": "מוחק קבוצה...",
     "publishingGroup": "מפרסם קבוצה...",
     "predictionsProgress": "{{count}}/{{total}} ניחושים",
+    "ctaNeedsPrediction": "דורש ניחוש",
+    "ctaUpNext": "הבא בתור",
+    "ctaLatestResult": "תוצאה אחרונה",
     "ranking": "דירוג",
     "rankingPending": "הדירוג יחושב לאחר סיום המשחק הראשון",
     "pts": "נק׳",
@@ -554,7 +584,8 @@
     "copied": "הועתק!",
     "tapToCopy": "לחץ להעתקה",
     "joinMessage": "הצטרף לקבוצה שלי ב-Cygobet!",
-    "inviteByUsername": "הזמן לפי שם משתמש"
+    "inviteByUsername": "הזמן לפי שם משתמש",
+    "searchDescription": "חפש חברים לפי שם משתמש כדי להזמין אותם"
   },
   "invites": {
     "invitations": "הזמנות",
@@ -591,7 +622,10 @@
     "cancelInvite": "בטל",
     "cancelInviteConfirm": "לבטל הזמנה ל-{{username}}?",
     "inviteSent": "ההזמנה נשלחה",
-    "viewSentInvites": "צפה בהזמנות שנשלחו"
+    "viewSentInvites": "צפה בהזמנות שנשלחו",
+    "groupPreview": "תצוגה מקדימה",
+    "gamesCount": "{{count}} משחקים",
+    "membersOfMax": "{{count}}/{{max}} חברים"
   },
   "members": {
     "loadingMembers": "טוען חברים...",

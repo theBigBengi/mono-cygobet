@@ -10,7 +10,7 @@ const wellKnownRoutes: FastifyPluginAsync = async (fastify) => {
         details: [
           {
             appID: "LUMW3GT7N8.com.cygobet.mobile",
-            paths: ["/groups/join*"],
+            paths: ["/groups/join*", "/reset-password*"],
           },
         ],
       },

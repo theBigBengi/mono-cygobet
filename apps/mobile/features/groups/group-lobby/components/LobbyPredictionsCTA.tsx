@@ -1,24 +1,23 @@
 // features/groups/group-lobby/components/LobbyPredictionsCTA.tsx
-// Lobby predictions CTA - styled to match the Games screen
+// Lobby predictions CTA - single "next action" card with progress
 
-import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import React, { useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable, Text, ScrollView, useWindowDimensions } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { View, StyleSheet, Pressable, Text } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSpring,
   withRepeat,
-  runOnJS,
-  Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import { AppText, TeamLogo, Card } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { isFinished as isFinishedState, isCancelled as isCancelledState, isLive as isLiveState } from "@repo/utils";
-import { formatKickoffDate, formatKickoffTime } from "@/utils/fixture";
+import { formatKickoffTime } from "@/utils/fixture";
+import { TeamRow } from "@/features/groups/predictions/components/TeamRow";
+import { ResultDisplay } from "@/features/groups/predictions/components/ResultDisplay";
+import { getGameResultOrTime, toDisplay } from "@/features/groups/predictions/utils/fixture-helpers";
 import type { FixtureItem } from "@/types/common";
 
 export interface LobbyPredictionsCTAProps {
@@ -27,141 +26,11 @@ export interface LobbyPredictionsCTAProps {
   onPress: (fixtureId?: number) => void;
   fixtures?: FixtureItem[];
   isLoading?: boolean;
-  winnerName?: string | null;
-  winnerPoints?: number | null;
-  onWinnerPress?: () => void;
 }
 
 const SUCCESS_COLOR = "#10B981";
 const MISSED_COLOR = "#EF4444";
 const LIVE_COLOR = "#EF4444";
-
-
-const MINI_CARD_WIDTH = 52;
-const MINI_CARD_GAP = 8;
-
-/** Mini cards slider - shows team logos for each fixture */
-function FixtureSlider({
-  fixtures,
-  selectedIndex,
-  isTrophySelected,
-  theme,
-  onSelectIndex,
-}: {
-  fixtures: FixtureItem[];
-  selectedIndex: number;
-  isTrophySelected: boolean;
-  theme: any;
-  onSelectIndex: (index: number) => void;
-}) {
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-
-  // Auto-scroll to center selected card
-  useEffect(() => {
-    if (scrollViewRef.current && containerWidth > 0) {
-      const cardTotalWidth = MINI_CARD_WIDTH + MINI_CARD_GAP;
-      const scrollX = selectedIndex * cardTotalWidth - (containerWidth / 2) + (MINI_CARD_WIDTH / 2);
-      scrollViewRef.current.scrollTo({ x: Math.max(0, scrollX), animated: true });
-    }
-  }, [selectedIndex, containerWidth]);
-
-  const handleLayout = (event: any) => {
-    setContainerWidth(event.nativeEvent.layout.width);
-  };
-
-  const renderMiniCard = (fixture: FixtureItem, index: number) => {
-    const isSelected = index === selectedIndex && !isTrophySelected;
-    const finished = isFinishedState(fixture.state);
-    const cancelled = isCancelledState(fixture.state);
-    const live = isLiveState(fixture.state);
-    const prediction = fixture.prediction;
-    const points = prediction?.points ?? 0;
-    const hasPoints = points > 0;
-    const hasPrediction = prediction?.home != null && prediction?.away != null;
-
-    // Determine accent color based on state
-    let accentColor = theme.colors.border;
-    let bgTint = "transparent";
-
-    if (cancelled) {
-      accentColor = theme.colors.border;
-    } else if (finished) {
-      accentColor = hasPoints ? SUCCESS_COLOR : MISSED_COLOR;
-      bgTint = hasPoints ? SUCCESS_COLOR + "15" : MISSED_COLOR + "10";
-    } else if (live) {
-      accentColor = LIVE_COLOR;
-      bgTint = LIVE_COLOR + "10";
-    } else if (hasPrediction) {
-      accentColor = theme.colors.textSecondary;
-      bgTint = theme.colors.textSecondary + "10";
-    }
-
-    // Points display text
-    let pointsText = "–";
-    if (finished && !cancelled) {
-      pointsText = hasPoints ? `+${points}` : "0";
-    } else if (hasPrediction) {
-      pointsText = "✓";
-    }
-
-    return (
-      <Pressable
-        key={index}
-        onPress={() => onSelectIndex(index)}
-        style={({ pressed }) => [
-          styles.miniCard,
-          {
-            backgroundColor: bgTint,
-            borderColor: isSelected ? accentColor : theme.colors.border,
-            borderWidth: isSelected ? 2 : 1,
-          },
-          isSelected && {
-            shadowColor: accentColor,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.3,
-            shadowRadius: 4,
-            elevation: 4,
-          },
-          pressed && { opacity: 0.7 },
-        ]}
-      >
-        {/* Game number */}
-        <Text style={[styles.miniCardNumber, { color: theme.colors.textSecondary }]}>
-          {index + 1}
-        </Text>
-        {/* Two team logos */}
-        <View style={styles.miniCardLogos}>
-          <TeamLogo
-            imagePath={fixture.homeTeam?.imagePath}
-            teamName={fixture.homeTeam?.name ?? ""}
-            size={18}
-            rounded={false}
-          />
-          <TeamLogo
-            imagePath={fixture.awayTeam?.imagePath}
-            teamName={fixture.awayTeam?.name ?? ""}
-            size={18}
-            rounded={false}
-          />
-        </View>
-      </Pressable>
-    );
-  };
-
-  return (
-    <View style={styles.sliderWrapper} onLayout={handleLayout}>
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.sliderContent}
-      >
-        {fixtures.map((fixture, index) => renderMiniCard(fixture, index))}
-      </ScrollView>
-    </View>
-  );
-}
 
 export function LobbyPredictionsCTA({
   predictionsCount,
@@ -169,14 +38,9 @@ export function LobbyPredictionsCTA({
   onPress,
   fixtures = [],
   isLoading = false,
-  winnerName,
-  winnerPoints,
-  onWinnerPress,
 }: LobbyPredictionsCTAProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
-  const { width: screenWidth } = useWindowDimensions();
-  const swipeThreshold = screenWidth * 0.15;
   const skeletonOpacity = useSharedValue(0.3);
 
   useEffect(() => {
@@ -189,125 +53,41 @@ export function LobbyPredictionsCTA({
     opacity: skeletonOpacity.value,
   }));
 
-  // Find initial index - first upcoming game without prediction, or next upcoming game
-  const initialSelectedIndex = useMemo(() => {
-    if (fixtures.length === 0) return 0;
+  // Pick the single most relevant fixture to display
+  const { relevantFixture, reason } = useMemo(() => {
+    if (fixtures.length === 0) return { relevantFixture: null, reason: "none" as const };
     const now = Date.now();
 
-    // Find first upcoming game that needs prediction
-    const needsPredictionIndex = fixtures.findIndex((fixture) => {
+    // 1. First upcoming game without prediction
+    const needsPrediction = fixtures.find((fixture) => {
       if (!fixture.kickoffAt) return false;
       const kickoffTime = new Date(fixture.kickoffAt).getTime();
       const isUpcoming = kickoffTime > now;
       const hasPrediction = fixture.prediction?.home != null && fixture.prediction?.away != null;
       return isUpcoming && !hasPrediction;
     });
+    if (needsPrediction) return { relevantFixture: needsPrediction, reason: "needsPrediction" as const };
 
-    if (needsPredictionIndex !== -1) return needsPredictionIndex;
-
-    // Otherwise find first upcoming game
-    const upcomingIndex = fixtures.findIndex((fixture) => {
+    // 2. First upcoming game
+    const upcoming = fixtures.find((fixture) => {
       if (!fixture.kickoffAt) return false;
-      const kickoffTime = new Date(fixture.kickoffAt).getTime();
-      return kickoffTime > now;
+      return new Date(fixture.kickoffAt).getTime() > now;
     });
+    if (upcoming) return { relevantFixture: upcoming, reason: "upcoming" as const };
 
-    if (upcomingIndex !== -1) return upcomingIndex;
-
-    // All games finished - show trophy
-    return fixtures.length;
+    // 3. Last fixture (fallback when all finished)
+    return { relevantFixture: fixtures[fixtures.length - 1], reason: "finished" as const };
   }, [fixtures]);
 
-  const [selectedIndex, setSelectedIndex] = useState<number>(initialSelectedIndex);
-  const [hasInitialized, setHasInitialized] = useState<boolean>(false);
-
-  // Sync selectedIndex when fixtures first load
-  React.useEffect(() => {
-    if (fixtures.length > 0) {
-      if (!hasInitialized) {
-        setSelectedIndex(initialSelectedIndex);
-        setHasInitialized(true);
-      } else if (selectedIndex < 0 || selectedIndex > fixtures.length) {
-        setSelectedIndex(initialSelectedIndex);
-      }
+  // Dynamic section title based on why this fixture was picked
+  const sectionHeaderTitle = useMemo(() => {
+    switch (reason) {
+      case "needsPrediction": return t("lobby.ctaNeedsPrediction");
+      case "upcoming": return t("lobby.ctaUpNext");
+      case "finished": return t("lobby.ctaLatestResult");
+      default: return "";
     }
-  }, [fixtures.length, selectedIndex, initialSelectedIndex, hasInitialized]);
-
-  const selectedFixture = fixtures[selectedIndex] ?? null;
-  const totalDots = fixtures.length + 1; // +1 for trophy
-  const isTrophySelected = selectedIndex === fixtures.length;
-
-  const canGoPrevious = selectedIndex > 0;
-  const canGoNext = selectedIndex < totalDots - 1;
-
-  // Swipe gesture handling
-  const translateX = useSharedValue(0);
-  const cardWidth = screenWidth - 96;
-  const SLIDE_DURATION = 150;
-
-  const slideToNext = useCallback(() => {
-    setSelectedIndex((prev) => Math.min(prev + 1, totalDots - 1));
-    translateX.value = cardWidth;
-    translateX.value = withTiming(0, { duration: SLIDE_DURATION, easing: Easing.out(Easing.ease) });
-  }, [cardWidth, translateX, totalDots]);
-
-  const slideToPrevious = useCallback(() => {
-    setSelectedIndex((prev) => Math.max(prev - 1, 0));
-    translateX.value = -cardWidth;
-    translateX.value = withTiming(0, { duration: SLIDE_DURATION, easing: Easing.out(Easing.ease) });
-  }, [cardWidth, translateX]);
-
-  const handlePrevious = useCallback(() => {
-    if (canGoPrevious) {
-      translateX.value = withTiming(cardWidth, { duration: SLIDE_DURATION }, () => {
-        runOnJS(slideToPrevious)();
-      });
-    }
-  }, [canGoPrevious, cardWidth, translateX, slideToPrevious]);
-
-  const handleNext = useCallback(() => {
-    if (canGoNext) {
-      translateX.value = withTiming(-cardWidth, { duration: SLIDE_DURATION }, () => {
-        runOnJS(slideToNext)();
-      });
-    }
-  }, [canGoNext, cardWidth, translateX, slideToNext]);
-
-  const panGesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .activeOffsetX([-10, 10])
-        .onUpdate((event) => {
-          if (!canGoPrevious && event.translationX > 0) {
-            translateX.value = event.translationX * 0.3;
-          } else if (!canGoNext && event.translationX < 0) {
-            translateX.value = event.translationX * 0.3;
-          } else {
-            translateX.value = event.translationX;
-          }
-        })
-        .onEnd((event) => {
-          const shouldGoNext = event.translationX < -swipeThreshold && canGoNext;
-          const shouldGoPrevious = event.translationX > swipeThreshold && canGoPrevious;
-
-          if (shouldGoNext) {
-            translateX.value = withTiming(-cardWidth, { duration: SLIDE_DURATION, easing: Easing.in(Easing.ease) }, () => {
-              runOnJS(slideToNext)();
-            });
-          } else if (shouldGoPrevious) {
-            translateX.value = withTiming(cardWidth, { duration: SLIDE_DURATION, easing: Easing.in(Easing.ease) }, () => {
-              runOnJS(slideToPrevious)();
-            });
-          } else {
-            translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
-          }
-        }),
-    [canGoPrevious, canGoNext, cardWidth, slideToNext, slideToPrevious, translateX, swipeThreshold]
-  );
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
+  }, [reason, t]);
 
   if (isLoading) {
     return (
@@ -321,20 +101,22 @@ export function LobbyPredictionsCTA({
             },
           ]}
         >
-          {/* Skeleton Mini Cards */}
-          <View style={styles.skeletonSliderWrapper}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sliderContent}>
-              {[0, 1, 2, 3, 4].map((i) => (
-                <Animated.View
-                  key={i}
-                  style={[
-                    styles.skeletonMiniCard,
-                    { backgroundColor: theme.colors.border },
-                    skeletonAnimatedStyle,
-                  ]}
-                />
-              ))}
-            </ScrollView>
+          {/* Skeleton Header */}
+          <View style={styles.sectionHeader}>
+            <Animated.View
+              style={[
+                styles.skeletonHeaderTitle,
+                { backgroundColor: theme.colors.border },
+                skeletonAnimatedStyle,
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.skeletonHeaderProgress,
+                { backgroundColor: theme.colors.border },
+                skeletonAnimatedStyle,
+              ]}
+            />
           </View>
 
           {/* Skeleton Card */}
@@ -423,35 +205,31 @@ export function LobbyPredictionsCTA({
 
   const borderBottomColor = theme.colors.textSecondary + "40";
   const primaryIconBg = theme.colors.primary + "15";
-  const textSecondaryAlpha80 = theme.colors.textSecondary + "80";
 
-  if (fixtures.length === 0) {
+  if (fixtures.length === 0 && totalFixtures === 0) {
     return null;
   }
 
   // Fixture state helpers
-  const isFinished = selectedFixture ? isFinishedState(selectedFixture.state) : false;
-  const isCancelled = selectedFixture ? isCancelledState(selectedFixture.state) : false;
-  const isLive = selectedFixture ? isLiveState(selectedFixture.state) : false;
+  const isFinished = relevantFixture ? isFinishedState(relevantFixture.state) : false;
+  const isCancelled = relevantFixture ? isCancelledState(relevantFixture.state) : false;
+  const isLive = relevantFixture ? isLiveState(relevantFixture.state) : false;
 
-  const prediction = selectedFixture?.prediction;
+  const prediction = relevantFixture?.prediction;
   const hasPrediction = prediction?.home != null && prediction?.away != null;
   const fixturePoints = prediction?.points ?? 0;
   const hasPoints = fixturePoints > 0;
+  const isMaxPoints = isFinished && fixturePoints >= 3;
 
-  // Determine card border color for finished games
-  const cardBorderColor = isFinished && !isCancelled
-    ? (hasPoints ? SUCCESS_COLOR : MISSED_COLOR) + "40"
-    : "transparent";
-  const cardShadowColor = isFinished && !isCancelled
-    ? (hasPoints ? SUCCESS_COLOR : MISSED_COLOR)
-    : "#000";
+  // Game result for ResultDisplay
+  const gameResultOrTime = relevantFixture ? getGameResultOrTime(relevantFixture) : null;
+  const homeScoreNum = relevantFixture?.homeScore90 ?? relevantFixture?.homeScore;
+  const awayScoreNum = relevantFixture?.awayScore90 ?? relevantFixture?.awayScore;
+  const isHomeWinner = homeScoreNum != null && awayScoreNum != null && homeScoreNum > awayScoreNum;
+  const isAwayWinner = homeScoreNum != null && awayScoreNum != null && awayScoreNum > homeScoreNum;
 
-  // Score display
-  const homeScore = selectedFixture?.homeScore90 ?? selectedFixture?.homeScore;
-  const awayScore = selectedFixture?.awayScore90 ?? selectedFixture?.awayScore;
-  const isHomeWinner = homeScore != null && awayScore != null && homeScore > awayScore;
-  const isAwayWinner = homeScore != null && awayScore != null && awayScore > homeScore;
+  // Prediction correctness for ScoreInput styling
+  const predictionSuccess = isFinished ? (isMaxPoints ? "max" as const : hasPoints) : undefined;
 
   return (
     <View style={styles.wrapper}>
@@ -465,225 +243,197 @@ export function LobbyPredictionsCTA({
           },
         ]}
       >
-        {/* Fixture Slider */}
-        <FixtureSlider
-          fixtures={fixtures}
-          selectedIndex={selectedIndex}
-          isTrophySelected={isTrophySelected}
-          theme={theme}
-          onSelectIndex={setSelectedIndex}
-        />
+        {/* Section Header */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionHeaderTitle, { color: theme.colors.textPrimary }]}>
+            {sectionHeaderTitle}
+          </Text>
+          <Text style={[styles.sectionHeaderProgress, { color: theme.colors.textSecondary }]}>
+            {t("lobby.predictionsProgress", { count: predictionsCount, total: totalFixtures })}
+          </Text>
+        </View>
 
-      {/* Card Row */}
-      <View style={styles.cardRow}>
-        {/* Swipeable Card */}
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.cardContainer, animatedStyle]}>
-            {isTrophySelected ? (
-              /* Trophy Card */
-              <Pressable onPress={onWinnerPress} style={({ pressed }) => pressed && styles.pressed}>
-                <View
-                  style={[
-                    styles.cardShadowWrapper,
-                    { shadowColor: "#FFD700", shadowOpacity: 0.3 },
-                  ]}
-                >
-                  <Card style={[styles.matchCard, { backgroundColor: theme.colors.cardBackground }]}>
-                    <View style={styles.trophyContent}>
-                      <Ionicons name="trophy" size={48} color="#FFD700" />
-                      <View style={styles.trophyTextContainer}>
-                        <AppText variant="subtitle" style={{ fontWeight: "700" }}>
-                          {winnerName ?? t("lobby.groupEnded")}
-                        </AppText>
-                        {winnerPoints != null && (
-                          <AppText variant="caption" color="secondary">
-                            {winnerPoints} {t("lobby.pts")}
-                          </AppText>
-                        )}
-                      </View>
-                    </View>
-                  </Card>
-                </View>
-              </Pressable>
-            ) : selectedFixture ? (
-              /* Match Card - styled like GroupGamesScreen */
+        {/* Single Match Card */}
+        <View style={styles.cardRow}>
+          <View style={styles.cardContainer}>
+            {relevantFixture ? (
               <Pressable
-                onPress={() => onPress(selectedFixture.id)}
+                onPress={() => onPress(relevantFixture.id)}
                 style={({ pressed }) => pressed && styles.pressed}
               >
-                {/* League Info */}
-                <View style={styles.leagueInfoRow}>
-                  <Text
-                    style={[styles.leagueText, { color: theme.colors.textSecondary }]}
-                    numberOfLines={1}
-                  >
-                    {selectedFixture.league?.name}
-                  </Text>
-                  <Text style={[styles.leagueText, { color: theme.colors.textSecondary }]}>
-                    {formatKickoffDate(selectedFixture.kickoffAt)} {formatKickoffTime(selectedFixture.kickoffAt)}
-                  </Text>
-                </View>
-
-                <View
+                <Card
                   style={[
-                    styles.cardShadowWrapper,
+                    styles.matchCard,
                     {
-                      shadowColor: cardShadowColor,
-                      shadowOpacity: isFinished && !isCancelled ? 0.2 : 0.12,
+                      backgroundColor: theme.colors.cardBackground,
+                      borderColor: theme.colors.border,
                     },
                   ]}
                 >
-                  <Card
-                    style={[
-                      styles.matchCard,
-                      {
-                        backgroundColor: theme.colors.cardBackground,
-                        borderWidth: 1,
-                        borderColor: cardBorderColor,
-                      },
-                    ]}
-                  >
-                    {/* Home Team Row */}
-                    <View style={styles.teamRow}>
-                      <View style={styles.teamInfo}>
-                        <TeamLogo
-                          imagePath={selectedFixture.homeTeam?.imagePath}
-                          teamName={selectedFixture.homeTeam?.name ?? ""}
-                          size={32}
-                          rounded={false}
-                        />
-                        <Text
-                          style={[
-                            styles.teamName,
-                            { color: theme.colors.textPrimary },
-                            isHomeWinner && styles.winnerText,
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {selectedFixture.homeTeam?.name ?? ""}
+                  {/* League info row */}
+                  <View style={[styles.gcLeagueRow, { backgroundColor: theme.colors.textSecondary + "08" }]}>
+                    {isFinished && !isCancelled ? (
+                      <View style={[
+                        styles.gcLeagueRightTint,
+                        isMaxPoints
+                          ? { backgroundColor: SUCCESS_COLOR + "15" }
+                          : hasPoints
+                            ? { backgroundColor: "#FFB020" + "20" }
+                            : { backgroundColor: MISSED_COLOR + "12" },
+                      ]} />
+                    ) : isLive ? (
+                      <View style={[styles.gcLeagueRightTint, { backgroundColor: LIVE_COLOR }]} />
+                    ) : null}
+                    <View style={styles.gcLeagueLeft}>
+                      <Text
+                        style={[styles.gcLeagueText, { color: theme.colors.textSecondary }]}
+                        numberOfLines={1}
+                      >
+                        {relevantFixture.league?.name}
+                      </Text>
+                      {(relevantFixture.round || relevantFixture.stage) && (
+                        <>
+                          <Text style={[styles.gcSeparator, { color: theme.colors.textSecondary }]}>•</Text>
+                          <Text style={[styles.gcLeagueText, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                            {relevantFixture.round
+                              ? isNaN(Number(relevantFixture.round))
+                                ? relevantFixture.round.replace(/^Knockout Round\s*/i, "").replace(/^Round of\s*/i, "R")
+                                : `R${relevantFixture.round}`
+                              : (relevantFixture.stage ?? "").replace(/^Knockout Round\s*/i, "").replace(/^Round of\s*/i, "R")}
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                    <Text style={[styles.gcLeagueText, isLive ? { color: LIVE_COLOR, fontWeight: "700" } : { color: theme.colors.textSecondary }]}>
+                      {isLive ? `${relevantFixture.liveMinute ?? 0}′` : formatKickoffTime(relevantFixture.kickoffAt)}
+                    </Text>
+                    <View style={[styles.gcLeagueDivider, { backgroundColor: theme.colors.border }]} />
+                    {isFinished && !isCancelled ? (
+                      <View style={styles.gcPredCol}>
+                        <Text style={[
+                          styles.gcPointsText,
+                          isMaxPoints
+                            ? { color: SUCCESS_COLOR }
+                            : hasPoints
+                              ? { color: "#D4920A" }
+                              : { color: MISSED_COLOR },
+                        ]}>
+                          {hasPoints ? `+${fixturePoints}` : "0"} pts
                         </Text>
                       </View>
-                      {/* Score */}
-                      {(isFinished || isLive) && !isCancelled && (
-                        <Text
-                          style={[
-                            styles.scoreText,
-                            { color: isLive ? LIVE_COLOR : theme.colors.textPrimary },
-                            isHomeWinner && styles.winnerText,
-                          ]}
-                        >
-                          {homeScore ?? "-"}
-                        </Text>
-                      )}
-                      {/* Prediction */}
-                      <View
-                        style={[
-                          styles.predictionBox,
-                          {
-                            backgroundColor: isFinished
-                              ? hasPoints ? SUCCESS_COLOR + "20" : MISSED_COLOR + "15"
-                              : hasPrediction
-                                ? "#F1F5F9"
-                                : theme.colors.surface,
-                            borderColor: isFinished
-                              ? hasPoints ? SUCCESS_COLOR + "60" : MISSED_COLOR + "40"
-                              : hasPrediction
-                                ? "#94A3B8"
-                                : theme.colors.border,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.predictionText,
-                            {
-                              color: isFinished
-                                ? hasPoints ? SUCCESS_COLOR : MISSED_COLOR
-                                : hasPrediction
-                                  ? theme.colors.textPrimary
-                                  : textSecondaryAlpha80,
-                            },
-                          ]}
-                        >
-                          {prediction?.home ?? "–"}
-                        </Text>
+                    ) : isLive ? (
+                      <View style={styles.gcPredCol}>
+                        <Text style={[styles.gcPointsText, { color: "#FFFFFF", fontWeight: "700" }]}>LIVE</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.gcPredCol} />
+                    )}
+                  </View>
+
+                  <View style={[styles.gcMatchContent, isCancelled && { opacity: 0.6 }]}>
+                    <View style={[styles.gcContinuousDivider, { backgroundColor: theme.colors.border }]} />
+
+                    {/* Home Row */}
+                    <View style={styles.gcTeamRow}>
+                      <View style={styles.gcMatchPressable}>
+                        <View style={styles.gcTeamPressable}>
+                          <TeamRow
+                            team={relevantFixture.homeTeam}
+                            teamName={relevantFixture.homeTeam?.name ?? ""}
+                            isWinner={isHomeWinner}
+                          />
+                        </View>
+                        <ResultDisplay
+                          result={gameResultOrTime}
+                          isLive={isLive}
+                          isFinished={isFinished}
+                          isCancelled={isCancelled}
+                          isHomeWinner={isHomeWinner}
+                          isAwayWinner={isAwayWinner}
+                          type="home"
+                        />
+                      </View>
+                      <View style={styles.gcPredCol}>
+                        <View style={[styles.gcScoreBox, {
+                          backgroundColor: predictionSuccess === "max" ? SUCCESS_COLOR + "20"
+                            : predictionSuccess === true ? "#FFB020" + "20"
+                            : predictionSuccess === false ? MISSED_COLOR + "15"
+                            : isLive ? theme.colors.surface
+                            : hasPrediction ? theme.colors.surface
+                            : theme.colors.surface,
+                          borderColor: predictionSuccess === "max" ? SUCCESS_COLOR + "60"
+                            : predictionSuccess === true ? "#FFB020" + "60"
+                            : predictionSuccess === false ? MISSED_COLOR + "40"
+                            : isLive ? "#6B7280"
+                            : hasPrediction ? theme.colors.border
+                            : theme.colors.border,
+                        }]}>
+                          <Text style={[styles.gcScoreText, {
+                            color: predictionSuccess === "max" ? SUCCESS_COLOR
+                              : predictionSuccess === true ? "#D4920A"
+                              : predictionSuccess === false ? MISSED_COLOR
+                              : hasPrediction ? "#374151"
+                              : theme.colors.textSecondary + "80",
+                          }]}>
+                            {toDisplay(prediction?.home ?? null, isFinished || isLive) || "–"}
+                          </Text>
+                        </View>
                       </View>
                     </View>
 
-                    {/* Away Team Row */}
-                    <View style={styles.teamRow}>
-                      <View style={styles.teamInfo}>
-                        <TeamLogo
-                          imagePath={selectedFixture.awayTeam?.imagePath}
-                          teamName={selectedFixture.awayTeam?.name ?? ""}
-                          size={32}
-                          rounded={false}
+                    {/* Away Row */}
+                    <View style={styles.gcTeamRow}>
+                      <View style={styles.gcMatchPressable}>
+                        <View style={styles.gcTeamPressable}>
+                          <TeamRow
+                            team={relevantFixture.awayTeam}
+                            teamName={relevantFixture.awayTeam?.name ?? ""}
+                            isWinner={isAwayWinner}
+                          />
+                        </View>
+                        <ResultDisplay
+                          result={gameResultOrTime}
+                          isLive={isLive}
+                          isFinished={isFinished}
+                          isCancelled={isCancelled}
+                          isHomeWinner={isHomeWinner}
+                          isAwayWinner={isAwayWinner}
+                          type="away"
                         />
-                        <Text
-                          style={[
-                            styles.teamName,
-                            { color: theme.colors.textPrimary },
-                            isAwayWinner && styles.winnerText,
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {selectedFixture.awayTeam?.name ?? ""}
-                        </Text>
                       </View>
-                      {/* Score */}
-                      {(isFinished || isLive) && !isCancelled && (
-                        <Text
-                          style={[
-                            styles.scoreText,
-                            { color: isLive ? LIVE_COLOR : theme.colors.textPrimary },
-                            isAwayWinner && styles.winnerText,
-                          ]}
-                        >
-                          {awayScore ?? "-"}
-                        </Text>
-                      )}
-                      {/* Prediction */}
-                      <View
-                        style={[
-                          styles.predictionBox,
-                          {
-                            backgroundColor: isFinished
-                              ? hasPoints ? SUCCESS_COLOR + "20" : MISSED_COLOR + "15"
-                              : hasPrediction
-                                ? "#F1F5F9"
-                                : theme.colors.surface,
-                            borderColor: isFinished
-                              ? hasPoints ? SUCCESS_COLOR + "60" : MISSED_COLOR + "40"
-                              : hasPrediction
-                                ? "#94A3B8"
-                                : theme.colors.border,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.predictionText,
-                            {
-                              color: isFinished
-                                ? hasPoints ? SUCCESS_COLOR : MISSED_COLOR
-                                : hasPrediction
-                                  ? theme.colors.textPrimary
-                                  : textSecondaryAlpha80,
-                            },
-                          ]}
-                        >
-                          {prediction?.away ?? "–"}
-                        </Text>
+                      <View style={styles.gcPredCol}>
+                        <View style={[styles.gcScoreBox, {
+                          backgroundColor: predictionSuccess === "max" ? SUCCESS_COLOR + "20"
+                            : predictionSuccess === true ? "#FFB020" + "20"
+                            : predictionSuccess === false ? MISSED_COLOR + "15"
+                            : isLive ? theme.colors.surface
+                            : hasPrediction ? theme.colors.surface
+                            : theme.colors.surface,
+                          borderColor: predictionSuccess === "max" ? SUCCESS_COLOR + "60"
+                            : predictionSuccess === true ? "#FFB020" + "60"
+                            : predictionSuccess === false ? MISSED_COLOR + "40"
+                            : isLive ? "#6B7280"
+                            : hasPrediction ? theme.colors.border
+                            : theme.colors.border,
+                        }]}>
+                          <Text style={[styles.gcScoreText, {
+                            color: predictionSuccess === "max" ? SUCCESS_COLOR
+                              : predictionSuccess === true ? "#D4920A"
+                              : predictionSuccess === false ? MISSED_COLOR
+                              : hasPrediction ? "#374151"
+                              : theme.colors.textSecondary + "80",
+                          }]}>
+                            {toDisplay(prediction?.away ?? null, isFinished || isLive) || "–"}
+                          </Text>
+                        </View>
                       </View>
                     </View>
-                  </Card>
-                </View>
+                  </View>
+                </Card>
               </Pressable>
             ) : null}
-          </Animated.View>
-        </GestureDetector>
-
-      </View>
+          </View>
+        </View>
 
         {/* View All Games Button */}
         <Pressable
@@ -733,9 +483,17 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginBottom: 12,
+    justifyContent: "space-between",
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  sectionHeaderTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  sectionHeaderProgress: {
+    fontSize: 12,
+    fontWeight: "500",
   },
   sectionTitle: {
     fontSize: 12,
@@ -761,180 +519,126 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  viewAllText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
   cardRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
     paddingHorizontal: 8,
   },
-  matchNumberContainer: {
-    width: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-  },
-  matchNumberText: {
-    fontSize: 11,
-    fontWeight: "600",
-    opacity: 0.7,
-  },
-  pointsContainer: {
-    width: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-  },
-  pointsNumber: {
-    fontSize: 20,
-    fontWeight: "800",
-  },
-  pointsLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    opacity: 0.8,
-  },
-  sliderWrapper: {
-    marginBottom: 12,
-  },
-  sliderContent: {
-    paddingHorizontal: 8,
-    gap: MINI_CARD_GAP,
-  },
-  miniCard: {
-    width: MINI_CARD_WIDTH,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  miniCardNumber: {
-    fontSize: 9,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  miniCardLogos: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  miniCardPoints: {
-    fontSize: 11,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  sliderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-  sliderChevron: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
-  },
-  sliderChevronDisabled: {
-    opacity: 0.3,
-  },
   cardContainer: {
     flex: 1,
-  },
-  leagueInfoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 4,
-    marginBottom: 4,
-  },
-  leagueText: {
-    fontSize: 11,
-    fontWeight: "500",
-    opacity: 0.7,
-  },
-  cardShadowWrapper: {
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 5,
   },
   matchCard: {
     marginHorizontal: 0,
     marginBottom: 0,
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 0,
-  },
-  teamRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
-  teamInfo: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  teamName: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  winnerText: {
-    fontWeight: "700",
-  },
-  scoreText: {
-    fontSize: 17,
-    fontWeight: "600",
-    width: 28,
-    textAlign: "center",
-  },
-  predictionBox: {
-    width: 40,
-    height: 40,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderBottomWidth: 3,
+  },
+  // Games-card league info row
+  gcLeagueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    marginHorizontal: -12,
+    marginTop: -10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 8,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    overflow: "hidden",
+  },
+  gcLeagueRightTint: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: 72,
+    borderTopRightRadius: 10,
+  },
+  gcLeagueLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  gcLeagueText: {
+    fontSize: 11,
+    fontWeight: "500",
+    opacity: 0.7,
+  },
+  gcSeparator: {
+    fontSize: 11,
+    opacity: 0.4,
+    marginHorizontal: -3,
+  },
+  gcLeagueDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    marginVertical: -6,
+    opacity: 0.5,
+  },
+  gcPredCol: {
+    width: 52,
+    alignItems: "center",
+  },
+  gcPointsText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  gcMatchContent: {
+    flexDirection: "column",
+    gap: 6,
+  },
+  gcContinuousDivider: {
+    position: "absolute",
+    width: 1,
+    top: 0,
+    bottom: 0,
+    right: 60,
+    opacity: 0.5,
+  },
+  gcTeamRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  gcMatchPressable: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  gcTeamPressable: {
+    flex: 1,
+  },
+  gcScoreBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  predictionText: {
+  gcScoreText: {
     fontSize: 18,
     fontWeight: "700",
-  },
-  trophyContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    paddingVertical: 8,
-  },
-  trophyTextContainer: {
-    flex: 1,
   },
   pressed: {
     opacity: 0.8,
   },
   // Skeleton styles
-  skeletonSliderWrapper: {
-    marginBottom: 12,
+  skeletonHeaderTitle: {
+    width: 110,
+    height: 14,
+    borderRadius: 4,
   },
-  skeletonMiniCard: {
-    width: MINI_CARD_WIDTH,
-    height: 50,
-    borderRadius: 10,
+  skeletonHeaderProgress: {
+    width: 80,
+    height: 12,
+    borderRadius: 4,
   },
   skeletonLeagueRow: {
     width: "60%",
@@ -955,8 +659,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   skeletonTeamLogo: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderRadius: 6,
   },
   skeletonTeamName: {
@@ -965,8 +669,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   skeletonPredictionBox: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: 10,
   },
   skeletonButton: {

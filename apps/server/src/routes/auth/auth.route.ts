@@ -29,6 +29,10 @@ import {
   userOnboardingCompleteResponseSchema,
   changePasswordBodySchema,
   changePasswordResponseSchema,
+  forgotPasswordBodySchema,
+  forgotPasswordResponseSchema,
+  resetPasswordBodySchema,
+  resetPasswordResponseSchema,
 } from "../../schemas/auth/user-auth.schemas";
 
 type UserRegisterBody = {
@@ -93,6 +97,12 @@ type ChangePasswordBody = {
 };
 
 type ChangePasswordResponse = { success: true; message: string };
+
+type ForgotPasswordBody = { email: string };
+type ForgotPasswordResponse = { success: true; message: string };
+
+type ResetPasswordBody = { token: string; newPassword: string };
+type ResetPasswordResponse = { success: true; message: string };
 
 /** True when client is Expo Web (sends X-Client: web). Native does not send this. */
 function isWebClient(req: {
@@ -350,6 +360,42 @@ const userAuthRoutes: FastifyPluginAsync = async (fastify) => {
 
       const available = !existing || existing.id === ctx.user.id;
       return reply.send({ available });
+    }
+  );
+
+  fastify.post<{ Body: ForgotPasswordBody; Reply: ForgotPasswordResponse }>(
+    "/forgot-password",
+    {
+      schema: {
+        body: forgotPasswordBodySchema,
+        response: { 200: forgotPasswordResponseSchema },
+      },
+    },
+    async (req, reply): Promise<ForgotPasswordResponse> => {
+      await service.forgotPassword(req.body.email);
+      // Always return success to prevent email enumeration
+      return reply.send({
+        success: true,
+        message:
+          "If an account with that email exists, a reset link has been sent.",
+      });
+    }
+  );
+
+  fastify.post<{ Body: ResetPasswordBody; Reply: ResetPasswordResponse }>(
+    "/reset-password",
+    {
+      schema: {
+        body: resetPasswordBodySchema,
+        response: { 200: resetPasswordResponseSchema },
+      },
+    },
+    async (req, reply): Promise<ResetPasswordResponse> => {
+      await service.resetPassword(req.body.token, req.body.newPassword);
+      return reply.send({
+        success: true,
+        message: "Password has been reset successfully.",
+      });
     }
   );
 };

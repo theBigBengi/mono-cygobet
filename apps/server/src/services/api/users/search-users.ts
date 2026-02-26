@@ -163,19 +163,21 @@ export async function getSuggestedUsers(
     excludeUserIds = [...excludeUserIds, ...currentGroupMembers.map((m) => m.userId)];
   }
 
-  // Get user IDs from those private groups (excluding self and current group members)
-  const suggestedMemberIds = await prisma.groupMembers.findMany({
+  // Get user IDs from those private groups (excluding self and current group members),
+  // ordered by how many groups they share with the current user (most shared first).
+  const sharedGroupCounts = await prisma.groupMembers.groupBy({
+    by: ["userId"],
     where: {
       groupId: { in: privateGroupIds },
       userId: { notIn: excludeUserIds },
       status: "joined",
     },
-    select: { userId: true },
-    distinct: ["userId"],
+    _count: { groupId: true },
+    orderBy: { _count: { groupId: "desc" } },
     take: SUGGESTED_USERS_LIMIT,
   });
 
-  const userIds = suggestedMemberIds.map((m) => m.userId);
+  const userIds = sharedGroupCounts.map((m) => m.userId);
 
   if (userIds.length === 0) {
     return {
@@ -196,8 +198,11 @@ export async function getSuggestedUsers(
     },
   });
 
-  const data: ApiUserSearchItem[] = users
-    .filter((u) => u.username) // Only include users with usernames
+  // Preserve the sort order from sharedGroupCounts (most shared groups first)
+  const userMap = new Map(users.map((u) => [u.id, u]));
+  const data: ApiUserSearchItem[] = userIds
+    .map((id) => userMap.get(id))
+    .filter((u): u is NonNullable<typeof u> => u != null && u.username != null)
     .map((u) => ({
       id: u.id,
       username: u.username ?? "",

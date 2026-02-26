@@ -1,71 +1,129 @@
 // features/groups/invite/screens/GroupInviteScreen.tsx
-// Screen for viewing and sharing group invite code.
+// Layout: Search + Users (scroll) | Share link (fixed bottom)
 
-import React from "react";
+import React, { useRef, useState, useCallback } from "react";
+import {
+  View,
+  StyleSheet,
+  Share,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Share, Pressable, Text, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
-import * as Clipboard from "expo-clipboard";
-import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { Screen, AppText, Button } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
+import { useInviteCodeQuery } from "@/domains/groups";
 import {
-  useInviteCodeQuery,
-  useRegenerateInviteCodeMutation,
-} from "@/domains/groups";
+  useUsersSearchQuery,
+  useSuggestedUsersQuery,
+  useSendInviteMutation,
+} from "@/domains/invites";
 import { useTheme } from "@/lib/theme";
+import { UserSearchInput } from "@/features/invites/components/UserSearchInput";
+import { UserSearchResultItem } from "@/features/invites/components/UserSearchResultItem";
 import { SentInvitesList } from "@/features/invites/components/SentInvitesList";
+import type { ApiUserSearchItem } from "@repo/types";
 
 const DEEP_LINK_BASE = "https://mono-cygobet.onrender.com/groups/join";
+const MIN_QUERY_LENGTH = 3;
+const SEARCH_DEBOUNCE_MS = 300;
 
 interface GroupInviteScreenProps {
   groupId: number | null;
-  isCreator?: boolean;
+  groupName?: string;
 }
 
-/**
- * GroupInviteScreen component
- *
- * Fetches and displays the group invite code. Share Invite uses Share.share()
- * with code + deep link. Regenerate Code triggers regeneration and refetches.
- */
 export function GroupInviteScreen({
   groupId,
-  isCreator,
+  groupName,
 }: GroupInviteScreenProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
-  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  // ── Invite link ─────────────────────────────────────────────
   const { data, isLoading, error, refetch } = useInviteCodeQuery(groupId);
-  const regenerateMutation = useRegenerateInviteCodeMutation(groupId);
-  const [copied, setCopied] = React.useState(false);
-
   const inviteCode = data?.data?.inviteCode ?? "";
-  const isRegenerating = regenerateMutation.isPending;
 
-  const handleCopy = async () => {
+  const handleShareLink = () => {
     if (!inviteCode) return;
-    await Clipboard.setStringAsync(inviteCode);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const link = `${DEEP_LINK_BASE}?code=${encodeURIComponent(inviteCode)}`;
+    const message = `${t("invite.joinMessage")}\n${link}`;
+    Share.share({ message, title: t("invite.groupInvite") }).catch(() => {});
   };
 
-  const handleShare = () => {
-    if (!inviteCode) return;
-    const message = `${t("invite.joinMessage")}\n\n${inviteCode}\n\n${DEEP_LINK_BASE}?code=${encodeURIComponent(inviteCode)}`;
-    Share.share({
-      message,
-      title: t("invite.groupInvite"),
-    }).catch(() => {});
-  };
+  // ── User search ──────────────────────────────────────────────
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleRegenerate = () => {
-    regenerateMutation.mutate(undefined);
-  };
+  const handleQueryChange = useCallback((text: string) => {
+    setQuery(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(text.trim());
+      debounceRef.current = null;
+    }, SEARCH_DEBOUNCE_MS);
+  }, []);
 
+  const {
+    data: searchData,
+    isLoading: searchLoading,
+    isFetching: searchFetching,
+  } = useUsersSearchQuery({
+    q: debouncedQuery,
+    excludeGroupId: groupId ?? undefined,
+  });
+  const { data: suggestedData, isLoading: suggestedLoading } =
+    useSuggestedUsersQuery({ excludeGroupId: groupId ?? undefined });
+  const sendInviteMutation = useSendInviteMutation(groupId ?? 0);
+  const [invitedUserIds, setInvitedUserIds] = useState<Set<number>>(
+    () => new Set(),
+  );
+
+  const handleInvitePress = useCallback(
+    (user: ApiUserSearchItem) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      sendInviteMutation.mutate(
+        { userId: user.id },
+        {
+          onSuccess: () => {
+            Haptics.notificationAsync(
+              Haptics.NotificationFeedbackType.Success,
+            );
+            setInvitedUserIds((prev) => new Set(prev).add(user.id));
+          },
+          onError: (err) => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert(
+              t("errors.error"),
+              err.message || t("errors.somethingWentWrong"),
+            );
+          },
+        },
+      );
+    },
+    [sendInviteMutation, t],
+  );
+
+  // ── Derived state ────────────────────────────────────────────
+  const searchResults = searchData?.data ?? [];
+
+  const suggestedUsers = suggestedData?.data ?? [];
+
+  const isSearching = debouncedQuery.length >= MIN_QUERY_LENGTH;
+  const isSearchBusy = isSearching && (searchLoading || searchFetching);
+  const isSearchEmpty =
+    isSearching && !searchLoading && !searchFetching && searchResults.length === 0;
+
+  // ── Full-screen loading / error ──────────────────────────────
   if (isLoading) {
     return (
       <Screen>
@@ -73,7 +131,6 @@ export function GroupInviteScreen({
       </Screen>
     );
   }
-
   if (error || !data) {
     return (
       <Screen>
@@ -85,175 +142,169 @@ export function GroupInviteScreen({
     );
   }
 
-  return (
-    <Screen>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header section */}
-        <View style={styles.headerSection}>
-          <View
-            style={[
-              styles.iconCircle,
-              { backgroundColor: theme.colors.primary + "15" },
-            ]}
-          >
-            <Ionicons name="link" size={32} color={theme.colors.primary} />
+  // ── Users section content ────────────────────────────────────
+  const renderUsersContent = () => {
+    if (isSearching) {
+      if (isSearchBusy) {
+        return (
+          <View style={styles.statusCenter}>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <AppText variant="caption" color="secondary">
+              {t("invites.searchingUsers")}
+            </AppText>
           </View>
-          <AppText variant="title" style={styles.title}>
-            {t("invite.inviteFriends")}
-          </AppText>
-          <AppText variant="body" color="secondary" style={styles.subtitle}>
-            {t("invite.shareCodeDescription")}
+        );
+      }
+      if (isSearchEmpty) {
+        return (
+          <View style={styles.statusCenter}>
+            <Ionicons
+              name="search-outline"
+              size={24}
+              color={theme.colors.textSecondary}
+              style={{ opacity: 0.5 }}
+            />
+            <AppText variant="body" color="secondary">
+              {t("invites.noResults")}
+            </AppText>
+            <AppText variant="caption" color="secondary">
+              {t("invites.tryDifferentSearch")}
+            </AppText>
+          </View>
+        );
+      }
+      return searchResults.map((user) => (
+        <UserSearchResultItem
+          key={String(user.id)}
+          user={user}
+          onInvite={() => handleInvitePress(user)}
+          isSending={sendInviteMutation.isPending}
+          invited={invitedUserIds.has(user.id)}
+        />
+      ));
+    }
+
+    if (suggestedLoading) {
+      return (
+        <View style={styles.statusCenter}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+        </View>
+      );
+    }
+    if (suggestedUsers.length === 0) {
+      return (
+        <View style={styles.statusCenter}>
+          <Ionicons
+            name="people-outline"
+            size={28}
+            color={theme.colors.textSecondary}
+            style={{ opacity: 0.4 }}
+          />
+          <AppText variant="body" color="secondary">
+            {t("invite.searchDescription")}
           </AppText>
         </View>
+      );
+    }
+    return suggestedUsers.map((user) => (
+      <UserSearchResultItem
+        key={String(user.id)}
+        user={user}
+        onInvite={() => handleInvitePress(user)}
+        isSending={sendInviteMutation.isPending}
+        invited={invitedUserIds.has(user.id)}
+      />
+    ));
+  };
 
-        {/* Code card */}
-        <Pressable onPress={handleCopy}>
-          <View
-            style={[
-              styles.codeCard,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          >
-            <Text
-              style={[styles.codeLabel, { color: theme.colors.textSecondary }]}
-            >
-              {t("groups.inviteCode")}
-            </Text>
-            <Text style={[styles.code, { color: theme.colors.textPrimary }]}>
-              {inviteCode}
-            </Text>
-            <View style={styles.copyRow}>
+  // ── Render ───────────────────────────────────────────────────
+  return (
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        {/* ─── Scrollable area ─────────────────────────── */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <UserSearchInput
+            value={query}
+            onChangeText={handleQueryChange}
+            placeholder={t("invites.searchByUsername")}
+          />
+
+          {query.length > 0 && query.length < MIN_QUERY_LENGTH && (
+            <View style={styles.hintRow}>
               <Ionicons
-                name={copied ? "checkmark-circle" : "copy-outline"}
-                size={16}
-                color={
-                  copied ? theme.colors.primary : theme.colors.textSecondary
-                }
+                name="information-circle-outline"
+                size={14}
+                color={theme.colors.textSecondary}
               />
-              <Text
-                style={[
-                  styles.copyText,
-                  {
-                    color: copied
-                      ? theme.colors.primary
-                      : theme.colors.textSecondary,
-                  },
-                ]}
-              >
-                {copied ? t("invite.copied") : t("invite.tapToCopy")}
-              </Text>
+              <AppText variant="caption" color="secondary">
+                {t("invites.minChars", { count: MIN_QUERY_LENGTH })}
+              </AppText>
             </View>
-          </View>
-        </Pressable>
+          )}
 
-        {/* Actions */}
-        <View style={styles.actions}>
+          {renderUsersContent()}
+
+          {/* ─── Sent invites ──────────────────────────── */}
+          {groupId != null && <SentInvitesList groupId={groupId} />}
+        </ScrollView>
+
+        {/* ─── Fixed bottom: Share link ────────────────── */}
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              backgroundColor: theme.colors.background,
+              borderTopColor: theme.colors.border,
+              paddingBottom: Math.max(insets.bottom, 16),
+            },
+          ]}
+        >
           <Button
             label={t("invite.shareInvite")}
-            onPress={handleShare}
-            icon="share-outline"
-            style={styles.button}
+            variant="primary"
+            onPress={handleShareLink}
           />
-          {groupId != null && (
-            <Button
-              label={t("invite.inviteByUsername")}
-              variant="secondary"
-              onPress={() =>
-                router.push(`/groups/${groupId}/invite-users` as any)
-              }
-              icon="person-add-outline"
-              style={styles.button}
-            />
-          )}
-          {isCreator && (
-            <Button
-              label={t("invite.regenerateCode")}
-              variant="secondary"
-              disabled={isRegenerating}
-              onPress={handleRegenerate}
-              icon="refresh-outline"
-              style={styles.button}
-            />
-          )}
         </View>
-
-        {/* Sent Invites */}
-        {groupId != null && <SentInvitesList groupId={groupId} />}
-      </ScrollView>
-    </Screen>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
+  container: {
     flex: 1,
   },
-  container: {
-    padding: 20,
-    paddingBottom: 40,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
   },
-  headerSection: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  statusCenter: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
+    paddingVertical: 40,
+    gap: 8,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  subtitle: {
-    textAlign: "center",
-    paddingHorizontal: 20,
-  },
-  codeCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 24,
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  codeLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 12,
-  },
-  code: {
-    fontSize: 32,
-    fontWeight: "800",
-    letterSpacing: 6,
-    marginBottom: 16,
-  },
-  copyRow: {
+  hintRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    marginTop: -8,
+    marginBottom: 10,
   },
-  copyText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  actions: {
-    gap: 12,
-  },
-  button: {
-    width: "100%",
+  bottomBar: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
 });

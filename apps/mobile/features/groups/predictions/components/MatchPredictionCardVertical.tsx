@@ -251,6 +251,7 @@ export function MatchPredictionCardVertical({
                     team={fixture.homeTeam}
                     teamName={homeTeamName}
                     isWinner={isHomeWinner}
+                    isUpcoming={!isFinished && !isLive}
                   />
                 </View>
                 <ResultDisplay
@@ -297,6 +298,7 @@ export function MatchPredictionCardVertical({
                     team={fixture.awayTeam}
                     teamName={awayTeamName}
                     isWinner={isAwayWinner}
+                    isUpcoming={!isFinished && !isLive}
                   />
                 </View>
                 <ResultDisplay

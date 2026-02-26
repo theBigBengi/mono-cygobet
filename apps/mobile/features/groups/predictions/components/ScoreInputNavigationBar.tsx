@@ -49,7 +49,6 @@ export function ScoreInputNavigationBar({
     }
   };
 
-  
   const bottomOffset = Platform.OS === "android" ? 60 : 10;
   const bgColor = isDark ? "rgba(30, 30, 30, 0.98)" : "rgba(255, 255, 255, 0.98)";
 
@@ -58,7 +57,7 @@ export function ScoreInputNavigationBar({
       style={[styles.container, { bottom: keyboardHeight + bottomOffset }]}
       pointerEvents="box-none"
     >
-      <View style={[styles.content, { backgroundColor: bgColor }]}>
+      <View style={[styles.content, { backgroundColor: bgColor, borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)" }]}>
         {/* Left section: Navigation arrows */}
         <View style={styles.leftSection}>
           <Pressable
@@ -142,6 +141,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 6,
     borderRadius: 16,
+    borderWidth: 1,
     gap: 8,
   },
   leftSection: {
@@ -162,16 +162,16 @@ const styles = StyleSheet.create({
   navButton: {
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 10,
-    width: 40,
-    height: 40,
+    borderRadius: 12,
+    width: 48,
+    height: 48,
   },
   doneButton: {
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 10,
-    width: 40,
-    height: 40,
+    borderRadius: 12,
+    width: 48,
+    height: 48,
   },
   buttonDisabled: {
     opacity: 0.4,

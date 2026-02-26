@@ -116,6 +116,19 @@ export default function SignInScreen() {
               editable={!isLoading}
             />
 
+            <Pressable
+              onPress={() => router.push("/forgot-password")}
+              disabled={isLoading}
+              style={styles.forgotPassword}
+            >
+              <AppText
+                variant="caption"
+                style={{ color: theme.colors.primary, fontWeight: "600" }}
+              >
+                {t("auth.forgotPassword")}
+              </AppText>
+            </Pressable>
+
             {(formError || error) && (
               <AppText variant="caption" color="danger" style={styles.error}>
                 {formError || error}
@@ -144,6 +157,7 @@ export default function SignInScreen() {
               )}
             </Pressable>
 
+            {/* TODO: Re-enable sign-up link when registration is open again
             <View style={styles.toggleRow}>
               <AppText variant="caption" color="secondary">
                 {t("auth.dontHaveAccount")}
@@ -160,6 +174,7 @@ export default function SignInScreen() {
                 </AppText>
               </Pressable>
             </View>
+            */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -196,6 +211,11 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     marginBottom: 16,
+  },
+  forgotPassword: {
+    alignSelf: "flex-end",
+    marginBottom: 16,
+    marginTop: -8,
   },
   error: {
     marginBottom: 16,

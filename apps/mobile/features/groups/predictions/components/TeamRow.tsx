@@ -8,12 +8,13 @@ type TeamRowProps = {
   team: FixtureItem["homeTeam"] | FixtureItem["awayTeam"];
   teamName: string;
   isWinner: boolean;
+  isUpcoming?: boolean;
 };
 
 /**
  * Displays team logo and name in a row
  */
-function TeamRowInner({ team, teamName, isWinner }: TeamRowProps) {
+function TeamRowInner({ team, teamName, isWinner, isUpcoming }: TeamRowProps) {
   const { theme } = useTheme();
   return (
     <View style={styles.teamRow}>
@@ -23,8 +24,7 @@ function TeamRowInner({ team, teamName, isWinner }: TeamRowProps) {
           variant="body"
           style={[
             styles.teamName,
-            { color: theme.colors.textSecondary },
-            isWinner && { color: theme.colors.textPrimary },
+            { color: isUpcoming ? theme.colors.textPrimary : theme.colors.textSecondary },
           ]}
           numberOfLines={1}
         >

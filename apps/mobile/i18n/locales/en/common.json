@@ -79,7 +79,33 @@
     "loginFailed": "Login failed",
     "checkingUsername": "Checking availability...",
     "usernameAvailable": "Username is available",
-    "usernameTaken": "Username is already taken"
+    "usernameTaken": "Username is already taken",
+    "forgotPassword": "Forgot Password?"
+  },
+  "forgotPassword": {
+    "title": "Forgot Password",
+    "subtitle": "Enter your email and we'll send you a reset link",
+    "emailPlaceholder": "Email address",
+    "sendResetLink": "Send Reset Link",
+    "successTitle": "Check Your Email",
+    "successMessage": "If an account with that email exists, we've sent a password reset link. Check your inbox.",
+    "backToSignIn": "Back to Sign In"
+  },
+  "resetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your new password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "submit": "Reset Password",
+    "successTitle": "Password Reset",
+    "successMessage": "Your password has been reset successfully. You can now sign in with your new password.",
+    "goToSignIn": "Go to Sign In",
+    "invalidLink": "Invalid or Expired Link",
+    "invalidLinkMessage": "This reset link is invalid or has expired. Please request a new one.",
+    "requestNewLink": "Request New Link",
+    "passwordsDontMatch": "Passwords don't match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordHint": "Must be at least 8 characters"
   },
   "groups": {
     "title": "Groups",
@@ -141,6 +167,7 @@
     "filterEnded": "Ended",
     "filterPublic": "Public",
     "searchPlaceholder": "Search groups...",
+    "quickActions": "Quick Actions",
     "noGroupsInFilter": "No groups in this category",
     "mode": {
       "games": "Games",
@@ -279,6 +306,9 @@
     "deletingGroup": "Deleting group...",
     "publishingGroup": "Publishing group...",
     "predictionsProgress": "{{count}}/{{total}} predictions",
+    "ctaNeedsPrediction": "Needs Prediction",
+    "ctaUpNext": "Up Next",
+    "ctaLatestResult": "Latest Result",
     "ranking": "Ranking",
     "rankingPending": "Ranking will be calculated after the first game ends",
     "pts": "pts",
@@ -538,7 +568,8 @@
     "copied": "Copied!",
     "tapToCopy": "Tap to copy",
     "joinMessage": "Join my group on Cygobet!",
-    "inviteByUsername": "Invite by username"
+    "inviteByUsername": "Invite by username",
+    "searchDescription": "Search for friends by username to invite them"
   },
   "invites": {
     "invitations": "Invitations",
@@ -575,7 +606,10 @@
     "cancelInvite": "Cancel",
     "cancelInviteConfirm": "Cancel invite to {{username}}?",
     "inviteSent": "Invite sent",
-    "viewSentInvites": "View sent invites"
+    "viewSentInvites": "View sent invites",
+    "groupPreview": "Group Preview",
+    "gamesCount": "{{count}} games",
+    "membersOfMax": "{{count}}/{{max}} members"
   },
   "members": {
     "loadingMembers": "Loading members...",

@@ -10,6 +10,8 @@ export interface ChatNotification {
   senderName: string;
   senderImage: string | null;
   body: string;
+  /** "chat" (default) navigates to group chat, "invite" navigates to invites inbox. */
+  type?: "chat" | "invite";
 }
 
 /**

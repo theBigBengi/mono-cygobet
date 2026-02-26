@@ -13,6 +13,7 @@ interface UserSearchResultItemProps {
   user: ApiUserSearchItem;
   onInvite: () => void;
   isSending?: boolean;
+  invited?: boolean;
 }
 
 function getInitials(username: string): string {
@@ -24,6 +25,7 @@ export function UserSearchResultItem({
   user,
   onInvite,
   isSending,
+  invited,
 }: UserSearchResultItemProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -83,13 +85,22 @@ export function UserSearchResultItem({
       </View>
 
       {/* Invite button */}
-      <Button
-        label={t("invites.inviteButton")}
-        variant="primary"
-        onPress={onInvite}
-        disabled={isSending}
-        style={styles.button}
-      />
+      {invited ? (
+        <View style={[styles.sentBadge, { backgroundColor: theme.colors.success + "18" }]}>
+          <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
+          <Text style={[styles.sentText, { color: theme.colors.success }]}>
+            {t("invites.inviteSent")}
+          </Text>
+        </View>
+      ) : (
+        <Button
+          label={t("invites.inviteButton")}
+          variant="primary"
+          onPress={onInvite}
+          disabled={isSending}
+          style={styles.button}
+        />
+      )}
     </View>
   );
 }
@@ -144,5 +155,17 @@ const styles = StyleSheet.create({
   },
   button: {
     minWidth: 90,
+  },
+  sentBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  sentText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

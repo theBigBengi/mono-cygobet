@@ -13,6 +13,7 @@ interface InviteCardProps {
   invite: ApiInviteItem;
   onAccept: () => void;
   onDecline: () => void;
+  onPreview?: () => void;
   isResponding?: boolean;
 }
 
@@ -37,6 +38,7 @@ export function InviteCard({
   invite,
   onAccept,
   onDecline,
+  onPreview,
   isResponding,
 }: InviteCardProps) {
   const { t } = useTranslation("common");
@@ -44,6 +46,7 @@ export function InviteCard({
 
   const expiresText = formatExpires(invite.expiresAt, t);
   const isExpired = expiresText === t("invites.expired");
+  const preview = invite.groupPreview;
 
   return (
     <View style={styles.cardWrapper}>
@@ -89,6 +92,58 @@ export function InviteCard({
             </View>
           </View>
         </View>
+
+        {/* Inline stats row */}
+        {preview ? (
+          <View style={styles.statsRow}>
+            <View style={styles.statChip}>
+              <Ionicons
+                name="people-outline"
+                size={13}
+                color={theme.colors.textSecondary}
+              />
+              <AppText variant="caption" color="secondary" style={styles.statText}>
+                {t("invites.membersOfMax", {
+                  count: preview.memberCount,
+                  max: preview.maxMembers,
+                })}
+              </AppText>
+            </View>
+            <AppText variant="caption" color="secondary">
+              ·
+            </AppText>
+            <View style={styles.statChip}>
+              <Ionicons
+                name="football-outline"
+                size={13}
+                color={theme.colors.textSecondary}
+              />
+              <AppText variant="caption" color="secondary" style={styles.statText}>
+                {t("invites.gamesCount", { count: preview.totalFixtures })}
+              </AppText>
+            </View>
+            <View style={styles.statPills}>
+              <View
+                style={[
+                  styles.pill,
+                  { backgroundColor: theme.colors.primary + "18" },
+                ]}
+              >
+                <AppText
+                  variant="caption"
+                  style={[styles.pillText, { color: theme.colors.primary }]}
+                >
+                  {preview.status === "active" ? t("groups.active") : preview.status}
+                </AppText>
+              </View>
+              <Ionicons
+                name={preview.privacy === "private" ? "lock-closed" : "globe-outline"}
+                size={13}
+                color={theme.colors.textSecondary}
+              />
+            </View>
+          </View>
+        ) : null}
 
         {/* Divider */}
         <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
@@ -166,6 +221,22 @@ export function InviteCard({
             disabled={isResponding}
             style={styles.declineBtn}
           />
+          {onPreview ? (
+            <Pressable
+              onPress={onPreview}
+              style={[
+                styles.previewBtn,
+                { backgroundColor: theme.colors.surface },
+              ]}
+              hitSlop={4}
+            >
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={theme.colors.primary}
+              />
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </View>
@@ -212,6 +283,36 @@ const styles = StyleSheet.create({
   },
   expiresText: {
     fontSize: 11,
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 10,
+  },
+  statChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  statText: {
+    fontSize: 12,
+  },
+  statPills: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginLeft: "auto",
+  },
+  pill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  pillText: {
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "capitalize",
   },
   divider: {
     height: 1,
@@ -263,6 +364,7 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   acceptBtn: {
@@ -270,5 +372,12 @@ const styles = StyleSheet.create({
   },
   declineBtn: {
     flex: 1,
+  },
+  previewBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

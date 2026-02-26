@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, Pressable, Dimensions, type ListRenderItemInfo } from "react-native";
+import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, Pressable, Dimensions, Platform, type ListRenderItemInfo } from "react-native";
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedStyle, runOnJS, clamp, withTiming, withSpring, interpolate, Easing } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -499,9 +499,13 @@ export function GroupGamesScreen({
   const handleScrollToNext = useCallback(() => {
     if (nextToPredictId) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Reveal header if it's hidden (scrolling up to earlier card)
+      if (headerOffset.value < 0) {
+        headerOffset.value = withTiming(0, { duration: 200 });
+      }
       scrollToMatchCard(nextToPredictId);
     }
-  }, [nextToPredictId, scrollToMatchCard]);
+  }, [nextToPredictId, scrollToMatchCard, headerOffset]);
 
   const keyboardHeight = useKeyboardHeight();
 
@@ -899,7 +903,7 @@ export function GroupGamesScreen({
             style={[
               styles.scrollToNextBtn,
               { backgroundColor: theme.colors.primary },
-              { bottom: keyboardHeight > 0 ? keyboardHeight + 40 : insets.bottom + 8 },
+              { bottom: keyboardHeight > 0 ? keyboardHeight + (Platform.OS === "android" ? 60 : 10) + 68 : insets.bottom + 8 },
             ]}
             onPress={handleScrollToNext}
           >

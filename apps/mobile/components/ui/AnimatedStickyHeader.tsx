@@ -16,10 +16,12 @@ import {
   Pressable,
   Text,
 } from "react-native";
+import { Platform } from "react-native";
 import Animated, {
   SharedValue,
   useAnimatedStyle,
   interpolate,
+  interpolateColor,
   Extrapolation,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
@@ -106,8 +108,33 @@ export function AnimatedStickyHeader({
     return { opacity };
   });
 
+  // Animated shadow that appears with the header background
+  // Android elevation requires backgroundColor on the view itself to render shadows.
+  const shadowStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      scrollY.value,
+      [threshold - 40, threshold],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+    if (Platform.OS === "android") {
+      const bg = interpolateColor(
+        opacity,
+        [0, 0.01, 1],
+        ["transparent", theme.colors.background, theme.colors.background]
+      );
+      return {
+        elevation: opacity * 4,
+        backgroundColor: bg,
+      };
+    }
+    return {
+      shadowOpacity: opacity * 0.1,
+    };
+  });
+
   return (
-    <View style={[styles.container, { height: totalHeight }]}>
+    <Animated.View style={[styles.container, { height: totalHeight }, shadowStyle]}>
       {/* Background layer - fades in on scroll */}
       <Animated.View
         style={[
@@ -139,7 +166,7 @@ export function AnimatedStickyHeader({
               <View
                 style={[
                   styles.iconCircle,
-                  !transparentIcons && { backgroundColor: theme.colors.surface },
+                  !transparentIcons && styles.iconCircleBg,
                 ]}
               >
                 <Ionicons
@@ -172,7 +199,7 @@ export function AnimatedStickyHeader({
                 <View
                   style={[
                     styles.iconCircle,
-                    !transparentIcons && { backgroundColor: theme.colors.surface },
+                    !transparentIcons && styles.iconCircleBg,
                   ]}
                 >
                   <Ionicons
@@ -185,7 +212,7 @@ export function AnimatedStickyHeader({
             ))}
           </View>
         </View>
-      </View>
+      </Animated.View>
   );
 }
 
@@ -196,6 +223,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 50,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
   backgroundLayer: {
     ...StyleSheet.absoluteFillObject,
@@ -214,9 +244,11 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 36,
     height: 36,
-    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
+  },
+  iconCircleBg: {
+    // intentionally empty — no background circle
   },
   titleContainer: {
     flex: 1,

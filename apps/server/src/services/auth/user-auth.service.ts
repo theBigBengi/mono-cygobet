@@ -24,6 +24,13 @@ import {
   ensureUserProfile,
   isOnboardingRequired,
 } from "../../auth/user-onboarding";
+import {
+  createPasswordResetToken,
+  resolvePasswordResetToken,
+  markPasswordResetTokenUsed,
+  invalidateAllPasswordResetTokens,
+} from "../../auth/password-reset-token";
+import { sendPasswordResetEmail } from "../email/email.service";
 
 export class UserAuthService {
   private googleClient: OAuth2Client | null = null;
@@ -518,5 +525,57 @@ export class UserAuthService {
     });
 
     log.info({ userId }, "user password changed");
+  }
+
+  /**
+   * Forgot password: generate reset token and send email.
+   * Silently returns if user not found or has no password (prevents enumeration).
+   */
+  async forgotPassword(email: string): Promise<void> {
+    const normalizedEmail = email?.trim().toLowerCase();
+    if (!normalizedEmail) return;
+
+    const user = await prisma.users.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true, password: true },
+    });
+
+    // Silently return if user not found or OAuth-only (no password)
+    if (!user || !user.password) return;
+
+    const { rawToken } = await createPasswordResetToken(prisma, user.id);
+
+    const baseUrl =
+      process.env.BASE_URL || "https://mono-cygobet.onrender.com";
+    const resetLink = `${baseUrl}/reset-password?token=${rawToken}`;
+
+    await sendPasswordResetEmail(normalizedEmail, resetLink);
+
+    log.info({ userId: user.id }, "password reset email requested");
+  }
+
+  /**
+   * Reset password using a valid reset token.
+   * Hashes new password, marks token used, invalidates all tokens, revokes all sessions.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const resolved = await resolvePasswordResetToken(prisma, token);
+    if (!resolved) {
+      throw new BadRequestError("Invalid or expired reset link");
+    }
+
+    const hashedPassword = await this.hashPassword(newPassword);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.users.update({
+        where: { id: resolved.userId },
+        data: { password: hashedPassword },
+      });
+      await markPasswordResetTokenUsed(tx, resolved.id);
+      await invalidateAllPasswordResetTokens(tx, resolved.userId);
+      await revokeAllUserRefreshSessionsByUserId(tx, resolved.userId);
+    });
+
+    log.info({ userId: resolved.userId }, "password reset completed");
   }
 }

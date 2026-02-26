@@ -20,6 +20,7 @@ import { GroupTimelineBar } from "../components/GroupTimelineBar";
 import { LobbyPredictionsCTA } from "../components/LobbyPredictionsCTA";
 import { LobbyQuickActions } from "../components/LobbyQuickActions";
 import { LobbyLeaderboard } from "../components/LobbyLeaderboard";
+import { LobbyActivityBanner } from "../components/LobbyActivityBanner";
 import { useGroupDuration } from "../hooks/useGroupDuration";
 
 interface GroupLobbyActiveScreenProps {
@@ -67,7 +68,7 @@ export function GroupLobbyActiveScreen({
     fixtures.filter((f) => f.prediction != null && f.prediction !== undefined)
       .length;
 
-  const fixturesLoaded = fixtures.length > 0 || totalFixtures === 0;
+  const fixturesLoaded = fixtures.length > 0 || group.totalFixtures === 0;
   const ranking = rankingData?.data ?? [];
 
   // Timeline progress calculation
@@ -120,12 +121,6 @@ export function GroupLobbyActiveScreen({
         badge: chatPreview?.unreadCount,
         onPress: handleViewChat,
       },
-      {
-        icon: "activity" as const,
-        label: t("lobby.activity"),
-        badge: unreadActivityCount || undefined,
-        onPress: handleViewActivity,
-      },
       ...(group.inviteAccess !== "admin_only" || isCreator
         ? [
             {
@@ -144,11 +139,9 @@ export function GroupLobbyActiveScreen({
     [
       t,
       chatPreview?.unreadCount,
-      unreadActivityCount,
       isCreator,
       group.inviteAccess,
       handleViewChat,
-      handleViewActivity,
       handleViewInvite,
       handleViewPredictionsOverview,
     ]
@@ -164,7 +157,7 @@ export function GroupLobbyActiveScreen({
         extendIntoStatusBar
       >
         {/* Spacer: pushes content below sticky header (status bar + some padding) */}
-        <View style={{ height: insets.top + 24 }} />
+        <View style={{ height: insets.top + 8 }} />
 
         <GroupLobbyHeader
           name={group.name}
@@ -199,9 +192,6 @@ export function GroupLobbyActiveScreen({
           onPress={handleViewGames}
           fixtures={fixtures}
           isLoading={!fixturesLoaded}
-          winnerName={ranking[0]?.username}
-          winnerPoints={ranking[0]?.totalPoints}
-          onWinnerPress={handleViewRanking}
         />
 
         <LobbyLeaderboard
@@ -210,6 +200,12 @@ export function GroupLobbyActiveScreen({
           isLoading={isRankingLoading}
           onPress={handleViewRanking}
           memberCount={group.memberCount}
+        />
+
+        <LobbyActivityBanner
+          groupId={group.id}
+          unreadCount={unreadActivityCount}
+          onPress={handleViewActivity}
         />
       </Screen>
     </View>
@@ -221,6 +217,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   screenContent: {
-    paddingBottom: 16,
+    // paddingBottom handled by Screen component (includes insets.bottom + tab bar)
   },
 });

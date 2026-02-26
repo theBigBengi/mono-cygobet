@@ -622,6 +622,15 @@ export type ApiInviteItem = {
   message: string | null;
   createdAt: string;
   expiresAt: string;
+  groupPreview?: {
+    description: string | null;
+    status: string;
+    privacy: string;
+    memberCount: number;
+    maxMembers: number;
+    totalFixtures: number;
+    predictionMode: string | null;
+  };
 };
 
 /**

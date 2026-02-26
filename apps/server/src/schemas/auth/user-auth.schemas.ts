@@ -167,3 +167,42 @@ export const userOnboardingCompleteResponseSchema = {
     success: { type: "boolean" },
   },
 } as const;
+
+export const forgotPasswordBodySchema = {
+  type: "object",
+  required: ["email"],
+  additionalProperties: false,
+  properties: {
+    email: { type: "string", format: "email" },
+  },
+} as const;
+
+export const forgotPasswordResponseSchema = {
+  type: "object",
+  required: ["success", "message"],
+  additionalProperties: false,
+  properties: {
+    success: { type: "boolean" },
+    message: { type: "string" },
+  },
+} as const;
+
+export const resetPasswordBodySchema = {
+  type: "object",
+  required: ["token", "newPassword"],
+  additionalProperties: false,
+  properties: {
+    token: { type: "string", minLength: 1 },
+    newPassword: { type: "string", minLength: 8, maxLength: 200 },
+  },
+} as const;
+
+export const resetPasswordResponseSchema = {
+  type: "object",
+  required: ["success", "message"],
+  additionalProperties: false,
+  properties: {
+    success: { type: "boolean" },
+    message: { type: "string" },
+  },
+} as const;
