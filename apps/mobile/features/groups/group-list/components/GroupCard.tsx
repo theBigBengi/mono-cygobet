@@ -680,18 +680,6 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
                   userRank={userRank}
                   textSecondary={theme.colors.textSecondary}
                 />
-                <PredictionsHudCell
-                  totalFixtures={totalFixtures}
-                  predictionsCount={predictionsCount}
-                  urgencyColor={urgencyColor}
-                  textSecondary={theme.colors.textSecondary}
-                />
-                <GamesHudCell
-                  liveCount={liveCount}
-                  totalFixtures={totalFixtures}
-                  completedGames={completedGames}
-                  textSecondary={theme.colors.textSecondary}
-                />
                 <ActivityHudCell
                   unreadActivityCount={unreadActivityCount}
                   primaryColor={theme.colors.primary}
