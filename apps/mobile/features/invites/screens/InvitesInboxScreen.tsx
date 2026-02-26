@@ -183,7 +183,7 @@ export function InvitesInboxScreen() {
       />
 
       {/* Group preview bottom sheet */}
-      <InfoSheet sheetRef={sheetRef} snapPoints={["55%"]}>
+      <InfoSheet sheetRef={sheetRef} enableDynamicSizing>
         {selectedInvite && preview ? (
           <View style={styles.sheetContent}>
             {/* Sheet header */}

@@ -207,6 +207,7 @@ export function formatFixtureFromDb(
       ? {
           id: fixture.homeTeam.id,
           name: fixture.homeTeam.name,
+          shortCode: fixture.homeTeam.shortCode ?? null,
           imagePath: fixture.homeTeam.imagePath ?? null,
           firstKitColor: fixture.homeTeam.firstKitColor ?? null,
           secondKitColor: fixture.homeTeam.secondKitColor ?? null,
@@ -217,6 +218,7 @@ export function formatFixtureFromDb(
       ? {
           id: fixture.awayTeam.id,
           name: fixture.awayTeam.name,
+          shortCode: fixture.awayTeam.shortCode ?? null,
           imagePath: fixture.awayTeam.imagePath ?? null,
           firstKitColor: fixture.awayTeam.firstKitColor ?? null,
           secondKitColor: fixture.awayTeam.secondKitColor ?? null,

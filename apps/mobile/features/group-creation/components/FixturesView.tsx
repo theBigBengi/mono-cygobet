@@ -155,8 +155,11 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
   );
 
   const mergedParams = useMemo(() => {
-    const start = new Date(selectedDate);
-    start.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const isToday = selectedDate.toDateString() === now.toDateString();
+    // For today, start from now so already-started games are excluded
+    const start = isToday ? now : new Date(selectedDate);
+    if (!isToday) start.setHours(0, 0, 0, 0);
     const end = new Date(selectedDate);
     end.setHours(23, 59, 59, 999);
     return {
@@ -168,7 +171,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
     };
   }, [queryParams, filters.queryParams, selectedDate]);
 
-  const { data, isLoading: fixturesLoading, error, refetch } =
+  const { data, isLoading: fixturesLoading, isFetching: fixturesFetching, error, refetch } =
     useUpcomingFixturesQuery(mergedParams);
 
   // Fetch user's league order preferences
@@ -177,6 +180,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
 
   // Wait for both fixtures and preferences to avoid list reorder jump
   const isLoading = fixturesLoading || prefsLoading;
+  const isFetching = fixturesFetching && !isLoading;
 
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = useCallback(async () => {
@@ -202,7 +206,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         contentContainerStyle={[
           styles.scrollContent,
           { paddingBottom: totalTabBarSpace + 48 + theme.spacing.lg },
-          (isLoading || leagueGroups.length === 0) && styles.scrollContentLoading,
+          (isLoading || isFetching || leagueGroups.length === 0) && styles.scrollContentLoading,
         ]}
         stickyHeaderIndices={[1]}
         onScroll={handleScroll}
@@ -244,7 +248,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           </AppText>
         )}
 
-        {!isLoading && !error && leagueGroups.length === 0 && (
+        {!isLoading && !isFetching && !error && leagueGroups.length === 0 && (
           <View style={styles.emptyContainer}>
             <AppText variant="body" color="secondary" style={styles.emptyText}>
               {t("fixtures.noGamesForDate")}
@@ -252,7 +256,13 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           </View>
         )}
 
-        {!isLoading && !error && leagueGroups.length > 0 && (
+        {isFetching && (
+          <View style={styles.fetchingContainer}>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          </View>
+        )}
+
+        {!isLoading && !isFetching && !error && leagueGroups.length > 0 && (
           <>
             {leagueGroups.map((group) => (
               <View key={group.key} style={styles.leagueSection}>
@@ -303,7 +313,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
       {/* Filter FAB */}
       <Pressable
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           filterSheetRef.current?.present();
         }}
         style={({ pressed }) => [
@@ -311,11 +321,15 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           {
             backgroundColor: theme.colors.surface,
             borderColor: theme.colors.border,
+            borderBottomWidth: pressed ? 1 : 3,
             borderBottomColor: pressed
               ? theme.colors.border
-              : theme.colors.textSecondary + "40",
-            shadowOpacity: pressed ? 0 : 0.15,
-            transform: [{ scale: pressed ? 0.92 : 1 }],
+              : "rgba(0,0,0,0.15)",
+            shadowOffset: { width: 0, height: pressed ? 1 : 3 },
+            shadowOpacity: pressed ? 0.08 : 0.15,
+            shadowRadius: pressed ? 2 : 4,
+            elevation: pressed ? 2 : 4,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
             bottom: totalTabBarSpace + theme.spacing.md,
           },
         ]}
@@ -350,6 +364,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fetchingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -409,6 +428,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
+    borderBottomWidth: Platform.OS === "android" ? StyleSheet.hairlineWidth : 0,
+    borderBottomColor: "rgba(0,0,0,0.12)",
   },
   filterFab: {
     position: "absolute",
@@ -417,12 +438,8 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 14,
     borderWidth: 1,
-    borderBottomWidth: 3,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-    elevation: 6,
   },
 });

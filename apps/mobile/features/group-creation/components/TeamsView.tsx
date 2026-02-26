@@ -9,6 +9,7 @@ import {
   StyleSheet,
   TextInput,
   Pressable,
+  Platform,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from "react-native";
@@ -19,7 +20,7 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { TeamListItem } from "./TeamListItem";
 import { useDebounce } from "@/hooks/useDebounce";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 
 interface TeamsViewProps {
   tabs?: React.ReactNode;
@@ -136,16 +137,14 @@ export function TeamsView({ tabs }: TeamsViewProps) {
             style={[
               styles.searchInputContainer,
               {
-                backgroundColor: theme.colors.textSecondary + "12",
-                borderColor: searchFocused
-                  ? theme.colors.primary
-                  : theme.colors.border,
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
               },
             ]}
           >
-            <MaterialIcons
+            <Ionicons
               name="search"
-              size={18}
+              size={20}
               color={theme.colors.textSecondary}
             />
             <TextInput
@@ -198,15 +197,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 40,
-    gap: 8,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 16,
     padding: 0,
   },
   clearButton: {
@@ -235,5 +233,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
+    borderBottomWidth: Platform.OS === "android" ? StyleSheet.hairlineWidth : 0,
+    borderBottomColor: "rgba(0,0,0,0.12)",
   },
 });

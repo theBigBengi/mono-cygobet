@@ -6,6 +6,7 @@ import {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/lib/theme";
 
 interface InfoSheetProps {
@@ -22,6 +23,7 @@ export function InfoSheet({
   children,
 }: InfoSheetProps) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const snapPoints = useMemo(
     () => (enableDynamicSizing ? undefined : (customSnapPoints ?? ["50%"])),
     [customSnapPoints, enableDynamicSizing]
@@ -63,7 +65,12 @@ export function InfoSheet({
       backgroundStyle={backgroundStyle}
       handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
     >
-      <BottomSheetScrollView contentContainerStyle={styles.content}>
+      <BottomSheetScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(insets.bottom, 16) },
+        ]}
+      >
         {children}
       </BottomSheetScrollView>
     </BottomSheetModal>
@@ -73,6 +80,5 @@ export function InfoSheet({
 const styles = StyleSheet.create({
   content: {
     padding: 20,
-    paddingBottom: 40,
   },
 });

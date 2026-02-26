@@ -33,12 +33,12 @@ function maybeLeague(
 function maybeTeam(
   include: boolean,
   team:
-    | { id: number; name: string; imagePath: string | null }
+    | { id: number; name: string; shortCode: string | null; imagePath: string | null }
     | null
     | undefined
 ): ApiUpcomingFixtureItem["homeTeam"] | undefined {
   if (!include || !team) return undefined;
-  return { id: team.id, name: team.name, imagePath: team.imagePath ?? null };
+  return { id: team.id, name: team.name, shortCode: team.shortCode ?? null, imagePath: team.imagePath ?? null };
 }
 
 export type GetUpcomingFixturesParams = {
@@ -131,10 +131,10 @@ export async function getUpcomingFixtures(
         },
       },
       homeTeam: includeTeams
-        ? { select: { id: true, name: true, imagePath: true } }
+        ? { select: { id: true, name: true, shortCode: true, imagePath: true } }
         : undefined,
       awayTeam: includeTeams
-        ? { select: { id: true, name: true, imagePath: true } }
+        ? { select: { id: true, name: true, shortCode: true, imagePath: true } }
         : undefined,
       odds: includeOdds
         ? {

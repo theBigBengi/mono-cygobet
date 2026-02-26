@@ -82,6 +82,7 @@ export type ApiUpcomingFixturesResponse = {
     homeTeam?: {
       id: number;
       name: string;
+      shortCode: string | null;
       imagePath: string | null;
       firstKitColor?: string | null;
       secondKitColor?: string | null;
@@ -90,6 +91,7 @@ export type ApiUpcomingFixturesResponse = {
     awayTeam?: {
       id: number;
       name: string;
+      shortCode: string | null;
       imagePath: string | null;
       firstKitColor?: string | null;
       secondKitColor?: string | null;

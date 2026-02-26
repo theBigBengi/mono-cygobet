@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -29,6 +30,7 @@ export function PublishGroupButton({
   isPending,
   disabled,
 }: PublishGroupButtonProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -45,7 +47,7 @@ export function PublishGroupButton({
       pointerEvents="box-none"
     >
       <Button
-        label={isPending ? "Publishing..." : "Publish Group"}
+        label={isPending ? t("lobby.publishing") : t("lobby.publishGroup")}
         onPress={onPress}
         disabled={disabled}
         style={styles.floatingButton}

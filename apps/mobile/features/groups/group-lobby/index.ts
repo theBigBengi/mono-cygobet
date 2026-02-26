@@ -29,6 +29,7 @@ export { GroupLobbyPrivacySection } from "./components/GroupLobbyPrivacySection"
 export { GroupLobbyInviteAccessSection } from "./components/GroupLobbyInviteAccessSection";
 export { GroupLobbyMetaSection } from "./components/GroupLobbyMetaSection";
 export { PublishGroupButton } from "./components/PublishGroupButton";
+export { DraftLobbySkeleton } from "./components/DraftLobbySkeleton";
 export { DeleteGroupButton } from "./components/DeleteGroupButton";
 export { LobbyWithHeader } from "./components/LobbyWithHeader";
 export { GroupInfoSheet } from "./components/GroupInfoSheet";

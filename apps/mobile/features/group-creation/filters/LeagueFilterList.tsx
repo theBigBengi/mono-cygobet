@@ -8,11 +8,11 @@ import {
   StyleSheet,
   TextInput,
   Pressable,
-  FlatList,
   ListRenderItemInfo,
 } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
-import { AppText, Card, TeamLogo } from "@/components/ui";
+import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
+import { Ionicons } from "@expo/vector-icons";
+import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useLeaguesQuery } from "@/domains/leagues/leagues.hooks";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -21,6 +21,7 @@ import type { ApiLeagueItem } from "@repo/types";
 interface LeagueFilterListProps {
   selectedLeagueIds: number[];
   onSelectionChange: (ids: number[]) => void;
+  listBottomPadding?: number;
 }
 
 function orderLeaguesWithSelectedFirst(
@@ -43,6 +44,7 @@ function orderLeaguesWithSelectedFirst(
 export function LeagueFilterList({
   selectedLeagueIds,
   onSelectionChange,
+  listBottomPadding = 80,
 }: LeagueFilterListProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -80,19 +82,44 @@ export function LeagueFilterList({
         onPress={() => toggleLeague(item)}
         style={({ pressed }) => [
           styles.row,
-          { opacity: pressed ? 0.8 : 1 },
+          {
+            backgroundColor: isSelected
+              ? theme.colors.primary + "08"
+              : theme.colors.surface,
+            borderColor: isSelected
+              ? theme.colors.primary + "40"
+              : theme.colors.border,
+            borderBottomColor: isSelected
+              ? theme.colors.primary + "40"
+              : theme.colors.textSecondary + "30",
+            shadowColor: "#000",
+            shadowOpacity: pressed ? 0 : isSelected ? 0.15 : 0.08,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+          },
         ]}
       >
-        <TeamLogo
-          imagePath={item.imagePath}
-          teamName={item.name}
-          size={24}
-        />
-        <AppText variant="body" style={styles.name} numberOfLines={1}>
-          {item.name}
-        </AppText>
-        <MaterialIcons
-          name={isSelected ? "check-box" : "check-box-outline-blank"}
+        <View style={styles.logoContainer}>
+          <TeamLogo
+            imagePath={item.imagePath}
+            teamName={item.name}
+            size={32}
+          />
+        </View>
+        <View style={styles.nameContainer}>
+          <AppText variant="body" style={[
+            styles.name,
+            { color: isSelected ? theme.colors.primary : theme.colors.textPrimary },
+          ]} numberOfLines={1}>
+            {item.name}
+          </AppText>
+          {item.country?.name && (
+            <AppText variant="caption" color="secondary" numberOfLines={1}>
+              {item.country.name}
+            </AppText>
+          )}
+        </View>
+        <Ionicons
+          name={isSelected ? "checkmark-circle" : "ellipse-outline"}
           size={24}
           color={isSelected ? theme.colors.primary : theme.colors.textSecondary}
         />
@@ -102,43 +129,44 @@ export function LeagueFilterList({
 
   return (
     <View style={styles.container}>
-      <Card style={styles.searchContainer}>
-        <View
-          style={[
-            styles.searchInputContainer,
-            { borderColor: theme.colors.border },
-          ]}
-        >
-          <MaterialIcons
-            name="search"
-            size={20}
-            color={theme.colors.textSecondary}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={[styles.searchInput, { color: theme.colors.textPrimary }]}
-            placeholder={t("groupCreation.searchLeaguesPlaceholder")}
-            placeholderTextColor={theme.colors.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {searchQuery.length > 0 && (
-            <Pressable
-              onPress={() => setSearchQuery("")}
-              style={styles.clearButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialIcons
-                name="close"
-                size={20}
-                color={theme.colors.textSecondary}
-              />
-            </Pressable>
-          )}
-        </View>
-      </Card>
+      {/* Search Input */}
+      <View
+        style={[
+          styles.searchInputContainer,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+          },
+        ]}
+      >
+        <Ionicons
+          name="search"
+          size={20}
+          color={theme.colors.textSecondary}
+        />
+        <TextInput
+          style={[styles.searchInput, { color: theme.colors.textPrimary }]}
+          placeholder={t("groupCreation.searchLeaguesPlaceholder")}
+          placeholderTextColor={theme.colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {searchQuery.length > 0 && (
+          <Pressable
+            onPress={() => setSearchQuery("")}
+            style={styles.clearButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons
+              name="close"
+              size={18}
+              color={theme.colors.textSecondary}
+            />
+          </Pressable>
+        )}
+      </View>
 
       {isLoading && (
         <AppText variant="body" color="secondary" style={styles.message}>
@@ -158,12 +186,12 @@ export function LeagueFilterList({
         </AppText>
       )}
       {!isLoading && !error && orderedLeagues.length > 0 && (
-        <FlatList
+        <BottomSheetFlatList
           data={orderedLeagues}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
           style={styles.list}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: listBottomPadding }]}
           showsVerticalScrollIndicator
         />
       )}
@@ -175,19 +203,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  searchContainer: {
-    marginBottom: 8,
-  },
   searchInputContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  searchIcon: {
-    marginEnd: 8,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+    marginBottom: 12,
   },
   searchInput: {
     flex: 1,
@@ -207,16 +231,34 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 100,
+    gap: 6,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
     gap: 12,
   },
-  name: {
+  logoContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.03)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  nameContainer: {
     flex: 1,
+  },
+  name: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

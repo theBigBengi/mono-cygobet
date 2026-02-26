@@ -34,6 +34,7 @@ export const FIXTURE_SELECT_BASE = {
     select: {
       id: true,
       name: true,
+      shortCode: true,
       imagePath: true,
       firstKitColor: true,
       secondKitColor: true,
@@ -44,6 +45,7 @@ export const FIXTURE_SELECT_BASE = {
     select: {
       id: true,
       name: true,
+      shortCode: true,
       imagePath: true,
       firstKitColor: true,
       secondKitColor: true,

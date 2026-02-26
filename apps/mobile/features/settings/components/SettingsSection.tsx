@@ -1,7 +1,7 @@
 // features/settings/components/SettingsSection.tsx
 
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -11,6 +11,10 @@ interface SettingsSectionProps {
   children: React.ReactNode;
   collapsible?: boolean;
   defaultExpanded?: boolean;
+  /** Optional override style for the card wrapper */
+  cardStyle?: ViewStyle;
+  /** Optional override style for the outer container */
+  containerStyle?: ViewStyle;
 }
 
 export function SettingsSection({
@@ -18,6 +22,8 @@ export function SettingsSection({
   children,
   collapsible = false,
   defaultExpanded = false,
+  cardStyle,
+  containerStyle,
 }: SettingsSectionProps) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -33,7 +39,7 @@ export function SettingsSection({
   ) : null;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {title &&
         (collapsible ? (
           <Pressable
@@ -60,6 +66,7 @@ export function SettingsSection({
               borderColor: theme.colors.border,
               borderRadius: theme.radius.md,
             },
+            cardStyle,
           ]}
         >
           {children}

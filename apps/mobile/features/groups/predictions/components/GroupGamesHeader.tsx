@@ -81,6 +81,12 @@ export function GroupGamesHeader({
 
       {/* Buttons row */}
       <View style={styles.content}>
+        {/* Absolutely centered title — independent of flex items */}
+        {!isExpanded && title && (
+          <View style={styles.titleOverlay} pointerEvents="none">
+            <AppText variant="body" style={styles.title} numberOfLines={1}>{title}</AppText>
+          </View>
+        )}
         {!isExpanded ? (
           <>
             <Pressable onPress={onBack} style={styles.hudButton}>
@@ -91,12 +97,8 @@ export function GroupGamesHeader({
             {!backOnly && children && (
               <View style={styles.childrenArea}>{children}</View>
             )}
-            {(!children || title) && (
-              <View style={styles.spacer}>
-                {title && (
-                  <AppText variant="body" style={styles.title} numberOfLines={1}>{title}</AppText>
-                )}
-              </View>
+            {(backOnly || !children) && (
+              <View style={styles.spacer} />
             )}
             {hasExpand && (
               <Pressable onPress={handleToggle} style={styles.hudButton}>
@@ -155,6 +157,15 @@ const styles = StyleSheet.create({
   },
   childrenArea: {
     flex: 1,
+  },
+  titleOverlay: {
+    position: "absolute",
+    left: 60,
+    right: 60,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: 16,

@@ -28,37 +28,33 @@ export function LeagueDateGroupSection({
 
   return (
     <View style={styles.section}>
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { borderBottomColor: theme.colors.border },
+        ]}
+      >
         {leagueImagePath && (
-          <View style={styles.logoContainer}>
-            <TeamLogo
-              imagePath={leagueImagePath}
-              teamName={leagueName}
-              size={20}
-            />
-          </View>
+          <TeamLogo
+            imagePath={leagueImagePath}
+            teamName={leagueName}
+            size={20}
+          />
         )}
-        <View style={styles.headerLeft}>
+        <AppText
+          variant="caption"
+          style={[styles.leagueName, { color: theme.colors.textSecondary }]}
+          numberOfLines={1}
+        >
+          {leagueName}
+        </AppText>
+        {dateKey && (
           <AppText
             variant="caption"
-            style={[styles.leagueName, { color: theme.colors.textPrimary }]}
+            color="secondary"
+            style={styles.dateText}
             numberOfLines={1}
           >
-            {leagueName}
-          </AppText>
-          {countryName && (
-            <AppText
-              variant="caption"
-              color="secondary"
-              style={styles.countryName}
-              numberOfLines={1}
-            >
-              {countryName}
-            </AppText>
-          )}
-        </View>
-        {dateKey && (
-          <AppText variant="caption" color="secondary" style={styles.headerText}>
             {formatDateHeader(dateKey)}
           </AppText>
         )}
@@ -75,32 +71,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  logoContainer: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    backgroundColor: "rgba(0,0,0,0.03)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerLeft: {
-    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   leagueName: {
-    fontSize: 13,
-    fontWeight: "600",
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  countryName: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-  headerText: {
+  dateText: {
     fontSize: 11,
     fontWeight: "500",
-    opacity: 0.7,
   },
 });

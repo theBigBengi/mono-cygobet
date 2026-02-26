@@ -203,6 +203,7 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
+    marginTop: 8,
     marginBottom: 12,
   },
   wrapper: {

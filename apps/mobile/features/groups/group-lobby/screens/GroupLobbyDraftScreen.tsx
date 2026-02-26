@@ -30,6 +30,7 @@ function clampScore(value: number): number {
 
 import { PublishGroupButton } from "../components/PublishGroupButton";
 import { DraftScoringContent } from "../components/DraftScoringContent";
+import { DraftLobbySkeleton } from "../components/DraftLobbySkeleton";
 import { useGroupLobbyState } from "../hooks/useGroupLobbyState";
 import { useGroupLobbyActions } from "../hooks/useGroupLobbyActions";
 import { useGroupDuration } from "../hooks/useGroupDuration";
@@ -155,6 +156,7 @@ export function GroupLobbyDraftScreen({
   const publishGroupMutation = usePublishGroupMutation(group.id);
 
   const fixtures: FixtureItem[] = group.fixtures ?? [];
+  const isFirstLoad = isLoading && fixtures.length === 0;
   const duration = useGroupDuration(fixtures);
 
   const { handlePublish } = useGroupLobbyActions(
@@ -234,6 +236,29 @@ export function GroupLobbyDraftScreen({
           : t("lobby.progressOneStepGames")
         : t("lobby.progressNoSteps");
 
+  const elevatedCard = {
+    borderRadius: theme.radius.lg,
+    borderBottomWidth: 3,
+    borderBottomColor: theme.colors.textSecondary + "40",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+  };
+
+  const sectionContainer = { marginBottom: 12 };
+
+  if (isFirstLoad) {
+    return (
+      <View style={styles.container}>
+        <Screen scroll contentContainerStyle={styles.screenContent}>
+          <DraftLobbySkeleton />
+        </Screen>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Screen
@@ -241,16 +266,24 @@ export function GroupLobbyDraftScreen({
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
       >
-        {/* Banner — separate from name/description card */}
+        {/* Banner — elevated card style */}
         <View
-          style={[styles.bannerRow, { borderBottomColor: theme.colors.border }]}
+          style={[
+            styles.bannerRow,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+              borderBottomColor: theme.colors.textSecondary + "40",
+              borderRadius: theme.radius.lg,
+            },
+          ]}
         >
           <View
             style={[
               styles.badge,
               {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.primary + "15",
+                borderColor: theme.colors.primary + "30",
               },
             ]}
           >
@@ -267,8 +300,8 @@ export function GroupLobbyDraftScreen({
           </AppText>
         </View>
 
-        {/* Name + description in a card, visually separate from banner */}
-        <SettingsSection title="">
+        {/* Name + description in a card */}
+        <SettingsSection title="" cardStyle={elevatedCard} containerStyle={sectionContainer}>
           <View
             style={[styles.nameRow, { borderBottomColor: theme.colors.border }]}
           >
@@ -323,7 +356,7 @@ export function GroupLobbyDraftScreen({
         </SettingsSection>
 
         {/* GAMES */}
-        <SettingsSection title={t("lobby.games")}>
+        <SettingsSection title={t("lobby.games")} cardStyle={elevatedCard} containerStyle={sectionContainer}>
           <SettingsRow
             type="value"
             icon="time-outline"
@@ -348,7 +381,7 @@ export function GroupLobbyDraftScreen({
 
         {/* PREDICTION RULES — creator only */}
         {isCreator && (
-          <SettingsSection title={t("lobby.predictionRules")}>
+          <SettingsSection title={t("lobby.predictionRules")} cardStyle={elevatedCard} containerStyle={sectionContainer}>
             <SettingsRowBottomSheet.Row
               sheetRef={predictionSheetRef}
               icon="dice-outline"
@@ -377,6 +410,8 @@ export function GroupLobbyDraftScreen({
             title={t("lobby.advanced")}
             collapsible
             defaultExpanded={false}
+            cardStyle={elevatedCard}
+            containerStyle={sectionContainer}
           >
             <SettingsRowBottomSheet.Row
               sheetRef={koSheetRef}
@@ -489,7 +524,7 @@ export function GroupLobbyDraftScreen({
         )}
 
         {/* INFO */}
-        <SettingsSection title={t("lobby.info")}>
+        <SettingsSection title={t("lobby.info")} cardStyle={elevatedCard} containerStyle={sectionContainer}>
           <SettingsRow
             type="value"
             iconComponent={
@@ -589,8 +624,14 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    marginBottom: 24,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
   },
   badge: {
     paddingHorizontal: 8,
