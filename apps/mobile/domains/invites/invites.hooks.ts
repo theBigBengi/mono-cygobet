@@ -153,6 +153,8 @@ export function useSentInvitesQuery(groupId: number) {
     queryKey: invitesKeys.sent(groupId),
     queryFn: () => getSentInvites(groupId),
     enabled,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
     meta: { scope: "user" },
   });
 }

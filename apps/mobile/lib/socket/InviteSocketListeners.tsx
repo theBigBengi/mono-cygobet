@@ -54,8 +54,8 @@ export function InviteSocketListeners() {
       queryClient.invalidateQueries({ queryKey: invitesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: groupsKeys.details() });
-      // Also refresh members list if we know the group
       if (payload.groupId) {
+        queryClient.invalidateQueries({ queryKey: invitesKeys.sent(payload.groupId) });
         queryClient.invalidateQueries({ queryKey: groupsKeys.members(payload.groupId) });
       }
     };
