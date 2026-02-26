@@ -228,7 +228,23 @@ export async function getGroupById(
   // Determine user's role: creator is owner, otherwise member
   data.userRole = group.creatorId === userId ? "owner" : "member";
 
-  const rules = await repo.findGroupRules(id);
+  const isNonDraft = group.status !== "draft";
+
+  // Run independent queries in parallel (all only depend on id/userId)
+  const [rules, memberCount, fixtureRows, firstGf] = await Promise.all([
+    repo.findGroupRules(id),
+    isNonDraft ? repo.countGroupMembers(id) : null,
+    includeFixtures ? repo.fetchGroupFixturesWithPredictions(id, userId) : null,
+    // Only query firstGame separately when we won't derive it from fixtures
+    isNonDraft && !includeFixtures
+      ? prisma.groupFixtures.findFirst({
+          where: { groupId: id },
+          orderBy: { fixtures: { startTs: "asc" } },
+          select: { fixtures: { select: FIXTURE_SELECT_BASE } },
+        })
+      : null,
+  ]);
+
   data.inviteAccess = rules?.inviteAccess ?? "all";
   data.maxMembers = rules?.maxMembers ?? DEFAULT_MAX_MEMBERS;
   data.predictionMode = rules?.predictionMode ?? "CorrectScore";
@@ -241,13 +257,22 @@ export async function getGroupById(
   data.nudgeEnabled = rules?.nudgeEnabled ?? true;
   data.nudgeWindowMinutes = rules?.nudgeWindowMinutes ?? 60;
 
-  if (group.status !== "draft") {
-    const firstGf = await prisma.groupFixtures.findFirst({
-      where: { groupId: id },
-      orderBy: { fixtures: { startTs: "asc" } },
-      select: { fixtures: { select: FIXTURE_SELECT_BASE } },
-    });
-    const rawFirst = firstGf?.fixtures ?? null;
+  // Include fixtures if requested
+  if (includeFixtures && fixtureRows) {
+    const fixturesData = mapGroupFixturesToApiFixtures(fixtureRows, userId);
+
+    data.fixtures =
+      filters != null
+        ? applyGroupFixturesFilter(fixturesData, filters)
+        : fixturesData;
+
+    // Derive firstGame from fixtures (already sorted by startTs ASC)
+    if (isNonDraft && fixturesData.length > 0) {
+      data.firstGame = fixturesData[0];
+    }
+  } else if (isNonDraft && firstGf) {
+    // No fixtures requested — use the separate firstGame query
+    const rawFirst = firstGf.fixtures ?? null;
     data.firstGame = formatFixtureFromDb(
       rawFirst as Parameters<typeof formatFixtureFromDb>[0],
       null,
@@ -255,19 +280,7 @@ export async function getGroupById(
     );
   }
 
-  // Include fixtures if requested
-  if (includeFixtures) {
-    const rows = await repo.fetchGroupFixturesWithPredictions(id, userId);
-    const fixturesData = mapGroupFixturesToApiFixtures(rows, userId);
-
-    data.fixtures =
-      filters != null
-        ? applyGroupFixturesFilter(fixturesData, filters)
-        : fixturesData;
-  }
-
-  if (group.status !== "draft") {
-    const memberCount = await repo.countGroupMembers(id);
+  if (memberCount != null) {
     data.memberCount = memberCount;
   }
 

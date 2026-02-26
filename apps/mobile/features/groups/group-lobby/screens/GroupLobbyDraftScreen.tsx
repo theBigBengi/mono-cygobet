@@ -154,9 +154,7 @@ export function GroupLobbyDraftScreen({
   const updateGroupMutation = useUpdateGroupMutation(group.id);
   const publishGroupMutation = usePublishGroupMutation(group.id);
 
-  const fixtures = Array.isArray((group as any).fixtures)
-    ? ((group as any).fixtures as FixtureItem[])
-    : [];
+  const fixtures: FixtureItem[] = group.fixtures ?? [];
   const duration = useGroupDuration(fixtures);
 
   const { handlePublish } = useGroupLobbyActions(

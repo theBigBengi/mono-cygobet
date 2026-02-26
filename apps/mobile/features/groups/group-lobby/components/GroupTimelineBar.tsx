@@ -23,7 +23,7 @@ interface GroupTimelineBarProps {
   isLoading?: boolean;
 }
 
-export function GroupTimelineBar({
+function GroupTimelineBarInner({
   startDate,
   endDate,
   progress,
@@ -174,6 +174,8 @@ export function GroupTimelineBar({
     </View>
   );
 }
+
+export const GroupTimelineBar = React.memo(GroupTimelineBarInner);
 
 const styles = StyleSheet.create({
   container: {

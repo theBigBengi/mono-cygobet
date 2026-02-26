@@ -38,7 +38,7 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-export function GroupLobbyHeader({
+function GroupLobbyHeaderInner({
   name,
   memberCount,
   status,
@@ -214,6 +214,8 @@ export function GroupLobbyHeader({
     </Card>
   );
 }
+
+export const GroupLobbyHeader = React.memo(GroupLobbyHeaderInner);
 
 const styles = StyleSheet.create({
   // HUD Styles

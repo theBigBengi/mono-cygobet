@@ -1,12 +1,11 @@
 // features/groups/group-lobby/screens/GroupLobbyActiveScreen.tsx
 // Active state screen for group lobby - Clean & Minimal layout.
 
-import React, { useRef, useCallback } from "react";
+import React, { useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen } from "@/components/ui";
 import { useAuth } from "@/lib/auth/useAuth";
 import {
@@ -21,7 +20,6 @@ import { GroupTimelineBar } from "../components/GroupTimelineBar";
 import { LobbyPredictionsCTA } from "../components/LobbyPredictionsCTA";
 import { LobbyQuickActions } from "../components/LobbyQuickActions";
 import { LobbyLeaderboard } from "../components/LobbyLeaderboard";
-import { GroupInfoSheet } from "../components/GroupInfoSheet";
 import { useGroupDuration } from "../hooks/useGroupDuration";
 
 interface GroupLobbyActiveScreenProps {
@@ -47,7 +45,6 @@ export function GroupLobbyActiveScreen({
   const router = useRouter();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const infoSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -62,9 +59,7 @@ export function GroupLobbyActiveScreen({
   const { data: unreadActivityData } = useUnreadActivityCountsQuery();
   const unreadActivityCount = unreadActivityData?.data?.[String(group.id)] ?? 0;
 
-  const fixtures = Array.isArray((group as any).fixtures)
-    ? ((group as any).fixtures as FixtureItem[])
-    : [];
+  const fixtures: FixtureItem[] = group.fixtures ?? [];
 
   const totalFixtures = group.totalFixtures ?? fixtures.length;
   const predictionsCount =
@@ -73,76 +68,91 @@ export function GroupLobbyActiveScreen({
       .length;
 
   const fixturesLoaded = fixtures.length > 0 || totalFixtures === 0;
-  const now = new Date();
   const ranking = rankingData?.data ?? [];
 
   // Timeline progress calculation
   const duration = useGroupDuration(fixtures);
-  const timelineProgress = React.useMemo(() => {
+  const timelineProgress = useMemo(() => {
     if (!duration) return 0;
     const startTime = new Date(duration.startDate).getTime();
     const endTime = new Date(duration.endDate).getTime();
-    const nowTime = now.getTime();
+    const nowTime = Date.now();
     if (endTime <= startTime) return 1;
     return (nowTime - startTime) / (endTime - startTime);
-  }, [duration, now]);
+  }, [duration]);
 
-  const handleViewGames = (fixtureId?: number) => {
-    if (fixtureId != null) {
-      router.push(`/groups/${group.id}/games?scrollToFixtureId=${fixtureId}` as any);
-    } else {
-      router.push(`/groups/${group.id}/games` as any);
-    }
-  };
+  const handleViewGames = useCallback(
+    (fixtureId?: number) => {
+      if (fixtureId != null) {
+        router.push(`/groups/${group.id}/games?scrollToFixtureId=${fixtureId}` as any);
+      } else {
+        router.push(`/groups/${group.id}/games` as any);
+      }
+    },
+    [router, group.id]
+  );
 
-  const handleViewRanking = () => {
+  const handleViewRanking = useCallback(() => {
     router.push(`/groups/${group.id}/ranking` as any);
-  };
+  }, [router, group.id]);
 
-  const handleViewInvite = () => {
+  const handleViewInvite = useCallback(() => {
     router.push(`/groups/${group.id}/invite` as any);
-  };
+  }, [router, group.id]);
 
-  const handleViewChat = () => {
+  const handleViewChat = useCallback(() => {
     router.push(`/groups/${group.id}/chat` as any);
-  };
+  }, [router, group.id]);
 
-  const handleViewPredictionsOverview = () => {
+  const handleViewPredictionsOverview = useCallback(() => {
     router.push(`/groups/${group.id}/predictions-overview` as any);
-  };
+  }, [router, group.id]);
 
-  const handleViewActivity = () => {
+  const handleViewActivity = useCallback(() => {
     router.push(`/groups/${group.id}/activity` as any);
-  };
+  }, [router, group.id]);
 
-  const quickActions = [
-    {
-      icon: "chat" as const,
-      label: t("lobby.chat"),
-      badge: chatPreview?.unreadCount,
-      onPress: handleViewChat,
-    },
-    {
-      icon: "activity" as const,
-      label: t("lobby.activity"),
-      badge: unreadActivityCount || undefined,
-      onPress: handleViewActivity,
-    },
-    ...(group.inviteAccess !== "admin_only" || isCreator
-      ? [
-          {
-            icon: "link" as const,
-            label: t("lobby.invite"),
-            onPress: handleViewInvite,
-          },
-        ]
-      : []),
-    {
-      icon: "stats" as const,
-      label: t("lobby.stats"),
-      onPress: handleViewPredictionsOverview,
-    },
-  ];
+  const quickActions = useMemo(
+    () => [
+      {
+        icon: "chat" as const,
+        label: t("lobby.chat"),
+        badge: chatPreview?.unreadCount,
+        onPress: handleViewChat,
+      },
+      {
+        icon: "activity" as const,
+        label: t("lobby.activity"),
+        badge: unreadActivityCount || undefined,
+        onPress: handleViewActivity,
+      },
+      ...(group.inviteAccess !== "admin_only" || isCreator
+        ? [
+            {
+              icon: "link" as const,
+              label: t("lobby.invite"),
+              onPress: handleViewInvite,
+            },
+          ]
+        : []),
+      {
+        icon: "stats" as const,
+        label: t("lobby.stats"),
+        onPress: handleViewPredictionsOverview,
+      },
+    ],
+    [
+      t,
+      chatPreview?.unreadCount,
+      unreadActivityCount,
+      isCreator,
+      group.inviteAccess,
+      handleViewChat,
+      handleViewActivity,
+      handleViewInvite,
+      handleViewPredictionsOverview,
+    ]
+  );
 
   return (
     <View style={styles.container}>
@@ -163,7 +173,7 @@ export function GroupLobbyActiveScreen({
           privacy={group.privacy}
           compact
           hideNavButtons
-          onInfoPress={() => infoSheetRef.current?.present()}
+          onInfoPress={onInfoPress}
         />
 
         {duration ? (
@@ -202,11 +212,6 @@ export function GroupLobbyActiveScreen({
           memberCount={group.memberCount}
         />
       </Screen>
-      <GroupInfoSheet
-        group={group}
-        sheetRef={infoSheetRef}
-        isLoading={isLoading}
-      />
     </View>
   );
 }

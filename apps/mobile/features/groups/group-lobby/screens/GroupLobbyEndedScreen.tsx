@@ -52,9 +52,7 @@ export function GroupLobbyEndedScreen({
   const chatUnreadCount = unreadData?.data?.[String(group.id)] ?? 0;
   const winner = rankingData?.data?.[0];
 
-  const fixtures = Array.isArray((group as any).fixtures)
-    ? ((group as any).fixtures as FixtureItem[])
-    : [];
+  const fixtures: FixtureItem[] = group.fixtures ?? [];
 
   const duration = useGroupDuration(fixtures);
 

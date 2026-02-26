@@ -36,7 +36,7 @@ function getInitials(name: string | null | undefined): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-export function LobbyLeaderboard({
+function LobbyLeaderboardInner({
   ranking,
   currentUserId,
   isLoading,
@@ -243,6 +243,10 @@ export function LobbyLeaderboard({
     );
   };
 
+  const borderBottomColor = theme.colors.textSecondary + "40";
+  const primaryAlpha40 = theme.colors.primary + "40";
+  const primaryAlpha15 = theme.colors.primary + "15";
+
   return (
     <View style={styles.container}>
       <View
@@ -251,7 +255,7 @@ export function LobbyLeaderboard({
           {
             backgroundColor: theme.colors.surface,
             borderColor: theme.colors.border,
-            borderBottomColor: theme.colors.textSecondary + "40",
+            borderBottomColor,
           },
         ]}
       >
@@ -268,7 +272,7 @@ export function LobbyLeaderboard({
               styles.userCard,
               {
                 backgroundColor: theme.colors.cardBackground,
-                borderColor: theme.colors.primary + "40",
+                borderColor: primaryAlpha40,
               },
               pressed && styles.pressed,
             ]}
@@ -299,13 +303,13 @@ export function LobbyLeaderboard({
             {
               backgroundColor: theme.colors.cardBackground,
               borderColor: theme.colors.border,
-              borderBottomColor: theme.colors.textSecondary + "40",
+              borderBottomColor,
               transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
             },
             pressed && styles.pressed,
           ]}
         >
-          <View style={[styles.buttonIconCircle, { backgroundColor: theme.colors.primary + "15" }]}>
+          <View style={[styles.buttonIconCircle, { backgroundColor: primaryAlpha15 }]}>
             <Ionicons name="podium-outline" size={16} color={theme.colors.primary} />
           </View>
           <Text style={[styles.buttonText, { color: theme.colors.textPrimary }]}>
@@ -316,6 +320,8 @@ export function LobbyLeaderboard({
     </View>
   );
 }
+
+export const LobbyLeaderboard = React.memo(LobbyLeaderboardInner);
 
 const styles = StyleSheet.create({
   container: {

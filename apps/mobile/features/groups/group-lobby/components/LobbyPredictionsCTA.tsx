@@ -3,7 +3,7 @@
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable, Text, Dimensions, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Text, ScrollView, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -20,9 +20,6 @@ import { useTheme } from "@/lib/theme";
 import { isFinished as isFinishedState, isCancelled as isCancelledState, isLive as isLiveState } from "@repo/utils";
 import { formatKickoffDate, formatKickoffTime } from "@/utils/fixture";
 import type { FixtureItem } from "@/types/common";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.15;
 
 export interface LobbyPredictionsCTAProps {
   predictionsCount: number;
@@ -178,6 +175,8 @@ export function LobbyPredictionsCTA({
 }: LobbyPredictionsCTAProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
+  const swipeThreshold = screenWidth * 0.15;
   const skeletonOpacity = useSharedValue(0.3);
 
   useEffect(() => {
@@ -243,7 +242,7 @@ export function LobbyPredictionsCTA({
 
   // Swipe gesture handling
   const translateX = useSharedValue(0);
-  const cardWidth = SCREEN_WIDTH - 96;
+  const cardWidth = screenWidth - 96;
   const SLIDE_DURATION = 150;
 
   const slideToNext = useCallback(() => {
@@ -274,33 +273,37 @@ export function LobbyPredictionsCTA({
     }
   }, [canGoNext, cardWidth, translateX, slideToNext]);
 
-  const panGesture = Gesture.Pan()
-    .activeOffsetX([-10, 10])
-    .onUpdate((event) => {
-      if (!canGoPrevious && event.translationX > 0) {
-        translateX.value = event.translationX * 0.3;
-      } else if (!canGoNext && event.translationX < 0) {
-        translateX.value = event.translationX * 0.3;
-      } else {
-        translateX.value = event.translationX;
-      }
-    })
-    .onEnd((event) => {
-      const shouldGoNext = event.translationX < -SWIPE_THRESHOLD && canGoNext;
-      const shouldGoPrevious = event.translationX > SWIPE_THRESHOLD && canGoPrevious;
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-10, 10])
+        .onUpdate((event) => {
+          if (!canGoPrevious && event.translationX > 0) {
+            translateX.value = event.translationX * 0.3;
+          } else if (!canGoNext && event.translationX < 0) {
+            translateX.value = event.translationX * 0.3;
+          } else {
+            translateX.value = event.translationX;
+          }
+        })
+        .onEnd((event) => {
+          const shouldGoNext = event.translationX < -swipeThreshold && canGoNext;
+          const shouldGoPrevious = event.translationX > swipeThreshold && canGoPrevious;
 
-      if (shouldGoNext) {
-        translateX.value = withTiming(-cardWidth, { duration: SLIDE_DURATION, easing: Easing.in(Easing.ease) }, () => {
-          runOnJS(slideToNext)();
-        });
-      } else if (shouldGoPrevious) {
-        translateX.value = withTiming(cardWidth, { duration: SLIDE_DURATION, easing: Easing.in(Easing.ease) }, () => {
-          runOnJS(slideToPrevious)();
-        });
-      } else {
-        translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
-      }
-    });
+          if (shouldGoNext) {
+            translateX.value = withTiming(-cardWidth, { duration: SLIDE_DURATION, easing: Easing.in(Easing.ease) }, () => {
+              runOnJS(slideToNext)();
+            });
+          } else if (shouldGoPrevious) {
+            translateX.value = withTiming(cardWidth, { duration: SLIDE_DURATION, easing: Easing.in(Easing.ease) }, () => {
+              runOnJS(slideToPrevious)();
+            });
+          } else {
+            translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+          }
+        }),
+    [canGoPrevious, canGoNext, cardWidth, slideToNext, slideToPrevious, translateX, swipeThreshold]
+  );
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
@@ -418,6 +421,10 @@ export function LobbyPredictionsCTA({
     );
   }
 
+  const borderBottomColor = theme.colors.textSecondary + "40";
+  const primaryIconBg = theme.colors.primary + "15";
+  const textSecondaryAlpha80 = theme.colors.textSecondary + "80";
+
   if (fixtures.length === 0) {
     return null;
   }
@@ -454,7 +461,7 @@ export function LobbyPredictionsCTA({
           {
             backgroundColor: theme.colors.cardBackground,
             borderColor: theme.colors.border,
-            borderBottomColor: theme.colors.textSecondary + "40",
+            borderBottomColor,
           },
         ]}
       >
@@ -594,7 +601,7 @@ export function LobbyPredictionsCTA({
                                 ? hasPoints ? SUCCESS_COLOR : MISSED_COLOR
                                 : hasPrediction
                                   ? theme.colors.textPrimary
-                                  : theme.colors.textSecondary + "80",
+                                  : textSecondaryAlpha80,
                             },
                           ]}
                         >
@@ -661,7 +668,7 @@ export function LobbyPredictionsCTA({
                                 ? hasPoints ? SUCCESS_COLOR : MISSED_COLOR
                                 : hasPrediction
                                   ? theme.colors.textPrimary
-                                  : theme.colors.textSecondary + "80",
+                                  : textSecondaryAlpha80,
                             },
                           ]}
                         >
@@ -686,13 +693,13 @@ export function LobbyPredictionsCTA({
             {
               backgroundColor: theme.colors.cardBackground,
               borderColor: theme.colors.border,
-              borderBottomColor: theme.colors.textSecondary + "40",
+              borderBottomColor,
               transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
             },
             pressed && styles.pressed,
           ]}
         >
-          <View style={[styles.buttonIconCircle, { backgroundColor: theme.colors.primary + "15" }]}>
+          <View style={[styles.buttonIconCircle, { backgroundColor: primaryIconBg }]}>
             <Ionicons name="football-outline" size={16} color={theme.colors.primary} />
           </View>
           <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>

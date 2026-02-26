@@ -42,7 +42,7 @@ function renderIcon(
   }
 }
 
-export function LobbyQuickActions({ actions, isLoading = false }: LobbyQuickActionsProps) {
+function LobbyQuickActionsInner({ actions, isLoading = false }: LobbyQuickActionsProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const opacity = useSharedValue(0.3);
@@ -122,6 +122,9 @@ export function LobbyQuickActions({ actions, isLoading = false }: LobbyQuickActi
     );
   }
 
+  const borderBottomColor = theme.colors.textSecondary + "40";
+  const iconBgColor = theme.colors.primary + "15";
+
   return (
     <View style={styles.container}>
       <View
@@ -130,7 +133,7 @@ export function LobbyQuickActions({ actions, isLoading = false }: LobbyQuickActi
           {
             backgroundColor: theme.colors.surface,
             borderColor: theme.colors.border,
-            borderBottomColor: theme.colors.textSecondary + "40",
+            borderBottomColor,
           },
         ]}
       >
@@ -153,7 +156,7 @@ export function LobbyQuickActions({ actions, isLoading = false }: LobbyQuickActi
                 {
                   backgroundColor: theme.colors.cardBackground,
                   borderColor: theme.colors.border,
-                  borderBottomColor: theme.colors.textSecondary + "40",
+                  borderBottomColor,
                   transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
                   shadowOpacity: pressed ? 0 : 0.1,
                 },
@@ -174,7 +177,7 @@ export function LobbyQuickActions({ actions, isLoading = false }: LobbyQuickActi
               <View
                 style={[
                   styles.iconCircle,
-                  { backgroundColor: theme.colors.primary + "15" },
+                  { backgroundColor: iconBgColor },
                 ]}
               >
                 {renderIcon(action.icon, theme.colors.primary, 24)}
@@ -194,6 +197,8 @@ export function LobbyQuickActions({ actions, isLoading = false }: LobbyQuickActi
     </View>
   );
 }
+
+export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 
 const styles = StyleSheet.create({
   container: {

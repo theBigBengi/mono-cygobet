@@ -91,11 +91,13 @@ export function GroupGamesHeader({
             {!backOnly && children && (
               <View style={styles.childrenArea}>{children}</View>
             )}
-            <View style={styles.spacer}>
-              {title && (
-                <AppText variant="body" style={styles.title} numberOfLines={1}>{title}</AppText>
-              )}
-            </View>
+            {(!children || title) && (
+              <View style={styles.spacer}>
+                {title && (
+                  <AppText variant="body" style={styles.title} numberOfLines={1}>{title}</AppText>
+                )}
+              </View>
+            )}
             {hasExpand && (
               <Pressable onPress={handleToggle} style={styles.hudButton}>
                 <View style={styles.hudButtonInner}>
@@ -122,10 +124,10 @@ export function GroupGamesHeader({
 const styles = StyleSheet.create({
   container: {
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   expandSection: {
     overflow: "hidden",
