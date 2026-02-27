@@ -69,6 +69,8 @@ export interface GroupsRepository {
     now: number;
     inviteAccess?: "all" | "admin_only";
     description?: string | null;
+    avatarType?: string;
+    avatarValue?: string;
   }): Promise<Prisma.groupsGetPayload<{}>>;
   updateGroupWithFixtures(
     groupId: number,
