@@ -78,8 +78,7 @@
           "organization": "bengi",
           "project": "mono-cygobet"
         }
-      ],
-      "expo-font"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
