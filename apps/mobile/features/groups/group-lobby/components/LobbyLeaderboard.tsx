@@ -232,6 +232,8 @@ function LobbyLeaderboardInner({
     ? [top3[1], top3[0], top3[2]].filter(Boolean)
     : top3;
 
+  const allSameRank = top3.length > 1 && top3.every((r) => r.rank === top3[0].rank);
+
   const renderPodiumCard = (item: ApiRankingItem | undefined, podiumIndex: number) => {
     if (!item) return <View key={podiumIndex} style={styles.podiumSlot} />;
 
@@ -239,7 +241,7 @@ function LobbyLeaderboardInner({
     const rankColorIndex = actualRank - 1;
     const isCurrentUser = currentUserId != null && item.userId === currentUserId;
     const displayName = isCurrentUser ? t("lobby.you") : (item.username ?? `#${item.rank}`);
-    const height = PODIUM_HEIGHTS[podiumIndex];
+    const height = allSameRank ? PODIUM_HEIGHTS[1] : PODIUM_HEIGHTS[podiumIndex];
     const isFirst = actualRank === 1;
     return (
       <Pressable

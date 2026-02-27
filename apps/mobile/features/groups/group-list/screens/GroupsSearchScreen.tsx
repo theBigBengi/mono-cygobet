@@ -695,12 +695,43 @@ const PublicGroupRow = React.memo(function PublicGroupRow({
                 )}
               </View>
 
-              <Button
-                label={joinMutation.isPending ? t("groups.joining") : t("discover.join")}
-                onPress={handleJoin}
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleJoin();
+                }}
                 disabled={joinMutation.isPending}
-                style={cardStyles.joinButton}
-              />
+                style={({ pressed }) => [
+                  cardStyles.joinButton,
+                  {
+                    backgroundColor: joinMutation.isPending
+                      ? theme.colors.surface
+                      : theme.colors.primary,
+                    borderColor: joinMutation.isPending
+                      ? theme.colors.border
+                      : "transparent",
+                    borderBottomColor: joinMutation.isPending
+                      ? theme.colors.textSecondary + "40"
+                      : "rgba(0,0,0,0.25)",
+                    borderBottomWidth: pressed ? 1 : 3,
+                    transform: [{ scale: pressed ? 0.95 : 1 }],
+                    opacity: joinMutation.isPending ? 0.6 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    cardStyles.joinButtonText,
+                    {
+                      color: joinMutation.isPending
+                        ? theme.colors.textSecondary
+                        : theme.colors.primaryText,
+                    },
+                  ]}
+                >
+                  {joinMutation.isPending ? t("groups.joining") : t("discover.join")}
+                </Text>
+              </Pressable>
             </View>
 
             {/* Bottom info row */}
@@ -802,7 +833,16 @@ const cardStyles = StyleSheet.create({
     marginTop: 2,
   },
   joinButton: {
-    minWidth: 70,
+    height: 32,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  joinButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
   bottomRow: {
     flexDirection: "row",

@@ -79,7 +79,6 @@ import type {
   AdminCreateOfficialGroupBody,
   AdminUpdateOfficialGroupBody,
   AdminOfficialGroupItem,
-  AdminOfficialGroupDetailsResponse,
 } from "@repo/types";
 
 // ─── Media query helpers (for responsive calendar) ───────────────────────────
