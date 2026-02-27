@@ -1390,6 +1390,42 @@ export interface AdminOfficialGroupFixturesResponse {
   message: string;
 }
 
+export interface AdminOfficialGroupFixturePredictionsResponse {
+  status: string;
+  data: {
+    fixture: {
+      id: number;
+      fixtureId: number;
+      name: string;
+      startIso: string;
+      state: string;
+      result: string | null;
+      homeScore90: number | null;
+      awayScore90: number | null;
+      homeTeam: { id: number; name: string; imagePath: string | null } | null;
+      awayTeam: { id: number; name: string; imagePath: string | null } | null;
+      league: { id: number; name: string; imagePath: string | null } | null;
+      round: string | null;
+    };
+    stats: {
+      totalPredictions: number;
+      settledPredictions: number;
+      outcomes: {
+        exactScore: number;
+        correctDifference: number;
+        correctOutcome: number;
+        wrong: number;
+      };
+    };
+    scoreDistribution: Array<{
+      prediction: string;
+      count: number;
+      percentage: number;
+    }>;
+  };
+  message: string;
+}
+
 export interface AdminFixtureSearchResponse {
   status: string;
   data: Array<{

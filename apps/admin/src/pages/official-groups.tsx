@@ -73,12 +73,15 @@ import {
   ArrowLeft,
   Trash2,
   Award,
+  ExternalLink,
 } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
+import { Link } from "react-router-dom";
 import type {
   AdminCreateOfficialGroupBody,
   AdminUpdateOfficialGroupBody,
   AdminOfficialGroupItem,
+  AdminOfficialGroupFixturePredictionsResponse,
 } from "@repo/types";
 
 // ─── Media query helpers (for responsive calendar) ───────────────────────────
@@ -2350,6 +2353,173 @@ function GroupSettingsDialog({
   );
 }
 
+// ─── Fixture Predictions Dialog ──────────────────────────────────────────────
+
+function FixturePredictionsDialog({
+  groupId,
+  groupFixtureId,
+  open,
+  onOpenChange,
+}: {
+  groupId: number;
+  groupFixtureId: number | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["official-groups", groupId, "fixture-predictions", groupFixtureId],
+    queryFn: () =>
+      officialGroupsService.getFixturePredictions(groupId, groupFixtureId!),
+    enabled: open && groupFixtureId !== null,
+  });
+
+  const fixture = data?.data?.fixture;
+  const stats = data?.data?.stats;
+  const scoreDistribution = data?.data?.scoreDistribution;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Fixture Predictions</DialogTitle>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : !data || !fixture ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            No data available
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Fixture Info */}
+            <Card>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {fixture.homeTeam?.imagePath && (
+                      <img src={fixture.homeTeam.imagePath} alt="" className="h-5 w-5 object-contain" />
+                    )}
+                    <span>{fixture.homeTeam?.name ?? "?"}</span>
+                    <span className="text-muted-foreground">vs</span>
+                    <span>{fixture.awayTeam?.name ?? "?"}</span>
+                    {fixture.awayTeam?.imagePath && (
+                      <img src={fixture.awayTeam.imagePath} alt="" className="h-5 w-5 object-contain" />
+                    )}
+                  </div>
+                  <Badge
+                    variant={
+                      fixture.state === "FT" || fixture.state === "AET" || fixture.state === "FT_PEN"
+                        ? "secondary"
+                        : fixture.state === "LIVE"
+                          ? "default"
+                          : "outline"
+                    }
+                    className="text-xs"
+                  >
+                    {fixture.state}
+                  </Badge>
+                </div>
+                {fixture.homeScore90 !== null && fixture.awayScore90 !== null && (
+                  <p className="text-center text-xl font-bold tabular-nums">
+                    {fixture.homeScore90} - {fixture.awayScore90}
+                  </p>
+                )}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{fixture.league?.name ?? "—"}</span>
+                  <span>{new Date(fixture.startIso).toLocaleString()}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Total Predictions</p>
+                  <p className="text-xl font-bold">{stats?.totalPredictions ?? 0}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Settled</p>
+                  <p className="text-xl font-bold">{stats?.settledPredictions ?? 0}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Outcome Breakdown */}
+            {stats && stats.settledPredictions > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Outcome Breakdown</p>
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="rounded-md border p-2 text-center">
+                    <p className="text-lg font-bold text-green-600">{stats.outcomes.exactScore}</p>
+                    <p className="text-[10px] text-muted-foreground">Exact</p>
+                  </div>
+                  <div className="rounded-md border p-2 text-center">
+                    <p className="text-lg font-bold text-blue-600">{stats.outcomes.correctDifference}</p>
+                    <p className="text-[10px] text-muted-foreground">Diff</p>
+                  </div>
+                  <div className="rounded-md border p-2 text-center">
+                    <p className="text-lg font-bold text-yellow-600">{stats.outcomes.correctOutcome}</p>
+                    <p className="text-[10px] text-muted-foreground">Winner</p>
+                  </div>
+                  <div className="rounded-md border p-2 text-center">
+                    <p className="text-lg font-bold text-red-600">{stats.outcomes.wrong}</p>
+                    <p className="text-[10px] text-muted-foreground">Wrong</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Score Distribution */}
+            {scoreDistribution && scoreDistribution.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Score Distribution</p>
+                <div className="rounded-md border max-h-[200px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Prediction</TableHead>
+                        <TableHead className="text-xs text-right">Count</TableHead>
+                        <TableHead className="text-xs text-right">%</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {scoreDistribution.map((s) => (
+                        <TableRow key={s.prediction}>
+                          <TableCell className="text-sm font-mono">{s.prediction}</TableCell>
+                          <TableCell className="text-sm text-right tabular-nums">{s.count}</TableCell>
+                          <TableCell className="text-sm text-right tabular-nums text-muted-foreground">
+                            {s.percentage}%
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
+            {/* View Fixture Link */}
+            <div className="pt-2">
+              <Button variant="outline" className="w-full" asChild>
+                <Link to={`/fixtures/${fixture.fixtureId}`}>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  View Fixture
+                </Link>
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Group Detail Full-Screen View ───────────────────────────────────────────
 
 function GroupDetailView({
@@ -2366,6 +2536,7 @@ function GroupDetailView({
   const [fixturesPage, setFixturesPage] = React.useState(1);
   const [leaderboardPage, setLeaderboardPage] = React.useState(1);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [selectedFixtureId, setSelectedFixtureId] = React.useState<number | null>(null);
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => officialGroupsService.delete(id),
@@ -2672,7 +2843,11 @@ function GroupDetailView({
                   </TableHeader>
                   <TableBody>
                     {fixturesData.data.map((f) => (
-                      <TableRow key={f.id}>
+                      <TableRow
+                        key={f.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setSelectedFixtureId(f.id)}
+                      >
                         <TableCell className="text-sm font-medium">
                           {f.homeTeam?.name ?? "?"} vs {f.awayTeam?.name ?? "?"}
                         </TableCell>
@@ -2729,6 +2904,16 @@ function GroupDetailView({
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         onGroupUpdated={onGroupUpdated}
+      />
+
+      {/* Fixture Predictions Dialog */}
+      <FixturePredictionsDialog
+        groupId={group.id}
+        groupFixtureId={selectedFixtureId}
+        open={selectedFixtureId !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedFixtureId(null);
+        }}
       />
     </div>
   );

@@ -410,8 +410,8 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
               avatarType="gradient"
               avatarValue={String(group.id % 8)}
               initials={getInitials(group.name)}
-              size={56}
-              borderRadius={16}
+              size={72}
+              borderRadius={20}
             />
           </View>
           <AppText variant="title" style={previewStyles.title}>
@@ -558,6 +558,7 @@ const previewStyles = StyleSheet.create({
   },
   headerRow: {
     alignItems: "center",
+    marginBottom: -4,
   },
   title: {
     fontSize: 20,

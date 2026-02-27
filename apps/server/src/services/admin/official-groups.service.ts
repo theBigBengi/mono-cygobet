@@ -549,6 +549,116 @@ export async function listGroupFixtures(
   };
 }
 
+export async function getFixturePredictions(
+  groupId: number,
+  groupFixtureId: number
+) {
+  // Verify group is official
+  const group = await prisma.groups.findUnique({
+    where: { id: groupId },
+    select: { id: true, isOfficial: true },
+  });
+
+  if (!group || !group.isOfficial) {
+    throw new NotFoundError("Official group not found");
+  }
+
+  // Fetch group fixture with fixture details
+  const gf = await prisma.groupFixtures.findFirst({
+    where: { id: groupFixtureId, groupId },
+    include: {
+      fixtures: {
+        include: {
+          homeTeam: { select: { id: true, name: true, imagePath: true } },
+          awayTeam: { select: { id: true, name: true, imagePath: true } },
+          league: { select: { id: true, name: true, imagePath: true } },
+        },
+      },
+    },
+  });
+
+  if (!gf) {
+    throw new NotFoundError("Group fixture not found");
+  }
+
+  // Fetch all predictions for this group fixture
+  const predictions = await prisma.groupPredictions.findMany({
+    where: { groupFixtureId, groupId },
+  });
+
+  const totalPredictions = predictions.length;
+  const settledPredictions = predictions.filter((p) => p.settledAt !== null).length;
+
+  // Outcome breakdown (hierarchical to avoid double-counting)
+  let exactScore = 0;
+  let correctDifference = 0;
+  let correctOutcome = 0;
+  let wrong = 0;
+
+  for (const p of predictions) {
+    if (p.settledAt === null) continue;
+    if (p.winningCorrectScore) {
+      exactScore++;
+    } else if (p.winningCorrectDifference) {
+      correctDifference++;
+    } else if (p.winningMatchWinner) {
+      correctOutcome++;
+    } else {
+      wrong++;
+    }
+  }
+
+  // Score distribution
+  const countByPrediction = new Map<string, number>();
+  for (const p of predictions) {
+    countByPrediction.set(p.prediction, (countByPrediction.get(p.prediction) ?? 0) + 1);
+  }
+
+  const scoreDistribution = Array.from(countByPrediction.entries())
+    .map(([prediction, count]) => ({
+      prediction,
+      count,
+      percentage: totalPredictions > 0 ? Math.round((count / totalPredictions) * 1000) / 10 : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const f = gf.fixtures;
+
+  return {
+    fixture: {
+      id: gf.id,
+      fixtureId: gf.fixtureId,
+      name: f.name,
+      startIso: typeof f.startIso === "object" ? (f.startIso as Date).toISOString() : String(f.startIso),
+      state: f.state,
+      result: f.result,
+      homeScore90: f.homeScore90,
+      awayScore90: f.awayScore90,
+      homeTeam: f.homeTeam
+        ? { id: f.homeTeam.id, name: f.homeTeam.name, imagePath: f.homeTeam.imagePath }
+        : null,
+      awayTeam: f.awayTeam
+        ? { id: f.awayTeam.id, name: f.awayTeam.name, imagePath: f.awayTeam.imagePath }
+        : null,
+      league: f.league
+        ? { id: f.league.id, name: f.league.name, imagePath: f.league.imagePath }
+        : null,
+      round: f.round,
+    },
+    stats: {
+      totalPredictions,
+      settledPredictions,
+      outcomes: {
+        exactScore,
+        correctDifference,
+        correctOutcome,
+        wrong,
+      },
+    },
+    scoreDistribution,
+  };
+}
+
 export async function deleteOfficialGroup(groupId: number): Promise<void> {
   const group = await prisma.groups.findUnique({
     where: { id: groupId },

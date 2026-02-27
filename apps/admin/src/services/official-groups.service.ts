@@ -12,6 +12,7 @@ import type {
   AdminOfficialGroupDetailsResponse,
   AdminUpdateOfficialGroupRulesBody,
   AdminUpdateOfficialGroupRulesResponse,
+  AdminOfficialGroupFixturePredictionsResponse,
 } from "@repo/types";
 
 export const officialGroupsService = {
@@ -90,6 +91,15 @@ export const officialGroupsService = {
   ): Promise<AdminOfficialGroupFixturesResponse> {
     return apiGet<AdminOfficialGroupFixturesResponse>(
       `/admin/official-groups/${id}/fixtures?page=${page}&perPage=${perPage}`
+    );
+  },
+
+  async getFixturePredictions(
+    groupId: number,
+    groupFixtureId: number
+  ): Promise<AdminOfficialGroupFixturePredictionsResponse> {
+    return apiGet<AdminOfficialGroupFixturePredictionsResponse>(
+      `/admin/official-groups/${groupId}/fixtures/${groupFixtureId}/predictions`
     );
   },
 

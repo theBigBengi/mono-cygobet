@@ -11,6 +11,7 @@ import {
   listGroupLeaderboard,
   getGroupDetails,
   updateGroupRules,
+  getFixturePredictions,
 } from "../../../services/admin/official-groups.service";
 import { evaluateGroupBadges } from "../../../services/api/groups/service/badge-evaluation";
 import type {
@@ -26,6 +27,7 @@ import type {
   AdminOfficialGroupDetailsResponse,
   AdminUpdateOfficialGroupRulesBody,
   AdminUpdateOfficialGroupRulesResponse,
+  AdminOfficialGroupFixturePredictionsResponse,
 } from "@repo/types";
 
 /**
@@ -212,6 +214,23 @@ const officialGroupsRoutes: FastifyPluginAsync = async (fastify) => {
       data: result.data,
       pagination: result.pagination,
       message: "Group fixtures fetched successfully",
+    });
+  });
+
+  // GET /admin/official-groups/:id/fixtures/:groupFixtureId/predictions
+  fastify.get<{
+    Params: { id: string; groupFixtureId: string };
+    Reply: AdminOfficialGroupFixturePredictionsResponse;
+  }>("/:id/fixtures/:groupFixtureId/predictions", async (req, reply) => {
+    const groupId = Number(req.params.id);
+    const groupFixtureId = Number(req.params.groupFixtureId);
+
+    const data = await getFixturePredictions(groupId, groupFixtureId);
+
+    return reply.send({
+      status: "success",
+      data,
+      message: "Fixture predictions fetched successfully",
     });
   });
 
