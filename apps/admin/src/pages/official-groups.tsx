@@ -1038,6 +1038,13 @@ function Step2LeaguesSelection({
   const [leagueSearch, setLeagueSearch] = useState("");
   const [debouncedLeagueSearch] = useDebounce(leagueSearch, 300);
 
+  // Default leagues (loaded on mount)
+  const { data: defaultLeaguesData } = useQuery({
+    queryKey: ["leagues", "defaults"],
+    queryFn: () => leaguesService.getFromDb({ perPage: 20, include: "country" }),
+    staleTime: Infinity,
+  });
+
   const { data: leaguesData } = useQuery({
     queryKey: ["leagues", "search", debouncedLeagueSearch],
     queryFn: () => leaguesService.search(debouncedLeagueSearch, 20),
@@ -1045,14 +1052,17 @@ function Step2LeaguesSelection({
     staleTime: Infinity,
   });
 
-  const leagueOptions = useMemo(
-    () =>
-      (leaguesData?.data ?? []).map((l) => ({
-        value: l.id,
-        label: l.country?.name ? `${l.name} (${l.country.name})` : l.name,
-      })),
-    [leaguesData],
-  );
+  const leagueOptions = useMemo(() => {
+    const searchResults = (leaguesData?.data ?? []).map((l) => ({
+      value: l.id,
+      label: l.country?.name ? `${l.name} (${l.country.name})` : l.name,
+    }));
+    if (searchResults.length > 0) return searchResults;
+    return (defaultLeaguesData?.data ?? []).map((l) => ({
+      value: l.id,
+      label: l.country?.name ? `${l.name} (${l.country.name})` : l.name,
+    }));
+  }, [leaguesData, defaultLeaguesData]);
 
   const isSingleLeague = selectedLeagueIds.length === 1;
   const singleLeagueId = isSingleLeague ? selectedLeagueIds[0] : undefined;
@@ -1315,6 +1325,13 @@ function Step2TeamsSelection({
   const [teamSearch, setTeamSearch] = useState("");
   const [debouncedTeamSearch] = useDebounce(teamSearch, 300);
 
+  // Default teams (loaded on mount)
+  const { data: defaultTeamsData } = useQuery({
+    queryKey: ["teams", "defaults"],
+    queryFn: () => teamsService.getFromDb({ perPage: 20, include: "country" }),
+    staleTime: Infinity,
+  });
+
   const { data: teamsData } = useQuery({
     queryKey: ["teams", "search", debouncedTeamSearch],
     queryFn: () => teamsService.search(debouncedTeamSearch, 20),
@@ -1322,14 +1339,17 @@ function Step2TeamsSelection({
     staleTime: Infinity,
   });
 
-  const teamOptions = useMemo(
-    () =>
-      (teamsData?.data ?? []).map((t) => ({
-        value: t.id,
-        label: t.country?.name ? `${t.name} (${t.country.name})` : t.name,
-      })),
-    [teamsData],
-  );
+  const teamOptions = useMemo(() => {
+    const searchResults = (teamsData?.data ?? []).map((t) => ({
+      value: t.id,
+      label: t.country?.name ? `${t.name} (${t.country.name})` : t.name,
+    }));
+    if (searchResults.length > 0) return searchResults;
+    return (defaultTeamsData?.data ?? []).map((t) => ({
+      value: t.id,
+      label: t.country?.name ? `${t.name} (${t.country.name})` : t.name,
+    }));
+  }, [teamsData, defaultTeamsData]);
 
   const hasDateRange = teamDateFrom && teamDateTo;
 

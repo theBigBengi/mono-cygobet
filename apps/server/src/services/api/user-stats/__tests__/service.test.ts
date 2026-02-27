@@ -57,6 +57,14 @@ vi.mock("../repository", () => ({
   }),
 }));
 
+vi.mock("@repo/db", () => ({
+  prisma: {
+    userEarnedBadges: {
+      findMany: vi.fn(async () => []),
+    },
+  },
+}));
+
 vi.mock("../badges", () => ({
   computeBadges: vi.fn(() => []),
   computeMaxStreak: vi.fn(() => 0),
