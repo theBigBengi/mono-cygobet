@@ -8,14 +8,14 @@ import {
   StyleSheet,
   TextInput,
   FlatList,
-  Text,
-  ListRenderItem,
+  Pressable,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Screen, AppText, Button, Card } from "@/components/ui";
+import { AppText, Button, Card, GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
@@ -27,6 +27,15 @@ import type { ApiPublicGroupItem } from "@repo/types";
 
 const PER_PAGE = 20;
 
+function getInitials(name: string): string {
+  if (!name?.trim()) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
 export function DiscoverGroupsScreen() {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -36,13 +45,13 @@ export function DiscoverGroupsScreen() {
   const [page, setPage] = useState(1);
   const [accumulated, setAccumulated] = useState<ApiPublicGroupItem[]>([]);
 
-  const { data, isLoading, error, refetch } = usePublicGroupsQuery({
+  const { data, isLoading, error, refetch, isFetching } = usePublicGroupsQuery({
     page,
     perPage: PER_PAGE,
     search,
   });
 
-  // Accumulate items when response changes; use response page to avoid double-append
+  // Accumulate items when response changes
   useEffect(() => {
     if (!data?.data) return;
     if (data.pagination.page === 1) {
@@ -63,6 +72,12 @@ export function DiscoverGroupsScreen() {
     setPage(1);
   }, [inputValue]);
 
+  const handleClear = useCallback(() => {
+    setInputValue("");
+    setSearch(undefined);
+    setPage(1);
+  }, []);
+
   const loadMore = useCallback(() => {
     if (!data?.pagination) return;
     const { page: currentPage, totalPages } = data.pagination;
@@ -77,22 +92,32 @@ export function DiscoverGroupsScreen() {
 
   if (error) {
     return (
-      <Screen>
+      <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
         <QueryErrorView
           message={t("discover.failedLoadPublicGroups")}
           onRetry={() => refetch()}
         />
-      </Screen>
+      </View>
     );
   }
 
   return (
-    <Screen>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-      >
-        <View style={[styles.searchRow, { padding: theme.spacing.md }]}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={[styles.root, { backgroundColor: theme.colors.background }]}
+    >
+      {/* Search bar */}
+      <View style={[styles.searchRow, { padding: theme.spacing.md }]}>
+        <View
+          style={[
+            styles.searchInputContainer,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
           <TextInput
             value={inputValue}
             onChangeText={setInputValue}
@@ -100,67 +125,67 @@ export function DiscoverGroupsScreen() {
             placeholder={t("discover.searchPlaceholder")}
             placeholderTextColor={theme.colors.textSecondary}
             returnKeyType="search"
-            style={[
-              styles.searchInput,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
-                color: theme.colors.textPrimary,
-              },
-            ]}
+            autoCorrect={false}
+            style={[styles.searchInput, { color: theme.colors.textPrimary }]}
           />
-          <Button
-            label={t("discover.search")}
-            variant="secondary"
-            onPress={handleSubmitSearch}
-            style={styles.searchButton}
-          />
+          {isFetching && search && (
+            <ActivityIndicator size="small" color={theme.colors.textSecondary} />
+          )}
+          {inputValue.length > 0 && !isFetching && (
+            <Pressable
+              onPress={handleClear}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
+            </Pressable>
+          )}
         </View>
+      </View>
 
-        {isLoading && page === 1 ? (
-          <QueryLoadingView message={t("groups.loadingGroups")} />
-        ) : (
-          <FlatList
-            data={accumulated}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={({ item }) => (
-              <PublicGroupRow
-                group={item}
-                onJoinSuccess={() => router.replace(`/groups/${item.id}`)}
-              />
-            )}
-            contentContainerStyle={[
-              styles.listContent,
-              { paddingHorizontal: theme.spacing.md },
-            ]}
-            ListEmptyComponent={
-              <View style={styles.empty}>
-                <AppText variant="body" color="secondary">
-                  {t("discover.noResults")}
-                </AppText>
+      {isLoading && page === 1 ? (
+        <QueryLoadingView message={t("groups.loadingGroups")} />
+      ) : (
+        <FlatList
+          data={accumulated}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => (
+            <PublicGroupRow
+              group={item}
+              onJoinSuccess={() => router.replace(`/groups/${item.id}`)}
+            />
+          )}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingHorizontal: theme.spacing.md },
+          ]}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <AppText variant="body" color="secondary">
+                {t("discover.noResults")}
+              </AppText>
+            </View>
+          }
+          ListFooterComponent={
+            hasMore ? (
+              <View style={[styles.footer, { padding: theme.spacing.md }]}>
+                {isLoading ? (
+                  <AppText variant="caption" color="secondary">
+                    {t("common.loading")}
+                  </AppText>
+                ) : (
+                  <Button
+                    label={t("discover.loadMore")}
+                    variant="secondary"
+                    onPress={loadMore}
+                  />
+                )}
               </View>
-            }
-            ListFooterComponent={
-              hasMore ? (
-                <View style={[styles.footer, { padding: theme.spacing.md }]}>
-                  {isLoading ? (
-                    <AppText variant="caption" color="secondary">
-                      {t("common.loading")}
-                    </AppText>
-                  ) : (
-                    <Button
-                      label={t("discover.loadMore")}
-                      variant="secondary"
-                      onPress={loadMore}
-                    />
-                  )}
-                </View>
-              ) : null
-            }
-          />
-        )}
-      </KeyboardAvoidingView>
-    </Screen>
+            ) : null
+          }
+        />
+      )}
+    </KeyboardAvoidingView>
   );
 }
 
@@ -169,7 +194,10 @@ interface PublicGroupRowProps {
   onJoinSuccess: () => void;
 }
 
-const PublicGroupRow = React.memo(function PublicGroupRow({ group, onJoinSuccess }: PublicGroupRowProps) {
+const PublicGroupRow = React.memo(function PublicGroupRow({
+  group,
+  onJoinSuccess,
+}: PublicGroupRowProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const joinMutation = useJoinPublicGroupMutation(group.id);
@@ -182,6 +210,9 @@ const PublicGroupRow = React.memo(function PublicGroupRow({ group, onJoinSuccess
     });
   };
 
+  const initials = getInitials(group.name);
+  const avatarValue = String(group.id % 8);
+
   const memberLabel =
     group.maxMembers != null
       ? t("discover.membersWithMax", {
@@ -193,6 +224,13 @@ const PublicGroupRow = React.memo(function PublicGroupRow({ group, onJoinSuccess
   return (
     <Card style={[styles.card, { marginBottom: theme.spacing.sm }]}>
       <View style={styles.cardContent}>
+        <GroupAvatar
+          avatarType="gradient"
+          avatarValue={avatarValue}
+          initials={initials}
+          size={48}
+          borderRadius={12}
+        />
         <View style={styles.cardMain}>
           <View style={styles.nameRow}>
             {group.isOfficial && (
@@ -200,7 +238,7 @@ const PublicGroupRow = React.memo(function PublicGroupRow({ group, onJoinSuccess
                 <Ionicons name="shield-checkmark" size={12} color="#D4A017" />
               </View>
             )}
-            <AppText variant="body" style={styles.groupName}>
+            <AppText variant="body" style={styles.groupName} numberOfLines={1}>
               {group.name}
             </AppText>
           </View>
@@ -218,7 +256,10 @@ const PublicGroupRow = React.memo(function PublicGroupRow({ group, onJoinSuccess
             </AppText>
           )}
           {group.isOfficial && (
-            <AppText variant="caption" style={{ color: "#D4A017", fontWeight: "600" }}>
+            <AppText
+              variant="caption"
+              style={{ color: "#D4A017", fontWeight: "600" }}
+            >
               {t("discover.officialGroup")}
             </AppText>
           )}
@@ -235,24 +276,26 @@ const PublicGroupRow = React.memo(function PublicGroupRow({ group, onJoinSuccess
 });
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
   },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
     gap: 8,
   },
   searchInput: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 16,
-  },
-  searchButton: {
-    minWidth: 80,
+    fontSize: 15,
   },
   listContent: {
     paddingBottom: 24,
@@ -270,11 +313,11 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 12,
   },
   cardMain: {
     flex: 1,
-    marginEnd: 12,
+    gap: 2,
   },
   nameRow: {
     flexDirection: "row",
@@ -291,9 +334,9 @@ const styles = StyleSheet.create({
   },
   groupName: {
     fontWeight: "600",
-    marginBottom: 4,
+    flex: 1,
   },
   joinButton: {
-    minWidth: 80,
+    minWidth: 70,
   },
 });

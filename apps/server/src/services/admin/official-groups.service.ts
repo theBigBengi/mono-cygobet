@@ -26,14 +26,14 @@ function mapGroupToItem(
   },
   memberCount: number,
   fixtureCount: number,
-  badge: {
+  badges: Array<{
     id: number;
     name: string;
     description: string;
     icon: string;
     criteriaType: string;
     criteriaValue: number;
-  } | null
+  }>
 ): AdminOfficialGroupItem {
   return {
     id: group.id,
@@ -43,7 +43,7 @@ function mapGroupToItem(
     memberCount,
     fixtureCount,
     createdAt: group.createdAt.toISOString(),
-    badge,
+    badges,
   };
 }
 
@@ -68,7 +68,7 @@ export async function listOfficialGroups(
       skip: (page - 1) * perPage,
       take: perPage,
       include: {
-        groupBadge: true,
+        groupBadges: true,
         _count: {
           select: {
             groupMembers: { where: { status: "joined" } },
@@ -85,16 +85,14 @@ export async function listOfficialGroups(
       g,
       g._count.groupMembers,
       g._count.groupFixtures,
-      g.groupBadge
-        ? {
-            id: g.groupBadge.id,
-            name: g.groupBadge.name,
-            description: g.groupBadge.description,
-            icon: g.groupBadge.icon,
-            criteriaType: g.groupBadge.criteriaType,
-            criteriaValue: g.groupBadge.criteriaValue,
-          }
-        : null
+      g.groupBadges.map((b) => ({
+        id: b.id,
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+        criteriaType: b.criteriaType,
+        criteriaValue: b.criteriaValue,
+      }))
     )
   );
 
@@ -147,27 +145,30 @@ export async function createOfficialGroup(
     data: { isOfficial: true },
   });
 
-  // 4. Create badge if provided
-  let badge: AdminOfficialGroupItem["badge"] = null;
-  if (body.badge) {
-    const created = await prisma.groupBadges.create({
-      data: {
+  // 4. Create badges if provided
+  let badges: AdminOfficialGroupItem["badges"] = [];
+  if (body.badges && body.badges.length > 0) {
+    await prisma.groupBadges.createMany({
+      data: body.badges.map((b) => ({
         groupId: group.id,
-        name: body.badge.name,
-        description: body.badge.description,
-        icon: body.badge.icon,
-        criteriaType: body.badge.criteriaType,
-        criteriaValue: body.badge.criteriaValue ?? 1,
-      },
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+        criteriaType: b.criteriaType,
+        criteriaValue: b.criteriaValue ?? 1,
+      })),
     });
-    badge = {
-      id: created.id,
-      name: created.name,
-      description: created.description,
-      icon: created.icon,
-      criteriaType: created.criteriaType,
-      criteriaValue: created.criteriaValue,
-    };
+    const created = await prisma.groupBadges.findMany({
+      where: { groupId: group.id },
+    });
+    badges = created.map((b) => ({
+      id: b.id,
+      name: b.name,
+      description: b.description,
+      icon: b.icon,
+      criteriaType: b.criteriaType,
+      criteriaValue: b.criteriaValue,
+    }));
   }
 
   // Count fixtures
@@ -181,7 +182,7 @@ export async function createOfficialGroup(
     { ...published, description: body.description ?? null },
     1, // admin is the first member
     fixtureCount,
-    badge
+    badges
   );
 }
 
@@ -191,7 +192,7 @@ export async function getOfficialGroup(
   const group = await prisma.groups.findUnique({
     where: { id: groupId },
     include: {
-      groupBadge: true,
+      groupBadges: true,
       _count: {
         select: {
           groupMembers: { where: { status: "joined" } },
@@ -209,16 +210,14 @@ export async function getOfficialGroup(
     group,
     group._count.groupMembers,
     group._count.groupFixtures,
-    group.groupBadge
-      ? {
-          id: group.groupBadge.id,
-          name: group.groupBadge.name,
-          description: group.groupBadge.description,
-          icon: group.groupBadge.icon,
-          criteriaType: group.groupBadge.criteriaType,
-          criteriaValue: group.groupBadge.criteriaValue,
-        }
-      : null
+    group.groupBadges.map((b) => ({
+      id: b.id,
+      name: b.name,
+      description: b.description,
+      icon: b.icon,
+      criteriaType: b.criteriaType,
+      criteriaValue: b.criteriaValue,
+    }))
   );
 }
 
@@ -247,29 +246,22 @@ export async function updateOfficialGroup(
     });
   }
 
-  // Update or create/delete badge
-  if (body.badge !== undefined) {
-    if (body.badge === null) {
-      // Delete badge
-      await prisma.groupBadges.deleteMany({ where: { groupId } });
-    } else {
-      await prisma.groupBadges.upsert({
-        where: { groupId },
-        create: {
+  // Update badges (replace strategy: delete existing + create new)
+  if (body.badges !== undefined) {
+    // Delete all existing badges for this group
+    await prisma.groupBadges.deleteMany({ where: { groupId } });
+
+    // Create new badges if not null
+    if (body.badges !== null && body.badges.length > 0) {
+      await prisma.groupBadges.createMany({
+        data: body.badges.map((b) => ({
           groupId,
-          name: body.badge.name,
-          description: body.badge.description,
-          icon: body.badge.icon,
-          criteriaType: body.badge.criteriaType,
-          criteriaValue: body.badge.criteriaValue ?? 1,
-        },
-        update: {
-          name: body.badge.name,
-          description: body.badge.description,
-          icon: body.badge.icon,
-          criteriaType: body.badge.criteriaType,
-          criteriaValue: body.badge.criteriaValue ?? 1,
-        },
+          name: b.name,
+          description: b.description,
+          icon: b.icon,
+          criteriaType: b.criteriaType,
+          criteriaValue: b.criteriaValue ?? 1,
+        })),
       });
     }
   }

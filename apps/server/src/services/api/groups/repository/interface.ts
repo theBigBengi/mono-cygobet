@@ -37,14 +37,14 @@ export interface GroupsRepository {
       creatorId: number;
       isOfficial: boolean;
       groupRules: { maxMembers: number } | null;
-      groupBadge: {
+      groupBadges: Array<{
         id: number;
         name: string;
         description: string;
         icon: string;
         criteriaType: string;
         criteriaValue: number;
-      } | null;
+      }>;
     }>;
     totalCount: number;
   }>;

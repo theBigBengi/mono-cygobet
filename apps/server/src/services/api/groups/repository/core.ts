@@ -71,7 +71,7 @@ export type PublicGroupWithRules = Prisma.groupsGetPayload<{
     creatorId: true;
     isOfficial: true;
     groupRules: { select: { maxMembers: true } };
-    groupBadge: { select: { id: true; name: true; description: true; icon: true; criteriaType: true; criteriaValue: true } };
+    groupBadges: { select: { id: true; name: true; description: true; icon: true; criteriaType: true; criteriaValue: true } };
   };
 }>;
 
@@ -115,7 +115,7 @@ export async function findPublicGroupsPaginated(params: {
         creatorId: true,
         isOfficial: true,
         groupRules: { select: { maxMembers: true } },
-        groupBadge: {
+        groupBadges: {
           select: {
             id: true,
             name: true,

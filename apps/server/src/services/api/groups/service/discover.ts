@@ -63,16 +63,19 @@ export async function getPublicGroups(
     creatorUsername: creatorUsernameByUserId.get(g.creatorId) ?? null,
     createdAt: g.createdAt.toISOString(),
     isOfficial: g.isOfficial || undefined,
-    badge: g.groupBadge
-      ? {
-          id: g.groupBadge.id,
-          name: g.groupBadge.name,
-          description: g.groupBadge.description,
-          icon: g.groupBadge.icon,
-          criteriaType: g.groupBadge.criteriaType as ApiGroupBadgeCriteriaType,
-          criteriaValue: g.groupBadge.criteriaValue,
-        }
-      : null,
+    badge: (() => {
+      const first = g.groupBadges[0];
+      return first
+        ? {
+            id: first.id,
+            name: first.name,
+            description: first.description,
+            icon: first.icon,
+            criteriaType: first.criteriaType as ApiGroupBadgeCriteriaType,
+            criteriaValue: first.criteriaValue,
+          }
+        : null;
+    })(),
   }));
 
   return {

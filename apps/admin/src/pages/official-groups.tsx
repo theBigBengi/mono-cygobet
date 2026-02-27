@@ -148,13 +148,14 @@ type WizardState = {
   correctDifferencePoints: string;
   outcomePoints: string;
 
-  // Badge
-  skipBadge: boolean;
-  badgeName: string;
-  badgeDescription: string;
-  badgeIcon: string;
-  badgeCriteriaType: string;
-  badgeCriteriaValue: string;
+  // Badges
+  badges: Array<{
+    name: string;
+    description: string;
+    icon: string;
+    criteriaType: string;
+    criteriaValue: string;
+  }>;
 };
 
 const initialWizardState: WizardState = {
@@ -180,12 +181,7 @@ const initialWizardState: WizardState = {
   onTheNosePoints: "3",
   correctDifferencePoints: "2",
   outcomePoints: "1",
-  skipBadge: true,
-  badgeName: "",
-  badgeDescription: "",
-  badgeIcon: "🏆",
-  badgeCriteriaType: "participation",
-  badgeCriteriaValue: "1",
+  badges: [],
 };
 
 type WizardAction =
@@ -217,13 +213,10 @@ type WizardAction =
   | { type: "SET_ON_THE_NOSE_POINTS"; value: string }
   | { type: "SET_CORRECT_DIFFERENCE_POINTS"; value: string }
   | { type: "SET_OUTCOME_POINTS"; value: string }
-  // Badge
-  | { type: "SET_SKIP_BADGE"; value: boolean }
-  | { type: "SET_BADGE_NAME"; value: string }
-  | { type: "SET_BADGE_DESCRIPTION"; value: string }
-  | { type: "SET_BADGE_ICON"; value: string }
-  | { type: "SET_BADGE_CRITERIA_TYPE"; value: string }
-  | { type: "SET_BADGE_CRITERIA_VALUE"; value: string };
+  // Badges
+  | { type: "ADD_BADGE" }
+  | { type: "REMOVE_BADGE"; index: number }
+  | { type: "UPDATE_BADGE"; index: number; field: string; value: string };
 
 function wizardReducer(state: WizardState, action: WizardAction): WizardState {
   switch (action.type) {
@@ -325,19 +318,32 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
     case "SET_OUTCOME_POINTS":
       return { ...state, outcomePoints: action.value };
 
-    // Badge
-    case "SET_SKIP_BADGE":
-      return { ...state, skipBadge: action.value };
-    case "SET_BADGE_NAME":
-      return { ...state, badgeName: action.value };
-    case "SET_BADGE_DESCRIPTION":
-      return { ...state, badgeDescription: action.value };
-    case "SET_BADGE_ICON":
-      return { ...state, badgeIcon: action.value };
-    case "SET_BADGE_CRITERIA_TYPE":
-      return { ...state, badgeCriteriaType: action.value };
-    case "SET_BADGE_CRITERIA_VALUE":
-      return { ...state, badgeCriteriaValue: action.value };
+    // Badges
+    case "ADD_BADGE":
+      return {
+        ...state,
+        badges: [
+          ...state.badges,
+          {
+            name: "",
+            description: "",
+            icon: "🏆",
+            criteriaType: "participation",
+            criteriaValue: "1",
+          },
+        ],
+      };
+    case "REMOVE_BADGE":
+      return {
+        ...state,
+        badges: state.badges.filter((_, i) => i !== action.index),
+      };
+    case "UPDATE_BADGE": {
+      const badges = state.badges.map((b, i) =>
+        i === action.index ? { ...b, [action.field]: action.value } : b
+      );
+      return { ...state, badges };
+    }
 
     default:
       return state;
@@ -1585,6 +1591,111 @@ function Step3Details({
 
 // ─── Step 4: Badge ───────────────────────────────────────────────────────────
 
+function BadgeCard({
+  badge,
+  index,
+  onUpdate,
+  onRemove,
+}: {
+  badge: WizardState["badges"][0];
+  index: number;
+  onUpdate: (index: number, field: string, value: string) => void;
+  onRemove: (index: number) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2 flex flex-row items-center justify-between">
+        <CardTitle className="text-sm">Badge {index + 1}</CardTitle>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => onRemove(index)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Name</Label>
+            <Input
+              value={badge.name}
+              onChange={(e) => onUpdate(index, "name", e.target.value)}
+              placeholder="e.g. Gold Badge"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Icon</Label>
+            <Input
+              value={badge.icon}
+              onChange={(e) => onUpdate(index, "icon", e.target.value)}
+              className="w-20"
+            />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Description</Label>
+          <Input
+            value={badge.description}
+            onChange={(e) => onUpdate(index, "description", e.target.value)}
+            placeholder="Badge description"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Award Rule</Label>
+          <Select
+            value={badge.criteriaType}
+            onValueChange={(v) => onUpdate(index, "criteriaType", v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="participation">All participants</SelectItem>
+              <SelectItem value="top_n">Top N in leaderboard</SelectItem>
+              <SelectItem value="exact_predictions">
+                Minimum exact predictions
+              </SelectItem>
+              <SelectItem value="custom">Manual (admin awards)</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {badge.criteriaType === "participation" &&
+              "Every member who joined the group will receive this badge when it ends."}
+            {badge.criteriaType === "top_n" &&
+              "Only the top N players on the final leaderboard will receive this badge."}
+            {badge.criteriaType === "exact_predictions" &&
+              "Members who reach at least N exact score predictions will receive this badge."}
+            {badge.criteriaType === "custom" &&
+              "No automatic evaluation — you decide who gets the badge via the Award button."}
+          </p>
+        </div>
+        {(badge.criteriaType === "top_n" ||
+          badge.criteriaType === "exact_predictions") && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">
+              {badge.criteriaType === "top_n"
+                ? "How many top players?"
+                : "Minimum exact predictions"}
+            </Label>
+            <Input
+              type="number"
+              min="1"
+              value={badge.criteriaValue}
+              onChange={(e) =>
+                onUpdate(index, "criteriaValue", e.target.value)
+              }
+              className="w-32"
+              placeholder={badge.criteriaType === "top_n" ? "e.g. 3" : "e.g. 5"}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function Step4Badge({
   state,
   dispatch,
@@ -1592,95 +1703,53 @@ function Step4Badge({
   state: WizardState;
   dispatch: React.Dispatch<WizardAction>;
 }) {
+  const hasBadges = state.badges.length > 0;
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Badge (optional)</h2>
+        <h2 className="text-lg font-semibold">Badges (optional)</h2>
         <p className="text-sm text-muted-foreground">
-          Optionally configure a badge that can be awarded to participants.
+          Configure one or more badge tiers that can be awarded to participants.
         </p>
       </div>
 
       <div className="flex items-center gap-3">
         <Switch
-          checked={!state.skipBadge}
-          onCheckedChange={(checked) =>
-            dispatch({ type: "SET_SKIP_BADGE", value: !checked })
-          }
+          checked={hasBadges}
+          onCheckedChange={(checked) => {
+            if (checked && state.badges.length === 0) {
+              dispatch({ type: "ADD_BADGE" });
+            } else if (!checked) {
+              // Remove all badges
+              for (let i = state.badges.length - 1; i >= 0; i--) {
+                dispatch({ type: "REMOVE_BADGE", index: i });
+              }
+            }
+          }}
         />
-        <Label>{state.skipBadge ? "No badge" : "Configure badge"}</Label>
+        <Label>{hasBadges ? "Configure badges" : "No badges"}</Label>
       </div>
 
-      {!state.skipBadge && (
+      {hasBadges && (
         <div className="space-y-4 max-w-xl">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Badge Name</Label>
-            <Input
-              value={state.badgeName}
-              onChange={(e) =>
-                dispatch({ type: "SET_BADGE_NAME", value: e.target.value })
+          {state.badges.map((badge, i) => (
+            <BadgeCard
+              key={i}
+              badge={badge}
+              index={i}
+              onUpdate={(idx, field, value) =>
+                dispatch({ type: "UPDATE_BADGE", index: idx, field, value })
               }
-              placeholder="e.g. CL Participant"
+              onRemove={(idx) => dispatch({ type: "REMOVE_BADGE", index: idx })}
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Description</Label>
-            <Input
-              value={state.badgeDescription}
-              onChange={(e) =>
-                dispatch({
-                  type: "SET_BADGE_DESCRIPTION",
-                  value: e.target.value,
-                })
-              }
-              placeholder="Participated in Champions League group"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Icon (emoji)</Label>
-              <Input
-                value={state.badgeIcon}
-                onChange={(e) =>
-                  dispatch({ type: "SET_BADGE_ICON", value: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Criteria Value</Label>
-              <Input
-                type="number"
-                value={state.badgeCriteriaValue}
-                onChange={(e) =>
-                  dispatch({
-                    type: "SET_BADGE_CRITERIA_VALUE",
-                    value: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Criteria Type</Label>
-            <Select
-              value={state.badgeCriteriaType}
-              onValueChange={(v) =>
-                dispatch({ type: "SET_BADGE_CRITERIA_TYPE", value: v })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="participation">Participation</SelectItem>
-                <SelectItem value="top_n">Top N</SelectItem>
-                <SelectItem value="exact_predictions">
-                  Exact Predictions
-                </SelectItem>
-                <SelectItem value="custom">Custom (manual)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          ))}
+          <Button
+            variant="outline"
+            onClick={() => dispatch({ type: "ADD_BADGE" })}
+          >
+            Add Badge
+          </Button>
         </div>
       )}
     </div>
@@ -1754,7 +1823,8 @@ function CreateWizard({
         return state.name.trim().length > 0;
       case 4:
         return (
-          state.skipBadge || state.badgeName.trim().length > 0
+          state.badges.length === 0 ||
+          state.badges.every((b) => b.name.trim().length > 0)
         );
       default:
         return false;
@@ -1809,14 +1879,15 @@ function CreateWizard({
       }
     }
 
-    if (!state.skipBadge && state.badgeName.trim()) {
-      body.badge = {
-        name: state.badgeName,
-        description: state.badgeDescription,
-        icon: state.badgeIcon,
-        criteriaType: state.badgeCriteriaType,
-        criteriaValue: Number(state.badgeCriteriaValue) || 1,
-      };
+    const validBadges = state.badges.filter((b) => b.name.trim());
+    if (validBadges.length > 0) {
+      body.badges = validBadges.map((b) => ({
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+        criteriaType: b.criteriaType,
+        criteriaValue: Number(b.criteriaValue) || 1,
+      }));
     }
 
     onCreated(body);
@@ -1868,13 +1939,15 @@ export default function OfficialGroupsPage() {
     React.useState<AdminOfficialGroupItem | null>(null);
   const [editName, setEditName] = React.useState("");
   const [editDescription, setEditDescription] = React.useState("");
-  const [editBadgeName, setEditBadgeName] = React.useState("");
-  const [editBadgeDescription, setEditBadgeDescription] = React.useState("");
-  const [editBadgeIcon, setEditBadgeIcon] = React.useState("");
-  const [editBadgeCriteriaType, setEditBadgeCriteriaType] =
-    React.useState("");
-  const [editBadgeCriteriaValue, setEditBadgeCriteriaValue] =
-    React.useState("");
+  const [editBadges, setEditBadges] = React.useState<
+    Array<{
+      name: string;
+      description: string;
+      icon: string;
+      criteriaType: string;
+      criteriaValue: string;
+    }>
+  >([]);
 
   const { data: groupsData, isLoading } = useQuery({
     queryKey: ["official-groups", page],
@@ -1940,16 +2013,17 @@ export default function OfficialGroupsPage() {
     if (editDescription !== (editGroup.description ?? ""))
       body.description = editDescription;
 
-    if (editBadgeName.trim()) {
-      body.badge = {
-        name: editBadgeName,
-        description: editBadgeDescription,
-        icon: editBadgeIcon,
-        criteriaType: editBadgeCriteriaType,
-        criteriaValue: Number(editBadgeCriteriaValue) || 1,
-      };
-    } else if (editGroup.badge && !editBadgeName.trim()) {
-      body.badge = null;
+    const validBadges = editBadges.filter((b) => b.name.trim());
+    if (validBadges.length > 0) {
+      body.badges = validBadges.map((b) => ({
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+        criteriaType: b.criteriaType,
+        criteriaValue: Number(b.criteriaValue) || 1,
+      }));
+    } else if (editGroup.badges.length > 0 && validBadges.length === 0) {
+      body.badges = null;
     }
 
     updateMutation.mutate({ id: editGroup.id, body });
@@ -1959,11 +2033,15 @@ export default function OfficialGroupsPage() {
     setEditGroup(group);
     setEditName(group.name);
     setEditDescription(group.description ?? "");
-    setEditBadgeName(group.badge?.name ?? "");
-    setEditBadgeDescription(group.badge?.description ?? "");
-    setEditBadgeIcon(group.badge?.icon ?? "🏆");
-    setEditBadgeCriteriaType(group.badge?.criteriaType ?? "participation");
-    setEditBadgeCriteriaValue(String(group.badge?.criteriaValue ?? 1));
+    setEditBadges(
+      group.badges.map((b) => ({
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+        criteriaType: b.criteriaType,
+        criteriaValue: String(b.criteriaValue),
+      }))
+    );
     setIsEditOpen(true);
   }
 
@@ -2032,9 +2110,15 @@ export default function OfficialGroupsPage() {
                     <TableCell>{group.memberCount}</TableCell>
                     <TableCell>{group.fixtureCount}</TableCell>
                     <TableCell>
-                      {group.badge ? (
-                        <span title={group.badge.description}>
-                          {group.badge.icon} {group.badge.name}
+                      {group.badges.length > 0 ? (
+                        <span
+                          title={group.badges
+                            .map((b) => `${b.icon} ${b.name}`)
+                            .join(", ")}
+                        >
+                          {group.badges.length === 1
+                            ? `${group.badges[0].icon} ${group.badges[0].name}`
+                            : `${group.badges.length} badges`}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
@@ -2055,7 +2139,18 @@ export default function OfficialGroupsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => awardMutation.mutate(group.id)}
-                        disabled={awardMutation.isPending}
+                        disabled={
+                          awardMutation.isPending ||
+                          group.badges.length === 0 ||
+                          group.status !== "ended"
+                        }
+                        title={
+                          group.badges.length === 0
+                            ? "No badges configured for this group"
+                            : group.status !== "ended"
+                              ? `Group must be ended to award badges (currently ${group.status})`
+                              : undefined
+                        }
                       >
                         Award Badges
                       </Button>
@@ -2129,69 +2224,159 @@ export default function OfficialGroupsPage() {
               />
             </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Badge</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div>
-                  <Label className="text-xs">
-                    Badge Name (clear to remove badge)
-                  </Label>
-                  <Input
-                    value={editBadgeName}
-                    onChange={(e) => setEditBadgeName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Description</Label>
-                  <Input
-                    value={editBadgeDescription}
-                    onChange={(e) => setEditBadgeDescription(e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs">Icon</Label>
-                    <Input
-                      value={editBadgeIcon}
-                      onChange={(e) => setEditBadgeIcon(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Criteria Value</Label>
-                    <Input
-                      type="number"
-                      value={editBadgeCriteriaValue}
-                      onChange={(e) =>
-                        setEditBadgeCriteriaValue(e.target.value)
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Badges</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setEditBadges((prev) => [
+                      ...prev,
+                      {
+                        name: "",
+                        description: "",
+                        icon: "🏆",
+                        criteriaType: "participation",
+                        criteriaValue: "1",
+                      },
+                    ])
+                  }
+                >
+                  Add Badge
+                </Button>
+              </div>
+              {editBadges.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  No badges configured.
+                </p>
+              )}
+              {editBadges.map((badge, i) => (
+                <Card key={i}>
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                    <CardTitle className="text-sm">Badge {i + 1}</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() =>
+                        setEditBadges((prev) =>
+                          prev.filter((_, idx) => idx !== i)
+                        )
                       }
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs">Criteria Type</Label>
-                  <Select
-                    value={editBadgeCriteriaType}
-                    onValueChange={setEditBadgeCriteriaType}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="participation">
-                        Participation
-                      </SelectItem>
-                      <SelectItem value="top_n">Top N</SelectItem>
-                      <SelectItem value="exact_predictions">
-                        Exact Predictions
-                      </SelectItem>
-                      <SelectItem value="custom">Custom (manual)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="grid grid-cols-[1fr_auto] gap-2">
+                      <div>
+                        <Label className="text-xs">Name</Label>
+                        <Input
+                          value={badge.name}
+                          onChange={(e) =>
+                            setEditBadges((prev) =>
+                              prev.map((b, idx) =>
+                                idx === i
+                                  ? { ...b, name: e.target.value }
+                                  : b
+                              )
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Icon</Label>
+                        <Input
+                          value={badge.icon}
+                          onChange={(e) =>
+                            setEditBadges((prev) =>
+                              prev.map((b, idx) =>
+                                idx === i
+                                  ? { ...b, icon: e.target.value }
+                                  : b
+                              )
+                            )
+                          }
+                          className="w-20"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Description</Label>
+                      <Input
+                        value={badge.description}
+                        onChange={(e) =>
+                          setEditBadges((prev) =>
+                            prev.map((b, idx) =>
+                              idx === i
+                                ? { ...b, description: e.target.value }
+                                : b
+                            )
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Award Rule</Label>
+                      <Select
+                        value={badge.criteriaType}
+                        onValueChange={(v) =>
+                          setEditBadges((prev) =>
+                            prev.map((b, idx) =>
+                              idx === i ? { ...b, criteriaType: v } : b
+                            )
+                          )
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="participation">
+                            All participants
+                          </SelectItem>
+                          <SelectItem value="top_n">
+                            Top N in leaderboard
+                          </SelectItem>
+                          <SelectItem value="exact_predictions">
+                            Minimum exact predictions
+                          </SelectItem>
+                          <SelectItem value="custom">
+                            Manual (admin awards)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {(badge.criteriaType === "top_n" ||
+                      badge.criteriaType === "exact_predictions") && (
+                      <div>
+                        <Label className="text-xs">
+                          {badge.criteriaType === "top_n"
+                            ? "How many top players?"
+                            : "Minimum exact predictions"}
+                        </Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={badge.criteriaValue}
+                          onChange={(e) =>
+                            setEditBadges((prev) =>
+                              prev.map((b, idx) =>
+                                idx === i
+                                  ? { ...b, criteriaValue: e.target.value }
+                                  : b
+                              )
+                            )
+                          }
+                          className="w-32"
+                        />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
             <Button
               className="w-full"

@@ -1206,14 +1206,14 @@ export interface AdminOfficialGroupItem {
   memberCount: number;
   fixtureCount: number;
   createdAt: string;
-  badge: {
+  badges: Array<{
     id: number;
     name: string;
     description: string;
     icon: string;
     criteriaType: string;
     criteriaValue: number;
-  } | null;
+  }>;
 }
 
 export interface AdminOfficialGroupsListResponse {
@@ -1240,13 +1240,13 @@ export interface AdminCreateOfficialGroupBody {
   outcomePoints?: number;
   predictionMode?: string;
   koRoundMode?: string;
-  badge?: {
+  badges?: Array<{
     name: string;
     description: string;
     icon: string;
     criteriaType: string;
     criteriaValue?: number;
-  };
+  }>;
 }
 
 export interface AdminCreateOfficialGroupResponse {
@@ -1258,13 +1258,13 @@ export interface AdminCreateOfficialGroupResponse {
 export interface AdminUpdateOfficialGroupBody {
   name?: string;
   description?: string;
-  badge?: {
+  badges?: Array<{
     name: string;
     description: string;
     icon: string;
     criteriaType: string;
     criteriaValue?: number;
-  } | null;
+  }> | null;
 }
 
 export interface AdminUpdateOfficialGroupResponse {
