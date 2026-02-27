@@ -316,6 +316,11 @@
     "ctaAllFinished": "כל המשחקים הסתיימו",
     "ctaMoreGames": "+{{count}} נוספים",
     "ctaVs": "נגד",
+    "ctaToday": "היום",
+    "ctaTomorrow": "מחר",
+    "ctaNext": "הבא",
+    "ctaCritical": "{{count}} קריטיים",
+    "ctaAllCritical": "{{count}} משחקים דורשים ניחוש · קריטי",
     "ranking": "דירוג",
     "rankingPending": "הדירוג יחושב לאחר סיום המשחק הראשון",
     "pts": "נק׳",
@@ -353,7 +358,9 @@
     "noPrediction": "אין ניחוש",
     "myPrediction": "הניחוש שלי",
     "addPrediction": "הוסף ניחוש",
-    "pts": "נק׳"
+    "pts": "נק׳",
+    "chooseAvatar": "בחר אווטאר",
+    "groupAvatar": "אווטאר קבוצה"
   },
   "groupSettings": {
     "general": "כללי",
@@ -546,7 +553,8 @@
     "loadMore": "טען עוד",
     "join": "הצטרף",
     "failedLoadPublicGroups": "טעינת קבוצות ציבוריות נכשלה",
-    "createdBy": "על ידי @{{username}}"
+    "createdBy": "על ידי @{{username}}",
+    "officialGroup": "רשמי"
   },
   "chat": {
     "typePlaceholder": "הקלד הודעה...",
@@ -845,6 +853,10 @@
     "selectionSummaryTeams": "קבוצות",
     "selectionSummaryTeamsSelected": "קבוצות נבחרו",
     "selectionSummaryTeamsCount": "{{count}} קבוצות"
+  },
+  "badges": {
+    "earned": "תגים שהושגו",
+    "earnedIn": "הושג ב{{group}}"
   },
   "groupInfo": {
     "title": "חוקי הקבוצה",

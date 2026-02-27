@@ -311,6 +311,10 @@ export type ApiUpdateGroupBody = {
   correctDifferencePoints?: number;
   /** Scoring: points for correct outcome. Only editable before first game starts. */
   outcomePoints?: number;
+  /** Avatar type: "gradient" | "emoji" | "image". */
+  avatarType?: string;
+  /** Avatar value: gradient index, emoji string, or image URL. */
+  avatarValue?: string;
 };
 
 /**
@@ -368,6 +372,7 @@ export type ApiGroupItem = {
   privacy: ApiGroupPrivacy;
   status: ApiGroupStatus;
   creatorId: number;
+  isOfficial?: boolean;
   /**
    * The current user's role in this group.
    */
@@ -443,6 +448,10 @@ export type ApiGroupItem = {
   inviteAccess?: ApiInviteAccess;
   /** Maximum number of members allowed in the group. */
   maxMembers?: number;
+  /** Avatar type: "gradient" | "emoji" | "image". */
+  avatarType?: string | null;
+  /** Avatar value: gradient index, emoji string, or image URL. */
+  avatarValue?: string | null;
   /**
    * Invite code for the group (if generated). Only present when relevant.
    */
@@ -523,6 +532,8 @@ export type ApiPublicGroupItem = {
   totalFixtures: number;
   creatorUsername: string | null;
   createdAt: string;
+  isOfficial?: boolean;
+  badge?: ApiGroupBadge | null;
 };
 
 /**
@@ -949,6 +960,30 @@ export type ApiMyPredictionsForFixtureResponse = {
   data: ApiMyPredictionForFixtureItem[];
 };
 
+// --- Group Badges ---
+
+export type ApiGroupBadgeCriteriaType = 'participation' | 'top_n' | 'exact_predictions' | 'custom';
+
+export type ApiGroupBadge = {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  criteriaType: ApiGroupBadgeCriteriaType;
+  criteriaValue: number;
+};
+
+export type ApiEarnedBadge = {
+  id: number;
+  badgeId: number;
+  groupId: number;
+  groupName: string;
+  name: string;
+  description: string;
+  icon: string;
+  earnedAt: string;
+};
+
 // --- User Stats ---
 
 /** Badge IDs for user profile stats. */
@@ -1025,6 +1060,7 @@ export type ApiUserStatsData = {
   distribution: ApiPredictionDistribution;
   form: ApiFormItem[];
   badges: ApiBadge[];
+  earnedBadges: ApiEarnedBadge[];
   groups: ApiUserGroupStat[];
   insights: ApiInsight[];
   bestLeague: {

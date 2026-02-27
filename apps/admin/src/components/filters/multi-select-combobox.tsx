@@ -250,7 +250,7 @@ export function MultiSelectCombobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[300px] p-0" align="start">
         {optionsContent}
         <div className="border-t p-2 flex justify-end">
           <Button size="sm" onClick={() => setOpen(false)} className="h-8">

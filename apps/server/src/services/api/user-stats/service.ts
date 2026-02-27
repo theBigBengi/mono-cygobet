@@ -9,7 +9,9 @@ import type {
   ApiFormItem,
   ApiUserGroupStat,
   ApiPredictionDistribution,
+  ApiEarnedBadge,
 } from "@repo/types";
+import { prisma } from "@repo/db";
 import * as repo from "./repository";
 import { computeBadges, computeMaxStreak } from "./badges";
 import { generateInsights } from "./insights";
@@ -72,6 +74,27 @@ async function computeUserStats(
     repo.findBestLeague(targetUserId),
   ]);
 
+  // Fetch earned badges (group badges) from DB
+  const earnedBadgesRaw = await prisma.userEarnedBadges.findMany({
+    where: { userId: targetUserId },
+    include: {
+      badge: true,
+      group: { select: { name: true } },
+    },
+    orderBy: { earnedAt: "desc" },
+  });
+
+  const earnedBadges: ApiEarnedBadge[] = earnedBadgesRaw.map((eb) => ({
+    id: eb.id,
+    badgeId: eb.badgeId,
+    groupId: eb.groupId,
+    groupName: eb.group.name,
+    name: eb.badge.name,
+    description: eb.badge.description,
+    icon: eb.badge.icon,
+    earnedAt: eb.earnedAt.toISOString(),
+  }));
+
   if (!overall) {
     const emptyBadges = computeBadges({
       exactScores: 0,
@@ -105,6 +128,7 @@ async function computeUserStats(
         distribution: { exact: 0, difference: 0, outcome: 0, miss: 0 },
         form: [],
         badges: emptyBadges,
+        earnedBadges,
         groups: [],
         insights: generateInsights({
           currentStreak: 0,
@@ -227,6 +251,7 @@ async function computeUserStats(
     distribution: dist,
     form,
     badges,
+    earnedBadges,
     groups,
     insights: generateInsights({
       currentStreak,

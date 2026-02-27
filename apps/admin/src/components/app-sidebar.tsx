@@ -31,6 +31,7 @@ const data = {
       items: [
         { title: "Fixtures", url: "/fixtures" },
         { title: "Teams", url: "/teams" },
+        { title: "Official Groups", url: "/official-groups" },
       ],
     },
     {

@@ -34,6 +34,9 @@ export function buildGroupItem(group: {
   createdAt: Date;
   updatedAt: Date;
   inviteCode?: string | null;
+  avatarType?: string | null;
+  avatarValue?: string | null;
+  isOfficial?: boolean;
 }): {
   id: number;
   name: string;
@@ -44,6 +47,9 @@ export function buildGroupItem(group: {
   createdAt: string;
   updatedAt: string;
   inviteCode?: string | null;
+  avatarType?: string | null;
+  avatarValue?: string | null;
+  isOfficial?: boolean;
 } {
   return {
     id: group.id,
@@ -55,6 +61,9 @@ export function buildGroupItem(group: {
     createdAt: group.createdAt.toISOString(),
     updatedAt: group.updatedAt.toISOString(),
     inviteCode: group.inviteCode ?? null,
+    avatarType: group.avatarType ?? null,
+    avatarValue: group.avatarValue ?? null,
+    isOfficial: group.isOfficial || undefined,
   };
 }
 
@@ -77,6 +86,9 @@ export function buildDraftGroupItem(
     creatorId: number;
     createdAt: Date;
     updatedAt: Date;
+    avatarType?: string | null;
+    avatarValue?: string | null;
+    isOfficial?: boolean;
   },
   firstGame: ApiFixturesListResponse["data"][0] | null,
   lastGame: ApiFixturesListResponse["data"][0] | null
@@ -112,6 +124,9 @@ export function buildActiveGroupItem(
     creatorId: number;
     createdAt: Date;
     updatedAt: Date;
+    avatarType?: string | null;
+    avatarValue?: string | null;
+    isOfficial?: boolean;
   },
   stats: {
     memberCount: number;

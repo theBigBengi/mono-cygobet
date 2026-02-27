@@ -5,8 +5,7 @@ import React from "react";
 import { View, StyleSheet, Text, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { Card, AppText } from "@/components/ui";
+import { Card, AppText, GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiGroupStatus, ApiGroupPrivacy } from "@repo/types";
 
@@ -19,6 +18,10 @@ interface GroupLobbyHeaderProps {
   compact?: boolean;
   /** Future: group image URL */
   image?: string | null;
+  /** Avatar type for gradient/emoji/image */
+  avatarType?: string | null;
+  /** Avatar value (gradient index, emoji, image url) */
+  avatarValue?: string | null;
   /** When provided, shows info icon; onPress opens group info sheet */
   onInfoPress?: () => void;
   /** When provided, shows back button */
@@ -27,6 +30,8 @@ interface GroupLobbyHeaderProps {
   onSettingsPress?: () => void;
   /** When true, hides nav buttons (used with external sticky header) */
   hideNavButtons?: boolean;
+  /** Whether this is an official group */
+  isOfficial?: boolean;
 }
 
 function getInitials(name: string): string {
@@ -45,10 +50,13 @@ function GroupLobbyHeaderInner({
   privacy,
   compact = false,
   image: _image,
+  avatarType,
+  avatarValue,
   onInfoPress,
   onBack,
   onSettingsPress,
   hideNavButtons = false,
+  isOfficial = false,
 }: GroupLobbyHeaderProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -123,19 +131,11 @@ function GroupLobbyHeaderInner({
             onPress={onInfoPress}
             disabled={!onInfoPress}
           >
-            <View
-              style={[
-                styles.shield,
-                {
-                  backgroundColor: theme.colors.primary,
-                  shadowColor: "#000",
-                },
-              ]}
-            >
-              <Text style={[styles.shieldInitials, { color: theme.colors.primaryText }]}>
-                {initials}
-              </Text>
-            </View>
+            <GroupAvatar
+              avatarType={avatarType}
+              avatarValue={avatarValue}
+              initials={initials}
+            />
             {/* Info badge */}
             {onInfoPress && (
               <View style={[styles.infoBadge, { backgroundColor: theme.colors.background }]}>
@@ -145,12 +145,19 @@ function GroupLobbyHeaderInner({
           </Pressable>
 
           {/* Name */}
-          <Text
-            style={[styles.hudName, { color: theme.colors.textPrimary }]}
-            numberOfLines={2}
-          >
-            {name}
-          </Text>
+          <View style={styles.hudNameRow}>
+            {isOfficial && (
+              <View style={styles.officialBadge}>
+                <Ionicons name="shield-checkmark" size={14} color="#D4A017" />
+              </View>
+            )}
+            <Text
+              style={[styles.hudName, { color: theme.colors.textPrimary }]}
+              numberOfLines={2}
+            >
+              {name}
+            </Text>
+          </View>
 
           {/* Stats Row */}
           <View style={styles.hudStats}>
@@ -194,11 +201,13 @@ function GroupLobbyHeaderInner({
   return (
     <Card style={styles.card}>
       <View style={styles.container}>
-        <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
-          <AppText variant="title" style={[styles.initials, { color: theme.colors.primaryText }]}>
-            {initials}
-          </AppText>
-        </View>
+        <GroupAvatar
+          avatarType={avatarType}
+          avatarValue={avatarValue}
+          initials={initials}
+          size={80}
+          borderRadius={14}
+        />
         <View style={styles.textContainer}>
           <AppText variant="title" style={styles.name} numberOfLines={2}>
             {name}
@@ -278,30 +287,25 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 3,
   },
-  shield: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    justifyContent: "center",
+  hudNameRow: {
+    flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-    borderBottomWidth: 4,
-    borderBottomColor: "rgba(0,0,0,0.15)",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 8,
+    justifyContent: "center",
+    gap: 6,
+    marginBottom: 8,
   },
-  shieldInitials: {
-    fontWeight: "800",
-    fontSize: 30,
+  officialBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#D4A01720",
+    alignItems: "center",
+    justifyContent: "center",
   },
   hudName: {
     fontSize: 22,
     fontWeight: "800",
     textAlign: "center",
-    marginBottom: 8,
   },
   hudStats: {
     flexDirection: "row",
@@ -342,17 +346,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     padding: 16,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  initials: {
-    fontWeight: "700",
-    fontSize: 32,
   },
   textContainer: {
     flex: 1,

@@ -428,7 +428,7 @@ function GroupsContent() {
                       borderTopColor: theme.colors.border,
                     }}
                   >
-                    {[1, 2, 3, 4].map((j) => (
+                    {[1, 2, 3].map((j) => (
                       <View
                         key={j}
                         style={{

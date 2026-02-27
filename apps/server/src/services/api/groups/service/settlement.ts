@@ -15,6 +15,7 @@ import {
   invalidateH2HCache,
 } from "../../../../lib/cache-invalidation";
 import type { TypedIOServer } from "../../../../types/socket";
+import { evaluateGroupBadges } from "./badge-evaluation";
 
 const log = getLogger("Settlement");
 
@@ -321,6 +322,47 @@ export async function settlePredictionsForFixtures(
 
     // Step 7: Transition completed groups to "ended"
     const groupsEnded = await transitionCompletedGroups(uniqueGroupIds);
+
+    // Step 7b: Evaluate badges for ended official groups
+    if (groupsEnded > 0) {
+      const pendingGroupIds2 = new Set(
+        (
+          await prisma.groupFixtures.groupBy({
+            by: ["groupId"],
+            where: {
+              groupId: { in: uniqueGroupIds },
+              fixtures: {
+                state: {
+                  notIn: [
+                    ...FINISHED_STATES,
+                    ...CANCELLED_STATES,
+                  ] as FixtureState[],
+                },
+              },
+            },
+          })
+        ).map((g) => g.groupId)
+      );
+      const completedGroupIds = uniqueGroupIds.filter(
+        (id) => !pendingGroupIds2.has(id)
+      );
+      for (const gId of completedGroupIds) {
+        try {
+          const officialCheck = await prisma.groups.findUnique({
+            where: { id: gId },
+            select: { isOfficial: true },
+          });
+          if (officialCheck?.isOfficial) {
+            await evaluateGroupBadges(gId);
+          }
+        } catch (badgeErr) {
+          log.warn(
+            { groupId: gId, err: badgeErr },
+            "Failed to evaluate badges for ended official group"
+          );
+        }
+      }
+    }
 
     // Invalidate ranking cache so "after" snapshots are fresh
     await invalidateRankingCache(uniqueGroupIds);

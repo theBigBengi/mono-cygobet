@@ -35,7 +35,16 @@ export interface GroupsRepository {
       name: string;
       createdAt: Date;
       creatorId: number;
+      isOfficial: boolean;
       groupRules: { maxMembers: number } | null;
+      groupBadge: {
+        id: number;
+        name: string;
+        description: string;
+        icon: string;
+        criteriaType: string;
+        criteriaValue: number;
+      } | null;
     }>;
     totalCount: number;
   }>;

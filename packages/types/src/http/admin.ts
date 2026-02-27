@@ -1196,6 +1196,94 @@ export interface AdminTeamOrderSettingsResponse {
   message: string;
 }
 
+// ─── Official Groups Admin Types ───
+
+export interface AdminOfficialGroupItem {
+  id: number;
+  name: string;
+  description: string | null;
+  status: "draft" | "active" | "ended";
+  memberCount: number;
+  fixtureCount: number;
+  createdAt: string;
+  badge: {
+    id: number;
+    name: string;
+    description: string;
+    icon: string;
+    criteriaType: string;
+    criteriaValue: number;
+  } | null;
+}
+
+export interface AdminOfficialGroupsListResponse {
+  status: string;
+  data: AdminOfficialGroupItem[];
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
+export interface AdminCreateOfficialGroupBody {
+  name: string;
+  description?: string;
+  selectionMode: "games" | "teams" | "leagues";
+  fixtureIds?: number[];
+  teamIds?: number[];
+  leagueIds?: number[];
+  onTheNosePoints?: number;
+  correctDifferencePoints?: number;
+  outcomePoints?: number;
+  predictionMode?: string;
+  koRoundMode?: string;
+  badge?: {
+    name: string;
+    description: string;
+    icon: string;
+    criteriaType: string;
+    criteriaValue?: number;
+  };
+}
+
+export interface AdminCreateOfficialGroupResponse {
+  status: string;
+  data: AdminOfficialGroupItem;
+  message: string;
+}
+
+export interface AdminUpdateOfficialGroupBody {
+  name?: string;
+  description?: string;
+  badge?: {
+    name: string;
+    description: string;
+    icon: string;
+    criteriaType: string;
+    criteriaValue?: number;
+  } | null;
+}
+
+export interface AdminUpdateOfficialGroupResponse {
+  status: string;
+  data: AdminOfficialGroupItem;
+  message: string;
+}
+
+export interface AdminDeleteOfficialGroupResponse {
+  status: string;
+  message: string;
+}
+
+export interface AdminAwardBadgesResponse {
+  status: string;
+  data: { awarded: number };
+  message: string;
+}
+
 export interface AdminFixtureSearchResponse {
   status: string;
   data: Array<{

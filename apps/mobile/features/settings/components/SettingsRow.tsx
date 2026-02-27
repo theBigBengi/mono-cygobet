@@ -121,7 +121,7 @@ export function SettingsRow(props: SettingsRowProps) {
 
       {type === "value" && (
         <View style={styles.valueContainer}>
-          <AppText variant="body" color="secondary">
+          <AppText variant="body" color="secondary" numberOfLines={1}>
             {props.value}
           </AppText>
           {props.onPress && (
@@ -181,5 +181,6 @@ const styles = StyleSheet.create({
   valueContainer: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 1,
   },
 });

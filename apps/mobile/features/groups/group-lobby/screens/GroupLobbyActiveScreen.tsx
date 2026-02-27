@@ -1,9 +1,9 @@
 // features/groups/group-lobby/screens/GroupLobbyActiveScreen.tsx
 // Active state screen for group lobby - Clean & Minimal layout.
 
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent, Pressable, Text, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Screen } from "@/components/ui";
@@ -22,6 +22,7 @@ import { LobbyQuickActions } from "../components/LobbyQuickActions";
 import { LobbyLeaderboard } from "../components/LobbyLeaderboard";
 import { LobbyActivityBanner } from "../components/LobbyActivityBanner";
 import { useGroupDuration } from "../hooks/useGroupDuration";
+import { DebugCTAScreen } from "./DebugCTAScreen";
 
 interface GroupLobbyActiveScreenProps {
   group: ApiGroupItem;
@@ -46,6 +47,7 @@ export function GroupLobbyActiveScreen({
   const router = useRouter();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const [showDebugCTA, setShowDebugCTA] = useState(false);
 
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -164,6 +166,9 @@ export function GroupLobbyActiveScreen({
           memberCount={group.memberCount}
           status="active"
           privacy={group.privacy}
+          avatarType={group.avatarType}
+          avatarValue={group.avatarValue}
+          isOfficial={group.isOfficial}
           compact
           hideNavButtons
           onInfoPress={onInfoPress}
@@ -207,6 +212,24 @@ export function GroupLobbyActiveScreen({
           unreadCount={unreadActivityCount}
           onPress={handleViewActivity}
         />
+
+        {/* DEBUG — remove after done */}
+        <Pressable
+          onPress={() => setShowDebugCTA(true)}
+          style={{ marginHorizontal: 16, marginTop: 12, padding: 10, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center" }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG CTA MODES</Text>
+        </Pressable>
+
+        <Modal visible={showDebugCTA} animationType="slide" presentationStyle="fullScreen">
+          <DebugCTAScreen />
+          <Pressable
+            onPress={() => setShowDebugCTA(false)}
+            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+          </Pressable>
+        </Modal>
       </Screen>
     </View>
   );

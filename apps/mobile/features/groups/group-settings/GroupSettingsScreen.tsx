@@ -6,15 +6,17 @@ import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { AppText } from "@/components/ui";
+import { AppText, GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { useGroupQuery, useUpdateGroupMutation } from "@/domains/groups";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGroupQuery, useUpdateGroupMutation, groupsKeys } from "@/domains/groups";
 import {
   EditNameSheet,
   EditDescriptionSheet,
   EditRulesSheet,
   DangerZoneSection,
 } from "./components";
+import { AvatarPickerSheet } from "../group-lobby/components/AvatarPickerSheet";
 import { useAuth } from "@/lib/auth/useAuth";
 import {
   SettingsSection,
@@ -25,6 +27,15 @@ import type { ApiInviteAccess, ApiGroupPrivacy } from "@repo/types";
 
 const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
 
+function getInitials(name: string): string {
+  if (!name?.trim()) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
 interface GroupSettingsScreenProps {
   groupId: number | null;
 }
@@ -34,6 +45,7 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
   const router = useRouter();
   const { theme } = useTheme();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data: groupData } = useGroupQuery(groupId);
   const group = groupData?.data;
   const isCreator = group?.creatorId === user?.id;
@@ -43,6 +55,7 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
   const editDescSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const privacySheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const rulesSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const avatarPickerRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
   // Check if rules are locked
   const hasFirstGameStarted = group?.firstGame != null && group?.firstGame?.state !== "NS";
@@ -106,6 +119,17 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
     }
   };
 
+  const handleAvatarChange = (value: string) => {
+    updateGroupMutation.mutate(
+      { avatarType: "gradient", avatarValue: value },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
+        },
+      }
+    );
+  };
+
   if (!group) {
     return null;
   }
@@ -145,6 +169,13 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
                   "groupSettings.editDescription" as Parameters<typeof t>[0]
                 )}
                 onPress={() => editDescSheetRef.current?.present()}
+                isLast={false}
+              />
+              <SettingsRow
+                type="navigation"
+                icon="color-palette-outline"
+                label={t("lobby.groupAvatar")}
+                onPress={() => avatarPickerRef.current?.present()}
                 isLast={false}
               />
               <SettingsRowBottomSheet.Row
@@ -293,6 +324,12 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
           updateGroupMutation={updateGroupMutation}
         />
       )}
+      <AvatarPickerSheet
+        sheetRef={avatarPickerRef}
+        selectedValue={group.avatarValue ?? "0"}
+        onSelect={handleAvatarChange}
+        initials={getInitials(group.name)}
+      />
     </>
   );
 }

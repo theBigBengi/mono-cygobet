@@ -131,6 +131,8 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
             onTheNosePoints: { type: "number", minimum: 0 },
             correctDifferencePoints: { type: "number", minimum: 0 },
             outcomePoints: { type: "number", minimum: 0 },
+            avatarType: { type: "string", enum: ["gradient", "emoji", "image"] },
+            avatarValue: { type: "string", maxLength: 255 },
           },
         },
         response: { 200: groupResponseSchema },
@@ -152,6 +154,8 @@ const groupsRoutes: FastifyPluginAsync = async (fastify) => {
         onTheNosePoints: body.onTheNosePoints,
         correctDifferencePoints: body.correctDifferencePoints,
         outcomePoints: body.outcomePoints,
+        avatarType: body.avatarType,
+        avatarValue: body.avatarValue,
         creatorId,
       }, fastify.io);
 

@@ -1,13 +1,13 @@
 // features/groups/group-lobby/hooks/useAutoSaveDraft.ts
 // Debounced auto-save of draft settings to the server.
 // Only saves fields supported by ApiUpdateGroupBody: name, description, privacy,
-// inviteAccess, nudgeEnabled, nudgeWindowMinutes.
+// inviteAccess, nudgeEnabled, nudgeWindowMinutes, avatarType, avatarValue.
 
 import { useRef, useEffect } from "react";
 import type { ApiGroupPrivacy, ApiInviteAccess } from "@repo/types";
 import { useUpdateGroupMutation } from "@/domains/groups";
 
-const DEBOUNCE_MS = 800;
+const DEBOUNCE_MS = 2000;
 
 interface DraftValues {
   name: string;
@@ -16,6 +16,8 @@ interface DraftValues {
   inviteAccess: ApiInviteAccess;
   nudgeEnabled: boolean;
   nudgeWindowMinutes: number;
+  avatarType: string;
+  avatarValue: string;
 }
 
 function valuesEqual(a: DraftValues, b: DraftValues): boolean {
@@ -25,7 +27,9 @@ function valuesEqual(a: DraftValues, b: DraftValues): boolean {
     a.privacy === b.privacy &&
     a.inviteAccess === b.inviteAccess &&
     a.nudgeEnabled === b.nudgeEnabled &&
-    a.nudgeWindowMinutes === b.nudgeWindowMinutes
+    a.nudgeWindowMinutes === b.nudgeWindowMinutes &&
+    a.avatarType === b.avatarType &&
+    a.avatarValue === b.avatarValue
   );
 }
 
@@ -62,6 +66,8 @@ export function useAutoSaveDraft(
         inviteAccess: current.inviteAccess,
         nudgeEnabled: current.nudgeEnabled,
         nudgeWindowMinutes: current.nudgeWindowMinutes,
+        avatarType: current.avatarType,
+        avatarValue: current.avatarValue,
       };
 
       updateGroupMutation.mutate(body, {
@@ -84,6 +90,8 @@ export function useAutoSaveDraft(
     values.inviteAccess,
     values.nudgeEnabled,
     values.nudgeWindowMinutes,
+    values.avatarType,
+    values.avatarValue,
     enabled,
   ]);
 

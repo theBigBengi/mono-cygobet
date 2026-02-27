@@ -316,6 +316,11 @@
     "ctaAllFinished": "All games finished",
     "ctaMoreGames": "+{{count}} more",
     "ctaVs": "vs",
+    "ctaToday": "Today",
+    "ctaTomorrow": "Tomorrow",
+    "ctaNext": "Next",
+    "ctaCritical": "{{count}} critical",
+    "ctaAllCritical": "{{count}} games need predictions · Critical",
     "ranking": "Ranking",
     "rankingPending": "Ranking will be calculated after the first game ends",
     "pts": "pts",
@@ -353,7 +358,9 @@
     "noPrediction": "No prediction",
     "myPrediction": "My prediction",
     "addPrediction": "Add prediction",
-    "pts": "pts"
+    "pts": "pts",
+    "chooseAvatar": "Choose Avatar",
+    "groupAvatar": "Group Avatar"
   },
   "groupSettings": {
     "general": "General",
@@ -546,7 +553,8 @@
     "loadMore": "Load more",
     "join": "Join",
     "failedLoadPublicGroups": "Failed to load public groups",
-    "createdBy": "by @{{username}}"
+    "createdBy": "by @{{username}}",
+    "officialGroup": "Official"
   },
   "chat": {
     "typePlaceholder": "Type a message...",
@@ -848,6 +856,10 @@
     "selectionSummaryTeams": "Teams",
     "selectionSummaryTeamsSelected": "Teams selected",
     "selectionSummaryTeamsCount": "{{count}} teams"
+  },
+  "badges": {
+    "earned": "Earned Badges",
+    "earnedIn": "Earned in {{group}}"
   },
   "groupInfo": {
     "title": "Group Rules",

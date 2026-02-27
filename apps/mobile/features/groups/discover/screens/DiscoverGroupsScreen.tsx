@@ -8,10 +8,12 @@ import {
   StyleSheet,
   TextInput,
   FlatList,
+  Text,
   ListRenderItem,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Screen, AppText, Button, Card } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -192,15 +194,32 @@ const PublicGroupRow = React.memo(function PublicGroupRow({ group, onJoinSuccess
     <Card style={[styles.card, { marginBottom: theme.spacing.sm }]}>
       <View style={styles.cardContent}>
         <View style={styles.cardMain}>
-          <AppText variant="body" style={styles.groupName}>
-            {group.name}
-          </AppText>
+          <View style={styles.nameRow}>
+            {group.isOfficial && (
+              <View style={styles.officialBadge}>
+                <Ionicons name="shield-checkmark" size={12} color="#D4A017" />
+              </View>
+            )}
+            <AppText variant="body" style={styles.groupName}>
+              {group.name}
+            </AppText>
+          </View>
           <AppText variant="caption" color="secondary">
             {memberLabel} · {t("discover.gamesCount", { count: group.totalFixtures })}
           </AppText>
-          {group.creatorUsername != null && (
+          {group.badge && (
+            <AppText variant="caption" color="secondary">
+              {group.badge.icon} {group.badge.name}
+            </AppText>
+          )}
+          {group.creatorUsername != null && !group.isOfficial && (
             <AppText variant="caption" color="secondary">
               {t("discover.createdBy", { username: group.creatorUsername })}
+            </AppText>
+          )}
+          {group.isOfficial && (
+            <AppText variant="caption" style={{ color: "#D4A017", fontWeight: "600" }}>
+              {t("discover.officialGroup")}
             </AppText>
           )}
         </View>
@@ -256,6 +275,19 @@ const styles = StyleSheet.create({
   cardMain: {
     flex: 1,
     marginEnd: 12,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  officialBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#D4A01720",
+    alignItems: "center",
+    justifyContent: "center",
   },
   groupName: {
     fontWeight: "600",

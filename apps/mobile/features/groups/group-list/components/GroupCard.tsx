@@ -4,11 +4,14 @@
 
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable, Text, Image, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Text } from "react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { AppText } from "@/components/ui";
+import Animated, {
+  FadeIn,
+} from "react-native-reanimated";
+import { AppText, GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useCountdown } from "@/features/groups/predictions/hooks";
 import type { ApiGroupItem } from "@repo/types";
@@ -64,14 +67,7 @@ const RankingHudCell = React.memo(function RankingHudCellInner({
   const isUp = rankChange > 0;
   const rankColor = isUp ? "#10B981" : "#EF4444";
   return (
-    <View
-      style={[
-        styles.hudCell,
-        {
-          backgroundColor: isLit ? rankColor + "15" : "transparent",
-        },
-      ]}
-    >
+    <View style={styles.hudCell}>
       <Ionicons
         name={isLit ? "trophy" : "trophy-outline"}
         size={16}
@@ -225,14 +221,7 @@ const ChatHudCell = React.memo(function ChatHudCellInner({
   const isLit = unreadCount > 0;
   const lastMsgTime = formatLastMessageTime(lastMessageAt);
   return (
-    <View
-      style={[
-        styles.hudCell,
-        {
-          backgroundColor: isLit ? primaryColor + "15" : "transparent",
-        },
-      ]}
-    >
+    <View style={styles.hudCell}>
       <Ionicons
         name={isLit ? "chatbubble" : "chatbubble-outline"}
         size={16}
@@ -260,14 +249,7 @@ const ActivityHudCell = React.memo(function ActivityHudCellInner({
 }: ActivityHudCellProps) {
   const isLit = unreadActivityCount > 0;
   return (
-    <View
-      style={[
-        styles.hudCell,
-        {
-          backgroundColor: isLit ? primaryColor + "15" : "transparent",
-        },
-      ]}
-    >
+    <View style={styles.hudCell}>
       <Ionicons
         name={isLit ? "notifications" : "notifications-outline"}
         size={16}
@@ -394,10 +376,15 @@ const NextGameRow = React.memo(function NextGameRowInner({
             },
           ]}
         >
+          <MaterialCommunityIcons
+            name="notebook-edit-outline"
+            size={14}
+            color={textPrimary}
+          />
           <Text
             style={[
               styles.predictButtonText,
-              { color: urgencyColor ?? textPrimary },
+              { color: textPrimary },
             ]}
           >
             {t("predictions.predict")}
@@ -532,89 +519,45 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
           >
             {/* Top Row: Avatar + Info + Chevron */}
             <View style={styles.topRow}>
-              <View
-                style={[
-                  styles.avatar,
-                  cardStyles.avatar,
-                ]}
-              >
-                <Text style={[styles.initials, cardStyles.initials]}>
-                  {initials}
-                </Text>
-              </View>
+              <GroupAvatar
+                avatarType={group.avatarType}
+                avatarValue={group.avatarValue}
+                initials={initials}
+                size={AVATAR_SIZE}
+                borderRadius={14}
+              />
 
               <View style={styles.info}>
-                <Text
-                  style={[styles.name, cardStyles.name]}
-                  numberOfLines={1}
-                >
-                  {group.name}
-                </Text>
-                {/* League mode badge */}
-                {group.selectionMode === "leagues" && group.nextGame?.league && (
-                  <View style={[styles.modeBadge, { backgroundColor: theme.colors.textSecondary + "15", borderColor: theme.colors.textSecondary + "30" }]}>
-                    {group.nextGame.league.imagePath ? (
-                      <View style={[styles.modeIcon, { backgroundColor: theme.colors.surface }]}>
-                        <Image
-                          source={{ uri: group.nextGame.league.imagePath }}
-                          style={styles.leagueLogo}
-                        />
-                      </View>
-                    ) : (
-                      <View style={[styles.modeIcon, { backgroundColor: theme.colors.surface }]}>
-                        <Ionicons name="trophy-outline" size={10} color={theme.colors.textSecondary} />
-                      </View>
-                    )}
-                    <Text style={[styles.modeText, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                      {group.nextGame.league.name}
-                    </Text>
-                  </View>
-                )}
-                {/* Teams mode badges */}
-                {group.selectionMode === "teams" && group.groupTeams && group.groupTeams.length > 0 && (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.teamBadgesScroll}
-                    contentContainerStyle={styles.teamBadgesRow}
-                    nestedScrollEnabled
-                    keyboardShouldPersistTaps="handled"
+                <View style={styles.nameRow}>
+                  <Text
+                    style={[styles.name, cardStyles.name, { flex: 1 }]}
+                    numberOfLines={1}
                   >
-                    {group.groupTeams.map((team) => (
-                      <Pressable
-                        key={team.id}
-                        onPress={() => {}}
-                        style={[styles.teamBadge, { backgroundColor: theme.colors.textSecondary + "15", borderColor: theme.colors.textSecondary + "30" }]}
-                      >
-                        {team.imagePath ? (
-                          <View style={[styles.teamLogoContainer, { backgroundColor: theme.colors.surface }]}>
-                            <Image
-                              source={{ uri: team.imagePath }}
-                              style={styles.teamLogo}
-                            />
-                          </View>
-                        ) : (
-                          <View style={[styles.teamLogoContainer, { backgroundColor: theme.colors.surface }]}>
-                            <Ionicons name="football-outline" size={10} color={theme.colors.textSecondary} />
-                          </View>
-                        )}
-                        <Text style={[styles.teamBadgeText, { color: theme.colors.textSecondary }]}>
-                          {team.shortCode ?? team.name.slice(0, 3).toUpperCase()}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                )}
-                {/* Games mode badge */}
-                {group.selectionMode === "games" && totalFixtures > 0 && (
-                  <View style={[styles.modeBadge, { backgroundColor: theme.colors.textSecondary + "15", borderColor: theme.colors.textSecondary + "30" }]}>
-                    <View style={[styles.modeIcon, { backgroundColor: theme.colors.surface }]}>
-                      <Ionicons name="grid-outline" size={10} color={theme.colors.textSecondary} />
+                    {group.name}
+                  </Text>
+                  {group.isOfficial && (
+                    <View style={styles.officialBadge}>
+                      <Ionicons name="shield-checkmark" size={12} color="#D4A017" />
                     </View>
-                    <Text style={[styles.modeText, { color: theme.colors.textSecondary }]}>
-                      {t("groups.freePick")}
-                    </Text>
-                  </View>
+                  )}
+                </View>
+                {/* League mode subtitle */}
+                {group.selectionMode === "leagues" && group.nextGame?.league && (
+                  <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                    {group.nextGame.league.name}
+                  </Text>
+                )}
+                {/* Teams mode subtitle */}
+                {group.selectionMode === "teams" && group.groupTeams && group.groupTeams.length > 0 && (
+                  <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                    {group.groupTeams.map((team) => team.shortCode ?? team.name.slice(0, 3).toUpperCase()).join(", ")}
+                  </Text>
+                )}
+                {/* Games mode subtitle */}
+                {group.selectionMode === "games" && totalFixtures > 0 && (
+                  <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+                    {t("groups.freePick")}
+                  </Text>
                 )}
               </View>
 
@@ -674,7 +617,10 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
 
             {/* Alert HUD - always visible, items light up when there's an alert */}
             {!isDraft && !isEnded && (
-              <View style={[styles.statsHud, cardStyles.statsHud]}>
+              <Animated.View
+                entering={FadeIn.duration(400)}
+                style={[styles.statsHud, cardStyles.statsHud]}
+              >
                 <RankingHudCell
                   rankChange={group.userRankChange ?? 0}
                   userRank={userRank}
@@ -691,7 +637,7 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
                   primaryColor={theme.colors.primary}
                   textSecondary={theme.colors.textSecondary}
                 />
-              </View>
+              </Animated.View>
             )}
 
             {/* Draft hint */}
@@ -786,70 +732,28 @@ const styles = StyleSheet.create({
   info: {
     flex: 1,
   },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
   name: {
     fontSize: 16,
     fontWeight: "700",
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  modeBadge: {
-    flexDirection: "row",
+  officialBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#D4A01720",
     alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    paddingLeft: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  modeIcon: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
     justifyContent: "center",
-    alignItems: "center",
+    marginBottom: 2,
   },
-  modeText: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  teamBadgesScroll: {
-    marginTop: 4,
-    marginHorizontal: -4,
-  },
-  teamBadgesRow: {
-    flexDirection: "row",
-    gap: 4,
-    paddingHorizontal: 4,
-  },
-  teamBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 3,
-    paddingHorizontal: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  teamLogoContainer: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  teamLogo: {
-    width: 14,
-    height: 14,
-  },
-  leagueLogo: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  teamBadgeText: {
-    fontSize: 10,
-    fontWeight: "600",
+  subtitle: {
+    fontSize: 12,
+    fontWeight: "500",
   },
   nextGameRow: {
     marginTop: 14,
@@ -887,7 +791,7 @@ const styles = StyleSheet.create({
   },
   predictButtonText: {
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "600",
   },
   predictionBoxes: {
     flexDirection: "row",

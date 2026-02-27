@@ -49,6 +49,8 @@ export async function createGroup(
       | "games"
       | "teams"
       | "leagues";
+    const randomAvatarValue = String(Math.floor(Math.random() * 8));
+
     const result = await repo.createGroupWithMemberAndRules({
       name: groupName,
       creatorId,
@@ -60,6 +62,8 @@ export async function createGroup(
       now: nowUnixSeconds(),
       ...(inviteAccess !== undefined && { inviteAccess }),
       description: description ?? null,
+      avatarType: "gradient",
+      avatarValue: randomAvatarValue,
     });
 
     const data = buildGroupItem(result);

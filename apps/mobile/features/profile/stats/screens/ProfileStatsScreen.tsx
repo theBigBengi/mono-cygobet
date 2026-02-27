@@ -28,6 +28,7 @@ import { StatsCard } from "../components/StatsCard";
 import { PerformanceCard } from "../components/PerformanceCard";
 import { WelcomeCard } from "../components/WelcomeCard";
 import { BadgesCard } from "../components/BadgesCard";
+import { EarnedBadgesCard } from "../components/EarnedBadgesCard";
 import { GroupStatsCard } from "../components/GroupStatsCard";
 import { EditProfileModal } from "../../components/EditProfileModal";
 import { InvitesBadgeButton } from "../../components/InvitesBadgeButton";
@@ -167,6 +168,9 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
         </>
       )}
       <BadgesCard badges={data.badges} />
+      {data.earnedBadges?.length > 0 && (
+        <EarnedBadgesCard badges={data.earnedBadges} />
+      )}
       <GroupStatsCard
         groups={data.groups}
         groupsPlayed={data.overall.groupsPlayed}

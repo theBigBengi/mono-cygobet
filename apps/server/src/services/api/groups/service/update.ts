@@ -58,6 +58,8 @@ export async function updateGroup(
     onTheNosePoints,
     correctDifferencePoints,
     outcomePoints,
+    avatarType,
+    avatarValue,
   } = args;
 
   if (
@@ -86,6 +88,14 @@ export async function updateGroup(
 
   if (description !== undefined) {
     updateData.description = description;
+  }
+
+  if (avatarType !== undefined) {
+    updateData.avatarType = avatarType;
+  }
+
+  if (avatarValue !== undefined) {
+    updateData.avatarValue = avatarValue;
   }
 
   const hasScoringUpdate =

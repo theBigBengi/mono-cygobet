@@ -89,6 +89,9 @@ export function GroupLobbyEndedScreen({
           memberCount={group.memberCount}
           status="ended"
           privacy={group.privacy}
+          avatarType={group.avatarType}
+          avatarValue={group.avatarValue}
+          isOfficial={group.isOfficial}
           compact
           onBack={goBack}
           onInfoPress={() => infoSheetRef.current?.present()}

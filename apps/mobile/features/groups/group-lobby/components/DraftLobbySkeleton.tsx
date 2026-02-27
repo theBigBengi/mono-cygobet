@@ -32,26 +32,10 @@ export function DraftLobbySkeleton() {
 
   return (
     <Animated.View style={pulseStyle}>
-      {/* Banner row skeleton */}
-      <View
-        style={[
-          styles.bannerRow,
-          {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            borderBottomColor: theme.colors.textSecondary + "40",
-            borderRadius: theme.radius.lg,
-          },
-        ]}
-      >
+      {/* Avatar skeleton */}
+      <View style={styles.avatarContainer}>
         <View
-          style={[styles.badgePlaceholder, { backgroundColor: skeletonColor }]}
-        />
-        <View
-          style={[
-            styles.bannerTextPlaceholder,
-            { backgroundColor: skeletonColor },
-          ]}
+          style={[styles.avatarPlaceholder, { backgroundColor: skeletonColor }]}
         />
       </View>
 
@@ -170,31 +154,15 @@ function RowPlaceholder({
 }
 
 const styles = StyleSheet.create({
-  /* Banner */
-  bannerRow: {
-    flexDirection: "row",
+  /* Avatar */
+  avatarContainer: {
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderBottomWidth: 3,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
   },
-  badgePlaceholder: {
-    width: 60,
-    height: 24,
-    borderRadius: 6,
-  },
-  bannerTextPlaceholder: {
-    flex: 1,
-    height: 14,
-    borderRadius: 4,
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
   },
 
   /* Cards */

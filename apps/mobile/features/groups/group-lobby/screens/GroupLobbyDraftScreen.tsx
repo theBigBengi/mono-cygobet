@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
-import { Screen, AppText } from "@/components/ui";
+import { Screen, AppText, GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
   SettingsSection,
@@ -16,6 +16,15 @@ import {
 } from "@/features/settings";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import type { ApiGroupItem } from "@repo/types";
+
+function getInitials(name: string): string {
+  if (!name || !name.trim()) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2);
+  }
+  return name.slice(0, 2).toUpperCase();
+}
 
 const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
 const MIN_SCORE = 1;
@@ -36,6 +45,7 @@ import { useGroupLobbyActions } from "../hooks/useGroupLobbyActions";
 import { useGroupDuration } from "../hooks/useGroupDuration";
 import { useAutoSaveDraft } from "../hooks/useAutoSaveDraft";
 import { GroupInfoSheet } from "../components/GroupInfoSheet";
+import { AvatarPickerSheet } from "../components/AvatarPickerSheet";
 import type { FixtureItem } from "../types";
 import { formatDate } from "@/utils/date";
 import {
@@ -87,15 +97,21 @@ export function GroupLobbyDraftScreen({
     draftDescription,
     draftPrivacy,
     draftInviteAccess,
+    draftAvatarType,
+    draftAvatarValue,
     setDraftName,
     setDraftDescription,
     setDraftPrivacy,
     setDraftInviteAccess,
+    setDraftAvatarType,
+    setDraftAvatarValue,
   } = useGroupLobbyState(
     group.name,
     group.description ?? null,
     group.privacy,
-    group.inviteAccess
+    group.inviteAccess,
+    group.avatarType,
+    group.avatarValue
   );
 
   const [predictionMode, setPredictionMode] = useState<PredictionMode>(() =>
@@ -195,6 +211,8 @@ export function GroupLobbyDraftScreen({
       inviteAccess: draftInviteAccess,
       nudgeEnabled,
       nudgeWindowMinutes,
+      avatarType: draftAvatarType,
+      avatarValue: draftAvatarValue,
     },
     isEditable && isCreator
   );
@@ -212,6 +230,8 @@ export function GroupLobbyDraftScreen({
     useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const infoSheetRef =
     useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const avatarPickerRef =
+    useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
   const scoringValueDisplay =
     predictionMode === "result"
@@ -219,22 +239,10 @@ export function GroupLobbyDraftScreen({
       : `${clampScore(scoringValues.onTheNose)} · ${clampScore(scoringValues.outcome)}`;
 
   const durationSubtitle = duration
-    ? duration.durationDays === 0
-      ? t("lobby.gamesCount", { count: fixtures.length })
-      : `${t("lobby.daysCount", { count: duration.durationDays })} · ${t("lobby.gamesCount", { count: fixtures.length })}`
+    ? duration.durationDays > 0
+      ? t("lobby.daysCount", { count: duration.durationDays })
+      : undefined
     : undefined;
-
-  const hasGames = fixtures.length > 0;
-  const hasName = draftName.trim().length > 0;
-  const stepsDone = (hasGames ? 1 : 0) + (hasName ? 1 : 0);
-  const progressBannerText =
-    stepsDone === 2
-      ? t("lobby.readyToPublish")
-      : stepsDone === 1
-        ? hasGames
-          ? t("lobby.progressOneStepName")
-          : t("lobby.progressOneStepGames")
-        : t("lobby.progressNoSteps");
 
   const elevatedCard = {
     borderRadius: theme.radius.lg,
@@ -266,38 +274,18 @@ export function GroupLobbyDraftScreen({
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
       >
-        {/* Banner — elevated card style */}
-        <View
-          style={[
-            styles.bannerRow,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
-              borderBottomColor: theme.colors.textSecondary + "40",
-              borderRadius: theme.radius.lg,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.badge,
-              {
-                backgroundColor: theme.colors.primary + "15",
-                borderColor: theme.colors.primary + "30",
-              },
-            ]}
+        {/* Group avatar */}
+        <View style={styles.avatarContainer}>
+          <Pressable
+            onPress={() => isCreator && avatarPickerRef.current?.present()}
+            disabled={!isCreator}
           >
-            <AppText variant="caption" style={styles.badgeText}>
-              {t("lobby.draftBadge")}
-            </AppText>
-          </View>
-          <AppText
-            variant="caption"
-            color="secondary"
-            style={styles.bannerSubtitle}
-          >
-            {progressBannerText}
-          </AppText>
+            <GroupAvatar
+              avatarType={draftAvatarType}
+              avatarValue={draftAvatarValue}
+              initials={getInitials(draftName || t("lobby.defaultGroupName"))}
+            />
+          </Pressable>
         </View>
 
         {/* Name + description in a card */}
@@ -318,17 +306,6 @@ export function GroupLobbyDraftScreen({
                 {draftName}
               </AppText>
             )}
-            <Pressable
-              onPress={() => infoSheetRef.current?.present()}
-              hitSlop={8}
-              style={({ pressed }) => [pressed && { opacity: 0.6 }]}
-            >
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color={theme.colors.textSecondary}
-              />
-            </Pressable>
           </View>
           {(isCreator && isEditable) || draftDescription ? (
             <View style={styles.descriptionRow}>
@@ -361,12 +338,14 @@ export function GroupLobbyDraftScreen({
             type="value"
             icon="time-outline"
             label={t("lobby.groupDuration")}
-            subtitle={durationSubtitle}
-            value={
+            subtitle={
               duration
-                ? `${formatDate(duration.startDate)} – ${formatDate(duration.endDate)}`
+                ? durationSubtitle
+                  ? `${formatDate(duration.startDate)} – ${formatDate(duration.endDate)} · ${durationSubtitle}`
+                  : `${formatDate(duration.startDate)} – ${formatDate(duration.endDate)}`
                 : t("lobby.addGamesToSeeDuration")
             }
+            value=""
             isLast={false}
           />
           <SettingsRow
@@ -548,6 +527,15 @@ export function GroupLobbyDraftScreen({
       />
 
       {isCreator && (
+        <AvatarPickerSheet
+          sheetRef={avatarPickerRef}
+          selectedValue={draftAvatarValue}
+          onSelect={setDraftAvatarValue}
+          initials={getInitials(draftName || t("lobby.defaultGroupName"))}
+        />
+      )}
+
+      {isCreator && (
         <>
           <SettingsRowBottomSheet.Sheet<PredictionMode>
             sheetRef={predictionSheetRef}
@@ -618,33 +606,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 100,
   },
-  bannerRow: {
-    flexDirection: "row",
+  avatarContainer: {
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderBottomWidth: 3,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  badgeText: {
-    fontWeight: "600",
-  },
-  bannerSubtitle: {
-    flex: 1,
-    lineHeight: 20,
   },
   nameRow: {
     flexDirection: "row",

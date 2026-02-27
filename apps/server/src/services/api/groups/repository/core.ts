@@ -69,7 +69,9 @@ export type PublicGroupWithRules = Prisma.groupsGetPayload<{
     name: true;
     createdAt: true;
     creatorId: true;
+    isOfficial: true;
     groupRules: { select: { maxMembers: true } };
+    groupBadge: { select: { id: true; name: true; description: true; icon: true; criteriaType: true; criteriaValue: true } };
   };
 }>;
 
@@ -103,7 +105,7 @@ export async function findPublicGroupsPaginated(params: {
   const [groups, totalCount] = await Promise.all([
     prisma.groups.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ isOfficial: "desc" }, { createdAt: "desc" }],
       skip: (page - 1) * perPage,
       take: perPage,
       select: {
@@ -111,7 +113,18 @@ export async function findPublicGroupsPaginated(params: {
         name: true,
         createdAt: true,
         creatorId: true,
+        isOfficial: true,
         groupRules: { select: { maxMembers: true } },
+        groupBadge: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            icon: true,
+            criteriaType: true,
+            criteriaValue: true,
+          },
+        },
       },
     }),
     prisma.groups.count({ where }),
@@ -418,6 +431,8 @@ export async function createGroupWithMemberAndRules(data: {
   now: number;
   inviteAccess?: "all" | "admin_only";
   description?: string | null;
+  avatarType?: string;
+  avatarValue?: string;
 }): Promise<Prisma.groupsGetPayload<{}>> {
   return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Create group
@@ -429,6 +444,12 @@ export async function createGroupWithMemberAndRules(data: {
         status: GROUP_STATUS.DRAFT,
         ...(data.description !== undefined && {
           description: data.description,
+        }),
+        ...(data.avatarType !== undefined && {
+          avatarType: data.avatarType,
+        }),
+        ...(data.avatarValue !== undefined && {
+          avatarValue: data.avatarValue,
         }),
       },
     });

@@ -22,3 +22,4 @@ export { StickyHeaderScreen } from "./StickyHeaderScreen";
 export type { StickyHeaderAction, StickyHeaderScreenProps } from "./StickyHeaderScreen";
 export { AnimatedStickyHeader } from "./AnimatedStickyHeader";
 export type { AnimatedStickyHeaderProps, HeaderAction } from "./AnimatedStickyHeader";
+export { GroupAvatar } from "./GroupAvatar";

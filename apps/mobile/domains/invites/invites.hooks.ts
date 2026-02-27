@@ -115,10 +115,45 @@ export function useRespondToInviteMutation() {
   return useMutation<
     { status: "success"; data?: unknown; message?: string },
     ApiError,
-    { inviteId: number; action: "accept" | "decline" }
+    { inviteId: number; action: "accept" | "decline" },
+    { previousData: ApiUserInvitesResponse | undefined }
   >({
     mutationFn: ({ inviteId, action }) => respondToInvite(inviteId, action),
-    onSuccess: (_, variables) => {
+    onMutate: async ({ inviteId }) => {
+      // Cancel in-flight refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: invitesKeys.list("pending") });
+
+      const previousData = queryClient.getQueryData<ApiUserInvitesResponse>(
+        invitesKeys.list("pending")
+      );
+
+      // Optimistically remove the invite from the list
+      if (previousData?.data) {
+        queryClient.setQueryData<ApiUserInvitesResponse>(
+          invitesKeys.list("pending"),
+          {
+            ...previousData,
+            data: {
+              ...previousData.data,
+              invites: previousData.data.invites.filter((i) => i.id !== inviteId),
+              pendingCount: Math.max(0, previousData.data.pendingCount - 1),
+            },
+          }
+        );
+      }
+
+      return { previousData };
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          invitesKeys.list("pending"),
+          context.previousData
+        );
+      }
+    },
+    onSettled: (_, _err, variables) => {
       queryClient.invalidateQueries({ queryKey: invitesKeys.lists() });
       if (variables.action === "accept") {
         queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });

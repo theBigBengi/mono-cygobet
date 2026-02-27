@@ -206,20 +206,28 @@ async function validateAndJoin(groupId: number, userId: number): Promise<void> {
       throw new ConflictError("You are already a member of this group");
     }
 
-    // Check max members (from groupRules)
-    const rules = await tx.groupRules.findUnique({
-      where: { groupId },
-      select: { maxMembers: true },
+    // Check if group is official (unlimited members)
+    const groupData = await tx.groups.findUnique({
+      where: { id: groupId },
+      select: { isOfficial: true },
     });
-    const maxMembers = rules?.maxMembers ?? DEFAULT_MAX_MEMBERS;
 
-    const memberCount = await tx.groupMembers.count({
-      where: { groupId, status: MEMBER_STATUS.JOINED },
-    });
-    if (memberCount >= maxMembers) {
-      throw new BadRequestError(
-        "This group has reached its maximum number of members"
-      );
+    if (!groupData?.isOfficial) {
+      // Check max members (from groupRules)
+      const rules = await tx.groupRules.findUnique({
+        where: { groupId },
+        select: { maxMembers: true },
+      });
+      const maxMembers = rules?.maxMembers ?? DEFAULT_MAX_MEMBERS;
+
+      const memberCount = await tx.groupMembers.count({
+        where: { groupId, status: MEMBER_STATUS.JOINED },
+      });
+      if (memberCount >= maxMembers) {
+        throw new BadRequestError(
+          "This group has reached its maximum number of members"
+        );
+      }
     }
 
     // Create or reactivate member

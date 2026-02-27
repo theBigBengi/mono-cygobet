@@ -5,6 +5,7 @@ import type {
   ApiPublicGroupsQuery,
   ApiPublicGroupItem,
   ApiPublicGroupsResponse,
+  ApiGroupBadgeCriteriaType,
 } from "@repo/types";
 import { prisma } from "@repo/db";
 import { nowUnixSeconds } from "../../../../utils/dates";
@@ -61,6 +62,17 @@ export async function getPublicGroups(
     totalFixtures: stats.fixtureCountByGroupId.get(g.id) ?? 0,
     creatorUsername: creatorUsernameByUserId.get(g.creatorId) ?? null,
     createdAt: g.createdAt.toISOString(),
+    isOfficial: g.isOfficial || undefined,
+    badge: g.groupBadge
+      ? {
+          id: g.groupBadge.id,
+          name: g.groupBadge.name,
+          description: g.groupBadge.description,
+          icon: g.groupBadge.icon,
+          criteriaType: g.groupBadge.criteriaType as ApiGroupBadgeCriteriaType,
+          criteriaValue: g.groupBadge.criteriaValue,
+        }
+      : null,
   }));
 
   return {
