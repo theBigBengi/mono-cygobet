@@ -71,12 +71,15 @@ import {
   Gamepad2,
   Users,
   ArrowLeft,
+  Trash2,
+  Award,
 } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
 import type {
   AdminCreateOfficialGroupBody,
   AdminUpdateOfficialGroupBody,
   AdminOfficialGroupItem,
+  AdminOfficialGroupDetailsResponse,
 } from "@repo/types";
 
 // ─── Media query helpers (for responsive calendar) ───────────────────────────
@@ -1928,26 +1931,818 @@ function CreateWizard({
   );
 }
 
+// ─── Group Settings Dialog ───────────────────────────────────────────────────
+
+function GroupSettingsDialog({
+  group,
+  open,
+  onOpenChange,
+  onGroupUpdated,
+}: {
+  group: AdminOfficialGroupItem;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onGroupUpdated?: (updated: AdminOfficialGroupItem) => void;
+}) {
+  const queryClient = useQueryClient();
+
+  const { data: detailsData } = useQuery({
+    queryKey: ["official-groups", group.id, "details"],
+    queryFn: () => officialGroupsService.getDetails(group.id),
+    enabled: open,
+  });
+
+  const details = detailsData?.data;
+  const rules = details?.rules;
+
+  const [name, setName] = React.useState(group.name);
+  const [description, setDescription] = React.useState(group.description ?? "");
+  const [badges, setBadges] = React.useState<
+    Array<{ name: string; description: string; icon: string; criteriaType: string; criteriaValue: string }>
+  >([]);
+  const [form, setForm] = React.useState({
+    onTheNosePoints: "",
+    correctDifferencePoints: "",
+    outcomePoints: "",
+    predictionMode: "",
+    koRoundMode: "",
+    maxMembers: "",
+    inviteAccess: "",
+    nudgeEnabled: false,
+    nudgeWindowMinutes: "",
+  });
+
+  // Sync form when details/rules load
+  React.useEffect(() => {
+    if (!rules) return;
+    setForm({
+      onTheNosePoints: String(rules.onTheNosePoints),
+      correctDifferencePoints: String(rules.correctDifferencePoints),
+      outcomePoints: String(rules.outcomePoints),
+      predictionMode: rules.predictionMode,
+      koRoundMode: rules.koRoundMode,
+      maxMembers: String(rules.maxMembers),
+      inviteAccess: rules.inviteAccess,
+      nudgeEnabled: rules.nudgeEnabled,
+      nudgeWindowMinutes: String(rules.nudgeWindowMinutes),
+    });
+  }, [rules]);
+
+  // Sync group metadata when dialog opens
+  React.useEffect(() => {
+    if (!open) return;
+    setName(group.name);
+    setDescription(group.description ?? "");
+    setBadges(
+      group.badges.map((b) => ({
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+        criteriaType: b.criteriaType,
+        criteriaValue: String(b.criteriaValue),
+      }))
+    );
+  }, [open, group]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      // Save group metadata (name, description, badges)
+      const metaBody: AdminUpdateOfficialGroupBody = {};
+      if (name !== group.name) metaBody.name = name;
+      if (description !== (group.description ?? "")) metaBody.description = description;
+      const validBadges = badges.filter((b) => b.name.trim());
+      if (validBadges.length > 0) {
+        metaBody.badges = validBadges.map((b) => ({
+          name: b.name, description: b.description, icon: b.icon,
+          criteriaType: b.criteriaType, criteriaValue: Number(b.criteriaValue) || 1,
+        }));
+      } else if (group.badges.length > 0) {
+        metaBody.badges = null;
+      }
+
+      // Save rules + metadata in parallel
+      const [metaResult] = await Promise.all([
+        officialGroupsService.update(group.id, metaBody),
+        officialGroupsService.updateRules(group.id, {
+          onTheNosePoints: Number(form.onTheNosePoints),
+          correctDifferencePoints: Number(form.correctDifferencePoints),
+          outcomePoints: Number(form.outcomePoints),
+          predictionMode: form.predictionMode,
+          koRoundMode: form.koRoundMode,
+          maxMembers: Number(form.maxMembers),
+          inviteAccess: form.inviteAccess,
+          nudgeEnabled: form.nudgeEnabled,
+          nudgeWindowMinutes: Number(form.nudgeWindowMinutes),
+        }),
+      ]);
+      return metaResult;
+    },
+    onSuccess: (metaResult) => {
+      toast.success("Settings saved");
+      queryClient.invalidateQueries({ queryKey: ["official-groups"] });
+      onOpenChange(false);
+      if (onGroupUpdated && metaResult?.data) {
+        onGroupUpdated(metaResult.data);
+      }
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to save settings", { description: err.message });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Settings — {group.name}</DialogTitle>
+        </DialogHeader>
+
+        {!details ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : !rules ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            No rules configured for this group
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Name & Description */}
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Name</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Description</Label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            {/* Read-only info */}
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm border rounded-md p-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Selection Mode</p>
+                <p className="font-medium">{rules.selectionMode}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Privacy</p>
+                <p className="font-medium">{details.privacy}</p>
+              </div>
+              {details.inviteCode && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Invite Code</p>
+                  <p className="font-medium font-mono">{details.inviteCode}</p>
+                </div>
+              )}
+              {details.creator && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Created By</p>
+                  <p className="font-medium">{details.creator.name || details.creator.email}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Scoring */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Scoring</Label>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Exact Score</Label>
+                  <Input
+                    type="number"
+                    value={form.onTheNosePoints}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, onTheNosePoints: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Correct Difference</Label>
+                  <Input
+                    type="number"
+                    value={form.correctDifferencePoints}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, correctDifferencePoints: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Outcome</Label>
+                  <Input
+                    type="number"
+                    value={form.outcomePoints}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, outcomePoints: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Game Rules */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Game Rules</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Prediction Mode</Label>
+                  <Select
+                    value={form.predictionMode}
+                    onValueChange={(v) => setForm((f) => ({ ...f, predictionMode: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CorrectScore">Correct Score</SelectItem>
+                      <SelectItem value="MatchWinner">Match Winner</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">KO Round Mode</Label>
+                  <Select
+                    value={form.koRoundMode}
+                    onValueChange={(v) => setForm((f) => ({ ...f, koRoundMode: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FullTime">Full Time</SelectItem>
+                      <SelectItem value="ExtraTime">Extra Time</SelectItem>
+                      <SelectItem value="Penalties">Penalties</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Max Members</Label>
+                  <Input
+                    type="number"
+                    value={form.maxMembers}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, maxMembers: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Invite Access</Label>
+                  <Select
+                    value={form.inviteAccess}
+                    onValueChange={(v) => setForm((f) => ({ ...f, inviteAccess: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="admin_only">Admin Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Nudge */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Nudge</Label>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={form.nudgeEnabled}
+                  onCheckedChange={(checked) =>
+                    setForm((f) => ({ ...f, nudgeEnabled: checked }))
+                  }
+                />
+                <span className="text-sm">
+                  {form.nudgeEnabled ? "Enabled" : "Disabled"}
+                </span>
+              </div>
+              {form.nudgeEnabled && (
+                <div className="space-y-1.5 max-w-[200px]">
+                  <Label className="text-xs">Window (minutes)</Label>
+                  <Input
+                    type="number"
+                    value={form.nudgeWindowMinutes}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, nudgeWindowMinutes: e.target.value }))
+                    }
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Badges */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Badges</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() =>
+                    setBadges((prev) => [
+                      ...prev,
+                      { name: "", description: "", icon: "🏆", criteriaType: "participation", criteriaValue: "1" },
+                    ])
+                  }
+                >
+                  Add Badge
+                </Button>
+              </div>
+              {badges.length === 0 && (
+                <p className="text-xs text-muted-foreground">No badges configured.</p>
+              )}
+              {badges.map((badge, i) => (
+                <div key={i} className="border rounded-md p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">Badge {i + 1}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => setBadges((prev) => prev.filter((_, idx) => idx !== i))}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto] gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Name</Label>
+                      <Input
+                        value={badge.name}
+                        onChange={(e) =>
+                          setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, name: e.target.value } : b))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Icon</Label>
+                      <Input
+                        value={badge.icon}
+                        onChange={(e) =>
+                          setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, icon: e.target.value } : b))
+                        }
+                        className="w-16"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Description</Label>
+                    <Input
+                      value={badge.description}
+                      onChange={(e) =>
+                        setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, description: e.target.value } : b))
+                      }
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Award Rule</Label>
+                      <Select
+                        value={badge.criteriaType}
+                        onValueChange={(v) =>
+                          setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, criteriaType: v } : b))
+                        }
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="participation">All participants</SelectItem>
+                          <SelectItem value="top_n">Top N</SelectItem>
+                          <SelectItem value="exact_predictions">Min exact</SelectItem>
+                          <SelectItem value="custom">Manual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {(badge.criteriaType === "top_n" || badge.criteriaType === "exact_predictions") && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          {badge.criteriaType === "top_n" ? "Top N" : "Min exact"}
+                        </Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={badge.criteriaValue}
+                          onChange={(e) =>
+                            setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, criteriaValue: e.target.value } : b))
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="w-full"
+            >
+              {saveMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Group Detail Full-Screen View ───────────────────────────────────────────
+
+function GroupDetailView({
+  group,
+  onBack,
+  onGroupUpdated,
+}: {
+  group: AdminOfficialGroupItem;
+  onBack: () => void;
+  onGroupUpdated: (updated: AdminOfficialGroupItem) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [tab, setTab] = React.useState<"leaderboard" | "fixtures">("leaderboard");
+  const [fixturesPage, setFixturesPage] = React.useState(1);
+  const [leaderboardPage, setLeaderboardPage] = React.useState(1);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => officialGroupsService.delete(id),
+    onSuccess: () => {
+      toast.success("Official group deleted");
+      queryClient.invalidateQueries({ queryKey: ["official-groups"] });
+      onBack();
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to delete group", { description: err.message });
+    },
+  });
+
+  const awardMutation = useMutation({
+    mutationFn: (id: number) => officialGroupsService.awardBadges(id),
+    onSuccess: (data) => {
+      toast.success(`${data.data.awarded} badges awarded`);
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to award badges", { description: err.message });
+    },
+  });
+
+  const { data: fixturesData, isLoading: fixturesLoading } = useQuery({
+    queryKey: ["official-groups", group.id, "fixtures", fixturesPage],
+    queryFn: () => officialGroupsService.getFixtures(group.id, fixturesPage, 20),
+    enabled: tab === "fixtures",
+  });
+
+  const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery({
+    queryKey: ["official-groups", group.id, "leaderboard", leaderboardPage],
+    queryFn: () =>
+      officialGroupsService.getLeaderboard(group.id, leaderboardPage, 20),
+  });
+
+  const stats = leaderboardData?.stats;
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={onBack}>
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          Back
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => awardMutation.mutate(group.id)}
+            disabled={
+              awardMutation.isPending ||
+              group.badges.length === 0 ||
+              group.status !== "ended"
+            }
+            title={
+              group.badges.length === 0
+                ? "No badges configured for this group"
+                : group.status !== "ended"
+                  ? `Group must be ended to award badges (currently ${group.status})`
+                  : undefined
+            }
+          >
+            <Award className="mr-1 h-4 w-4" />
+            Award Badges
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+            Settings
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              if (
+                confirm(
+                  `Delete official group "${group.name}"? This cannot be undone.`,
+                )
+              ) {
+                deleteMutation.mutate(group.id);
+              }
+            }}
+          >
+            <Trash2 className="mr-1 h-4 w-4" />
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      {/* Group Info */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold">{group.name}</h1>
+          {group.description && (
+            <p className="text-sm text-muted-foreground">{group.description}</p>
+          )}
+        </div>
+        <Badge
+          variant={
+            group.status === "active"
+              ? "default"
+              : group.status === "ended"
+                ? "secondary"
+                : "outline"
+          }
+          className="text-sm h-7 px-3"
+        >
+          {group.status}
+        </Badge>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Members</p>
+            <p className="text-2xl font-bold">
+              {stats?.totalMembers ?? group.memberCount}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Fixtures</p>
+            <p className="text-2xl font-bold">{group.fixtureCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Predictions</p>
+            <p className="text-2xl font-bold">{stats?.totalPredictions ?? "—"}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Settled</p>
+            <p className="text-2xl font-bold">{stats?.settledPredictions ?? "—"}</p>
+            {stats && stats.pendingPredictions > 0 && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {stats.pendingPredictions} pending
+              </p>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Badges</p>
+            <p className="text-2xl font-bold">{group.badges.length}</p>
+            {group.badges.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {group.badges.map((b) => `${b.icon} ${b.name}`).join(", ")}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tab Buttons */}
+      <div className="flex gap-2 border-b pb-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "rounded-b-none border-b-2 px-4",
+            tab === "leaderboard"
+              ? "border-primary font-semibold"
+              : "border-transparent text-muted-foreground"
+          )}
+          onClick={() => setTab("leaderboard")}
+        >
+          Leaderboard
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "rounded-b-none border-b-2 px-4",
+            tab === "fixtures"
+              ? "border-primary font-semibold"
+              : "border-transparent text-muted-foreground"
+          )}
+          onClick={() => setTab("fixtures")}
+        >
+          Fixtures
+        </Button>
+      </div>
+
+      {/* Leaderboard Tab */}
+      {tab === "leaderboard" && (
+        <Card>
+          <CardContent className="p-0">
+            {leaderboardLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : !leaderboardData || leaderboardData.data.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                No members yet
+              </div>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs w-12">#</TableHead>
+                      <TableHead className="text-xs">User</TableHead>
+                      <TableHead className="text-xs text-right">Points</TableHead>
+                      <TableHead className="text-xs text-right">Predictions</TableHead>
+                      <TableHead className="text-xs text-right">Exact</TableHead>
+                      <TableHead className="text-xs text-right">Diff</TableHead>
+                      <TableHead className="text-xs text-right">Outcome</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leaderboardData.data.map((m) => (
+                      <TableRow key={m.userId}>
+                        <TableCell className="text-sm font-bold text-muted-foreground">
+                          {m.rank}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {m.image ? (
+                              <img
+                                src={m.image}
+                                alt=""
+                                className="h-6 w-6 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold">
+                                {(m.name || m.username || "?").charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-sm font-medium leading-none">
+                                {m.name || m.username || `User #${m.userId}`}
+                              </p>
+                              {m.username && m.name && (
+                                <p className="text-xs text-muted-foreground">
+                                  @{m.username}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm font-bold text-right tabular-nums">
+                          {m.totalPoints}
+                        </TableCell>
+                        <TableCell className="text-xs text-right text-muted-foreground tabular-nums">
+                          {m.predictionsCount}
+                        </TableCell>
+                        <TableCell className="text-xs text-right tabular-nums">
+                          {m.exactCount}
+                        </TableCell>
+                        <TableCell className="text-xs text-right tabular-nums">
+                          {m.differenceCount}
+                        </TableCell>
+                        <TableCell className="text-xs text-right tabular-nums">
+                          {m.outcomeCount}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {leaderboardData.pagination.totalPages > 1 && (
+                  <div className="px-4 pb-3">
+                    <SimplePagination
+                      page={leaderboardData.pagination.page}
+                      totalPages={leaderboardData.pagination.totalPages}
+                      totalItems={leaderboardData.pagination.totalItems}
+                      perPage={leaderboardData.pagination.perPage}
+                      onPageChange={setLeaderboardPage}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Fixtures Tab */}
+      {tab === "fixtures" && (
+        <Card>
+          <CardContent className="p-0">
+            {fixturesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : !fixturesData || fixturesData.data.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                No fixtures in this group
+              </div>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Match</TableHead>
+                      <TableHead className="text-xs">League</TableHead>
+                      <TableHead className="text-xs">Score</TableHead>
+                      <TableHead className="text-xs">Date</TableHead>
+                      <TableHead className="text-xs">Round</TableHead>
+                      <TableHead className="text-xs">State</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fixturesData.data.map((f) => (
+                      <TableRow key={f.id}>
+                        <TableCell className="text-sm font-medium">
+                          {f.homeTeam?.name ?? "?"} vs {f.awayTeam?.name ?? "?"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {f.league?.name ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {f.homeScore90 !== null && f.awayScore90 !== null
+                            ? `${f.homeScore90} - ${f.awayScore90}`
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {new Date(f.startIso).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-xs">{f.round ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              f.state === "FT" || f.state === "AET" || f.state === "FT_PEN"
+                                ? "secondary"
+                                : f.state === "LIVE"
+                                  ? "default"
+                                  : "outline"
+                            }
+                            className="text-xs"
+                          >
+                            {f.state}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {fixturesData.pagination.totalPages > 1 && (
+                  <div className="px-4 pb-3">
+                    <SimplePagination
+                      page={fixturesData.pagination.page}
+                      totalPages={fixturesData.pagination.totalPages}
+                      totalItems={fixturesData.pagination.totalItems}
+                      perPage={fixturesData.pagination.perPage}
+                      onPageChange={setFixturesPage}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Settings Dialog */}
+      <GroupSettingsDialog
+        group={group}
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onGroupUpdated={onGroupUpdated}
+      />
+    </div>
+  );
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function OfficialGroupsPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = React.useState(1);
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
-  const [isEditOpen, setIsEditOpen] = React.useState(false);
-  const [editGroup, setEditGroup] =
+  const [fixturesGroup, setFixturesGroup] =
     React.useState<AdminOfficialGroupItem | null>(null);
-  const [editName, setEditName] = React.useState("");
-  const [editDescription, setEditDescription] = React.useState("");
-  const [editBadges, setEditBadges] = React.useState<
-    Array<{
-      name: string;
-      description: string;
-      icon: string;
-      criteriaType: string;
-      criteriaValue: string;
-    }>
-  >([]);
 
   const { data: groupsData, isLoading } = useQuery({
     queryKey: ["official-groups", page],
@@ -1967,85 +2762,18 @@ export default function OfficialGroupsPage() {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      body,
-    }: {
-      id: number;
-      body: AdminUpdateOfficialGroupBody;
-    }) => officialGroupsService.update(id, body),
-    onSuccess: () => {
-      toast.success("Official group updated");
-      setIsEditOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["official-groups"] });
-    },
-    onError: (err: Error) => {
-      toast.error("Failed to update group", { description: err.message });
-    },
-  });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => officialGroupsService.delete(id),
-    onSuccess: () => {
-      toast.success("Official group deleted");
-      queryClient.invalidateQueries({ queryKey: ["official-groups"] });
-    },
-    onError: (err: Error) => {
-      toast.error("Failed to delete group", { description: err.message });
-    },
-  });
-
-  const awardMutation = useMutation({
-    mutationFn: (id: number) => officialGroupsService.awardBadges(id),
-    onSuccess: (data) => {
-      toast.success(`${data.data.awarded} badges awarded`);
-    },
-    onError: (err: Error) => {
-      toast.error("Failed to award badges", { description: err.message });
-    },
-  });
-
-  function handleEdit() {
-    if (!editGroup) return;
-    const body: AdminUpdateOfficialGroupBody = {};
-    if (editName !== editGroup.name) body.name = editName;
-    if (editDescription !== (editGroup.description ?? ""))
-      body.description = editDescription;
-
-    const validBadges = editBadges.filter((b) => b.name.trim());
-    if (validBadges.length > 0) {
-      body.badges = validBadges.map((b) => ({
-        name: b.name,
-        description: b.description,
-        icon: b.icon,
-        criteriaType: b.criteriaType,
-        criteriaValue: Number(b.criteriaValue) || 1,
-      }));
-    } else if (editGroup.badges.length > 0 && validBadges.length === 0) {
-      body.badges = null;
-    }
-
-    updateMutation.mutate({ id: editGroup.id, body });
-  }
-
-  function openEdit(group: AdminOfficialGroupItem) {
-    setEditGroup(group);
-    setEditName(group.name);
-    setEditDescription(group.description ?? "");
-    setEditBadges(
-      group.badges.map((b) => ({
-        name: b.name,
-        description: b.description,
-        icon: b.icon,
-        criteriaType: b.criteriaType,
-        criteriaValue: String(b.criteriaValue),
-      }))
+  // ── Full-screen views replace entire page ──
+  if (fixturesGroup) {
+    return (
+      <GroupDetailView
+        group={fixturesGroup}
+        onBack={() => setFixturesGroup(null)}
+        onGroupUpdated={setFixturesGroup}
+      />
     );
-    setIsEditOpen(true);
   }
 
-  // ── Wizard replaces entire page ──
   if (isCreateOpen) {
     return (
       <CreateWizard
@@ -2087,12 +2815,15 @@ export default function OfficialGroupsPage() {
                   <TableHead>Fixtures</TableHead>
                   <TableHead>Badge</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {groups.map((group) => (
-                  <TableRow key={group.id}>
+                  <TableRow
+                    key={group.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setFixturesGroup(group)}
+                  >
                     <TableCell className="font-medium">{group.name}</TableCell>
                     <TableCell>
                       <Badge
@@ -2127,49 +2858,6 @@ export default function OfficialGroupsPage() {
                     <TableCell>
                       {new Date(group.createdAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEdit(group)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => awardMutation.mutate(group.id)}
-                        disabled={
-                          awardMutation.isPending ||
-                          group.badges.length === 0 ||
-                          group.status !== "ended"
-                        }
-                        title={
-                          group.badges.length === 0
-                            ? "No badges configured for this group"
-                            : group.status !== "ended"
-                              ? `Group must be ended to award badges (currently ${group.status})`
-                              : undefined
-                        }
-                      >
-                        Award Badges
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          if (
-                            confirm(
-                              `Delete official group "${group.name}"? This cannot be undone.`,
-                            )
-                          ) {
-                            deleteMutation.mutate(group.id);
-                          }
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -2202,192 +2890,6 @@ export default function OfficialGroupsPage() {
         </div>
       )}
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Official Group</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <Input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Description</Label>
-              <Textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Badges</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setEditBadges((prev) => [
-                      ...prev,
-                      {
-                        name: "",
-                        description: "",
-                        icon: "🏆",
-                        criteriaType: "participation",
-                        criteriaValue: "1",
-                      },
-                    ])
-                  }
-                >
-                  Add Badge
-                </Button>
-              </div>
-              {editBadges.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  No badges configured.
-                </p>
-              )}
-              {editBadges.map((badge, i) => (
-                <Card key={i}>
-                  <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                    <CardTitle className="text-sm">Badge {i + 1}</CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() =>
-                        setEditBadges((prev) =>
-                          prev.filter((_, idx) => idx !== i)
-                        )
-                      }
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="grid grid-cols-[1fr_auto] gap-2">
-                      <div>
-                        <Label className="text-xs">Name</Label>
-                        <Input
-                          value={badge.name}
-                          onChange={(e) =>
-                            setEditBadges((prev) =>
-                              prev.map((b, idx) =>
-                                idx === i
-                                  ? { ...b, name: e.target.value }
-                                  : b
-                              )
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Icon</Label>
-                        <Input
-                          value={badge.icon}
-                          onChange={(e) =>
-                            setEditBadges((prev) =>
-                              prev.map((b, idx) =>
-                                idx === i
-                                  ? { ...b, icon: e.target.value }
-                                  : b
-                              )
-                            )
-                          }
-                          className="w-20"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Description</Label>
-                      <Input
-                        value={badge.description}
-                        onChange={(e) =>
-                          setEditBadges((prev) =>
-                            prev.map((b, idx) =>
-                              idx === i
-                                ? { ...b, description: e.target.value }
-                                : b
-                            )
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Award Rule</Label>
-                      <Select
-                        value={badge.criteriaType}
-                        onValueChange={(v) =>
-                          setEditBadges((prev) =>
-                            prev.map((b, idx) =>
-                              idx === i ? { ...b, criteriaType: v } : b
-                            )
-                          )
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="participation">
-                            All participants
-                          </SelectItem>
-                          <SelectItem value="top_n">
-                            Top N in leaderboard
-                          </SelectItem>
-                          <SelectItem value="exact_predictions">
-                            Minimum exact predictions
-                          </SelectItem>
-                          <SelectItem value="custom">
-                            Manual (admin awards)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {(badge.criteriaType === "top_n" ||
-                      badge.criteriaType === "exact_predictions") && (
-                      <div>
-                        <Label className="text-xs">
-                          {badge.criteriaType === "top_n"
-                            ? "How many top players?"
-                            : "Minimum exact predictions"}
-                        </Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={badge.criteriaValue}
-                          onChange={(e) =>
-                            setEditBadges((prev) =>
-                              prev.map((b, idx) =>
-                                idx === i
-                                  ? { ...b, criteriaValue: e.target.value }
-                                  : b
-                              )
-                            )
-                          }
-                          className="w-32"
-                        />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <Button
-              className="w-full"
-              onClick={handleEdit}
-              disabled={updateMutation.isPending}
-            >
-              {updateMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

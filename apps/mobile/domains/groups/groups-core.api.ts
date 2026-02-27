@@ -13,6 +13,7 @@ import type {
   ApiPublicGroupsQuery,
   ApiPublicGroupsResponse,
   ApiGroupFixturesResponse,
+  ApiGroupLobbySummaryResponse,
   ApiGroupGamesFiltersResponse,
   ApiGroupPreviewBody,
   ApiGroupPreviewResponse,
@@ -152,6 +153,19 @@ export async function fetchGroupFixtures(
     {
       method: "GET",
     }
+  );
+}
+
+/**
+ * Fetch lightweight lobby summary (live + upcoming + finished slices) for a group.
+ * - Requires authentication.
+ */
+export async function fetchGroupLobbySummary(
+  groupId: number
+): Promise<ApiGroupLobbySummaryResponse> {
+  return apiFetchWithAuthRetry<ApiGroupLobbySummaryResponse>(
+    `/api/groups/${groupId}/lobby-summary`,
+    { method: "GET" }
   );
 }
 

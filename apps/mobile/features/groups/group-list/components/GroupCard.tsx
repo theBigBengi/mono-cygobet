@@ -2,7 +2,7 @@
 // Unified card component for displaying groups in the groups list.
 // Styled to match the lobby and games screen design patterns.
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { useRouter } from "expo-router";
@@ -10,6 +10,10 @@ import * as Haptics from "expo-haptics";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   FadeIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
 } from "react-native-reanimated";
 import { AppText, GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -46,6 +50,7 @@ export interface GroupCardProps {
   onPress: (groupId: number) => void;
   unreadCount?: number;
   unreadActivityCount?: number;
+  isHudLoading?: boolean;
 }
 
 const AVATAR_SIZE = 56;
@@ -264,6 +269,31 @@ const ActivityHudCell = React.memo(function ActivityHudCellInner({
   );
 });
 
+// ─── HUD Skeleton ─────────────────────────────────────────────────────
+
+function HudSkeleton({ borderColor }: { borderColor: string }) {
+  const opacity = useSharedValue(0.3);
+
+  useEffect(() => {
+    opacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
+  }, [opacity]);
+
+  const pulseStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return (
+    <Animated.View style={pulseStyle}>
+      <View style={styles.hudSkeletonRow}>
+        {[0, 1, 2].map((i) => (
+          <View key={i} style={styles.hudSkeletonCell}>
+            <View style={[styles.hudSkeletonIcon, { backgroundColor: borderColor }]} />
+            <View style={[styles.hudSkeletonText, { backgroundColor: borderColor }]} />
+          </View>
+        ))}
+      </View>
+    </Animated.View>
+  );
+}
+
 // ─── NextGameRow Sub-component ────────────────────────────────────────
 
 interface NextGameRowProps {
@@ -398,7 +428,7 @@ const NextGameRow = React.memo(function NextGameRowInner({
 
 // ─── GroupCard ─────────────────────────────────────────────────────────
 
-function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount = 0 }: GroupCardProps) {
+function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount = 0, isHudLoading = false }: GroupCardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const router = useRouter();
@@ -615,29 +645,32 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
               />
             )}
 
-            {/* Alert HUD - always visible, items light up when there's an alert */}
+            {/* Alert HUD - skeleton while unread data loads, real cells after */}
             {!isDraft && !isEnded && (
-              <Animated.View
-                entering={FadeIn.duration(400)}
-                style={[styles.statsHud, cardStyles.statsHud]}
-              >
-                <RankingHudCell
-                  rankChange={group.userRankChange ?? 0}
-                  userRank={userRank}
-                  textSecondary={theme.colors.textSecondary}
-                />
-                <ActivityHudCell
-                  unreadActivityCount={unreadActivityCount}
-                  primaryColor={theme.colors.primary}
-                  textSecondary={theme.colors.textSecondary}
-                />
-                <ChatHudCell
-                  unreadCount={unreadCount}
-                  lastMessageAt={group.lastMessageAt}
-                  primaryColor={theme.colors.primary}
-                  textSecondary={theme.colors.textSecondary}
-                />
-              </Animated.View>
+              <View style={[styles.statsHud, cardStyles.statsHud]}>
+                {isHudLoading ? (
+                  <HudSkeleton borderColor={theme.colors.border} />
+                ) : (
+                  <Animated.View entering={FadeIn.duration(300)} style={styles.hudInner}>
+                    <RankingHudCell
+                      rankChange={group.userRankChange ?? 0}
+                      userRank={userRank}
+                      textSecondary={theme.colors.textSecondary}
+                    />
+                    <ActivityHudCell
+                      unreadActivityCount={unreadActivityCount}
+                      primaryColor={theme.colors.primary}
+                      textSecondary={theme.colors.textSecondary}
+                    />
+                    <ChatHudCell
+                      unreadCount={unreadCount}
+                      lastMessageAt={group.lastMessageAt}
+                      primaryColor={theme.colors.primary}
+                      textSecondary={theme.colors.textSecondary}
+                    />
+                  </Animated.View>
+                )}
+              </View>
             )}
 
             {/* Draft hint */}
@@ -675,6 +708,7 @@ export const GroupCard = React.memo(GroupCardInner, (prev, next) => {
     prev.group === next.group &&
     prev.unreadCount === next.unreadCount &&
     prev.unreadActivityCount === next.unreadActivityCount &&
+    prev.isHudLoading === next.isHudLoading &&
     prev.onPress === next.onPress
   );
 });
@@ -820,10 +854,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   statsHud: {
-    flexDirection: "row",
     marginTop: 14,
     paddingVertical: 6,
-    gap: 2,
     borderTopWidth: 1,
   },
   hudCell: {
@@ -884,5 +916,33 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
+  },
+  hudInner: {
+    flexDirection: "row",
+    flex: 1,
+    gap: 2,
+  },
+  hudSkeletonRow: {
+    flexDirection: "row",
+    flex: 1,
+    gap: 2,
+  },
+  hudSkeletonCell: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    gap: 4,
+  },
+  hudSkeletonIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+  },
+  hudSkeletonText: {
+    width: 24,
+    height: 12,
+    borderRadius: 4,
   },
 });

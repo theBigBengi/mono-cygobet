@@ -157,6 +157,7 @@ export function useRespondToInviteMutation() {
       queryClient.invalidateQueries({ queryKey: invitesKeys.lists() });
       if (variables.action === "accept") {
         queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
+        queryClient.removeQueries({ queryKey: [...groupsKeys.all, "public"] });
       }
     },
   });

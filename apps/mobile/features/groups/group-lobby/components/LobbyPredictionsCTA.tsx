@@ -348,49 +348,51 @@ export function LobbyPredictionsCTA({
   // --- Skeleton ---
   if (isLoading) {
     return (
-      <View style={styles.wrapper}>
-        <View
-          style={[
-            styles.container,
-            {
-              backgroundColor: theme.colors.cardBackground,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
-          <View style={styles.headerRow}>
+      <View style={styles.outerWrapper}>
+        <View style={[styles.wrapper, { backgroundColor: theme.colors.cardBackground }]}>
+          <View
+            style={[
+              styles.container,
+              {
+                backgroundColor: theme.colors.cardBackground,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
+            <View style={styles.headerRow}>
+              <Animated.View
+                style={[
+                  styles.skeletonBar,
+                  { backgroundColor: theme.colors.border },
+                  skeletonAnimatedStyle,
+                ]}
+              />
+              <Animated.View
+                style={[
+                  styles.skeletonBarSmall,
+                  { backgroundColor: theme.colors.border },
+                  skeletonAnimatedStyle,
+                ]}
+              />
+            </View>
+            {[0, 1, 2].map((i) => (
+              <Animated.View
+                key={i}
+                style={[
+                  styles.skeletonRow,
+                  { backgroundColor: theme.colors.border },
+                  skeletonAnimatedStyle,
+                ]}
+              />
+            ))}
             <Animated.View
               style={[
-                styles.skeletonBar,
-                { backgroundColor: theme.colors.border },
-                skeletonAnimatedStyle,
-              ]}
-            />
-            <Animated.View
-              style={[
-                styles.skeletonBarSmall,
+                styles.skeletonButton,
                 { backgroundColor: theme.colors.border },
                 skeletonAnimatedStyle,
               ]}
             />
           </View>
-          {[0, 1, 2].map((i) => (
-            <Animated.View
-              key={i}
-              style={[
-                styles.skeletonRow,
-                { backgroundColor: theme.colors.border },
-                skeletonAnimatedStyle,
-              ]}
-            />
-          ))}
-          <Animated.View
-            style={[
-              styles.skeletonButton,
-              { backgroundColor: theme.colors.border },
-              skeletonAnimatedStyle,
-            ]}
-          />
         </View>
       </View>
     );
@@ -439,18 +441,19 @@ export function LobbyPredictionsCTA({
   };
 
   return (
-    <View style={styles.wrapper}>
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.cardBackground,
-            borderColor: theme.colors.border,
-            borderBottomColor,
-          },
-        ]}
-      >
-        {/* === RESULTS — last finished games with scores + predictions + points === */}
+    <View style={styles.outerWrapper}>
+      <View style={[styles.wrapper, { backgroundColor: theme.colors.cardBackground }]}>
+        <View
+          style={[
+            styles.container,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.border,
+              borderBottomColor,
+            },
+          ]}
+        >
+          {/* === RESULTS — last finished games with scores + predictions + points === */}
         {mode === "results" && (() => {
           const MAX_RESULTS = 4;
           const recentResults = finishedFixtures.slice(0, MAX_RESULTS);
@@ -605,6 +608,7 @@ export function LobbyPredictionsCTA({
         })()}
 
 
+        </View>
       </View>
       <View style={styles.footerRow}>
         <Text style={[styles.progressText, { color: theme.colors.textSecondary + "80" }]}>
@@ -627,9 +631,11 @@ export function LobbyPredictionsCTA({
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  outerWrapper: {
     marginHorizontal: 16,
     marginBottom: 12,
+  },
+  wrapper: {
     borderRadius: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },

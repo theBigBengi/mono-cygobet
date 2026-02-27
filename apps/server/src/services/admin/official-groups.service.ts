@@ -270,6 +270,285 @@ export async function updateOfficialGroup(
   return getOfficialGroup(groupId);
 }
 
+export async function getGroupDetails(groupId: number) {
+  const group = await prisma.groups.findUnique({
+    where: { id: groupId },
+    include: {
+      groupRules: true,
+    },
+  });
+
+  if (!group || !group.isOfficial) {
+    throw new NotFoundError("Official group not found");
+  }
+
+  // Resolve creator
+  const creator = await prisma.users.findUnique({
+    where: { id: group.creatorId },
+    select: { id: true, name: true, email: true },
+  });
+
+  const rules = group.groupRules;
+
+  return {
+    id: group.id,
+    name: group.name,
+    description: group.description,
+    status: group.status,
+    privacy: group.privacy,
+    inviteCode: group.inviteCode,
+    isOfficial: group.isOfficial,
+    createdAt: group.createdAt.toISOString(),
+    updatedAt: group.updatedAt.toISOString(),
+    creator,
+    rules: rules
+      ? {
+          selectionMode: rules.selectionMode,
+          onTheNosePoints: rules.onTheNosePoints,
+          correctDifferencePoints: rules.correctDifferencePoints,
+          outcomePoints: rules.outcomePoints,
+          koRoundMode: rules.koRoundMode,
+          predictionMode: rules.predictionMode,
+          maxMembers: rules.maxMembers,
+          inviteAccess: rules.inviteAccess,
+          nudgeEnabled: rules.nudgeEnabled,
+          nudgeWindowMinutes: rules.nudgeWindowMinutes,
+          leagueIds: rules.groupLeaguesIds,
+          teamIds: rules.groupTeamsIds,
+        }
+      : null,
+  };
+}
+
+export async function updateGroupRules(
+  groupId: number,
+  body: {
+    onTheNosePoints?: number;
+    correctDifferencePoints?: number;
+    outcomePoints?: number;
+    predictionMode?: string;
+    koRoundMode?: string;
+    maxMembers?: number;
+    inviteAccess?: string;
+    nudgeEnabled?: boolean;
+    nudgeWindowMinutes?: number;
+  }
+) {
+  const group = await prisma.groups.findUnique({
+    where: { id: groupId },
+    select: { id: true, isOfficial: true },
+  });
+
+  if (!group || !group.isOfficial) {
+    throw new NotFoundError("Official group not found");
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (body.onTheNosePoints !== undefined) updateData.onTheNosePoints = body.onTheNosePoints;
+  if (body.correctDifferencePoints !== undefined) updateData.correctDifferencePoints = body.correctDifferencePoints;
+  if (body.outcomePoints !== undefined) updateData.outcomePoints = body.outcomePoints;
+  if (body.predictionMode !== undefined) updateData.predictionMode = body.predictionMode;
+  if (body.koRoundMode !== undefined) updateData.koRoundMode = body.koRoundMode;
+  if (body.maxMembers !== undefined) updateData.maxMembers = body.maxMembers;
+  if (body.inviteAccess !== undefined) updateData.inviteAccess = body.inviteAccess;
+  if (body.nudgeEnabled !== undefined) updateData.nudgeEnabled = body.nudgeEnabled;
+  if (body.nudgeWindowMinutes !== undefined) updateData.nudgeWindowMinutes = body.nudgeWindowMinutes;
+
+  if (Object.keys(updateData).length > 0) {
+    await prisma.groupRules.update({
+      where: { groupId },
+      data: updateData as any,
+    });
+  }
+
+  log.info({ groupId }, "Official group rules updated");
+  return getGroupDetails(groupId);
+}
+
+export async function listGroupLeaderboard(
+  groupId: number,
+  page: number,
+  perPage: number
+) {
+  // Verify group exists and is official
+  const group = await prisma.groups.findUnique({
+    where: { id: groupId },
+    select: { id: true, isOfficial: true },
+  });
+
+  if (!group || !group.isOfficial) {
+    throw new NotFoundError("Official group not found");
+  }
+
+  // Get members with their prediction stats via raw aggregation
+  const totalMembers = await prisma.groupMembers.count({
+    where: { groupId, status: "joined" },
+  });
+
+  // Get all prediction stats for this group
+  const [totalPredictions, settledPredictions] = await Promise.all([
+    prisma.groupPredictions.count({ where: { groupId } }),
+    prisma.groupPredictions.count({ where: { groupId, settledAt: { not: null } } }),
+  ]);
+
+  // Get members with aggregated points - use raw query for SUM
+  const membersWithPoints = await prisma.$queryRaw<
+    Array<{
+      user_id: number;
+      name: string | null;
+      username: string | null;
+      image: string | null;
+      total_points: string;
+      predictions_count: string;
+      settled_count: string;
+      exact_count: string;
+      difference_count: string;
+      outcome_count: string;
+    }>
+  >`
+    SELECT
+      gm.user_id,
+      u.name,
+      u.username,
+      u.image,
+      COALESCE(SUM(CAST(gp.points AS NUMERIC)), 0) AS total_points,
+      COUNT(gp.id) AS predictions_count,
+      COUNT(gp.settled_at) AS settled_count,
+      COUNT(CASE WHEN gp.winning_correct_score = true THEN 1 END) AS exact_count,
+      COUNT(CASE WHEN gp.winning_correct_difference = true AND gp.winning_correct_score = false THEN 1 END) AS difference_count,
+      COUNT(CASE WHEN gp.winning_match_winner = true AND gp.winning_correct_difference = false AND gp.winning_correct_score = false THEN 1 END) AS outcome_count
+    FROM group_members gm
+    JOIN users u ON u.id = gm.user_id
+    LEFT JOIN group_predictions gp ON gp.group_id = gm.group_id AND gp.user_id = gm.user_id
+    WHERE gm.group_id = ${groupId} AND gm.status = 'joined'
+    GROUP BY gm.user_id, u.name, u.username, u.image
+    ORDER BY total_points DESC, exact_count DESC, predictions_count DESC
+    LIMIT ${perPage} OFFSET ${(page - 1) * perPage}
+  `;
+
+  const data = membersWithPoints.map((m, i) => ({
+    userId: m.user_id,
+    name: m.name,
+    username: m.username,
+    image: m.image,
+    totalPoints: Number(m.total_points),
+    predictionsCount: Number(m.predictions_count),
+    settledCount: Number(m.settled_count),
+    exactCount: Number(m.exact_count),
+    differenceCount: Number(m.difference_count),
+    outcomeCount: Number(m.outcome_count),
+    rank: (page - 1) * perPage + i + 1,
+  }));
+
+  return {
+    data,
+    pagination: {
+      page,
+      perPage,
+      totalItems: totalMembers,
+      totalPages: Math.ceil(totalMembers / perPage) || 1,
+    },
+    stats: {
+      totalMembers,
+      totalPredictions,
+      settledPredictions,
+      pendingPredictions: totalPredictions - settledPredictions,
+    },
+  };
+}
+
+export async function listGroupFixtures(
+  groupId: number,
+  page: number,
+  perPage: number
+): Promise<{
+  data: Array<{
+    id: number;
+    fixtureId: number;
+    name: string;
+    startIso: string;
+    state: string;
+    result: string | null;
+    homeScore90: number | null;
+    awayScore90: number | null;
+    homeTeam: { id: number; name: string; imagePath: string | null } | null;
+    awayTeam: { id: number; name: string; imagePath: string | null } | null;
+    league: { id: number; name: string; imagePath: string | null } | null;
+    round: string | null;
+  }>;
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}> {
+  // Verify group exists and is official
+  const group = await prisma.groups.findUnique({
+    where: { id: groupId },
+    select: { id: true, isOfficial: true },
+  });
+
+  if (!group || !group.isOfficial) {
+    throw new NotFoundError("Official group not found");
+  }
+
+  const where = { groupId };
+
+  const [rows, totalCount] = await Promise.all([
+    prisma.groupFixtures.findMany({
+      where,
+      orderBy: { fixtures: { startTs: "desc" } },
+      skip: (page - 1) * perPage,
+      take: perPage,
+      include: {
+        fixtures: {
+          include: {
+            homeTeam: { select: { id: true, name: true, imagePath: true } },
+            awayTeam: { select: { id: true, name: true, imagePath: true } },
+            league: { select: { id: true, name: true, imagePath: true } },
+          },
+        },
+      },
+    }),
+    prisma.groupFixtures.count({ where }),
+  ]);
+
+  const data = rows.map((gf) => {
+    const f = gf.fixtures;
+    return {
+      id: gf.id,
+      fixtureId: gf.fixtureId,
+      name: f.name,
+      startIso: typeof f.startIso === "object" ? (f.startIso as Date).toISOString() : String(f.startIso),
+      state: f.state,
+      result: f.result,
+      homeScore90: f.homeScore90,
+      awayScore90: f.awayScore90,
+      homeTeam: f.homeTeam
+        ? { id: f.homeTeam.id, name: f.homeTeam.name, imagePath: f.homeTeam.imagePath }
+        : null,
+      awayTeam: f.awayTeam
+        ? { id: f.awayTeam.id, name: f.awayTeam.name, imagePath: f.awayTeam.imagePath }
+        : null,
+      league: f.league
+        ? { id: f.league.id, name: f.league.name, imagePath: f.league.imagePath }
+        : null,
+      round: f.round,
+    };
+  });
+
+  return {
+    data,
+    pagination: {
+      page,
+      perPage,
+      totalItems: totalCount,
+      totalPages: Math.ceil(totalCount / perPage) || 1,
+    },
+  };
+}
+
 export async function deleteOfficialGroup(groupId: number): Promise<void> {
   const group = await prisma.groups.findUnique({
     where: { id: groupId },

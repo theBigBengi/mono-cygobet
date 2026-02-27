@@ -51,6 +51,7 @@ export function useJoinGroupByCodeMutation() {
     onSuccess: (data) => {
       analytics.track("group_joined", { groupId: data.data?.id, method: "invite_code" });
       queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
+      queryClient.removeQueries({ queryKey: [...groupsKeys.all, "public"] });
     },
   });
 }
@@ -78,7 +79,7 @@ export function useJoinPublicGroupMutation(groupId: number | null) {
           queryKey: groupsKeys.detail(groupId),
         });
       }
-      queryClient.invalidateQueries({
+      queryClient.removeQueries({
         queryKey: [...groupsKeys.all, "public"],
       });
     },

@@ -55,10 +55,11 @@ function GroupsContent() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { data, isLoading, error, refetch } = useMyGroupsQuery();
-  const { data: unreadData, refetch: refetchUnread } = useUnreadCountsQuery();
+  const { data: unreadData, refetch: refetchUnread, isLoading: isUnreadLoading } = useUnreadCountsQuery();
   const unreadCounts = unreadData?.data ?? {};
-  const { data: unreadActivityData } = useUnreadActivityCountsQuery();
+  const { data: unreadActivityData, isLoading: isActivityLoading } = useUnreadActivityCountsQuery();
   const unreadActivityCounts = unreadActivityData?.data ?? {};
+  const isHudLoading = isUnreadLoading || isActivityLoading;
   const { data: invitesData } = useMyInvitesQuery({ status: "pending" });
   const pendingInviteCount = invitesData?.data?.invites?.length ?? 0;
   const [refreshing, setRefreshing] = useState(false);
@@ -245,9 +246,10 @@ function GroupsContent() {
         onPress={handleGroupPress}
         unreadCount={unreadCounts[String(item.data.id)] ?? 0}
         unreadActivityCount={unreadActivityCounts[String(item.data.id)] ?? 0}
+        isHudLoading={isHudLoading}
       />
     );
-  }, [theme, handleOpenInfo, handleOpenInvites, handleOpenSearch, pendingInviteCount, isTabsSticky, selectedFilter, setSelectedFilter, counts, handleGroupPress, unreadCounts, unreadActivityCounts]);
+  }, [theme, handleOpenInfo, handleOpenInvites, handleOpenSearch, pendingInviteCount, isTabsSticky, selectedFilter, setSelectedFilter, counts, handleGroupPress, unreadCounts, unreadActivityCounts, isHudLoading]);
 
   // Loading state — skeleton
   if (isLoading) {

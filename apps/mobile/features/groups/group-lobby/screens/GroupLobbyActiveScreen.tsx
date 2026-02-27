@@ -6,12 +6,16 @@ import { useTranslation } from "react-i18next";
 import { View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent, Pressable, Text, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import { Screen } from "@/components/ui";
 import { useAuth } from "@/lib/auth/useAuth";
 import {
   useGroupRankingQuery,
   useGroupChatPreviewQuery,
   useUnreadActivityCountsQuery,
+  useGroupLobbySummaryQuery,
+  groupsKeys,
 } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
 import type { FixtureItem } from "../types";
@@ -21,8 +25,8 @@ import { LobbyPredictionsCTA } from "../components/LobbyPredictionsCTA";
 import { LobbyQuickActions } from "../components/LobbyQuickActions";
 import { LobbyLeaderboard } from "../components/LobbyLeaderboard";
 import { LobbyActivityBanner } from "../components/LobbyActivityBanner";
-import { useGroupDuration } from "../hooks/useGroupDuration";
 import { DebugCTAScreen } from "./DebugCTAScreen";
+import { DebugLeaderboardScreen } from "./DebugLeaderboardScreen";
 
 interface GroupLobbyActiveScreenProps {
   group: ApiGroupItem;
@@ -47,7 +51,16 @@ export function GroupLobbyActiveScreen({
   const router = useRouter();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const [showDebugCTA, setShowDebugCTA] = useState(false);
+  const [showDebugLeaderboard, setShowDebugLeaderboard] = useState(false);
+
+  // Invalidate lobby summary when screen gains focus (e.g. returning from games screen after saving predictions)
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: groupsKeys.lobbySummary(group.id) });
+    }, [queryClient, group.id])
+  );
 
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -62,27 +75,36 @@ export function GroupLobbyActiveScreen({
   const { data: unreadActivityData } = useUnreadActivityCountsQuery();
   const unreadActivityCount = unreadActivityData?.data?.[String(group.id)] ?? 0;
 
-  const fixtures: FixtureItem[] = group.fixtures ?? [];
+  // Lobby summary — lightweight fixture slices for CTA
+  const { data: lobbySummaryData, isLoading: isLobbySummaryLoading } =
+    useGroupLobbySummaryQuery(group.id);
+  const lobbySummary = lobbySummaryData?.data;
 
-  const totalFixtures = group.totalFixtures ?? fixtures.length;
-  const predictionsCount =
-    group.predictionsCount ??
-    fixtures.filter((f) => f.prediction != null && f.prediction !== undefined)
-      .length;
+  // Combine lobby summary slices into a flat array for the CTA component
+  const fixtures: FixtureItem[] = useMemo(() => {
+    if (!lobbySummary) return [];
+    return [
+      ...lobbySummary.liveFixtures,
+      ...lobbySummary.upcomingFixtures,
+      ...lobbySummary.recentFinishedFixtures,
+    ];
+  }, [lobbySummary]);
 
-  const fixturesLoaded = fixtures.length > 0 || group.totalFixtures === 0;
+  const totalFixtures = lobbySummary?.totalFixtures ?? group.totalFixtures ?? 0;
+  const predictionsCount = lobbySummary?.predictionsCount ?? group.predictionsCount ?? 0;
+
+  const fixturesLoaded = !isLobbySummaryLoading;
   const ranking = rankingData?.data ?? [];
 
-  // Timeline progress calculation
-  const duration = useGroupDuration(fixtures);
+  // Timeline progress calculation — use group.firstGame/lastGame (no full fixtures needed)
   const timelineProgress = useMemo(() => {
-    if (!duration) return 0;
-    const startTime = new Date(duration.startDate).getTime();
-    const endTime = new Date(duration.endDate).getTime();
+    if (!group.firstGame || !group.lastGame) return 0;
+    const startTime = new Date(group.firstGame.kickoffAt).getTime();
+    const endTime = new Date(group.lastGame.kickoffAt).getTime();
     const nowTime = Date.now();
     if (endTime <= startTime) return 1;
     return (nowTime - startTime) / (endTime - startTime);
-  }, [duration]);
+  }, [group.firstGame, group.lastGame]);
 
   const handleViewGames = useCallback(
     (fixtureId?: number) => {
@@ -174,10 +196,10 @@ export function GroupLobbyActiveScreen({
           onInfoPress={onInfoPress}
         />
 
-        {duration ? (
+        {group.firstGame && group.lastGame ? (
           <GroupTimelineBar
-            startDate={duration.startDate}
-            endDate={duration.endDate}
+            startDate={group.firstGame.kickoffAt}
+            endDate={group.lastGame.kickoffAt}
             progress={timelineProgress}
           />
         ) : (
@@ -214,17 +236,35 @@ export function GroupLobbyActiveScreen({
         />
 
         {/* DEBUG — remove after done */}
-        <Pressable
-          onPress={() => setShowDebugCTA(true)}
-          style={{ marginHorizontal: 16, marginTop: 12, padding: 10, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center" }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG CTA MODES</Text>
-        </Pressable>
+        <View style={{ flexDirection: "row", gap: 8, marginHorizontal: 16, marginTop: 12 }}>
+          <Pressable
+            onPress={() => setShowDebugCTA(true)}
+            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center" }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG CTA</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setShowDebugLeaderboard(true)}
+            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#8B5CF6", alignItems: "center" }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG LEADERBOARD</Text>
+          </Pressable>
+        </View>
 
         <Modal visible={showDebugCTA} animationType="slide" presentationStyle="fullScreen">
           <DebugCTAScreen />
           <Pressable
             onPress={() => setShowDebugCTA(false)}
+            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={showDebugLeaderboard} animationType="slide" presentationStyle="fullScreen">
+          <DebugLeaderboardScreen />
+          <Pressable
+            onPress={() => setShowDebugLeaderboard(false)}
             style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
           >
             <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>

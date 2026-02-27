@@ -63,6 +63,8 @@ export async function getPublicGroups(
     creatorUsername: creatorUsernameByUserId.get(g.creatorId) ?? null,
     createdAt: g.createdAt.toISOString(),
     isOfficial: g.isOfficial || undefined,
+    description: g.description ?? null,
+    predictionMode: g.groupRules?.predictionMode ?? null,
     badge: (() => {
       const first = g.groupBadges[0];
       return first

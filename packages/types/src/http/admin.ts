@@ -1284,6 +1284,112 @@ export interface AdminAwardBadgesResponse {
   message: string;
 }
 
+export interface AdminOfficialGroupDetailsResponse {
+  status: string;
+  data: {
+    id: number;
+    name: string;
+    description: string | null;
+    status: string;
+    privacy: string;
+    inviteCode: string | null;
+    isOfficial: boolean;
+    createdAt: string;
+    updatedAt: string;
+    creator: { id: number; name: string | null; email: string } | null;
+    rules: {
+      selectionMode: string;
+      onTheNosePoints: number;
+      correctDifferencePoints: number;
+      outcomePoints: number;
+      koRoundMode: string;
+      predictionMode: string;
+      maxMembers: number;
+      inviteAccess: string;
+      nudgeEnabled: boolean;
+      nudgeWindowMinutes: number;
+      leagueIds: number[];
+      teamIds: number[];
+    } | null;
+  };
+  message: string;
+}
+
+export interface AdminUpdateOfficialGroupRulesBody {
+  onTheNosePoints?: number;
+  correctDifferencePoints?: number;
+  outcomePoints?: number;
+  predictionMode?: string;
+  koRoundMode?: string;
+  maxMembers?: number;
+  inviteAccess?: string;
+  nudgeEnabled?: boolean;
+  nudgeWindowMinutes?: number;
+}
+
+export interface AdminUpdateOfficialGroupRulesResponse {
+  status: string;
+  data: AdminOfficialGroupDetailsResponse["data"];
+  message: string;
+}
+
+export interface AdminOfficialGroupLeaderboardEntry {
+  userId: number;
+  name: string | null;
+  username: string | null;
+  image: string | null;
+  totalPoints: number;
+  predictionsCount: number;
+  settledCount: number;
+  exactCount: number;
+  differenceCount: number;
+  outcomeCount: number;
+  rank: number;
+}
+
+export interface AdminOfficialGroupLeaderboardResponse {
+  status: string;
+  data: AdminOfficialGroupLeaderboardEntry[];
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  stats: {
+    totalMembers: number;
+    totalPredictions: number;
+    settledPredictions: number;
+    pendingPredictions: number;
+  };
+  message: string;
+}
+
+export interface AdminOfficialGroupFixturesResponse {
+  status: string;
+  data: Array<{
+    id: number;
+    fixtureId: number;
+    name: string;
+    startIso: string;
+    state: string;
+    result: string | null;
+    homeScore90: number | null;
+    awayScore90: number | null;
+    homeTeam: { id: number; name: string; imagePath: string | null } | null;
+    awayTeam: { id: number; name: string; imagePath: string | null } | null;
+    league: { id: number; name: string; imagePath: string | null } | null;
+    round: string | null;
+  }>;
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
 export interface AdminFixtureSearchResponse {
   status: string;
   data: Array<{

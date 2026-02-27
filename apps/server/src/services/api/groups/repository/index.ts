@@ -35,6 +35,7 @@ import {
   findGroupFixturesWithFixtureDetails,
   findStartedFixturesByGroupFixtureIds,
   fetchGroupFixturesWithPredictions,
+  fetchLobbySummaryFixtures,
   findGroupFixturesForOverview,
   updateGroupWithFixtures,
 } from "./fixtures";
@@ -92,6 +93,7 @@ export const repository: GroupsRepository = {
   findGroupFixturesWithFixtureDetails,
   findStartedFixturesByGroupFixtureIds,
   fetchGroupFixturesWithPredictions,
+  fetchLobbySummaryFixtures,
   findGroupFixturesForOverview,
 
   // Predictions operations

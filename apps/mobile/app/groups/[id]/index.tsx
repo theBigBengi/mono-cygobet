@@ -22,7 +22,8 @@ import { BlurView } from "expo-blur";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, AppText } from "@/components/ui";
 import { AnimatedStickyHeader } from "@/components/ui/AnimatedStickyHeader";
-import { useGroupQuery, useDeleteGroupMutation } from "@/domains/groups";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGroupQuery, useDeleteGroupMutation, groupsKeys } from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
@@ -59,6 +60,7 @@ function GroupLobbyContent() {
   const { user } = useAuth();
   const { theme, colorScheme } = useTheme();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const setOverlay = useSetAtom(globalBlockingOverlayAtom);
   const setActiveGroup = useSetAtom(activeGroupIdAtom);
   const groupId =
@@ -82,7 +84,7 @@ function GroupLobbyContent() {
     isFetching,
     error,
     refetch: refetchGroup,
-  } = useGroupQuery(groupId, { includeFixtures: true });
+  } = useGroupQuery(groupId);
 
   // Dismiss creation overlay once group data is loaded
   useEffect(() => {
@@ -106,8 +108,11 @@ function GroupLobbyContent() {
   }, [error, data, isLoading, router]);
 
   const handleRefresh = React.useCallback(async () => {
+    if (groupId) {
+      queryClient.invalidateQueries({ queryKey: groupsKeys.lobbySummary(groupId) });
+    }
     await refetchGroup();
-  }, [refetchGroup]);
+  }, [refetchGroup, groupId, queryClient]);
 
   const deleteGroupMutation = useDeleteGroupMutation(groupId ?? 0);
   const [isPublishing, setIsPublishing] = useState(false);

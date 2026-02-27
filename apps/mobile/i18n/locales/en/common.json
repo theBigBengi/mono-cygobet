@@ -323,6 +323,7 @@
     "ctaAllCritical": "{{count}} games need predictions · Critical",
     "ranking": "Ranking",
     "rankingPending": "Ranking will be calculated after the first game ends",
+    "rankingNoPointsYet": "No one has scored points yet",
     "pts": "pts",
     "yourRank": "You're #{{rank}}",
     "leaderWithPoints": "Leader: {{name}} · {{points}} pts",
@@ -554,7 +555,9 @@
     "join": "Join",
     "failedLoadPublicGroups": "Failed to load public groups",
     "createdBy": "by @{{username}}",
-    "officialGroup": "Official"
+    "officialGroup": "Official",
+    "groupDetails": "Group Details",
+    "creator": "Creator"
   },
   "chat": {
     "typePlaceholder": "Type a message...",

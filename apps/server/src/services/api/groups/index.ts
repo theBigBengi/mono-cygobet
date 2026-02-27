@@ -10,6 +10,7 @@ export {
   updateGroup,
   publishGroup,
   getGroupFixtures,
+  getGroupLobbySummary,
   saveGroupPrediction,
   saveGroupPredictionsBatch,
   deleteGroup,

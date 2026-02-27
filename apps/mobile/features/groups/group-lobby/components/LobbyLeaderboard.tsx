@@ -16,7 +16,7 @@ import { useTheme } from "@/lib/theme";
 import type { ApiRankingItem } from "@repo/types";
 
 const RANK_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"] as const; // Gold, Silver, Bronze
-const PODIUM_HEIGHTS = [120, 145, 110] as const; // 2nd, 1st, 3rd place heights
+const PODIUM_HEIGHTS = [120, 155, 110] as const; // 2nd, 1st, 3rd place heights
 
 export interface LobbyLeaderboardProps {
   ranking: ApiRankingItem[] | undefined;
@@ -108,22 +108,120 @@ function LobbyLeaderboardInner({
     );
   }
 
-  if (top3.length === 0) {
+  // Shared "no ranking yet" renderer for both empty and all-zero states
+  const allZeroPoints = top3.length > 0 && allRanking.every((r) => r.totalPoints === 0);
+  if (top3.length === 0 || allZeroPoints) {
+    const message = allZeroPoints
+      ? t("lobby.rankingNoPointsYet")
+      : t("lobby.rankingPending");
+    const members = allZeroPoints ? allRanking : [];
+    const borderBottomColor = theme.colors.textSecondary + "40";
+
     return (
       <View style={styles.container}>
         <View
           style={[
-            styles.emptyCard,
+            styles.wrapper,
             {
-              backgroundColor: theme.colors.cardBackground,
+              backgroundColor: theme.colors.surface,
               borderColor: theme.colors.border,
+              borderBottomColor,
             },
           ]}
         >
-          <Ionicons name="trophy-outline" size={32} color={theme.colors.textSecondary} />
-          <AppText variant="caption" color="secondary" style={styles.emptyText}>
-            {t("lobby.rankingPending")}
-          </AppText>
+          {/* Message on top */}
+          <Text style={[styles.zeroHeaderText, { color: theme.colors.textSecondary, textAlign: "center", marginBottom: 12, paddingHorizontal: 16 }]}>
+            {message}
+          </Text>
+
+          {/* Placeholder podium: left=2nd, center=1st, right=3rd */}
+          <View style={styles.podiumRow}>
+              {([1, 0, 2] as const).map((rankIndex, visualIndex) => {
+                const height = PODIUM_HEIGHTS[visualIndex];
+                const rankColor = RANK_COLORS[rankIndex];
+                return (
+                  <View key={visualIndex} style={styles.podiumSlot}>
+                    <View
+                      style={[
+                        styles.podiumCard,
+                        {
+                          height,
+                          backgroundColor: theme.colors.cardBackground,
+                          borderColor: rankColor + "40",
+                          shadowColor: rankColor,
+                        },
+                      ]}
+                    >
+                      {/* Rank Badge */}
+                      <View
+                        style={[
+                          styles.rankBadge,
+                          { backgroundColor: rankColor },
+                        ]}
+                      >
+                        <Text style={styles.rankBadgeText}>{rankIndex + 1}</Text>
+                      </View>
+
+                      {/* Avatar */}
+                      <View
+                        style={[
+                          styles.avatar,
+                          {
+                            backgroundColor: rankColor + "30",
+                            borderColor: rankColor,
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.avatarText, { color: rankColor }]}>
+                          ?
+                        </Text>
+                      </View>
+
+                      {/* Name */}
+                      <Text
+                        style={[
+                          styles.playerName,
+                          { color: theme.colors.textSecondary },
+                        ]}
+                      >
+                        —
+                      </Text>
+
+                      {/* Points */}
+                      <View style={styles.pointsRow}>
+                        <Text style={[styles.pointsValue, { color: rankColor }]}>
+                          –
+                        </Text>
+                        <Text style={[styles.pointsLabel, { color: theme.colors.textSecondary }]}>
+                          pts
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+
+          {/* View Full Ranking Button */}
+          <Pressable
+            onPress={onPress}
+            style={({ pressed }) => [
+              styles.viewAllButton,
+              {
+                backgroundColor: theme.colors.cardBackground,
+                borderColor: theme.colors.border,
+                borderBottomColor,
+                marginTop: 12,
+                transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={[styles.buttonText, { color: theme.colors.textSecondary }]}>
+              {t("lobby.leaderboard")}
+            </Text>
+            <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
+          </Pressable>
         </View>
       </View>
     );
@@ -254,7 +352,7 @@ function LobbyLeaderboardInner({
               styles.userCard,
               {
                 backgroundColor: theme.colors.cardBackground,
-                borderColor: primaryAlpha40,
+                borderColor: theme.colors.border,
               },
               pressed && styles.pressed,
             ]}
@@ -273,7 +371,6 @@ function LobbyLeaderboardInner({
             <Text style={[styles.userPoints, { color: theme.colors.textSecondary }]}>
               {userRow.totalPoints} pts
             </Text>
-            <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
           </Pressable>
         )}
 
@@ -291,12 +388,10 @@ function LobbyLeaderboardInner({
             pressed && styles.pressed,
           ]}
         >
-          <View style={[styles.buttonIconCircle, { backgroundColor: primaryAlpha15 }]}>
-            <Ionicons name="podium-outline" size={16} color={theme.colors.primary} />
-          </View>
-          <Text style={[styles.buttonText, { color: theme.colors.textPrimary }]}>
+          <Text style={[styles.buttonText, { color: theme.colors.textSecondary }]}>
             {t("lobby.leaderboard")}
           </Text>
+          <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
         </Pressable>
       </View>
     </View>
@@ -366,7 +461,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     justifyContent: "center",
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 12,
     paddingTop: 8,
   },
   podiumSlot: {
@@ -442,59 +537,60 @@ const styles = StyleSheet.create({
   userCard: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    borderBottomWidth: 3,
-    marginBottom: 16,
-    gap: 10,
+    borderBottomWidth: 2,
+    marginBottom: 12,
+    gap: 8,
   },
   userRankCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   userRankText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "700",
   },
   userName: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
   },
   userPoints: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
   },
   viewAllButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderBottomWidth: 3,
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   buttonIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
   },
   buttonText: {
     fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    fontWeight: "500",
   },
   pressed: {
     opacity: 0.8,
+  },
+  // Empty / zero points state styles
+  zeroHeaderText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
   // Skeleton styles
   skeletonIcon: {

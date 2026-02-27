@@ -7,6 +7,11 @@ import type {
   AdminUpdateOfficialGroupResponse,
   AdminDeleteOfficialGroupResponse,
   AdminAwardBadgesResponse,
+  AdminOfficialGroupFixturesResponse,
+  AdminOfficialGroupLeaderboardResponse,
+  AdminOfficialGroupDetailsResponse,
+  AdminUpdateOfficialGroupRulesBody,
+  AdminUpdateOfficialGroupRulesResponse,
 } from "@repo/types";
 
 export const officialGroupsService = {
@@ -47,6 +52,44 @@ export const officialGroupsService = {
   async delete(id: number): Promise<AdminDeleteOfficialGroupResponse> {
     return apiDelete<AdminDeleteOfficialGroupResponse>(
       `/admin/official-groups/${id}`
+    );
+  },
+
+  async getDetails(
+    id: number
+  ): Promise<AdminOfficialGroupDetailsResponse> {
+    return apiGet<AdminOfficialGroupDetailsResponse>(
+      `/admin/official-groups/${id}/details`
+    );
+  },
+
+  async updateRules(
+    id: number,
+    body: AdminUpdateOfficialGroupRulesBody
+  ): Promise<AdminUpdateOfficialGroupRulesResponse> {
+    return apiPatch<AdminUpdateOfficialGroupRulesResponse>(
+      `/admin/official-groups/${id}/rules`,
+      body
+    );
+  },
+
+  async getLeaderboard(
+    id: number,
+    page = 1,
+    perPage = 20
+  ): Promise<AdminOfficialGroupLeaderboardResponse> {
+    return apiGet<AdminOfficialGroupLeaderboardResponse>(
+      `/admin/official-groups/${id}/leaderboard?page=${page}&perPage=${perPage}`
+    );
+  },
+
+  async getFixtures(
+    id: number,
+    page = 1,
+    perPage = 20
+  ): Promise<AdminOfficialGroupFixturesResponse> {
+    return apiGet<AdminOfficialGroupFixturesResponse>(
+      `/admin/official-groups/${id}/fixtures?page=${page}&perPage=${perPage}`
     );
   },
 

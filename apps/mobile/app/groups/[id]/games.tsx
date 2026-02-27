@@ -35,22 +35,23 @@ function GroupGamesContent() {
       ? Number(params.scrollToFixtureId)
       : undefined;
 
-  const { data, isLoading, error } = useGroupQuery(groupId, {
+  const { data, isLoading, isFetching, error } = useGroupQuery(groupId, {
     includeFixtures: true,
   });
 
-  // Loading state
-  if (isLoading) {
+  const group = data?.data;
+  const hasFixturesLoaded = group?.fixtures !== undefined;
+  const fixtures = Array.isArray(group?.fixtures) ? group.fixtures : [];
+
+  // Show loading when initial fetch OR when placeholder data has no fixtures yet
+  if (isLoading || (!hasFixturesLoaded && isFetching)) {
     return <QueryLoadingView message={t("groups.loadingGroup")} />;
   }
 
   // Error state
-  if (error || !data) {
+  if (error || !data || !group) {
     return <QueryErrorView message={t("groups.failedLoadGroup")} />;
   }
-
-  const group = data.data;
-  const fixtures = Array.isArray(group.fixtures) ? group.fixtures : [];
 
   // Route to appropriate screen based on status
   if (group.status === "draft") {

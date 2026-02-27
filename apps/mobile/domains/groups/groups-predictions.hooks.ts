@@ -44,6 +44,9 @@ export function useSaveGroupPredictionMutation(groupId: number | null) {
           queryKey: groupsKeys.fixtures(groupId),
         });
         queryClient.invalidateQueries({
+          queryKey: groupsKeys.lobbySummary(groupId),
+        });
+        queryClient.invalidateQueries({
           queryKey: groupsKeys.predictionsOverview(groupId),
         });
         queryClient.invalidateQueries({
@@ -84,6 +87,9 @@ export function useSaveGroupPredictionsBatchMutation(groupId: number | null) {
       if (groupId) {
         queryClient.invalidateQueries({
           queryKey: groupsKeys.fixtures(groupId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: groupsKeys.lobbySummary(groupId),
         });
         queryClient.invalidateQueries({
           queryKey: groupsKeys.predictionsOverview(groupId),

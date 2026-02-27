@@ -226,6 +226,34 @@ export const groupFixturesResponseSchema = {
   },
 };
 
+/** Response schema for GET /api/groups/:id/lobby-summary. */
+export const lobbySummaryResponseSchema = {
+  type: "object",
+  required: ["status", "data", "message"],
+  properties: {
+    status: { type: "string", enum: ["success"] },
+    data: {
+      type: "object",
+      required: [
+        "liveFixtures",
+        "upcomingFixtures",
+        "recentFinishedFixtures",
+        "totalFixtures",
+        "predictionsCount",
+      ],
+      properties: {
+        liveFixtures: upcomingMobileFixturesResponseSchema.properties.data,
+        upcomingFixtures: upcomingMobileFixturesResponseSchema.properties.data,
+        recentFinishedFixtures:
+          upcomingMobileFixturesResponseSchema.properties.data,
+        totalFixtures: { type: "number" },
+        predictionsCount: { type: "number" },
+      },
+    },
+    message: { type: "string" },
+  },
+};
+
 export const saveGroupPredictionsBatchBodySchema = {
   type: "object",
   required: ["predictions"],

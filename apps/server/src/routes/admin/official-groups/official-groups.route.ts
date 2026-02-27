@@ -7,6 +7,10 @@ import {
   getOfficialGroup,
   updateOfficialGroup,
   deleteOfficialGroup,
+  listGroupFixtures,
+  listGroupLeaderboard,
+  getGroupDetails,
+  updateGroupRules,
 } from "../../../services/admin/official-groups.service";
 import { evaluateGroupBadges } from "../../../services/api/groups/service/badge-evaluation";
 import type {
@@ -17,6 +21,11 @@ import type {
   AdminUpdateOfficialGroupResponse,
   AdminDeleteOfficialGroupResponse,
   AdminAwardBadgesResponse,
+  AdminOfficialGroupFixturesResponse,
+  AdminOfficialGroupLeaderboardResponse,
+  AdminOfficialGroupDetailsResponse,
+  AdminUpdateOfficialGroupRulesBody,
+  AdminUpdateOfficialGroupRulesResponse,
 } from "@repo/types";
 
 /**
@@ -123,6 +132,86 @@ const officialGroupsRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({
       status: "success",
       message: "Official group deleted successfully",
+    });
+  });
+
+  // GET /admin/official-groups/:id/details
+  fastify.get<{
+    Params: { id: string };
+    Reply: AdminOfficialGroupDetailsResponse;
+  }>("/:id/details", async (req, reply) => {
+    const groupId = Number(req.params.id);
+    const data = await getGroupDetails(groupId);
+
+    return reply.send({
+      status: "success",
+      data,
+      message: "Group details fetched successfully",
+    });
+  });
+
+  // PATCH /admin/official-groups/:id/rules
+  fastify.patch<{
+    Params: { id: string };
+    Body: AdminUpdateOfficialGroupRulesBody;
+    Reply: AdminUpdateOfficialGroupRulesResponse;
+  }>("/:id/rules", async (req, reply) => {
+    const groupId = Number(req.params.id);
+    const data = await updateGroupRules(groupId, req.body);
+
+    auditFromRequest(req, reply, {
+      action: "official_groups.update_rules",
+      category: "official_groups",
+      description: `Updated rules for official group #${groupId}`,
+      targetType: "group",
+      targetId: String(groupId),
+    });
+
+    return reply.send({
+      status: "success",
+      data,
+      message: "Group rules updated successfully",
+    });
+  });
+
+  // GET /admin/official-groups/:id/leaderboard
+  fastify.get<{
+    Params: { id: string };
+    Querystring: { page?: number; perPage?: number };
+    Reply: AdminOfficialGroupLeaderboardResponse;
+  }>("/:id/leaderboard", async (req, reply) => {
+    const groupId = Number(req.params.id);
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const perPage = Math.min(100, Math.max(1, Number(req.query.perPage) || 20));
+
+    const result = await listGroupLeaderboard(groupId, page, perPage);
+
+    return reply.send({
+      status: "success",
+      data: result.data,
+      pagination: result.pagination,
+      stats: result.stats,
+      message: "Leaderboard fetched successfully",
+    });
+  });
+
+  // GET /admin/official-groups/:id/fixtures
+  fastify.get<{
+    Params: { id: string };
+    Querystring: { page?: number; perPage?: number };
+    Reply: AdminOfficialGroupFixturesResponse;
+  }>("/:id/fixtures", async (req, reply) => {
+    const groupId = Number(req.params.id);
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const perPage = Math.min(100, Math.max(1, Number(req.query.perPage) || 20));
+
+    const result = await listGroupFixtures(groupId, page, perPage);
+
+    return reply.send({
+      status: "success",
+      data: result.data,
+      pagination: result.pagination,
+      message: "Group fixtures fetched successfully",
     });
   });
 

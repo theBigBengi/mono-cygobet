@@ -5,16 +5,19 @@ import type { FastifyPluginAsync } from "fastify";
 import {
   getGroupFixtures,
   getGroupGamesFilters,
+  getGroupLobbySummary,
 } from "../../services/api/groups";
 import type {
   ApiGroupFixturesResponse,
   ApiGroupGamesFiltersResponse,
+  ApiGroupLobbySummaryResponse,
 } from "@repo/types";
 import {
   getGroupParamsSchema,
   groupFixturesResponseSchema,
   groupFixturesFilterQuerystringSchema,
   groupGamesFiltersResponseSchema,
+  lobbySummaryResponseSchema,
 } from "../../schemas/api";
 import { parseGroupFixturesFilter } from "../../utils/routes";
 
@@ -42,6 +45,26 @@ const fixturesRoutes: FastifyPluginAsync = async (fastify) => {
         req.query as Record<string, unknown>
       );
       const result = await getGroupFixtures(id, userId, filters);
+      return reply.send(result);
+    }
+  );
+
+  // GET /api/groups/:id/lobby-summary
+  fastify.get<{
+    Params: { id: number };
+    Reply: ApiGroupLobbySummaryResponse;
+  }>(
+    "/groups/:id/lobby-summary",
+    {
+      schema: {
+        params: getGroupParamsSchema,
+        response: { 200: lobbySummaryResponseSchema },
+      },
+    },
+    async (req, reply) => {
+      const id = Number(req.params.id);
+      const userId = req.userAuth!.user.id;
+      const result = await getGroupLobbySummary(id, userId);
       return reply.send(result);
     }
   );

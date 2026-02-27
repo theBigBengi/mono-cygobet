@@ -13,6 +13,7 @@ import type {
   ApiPublicGroupsQuery,
   ApiPublicGroupsResponse,
   ApiGroupFixturesResponse,
+  ApiGroupLobbySummaryResponse,
   ApiGroupGamesFiltersResponse,
   ApiGroupPreviewBody,
   ApiGroupPreviewResponse,
@@ -30,6 +31,7 @@ import {
   publishGroup,
   deleteGroup,
   fetchGroupFixtures,
+  fetchGroupLobbySummary,
   fetchGroupGamesFilters,
   fetchGroupPreview,
 } from "./groups-core.api";
@@ -66,6 +68,7 @@ export function usePublicGroupsQuery(params: ApiPublicGroupsQuery) {
     queryKey: groupsKeys.publicList(params),
     queryFn: () => fetchPublicGroups(params),
     enabled,
+    staleTime: 60_000,
     meta: { scope: "user" },
   });
 }
@@ -232,6 +235,28 @@ export function useGroupFixturesQuery(groupId: number | null) {
     queryKey: groupsKeys.fixtures(groupId ?? 0),
     queryFn: () => fetchGroupFixtures(groupId as number),
     enabled,
+    meta: { scope: "user" },
+  });
+}
+
+/**
+ * Hook to fetch lobby summary (live + upcoming + finished fixture slices).
+ * - Lightweight alternative to fetching all fixtures.
+ * - Used by the lobby CTA card.
+ */
+export function useGroupLobbySummaryQuery(groupId: number | null) {
+  const { status, user } = useAuth();
+
+  const enabled =
+    isReadyForProtected(status, user) &&
+    groupId !== null &&
+    !Number.isNaN(groupId);
+
+  return useQuery<ApiGroupLobbySummaryResponse, ApiError>({
+    queryKey: groupsKeys.lobbySummary(groupId ?? 0),
+    queryFn: () => fetchGroupLobbySummary(groupId as number),
+    enabled,
+    staleTime: 30_000,
     meta: { scope: "user" },
   });
 }

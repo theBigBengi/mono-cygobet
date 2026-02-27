@@ -534,6 +534,8 @@ export type ApiPublicGroupItem = {
   createdAt: string;
   isOfficial?: boolean;
   badge?: ApiGroupBadge | null;
+  description?: string | null;
+  predictionMode?: string | null;
 };
 
 /**
@@ -1195,6 +1197,24 @@ export type ApiGroupActivityResponse = {
 export type ApiGroupActivityQuery = {
   before?: string;
   limit?: number;
+};
+
+// ─── Group Lobby Summary ─────────────────────────────────────────────────────
+
+/**
+ * Response from GET /api/groups/:id/lobby-summary.
+ * Lightweight slice of fixtures for the lobby CTA card.
+ */
+export type ApiGroupLobbySummaryResponse = {
+  status: "success";
+  data: {
+    liveFixtures: ApiFixturesListResponse["data"];
+    upcomingFixtures: ApiFixturesListResponse["data"];
+    recentFinishedFixtures: ApiFixturesListResponse["data"];
+    totalFixtures: number;
+    predictionsCount: number;
+  };
+  message: string;
 };
 
 export * from "./gamification";

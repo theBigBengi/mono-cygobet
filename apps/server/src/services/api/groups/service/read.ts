@@ -6,6 +6,7 @@ import type {
   ApiGroupResponse,
   ApiGroupsResponse,
   ApiGroupFixturesResponse,
+  ApiGroupLobbySummaryResponse,
   ApiFixturesListResponse,
 } from "@repo/types";
 import { nowUnixSeconds } from "../../../../utils/dates";
@@ -231,7 +232,7 @@ export async function getGroupById(
   const isNonDraft = group.status !== "draft";
 
   // Run independent queries in parallel (all only depend on id/userId)
-  const [rules, memberCount, fixtureRows, firstGf] = await Promise.all([
+  const [rules, memberCount, fixtureRows, firstGf, lastGf] = await Promise.all([
     repo.findGroupRules(id),
     isNonDraft ? repo.countGroupMembers(id) : null,
     includeFixtures ? repo.fetchGroupFixturesWithPredictions(id, userId) : null,
@@ -240,6 +241,14 @@ export async function getGroupById(
       ? prisma.groupFixtures.findFirst({
           where: { groupId: id },
           orderBy: { fixtures: { startTs: "asc" } },
+          select: { fixtures: { select: FIXTURE_SELECT_BASE } },
+        })
+      : null,
+    // Query lastGame when not including fixtures (for timeline bar)
+    isNonDraft && !includeFixtures
+      ? prisma.groupFixtures.findFirst({
+          where: { groupId: id },
+          orderBy: { fixtures: { startTs: "desc" } },
           select: { fixtures: { select: FIXTURE_SELECT_BASE } },
         })
       : null,
@@ -270,14 +279,24 @@ export async function getGroupById(
     if (isNonDraft && fixturesData.length > 0) {
       data.firstGame = fixturesData[0];
     }
-  } else if (isNonDraft && firstGf) {
-    // No fixtures requested — use the separate firstGame query
-    const rawFirst = firstGf.fixtures ?? null;
-    data.firstGame = formatFixtureFromDb(
-      rawFirst as Parameters<typeof formatFixtureFromDb>[0],
-      null,
-      null
-    );
+  } else if (isNonDraft) {
+    // No fixtures requested — use separate firstGame/lastGame queries
+    if (firstGf) {
+      const rawFirst = firstGf.fixtures ?? null;
+      data.firstGame = formatFixtureFromDb(
+        rawFirst as Parameters<typeof formatFixtureFromDb>[0],
+        null,
+        null
+      );
+    }
+    if (lastGf) {
+      const rawLast = lastGf.fixtures ?? null;
+      data.lastGame = formatFixtureFromDb(
+        rawLast as Parameters<typeof formatFixtureFromDb>[0],
+        null,
+        null
+      );
+    }
   }
 
   if (memberCount != null) {
@@ -319,5 +338,55 @@ export async function getGroupFixtures(
     status: "success",
     data: finalData,
     message: "Group fixtures fetched successfully",
+  };
+}
+
+/**
+ * Get a lightweight lobby summary for the CTA card.
+ * Returns live, upcoming, and recent finished fixture slices + counts.
+ */
+export async function getGroupLobbySummary(
+  id: number,
+  userId: number
+): Promise<ApiGroupLobbySummaryResponse> {
+  log.debug({ id, userId }, "getGroupLobbySummary - start");
+  await assertGroupMember(id, userId);
+
+  const summary = await repo.fetchLobbySummaryFixtures(id, userId);
+
+  const liveFixtures = mapGroupFixturesToApiFixtures(
+    summary.liveFixtures,
+    userId
+  );
+  const upcomingFixtures = mapGroupFixturesToApiFixtures(
+    summary.upcomingFixtures,
+    userId
+  );
+  const recentFinishedFixtures = mapGroupFixturesToApiFixtures(
+    summary.recentFinishedFixtures,
+    userId
+  );
+
+  log.info(
+    {
+      id,
+      userId,
+      live: liveFixtures.length,
+      upcoming: upcomingFixtures.length,
+      finished: recentFinishedFixtures.length,
+    },
+    "getGroupLobbySummary - fetched"
+  );
+
+  return {
+    status: "success",
+    data: {
+      liveFixtures,
+      upcomingFixtures,
+      recentFinishedFixtures,
+      totalFixtures: summary.totalFixtures,
+      predictionsCount: summary.predictionsCount,
+    },
+    message: "Lobby summary fetched successfully",
   };
 }

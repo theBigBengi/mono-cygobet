@@ -3,7 +3,7 @@
 
 export { createGroup } from "./create";
 export { getPublicGroups } from "./discover";
-export { getMyGroups, getGroupById, getGroupFixtures } from "./read";
+export { getMyGroups, getGroupById, getGroupFixtures, getGroupLobbySummary } from "./read";
 export { updateGroup, publishGroup } from "./update";
 export { deleteGroup } from "./delete";
 export { saveGroupPrediction, saveGroupPredictionsBatch } from "./predictions";

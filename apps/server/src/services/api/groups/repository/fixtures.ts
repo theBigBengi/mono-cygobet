@@ -2,7 +2,7 @@
 // Repository functions for group fixtures.
 
 import { prisma } from "@repo/db";
-import type { Prisma } from "@repo/db";
+import type { Prisma, FixtureState } from "@repo/db";
 import { findFixturesTx } from "../../fixtures/repository";
 import {
   buildUpcomingFixturesWhere,
@@ -12,6 +12,7 @@ import {
 import { FIXTURE_SELECT_WITH_RESULT } from "../../fixtures/selects";
 import type { FixtureWithRelationsAndResult } from "../types";
 import { hasMatchStarted } from "../helpers";
+import { LIVE_STATES, FINISHED_STATES } from "@repo/utils";
 
 /**
  * Resolve initial fixtures based on selection mode (internal - always wraps transaction).
@@ -291,6 +292,93 @@ export async function fetchGroupFixturesWithPredictions(
     },
     select,
   });
+}
+
+/**
+ * Fetch a lightweight lobby summary: live, upcoming, and recent finished fixtures.
+ * Runs 5 parallel queries for efficiency.
+ */
+export async function fetchLobbySummaryFixtures(
+  groupId: number,
+  userId: number
+): Promise<{
+  liveFixtures: GroupFixtureWithPredictions[];
+  upcomingFixtures: GroupFixtureWithPredictions[];
+  recentFinishedFixtures: GroupFixtureWithPredictions[];
+  totalFixtures: number;
+  predictionsCount: number;
+}> {
+  const liveStatesArr = Array.from(LIVE_STATES) as FixtureState[];
+  const finishedStatesArr = Array.from(FINISHED_STATES) as FixtureState[];
+
+  const selectWithPredictions = {
+    id: true,
+    fixtures: {
+      select: FIXTURE_SELECT_WITH_RESULT,
+    },
+    groupPredictions: {
+      where: { userId },
+      select: {
+        prediction: true,
+        updatedAt: true,
+        placedAt: true,
+        settledAt: true,
+        points: true,
+      },
+    },
+  } satisfies Prisma.groupFixturesFindManyArgs["select"];
+
+  const [
+    liveFixtures,
+    upcomingFixtures,
+    recentFinishedFixtures,
+    totalFixtures,
+    predictionsCount,
+  ] = await Promise.all([
+    // Live fixtures (all of them — typically 0-5)
+    prisma.groupFixtures.findMany({
+      where: {
+        groupId,
+        fixtures: { state: { in: liveStatesArr } },
+      },
+      orderBy: { fixtures: { startTs: "asc" } },
+      select: selectWithPredictions,
+    }),
+    // Upcoming fixtures (next 8, not started)
+    prisma.groupFixtures.findMany({
+      where: {
+        groupId,
+        fixtures: { state: "NS" },
+      },
+      orderBy: { fixtures: { startTs: "asc" } },
+      take: 8,
+      select: selectWithPredictions,
+    }),
+    // Recent finished fixtures (last 4)
+    prisma.groupFixtures.findMany({
+      where: {
+        groupId,
+        fixtures: { state: { in: finishedStatesArr } },
+      },
+      orderBy: { fixtures: { startTs: "desc" } },
+      take: 4,
+      select: selectWithPredictions,
+    }),
+    // Total fixture count
+    prisma.groupFixtures.count({ where: { groupId } }),
+    // User's prediction count
+    prisma.groupPredictions.count({
+      where: { userId, groupFixtures: { groupId } },
+    }),
+  ]);
+
+  return {
+    liveFixtures: liveFixtures as unknown as GroupFixtureWithPredictions[],
+    upcomingFixtures: upcomingFixtures as unknown as GroupFixtureWithPredictions[],
+    recentFinishedFixtures: recentFinishedFixtures as unknown as GroupFixtureWithPredictions[],
+    totalFixtures,
+    predictionsCount,
+  };
 }
 
 /**

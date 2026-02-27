@@ -7,6 +7,7 @@ export {
   usePublicGroupsQuery,
   useGroupQuery,
   useGroupGamesFiltersQuery,
+  useGroupLobbySummaryQuery,
   useCreateGroupMutation,
   useUpdateGroupMutation,
   usePublishGroupMutation,
@@ -20,6 +21,7 @@ export {
   fetchPublicGroups,
   fetchGroupById,
   fetchGroupFixtures,
+  fetchGroupLobbySummary,
   fetchGroupGamesFilters,
   fetchGroupPreview,
 } from "./groups-core.api";
@@ -85,6 +87,7 @@ export type {
   ApiGroupsResponse,
   ApiGroupPrivacy,
   ApiGroupFixturesResponse,
+  ApiGroupLobbySummaryResponse,
   ApiPublicGroupsQuery,
   ApiPublicGroupItem,
   ApiPublicGroupsResponse,

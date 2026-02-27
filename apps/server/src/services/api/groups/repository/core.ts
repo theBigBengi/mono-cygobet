@@ -67,10 +67,11 @@ export type PublicGroupWithRules = Prisma.groupsGetPayload<{
   select: {
     id: true;
     name: true;
+    description: true;
     createdAt: true;
     creatorId: true;
     isOfficial: true;
-    groupRules: { select: { maxMembers: true } };
+    groupRules: { select: { maxMembers: true; predictionMode: true } };
     groupBadges: { select: { id: true; name: true; description: true; icon: true; criteriaType: true; criteriaValue: true } };
   };
 }>;
@@ -111,10 +112,11 @@ export async function findPublicGroupsPaginated(params: {
       select: {
         id: true,
         name: true,
+        description: true,
         createdAt: true,
         creatorId: true,
         isOfficial: true,
-        groupRules: { select: { maxMembers: true } },
+        groupRules: { select: { maxMembers: true, predictionMode: true } },
         groupBadges: {
           select: {
             id: true,

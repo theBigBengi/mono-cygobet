@@ -323,6 +323,7 @@
     "ctaAllCritical": "{{count}} משחקים דורשים ניחוש · קריטי",
     "ranking": "דירוג",
     "rankingPending": "הדירוג יחושב לאחר סיום המשחק הראשון",
+    "rankingNoPointsYet": "אף אחד עדיין לא צבר נקודות",
     "pts": "נק׳",
     "yourRank": "אתה במקום #{{rank}}",
     "leaderWithPoints": "מוביל: {{name}} · {{points}} נק׳",
@@ -554,7 +555,9 @@
     "join": "הצטרף",
     "failedLoadPublicGroups": "טעינת קבוצות ציבוריות נכשלה",
     "createdBy": "על ידי @{{username}}",
-    "officialGroup": "רשמי"
+    "officialGroup": "רשמי",
+    "groupDetails": "פרטי קבוצה",
+    "creator": "יוצר"
   },
   "chat": {
     "typePlaceholder": "הקלד הודעה...",

@@ -33,10 +33,11 @@ export interface GroupsRepository {
     groups: Array<{
       id: number;
       name: string;
+      description: string | null;
       createdAt: Date;
       creatorId: number;
       isOfficial: boolean;
-      groupRules: { maxMembers: number } | null;
+      groupRules: { maxMembers: number; predictionMode: string | null } | null;
       groupBadges: Array<{
         id: number;
         name: string;
@@ -200,6 +201,46 @@ export interface GroupsRepository {
       }>;
     }>
   >;
+  fetchLobbySummaryFixtures(
+    groupId: number,
+    userId: number
+  ): Promise<{
+    liveFixtures: Array<{
+      id: number;
+      fixtures: FixtureWithRelationsAndResult;
+      groupPredictions: Array<{
+        prediction: string;
+        updatedAt: Date;
+        placedAt: Date;
+        settledAt: Date | null;
+        points: number | string | null;
+      }>;
+    }>;
+    upcomingFixtures: Array<{
+      id: number;
+      fixtures: FixtureWithRelationsAndResult;
+      groupPredictions: Array<{
+        prediction: string;
+        updatedAt: Date;
+        placedAt: Date;
+        settledAt: Date | null;
+        points: number | string | null;
+      }>;
+    }>;
+    recentFinishedFixtures: Array<{
+      id: number;
+      fixtures: FixtureWithRelationsAndResult;
+      groupPredictions: Array<{
+        prediction: string;
+        updatedAt: Date;
+        placedAt: Date;
+        settledAt: Date | null;
+        points: number | string | null;
+      }>;
+    }>;
+    totalFixtures: number;
+    predictionsCount: number;
+  }>;
   findGroupFixturesForOverview(groupId: number): Promise<
     Array<{
       fixtureId: number;
