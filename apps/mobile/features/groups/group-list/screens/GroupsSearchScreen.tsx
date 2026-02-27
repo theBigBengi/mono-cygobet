@@ -386,143 +386,144 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
     });
   }, [group, joinMutation, onJoinSuccess]);
 
-  if (!group) return null;
-
-  const memberLabel =
-    group.maxMembers != null
+  const memberLabel = group
+    ? group.maxMembers != null
       ? t("discover.membersWithMax", {
           count: group.memberCount,
           max: group.maxMembers,
         })
-      : t("discover.membersCount", { count: group.memberCount });
+      : t("discover.membersCount", { count: group.memberCount })
+    : "";
 
   const predictionLabel =
-    group.predictionMode === "MatchWinner"
+    group?.predictionMode === "MatchWinner"
       ? t("groupInfo.predictionModeLabels.MatchWinner")
       : t("groupInfo.predictionModeLabels.CorrectScore");
 
   return (
     <InfoSheet sheetRef={sheetRef} enableDynamicSizing>
-      <View style={previewStyles.content}>
-        {/* Header with avatar */}
-        <View style={previewStyles.headerRow}>
-          <GroupAvatar
-            avatarType="gradient"
-            avatarValue={String(group.id % 8)}
-            initials={getInitials(group.name)}
-            size={56}
-            borderRadius={16}
-          />
-        </View>
-        <AppText variant="title" style={previewStyles.title}>
-          {group.name}
-        </AppText>
-        {group.description ? (
-          <AppText
-            variant="body"
-            color="secondary"
-            style={previewStyles.description}
-            numberOfLines={3}
-          >
-            {group.description}
+      {group && (
+        <View style={previewStyles.content}>
+          {/* Header with avatar */}
+          <View style={previewStyles.headerRow}>
+            <GroupAvatar
+              avatarType="gradient"
+              avatarValue={String(group.id % 8)}
+              initials={getInitials(group.name)}
+              size={56}
+              borderRadius={16}
+            />
+          </View>
+          <AppText variant="title" style={previewStyles.title}>
+            {group.name}
           </AppText>
-        ) : null}
+          {group.description ? (
+            <AppText
+              variant="body"
+              color="secondary"
+              style={previewStyles.description}
+              numberOfLines={3}
+            >
+              {group.description}
+            </AppText>
+          ) : null}
 
-        {/* Stats list */}
-        <View
-          style={[
-            previewStyles.stats,
-            { backgroundColor: theme.colors.cardBackground },
-          ]}
-        >
-          <PreviewStatRow
-            icon="people-outline"
-            label={t("groupInfo.members")}
-            value={memberLabel}
-            theme={theme}
-          />
+          {/* Stats list */}
           <View
             style={[
-              previewStyles.statDivider,
-              { backgroundColor: theme.colors.border },
+              previewStyles.stats,
+              { backgroundColor: theme.colors.cardBackground },
             ]}
-          />
-          <PreviewStatRow
-            icon="football-outline"
-            label={t("lobby.games")}
-            value={t("discover.gamesCount", { count: group.totalFixtures })}
-            theme={theme}
-          />
-          {group.predictionMode != null && (
-            <>
-              <View
-                style={[
-                  previewStyles.statDivider,
-                  { backgroundColor: theme.colors.border },
-                ]}
-              />
-              <PreviewStatRow
-                icon="game-controller-outline"
-                label={t("groupInfo.predictionMode")}
-                value={predictionLabel}
-                theme={theme}
-              />
-            </>
-          )}
-          {group.creatorUsername != null && (
-            <>
-              <View
-                style={[
-                  previewStyles.statDivider,
-                  { backgroundColor: theme.colors.border },
-                ]}
-              />
-              <PreviewStatRow
-                icon="person-outline"
-                label={t("discover.creator")}
-                value={`@${group.creatorUsername}`}
-                theme={theme}
-              />
-            </>
-          )}
-          {group.badge != null && (
-            <>
-              <View
-                style={[
-                  previewStyles.statDivider,
-                  { backgroundColor: theme.colors.border },
-                ]}
-              />
-              <PreviewStatRow
-                icon="ribbon-outline"
-                label={group.badge.name}
-                value={group.badge.icon}
-                theme={theme}
-              />
-            </>
-          )}
-        </View>
-
-        {group.isOfficial && (
-          <View style={previewStyles.officialRow}>
-            <Ionicons name="shield-checkmark" size={14} color="#D4A017" />
-            <AppText
-              variant="caption"
-              style={{ color: "#D4A017", fontWeight: "600" }}
-            >
-              {t("discover.officialGroup")}
-            </AppText>
+          >
+            <PreviewStatRow
+              icon="people-outline"
+              label={t("groupInfo.members")}
+              value={memberLabel}
+              theme={theme}
+            />
+            <View
+              style={[
+                previewStyles.statDivider,
+                { backgroundColor: theme.colors.border },
+              ]}
+            />
+            <PreviewStatRow
+              icon="football-outline"
+              label={t("lobby.games")}
+              value={t("discover.gamesCount", { count: group.totalFixtures })}
+              theme={theme}
+            />
+            {group.predictionMode != null && (
+              <>
+                <View
+                  style={[
+                    previewStyles.statDivider,
+                    { backgroundColor: theme.colors.border },
+                  ]}
+                />
+                <PreviewStatRow
+                  icon="game-controller-outline"
+                  label={t("groupInfo.predictionMode")}
+                  value={predictionLabel}
+                  theme={theme}
+                />
+              </>
+            )}
+            {group.creatorUsername != null && (
+              <>
+                <View
+                  style={[
+                    previewStyles.statDivider,
+                    { backgroundColor: theme.colors.border },
+                  ]}
+                />
+                <PreviewStatRow
+                  icon="person-outline"
+                  label={t("discover.creator")}
+                  value={`@${group.creatorUsername}`}
+                  theme={theme}
+                />
+              </>
+            )}
+            {group.badge != null && (
+              <>
+                <View
+                  style={[
+                    previewStyles.statDivider,
+                    { backgroundColor: theme.colors.border },
+                  ]}
+                />
+                <PreviewStatRow
+                  icon="ribbon-outline"
+                  label={group.badge.name}
+                  value={group.badge.icon}
+                  theme={theme}
+                />
+              </>
+            )}
           </View>
-        )}
 
-        {/* Join button */}
-        <Button
-          label={joinMutation.isPending ? t("groups.joining") : t("discover.join")}
-          onPress={handleJoin}
-          disabled={joinMutation.isPending}
-          icon="enter-outline"
-        />
-      </View>
+          {group.isOfficial && (
+            <View style={previewStyles.officialRow}>
+              <Ionicons name="shield-checkmark" size={14} color="#D4A017" />
+              <AppText
+                variant="caption"
+                style={{ color: "#D4A017", fontWeight: "600" }}
+              >
+                {t("discover.officialGroup")}
+              </AppText>
+            </View>
+          )}
+
+          {/* Join button */}
+          <Button
+            label={joinMutation.isPending ? t("groups.joining") : t("discover.join")}
+            onPress={handleJoin}
+            disabled={joinMutation.isPending}
+            icon="enter-outline"
+          />
+        </View>
+      )}
     </InfoSheet>
   );
 }
