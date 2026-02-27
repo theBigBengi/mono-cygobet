@@ -330,7 +330,11 @@ function LobbyLeaderboardInner({
   const primaryAlpha15 = theme.colors.primary + "15";
 
   return (
-    <View style={styles.container}>
+    <Pressable
+      style={styles.container}
+      onPress={onPress}
+    >
+      {({ pressed }) => (
       <View
         style={[
           styles.wrapper,
@@ -339,6 +343,7 @@ function LobbyLeaderboardInner({
             borderColor: theme.colors.border,
             borderBottomColor,
           },
+          pressed && styles.wrapperPressed,
         ]}
       >
         {/* Podium */}
@@ -396,7 +401,8 @@ function LobbyLeaderboardInner({
           <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
         </Pressable>
       </View>
-    </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -417,6 +423,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 5,
+  },
+  wrapperPressed: {
+    shadowOpacity: 0,
+    elevation: 0,
+    transform: [{ scale: 0.98 }, { translateY: 2 }],
   },
   memberCountRow: {
     alignItems: "center",
