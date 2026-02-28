@@ -122,13 +122,13 @@ export function buildOverviewFixtures(
       homeTeam: {
         id: number;
         name: string;
-        shortCode: string | null;
+        shortCode?: string | null;
         imagePath: string | null;
       } | null;
       awayTeam: {
         id: number;
         name: string;
-        shortCode: string | null;
+        shortCode?: string | null;
         imagePath: string | null;
       } | null;
     } | null;
@@ -144,13 +144,13 @@ export function buildOverviewFixtures(
       homeTeam: {
         id: fixtures.homeTeam.id,
         name: fixtures.homeTeam.name,
-        shortCode: fixtures.homeTeam.shortCode,
+        shortCode: fixtures.homeTeam.shortCode ?? null,
         imagePath: fixtures.homeTeam.imagePath,
       },
       awayTeam: {
         id: fixtures.awayTeam.id,
         name: fixtures.awayTeam.name,
-        shortCode: fixtures.awayTeam.shortCode,
+        shortCode: fixtures.awayTeam.shortCode ?? null,
         imagePath: fixtures.awayTeam.imagePath,
       },
       result: fixtures.result,

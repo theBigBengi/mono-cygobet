@@ -62,17 +62,21 @@ export type PredictionsOverviewFixture = {
   homeTeam: {
     id: number;
     name: string;
+    shortCode: string | null;
     imagePath: string | null;
   };
   awayTeam: {
     id: number;
     name: string;
+    shortCode: string | null;
     imagePath: string | null;
   };
   result: string | null;
   startTs: number;
   state: string;
   liveMinute?: number | null;
+  homeScore90?: number | null;
+  awayScore90?: number | null;
 };
 
 /**
