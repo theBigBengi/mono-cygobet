@@ -76,7 +76,8 @@
         "@sentry/react-native/expo",
         {
           "organization": "bengi",
-          "project": "mono-cygobet"
+          "project": "mono-cygobet",
+          "uploadSourceMaps": false
         }
       ]
     ],
