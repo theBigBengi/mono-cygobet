@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <!-- Ribbon gradients (flat-style subtle shading) -->
+    <linearGradient id="ribbonLeft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D32F2F"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </linearGradient>
+    <linearGradient id="ribbonRight" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D32F2F"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </linearGradient>
+  </defs>
+
+  <!-- === RIBBON STRAPS === -->
+  <!-- Left ribbon -->
+  <polygon points="198,148 164,8 204,8 256,178" fill="url(#ribbonLeft)"/>
+  <polygon points="164,8 204,8 194,48 154,48" fill="#C62828" opacity="0.5"/>
+
+  <!-- Right ribbon -->
+  <polygon points="314,148 348,8 308,8 256,178" fill="url(#ribbonRight)"/>
+  <polygon points="348,8 308,8 318,48 358,48" fill="#C62828" opacity="0.5"/>
+
+  <!-- Ribbon white stripes (Bundesliga nod) -->
+  <polygon points="182,88 178,72 218,72 222,88" fill="#FFFFFF" opacity="0.3"/>
+  <polygon points="330,88 334,72 294,72 290,88" fill="#FFFFFF" opacity="0.3"/>
+
+  <!-- === MEDAL OUTER RING === -->
+  <circle cx="256" cy="296" r="190" fill="#CFB53B"/>
+
+  <!-- Medal edge notches (starburst border) -->
+  <g fill="#B8960C">
+    <circle cx="256" cy="108" r="12"/>
+    <circle cx="344" cy="126" r="12"/>
+    <circle cx="410" cy="192" r="12"/>
+    <circle cx="440" cy="280" r="12"/>
+    <circle cx="424" cy="370" r="12"/>
+    <circle cx="368" cy="440" r="12"/>
+    <circle cx="290" cy="482" r="12"/>
+    <circle cx="222" cy="482" r="12"/>
+    <circle cx="144" cy="440" r="12"/>
+    <circle cx="88" cy="370" r="12"/>
+    <circle cx="72" cy="280" r="12"/>
+    <circle cx="102" cy="192" r="12"/>
+    <circle cx="168" cy="126" r="12"/>
+    <circle cx="256" cy="486" r="12"/>
+    <circle cx="114" cy="230" r="12"/>
+    <circle cx="398" cy="230" r="12"/>
+    <circle cx="82" cy="326" r="12"/>
+    <circle cx="430" cy="326" r="12"/>
+    <circle cx="316" cy="470" r="12"/>
+    <circle cx="196" cy="470" r="12"/>
+    <circle cx="128" cy="406" r="12"/>
+    <circle cx="384" cy="406" r="12"/>
+    <circle cx="392" cy="156" r="12"/>
+    <circle cx="120" cy="156" r="12"/>
+  </g>
+
+  <!-- Inner ring border -->
+  <circle cx="256" cy="296" r="168" fill="#E8C84A"/>
+
+  <!-- Ridge detail ring -->
+  <circle cx="256" cy="296" r="158" fill="none" stroke="#CFB53B" stroke-width="3"/>
+
+  <!-- Medal face -->
+  <circle cx="256" cy="296" r="150" fill="#FFD54F"/>
+
+  <!-- Inner decorative circle -->
+  <circle cx="256" cy="296" r="130" fill="none" stroke="#CFB53B" stroke-width="2.5"/>
+  <circle cx="256" cy="296" r="124" fill="none" stroke="#CFB53B" stroke-width="1" stroke-dasharray="6 4"/>
+
+  <!-- === LAUREL WREATH (left side) === -->
+  <g fill="#CFB53B" opacity="0.85">
+    <!-- Left branch -->
+    <ellipse cx="172" cy="340" rx="10" ry="22" transform="rotate(30 172 340)"/>
+    <ellipse cx="162" cy="316" rx="9" ry="20" transform="rotate(15 162 316)"/>
+    <ellipse cx="160" cy="290" rx="9" ry="20" transform="rotate(0 160 290)"/>
+    <ellipse cx="166" cy="264" rx="9" ry="20" transform="rotate(-15 166 264)"/>
+    <ellipse cx="178" cy="242" rx="9" ry="20" transform="rotate(-30 178 242)"/>
+    <ellipse cx="196" cy="224" rx="8" ry="18" transform="rotate(-45 196 224)"/>
+    <ellipse cx="186" cy="362" rx="10" ry="20" transform="rotate(45 186 362)"/>
+    <ellipse cx="206" cy="380" rx="9" ry="18" transform="rotate(55 206 380)"/>
+    <ellipse cx="228" cy="392" rx="8" ry="16" transform="rotate(70 228 392)"/>
+
+    <!-- Right branch -->
+    <ellipse cx="340" cy="340" rx="10" ry="22" transform="rotate(-30 340 340)"/>
+    <ellipse cx="350" cy="316" rx="9" ry="20" transform="rotate(-15 350 316)"/>
+    <ellipse cx="352" cy="290" rx="9" ry="20" transform="rotate(0 352 290)"/>
+    <ellipse cx="346" cy="264" rx="9" ry="20" transform="rotate(15 346 264)"/>
+    <ellipse cx="334" cy="242" rx="9" ry="20" transform="rotate(30 334 242)"/>
+    <ellipse cx="316" cy="224" rx="8" ry="18" transform="rotate(45 316 224)"/>
+    <ellipse cx="326" cy="362" rx="10" ry="20" transform="rotate(-45 326 362)"/>
+    <ellipse cx="306" cy="380" rx="9" ry="18" transform="rotate(-55 306 380)"/>
+    <ellipse cx="284" cy="392" rx="8" ry="16" transform="rotate(-70 284 392)"/>
+  </g>
+
+  <!-- Wreath tie at bottom -->
+  <circle cx="256" cy="404" r="8" fill="#CFB53B"/>
+
+  <!-- === "1" NUMBER === -->
+  <text x="256" y="280" text-anchor="middle" dominant-baseline="central"
+        font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+        font-weight="900" font-size="120" fill="#B8960C" letter-spacing="-2">
+    1
+  </text>
+
+  <!-- === "ST" SUPERSCRIPT === -->
+  <text x="310" y="232" text-anchor="start" dominant-baseline="central"
+        font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+        font-weight="800" font-size="32" fill="#B8960C">
+    ST
+  </text>
+
+  <!-- === BUNDESLIGA TEXT (curved along bottom) === -->
+  <path id="textArc" d="M 170 360 A 110 110 0 0 0 342 360" fill="none"/>
+  <text font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+        font-weight="800" font-size="18" fill="#B8960C" letter-spacing="5">
+    <textPath href="#textArc" startOffset="50%" text-anchor="middle">
+      BUNDESLIGA
+    </textPath>
+  </text>
+
+  <!-- === SMALL STAR ABOVE "1" === -->
+  <polygon points="256,176 262,194 280,194 266,206 271,224 256,214 241,224 246,206 232,194 250,194"
+           fill="#B8960C"/>
+
+  <!-- === FLAT HIGHLIGHT (subtle shine on medal face) === -->
+  <ellipse cx="230" cy="240" rx="60" ry="40" fill="#FFFFFF" opacity="0.12" transform="rotate(-20 230 240)"/>
+</svg>
