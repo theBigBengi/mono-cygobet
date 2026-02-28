@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   View,
@@ -7,6 +7,8 @@ import {
   FlatList,
   Dimensions,
   Pressable,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { isNotStarted } from "@repo/utils";
@@ -41,6 +43,33 @@ export function PredictionsOverviewTable({
   const leftFlatListRef = useRef<FlatList>(null);
   const rightFlatListRef = useRef<FlatList>(null);
   const horizontalScrollRef = useRef<ScrollView>(null);
+  const isScrolling = useRef<"left" | "right" | null>(null);
+
+  const onLeftScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (isScrolling.current === "right") return;
+      isScrolling.current = "left";
+      rightFlatListRef.current?.scrollToOffset({
+        offset: e.nativeEvent.contentOffset.y,
+        animated: false,
+      });
+      isScrolling.current = null;
+    },
+    []
+  );
+
+  const onRightScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (isScrolling.current === "left") return;
+      isScrolling.current = "right";
+      leftFlatListRef.current?.scrollToOffset({
+        offset: e.nativeEvent.contentOffset.y,
+        animated: false,
+      });
+      isScrolling.current = null;
+    },
+    []
+  );
 
   const { participants, fixtures, predictions, predictionPoints } = data;
   const currentUserId = user?.id ?? null;
@@ -53,13 +82,45 @@ export function PredictionsOverviewTable({
     return predictionPoints[`${userId}_${fixtureId}`] ?? null;
   };
 
+  const calculateLivePoints = (
+    prediction: string | null,
+    homeScore: number | null,
+    awayScore: number | null
+  ): string | null => {
+    if (!prediction || homeScore == null || awayScore == null) return null;
+    const parts = prediction.split(/[-:]/);
+    if (parts.length !== 2) return null;
+    const predHome = parseInt(parts[0], 10);
+    const predAway = parseInt(parts[1], 10);
+    if (isNaN(predHome) || isNaN(predAway)) return null;
+
+    // Exact score
+    if (predHome === homeScore && predAway === awayScore) return "3";
+    // Correct goal difference
+    if (predHome - predAway === homeScore - awayScore) return "2";
+    // Correct outcome
+    const predOutcome = Math.sign(predHome - predAway);
+    const actualOutcome = Math.sign(homeScore - awayScore);
+    if (predOutcome === actualOutcome) return "1";
+    return "0";
+  };
+
   const getPointsColor = (points: string | null): string => {
     if (!points) return theme.colors.textSecondary;
     const n = parseInt(points, 10);
-    if (n >= 3) return "#34C759";
-    if (n >= 2) return "#FF9500";
-    if (n >= 1) return theme.colors.primary;
-    return theme.colors.textSecondary;
+    if (n >= 3) return "#10B981";
+    if (n >= 2) return "#F59E0B";
+    if (n >= 1) return "#E8A308";
+    return theme.colors.danger;
+  };
+
+  const getPointsCellBg = (points: string | null): string | undefined => {
+    if (!points) return undefined;
+    const n = parseInt(points, 10);
+    if (n >= 3) return "#10B98112";
+    if (n >= 2) return "#F59E0B10";
+    if (n >= 1) return "#E8A30810";
+    return theme.colors.danger + "10";
   };
 
   const formatPrediction = (
@@ -177,11 +238,11 @@ export function PredictionsOverviewTable({
               width: TOTAL_COLUMN_WIDTH,
               borderRightWidth: 1,
               borderRightColor: theme.colors.border,
-              backgroundColor: theme.colors.primary + "10",
+              backgroundColor: theme.colors.textSecondary + "10",
             },
           ]}
         >
-          <AppText variant="caption" style={{ fontWeight: "700", color: theme.colors.primary }}>
+          <AppText variant="caption" style={[styles.totalPointsHeaderText, { color: theme.colors.textSecondary }]}>
             Pts
           </AppText>
         </View>
@@ -195,7 +256,11 @@ export function PredictionsOverviewTable({
                 width: actualGameColumnWidth,
                 borderRightWidth: 1,
                 borderRightColor: theme.colors.border,
-                backgroundColor: pressed ? theme.colors.primary + "10" : "transparent",
+                backgroundColor: pressed
+                  ? theme.colors.primary + "10"
+                  : fixture.liveMinute != null
+                    ? theme.colors.primary + "0A"
+                    : "transparent",
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
@@ -248,7 +313,7 @@ export function PredictionsOverviewTable({
                     ]}
                     numberOfLines={1}
                   >
-                    {getTeamAbbr(fixture.homeTeam.name)}
+                    {fixture.homeTeam.shortCode || getTeamAbbr(fixture.homeTeam.name)}
                   </AppText>
                 );
               })()}
@@ -277,7 +342,7 @@ export function PredictionsOverviewTable({
                     ]}
                     numberOfLines={1}
                   >
-                    {getTeamAbbr(fixture.awayTeam.name)}
+                    {fixture.awayTeam.shortCode || getTeamAbbr(fixture.awayTeam.name)}
                   </AppText>
                 );
               })()}
@@ -300,7 +365,10 @@ export function PredictionsOverviewTable({
                 <AppText
                   variant="caption"
                   color="primary"
-                  style={styles.resultText}
+                  style={[
+                    styles.resultText,
+                    fixture.liveMinute != null && { color: theme.colors.primary, fontWeight: "700" },
+                  ]}
                 >
                   {fixture.result}
                 </AppText>
@@ -323,10 +391,15 @@ export function PredictionsOverviewTable({
   // Render left column row
   const renderLeftRow = ({
     item: participant,
+    index,
   }: {
     item: (typeof participants)[0];
+    index: number;
   }) => {
     const isCurrentUser = participant.id === currentUserId;
+    const rowBg = index % 2 === 0
+      ? theme.colors.background
+      : theme.colors.surface;
     return (
       <View
         style={[
@@ -335,21 +408,21 @@ export function PredictionsOverviewTable({
             height: ROW_HEIGHT,
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.border,
-            backgroundColor: isCurrentUser
-              ? theme.colors.primary + "18"
-              : theme.colors.surface,
-          },
-          isCurrentUser && {
-            borderLeftWidth: 3,
-            borderLeftColor: theme.colors.primary,
+            backgroundColor: rowBg,
           },
         ]}
       >
+        {isCurrentUser && (
+          <View
+            style={[styles.currentUserOverlay, { borderColor: theme.colors.primary }]}
+            pointerEvents="none"
+          />
+        )}
         <AppText
           variant="body"
           style={[
             styles.participantNumber,
-            isCurrentUser && { color: theme.colors.primary, fontWeight: "700" },
+            isCurrentUser && [styles.participantHighlight, { color: theme.colors.primary }],
           ]}
         >
           {participant.number}
@@ -359,7 +432,9 @@ export function PredictionsOverviewTable({
           numberOfLines={1}
           style={[
             styles.participantName,
-            isCurrentUser && { fontWeight: "700", color: theme.colors.primary },
+            isCurrentUser
+              ? [styles.participantHighlight, { color: theme.colors.primary }]
+              : { color: theme.colors.textSecondary },
           ]}
         >
           {participant.username || t("common.unknown")}
@@ -371,10 +446,15 @@ export function PredictionsOverviewTable({
   // Render participant row - ONLY match cells (left column is outside)
   const renderRow = ({
     item: participant,
+    index,
   }: {
     item: (typeof participants)[0];
+    index: number;
   }) => {
     const isCurrentUser = participant.id === currentUserId;
+    const rowBg = index % 2 === 0
+      ? theme.colors.background
+      : theme.colors.surface;
     return (
       <View
         style={[
@@ -384,12 +464,16 @@ export function PredictionsOverviewTable({
             height: ROW_HEIGHT,
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.border,
-            backgroundColor: isCurrentUser
-              ? theme.colors.primary + "18"
-              : theme.colors.background,
+            backgroundColor: rowBg,
           },
         ]}
       >
+        {isCurrentUser && (
+          <View
+            style={[styles.currentUserOverlay, { borderColor: theme.colors.primary }]}
+            pointerEvents="none"
+          />
+        )}
         {/* Total Points cell — first scrollable column */}
         <View
           style={[
@@ -398,7 +482,7 @@ export function PredictionsOverviewTable({
               width: TOTAL_COLUMN_WIDTH,
               borderRightWidth: 1,
               borderRightColor: theme.colors.border,
-              backgroundColor: theme.colors.primary + "08",
+              backgroundColor: theme.colors.textSecondary + "10",
             },
           ]}
         >
@@ -406,7 +490,7 @@ export function PredictionsOverviewTable({
             variant="caption"
             style={{
               fontWeight: "700",
-              color: isCurrentUser ? theme.colors.primary : theme.colors.textPrimary,
+              color: isCurrentUser ? theme.colors.primary : theme.colors.textSecondary,
             }}
           >
             {participant.totalPoints}
@@ -415,7 +499,10 @@ export function PredictionsOverviewTable({
         {/* Prediction cells */}
         {fixtures.map((fixture) => {
           const prediction = getPrediction(participant.id, fixture.id);
-          const pts = getPoints(participant.id, fixture.id);
+          const isLive = fixture.liveMinute != null;
+          const pts = isLive
+            ? calculateLivePoints(prediction, fixture.homeScore90, fixture.awayScore90)
+            : getPoints(participant.id, fixture.id);
           const predText = formatPrediction(
             prediction,
             participant.id,
@@ -430,26 +517,33 @@ export function PredictionsOverviewTable({
                   width: actualGameColumnWidth,
                   borderRightWidth: 1,
                   borderRightColor: theme.colors.border,
+                  backgroundColor: fixture.liveMinute != null
+                    ? theme.colors.primary + "0A"
+                    : fixture.result && fixture.liveMinute == null
+                      ? getPointsCellBg(pts)
+                      : undefined,
                 },
               ]}
             >
-              <View style={{ alignItems: "center" }}>
+              <View style={styles.predictionCellInner}>
                 <AppText
                   variant="caption"
-                  color="secondary"
-                  style={{ fontSize: 11 }}
+                  style={[
+                    styles.predictionText,
+                    { color: pts != null ? getPointsColor(pts) : theme.colors.textSecondary, fontWeight: "600" },
+                    fixture.liveMinute != null && { color: theme.colors.primary, fontWeight: "600" },
+                  ]}
                 >
                   {predText}
                 </AppText>
                 {pts !== null && (
                   <AppText
-                    style={{
-                      fontSize: 9,
-                      fontWeight: "700",
-                      color: getPointsColor(pts),
-                    }}
+                    style={[
+                      styles.pointsText,
+                      { color: isLive ? theme.colors.primary : getPointsColor(pts), fontWeight: isLive ? "800" : "700" },
+                    ]}
                   >
-                    {pts}
+                    {pts} pts
                   </AppText>
                 )}
               </View>
@@ -488,9 +582,6 @@ export function PredictionsOverviewTable({
               },
             ]}
           >
-            <AppText variant="body" style={[styles.headerText, { color: theme.colors.textSecondary }]}>
-              #
-            </AppText>
           </View>
 
           {/* Left Column Rows - Fixed, OUTSIDE horizontal scroll */}
@@ -500,6 +591,8 @@ export function PredictionsOverviewTable({
             renderItem={renderLeftRow}
             keyExtractor={(item) => item.id.toString()}
             showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={onLeftScroll}
             style={styles.leftColumnList}
             onScrollToIndexFailed={() => {}}
             getItemLayout={(_, index) => ({
@@ -529,7 +622,9 @@ export function PredictionsOverviewTable({
                 data={participants}
                 renderItem={renderRow}
                 keyExtractor={(item) => item.id.toString()}
-                showsVerticalScrollIndicator={true}
+                showsVerticalScrollIndicator={false}
+                scrollEventThrottle={16}
+                onScroll={onRightScroll}
                 style={styles.flatList}
                 nestedScrollEnabled={true}
                 onScrollToIndexFailed={() => {}}
@@ -551,6 +646,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: "100%",
+    borderRadius: 12,
   },
   contentRow: {
     flex: 1,
@@ -558,12 +654,6 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   leftColumnFixed: {
-    // Fixed width column with shadow for depth
-    shadowColor: "#000",
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
     zIndex: 10,
   },
   leftHeader: {
@@ -581,11 +671,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,
-    gap: 8,
+    gap: 4,
   },
   participantNumber: {
     fontWeight: "600",
     minWidth: 24,
+    textAlign: "center",
   },
   participantName: {
     flex: 1,
@@ -614,7 +705,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
+    gap: 1,
   },
   logoContainerDimmed: {
     opacity: 0.5,
@@ -645,5 +736,32 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 4,
+  },
+  predictionCellInner: {
+    alignItems: "center",
+  },
+  predictionText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  pointsText: {
+    fontSize: 9,
+    fontWeight: "700",
+  },
+  totalPointsHeaderText: {
+    fontWeight: "700",
+  },
+  participantHighlight: {
+    fontWeight: "700",
+  },
+  currentUserOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopWidth: 1.5,
+    borderBottomWidth: 1.5,
+    zIndex: 10,
   },
 });

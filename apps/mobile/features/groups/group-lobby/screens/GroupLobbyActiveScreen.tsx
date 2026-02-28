@@ -27,6 +27,7 @@ import { LobbyLeaderboard } from "../components/LobbyLeaderboard";
 import { LobbyActivityBanner } from "../components/LobbyActivityBanner";
 import { DebugCTAScreen } from "./DebugCTAScreen";
 import { DebugLeaderboardScreen } from "./DebugLeaderboardScreen";
+import { DebugPredictionsOverviewScreen } from "./DebugPredictionsOverviewScreen";
 
 interface GroupLobbyActiveScreenProps {
   group: ApiGroupItem;
@@ -54,6 +55,7 @@ export function GroupLobbyActiveScreen({
   const queryClient = useQueryClient();
   const [showDebugCTA, setShowDebugCTA] = useState(false);
   const [showDebugLeaderboard, setShowDebugLeaderboard] = useState(false);
+  const [showDebugOverview, setShowDebugOverview] = useState(false);
 
   // Invalidate lobby summary when screen gains focus (e.g. returning from games screen after saving predictions)
   useFocusEffect(
@@ -249,6 +251,12 @@ export function GroupLobbyActiveScreen({
           >
             <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG LEADERBOARD</Text>
           </Pressable>
+          <Pressable
+            onPress={() => setShowDebugOverview(true)}
+            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#10B981", alignItems: "center" }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG TABLE</Text>
+          </Pressable>
         </View>
 
         <Modal visible={showDebugCTA} animationType="slide" presentationStyle="fullScreen">
@@ -265,6 +273,16 @@ export function GroupLobbyActiveScreen({
           <DebugLeaderboardScreen />
           <Pressable
             onPress={() => setShowDebugLeaderboard(false)}
+            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={showDebugOverview} animationType="slide" presentationStyle="fullScreen">
+          <DebugPredictionsOverviewScreen />
+          <Pressable
+            onPress={() => setShowDebugOverview(false)}
             style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
           >
             <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>

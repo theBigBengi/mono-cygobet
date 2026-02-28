@@ -1,76 +1,67 @@
 // src/services/admin/badges.service.ts
-// Admin service for managing badges globally across all groups.
+// Admin service for managing the global badge definitions catalog.
 
 import { prisma } from "@repo/db";
 import type { Prisma } from "@repo/db";
 import { getLogger } from "../../logger";
 import { NotFoundError } from "../../utils/errors";
-import type { AdminBadgeItem, AdminBadgeEarnedEntry } from "@repo/types";
+import type {
+  AdminBadgeDefinitionItem,
+  AdminBadgeDefinitionSearchItem,
+} from "@repo/types";
 
-const log = getLogger("AdminBadges");
+const log = getLogger("AdminBadgeDefinitions");
 
-function mapBadgeToItem(
-  badge: {
+function mapDefinitionToItem(
+  def: {
     id: number;
-    groupId: number;
     name: string;
     description: string;
     icon: string;
     criteriaType: string;
     criteriaValue: number;
     createdAt: Date;
-    group: { name: string; status: string };
-    _count: { earnedBadges: number };
+    _count: { groupBadges: number };
   }
-): AdminBadgeItem {
+): AdminBadgeDefinitionItem {
   return {
-    id: badge.id,
-    groupId: badge.groupId,
-    groupName: badge.group.name,
-    groupStatus: badge.group.status,
-    name: badge.name,
-    description: badge.description,
-    icon: badge.icon,
-    criteriaType: badge.criteriaType,
-    criteriaValue: badge.criteriaValue,
-    earnedCount: badge._count.earnedBadges,
-    createdAt: badge.createdAt.toISOString(),
+    id: def.id,
+    name: def.name,
+    description: def.description,
+    icon: def.icon,
+    criteriaType: def.criteriaType,
+    criteriaValue: def.criteriaValue,
+    usageCount: def._count.groupBadges,
+    createdAt: def.createdAt.toISOString(),
   };
 }
 
-export async function listBadges(
+export async function listBadgeDefinitions(
   page: number,
   perPage: number,
-  filters?: { search?: string; criteriaType?: string; groupId?: number }
+  filters?: { search?: string }
 ) {
-  const where: Prisma.groupBadgesWhereInput = {};
+  const where: Prisma.badgeDefinitionsWhereInput = {};
 
   if (filters?.search) {
     where.name = { contains: filters.search, mode: "insensitive" };
   }
-  if (filters?.criteriaType) {
-    where.criteriaType = filters.criteriaType;
-  }
-  if (filters?.groupId) {
-    where.groupId = filters.groupId;
-  }
 
-  const [badges, totalCount] = await Promise.all([
-    prisma.groupBadges.findMany({
+  const [definitions, totalCount] = await Promise.all([
+    prisma.badgeDefinitions.findMany({
       where,
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * perPage,
       take: perPage,
       include: {
-        group: { select: { name: true, status: true } },
-        _count: { select: { earnedBadges: true } },
+        _count: { select: { groupBadges: true } },
       },
     }),
-    prisma.groupBadges.count({ where }),
+    prisma.badgeDefinitions.count({ where }),
   ]);
 
   return {
-    data: badges.map(mapBadgeToItem),
+    data: definitions.map(mapDefinitionToItem),
     pagination: {
       page,
       perPage,
@@ -80,8 +71,32 @@ export async function listBadges(
   };
 }
 
-export async function updateBadge(
-  badgeId: number,
+export async function createBadgeDefinition(body: {
+  name: string;
+  description: string;
+  icon: string;
+  criteriaType: string;
+  criteriaValue?: number;
+}): Promise<AdminBadgeDefinitionItem> {
+  const created = await prisma.badgeDefinitions.create({
+    data: {
+      name: body.name,
+      description: body.description,
+      icon: body.icon,
+      criteriaType: body.criteriaType,
+      criteriaValue: body.criteriaValue ?? 1,
+    },
+    include: {
+      _count: { select: { groupBadges: true } },
+    },
+  });
+
+  log.info({ id: created.id }, "Badge definition created");
+  return mapDefinitionToItem(created);
+}
+
+export async function updateBadgeDefinition(
+  id: number,
   body: {
     name?: string;
     description?: string;
@@ -89,82 +104,72 @@ export async function updateBadge(
     criteriaType?: string;
     criteriaValue?: number;
   }
-): Promise<AdminBadgeItem> {
-  const existing = await prisma.groupBadges.findUnique({
-    where: { id: badgeId },
+): Promise<AdminBadgeDefinitionItem> {
+  const existing = await prisma.badgeDefinitions.findUnique({
+    where: { id },
   });
 
   if (!existing) {
-    throw new NotFoundError("Badge not found");
+    throw new NotFoundError("Badge definition not found");
   }
 
-  const updateData: Prisma.groupBadgesUpdateInput = {};
+  const updateData: Prisma.badgeDefinitionsUpdateInput = {};
   if (body.name !== undefined) updateData.name = body.name;
   if (body.description !== undefined) updateData.description = body.description;
   if (body.icon !== undefined) updateData.icon = body.icon;
   if (body.criteriaType !== undefined) updateData.criteriaType = body.criteriaType;
   if (body.criteriaValue !== undefined) updateData.criteriaValue = body.criteriaValue;
 
-  await prisma.groupBadges.update({
-    where: { id: badgeId },
+  const updated = await prisma.badgeDefinitions.update({
+    where: { id },
     data: updateData,
-  });
-
-  const updated = await prisma.groupBadges.findUniqueOrThrow({
-    where: { id: badgeId },
     include: {
-      group: { select: { name: true, status: true } },
-      _count: { select: { earnedBadges: true } },
+      _count: { select: { groupBadges: true } },
     },
   });
 
-  log.info({ badgeId }, "Badge updated");
-  return mapBadgeToItem(updated);
+  log.info({ id }, "Badge definition updated");
+  return mapDefinitionToItem(updated);
 }
 
-export async function listBadgeEarned(
-  badgeId: number,
-  page: number,
-  perPage: number
-) {
-  const badge = await prisma.groupBadges.findUnique({
-    where: { id: badgeId },
+export async function deleteBadgeDefinition(id: number): Promise<void> {
+  const existing = await prisma.badgeDefinitions.findUnique({
+    where: { id },
+    include: { _count: { select: { groupBadges: true } } },
   });
 
-  if (!badge) {
-    throw new NotFoundError("Badge not found");
+  if (!existing) {
+    throw new NotFoundError("Badge definition not found");
   }
 
-  const where = { badgeId };
+  if (existing._count.groupBadges > 0) {
+    throw new Error(
+      `Cannot delete badge definition: it is used by ${existing._count.groupBadges} group(s). Remove it from all groups first.`
+    );
+  }
 
-  const [entries, totalCount] = await Promise.all([
-    prisma.userEarnedBadges.findMany({
-      where,
-      orderBy: { earnedAt: "desc" },
-      skip: (page - 1) * perPage,
-      take: perPage,
-      include: {
-        user: { select: { name: true, email: true } },
-      },
-    }),
-    prisma.userEarnedBadges.count({ where }),
-  ]);
+  await prisma.badgeDefinitions.delete({ where: { id } });
+  log.info({ id }, "Badge definition deleted");
+}
 
-  const data: AdminBadgeEarnedEntry[] = entries.map((e) => ({
-    id: e.id,
-    userId: e.userId,
-    userName: e.user.name,
-    userEmail: e.user.email,
-    earnedAt: e.earnedAt.toISOString(),
-  }));
-
-  return {
-    data,
-    pagination: {
-      page,
-      perPage,
-      totalItems: totalCount,
-      totalPages: Math.ceil(totalCount / perPage) || 1,
+export async function searchBadgeDefinitions(
+  query: string
+): Promise<AdminBadgeDefinitionSearchItem[]> {
+  const definitions = await prisma.badgeDefinitions.findMany({
+    where: query
+      ? { name: { contains: query, mode: "insensitive" } }
+      : undefined,
+    orderBy: { name: "asc" },
+    take: 20,
+    select: {
+      id: true,
+      name: true,
+      icon: true,
+      description: true,
+      criteriaType: true,
+      criteriaValue: true,
     },
-  };
+  });
+
+  return definitions;
 }

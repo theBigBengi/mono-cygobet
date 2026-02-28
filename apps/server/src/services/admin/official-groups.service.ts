@@ -161,6 +161,7 @@ export async function createOfficialGroup(
         icon: b.icon,
         criteriaType: b.criteriaType,
         criteriaValue: b.criteriaValue ?? 1,
+        badgeDefinitionId: b.badgeDefinitionId ?? null,
       })),
     });
     const created = await prisma.groupBadges.findMany({
@@ -266,6 +267,7 @@ export async function updateOfficialGroup(
           icon: b.icon,
           criteriaType: b.criteriaType,
           criteriaValue: b.criteriaValue ?? 1,
+          badgeDefinitionId: b.badgeDefinitionId ?? null,
         })),
       });
     }

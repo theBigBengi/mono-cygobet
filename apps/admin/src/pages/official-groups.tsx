@@ -9,6 +9,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import { officialGroupsService } from "@/services/official-groups.service";
+import { badgesService } from "@/services/badges.service";
 import { fixturesService } from "@/services/fixtures.service";
 import { leaguesService } from "@/services/leagues.service";
 import { teamsService } from "@/services/teams.service";
@@ -75,7 +76,6 @@ import {
   Award,
   ExternalLink,
   Upload,
-  ImageIcon,
 } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Link } from "react-router-dom";
@@ -83,6 +83,7 @@ import type {
   AdminCreateOfficialGroupBody,
   AdminUpdateOfficialGroupBody,
   AdminOfficialGroupItem,
+  AdminBadgeDefinitionSearchItem,
 } from "@repo/types";
 
 // ─── Media query helpers (for responsive calendar) ───────────────────────────
@@ -161,6 +162,7 @@ type WizardState = {
     icon: string;
     criteriaType: string;
     criteriaValue: string;
+    badgeDefinitionId?: number;
   }>;
 };
 
@@ -222,7 +224,8 @@ type WizardAction =
   // Badges
   | { type: "ADD_BADGE" }
   | { type: "REMOVE_BADGE"; index: number }
-  | { type: "UPDATE_BADGE"; index: number; field: string; value: string };
+  | { type: "UPDATE_BADGE"; index: number; field: string; value: string }
+  | { type: "SET_BADGE_FROM_CATALOG"; index: number; definition: { id: number; name: string; description: string; icon: string; criteriaType: string; criteriaValue: number } };
 
 function wizardReducer(state: WizardState, action: WizardAction): WizardState {
   switch (action.type) {
@@ -347,6 +350,22 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
     case "UPDATE_BADGE": {
       const badges = state.badges.map((b, i) =>
         i === action.index ? { ...b, [action.field]: action.value } : b
+      );
+      return { ...state, badges };
+    }
+    case "SET_BADGE_FROM_CATALOG": {
+      const d = action.definition;
+      const badges = state.badges.map((b, i) =>
+        i === action.index
+          ? {
+              name: d.name,
+              description: d.description,
+              icon: d.icon,
+              criteriaType: d.criteriaType,
+              criteriaValue: String(d.criteriaValue),
+              badgeDefinitionId: d.id,
+            }
+          : b
       );
       return { ...state, badges };
     }
@@ -1696,29 +1715,109 @@ function BadgeIconField({
 
 // ─── Step 4: Badge ───────────────────────────────────────────────────────────
 
+function CatalogSearch({
+  onSelect,
+}: {
+  onSelect: (def: AdminBadgeDefinitionSearchItem) => void;
+}) {
+  const [query, setQuery] = React.useState("");
+  const [debouncedQuery] = useDebounce(query, 300);
+  const [open, setOpen] = React.useState(false);
+
+  const { data: searchData } = useQuery({
+    queryKey: ["badge-definitions-search", debouncedQuery],
+    queryFn: () => badgesService.search(debouncedQuery),
+    enabled: open,
+  });
+
+  const results = searchData?.data ?? [];
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-7 text-xs">
+          <Search className="mr-1 h-3 w-3" />
+          From Catalog
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0" align="start">
+        <Command>
+          <CommandInput
+            placeholder="Search badge catalog..."
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList>
+            <CommandEmpty>No badges found</CommandEmpty>
+            <CommandGroup>
+              {results.map((def) => (
+                <CommandItem
+                  key={def.id}
+                  onSelect={() => {
+                    onSelect(def);
+                    setOpen(false);
+                    setQuery("");
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <span className="text-lg">
+                    {def.icon.startsWith("http") ? (
+                      <img src={def.icon} alt="" className="h-5 w-5 rounded object-cover" />
+                    ) : (
+                      def.icon
+                    )}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{def.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">{def.description}</div>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function BadgeCard({
   badge,
   index,
   onUpdate,
   onRemove,
+  onSelectFromCatalog,
 }: {
   badge: WizardState["badges"][0];
   index: number;
   onUpdate: (index: number, field: string, value: string) => void;
   onRemove: (index: number) => void;
+  onSelectFromCatalog?: (index: number, def: AdminBadgeDefinitionSearchItem) => void;
 }) {
   return (
     <Card>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm">Badge {index + 1}</CardTitle>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0"
-          onClick={() => onRemove(index)}
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-sm">Badge {index + 1}</CardTitle>
+          {badge.badgeDefinitionId && (
+            <Badge variant="secondary" className="text-[10px]">Catalog</Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          {onSelectFromCatalog && (
+            <CatalogSearch
+              onSelect={(def) => onSelectFromCatalog(index, def)}
+            />
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => onRemove(index)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-1.5">
@@ -1841,6 +1940,9 @@ function Step4Badge({
                 dispatch({ type: "UPDATE_BADGE", index: idx, field, value })
               }
               onRemove={(idx) => dispatch({ type: "REMOVE_BADGE", index: idx })}
+              onSelectFromCatalog={(idx, def) =>
+                dispatch({ type: "SET_BADGE_FROM_CATALOG", index: idx, definition: def })
+              }
             />
           ))}
           <Button
@@ -1986,6 +2088,7 @@ function CreateWizard({
         icon: b.icon,
         criteriaType: b.criteriaType,
         criteriaValue: Number(b.criteriaValue) || 1,
+        badgeDefinitionId: b.badgeDefinitionId,
       }));
     }
 
@@ -2341,7 +2444,7 @@ function BadgeManagementDialog({
 
   // Track original badge IDs alongside editable fields
   const [badges, setBadges] = React.useState<
-    Array<{ savedId: number | null; name: string; description: string; icon: string; criteriaType: string; criteriaValue: string }>
+    Array<{ savedId: number | null; name: string; description: string; icon: string; criteriaType: string; criteriaValue: string; badgeDefinitionId?: number }>
   >([]);
   const [awardingBadgeId, setAwardingBadgeId] = React.useState<number | null>(null);
 
@@ -2371,6 +2474,7 @@ function BadgeManagementDialog({
           icon: b.icon,
           criteriaType: b.criteriaType,
           criteriaValue: Number(b.criteriaValue) || 1,
+          badgeDefinitionId: b.badgeDefinitionId,
         }));
       } else {
         body.badges = null;
@@ -2437,8 +2541,32 @@ function BadgeManagementDialog({
           {badges.map((badge, i) => (
             <div key={i} className="border rounded-md p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium">Badge {i + 1}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium">Badge {i + 1}</span>
+                  {badge.badgeDefinitionId && (
+                    <Badge variant="secondary" className="text-[10px]">Catalog</Badge>
+                  )}
+                </div>
                 <div className="flex items-center gap-1">
+                  <CatalogSearch
+                    onSelect={(def) =>
+                      setBadges((prev) =>
+                        prev.map((b, idx) =>
+                          idx === i
+                            ? {
+                                ...b,
+                                name: def.name,
+                                description: def.description,
+                                icon: def.icon,
+                                criteriaType: def.criteriaType,
+                                criteriaValue: String(def.criteriaValue),
+                                badgeDefinitionId: def.id,
+                              }
+                            : b
+                        )
+                      )
+                    }
+                  />
                   {badge.savedId !== null && badge.criteriaType !== "custom" && (
                     <Button
                       variant="outline"

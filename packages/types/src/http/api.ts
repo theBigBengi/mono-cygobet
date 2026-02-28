@@ -762,6 +762,7 @@ export type ApiPredictionsOverviewFixture = {
   homeTeam: {
     id: number;
     name: string;
+    shortCode: string | null;
     imagePath: string | null;
     firstKitColor?: string | null;
     secondKitColor?: string | null;
@@ -770,6 +771,7 @@ export type ApiPredictionsOverviewFixture = {
   awayTeam: {
     id: number;
     name: string;
+    shortCode: string | null;
     imagePath: string | null;
     firstKitColor?: string | null;
     secondKitColor?: string | null;

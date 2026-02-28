@@ -1246,6 +1246,7 @@ export interface AdminCreateOfficialGroupBody {
     icon: string;
     criteriaType: string;
     criteriaValue?: number;
+    badgeDefinitionId?: number;
   }>;
 }
 
@@ -1264,6 +1265,7 @@ export interface AdminUpdateOfficialGroupBody {
     icon: string;
     criteriaType: string;
     criteriaValue?: number;
+    badgeDefinitionId?: number;
   }> | null;
 }
 
@@ -1452,25 +1454,22 @@ export interface AdminFixtureSearchResponse {
   message: string;
 }
 
-// ─── Badges (global) ───────────────────────────────────────────
+// ─── Badge Definitions (global catalog) ─────────────────────────
 
-export interface AdminBadgeItem {
+export interface AdminBadgeDefinitionItem {
   id: number;
-  groupId: number;
-  groupName: string;
-  groupStatus: string;
   name: string;
   description: string;
   icon: string;
   criteriaType: string;
   criteriaValue: number;
-  earnedCount: number;
+  usageCount: number;
   createdAt: string;
 }
 
-export interface AdminBadgesListResponse {
+export interface AdminBadgeDefinitionsListResponse {
   status: string;
-  data: AdminBadgeItem[];
+  data: AdminBadgeDefinitionItem[];
   pagination: {
     page: number;
     perPage: number;
@@ -1480,7 +1479,21 @@ export interface AdminBadgesListResponse {
   message: string;
 }
 
-export interface AdminUpdateBadgeBody {
+export interface AdminCreateBadgeDefinitionBody {
+  name: string;
+  description: string;
+  icon: string;
+  criteriaType: string;
+  criteriaValue?: number;
+}
+
+export interface AdminCreateBadgeDefinitionResponse {
+  status: string;
+  data: AdminBadgeDefinitionItem;
+  message: string;
+}
+
+export interface AdminUpdateBadgeDefinitionBody {
   name?: string;
   description?: string;
   icon?: string;
@@ -1488,28 +1501,28 @@ export interface AdminUpdateBadgeBody {
   criteriaValue?: number;
 }
 
-export interface AdminUpdateBadgeResponse {
+export interface AdminUpdateBadgeDefinitionResponse {
   status: string;
-  data: AdminBadgeItem;
+  data: AdminBadgeDefinitionItem;
   message: string;
 }
 
-export interface AdminBadgeEarnedEntry {
-  id: number;
-  userId: number;
-  userName: string | null;
-  userEmail: string;
-  earnedAt: string;
+export interface AdminDeleteBadgeDefinitionResponse {
+  status: string;
+  message: string;
 }
 
-export interface AdminBadgeEarnedListResponse {
+export interface AdminBadgeDefinitionSearchItem {
+  id: number;
+  name: string;
+  icon: string;
+  description: string;
+  criteriaType: string;
+  criteriaValue: number;
+}
+
+export interface AdminBadgeDefinitionSearchResponse {
   status: string;
-  data: AdminBadgeEarnedEntry[];
-  pagination: {
-    page: number;
-    perPage: number;
-    totalItems: number;
-    totalPages: number;
-  };
+  data: AdminBadgeDefinitionSearchItem[];
   message: string;
 }

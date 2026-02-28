@@ -408,6 +408,7 @@ export async function findGroupFixturesForOverview(groupId: number) {
             select: {
               id: true,
               name: true,
+              shortCode: true,
               imagePath: true,
             },
           },
@@ -415,6 +416,7 @@ export async function findGroupFixturesForOverview(groupId: number) {
             select: {
               id: true,
               name: true,
+              shortCode: true,
               imagePath: true,
             },
           },

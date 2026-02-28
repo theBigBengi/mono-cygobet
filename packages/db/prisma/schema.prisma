@@ -1010,9 +1010,8 @@ model adminAuditLog {
   @@map("admin_audit_log")
 }
 
-model groupBadges {
+model badgeDefinitions {
   id            Int      @id @default(autoincrement())
-  groupId       Int      @map("group_id")
   name          String   @db.VarChar(100)
   description   String   @db.VarChar(500)
   icon          String   @db.VarChar(500)
@@ -1021,8 +1020,26 @@ model groupBadges {
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  group        groups              @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  earnedBadges userEarnedBadges[]
+  groupBadges groupBadges[]
+
+  @@map("badge_definitions")
+}
+
+model groupBadges {
+  id                Int      @id @default(autoincrement())
+  groupId           Int      @map("group_id")
+  name              String   @db.VarChar(100)
+  description       String   @db.VarChar(500)
+  icon              String   @db.VarChar(500)
+  criteriaType      String   @map("criteria_type") @db.VarChar(50)
+  criteriaValue     Int      @default(1) @map("criteria_value")
+  badgeDefinitionId Int?     @map("badge_definition_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  group           groups            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  badgeDefinition badgeDefinitions? @relation(fields: [badgeDefinitionId], references: [id], onDelete: SetNull)
+  earnedBadges    userEarnedBadges[]
 
   @@index([groupId])
   @@map("group_badges")

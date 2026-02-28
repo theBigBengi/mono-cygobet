@@ -2,140 +2,128 @@
 import type { FastifyPluginAsync } from "fastify";
 import { auditFromRequest } from "../../../services/admin/audit-log.service";
 import {
-  listBadges,
-  updateBadge,
-  listBadgeEarned,
+  listBadgeDefinitions,
+  createBadgeDefinition,
+  updateBadgeDefinition,
+  deleteBadgeDefinition,
+  searchBadgeDefinitions,
 } from "../../../services/admin/badges.service";
-import { evaluateSingleBadge } from "../../../services/api/groups/service/badge-evaluation";
-import { prisma } from "@repo/db";
 import type {
-  AdminBadgesListResponse,
-  AdminUpdateBadgeBody,
-  AdminUpdateBadgeResponse,
-  AdminBadgeEarnedListResponse,
-  AdminAwardBadgesResponse,
+  AdminBadgeDefinitionsListResponse,
+  AdminCreateBadgeDefinitionBody,
+  AdminCreateBadgeDefinitionResponse,
+  AdminUpdateBadgeDefinitionBody,
+  AdminUpdateBadgeDefinitionResponse,
+  AdminDeleteBadgeDefinitionResponse,
+  AdminBadgeDefinitionSearchResponse,
 } from "@repo/types";
 
 /**
- * Admin Badges Routes
- * -------------------
+ * Admin Badge Definitions Routes
+ * ──────────────────────────────
  * Mounted under `/admin/badges` by Fastify autoload.
+ * CRUD for the global badge definitions catalog.
  */
 const badgesRoutes: FastifyPluginAsync = async (fastify) => {
+  // GET /admin/badges/search  (must be before /:id to avoid conflict)
+  fastify.get<{
+    Querystring: { q?: string };
+    Reply: AdminBadgeDefinitionSearchResponse;
+  }>("/search", async (req, reply) => {
+    const q = req.query.q ? String(req.query.q) : "";
+    const data = await searchBadgeDefinitions(q);
+
+    return reply.send({
+      status: "success",
+      data,
+      message: "Badge definitions search results",
+    });
+  });
+
   // GET /admin/badges
   fastify.get<{
-    Querystring: {
-      page?: number;
-      perPage?: number;
-      search?: string;
-      criteriaType?: string;
-      groupId?: number;
-    };
-    Reply: AdminBadgesListResponse;
+    Querystring: { page?: number; perPage?: number; search?: string };
+    Reply: AdminBadgeDefinitionsListResponse;
   }>("/", async (req, reply) => {
     const page = Math.max(1, Number(req.query.page) || 1);
     const perPage = Math.min(100, Math.max(1, Number(req.query.perPage) || 20));
     const search = req.query.search ? String(req.query.search) : undefined;
-    const criteriaType = req.query.criteriaType
-      ? String(req.query.criteriaType)
-      : undefined;
-    const groupId = req.query.groupId
-      ? Number(req.query.groupId)
-      : undefined;
 
-    const result = await listBadges(page, perPage, {
-      search,
-      criteriaType,
-      groupId,
-    });
+    const result = await listBadgeDefinitions(page, perPage, { search });
 
     return reply.send({
       status: "success",
       data: result.data,
       pagination: result.pagination,
-      message: "Badges fetched successfully",
+      message: "Badge definitions fetched successfully",
+    });
+  });
+
+  // POST /admin/badges
+  fastify.post<{
+    Body: AdminCreateBadgeDefinitionBody;
+    Reply: AdminCreateBadgeDefinitionResponse;
+  }>("/", async (req, reply) => {
+    const data = await createBadgeDefinition(req.body);
+
+    auditFromRequest(req, reply, {
+      action: "badge-definitions.create",
+      category: "badges",
+      description: `Created badge definition: ${data.name} (#${data.id})`,
+      targetType: "badge_definition",
+      targetId: String(data.id),
+    });
+
+    return reply.code(201).send({
+      status: "success",
+      data,
+      message: "Badge definition created successfully",
     });
   });
 
   // PATCH /admin/badges/:id
   fastify.patch<{
     Params: { id: string };
-    Body: AdminUpdateBadgeBody;
-    Reply: AdminUpdateBadgeResponse;
+    Body: AdminUpdateBadgeDefinitionBody;
+    Reply: AdminUpdateBadgeDefinitionResponse;
   }>("/:id", async (req, reply) => {
-    const badgeId = Number(req.params.id);
-    const data = await updateBadge(badgeId, req.body);
+    const id = Number(req.params.id);
+    const data = await updateBadgeDefinition(id, req.body);
 
     auditFromRequest(req, reply, {
-      action: "badges.update",
+      action: "badge-definitions.update",
       category: "badges",
-      description: `Updated badge: ${data.name} (#${badgeId})`,
-      targetType: "badge",
-      targetId: String(badgeId),
+      description: `Updated badge definition: ${data.name} (#${id})`,
+      targetType: "badge_definition",
+      targetId: String(id),
     });
 
     return reply.send({
       status: "success",
       data,
-      message: "Badge updated successfully",
+      message: "Badge definition updated successfully",
     });
   });
 
-  // GET /admin/badges/:id/earned
-  fastify.get<{
+  // DELETE /admin/badges/:id
+  fastify.delete<{
     Params: { id: string };
-    Querystring: { page?: number; perPage?: number };
-    Reply: AdminBadgeEarnedListResponse;
-  }>("/:id/earned", async (req, reply) => {
-    const badgeId = Number(req.params.id);
-    const page = Math.max(1, Number(req.query.page) || 1);
-    const perPage = Math.min(100, Math.max(1, Number(req.query.perPage) || 20));
-
-    const result = await listBadgeEarned(badgeId, page, perPage);
-
-    return reply.send({
-      status: "success",
-      data: result.data,
-      pagination: result.pagination,
-      message: "Earned badges fetched successfully",
-    });
-  });
-
-  // POST /admin/badges/:id/award
-  fastify.post<{
-    Params: { id: string };
-    Reply: AdminAwardBadgesResponse;
-  }>("/:id/award", async (req, reply) => {
-    const badgeId = Number(req.params.id);
-
-    // Look up the badge to get its groupId
-    const badge = await prisma.groupBadges.findUnique({
-      where: { id: badgeId },
-      select: { id: true, groupId: true, name: true },
-    });
-
-    if (!badge) {
-      return reply.code(404).send({
-        status: "error",
-        data: { awarded: 0 },
-        message: "Badge not found",
-      });
-    }
-
-    const awarded = await evaluateSingleBadge(badge.groupId, badgeId);
+    Reply: AdminDeleteBadgeDefinitionResponse;
+  }>("/:id", async (req, reply) => {
+    const id = Number(req.params.id);
+    await deleteBadgeDefinition(id);
 
     auditFromRequest(req, reply, {
-      action: "badges.award",
+      action: "badge-definitions.delete",
       category: "badges",
-      description: `Awarded badge "${badge.name}" (#${badgeId}) to ${awarded} members in group #${badge.groupId}`,
-      targetType: "badge",
-      targetId: String(badgeId),
+      description: `Deleted badge definition #${id}`,
+      targetType: "badge_definition",
+      targetId: String(id),
     });
 
     return reply.send({
       status: "success",
-      data: { awarded },
-      message: `${awarded} badges awarded successfully`,
+      message: "Badge definition deleted successfully",
     });
   });
 };

@@ -37,27 +37,27 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { badgesService } from "@/services/badges.service";
-import type { AdminBadgeItem } from "@repo/types";
-import { Pencil, Users, Award } from "lucide-react";
+import type { AdminBadgeDefinitionItem } from "@repo/types";
+import { Pencil, Plus, Trash2, Upload, X, Loader2 } from "lucide-react";
 
-function formatDateTime(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString();
+function BadgeIcon({ icon }: { icon: string }) {
+  if (icon.startsWith("http") || icon.startsWith("/")) {
+    return (
+      <img
+        src={icon}
+        alt=""
+        className="h-8 w-8 rounded object-cover"
+      />
+    );
+  }
+  return <span className="text-2xl">{icon}</span>;
 }
-
-const CRITERIA_OPTIONS = [
-  { value: "all", label: "All Criteria" },
-  { value: "participation", label: "Participation" },
-  { value: "top_n", label: "Top N" },
-  { value: "exact_predictions", label: "Exact Predictions" },
-  { value: "custom", label: "Custom" },
-];
 
 function criteriaLabel(type: string, value: number): string {
   switch (type) {
@@ -74,218 +74,354 @@ function criteriaLabel(type: string, value: number): string {
   }
 }
 
-function BadgeIcon({ icon }: { icon: string }) {
-  if (icon.startsWith("http") || icon.startsWith("/")) {
-    return (
-      <img
-        src={icon}
-        alt=""
-        className="h-8 w-8 rounded object-cover"
-      />
-    );
-  }
-  return <span className="text-2xl">{icon}</span>;
+type BadgeFormData = {
+  name: string;
+  description: string;
+  icon: string;
+  criteriaType: string;
+  criteriaValue: number;
+};
+
+const emptyForm: BadgeFormData = {
+  name: "",
+  description: "",
+  icon: "🏆",
+  criteriaType: "participation",
+  criteriaValue: 1,
+};
+
+function BadgeForm({
+  form,
+  setForm,
+  onSubmit,
+  isSubmitting,
+  onCancel,
+  submitLabel,
+}: {
+  form: BadgeFormData;
+  setForm: React.Dispatch<React.SetStateAction<BadgeFormData>>;
+  onSubmit: (e: React.FormEvent) => void;
+  isSubmitting: boolean;
+  onCancel: () => void;
+  submitLabel: string;
+}) {
+  const fileRef = React.useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = React.useState(false);
+
+  const isUrl = form.icon.startsWith("http");
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const result = await badgesService.uploadImage(file);
+      setForm((f) => ({ ...f, icon: result.data.url }));
+    } catch (err: unknown) {
+      toast.error("Upload failed", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4 mt-6">
+      <div className="space-y-2">
+        <Label htmlFor="form-name">Name</Label>
+        <Input
+          id="form-name"
+          value={form.name}
+          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          placeholder="e.g. Gold Badge"
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="form-description">Description</Label>
+        <Input
+          id="form-description"
+          value={form.description}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, description: e.target.value }))
+          }
+          placeholder="Badge description"
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Icon</Label>
+        <div className="flex items-center gap-3">
+          <BadgeIcon icon={form.icon} />
+          {!isUrl && (
+            <Input
+              value={form.icon}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, icon: e.target.value }))
+              }
+              placeholder="Emoji"
+              className="w-20"
+            />
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+          >
+            {uploading ? (
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+            ) : (
+              <Upload className="mr-1 h-3 w-3" />
+            )}
+            {uploading ? "Uploading…" : "Upload"}
+          </Button>
+          {isUrl && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setForm((f) => ({ ...f, icon: "🏆" }))}
+              title="Remove image"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleUpload}
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="form-criteria-type">Criteria Type</Label>
+        <Select
+          value={form.criteriaType}
+          onValueChange={(value) =>
+            setForm((f) => ({ ...f, criteriaType: value }))
+          }
+        >
+          <SelectTrigger id="form-criteria-type">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="participation">Participation</SelectItem>
+            <SelectItem value="top_n">Top N</SelectItem>
+            <SelectItem value="exact_predictions">
+              Exact Predictions
+            </SelectItem>
+            <SelectItem value="custom">Custom</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {(form.criteriaType === "top_n" ||
+        form.criteriaType === "exact_predictions") && (
+        <div className="space-y-2">
+          <Label htmlFor="form-criteria-value">
+            {form.criteriaType === "top_n"
+              ? "How many top players?"
+              : "Minimum exact predictions"}
+          </Label>
+          <Input
+            id="form-criteria-value"
+            type="number"
+            min={1}
+            value={form.criteriaValue}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                criteriaValue: Number(e.target.value) || 1,
+              }))
+            }
+          />
+        </div>
+      )}
+      <div className="flex gap-2 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" className="flex-1" disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : submitLabel}
+        </Button>
+      </div>
+    </form>
+  );
 }
 
 export default function BadgesPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = React.useState("");
-  const [criteriaFilter, setCriteriaFilter] = React.useState("all");
   const [page, setPage] = React.useState(1);
   const perPage = 20;
 
-  const [editingBadge, setEditingBadge] = React.useState<AdminBadgeItem | null>(null);
-  const [earnedBadge, setEarnedBadge] = React.useState<AdminBadgeItem | null>(null);
-  const [earnedPage, setEarnedPage] = React.useState(1);
+  const [creating, setCreating] = React.useState(false);
+  const [editingDef, setEditingDef] =
+    React.useState<AdminBadgeDefinitionItem | null>(null);
+  const [deletingDef, setDeletingDef] =
+    React.useState<AdminBadgeDefinitionItem | null>(null);
 
-  // Edit form state
-  const [editForm, setEditForm] = React.useState({
-    name: "",
-    description: "",
-    icon: "",
-    criteriaType: "",
-    criteriaValue: 1,
-  });
+  const [createForm, setCreateForm] = React.useState<BadgeFormData>(emptyForm);
+  const [editForm, setEditForm] = React.useState<BadgeFormData>(emptyForm);
 
-  // Fetch badges list
+  // Fetch badge definitions
   const {
-    data: badgesData,
+    data: defsData,
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: [
-      "badges",
-      page,
-      perPage,
-      search,
-      criteriaFilter === "all" ? undefined : criteriaFilter,
-    ],
+    queryKey: ["badge-definitions", page, perPage, search],
     queryFn: () =>
       badgesService.list({
         page,
         perPage,
         search: search || undefined,
-        criteriaType: criteriaFilter === "all" ? undefined : criteriaFilter,
       }),
   });
 
-  // Fetch earned users
-  const { data: earnedData, isLoading: earnedLoading } = useQuery({
-    queryKey: ["badges", earnedBadge?.id, "earned", earnedPage],
-    queryFn: () => badgesService.listEarned(earnedBadge!.id, earnedPage, 20),
-    enabled: !!earnedBadge,
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: () =>
+      badgesService.create({
+        name: createForm.name,
+        description: createForm.description,
+        icon: createForm.icon,
+        criteriaType: createForm.criteriaType,
+        criteriaValue: createForm.criteriaValue,
+      }),
+    onSuccess: () => {
+      toast.success("Badge definition created");
+      setCreating(false);
+      setCreateForm(emptyForm);
+      queryClient.invalidateQueries({ queryKey: ["badge-definitions"] });
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to create badge definition", {
+        description: error.message,
+      });
+    },
   });
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({
-      badgeId,
-      body,
-    }: {
-      badgeId: number;
-      body: {
-        name?: string;
-        description?: string;
-        icon?: string;
-        criteriaType?: string;
-        criteriaValue?: number;
-      };
-    }) => badgesService.update(badgeId, body),
+    mutationFn: () => {
+      if (!editingDef) throw new Error("No definition selected");
+      const body: Record<string, unknown> = {};
+      if (editForm.name !== editingDef.name) body.name = editForm.name;
+      if (editForm.description !== editingDef.description)
+        body.description = editForm.description;
+      if (editForm.icon !== editingDef.icon) body.icon = editForm.icon;
+      if (editForm.criteriaType !== editingDef.criteriaType)
+        body.criteriaType = editForm.criteriaType;
+      if (editForm.criteriaValue !== editingDef.criteriaValue)
+        body.criteriaValue = editForm.criteriaValue;
+
+      if (Object.keys(body).length === 0) {
+        return Promise.resolve(null);
+      }
+      return badgesService.update(editingDef.id, body);
+    },
+    onSuccess: (res) => {
+      if (res === null) {
+        toast.info("No changes to save");
+        return;
+      }
+      toast.success("Badge definition updated");
+      setEditingDef(null);
+      queryClient.invalidateQueries({ queryKey: ["badge-definitions"] });
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to update badge definition", {
+        description: error.message,
+      });
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: () => {
+      if (!deletingDef) throw new Error("No definition selected");
+      return badgesService.delete(deletingDef.id);
+    },
     onSuccess: () => {
-      toast.success("Badge updated successfully");
-      setEditingBadge(null);
-      queryClient.invalidateQueries({ queryKey: ["badges"] });
+      toast.success("Badge definition deleted");
+      setDeletingDef(null);
+      queryClient.invalidateQueries({ queryKey: ["badge-definitions"] });
     },
     onError: (error: Error) => {
-      toast.error("Failed to update badge", { description: error.message });
+      toast.error("Failed to delete badge definition", {
+        description: error.message,
+      });
     },
   });
 
-  // Award mutation
-  const awardMutation = useMutation({
-    mutationFn: (badgeId: number) => badgesService.award(badgeId),
-    onSuccess: (res) => {
-      toast.success(`${res.data.awarded} badges awarded`);
-      queryClient.invalidateQueries({ queryKey: ["badges"] });
-    },
-    onError: (error: Error) => {
-      toast.error("Failed to award badge", { description: error.message });
-    },
-  });
-
-  // Upload mutation
-  const uploadMutation = useMutation({
-    mutationFn: (file: File) => badgesService.uploadImage(file),
-    onSuccess: (res) => {
-      setEditForm((f) => ({ ...f, icon: res.data.url }));
-      toast.success("Image uploaded");
-    },
-    onError: (error: Error) => {
-      toast.error("Upload failed", { description: error.message });
-    },
-  });
-
-  const handleEdit = (badge: AdminBadgeItem) => {
-    setEditingBadge(badge);
+  const handleEdit = (def: AdminBadgeDefinitionItem) => {
+    setEditingDef(def);
     setEditForm({
-      name: badge.name,
-      description: badge.description,
-      icon: badge.icon,
-      criteriaType: badge.criteriaType,
-      criteriaValue: badge.criteriaValue,
+      name: def.name,
+      description: def.description,
+      icon: def.icon,
+      criteriaType: def.criteriaType,
+      criteriaValue: def.criteriaValue,
     });
   };
 
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingBadge) return;
-
-    const body: Record<string, unknown> = {};
-    if (editForm.name !== editingBadge.name) body.name = editForm.name;
-    if (editForm.description !== editingBadge.description)
-      body.description = editForm.description;
-    if (editForm.icon !== editingBadge.icon) body.icon = editForm.icon;
-    if (editForm.criteriaType !== editingBadge.criteriaType)
-      body.criteriaType = editForm.criteriaType;
-    if (editForm.criteriaValue !== editingBadge.criteriaValue)
-      body.criteriaValue = editForm.criteriaValue;
-
-    if (Object.keys(body).length === 0) {
-      toast.info("No changes to save");
-      return;
-    }
-
-    updateMutation.mutate({ badgeId: editingBadge.id, body });
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      uploadMutation.mutate(file);
-    }
-  };
-
-  const badges = badgesData?.data ?? [];
-  const total = badgesData?.pagination?.totalItems ?? 0;
-  const totalPages = badgesData?.pagination?.totalPages ?? 1;
-
-  const earnedEntries = earnedData?.data ?? [];
-  const earnedTotal = earnedData?.pagination?.totalItems ?? 0;
-  const earnedTotalPages = earnedData?.pagination?.totalPages ?? 1;
+  const definitions = defsData?.data ?? [];
+  const total = defsData?.pagination?.totalItems ?? 0;
+  const totalPages = defsData?.pagination?.totalPages ?? 1;
 
   return (
     <div className="h-full w-full p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Badge Catalog</h1>
+            <p className="text-sm text-muted-foreground">
+              Manage global badge definitions. Groups pick from this catalog.
+            </p>
+          </div>
+          <Button onClick={() => setCreating(true)}>
+            <Plus className="mr-1 h-4 w-4" />
+            Create Badge
+          </Button>
+        </div>
+
         {/* Filters */}
         <Card>
-          <CardHeader>
-            <CardTitle>Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <div className="flex-1">
-                <Label htmlFor="badge-search">Search</Label>
-                <Input
-                  id="badge-search"
-                  placeholder="Search by badge name..."
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
-                />
-              </div>
-              <div className="w-full sm:w-48">
-                <Label htmlFor="criteria">Criteria Type</Label>
-                <Select
-                  value={criteriaFilter}
-                  onValueChange={(value) => {
-                    setCriteriaFilter(value);
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger id="criteria">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CRITERIA_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <CardContent className="pt-6">
+            <div className="flex-1">
+              <Input
+                placeholder="Search by name..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
             </div>
           </CardContent>
         </Card>
 
-        {/* Badges Table */}
+        {/* Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Badges ({total})</CardTitle>
+            <CardTitle>Definitions ({total})</CardTitle>
             <CardDescription>
-              Showing {badges.length} of {total} badges across all groups
+              Showing {definitions.length} of {total} badge definitions
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -295,9 +431,9 @@ export default function BadgesPage() {
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-            ) : badges.length === 0 ? (
+            ) : definitions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No badges found
+                No badge definitions found
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -306,59 +442,38 @@ export default function BadgesPage() {
                     <TableRow>
                       <TableHead className="w-12">Icon</TableHead>
                       <TableHead>Name</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Group
-                      </TableHead>
                       <TableHead className="hidden lg:table-cell">
                         Criteria
                       </TableHead>
-                      <TableHead>Earned</TableHead>
+                      <TableHead>Used In</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {badges.map((badge) => (
-                      <TableRow key={badge.id}>
+                    {definitions.map((def) => (
+                      <TableRow key={def.id}>
                         <TableCell>
-                          <BadgeIcon icon={badge.icon} />
+                          <BadgeIcon icon={def.icon} />
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{badge.name}</div>
+                          <div className="font-medium">{def.name}</div>
                           <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                            {badge.description}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate max-w-[150px]">
-                              {badge.groupName}
-                            </span>
-                            <Badge
-                              variant={
-                                badge.groupStatus === "active"
-                                  ? "default"
-                                  : badge.groupStatus === "ended"
-                                    ? "secondary"
-                                    : "outline"
-                              }
-                            >
-                              {badge.groupStatus}
-                            </Badge>
+                            {def.description}
                           </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          {criteriaLabel(
-                            badge.criteriaType,
-                            badge.criteriaValue
-                          )}
+                          {criteriaLabel(def.criteriaType, def.criteriaValue)}
                         </TableCell>
-                        <TableCell>{badge.earnedCount}</TableCell>
+                        <TableCell>
+                          {def.usageCount} group
+                          {def.usageCount !== 1 ? "s" : ""}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleEdit(badge)}
+                              onClick={() => handleEdit(def)}
                               title="Edit"
                             >
                               <Pencil className="h-4 w-4" />
@@ -366,29 +481,15 @@ export default function BadgesPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setEarnedBadge(badge);
-                                setEarnedPage(1);
-                              }}
-                              title="View Earned"
-                            >
-                              <Users className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => awardMutation.mutate(badge.id)}
-                              disabled={
-                                badge.groupStatus !== "ended" ||
-                                awardMutation.isPending
-                              }
+                              onClick={() => setDeletingDef(def)}
+                              disabled={def.usageCount > 0}
                               title={
-                                badge.groupStatus !== "ended"
-                                  ? "Group must be ended to award"
-                                  : "Award badge"
+                                def.usageCount > 0
+                                  ? "Remove from all groups first"
+                                  : "Delete"
                               }
                             >
-                              <Award className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -419,7 +520,9 @@ export default function BadgesPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() =>
+                      setPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={page >= totalPages || isFetching}
                     className="h-8 sm:h-9"
                   >
@@ -431,218 +534,97 @@ export default function BadgesPage() {
           </CardContent>
         </Card>
 
-        {/* Edit Badge Sheet */}
+        {/* Create Badge Sheet */}
         <Sheet
-          open={!!editingBadge}
-          onOpenChange={(open) => !open && setEditingBadge(null)}
+          open={creating}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreating(false);
+              setCreateForm(emptyForm);
+            }
+          }}
         >
           <SheetContent className="sm:max-w-md">
             <SheetHeader>
-              <SheetTitle>Edit Badge</SheetTitle>
+              <SheetTitle>Create Badge Definition</SheetTitle>
               <SheetDescription>
-                Update badge details. Changes apply immediately.
+                Add a new badge to the global catalog.
               </SheetDescription>
             </SheetHeader>
-            {editingBadge && (
-              <form onSubmit={handleEditSubmit} className="space-y-4 mt-6">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">Name</Label>
-                  <Input
-                    id="edit-name"
-                    value={editForm.name}
-                    onChange={(e) =>
-                      setEditForm((f) => ({ ...f, name: e.target.value }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-description">Description</Label>
-                  <Input
-                    id="edit-description"
-                    value={editForm.description}
-                    onChange={(e) =>
-                      setEditForm((f) => ({
-                        ...f,
-                        description: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Icon</Label>
-                  <div className="flex items-center gap-3">
-                    <BadgeIcon icon={editForm.icon} />
-                    <Input
-                      value={editForm.icon}
-                      onChange={(e) =>
-                        setEditForm((f) => ({ ...f, icon: e.target.value }))
-                      }
-                      placeholder="Emoji or URL"
-                      className="flex-1"
-                    />
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="icon-upload"
-                      className="text-xs text-muted-foreground cursor-pointer hover:underline"
-                    >
-                      Or upload an image
-                    </Label>
-                    <Input
-                      id="icon-upload"
-                      type="file"
-                      accept="image/*"
-                      className="mt-1"
-                      onChange={handleFileChange}
-                      disabled={uploadMutation.isPending}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-criteria-type">Criteria Type</Label>
-                  <Select
-                    value={editForm.criteriaType}
-                    onValueChange={(value) =>
-                      setEditForm((f) => ({ ...f, criteriaType: value }))
-                    }
-                  >
-                    <SelectTrigger id="edit-criteria-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="participation">
-                        Participation
-                      </SelectItem>
-                      <SelectItem value="top_n">Top N</SelectItem>
-                      <SelectItem value="exact_predictions">
-                        Exact Predictions
-                      </SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-criteria-value">Criteria Value</Label>
-                  <Input
-                    id="edit-criteria-value"
-                    type="number"
-                    min={1}
-                    value={editForm.criteriaValue}
-                    onChange={(e) =>
-                      setEditForm((f) => ({
-                        ...f,
-                        criteriaValue: Number(e.target.value) || 1,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setEditingBadge(null)}
-                    disabled={updateMutation.isPending}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1"
-                    disabled={updateMutation.isPending}
-                  >
-                    {updateMutation.isPending ? "Saving..." : "Save Changes"}
-                  </Button>
-                </div>
-              </form>
+            <BadgeForm
+              form={createForm}
+              setForm={setCreateForm}
+              onSubmit={(e) => {
+                e.preventDefault();
+                createMutation.mutate();
+              }}
+              isSubmitting={createMutation.isPending}
+              onCancel={() => {
+                setCreating(false);
+                setCreateForm(emptyForm);
+              }}
+              submitLabel="Create"
+            />
+          </SheetContent>
+        </Sheet>
+
+        {/* Edit Badge Sheet */}
+        <Sheet
+          open={!!editingDef}
+          onOpenChange={(open) => !open && setEditingDef(null)}
+        >
+          <SheetContent className="sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle>Edit Badge Definition</SheetTitle>
+              <SheetDescription>
+                Update badge details. Changes apply to the catalog entry only.
+              </SheetDescription>
+            </SheetHeader>
+            {editingDef && (
+              <BadgeForm
+                form={editForm}
+                setForm={setEditForm}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  updateMutation.mutate();
+                }}
+                isSubmitting={updateMutation.isPending}
+                onCancel={() => setEditingDef(null)}
+                submitLabel="Save Changes"
+              />
             )}
           </SheetContent>
         </Sheet>
 
-        {/* Earned Users Dialog */}
+        {/* Delete Confirmation Dialog */}
         <Dialog
-          open={!!earnedBadge}
-          onOpenChange={(open) => !open && setEarnedBadge(null)}
+          open={!!deletingDef}
+          onOpenChange={(open) => !open && setDeletingDef(null)}
         >
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                Earned: {earnedBadge?.name}
-              </DialogTitle>
+              <DialogTitle>Delete Badge Definition</DialogTitle>
               <DialogDescription>
-                {earnedTotal} user{earnedTotal !== 1 ? "s" : ""} earned this
-                badge
+                Are you sure you want to delete &ldquo;{deletingDef?.name}
+                &rdquo;? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
-            {earnedLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
-                ))}
-              </div>
-            ) : earnedEntries.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground">
-                No users have earned this badge yet
-              </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Earned At</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {earnedEntries.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell>{entry.userName || "—"}</TableCell>
-                          <TableCell className="text-sm">
-                            {entry.userEmail}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatDateTime(entry.earnedAt)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                {earnedTotalPages > 1 && (
-                  <div className="flex items-center justify-between mt-2 gap-2">
-                    <div className="text-xs text-muted-foreground">
-                      {earnedPage}/{earnedTotalPages}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setEarnedPage((p) => Math.max(1, p - 1))
-                        }
-                        disabled={earnedPage === 1}
-                      >
-                        Prev
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setEarnedPage((p) =>
-                            Math.min(earnedTotalPages, p + 1)
-                          )
-                        }
-                        disabled={earnedPage >= earnedTotalPages}
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeletingDef(null)}
+                disabled={deleteMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deleteMutation.mutate()}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

@@ -1,10 +1,12 @@
-import { apiGet, apiPatch, apiPost, apiUpload } from "@/lib/adminApi";
+import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from "@/lib/adminApi";
 import type {
-  AdminBadgesListResponse,
-  AdminUpdateBadgeBody,
-  AdminUpdateBadgeResponse,
-  AdminBadgeEarnedListResponse,
-  AdminAwardBadgesResponse,
+  AdminBadgeDefinitionsListResponse,
+  AdminCreateBadgeDefinitionBody,
+  AdminCreateBadgeDefinitionResponse,
+  AdminUpdateBadgeDefinitionBody,
+  AdminUpdateBadgeDefinitionResponse,
+  AdminDeleteBadgeDefinitionResponse,
+  AdminBadgeDefinitionSearchResponse,
 } from "@repo/types";
 
 export const badgesService = {
@@ -12,40 +14,43 @@ export const badgesService = {
     page?: number;
     perPage?: number;
     search?: string;
-    criteriaType?: string;
-    groupId?: number;
-  }): Promise<AdminBadgesListResponse> {
+  }): Promise<AdminBadgeDefinitionsListResponse> {
     const qs = new URLSearchParams();
     if (params?.page) qs.set("page", String(params.page));
     if (params?.perPage) qs.set("perPage", String(params.perPage));
     if (params?.search) qs.set("search", params.search);
-    if (params?.criteriaType) qs.set("criteriaType", params.criteriaType);
-    if (params?.groupId) qs.set("groupId", String(params.groupId));
     const query = qs.toString();
-    return apiGet<AdminBadgesListResponse>(
+    return apiGet<AdminBadgeDefinitionsListResponse>(
       `/admin/badges${query ? `?${query}` : ""}`
     );
   },
 
-  async update(
-    badgeId: number,
-    body: AdminUpdateBadgeBody
-  ): Promise<AdminUpdateBadgeResponse> {
-    return apiPatch<AdminUpdateBadgeResponse>(`/admin/badges/${badgeId}`, body);
+  async create(
+    body: AdminCreateBadgeDefinitionBody
+  ): Promise<AdminCreateBadgeDefinitionResponse> {
+    return apiPost<AdminCreateBadgeDefinitionResponse>("/admin/badges", body);
   },
 
-  async listEarned(
-    badgeId: number,
-    page = 1,
-    perPage = 20
-  ): Promise<AdminBadgeEarnedListResponse> {
-    return apiGet<AdminBadgeEarnedListResponse>(
-      `/admin/badges/${badgeId}/earned?page=${page}&perPage=${perPage}`
+  async update(
+    id: number,
+    body: AdminUpdateBadgeDefinitionBody
+  ): Promise<AdminUpdateBadgeDefinitionResponse> {
+    return apiPatch<AdminUpdateBadgeDefinitionResponse>(
+      `/admin/badges/${id}`,
+      body
     );
   },
 
-  async award(badgeId: number): Promise<AdminAwardBadgesResponse> {
-    return apiPost<AdminAwardBadgesResponse>(`/admin/badges/${badgeId}/award`);
+  async delete(id: number): Promise<AdminDeleteBadgeDefinitionResponse> {
+    return apiDelete<AdminDeleteBadgeDefinitionResponse>(
+      `/admin/badges/${id}`
+    );
+  },
+
+  async search(q: string): Promise<AdminBadgeDefinitionSearchResponse> {
+    return apiGet<AdminBadgeDefinitionSearchResponse>(
+      `/admin/badges/search?q=${encodeURIComponent(q)}`
+    );
   },
 
   async uploadImage(
