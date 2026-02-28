@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import type { MentionData } from "@/lib/socket";
 import { MentionPicker } from "./MentionPicker";
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 12,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 12,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     justifyContent: "center",
     alignItems: "center",
   },

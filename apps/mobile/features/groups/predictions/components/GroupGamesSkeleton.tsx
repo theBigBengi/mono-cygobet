@@ -7,20 +7,24 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useTheme } from "@/lib/theme";
-import { TIMELINE } from "../utils/constants";
 
 /**
  * Skeleton layout that mirrors the real GroupGamesScreen:
- * SummaryCard → [DateHeader → LeaguePill → Card, Card] → [DateHeader → LeaguePill → Card, Card, Card]
+ * SummaryCard → [DateHeader → Card, Card] → [DateHeader → Card, Card, Card]
+ *
+ * Dimensions match actual components:
+ * - GamesSummaryCard: borderRadius 10, borderWidth 1, stat gap 2
+ * - MatchPredictionCardVertical: borderRadius 10, borderWidth 1, paddingH 12, paddingV 10
+ *   - LeagueInfoRow: paddingH 12, paddingV 6
+ *   - TeamRow: logo 30x30, name height 36, gap 8
+ *   - ScoreInput: 36x36 in predictionColumn width 52
+ * - Section headers: paddingLeft 4, date line height 1.5
  */
 
-// Define skeleton structure: headers + cards in realistic grouping
-const SKELETON_ITEMS: Array<{ type: "date" | "league" | "card" }> = [
-  { type: "league" },
+const SKELETON_ITEMS: Array<{ type: "date" | "card" }> = [
   { type: "card" },
   { type: "card" },
   { type: "date" },
-  { type: "league" },
   { type: "card" },
   { type: "card" },
   { type: "card" },
@@ -40,27 +44,19 @@ export function GroupGamesSkeleton() {
   let cardIndex = 0;
 
   return (
-    <Animated.View style={[pulseStyle, styles.wrapper]}>
-      {/* Timeline track — full height like real screen */}
-      <View
-        style={[styles.track, { backgroundColor: skeletonColor }]}
-        pointerEvents="none"
-      />
-
+    <Animated.View style={pulseStyle}>
       {/* ── Summary card skeleton ── */}
-      <View style={styles.summaryRow}>
-        <View style={styles.timelineSpacer} />
+      <View style={styles.summaryWrapper}>
         <View
           style={[
             styles.summaryCard,
             {
               backgroundColor: theme.colors.cardBackground,
               borderColor: theme.colors.border,
-              borderBottomColor: theme.colors.textSecondary + "40",
             },
           ]}
         >
-          <View style={styles.summaryInner}>
+          <View style={styles.summaryRow}>
             {[0, 1, 2].map((j) => (
               <React.Fragment key={j}>
                 {j > 0 && (
@@ -75,42 +71,17 @@ export function GroupGamesSkeleton() {
             ))}
           </View>
         </View>
-        <View style={styles.rightSpacer} />
       </View>
 
-      {/* ── Items: date headers, league pills, fixture cards ── */}
+      {/* ── Items: date headers + fixture cards ── */}
       {SKELETON_ITEMS.map((item, i) => {
         if (item.type === "date") {
           return (
-            <View key={`date-${i}`} style={styles.sectionHeaderRow}>
-              <View style={styles.sectionTimelineCol} />
-              <View style={styles.sectionHeaderContent}>
-                <View style={styles.dateRow}>
-                  <View style={[styles.dateLine, { backgroundColor: skeletonColor }]} />
-                  <View style={[styles.dateLabelPlaceholder, { backgroundColor: skeletonColor }]} />
-                  <View style={[styles.dateLine, { backgroundColor: skeletonColor }]} />
-                </View>
-              </View>
-            </View>
-          );
-        }
-
-        if (item.type === "league") {
-          return (
-            <View key={`league-${i}`} style={styles.sectionHeaderRow}>
-              <View style={styles.sectionTimelineCol} />
-              <View style={styles.sectionHeaderContent}>
-                <View
-                  style={[
-                    styles.leaguePill,
-                    {
-                      backgroundColor: theme.colors.textSecondary + "0C",
-                      borderColor: theme.colors.textSecondary + "15",
-                    },
-                  ]}
-                >
-                  <View style={[styles.leaguePillText, { backgroundColor: skeletonColor }]} />
-                </View>
+            <View key={`date-${i}`} style={styles.sectionHeaderContent}>
+              <View style={styles.dateRow}>
+                <View style={[styles.dateLine, { backgroundColor: skeletonColor }]} />
+                <View style={[styles.dateLabelPlaceholder, { backgroundColor: skeletonColor }]} />
+                <View style={[styles.dateLine, { backgroundColor: skeletonColor }]} />
               </View>
             </View>
           );
@@ -118,59 +89,56 @@ export function GroupGamesSkeleton() {
 
         // Card
         const ci = cardIndex++;
-        const isLast = i === SKELETON_ITEMS.length - 1;
-        const nextIsCard = !isLast && SKELETON_ITEMS[i + 1]?.type === "card";
 
         return (
-          <View key={`card-${i}`} style={[styles.cardOuterRow, nextIsCard && styles.cardSpacing]}>
-            {/* Timeline column */}
-            <View style={styles.timelineCol}>
+          <View key={`card-${ci}`} style={styles.cardOuter}>
+            <View
+              style={[
+                styles.matchCard,
+                {
+                  backgroundColor: theme.colors.cardBackground,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+            >
+              {/* League info row */}
               <View
                 style={[
-                  styles.fillLine,
-                  {
-                    backgroundColor: skeletonColor,
-                    top: ci === 0 ? "50%" : -1,
-                    bottom: isLast ? "50%" : -1,
-                  },
+                  styles.leagueInfoRow,
+                  { backgroundColor: theme.colors.textSecondary + "08" },
                 ]}
-              />
-              <View style={[styles.waypointDash, { backgroundColor: skeletonColor }]} />
-              <View style={styles.timeTextArea}>
-                <View style={[styles.timePlaceholder, { backgroundColor: skeletonColor }]} />
+              >
+                <View style={[styles.leagueTextPlaceholder, { backgroundColor: skeletonColor, width: 70 + (ci % 3) * 20 }]} />
+                <View style={[styles.leagueSeparator, { backgroundColor: skeletonColor }]} />
+                <View style={[styles.leagueTextPlaceholder, { backgroundColor: skeletonColor, width: 20 }]} />
+                <View style={{ flex: 1 }} />
+                <View style={[styles.leagueTimePlaceholder, { backgroundColor: skeletonColor }]} />
+                <View style={[styles.leagueDivider, { backgroundColor: theme.colors.border }]} />
+                <View style={styles.predictionColumn} />
               </View>
-            </View>
 
-            {/* Content column */}
-            <View style={styles.contentCol}>
-              {/* Card + points row */}
-              <View style={styles.cardContentRow}>
-                <View
-                  style={[
-                    styles.matchCard,
-                    {
-                      backgroundColor: theme.colors.cardBackground,
-                      borderColor: theme.colors.border,
-                      borderBottomColor: theme.colors.textSecondary + "40",
-                    },
-                  ]}
-                >
-                  {/* Home team row */}
-                  <View style={styles.teamRow}>
+              {/* Match content */}
+              <View style={styles.matchContent}>
+                {/* Home team row */}
+                <View style={styles.teamRow}>
+                  <View style={styles.teamPressable}>
                     <View style={[styles.teamLogo, { backgroundColor: skeletonColor }]} />
-                    <View style={[styles.teamName, { backgroundColor: skeletonColor, width: 90 + (ci % 3) * 20 }]} />
-                    <View style={[styles.resultPlaceholder, { backgroundColor: skeletonColor }]} />
-                    <View style={[styles.scoreInput, { backgroundColor: skeletonColor }]} />
+                    <View style={[styles.teamName, { backgroundColor: skeletonColor, width: 80 + (ci % 3) * 25 }]} />
                   </View>
-                  {/* Away team row */}
-                  <View style={styles.teamRow}>
-                    <View style={[styles.teamLogo, { backgroundColor: skeletonColor }]} />
-                    <View style={[styles.teamName, { backgroundColor: skeletonColor, width: 80 + (ci % 3) * 15 }]} />
-                    <View style={[styles.resultPlaceholder, { backgroundColor: skeletonColor }]} />
+                  <View style={styles.predictionColumn}>
                     <View style={[styles.scoreInput, { backgroundColor: skeletonColor }]} />
                   </View>
                 </View>
-                <View style={styles.rightSpacer} />
+                {/* Away team row */}
+                <View style={styles.teamRow}>
+                  <View style={styles.teamPressable}>
+                    <View style={[styles.teamLogo, { backgroundColor: skeletonColor }]} />
+                    <View style={[styles.teamName, { backgroundColor: skeletonColor, width: 90 + (ci % 3) * 15 }]} />
+                  </View>
+                  <View style={styles.predictionColumn}>
+                    <View style={[styles.scoreInput, { backgroundColor: skeletonColor }]} />
+                  </View>
+                </View>
               </View>
             </View>
           </View>
@@ -181,42 +149,26 @@ export function GroupGamesSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    position: "relative",
-  },
-  track: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: TIMELINE.TRACK_WIDTH,
-  },
-
-  /* ── Summary card ── */
-  summaryRow: {
-    flexDirection: "row",
-    marginTop: 28,
+  /* ── Summary card (matches GamesSummaryCard) ── */
+  summaryWrapper: {
+    marginTop: 20,
     marginBottom: 20,
-  },
-  timelineSpacer: {
-    width: TIMELINE.COLUMN_WIDTH,
   },
   summaryCard: {
     flex: 1,
     borderRadius: 10,
     borderWidth: 1,
-    borderBottomWidth: 3,
     paddingVertical: 12,
     paddingHorizontal: 8,
   },
-  summaryInner: {
+  summaryRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
   },
   summaryStat: {
     alignItems: "center",
-    gap: 4,
+    gap: 2,
     flex: 1,
   },
   summaryIcon: {
@@ -239,27 +191,16 @@ const styles = StyleSheet.create({
     height: 28,
   },
 
-  /* ── Section headers ── */
-  sectionHeaderRow: {
-    flexDirection: "row",
-  },
-  sectionTimelineCol: {
-    width: TIMELINE.COLUMN_WIDTH,
-    alignItems: "center",
-    alignSelf: "stretch",
-  },
+  /* ── Section headers (matches GroupGamesScreen sectionHeaderContent) ── */
   sectionHeaderContent: {
-    flex: 1,
-    paddingLeft: 10,
-    justifyContent: "center",
+    paddingLeft: 4,
   },
-  // Date header: line — label — line
   dateRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 15,
-    paddingRight: TIMELINE.COLUMN_WIDTH,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
   dateLine: {
     flex: 1,
@@ -270,105 +211,85 @@ const styles = StyleSheet.create({
     height: 11,
     borderRadius: 4,
   },
-  // League pill
-  leaguePill: {
-    alignSelf: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    borderWidth: 1,
-    marginBottom: 15,
-    marginRight: TIMELINE.COLUMN_WIDTH,
-  },
-  leaguePillText: {
-    width: 100,
-    height: 10,
-    borderRadius: 3,
-  },
 
-  /* ── Fixture cards ── */
-  cardOuterRow: {
-    flexDirection: "row",
-  },
-  cardSpacing: {
-    marginBottom: 30,
-  },
-  timelineCol: {
-    width: TIMELINE.COLUMN_WIDTH,
-    alignSelf: "stretch",
-    justifyContent: "center",
-  },
-  fillLine: {
-    position: "absolute",
-    left: (TIMELINE.TRACK_WIDTH - TIMELINE.LINE_WIDTH) / 2,
-    width: TIMELINE.LINE_WIDTH,
-  },
-  waypointDash: {
-    width: TIMELINE.TRACK_WIDTH + 2,
-    height: 2,
-    borderRadius: 1,
-    zIndex: 2,
-  },
-  timeTextArea: {
-    position: "absolute",
-    left: TIMELINE.TRACK_WIDTH,
-    right: -10,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 2,
-  },
-  timePlaceholder: {
-    width: 24,
-    height: 10,
-    borderRadius: 3,
-  },
-  contentCol: {
-    flex: 1,
-    paddingLeft: 10,
-  },
-
-  /* ── Card + points ── */
-  cardContentRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  /* ── Fixture cards (matches MatchPredictionCardVertical) ── */
+  cardOuter: {
+    marginBottom: 12,
   },
   matchCard: {
-    flex: 1,
     borderRadius: 10,
     borderWidth: 1,
-    borderBottomWidth: 3,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
+  },
+
+  /* League info row */
+  leagueInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    marginHorizontal: -12,
+    marginTop: -10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     gap: 8,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  leagueTextPlaceholder: {
+    height: 10,
+    borderRadius: 3,
+  },
+  leagueSeparator: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    opacity: 0.4,
+  },
+  leagueTimePlaceholder: {
+    width: 32,
+    height: 10,
+    borderRadius: 3,
+  },
+  leagueDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    marginVertical: -6,
+    opacity: 0.5,
+  },
+  predictionColumn: {
+    width: 52,
+    alignItems: "center",
+  },
+
+  /* Match content */
+  matchContent: {
+    gap: 6,
   },
   teamRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
+  teamPressable: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    height: 36,
+  },
   teamLogo: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 30,
+    height: 30,
+    borderRadius: 6,
   },
   teamName: {
     height: 14,
-    borderRadius: 4,
-    flex: 1,
-  },
-  resultPlaceholder: {
-    width: 18,
-    height: 18,
     borderRadius: 4,
   },
   scoreInput: {
     width: 36,
     height: 36,
     borderRadius: 8,
-  },
-  rightSpacer: {
-    width: TIMELINE.COLUMN_WIDTH - 6,
   },
 });

@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 import { ScoresInput } from "./ScoresInput";
 import { OutcomePicker } from "./OutcomePicker";
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 20,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     borderRadius: 14,
     overflow: "hidden",
   },

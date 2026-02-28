@@ -45,3 +45,9 @@ export function getShadowStyle(level: keyof typeof shadows): ViewStyle {
   const s = shadows[level];
   return Platform.OS === "ios" ? s.ios : s.android;
 }
+
+/**
+ * Platform-adjusted bottom border width for 3D card effect.
+ * iOS renders 3px well; Android looks better with 2px.
+ */
+export const CARD_BORDER_BOTTOM_WIDTH = Platform.OS === "ios" ? 3 : 2;

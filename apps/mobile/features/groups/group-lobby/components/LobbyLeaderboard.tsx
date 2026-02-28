@@ -4,6 +4,7 @@
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
+import { CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -416,7 +417,7 @@ const styles = StyleSheet.create({
   wrapper: {
     borderRadius: 16,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     padding: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
@@ -484,7 +485,7 @@ const styles = StyleSheet.create({
   podiumCard: {
     borderRadius: 12,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     padding: 8,
     alignItems: "center",
     justifyContent: "center",

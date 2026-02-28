@@ -19,7 +19,7 @@ import { useSetAtom, useAtomValue } from "jotai";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { AppText, Button } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { globalBlockingOverlayAtom } from "@/lib/state/globalOverlay.atom";
 import {
   useSelectedGroupGames,
@@ -191,20 +191,30 @@ export function CreateGroupModal() {
     <Modal
       visible={visible}
       animationType="slide"
-      transparent={false}
+      transparent={Platform.OS === "android"}
       onRequestClose={handleRequestClose}
       presentationStyle="pageSheet"
-      statusBarTranslucent={false}
+      statusBarTranslucent={Platform.OS === "android"}
     >
       <View
         style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.background,
-            // paddingTop: insets.top,
-          },
+          styles.modalRoot,
+          Platform.OS === "android" && styles.androidScrim,
         ]}
       >
+        <View
+          style={[
+            styles.container,
+            {
+              backgroundColor: theme.colors.background,
+            },
+            Platform.OS === "android" && {
+              marginTop: insets.top + 12,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+            },
+          ]}
+        >
         <View
           style={[
             styles.header,
@@ -365,15 +375,20 @@ export function CreateGroupModal() {
           </View>
         </View>
       )}
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalRoot: {
+    flex: 1,
+  },
+  androidScrim: {
+    backgroundColor: "rgba(0,0,0,0.3)",
+  },
   container: {
     flex: 1,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
     overflow: "hidden",
   },
   header: {
@@ -382,14 +397,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
   },
   closeBtn: {
     width: 36,
     height: 36,
     borderRadius: 12,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -434,7 +449,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     width: "100%",
   },
   errorTxt: {

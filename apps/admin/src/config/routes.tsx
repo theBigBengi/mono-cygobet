@@ -14,6 +14,7 @@ import AnalyticsPage from "@/pages/analytics";
 import SettingsPage from "@/pages/settings";
 import ActivityLogPage from "@/pages/activity-log";
 import OfficialGroupsPage from "@/pages/official-groups";
+import BadgesPage from "@/pages/badges";
 import LoginPage from "@/pages/login";
 import { AdminLayout } from "@/components/layout";
 
@@ -46,6 +47,7 @@ export const routes: RouteObject[] = [
       { path: "/settings", element: <SettingsPage /> },
       { path: "/activity-log", element: <ActivityLogPage /> },
       { path: "/official-groups", element: <OfficialGroupsPage /> },
+      { path: "/badges", element: <BadgesPage /> },
       {
         path: "*",
         element: (

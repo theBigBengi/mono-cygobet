@@ -1,9 +1,8 @@
 // features/groups/group-lobby/components/LobbyQuickActions.tsx
-// Grid of 3 quick action buttons (Chat, Invite, Stats) - Game menu style.
+// Compact pill-row quick action buttons.
 
 import React, { useEffect } from "react";
-import { View, StyleSheet, Pressable, Text } from "react-native";
-import { useTranslation } from "react-i18next";
+import { View, ScrollView, StyleSheet, Pressable, Text } from "react-native";
 import { Ionicons, Entypo, Fontisto } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -25,25 +24,23 @@ export interface LobbyQuickActionsProps {
   isLoading?: boolean;
 }
 
-function renderIcon(
-  icon: QuickAction["icon"],
-  color: string,
-  size: number
-) {
+function renderIcon(icon: QuickAction["icon"], color: string, size: number) {
   switch (icon) {
     case "chat":
       return <Entypo name="chat" size={size} color={color} />;
     case "link":
       return <Ionicons name="link-outline" size={size} color={color} />;
     case "stats":
-      return <Fontisto name="list-1" size={size - 4} color={color} />;
+      return <Fontisto name="list-1" size={size - 3} color={color} />;
     case "activity":
       return <Ionicons name="newspaper-outline" size={size} color={color} />;
   }
 }
 
-function LobbyQuickActionsInner({ actions, isLoading = false }: LobbyQuickActionsProps) {
-  const { t } = useTranslation("common");
+function LobbyQuickActionsInner({
+  actions,
+  isLoading = false,
+}: LobbyQuickActionsProps) {
   const { theme } = useTheme();
   const opacity = useSharedValue(0.3);
 
@@ -60,140 +57,68 @@ function LobbyQuickActionsInner({ actions, isLoading = false }: LobbyQuickAction
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <View
-          style={[
-            styles.wrapper,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
-          {/* Skeleton Header */}
-          <View style={styles.sectionHeader}>
+        <View style={styles.row}>
+          {[0, 1, 2].map((i) => (
             <Animated.View
+              key={i}
               style={[
-                styles.skeletonHeaderIcon,
+                styles.skeletonPill,
                 { backgroundColor: theme.colors.border },
                 animatedStyle,
               ]}
             />
-            <Animated.View
-              style={[
-                styles.skeletonHeaderText,
-                { backgroundColor: theme.colors.border },
-                animatedStyle,
-              ]}
-            />
-          </View>
-
-          {/* Skeleton Cards Grid */}
-          <View style={styles.grid}>
-            {[0, 1, 2].map((index) => (
-              <View
-                key={index}
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: theme.colors.cardBackground,
-                    borderColor: theme.colors.border,
-                  },
-                ]}
-              >
-                <Animated.View
-                  style={[
-                    styles.skeletonCircle,
-                    { backgroundColor: theme.colors.border },
-                    animatedStyle,
-                  ]}
-                />
-                <Animated.View
-                  style={[
-                    styles.skeletonLabel,
-                    { backgroundColor: theme.colors.border },
-                    animatedStyle,
-                  ]}
-                />
-              </View>
-            ))}
-          </View>
+          ))}
         </View>
       </View>
     );
   }
 
-  const borderBottomColor = theme.colors.textSecondary + "40";
-  const iconBgColor = theme.colors.primary + "15";
-
   return (
     <View style={styles.container}>
-      <View
-        style={[
-          styles.wrapper,
-          {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            borderBottomColor,
-          },
-        ]}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
       >
-        {/* Section Header */}
-        <View style={styles.sectionHeader}>
-          <Ionicons name="flash-outline" size={16} color={theme.colors.textSecondary} />
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
-            {t("lobby.quickActions")}
-          </Text>
-        </View>
-
-        {/* Cards Grid */}
-        <View style={styles.grid}>
-          {actions.map((action, index) => (
+        {actions.map((action, index) => {
+          const hasBadge = action.badge != null && action.badge > 0;
+          return (
             <Pressable
               key={index}
               onPress={action.onPress}
               style={({ pressed }) => [
-                styles.card,
+                styles.pill,
                 {
-                  backgroundColor: theme.colors.cardBackground,
+                  backgroundColor: pressed
+                    ? theme.colors.primary + "18"
+                    : theme.colors.surface,
                   borderColor: theme.colors.border,
-                  borderBottomColor,
-                  transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
-                  shadowOpacity: pressed ? 0 : 0.1,
                 },
               ]}
             >
-              {/* Badge */}
-              {action.badge != null && action.badge > 0 && (
-                <View
-                  style={[styles.badge, { backgroundColor: theme.colors.danger }]}
-                >
-                  <Text style={styles.badgeText}>
-                    {action.badge > 99 ? "99+" : action.badge}
-                  </Text>
-                </View>
-              )}
-
-              {/* Icon */}
-              <View
-                style={[
-                  styles.iconCircle,
-                  { backgroundColor: iconBgColor },
-                ]}
-              >
-                {renderIcon(action.icon, theme.colors.primary, 24)}
-              </View>
-
-              {/* Label */}
+              {renderIcon(action.icon, theme.colors.primary, 16)}
               <Text
-                style={[styles.label, { color: theme.colors.textPrimary }]}
+                style={[styles.pillLabel, { color: theme.colors.textPrimary }]}
                 numberOfLines={1}
               >
                 {action.label}
               </Text>
+              {hasBadge && (
+                <View
+                  style={[
+                    styles.badge,
+                    { backgroundColor: theme.colors.danger },
+                  ]}
+                >
+                  <Text style={styles.badgeText}>
+                    {action.badge! > 99 ? "99+" : action.badge}
+                  </Text>
+                </View>
+              )}
             </Pressable>
-          ))}
-        </View>
-      </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
@@ -202,99 +127,43 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
     marginTop: 8,
     marginBottom: 12,
   },
-  wrapper: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderBottomWidth: 3,
-    padding: 16,
-    paddingTop: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
+  row: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 16,
   },
-  sectionHeader: {
+  pill: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 6,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  grid: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  card: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
     borderWidth: 1,
-    borderBottomWidth: 3,
-    position: "relative",
   },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  label: {
+  pillLabel: {
     fontSize: 13,
     fontWeight: "600",
   },
   badge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
   },
   badgeText: {
     color: "#fff",
     fontWeight: "700",
-    fontSize: 11,
+    fontSize: 10,
   },
-  pressed: {
-    opacity: 0.7,
-  },
-  skeletonHeaderIcon: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
-  },
-  skeletonHeaderText: {
-    width: 80,
-    height: 12,
-    borderRadius: 4,
-  },
-  skeletonCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginBottom: 8,
-  },
-  skeletonLabel: {
-    width: 50,
-    height: 12,
-    borderRadius: 4,
+  skeletonPill: {
+    width: 90,
+    height: 36,
+    borderRadius: 20,
   },
 });

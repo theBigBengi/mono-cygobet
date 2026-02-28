@@ -8,7 +8,7 @@ import { View, StyleSheet, Pressable, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { Screen, AppText, GroupAvatar } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import {
   SettingsSection,
   SettingsRow,
@@ -246,7 +246,7 @@ export function GroupLobbyDraftScreen({
 
   const elevatedCard = {
     borderRadius: theme.radius.lg,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     borderBottomColor: theme.colors.textSecondary + "40",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },

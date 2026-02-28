@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/adminApi";
+import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from "@/lib/adminApi";
 import type {
   AdminOfficialGroupsListResponse,
   AdminCreateOfficialGroupBody,
@@ -107,5 +107,22 @@ export const officialGroupsService = {
     return apiPost<AdminAwardBadgesResponse>(
       `/admin/official-groups/${id}/award-badges`
     );
+  },
+
+  async awardSingleBadge(
+    groupId: number,
+    badgeId: number
+  ): Promise<AdminAwardBadgesResponse> {
+    return apiPost<AdminAwardBadgesResponse>(
+      `/admin/official-groups/${groupId}/badges/${badgeId}/award`
+    );
+  },
+
+  async uploadBadgeImage(
+    file: File
+  ): Promise<{ status: string; data: { url: string }; message: string }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiUpload("/admin/upload/badge-image", formData);
   },
 };

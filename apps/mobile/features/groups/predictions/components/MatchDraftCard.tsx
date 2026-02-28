@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { TeamLogo } from "@/components/ui";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { formatKickoffTime } from "@/utils/fixture";
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
   cardWithBottomBorder: {
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
   },
   timeChip: {
     paddingHorizontal: 6,
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 9,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     alignItems: "center",
     justifyContent: "center",
     shadowOffset: { width: 0, height: 2 },

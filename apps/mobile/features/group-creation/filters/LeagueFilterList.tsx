@@ -13,7 +13,7 @@ import {
 import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText, TeamLogo } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { useLeaguesQuery } from "@/domains/leagues/leagues.hooks";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { ApiLeagueItem } from "@repo/types";
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,

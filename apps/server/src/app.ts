@@ -4,6 +4,7 @@ import fastifyEnv from "@fastify/env";
 import fastifyCookie from "@fastify/cookie";
 import fastifyCors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
+import fastifyMultipart from "@fastify/multipart";
 import { FastifyPluginAsync } from "fastify";
 import * as path from "path";
 import { getLogger } from "./logger";
@@ -131,6 +132,11 @@ const app: FastifyPluginAsync<AppOptions> = async (
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Client"],
+    });
+
+    // Multipart file uploads (max 2 MB)
+    await fastify.register(fastifyMultipart, {
+      limits: { fileSize: 2 * 1024 * 1024 },
     });
 
     // Compress responses (gzip/brotli) — only payloads > 1 KB

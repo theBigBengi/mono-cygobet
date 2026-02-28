@@ -28,7 +28,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { Screen, AppText, Button } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { useMyGroupsQuery, useUnreadCountsQuery, useUnreadActivityCountsQuery } from "@/domains/groups";
 import { useMyInvitesQuery } from "@/domains/invites";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
@@ -398,7 +398,7 @@ function GroupsContent() {
                             borderRadius: 7,
                             backgroundColor: skeletonColor,
                             borderWidth: 1,
-                            borderBottomWidth: 3,
+                            borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
                             borderColor: theme.colors.border,
                           }}
                         />
@@ -412,7 +412,7 @@ function GroupsContent() {
                             borderRadius: 7,
                             backgroundColor: skeletonColor,
                             borderWidth: 1,
-                            borderBottomWidth: 3,
+                            borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
                             borderColor: theme.colors.border,
                           }}
                         />

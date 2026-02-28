@@ -3,6 +3,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, TextInput } from "react-native";
+import { CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import {
   BottomSheetModal,
   BottomSheetScrollView,
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,

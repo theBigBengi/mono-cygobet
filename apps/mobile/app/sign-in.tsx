@@ -1,7 +1,7 @@
 // app/sign-in.tsx
 // Sign-in screen - always accessible, redirects to home after successful login
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   View,
   TextInput,
@@ -23,8 +23,8 @@ import { getAuthErrorMessage } from "@/lib/errors/getAuthErrorMessage";
 
 export default function SignInScreen() {
   const { t } = useTranslation("common");
-  const [emailOrUsername, setEmailOrUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const emailOrUsernameRef = useRef("");
+  const passwordRef = useRef("");
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,16 +33,19 @@ export default function SignInScreen() {
   const router = useRouter();
 
   const handleEmailOrUsernameChange = (text: string) => {
-    setEmailOrUsername(text);
+    emailOrUsernameRef.current = text;
     if (formError) setFormError(null);
   };
 
   const handlePasswordChange = (text: string) => {
-    setPassword(text);
+    passwordRef.current = text;
     if (formError) setFormError(null);
   };
 
   const handleLogin = async () => {
+    const emailOrUsername = emailOrUsernameRef.current;
+    const password = passwordRef.current;
+
     if (!emailOrUsername.trim() || !password.trim()) {
       Alert.alert(t("errors.error"), t("auth.errorBothFields"));
       return;
@@ -93,7 +96,6 @@ export default function SignInScreen() {
               ]}
               placeholder={t("auth.emailOrUsername")}
               placeholderTextColor={theme.colors.textSecondary}
-              value={emailOrUsername}
               onChangeText={handleEmailOrUsernameChange}
               autoCapitalize="none"
               autoCorrect={false}
@@ -111,7 +113,6 @@ export default function SignInScreen() {
               ]}
               placeholder={t("auth.password")}
               placeholderTextColor={theme.colors.textSecondary}
-              value={password}
               onChangeText={handlePasswordChange}
               editable={!isLoading}
             />

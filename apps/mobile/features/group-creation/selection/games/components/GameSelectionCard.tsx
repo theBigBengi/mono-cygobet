@@ -2,11 +2,11 @@
 // Game-like selection card with shadow, 3D effect, and haptic feedback.
 
 import React from "react";
-import { View, StyleSheet, Pressable, Text } from "react-native";
+import { View, StyleSheet, Pressable, Text, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { TeamLogo } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { formatKickoffTime } from "@/utils/fixture";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { SelectionToggleButton } from "../../../components/SelectionToggleButton";
@@ -39,6 +39,10 @@ export function GameSelectionCard({
     onPress?.();
   };
 
+  const isMiddle = positionInGroup === "middle";
+  const isConnected = positionInGroup !== "single" && positionInGroup !== "top";
+  const hasThickBottom = positionInGroup === "bottom" || positionInGroup === "single";
+
   // Calculate border radius based on position
   const getBorderRadius = () => {
     switch (positionInGroup) {
@@ -60,25 +64,27 @@ export function GameSelectionCard({
         style={({ pressed }) => [
           styles.card,
           getBorderRadius(),
-          positionInGroup !== "single" && positionInGroup !== "top" && styles.cardConnected,
-          positionInGroup === "bottom" || positionInGroup === "single"
-            ? styles.cardWithBottomBorder
-            : {},
+          isConnected && styles.cardConnected,
+          hasThickBottom ? styles.cardWithBottomBorder : {},
           {
             backgroundColor: isSelected
-              ? theme.colors.primary + "08"
+              ? theme.colors.primary + (Platform.OS === "android" ? "12" : "08")
               : theme.colors.surface,
             borderColor: isSelected
               ? theme.colors.primary + "40"
               : theme.colors.border,
             borderBottomColor: isSelected
               ? theme.colors.primary + "40"
-              : positionInGroup === "bottom" || positionInGroup === "single"
+              : hasThickBottom
                 ? theme.colors.textSecondary + "30"
                 : theme.colors.border,
             shadowColor: isSelected ? theme.colors.primary : "#000",
             shadowOpacity: pressed ? 0 : isSelected ? 0.15 : 0.06,
             transform: [{ scale: pressed ? 0.98 : 1 }],
+            // On Android, grouped cards with elevation render background tint inconsistently
+            ...(Platform.OS === "android" && positionInGroup !== "single"
+              ? { elevation: 0 }
+              : {}),
           },
         ]}
       >
@@ -175,7 +181,7 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
   cardWithBottomBorder: {
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
   },
   timeChip: {
     paddingHorizontal: 8,

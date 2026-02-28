@@ -8,7 +8,7 @@ import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { RoundPickerSheet } from "./RoundPickerSheet";
 import { TeamPickerSheet } from "./TeamPickerSheet";
 import { CompetitionPickerSheet } from "./CompetitionPickerSheet";
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
   },
   pillChevron: {
     marginStart: 4,

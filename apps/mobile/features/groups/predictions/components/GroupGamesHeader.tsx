@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import Animated, { useAnimatedStyle, interpolate, withSpring } from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { HEADER_HEIGHT } from "../utils/constants";
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.06)",
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.1)",
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     borderBottomColor: "rgba(0,0,0,0.15)",
   },
   childrenArea: {
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.06)",
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.1)",
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     borderBottomColor: "rgba(0,0,0,0.15)",
   },
 });

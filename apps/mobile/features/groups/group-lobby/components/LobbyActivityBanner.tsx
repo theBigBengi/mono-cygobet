@@ -5,7 +5,7 @@ import React, { useMemo } from "react";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { useGroupActivityQuery } from "@/domains/groups";
 import { formatRelativeTime } from "@/utils/date";
 import type { ApiGroupActivityItem } from "@repo/types";
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   wrapper: {
     borderRadius: 16,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     padding: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
   },
   buttonIconCircle: {
     width: 28,

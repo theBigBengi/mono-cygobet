@@ -56,7 +56,8 @@ export async function adminFetch<T>(
 
   const headers = new Headers(init?.headers);
   const hasBody = typeof init?.body !== "undefined" && init?.body !== null;
-  if (hasBody && !headers.has("content-type")) {
+  const isFormData = hasBody && init?.body instanceof FormData;
+  if (hasBody && !isFormData && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
 
@@ -124,4 +125,12 @@ export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
 
 export async function apiDelete<T>(path: string): Promise<T> {
   return adminFetch<T>(path, { method: "DELETE" });
+}
+
+export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  return adminFetch<T>(path, {
+    method: "POST",
+    body: formData,
+    // Do NOT set content-type — browser auto-sets multipart boundary
+  });
 }

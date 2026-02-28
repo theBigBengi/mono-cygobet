@@ -1451,3 +1451,65 @@ export interface AdminFixtureSearchResponse {
   };
   message: string;
 }
+
+// ─── Badges (global) ───────────────────────────────────────────
+
+export interface AdminBadgeItem {
+  id: number;
+  groupId: number;
+  groupName: string;
+  groupStatus: string;
+  name: string;
+  description: string;
+  icon: string;
+  criteriaType: string;
+  criteriaValue: number;
+  earnedCount: number;
+  createdAt: string;
+}
+
+export interface AdminBadgesListResponse {
+  status: string;
+  data: AdminBadgeItem[];
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}
+
+export interface AdminUpdateBadgeBody {
+  name?: string;
+  description?: string;
+  icon?: string;
+  criteriaType?: string;
+  criteriaValue?: number;
+}
+
+export interface AdminUpdateBadgeResponse {
+  status: string;
+  data: AdminBadgeItem;
+  message: string;
+}
+
+export interface AdminBadgeEarnedEntry {
+  id: number;
+  userId: number;
+  userName: string | null;
+  userEmail: string;
+  earnedAt: string;
+}
+
+export interface AdminBadgeEarnedListResponse {
+  status: string;
+  data: AdminBadgeEarnedEntry[];
+  pagination: {
+    page: number;
+    perPage: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  message: string;
+}

@@ -8,7 +8,7 @@ import {
 } from "@gorhom/bottom-sheet";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { AVATAR_GRADIENTS } from "@/lib/constants/avatarGradients";
 import { AppText, Button } from "@/components/ui";
 
@@ -84,7 +84,7 @@ export function AvatarPickerSheet({
                     isSelected && {
                       borderColor: theme.colors.primary,
                       borderWidth: 3,
-                      borderBottomWidth: 3,
+                      borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
                       borderBottomColor: theme.colors.primary,
                     },
                   ]}

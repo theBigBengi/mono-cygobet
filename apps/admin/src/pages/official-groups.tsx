@@ -74,6 +74,8 @@ import {
   Trash2,
   Award,
   ExternalLink,
+  Upload,
+  ImageIcon,
 } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { Link } from "react-router-dom";
@@ -1593,6 +1595,105 @@ function Step3Details({
   );
 }
 
+// ─── Badge Icon Field (shared by wizard + dialog) ────────────────────────────
+
+function BadgeIconField({
+  icon,
+  onIconChange,
+}: {
+  icon: string;
+  onIconChange: (value: string) => void;
+}) {
+  const [uploading, setUploading] = React.useState(false);
+  const fileRef = React.useRef<HTMLInputElement>(null);
+
+  const isUrl = icon.startsWith("http");
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const result = await officialGroupsService.uploadBadgeImage(file);
+      onIconChange(result.data.url);
+    } catch (err: unknown) {
+      toast.error("Upload failed", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">Icon</Label>
+      <div className="flex items-center gap-2">
+        {/* Preview */}
+        {isUrl ? (
+          <img
+            src={icon}
+            alt="badge"
+            className="h-8 w-8 rounded object-cover border"
+          />
+        ) : (
+          <span className="text-2xl leading-none">{icon || "🏆"}</span>
+        )}
+
+        {/* Emoji input — only shown when not a URL */}
+        {!isUrl && (
+          <Input
+            value={icon}
+            onChange={(e) => onIconChange(e.target.value)}
+            className="w-20"
+            placeholder="🏆"
+          />
+        )}
+
+        {/* Upload button */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs"
+          disabled={uploading}
+          onClick={() => fileRef.current?.click()}
+        >
+          {uploading ? (
+            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+          ) : (
+            <Upload className="mr-1 h-3 w-3" />
+          )}
+          {uploading ? "Uploading…" : "Upload"}
+        </Button>
+
+        {/* Remove image — revert to emoji */}
+        {isUrl && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => onIconChange("🏆")}
+            title="Remove image"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleUpload}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── Step 4: Badge ───────────────────────────────────────────────────────────
 
 function BadgeCard({
@@ -1620,24 +1721,18 @@ function BadgeCard({
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Name</Label>
-            <Input
-              value={badge.name}
-              onChange={(e) => onUpdate(index, "name", e.target.value)}
-              placeholder="e.g. Gold Badge"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Icon</Label>
-            <Input
-              value={badge.icon}
-              onChange={(e) => onUpdate(index, "icon", e.target.value)}
-              className="w-20"
-            />
-          </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Name</Label>
+          <Input
+            value={badge.name}
+            onChange={(e) => onUpdate(index, "name", e.target.value)}
+            placeholder="e.g. Gold Badge"
+          />
         </div>
+        <BadgeIconField
+          icon={badge.icon}
+          onIconChange={(v) => onUpdate(index, "icon", v)}
+        />
         <div className="space-y-1.5">
           <Label className="text-xs">Description</Label>
           <Input
@@ -1958,9 +2053,6 @@ function GroupSettingsDialog({
 
   const [name, setName] = React.useState(group.name);
   const [description, setDescription] = React.useState(group.description ?? "");
-  const [badges, setBadges] = React.useState<
-    Array<{ name: string; description: string; icon: string; criteriaType: string; criteriaValue: string }>
-  >([]);
   const [form, setForm] = React.useState({
     onTheNosePoints: "",
     correctDifferencePoints: "",
@@ -1994,32 +2086,14 @@ function GroupSettingsDialog({
     if (!open) return;
     setName(group.name);
     setDescription(group.description ?? "");
-    setBadges(
-      group.badges.map((b) => ({
-        name: b.name,
-        description: b.description,
-        icon: b.icon,
-        criteriaType: b.criteriaType,
-        criteriaValue: String(b.criteriaValue),
-      }))
-    );
   }, [open, group]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // Save group metadata (name, description, badges)
+      // Save group metadata (name, description)
       const metaBody: AdminUpdateOfficialGroupBody = {};
       if (name !== group.name) metaBody.name = name;
       if (description !== (group.description ?? "")) metaBody.description = description;
-      const validBadges = badges.filter((b) => b.name.trim());
-      if (validBadges.length > 0) {
-        metaBody.badges = validBadges.map((b) => ({
-          name: b.name, description: b.description, icon: b.icon,
-          criteriaType: b.criteriaType, criteriaValue: Number(b.criteriaValue) || 1,
-        }));
-      } else if (group.badges.length > 0) {
-        metaBody.badges = null;
-      }
 
       // Save rules + metadata in parallel
       const [metaResult] = await Promise.all([
@@ -2236,108 +2310,6 @@ function GroupSettingsDialog({
               )}
             </div>
 
-            {/* Badges */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Badges</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() =>
-                    setBadges((prev) => [
-                      ...prev,
-                      { name: "", description: "", icon: "🏆", criteriaType: "participation", criteriaValue: "1" },
-                    ])
-                  }
-                >
-                  Add Badge
-                </Button>
-              </div>
-              {badges.length === 0 && (
-                <p className="text-xs text-muted-foreground">No badges configured.</p>
-              )}
-              {badges.map((badge, i) => (
-                <div key={i} className="border rounded-md p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">Badge {i + 1}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => setBadges((prev) => prev.filter((_, idx) => idx !== i))}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-[1fr_auto] gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Name</Label>
-                      <Input
-                        value={badge.name}
-                        onChange={(e) =>
-                          setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, name: e.target.value } : b))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Icon</Label>
-                      <Input
-                        value={badge.icon}
-                        onChange={(e) =>
-                          setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, icon: e.target.value } : b))
-                        }
-                        className="w-16"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Description</Label>
-                    <Input
-                      value={badge.description}
-                      onChange={(e) =>
-                        setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, description: e.target.value } : b))
-                      }
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Award Rule</Label>
-                      <Select
-                        value={badge.criteriaType}
-                        onValueChange={(v) =>
-                          setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, criteriaType: v } : b))
-                        }
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="participation">All participants</SelectItem>
-                          <SelectItem value="top_n">Top N</SelectItem>
-                          <SelectItem value="exact_predictions">Min exact</SelectItem>
-                          <SelectItem value="custom">Manual</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {(badge.criteriaType === "top_n" || badge.criteriaType === "exact_predictions") && (
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          {badge.criteriaType === "top_n" ? "Top N" : "Min exact"}
-                        </Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={badge.criteriaValue}
-                          onChange={(e) =>
-                            setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, criteriaValue: e.target.value } : b))
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
             <Button
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
@@ -2347,6 +2319,234 @@ function GroupSettingsDialog({
             </Button>
           </div>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Badge Management Dialog ─────────────────────────────────────────────────
+
+function BadgeManagementDialog({
+  group,
+  open,
+  onOpenChange,
+  onGroupUpdated,
+}: {
+  group: AdminOfficialGroupItem;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onGroupUpdated?: (updated: AdminOfficialGroupItem) => void;
+}) {
+  const queryClient = useQueryClient();
+
+  // Track original badge IDs alongside editable fields
+  const [badges, setBadges] = React.useState<
+    Array<{ savedId: number | null; name: string; description: string; icon: string; criteriaType: string; criteriaValue: string }>
+  >([]);
+  const [awardingBadgeId, setAwardingBadgeId] = React.useState<number | null>(null);
+
+  // Sync badges when dialog opens
+  React.useEffect(() => {
+    if (!open) return;
+    setBadges(
+      group.badges.map((b) => ({
+        savedId: b.id,
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+        criteriaType: b.criteriaType,
+        criteriaValue: String(b.criteriaValue),
+      }))
+    );
+  }, [open, group]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const validBadges = badges.filter((b) => b.name.trim());
+      const body: AdminUpdateOfficialGroupBody = {};
+      if (validBadges.length > 0) {
+        body.badges = validBadges.map((b) => ({
+          name: b.name,
+          description: b.description,
+          icon: b.icon,
+          criteriaType: b.criteriaType,
+          criteriaValue: Number(b.criteriaValue) || 1,
+        }));
+      } else {
+        body.badges = null;
+      }
+      return officialGroupsService.update(group.id, body);
+    },
+    onSuccess: (result) => {
+      toast.success("Badges saved");
+      queryClient.invalidateQueries({ queryKey: ["official-groups"] });
+      onOpenChange(false);
+      if (onGroupUpdated && result?.data) {
+        onGroupUpdated(result.data);
+      }
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to save badges", { description: err.message });
+    },
+  });
+
+  const awardMutation = useMutation({
+    mutationFn: (badgeId: number) =>
+      officialGroupsService.awardSingleBadge(group.id, badgeId),
+    onMutate: (badgeId) => setAwardingBadgeId(badgeId),
+    onSettled: () => setAwardingBadgeId(null),
+    onSuccess: (data) => {
+      toast.success(`${data.data.awarded} badge${data.data.awarded !== 1 ? "s" : ""} awarded`);
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to award badge", { description: err.message });
+    },
+  });
+
+  // Check if form has unsaved changes (new badges without IDs or edits)
+  const hasUnsavedChanges = badges.some((b) => b.savedId === null) ||
+    badges.length !== group.badges.length;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Badges — {group.name}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {badges.length === 0 ? "No badges configured." : `${badges.length} badge${badges.length !== 1 ? "s" : ""}`}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() =>
+                setBadges((prev) => [
+                  ...prev,
+                  { savedId: null, name: "", description: "", icon: "🏆", criteriaType: "participation", criteriaValue: "1" },
+                ])
+              }
+            >
+              Add Badge
+            </Button>
+          </div>
+
+          {badges.map((badge, i) => (
+            <div key={i} className="border rounded-md p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium">Badge {i + 1}</span>
+                <div className="flex items-center gap-1">
+                  {badge.savedId !== null && badge.criteriaType !== "custom" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      disabled={
+                        awardingBadgeId === badge.savedId ||
+                        group.status !== "ended" ||
+                        hasUnsavedChanges
+                      }
+                      title={
+                        group.status !== "ended"
+                          ? `Group must be ended (currently ${group.status})`
+                          : hasUnsavedChanges
+                            ? "Save changes first"
+                            : "Award this badge to qualifying members"
+                      }
+                      onClick={() => awardMutation.mutate(badge.savedId!)}
+                    >
+                      {awardingBadgeId === badge.savedId ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <>
+                          <Award className="mr-1 h-3 w-3" />
+                          Award
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => setBadges((prev) => prev.filter((_, idx) => idx !== i))}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Name</Label>
+                <Input
+                  value={badge.name}
+                  onChange={(e) =>
+                    setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, name: e.target.value } : b))
+                  }
+                />
+              </div>
+              <BadgeIconField
+                icon={badge.icon}
+                onIconChange={(v) =>
+                  setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, icon: v } : b))
+                }
+              />
+              <div className="space-y-1">
+                <Label className="text-xs">Description</Label>
+                <Input
+                  value={badge.description}
+                  onChange={(e) =>
+                    setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, description: e.target.value } : b))
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Award Rule</Label>
+                  <Select
+                    value={badge.criteriaType}
+                    onValueChange={(v) =>
+                      setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, criteriaType: v } : b))
+                    }
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="participation">All participants</SelectItem>
+                      <SelectItem value="top_n">Top N</SelectItem>
+                      <SelectItem value="exact_predictions">Min exact</SelectItem>
+                      <SelectItem value="custom">Manual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(badge.criteriaType === "top_n" || badge.criteriaType === "exact_predictions") && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">
+                      {badge.criteriaType === "top_n" ? "Top N" : "Min exact"}
+                    </Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={badge.criteriaValue}
+                      onChange={(e) =>
+                        setBadges((prev) => prev.map((b, idx) => idx === i ? { ...b, criteriaValue: e.target.value } : b))
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="w-full"
+          >
+            {saveMutation.isPending ? "Saving..." : "Save Badges"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -2535,6 +2735,7 @@ function GroupDetailView({
   const [fixturesPage, setFixturesPage] = React.useState(1);
   const [leaderboardPage, setLeaderboardPage] = React.useState(1);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [badgesOpen, setBadgesOpen] = React.useState(false);
   const [selectedFixtureId, setSelectedFixtureId] = React.useState<number | null>(null);
 
   const deleteMutation = useMutation({
@@ -2546,16 +2747,6 @@ function GroupDetailView({
     },
     onError: (err: Error) => {
       toast.error("Failed to delete group", { description: err.message });
-    },
-  });
-
-  const awardMutation = useMutation({
-    mutationFn: (id: number) => officialGroupsService.awardBadges(id),
-    onSuccess: (data) => {
-      toast.success(`${data.data.awarded} badges awarded`);
-    },
-    onError: (err: Error) => {
-      toast.error("Failed to award badges", { description: err.message });
     },
   });
 
@@ -2582,25 +2773,9 @@ function GroupDetailView({
           Back
         </Button>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => awardMutation.mutate(group.id)}
-            disabled={
-              awardMutation.isPending ||
-              group.badges.length === 0 ||
-              group.status !== "ended"
-            }
-            title={
-              group.badges.length === 0
-                ? "No badges configured for this group"
-                : group.status !== "ended"
-                  ? `Group must be ended to award badges (currently ${group.status})`
-                  : undefined
-            }
-          >
+          <Button variant="outline" size="sm" onClick={() => setBadgesOpen(true)}>
             <Award className="mr-1 h-4 w-4" />
-            Award Badges
+            Badges
           </Button>
           <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
             Settings
@@ -2905,6 +3080,14 @@ function GroupDetailView({
         onGroupUpdated={onGroupUpdated}
       />
 
+      {/* Badge Management Dialog */}
+      <BadgeManagementDialog
+        group={group}
+        open={badgesOpen}
+        onOpenChange={setBadgesOpen}
+        onGroupUpdated={onGroupUpdated}
+      />
+
       {/* Fixture Predictions Dialog */}
       <FixturePredictionsDialog
         groupId={group.id}
@@ -2996,7 +3179,6 @@ export default function OfficialGroupsPage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Members</TableHead>
                   <TableHead>Fixtures</TableHead>
-                  <TableHead>Badge</TableHead>
                   <TableHead>Created</TableHead>
                 </TableRow>
               </TableHeader>
@@ -3023,21 +3205,6 @@ export default function OfficialGroupsPage() {
                     </TableCell>
                     <TableCell>{group.memberCount}</TableCell>
                     <TableCell>{group.fixtureCount}</TableCell>
-                    <TableCell>
-                      {group.badges.length > 0 ? (
-                        <span
-                          title={group.badges
-                            .map((b) => `${b.icon} ${b.name}`)
-                            .join(", ")}
-                        >
-                          {group.badges.length === 1
-                            ? `${group.badges[0].icon} ${group.badges[0].name}`
-                            : `${group.badges.length} badges`}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
                     <TableCell>
                       {new Date(group.createdAt).toLocaleDateString()}
                     </TableCell>

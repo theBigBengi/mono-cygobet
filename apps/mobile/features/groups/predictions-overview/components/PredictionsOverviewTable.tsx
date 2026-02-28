@@ -12,7 +12,7 @@ import { useRouter } from "expo-router";
 import { isNotStarted } from "@repo/utils";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { useAuth } from "@/lib/auth/useAuth";
 import type { ApiPredictionsOverviewData } from "@repo/types";
@@ -163,7 +163,7 @@ export function PredictionsOverviewTable({
             minWidth: totalWidth,
             height: HEADER_HEIGHT,
             backgroundColor: theme.colors.surface,
-            borderBottomWidth: 3,
+            borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
             borderBottomColor: theme.colors.textSecondary + "40",
           },
         ]}
@@ -483,7 +483,7 @@ export function PredictionsOverviewTable({
               {
                 height: HEADER_HEIGHT,
                 backgroundColor: theme.colors.surface,
-                borderBottomWidth: 3,
+                borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
                 borderBottomColor: theme.colors.textSecondary + "40",
               },
             ]}

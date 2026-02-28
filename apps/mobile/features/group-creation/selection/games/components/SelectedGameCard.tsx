@@ -3,10 +3,10 @@
 // Vertical layout: home team above away team, remove button on the right.
 
 import React from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { TeamRow } from "@/features/groups/predictions/components/TeamRow";
 import { Ionicons } from "@expo/vector-icons";
@@ -66,7 +66,7 @@ export function SelectedGameCard({
               ? theme.colors.textSecondary + "40"
               : theme.colors.border,
             borderTopWidth: isConnected ? 0 : 1,
-            borderBottomWidth: positionInGroup === "bottom" || positionInGroup === "single" ? 3 : 1,
+            borderBottomWidth: positionInGroup === "bottom" || positionInGroup === "single" ? CARD_BORDER_BOTTOM_WIDTH : 1,
           },
         ]}
       >
@@ -172,12 +172,13 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 10,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     alignItems: "center",
     justifyContent: "center",
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,
     shadowOpacity: 0.1,
-    elevation: 2,
+    // Android: elevation on a child inside an elevated parent with semi-transparent bg renders gray
+    elevation: Platform.OS === "ios" ? 2 : 0,
   },
 });

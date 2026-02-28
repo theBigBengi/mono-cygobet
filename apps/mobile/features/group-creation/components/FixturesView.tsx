@@ -208,7 +208,9 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           { paddingBottom: totalTabBarSpace + 48 + theme.spacing.lg },
           (isLoading || isFetching || leagueGroups.length === 0) && styles.scrollContentLoading,
         ]}
-        stickyHeaderIndices={[1]}
+        // Android: stickyHeaderIndices breaks touch events on sticky views,
+        // so we use an absolute overlay instead (rendered below).
+        stickyHeaderIndices={Platform.OS === "ios" ? [1] : undefined}
         onScroll={handleScroll}
         scrollEventThrottle={16}
         refreshControl={
@@ -228,7 +230,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         <View
           style={[
             { backgroundColor: theme.colors.background },
-            isDateSliderSticky && styles.stickyDropShadow,
+            isDateSliderSticky && Platform.OS === "ios" && styles.stickyDropShadow,
           ]}
         >
           <DateSlider
@@ -309,6 +311,22 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
           </>
         )}
       </ScrollView>
+
+      {/* Android: sticky DateSlider overlay (stickyHeaderIndices breaks touches) */}
+      {Platform.OS === "android" && isDateSliderSticky && (
+        <View
+          style={[
+            styles.stickyOverlay,
+            { backgroundColor: theme.colors.background },
+            styles.stickyDropShadow,
+          ]}
+        >
+          <DateSlider
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+          />
+        </View>
+      )}
 
       {/* Filter FAB */}
       <Pressable
@@ -422,6 +440,13 @@ const styles = StyleSheet.create({
     marginStart: 4,
   },
   groupCardContainer: {},
+  stickyOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
   stickyDropShadow: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },

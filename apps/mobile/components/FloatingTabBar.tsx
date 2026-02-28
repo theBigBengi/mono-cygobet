@@ -3,6 +3,7 @@
 
 import React, { useMemo } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
+import { CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAtomValue } from "jotai";
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     borderRadius: 16,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 6,
     elevation: 6,

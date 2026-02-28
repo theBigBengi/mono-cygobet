@@ -7,7 +7,7 @@ import { View, ScrollView, Pressable, StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 
 export type GroupFilterType =
   | "all"
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,

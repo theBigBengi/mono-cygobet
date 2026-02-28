@@ -139,11 +139,16 @@ export async function createOfficialGroup(
     koRoundMode: body.koRoundMode as any,
   });
 
-  // 3. Set isOfficial flag
-  await prisma.groups.update({
-    where: { id: group.id },
-    data: { isOfficial: true },
-  });
+  // 3. Set isOfficial flag + remove admin as member
+  await Promise.all([
+    prisma.groups.update({
+      where: { id: group.id },
+      data: { isOfficial: true },
+    }),
+    prisma.groupMembers.deleteMany({
+      where: { groupId: group.id, userId: adminUserId },
+    }),
+  ]);
 
   // 4. Create badges if provided
   let badges: AdminOfficialGroupItem["badges"] = [];
@@ -180,7 +185,7 @@ export async function createOfficialGroup(
 
   return mapGroupToItem(
     { ...published, description: body.description ?? null },
-    1, // admin is the first member
+    0,
     fixtureCount,
     badges
   );

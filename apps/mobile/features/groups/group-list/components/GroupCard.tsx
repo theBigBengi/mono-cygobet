@@ -5,6 +5,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
+import { CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -483,6 +484,9 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
 
   // Memoize theme-dependent inline style objects
   const cardStyles = useMemo(() => ({
+    shadowWrapper: {
+      backgroundColor: theme.colors.cardBackground,
+    },
     card: {
       backgroundColor: theme.colors.cardBackground,
       borderColor: theme.colors.border,
@@ -533,6 +537,7 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
         <View
           style={[
             styles.cardShadowWrapper,
+            cardStyles.shadowWrapper,
             {
               shadowColor: "#000",
               shadowOpacity: isPressed ? 0 : 0.12,
@@ -734,7 +739,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 14,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     paddingTop: 14,
     paddingHorizontal: 14,
     paddingBottom: 0,
@@ -821,7 +826,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 7,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
   },
   predictButtonText: {
     fontSize: 11,
@@ -845,7 +850,7 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 7,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     alignItems: "center",
     justifyContent: "center",
   },

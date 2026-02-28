@@ -3,13 +3,16 @@
 // Routes to appropriate screen based on group status.
 
 import React from "react";
+import { View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useLocalSearchParams } from "expo-router";
-import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useGroupQuery } from "@/domains/groups";
+import { useTheme } from "@/lib/theme";
 import { GroupGamesScreen } from "@/features/groups/predictions/screens/GroupGamesScreen";
 import { GroupGamesDraftScreen } from "@/features/groups/predictions/screens/GroupGamesDraftScreen";
+import { GroupGamesSkeleton } from "@/features/groups/predictions/components/GroupGamesSkeleton";
 import type { PredictionMode } from "@/features/groups/predictions/types";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -43,9 +46,16 @@ function GroupGamesContent() {
   const hasFixturesLoaded = group?.fixtures !== undefined;
   const fixtures = Array.isArray(group?.fixtures) ? group.fixtures : [];
 
-  // Show loading when initial fetch OR when placeholder data has no fixtures yet
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  // Show skeleton when initial fetch OR when placeholder data has no fixtures yet
   if (isLoading || (!hasFixturesLoaded && isFetching)) {
-    return <QueryLoadingView message={t("groups.loadingGroup")} />;
+    return (
+      <View style={[loadingStyles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
+        <GroupGamesSkeleton />
+      </View>
+    );
   }
 
   // Error state
@@ -79,3 +89,9 @@ function GroupGamesContent() {
     />
   );
 }
+
+const loadingStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

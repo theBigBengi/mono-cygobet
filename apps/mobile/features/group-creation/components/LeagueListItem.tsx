@@ -5,7 +5,7 @@ import React from "react";
 import { View, Pressable, StyleSheet, Text } from "react-native";
 import * as Haptics from "expo-haptics";
 import { TeamLogo } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import {
   useToggleLeague,
   useIsLeagueSelected,
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,

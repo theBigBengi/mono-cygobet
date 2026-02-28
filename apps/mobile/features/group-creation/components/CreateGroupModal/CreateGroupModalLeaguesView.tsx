@@ -3,9 +3,9 @@
 
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { AppText, TeamLogo } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import {
   useSelectedLeagues,
   useToggleLeague,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -170,12 +170,12 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 10,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     alignItems: "center",
     justifyContent: "center",
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,
     shadowOpacity: 0.1,
-    elevation: 2,
+    elevation: Platform.OS === "ios" ? 2 : 0,
   },
 });

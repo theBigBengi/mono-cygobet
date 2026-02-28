@@ -4,6 +4,7 @@
 import React, { useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
+import { CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -101,6 +102,7 @@ function FixtureRow({
         ) : (() => {
           let statusLabel = "\u2014";
           let statusUrgent = false;
+          let statusIcon: "av-timer" | "schedule" | "event" | undefined;
           if (isFinished) {
             statusLabel = "FT";
           } else if (fixture.kickoffAt) {
@@ -114,23 +116,33 @@ function FixtureRow({
               const diff = k.getTime() - n.getTime();
               if (diff <= 0) {
                 statusLabel = formatTime(fixture.kickoffAt);
+                statusIcon = "schedule";
               } else {
                 const totalMin = Math.floor(diff / 60000);
                 const h = Math.floor(totalMin / 60);
                 const m = totalMin % 60;
                 statusLabel = h === 0 ? `${m}m` : m > 0 ? `${h}h ${m}m` : `${h}h`;
                 statusUrgent = totalMin <= 60;
+                statusIcon = "av-timer";
               }
             } else if (isTomorrow) {
               statusLabel = formatTime(fixture.kickoffAt);
+              statusIcon = "schedule";
             } else {
               statusLabel = `${k.getDate().toString().padStart(2, "0")}/${(k.getMonth() + 1).toString().padStart(2, "0")}`;
+              statusIcon = "event";
             }
           }
+          const statusColor = statusUrgent ? CRITICAL_COLOR : theme.colors.textSecondary;
           return (
-            <Text style={[styles.statusText, { color: statusUrgent ? CRITICAL_COLOR : theme.colors.textSecondary }]}>
-              {statusLabel}
-            </Text>
+            <View style={styles.statusWithIcon}>
+              {statusIcon && (
+                <MaterialIcons name={statusIcon} size={11} color={statusColor} />
+              )}
+              <Text style={[styles.statusText, { color: statusColor }]}>
+                {statusLabel}
+              </Text>
+            </View>
           );
         })()}
       </View>
@@ -649,7 +661,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
   },
   headerRow: {
     flexDirection: "row",
@@ -701,6 +713,11 @@ const styles = StyleSheet.create({
   },
   statusCol: {
     width: 56,
+  },
+  statusWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
   },
   statusText: {
     fontSize: 11,

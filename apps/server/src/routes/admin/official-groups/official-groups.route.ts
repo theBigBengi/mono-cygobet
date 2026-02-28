@@ -13,7 +13,7 @@ import {
   updateGroupRules,
   getFixturePredictions,
 } from "../../../services/admin/official-groups.service";
-import { evaluateGroupBadges } from "../../../services/api/groups/service/badge-evaluation";
+import { evaluateGroupBadges, evaluateSingleBadge } from "../../../services/api/groups/service/badge-evaluation";
 import type {
   AdminOfficialGroupsListResponse,
   AdminCreateOfficialGroupBody,
@@ -246,6 +246,30 @@ const officialGroupsRoutes: FastifyPluginAsync = async (fastify) => {
       action: "official_groups.award_badges",
       category: "official_groups",
       description: `Awarded ${awarded} badges for official group #${groupId}`,
+      targetType: "group",
+      targetId: String(groupId),
+    });
+
+    return reply.send({
+      status: "success",
+      data: { awarded },
+      message: `${awarded} badges awarded successfully`,
+    });
+  });
+
+  // POST /admin/official-groups/:id/badges/:badgeId/award
+  fastify.post<{
+    Params: { id: string; badgeId: string };
+    Reply: AdminAwardBadgesResponse;
+  }>("/:id/badges/:badgeId/award", async (req, reply) => {
+    const groupId = Number(req.params.id);
+    const badgeId = Number(req.params.badgeId);
+    const awarded = await evaluateSingleBadge(groupId, badgeId);
+
+    auditFromRequest(req, reply, {
+      action: "official_groups.award_badge",
+      category: "official_groups",
+      description: `Awarded badge #${badgeId} to ${awarded} members in group #${groupId}`,
       targetType: "group",
       targetId: String(groupId),
     });

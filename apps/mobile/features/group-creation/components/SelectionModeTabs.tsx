@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { View, Pressable, StyleSheet, Text } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 
 export type SelectionMode = "fixtures" | "leagues" | "teams";
 
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderBottomWidth: 3,
+    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 4,
     elevation: 4,
