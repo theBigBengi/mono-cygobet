@@ -28,6 +28,7 @@ import { LobbyActivityBanner } from "../components/LobbyActivityBanner";
 import { DebugCTAScreen } from "./DebugCTAScreen";
 import { DebugLeaderboardScreen } from "./DebugLeaderboardScreen";
 import { DebugPredictionsOverviewScreen } from "./DebugPredictionsOverviewScreen";
+import { DebugSingleGameScreen } from "./DebugSingleGameScreen";
 
 interface GroupLobbyActiveScreenProps {
   group: ApiGroupItem;
@@ -56,6 +57,7 @@ export function GroupLobbyActiveScreen({
   const [showDebugCTA, setShowDebugCTA] = useState(false);
   const [showDebugLeaderboard, setShowDebugLeaderboard] = useState(false);
   const [showDebugOverview, setShowDebugOverview] = useState(false);
+  const [showDebugSingleGame, setShowDebugSingleGame] = useState(false);
 
   // Invalidate lobby summary when screen gains focus (e.g. returning from games screen after saving predictions)
   useFocusEffect(
@@ -257,6 +259,12 @@ export function GroupLobbyActiveScreen({
           >
             <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG TABLE</Text>
           </Pressable>
+          <Pressable
+            onPress={() => setShowDebugSingleGame(true)}
+            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#F59E0B", alignItems: "center" }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG GAME</Text>
+          </Pressable>
         </View>
 
         <Modal visible={showDebugCTA} animationType="slide" presentationStyle="fullScreen">
@@ -283,6 +291,16 @@ export function GroupLobbyActiveScreen({
           <DebugPredictionsOverviewScreen />
           <Pressable
             onPress={() => setShowDebugOverview(false)}
+            style={{ position: "absolute", bottom: 40, alignSelf: "center", paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={showDebugSingleGame} animationType="slide" presentationStyle="fullScreen">
+          <DebugSingleGameScreen />
+          <Pressable
+            onPress={() => setShowDebugSingleGame(false)}
             style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
           >
             <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>

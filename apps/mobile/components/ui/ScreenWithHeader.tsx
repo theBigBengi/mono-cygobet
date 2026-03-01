@@ -13,6 +13,10 @@ export interface ScreenWithHeaderProps {
   children: React.ReactNode;
   /** Optional title shown next to back button */
   title?: string;
+  /** Optional subtitle shown below the title */
+  subtitle?: string;
+  /** Show a pulsing live dot next to the subtitle */
+  showLiveDot?: boolean;
   /** Optional right-side content (settings icon, status badge, etc.) */
   rightContent?: React.ReactNode;
   /** Fallback route when no history exists. Defaults to "/(tabs)/groups" */
@@ -22,6 +26,8 @@ export interface ScreenWithHeaderProps {
 export function ScreenWithHeader({
   children,
   title,
+  subtitle,
+  showLiveDot,
   rightContent,
   fallbackRoute = "/(tabs)/groups",
 }: ScreenWithHeaderProps) {
@@ -39,6 +45,8 @@ export function ScreenWithHeader({
       <AppHeader
         onBack={goBack}
         title={title}
+        subtitle={subtitle}
+        showLiveDot={showLiveDot}
         rightContent={rightContent}
       />
       <View style={styles.content}>{children}</View>

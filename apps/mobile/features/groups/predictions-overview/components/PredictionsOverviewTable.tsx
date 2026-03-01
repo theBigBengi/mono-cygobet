@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   View,
@@ -7,17 +7,23 @@ import {
   FlatList,
   Dimensions,
   Pressable,
-  type NativeSyntheticEvent,
-  type NativeScrollEvent,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { isNotStarted } from "@repo/utils";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { useAuth } from "@/lib/auth/useAuth";
 import type { ApiPredictionsOverviewData } from "@repo/types";
+import {
+  calculateLivePoints,
+  getTeamAbbr,
+  formatDate,
+  getWinner,
+  hasMatchStarted,
+} from "./utils";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -26,7 +32,7 @@ interface PredictionsOverviewTableProps {
   groupId: number | null;
 }
 
-const LEFT_COLUMN_WIDTH = 120;
+const LEFT_COLUMN_WIDTH = 134;
 const TOTAL_COLUMN_WIDTH = 50;
 const GAME_COLUMN_WIDTH = 50;
 const ROW_HEIGHT = 40;
@@ -40,39 +46,21 @@ export function PredictionsOverviewTable({
   const { theme } = useTheme();
   const { user } = useAuth();
   const router = useRouter();
-  const leftFlatListRef = useRef<FlatList>(null);
   const rightFlatListRef = useRef<FlatList>(null);
   const horizontalScrollRef = useRef<ScrollView>(null);
-  const isScrolling = useRef<"left" | "right" | null>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
-  const onLeftScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (isScrolling.current === "right") return;
-      isScrolling.current = "left";
-      rightFlatListRef.current?.scrollToOffset({
-        offset: e.nativeEvent.contentOffset.y,
-        animated: false,
-      });
-      isScrolling.current = null;
-    },
-    []
-  );
-
-  const onRightScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (isScrolling.current === "left") return;
-      isScrolling.current = "right";
-      leftFlatListRef.current?.scrollToOffset({
-        offset: e.nativeEvent.contentOffset.y,
-        animated: false,
-      });
-      isScrolling.current = null;
-    },
-    []
-  );
+  const translateY = scrollY.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -1],
+  });
 
   const { participants, fixtures, predictions, predictionPoints } = data;
   const currentUserId = user?.id ?? null;
+
+  const liveFixtures = fixtures.filter((f) => f.liveMinute != null);
+  const hasLive = liveFixtures.length > 0;
+  const [showLivePoints, setShowLivePoints] = useState(hasLive);
 
   const getPrediction = (userId: number, fixtureId: number): string | null => {
     return predictions[`${userId}_${fixtureId}`] ?? null;
@@ -82,28 +70,43 @@ export function PredictionsOverviewTable({
     return predictionPoints[`${userId}_${fixtureId}`] ?? null;
   };
 
-  const calculateLivePoints = (
-    prediction: string | null,
-    homeScore: number | null,
-    awayScore: number | null
-  ): string | null => {
-    if (!prediction || homeScore == null || awayScore == null) return null;
-    const parts = prediction.split(/[-:]/);
-    if (parts.length !== 2) return null;
-    const predHome = parseInt(parts[0], 10);
-    const predAway = parseInt(parts[1], 10);
-    if (isNaN(predHome) || isNaN(predAway)) return null;
+  // Pre-compute live bonus points per participant
+  const liveBonusMap = useMemo(() => {
+    if (!hasLive) return new Map<number, number>();
+    const map = new Map<number, number>();
+    for (const p of participants) {
+      let bonus = 0;
+      for (const f of liveFixtures) {
+        const pred = predictions[`${p.id}_${f.id}`] ?? null;
+        const pts = calculateLivePoints(pred, f.homeScore90, f.awayScore90);
+        bonus += pts ? parseInt(pts, 10) : 0;
+      }
+      map.set(p.id, bonus);
+    }
+    return map;
+  }, [hasLive, participants, liveFixtures, predictions]);
 
-    // Exact score
-    if (predHome === homeScore && predAway === awayScore) return "3";
-    // Correct goal difference
-    if (predHome - predAway === homeScore - awayScore) return "2";
-    // Correct outcome
-    const predOutcome = Math.sign(predHome - predAway);
-    const actualOutcome = Math.sign(homeScore - awayScore);
-    if (predOutcome === actualOutcome) return "1";
-    return "0";
-  };
+  // Sort participants by live-adjusted points when in Live mode
+  const sortedParticipants = useMemo(() => {
+    if (!showLivePoints) return participants;
+    return [...participants].sort((a, b) => {
+      const aTotal = a.totalPoints + (liveBonusMap.get(a.id) ?? 0);
+      const bTotal = b.totalPoints + (liveBonusMap.get(b.id) ?? 0);
+      return bTotal - aTotal;
+    });
+  }, [showLivePoints, participants, liveBonusMap]);
+
+  // Map of userId -> position change (positive = moved up, negative = moved down)
+  const positionChangeMap = useMemo(() => {
+    if (!showLivePoints) return new Map<number, number>();
+    const map = new Map<number, number>();
+    const originalPos = new Map(participants.map((p, i) => [p.id, i]));
+    sortedParticipants.forEach((p, newIndex) => {
+      const oldIndex = originalPos.get(p.id) ?? newIndex;
+      map.set(p.id, oldIndex - newIndex); // positive = moved up
+    });
+    return map;
+  }, [showLivePoints, participants, sortedParticipants]);
 
   const getPointsColor = (points: string | null): string => {
     if (!points) return theme.colors.textSecondary;
@@ -130,7 +133,7 @@ export function PredictionsOverviewTable({
   ): string => {
     // If it's the current user, always show their prediction (or "-:-" if none)
     if (userId === currentUserId) {
-      return prediction || "-:-";
+      return prediction ? prediction.replace(":", "-") : "-:-";
     }
 
     // For other users, check if match has started
@@ -149,56 +152,7 @@ export function PredictionsOverviewTable({
     }
 
     // If match has started, show prediction or "-:-"
-    return prediction || "-:-";
-  };
-
-  const getTeamAbbr = (teamName: string): string => {
-    const words = teamName.split(" ");
-    if (words.length > 1) {
-      return words
-        .slice(0, 2)
-        .map((w) => w.charAt(0).toUpperCase())
-        .join("");
-    }
-    return teamName.substring(0, 3).toUpperCase();
-  };
-
-  const formatDate = (timestamp: number): string => {
-    const date = new Date(timestamp * 1000);
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    return `${day}/${month}`;
-  };
-
-  // Check which team won: prefer numeric scores, fallback to parsing result string
-  const getWinner = (fixture: {
-    result: string | null;
-    homeScore90?: number | null;
-    awayScore90?: number | null;
-  }): "home" | "away" | "draw" | null => {
-    if (fixture.homeScore90 != null && fixture.awayScore90 != null) {
-      if (fixture.homeScore90 > fixture.awayScore90) return "home";
-      if (fixture.awayScore90 > fixture.homeScore90) return "away";
-      return "draw";
-    }
-    const result = fixture.result;
-    if (!result) return null;
-    const [home, away] = result.split("-").map(Number);
-    if (isNaN(home) || isNaN(away)) return null;
-    if (home > away) return "home";
-    if (away > home) return "away";
-    return "draw";
-  };
-
-  const hasMatchStarted = (
-    state: string,
-    result: string | null,
-    startTs: number
-  ): boolean => {
-    if (result) return true;
-    const now = Math.floor(Date.now() / 1000);
-    if (startTs > now) return false;
-    return !isNotStarted(state);
+    return prediction ? prediction.replace(":", "-") : "-:-";
   };
 
   // Calculate available width for the right section (screen - left column)
@@ -230,7 +184,11 @@ export function PredictionsOverviewTable({
         ]}
       >
         {/* Total Points header — first scrollable column */}
-        <View
+        <Pressable
+          onPress={hasLive ? () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowLivePoints((v) => !v);
+          } : undefined}
           style={[
             styles.gameHeader,
             styles.totalPointsHeader,
@@ -238,14 +196,21 @@ export function PredictionsOverviewTable({
               width: TOTAL_COLUMN_WIDTH,
               borderRightWidth: 1,
               borderRightColor: theme.colors.border,
-              backgroundColor: theme.colors.textSecondary + "10",
+              backgroundColor: showLivePoints ? theme.colors.primary + "10" : theme.colors.textSecondary + "10",
             },
           ]}
         >
-          <AppText variant="caption" style={[styles.totalPointsHeaderText, { color: theme.colors.textSecondary }]}>
-            Pts
+          {hasLive && (
+            <Ionicons
+              name={showLivePoints ? "toggle" : "toggle-outline"}
+              size={18}
+              color={showLivePoints ? theme.colors.primary : theme.colors.textSecondary}
+            />
+          )}
+          <AppText variant="caption" style={[styles.totalPointsHeaderText, { color: showLivePoints ? theme.colors.primary : theme.colors.textSecondary }]}>
+            {showLivePoints ? "Live" : "Pts"}
           </AppText>
-        </View>
+        </Pressable>
         {/* Fixture columns */}
         {fixtures.map((fixture) => (
           <Pressable
@@ -367,7 +332,7 @@ export function PredictionsOverviewTable({
                   color="primary"
                   style={[
                     styles.resultText,
-                    fixture.liveMinute != null && { color: theme.colors.primary, fontWeight: "700" },
+                    fixture.liveMinute != null && { color: theme.colors.primary, fontWeight: "800" },
                   ]}
                 >
                   {fixture.result}
@@ -388,44 +353,44 @@ export function PredictionsOverviewTable({
     );
   };
 
-  // Render left column row
-  const renderLeftRow = ({
-    item: participant,
-    index,
-  }: {
-    item: (typeof participants)[0];
-    index: number;
-  }) => {
+  // Render left column row (used by Animated.View, not FlatList)
+  const renderLeftRowItem = (
+    participant: (typeof participants)[0],
+    index: number
+  ) => {
     const isCurrentUser = participant.id === currentUserId;
+    const position = showLivePoints ? index + 1 : participant.number;
+    const change = positionChangeMap.get(participant.id) ?? 0;
+    const movedUp = showLivePoints && change > 0;
+    const movedDown = showLivePoints && change < 0;
     const rowBg = index % 2 === 0
       ? theme.colors.background
       : theme.colors.surface;
     return (
       <View
+        key={participant.id}
         style={[
           styles.leftColumnCell,
           {
             height: ROW_HEIGHT,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.colors.border,
+            borderBottomWidth: isCurrentUser ? 1.5 : 1,
+            borderBottomColor: isCurrentUser ? theme.colors.textSecondary : theme.colors.border,
+            borderTopWidth: isCurrentUser ? 1.5 : 0,
+            borderTopColor: isCurrentUser ? theme.colors.textSecondary : undefined,
             backgroundColor: rowBg,
           },
         ]}
       >
-        {isCurrentUser && (
-          <View
-            style={[styles.currentUserOverlay, { borderColor: theme.colors.primary }]}
-            pointerEvents="none"
-          />
-        )}
         <AppText
           variant="body"
           style={[
             styles.participantNumber,
-            isCurrentUser && [styles.participantHighlight, { color: theme.colors.primary }],
+            isCurrentUser
+              ? [styles.participantHighlight, { color: theme.colors.textPrimary }]
+              : { color: theme.colors.textSecondary },
           ]}
         >
-          {participant.number}
+          {position}
         </AppText>
         <AppText
           variant="caption"
@@ -433,12 +398,19 @@ export function PredictionsOverviewTable({
           style={[
             styles.participantName,
             isCurrentUser
-              ? [styles.participantHighlight, { color: theme.colors.primary }]
+              ? [styles.participantHighlight, { color: theme.colors.textPrimary }]
               : { color: theme.colors.textSecondary },
           ]}
         >
           {participant.username || t("common.unknown")}
         </AppText>
+        {movedUp ? (
+          <Ionicons name="caret-up" size={10} color="#10B981" />
+        ) : movedDown ? (
+          <Ionicons name="caret-down" size={10} color={theme.colors.danger} />
+        ) : showLivePoints ? (
+          <View style={styles.changeArrowPlaceholder} />
+        ) : null}
       </View>
     );
   };
@@ -462,18 +434,14 @@ export function PredictionsOverviewTable({
           {
             minWidth: totalWidth,
             height: ROW_HEIGHT,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.colors.border,
+            borderBottomWidth: isCurrentUser ? 1.5 : 1,
+            borderBottomColor: isCurrentUser ? theme.colors.textSecondary : theme.colors.border,
+            borderTopWidth: isCurrentUser ? 1.5 : 0,
+            borderTopColor: isCurrentUser ? theme.colors.textSecondary : undefined,
             backgroundColor: rowBg,
           },
         ]}
       >
-        {isCurrentUser && (
-          <View
-            style={[styles.currentUserOverlay, { borderColor: theme.colors.primary }]}
-            pointerEvents="none"
-          />
-        )}
         {/* Total Points cell — first scrollable column */}
         <View
           style={[
@@ -482,27 +450,35 @@ export function PredictionsOverviewTable({
               width: TOTAL_COLUMN_WIDTH,
               borderRightWidth: 1,
               borderRightColor: theme.colors.border,
-              backgroundColor: theme.colors.textSecondary + "10",
+              backgroundColor: showLivePoints ? theme.colors.primary + "10" : theme.colors.textSecondary + "10",
             },
           ]}
         >
           <AppText
-            variant="caption"
+            variant="body"
             style={{
               fontWeight: "700",
-              color: isCurrentUser ? theme.colors.primary : theme.colors.textSecondary,
+              fontSize: 13,
+              color: showLivePoints
+                ? theme.colors.primary
+                : isCurrentUser ? theme.colors.textPrimary : theme.colors.textSecondary,
             }}
           >
-            {participant.totalPoints}
+            {showLivePoints
+              ? participant.totalPoints + (liveBonusMap.get(participant.id) ?? 0)
+              : participant.totalPoints}
           </AppText>
         </View>
         {/* Prediction cells */}
         {fixtures.map((fixture) => {
           const prediction = getPrediction(participant.id, fixture.id);
           const isLive = fixture.liveMinute != null;
-          const pts = isLive
+          const matchFinished = fixture.result != null && !isLive;
+          const rawPts = isLive
             ? calculateLivePoints(prediction, fixture.homeScore90, fixture.awayScore90)
             : getPoints(participant.id, fixture.id);
+          // For finished matches with no prediction, show 0 points
+          const pts = rawPts == null && matchFinished && !prediction ? "0" : rawPts;
           const predText = formatPrediction(
             prediction,
             participant.id,
@@ -530,17 +506,17 @@ export function PredictionsOverviewTable({
                   variant="caption"
                   style={[
                     styles.predictionText,
-                    { color: pts != null ? getPointsColor(pts) : theme.colors.textSecondary, fontWeight: "600" },
-                    fixture.liveMinute != null && { color: theme.colors.primary, fontWeight: "600" },
+                    { color: pts != null ? getPointsColor(pts) : theme.colors.textSecondary, fontWeight: "800" },
+                    fixture.liveMinute != null && { color: theme.colors.primary, fontWeight: "800" },
                   ]}
                 >
                   {predText}
                 </AppText>
-                {pts !== null && (
+                {pts != null && (
                   <AppText
                     style={[
                       styles.pointsText,
-                      { color: isLive ? theme.colors.primary : getPointsColor(pts), fontWeight: isLive ? "800" : "700" },
+                      { color: isLive ? theme.colors.primary : getPointsColor(pts), fontWeight: "700" },
                     ]}
                   >
                     {pts} pts
@@ -584,23 +560,12 @@ export function PredictionsOverviewTable({
           >
           </View>
 
-          {/* Left Column Rows - Fixed, OUTSIDE horizontal scroll */}
-          <FlatList
-            ref={leftFlatListRef}
-            data={participants}
-            renderItem={renderLeftRow}
-            keyExtractor={(item) => item.id.toString()}
-            showsVerticalScrollIndicator={false}
-            scrollEventThrottle={16}
-            onScroll={onLeftScroll}
-            style={styles.leftColumnList}
-            onScrollToIndexFailed={() => {}}
-            getItemLayout={(_, index) => ({
-              length: ROW_HEIGHT,
-              offset: ROW_HEIGHT * index,
-              index,
-            })}
-          />
+          {/* Left Column Rows - Animated, driven by right FlatList scroll */}
+          <View style={styles.leftColumnList}>
+            <Animated.View style={{ transform: [{ translateY }] }}>
+              {sortedParticipants.map((p, i) => renderLeftRowItem(p, i))}
+            </Animated.View>
+          </View>
         </View>
 
         {/* Right Section - Horizontal Scroll Container (ONE for header + rows) */}
@@ -617,15 +582,19 @@ export function PredictionsOverviewTable({
               {renderHeader()}
 
               {/* FlatList - ONE vertical list for all rows */}
-              <FlatList
+              <Animated.FlatList
                 ref={rightFlatListRef}
-                data={participants}
+                data={sortedParticipants}
                 renderItem={renderRow}
                 keyExtractor={(item) => item.id.toString()}
                 showsVerticalScrollIndicator={false}
                 scrollEventThrottle={16}
-                onScroll={onRightScroll}
+                onScroll={Animated.event(
+                  [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                  { useNativeDriver: true }
+                )}
                 style={styles.flatList}
+                contentContainerStyle={{ paddingBottom: 40 }}
                 nestedScrollEnabled={true}
                 onScrollToIndexFailed={() => {}}
                 getItemLayout={(_, index) => ({
@@ -661,21 +630,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
   },
-  headerText: {
-    fontWeight: "600",
-  },
   leftColumnList: {
     flex: 1,
+    overflow: "hidden",
   },
   leftColumnCell: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
+    paddingLeft: 0,
+    paddingRight: 8,
     gap: 4,
+  },
+  changeArrowPlaceholder: {
+    width: 10,
   },
   participantNumber: {
     fontWeight: "600",
-    minWidth: 24,
+    fontSize: 12,
+    minWidth: 20,
     textAlign: "center",
   },
   participantName: {
@@ -698,8 +670,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   totalPointsHeader: {
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
+    paddingBottom: 6,
   },
   gameHeaderColumn: {
     flexDirection: "column",
@@ -719,7 +692,7 @@ const styles = StyleSheet.create({
   },
   resultText: {
     marginTop: 2,
-    fontWeight: "600",
+    fontWeight: "800",
   },
   dateText: {
     marginTop: 2,
@@ -753,15 +726,5 @@ const styles = StyleSheet.create({
   },
   participantHighlight: {
     fontWeight: "700",
-  },
-  currentUserOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTopWidth: 1.5,
-    borderBottomWidth: 1.5,
-    zIndex: 10,
   },
 });

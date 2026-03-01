@@ -10,6 +10,12 @@ export type GroupFilterType =
   | "drafts"
   | "ended";
 
+export type GroupSortType =
+  | "recents"
+  | "recentlyAdded"
+  | "alphabetical"
+  | "creator";
+
 const FILTER_PRIORITY: Exclude<GroupFilterType, "all">[] = [
   "active",
   "drafts",
@@ -19,6 +25,8 @@ const FILTER_PRIORITY: Exclude<GroupFilterType, "all">[] = [
 interface GroupFilterResult {
   selectedFilter: GroupFilterType;
   setSelectedFilter: (filter: GroupFilterType) => void;
+  selectedSort: GroupSortType;
+  setSelectedSort: (sort: GroupSortType) => void;
   filteredGroups: ApiGroupItem[];
   counts: {
     all: number;
@@ -44,6 +52,7 @@ function categorizeGroup(
 
 export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
   const [selectedFilter, setSelectedFilter] = useState<GroupFilterType>("active");
+  const [selectedSort, setSelectedSort] = useState<GroupSortType>("recents");
 
   const { filteredGroups, counts } = useMemo(() => {
     const categorized = {
@@ -57,16 +66,14 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
       categorized[category].push(group);
     }
 
-    // Sort active: groups needing attention first (live > unpredicted), then by nextGame.kickoffAt
-    categorized.active.sort((a, b) => {
+    // Default sort for active: groups needing attention first (live > unpredicted), then by nextGame.kickoffAt
+    const defaultSort = (a: ApiGroupItem, b: ApiGroupItem) => {
       const attentionA = needsAttention(a);
       const attentionB = needsAttention(b);
 
-      // Attention groups come first
       if (attentionA && !attentionB) return -1;
       if (!attentionA && attentionB) return 1;
 
-      // Within attention groups: live first, then by unpredicted count
       if (attentionA && attentionB) {
         const liveA = a.liveGamesCount ?? 0;
         const liveB = b.liveGamesCount ?? 0;
@@ -76,14 +83,40 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
         if (unpredA !== unpredB) return unpredB - unpredA;
       }
 
-      // Then sort by nextGame.kickoffAt ASC, nulls last
       const ka = a.nextGame?.kickoffAt ?? null;
       const kb = b.nextGame?.kickoffAt ?? null;
       if (ka === null && kb === null) return 0;
       if (ka === null) return 1;
       if (kb === null) return -1;
       return ka.localeCompare(kb);
-    });
+    };
+
+    // Apply sort to each category
+    const sortFn = (a: ApiGroupItem, b: ApiGroupItem): number => {
+      switch (selectedSort) {
+        case "recentlyAdded": {
+          const ca = a.createdAt ?? "";
+          const cb = b.createdAt ?? "";
+          return cb.localeCompare(ca); // newest first
+        }
+        case "alphabetical":
+          return (a.name ?? "").localeCompare(b.name ?? "");
+        case "creator": {
+          const roleOrder = { owner: 0, admin: 1, member: 2 };
+          const ra = roleOrder[a.userRole as keyof typeof roleOrder] ?? 2;
+          const rb = roleOrder[b.userRole as keyof typeof roleOrder] ?? 2;
+          if (ra !== rb) return ra - rb;
+          return defaultSort(a, b);
+        }
+        case "recents":
+        default:
+          return defaultSort(a, b);
+      }
+    };
+
+    categorized.active.sort(sortFn);
+    categorized.drafts.sort(sortFn);
+    categorized.ended.sort(sortFn);
 
     const counts = {
       all: groups.length,
@@ -104,7 +137,7 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
     }
 
     return { filteredGroups: filtered, counts };
-  }, [groups, selectedFilter]);
+  }, [groups, selectedFilter, selectedSort]);
 
   // Auto-select first non-empty filter on initial load
   useEffect(() => {
@@ -119,6 +152,8 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
   return {
     selectedFilter,
     setSelectedFilter,
+    selectedSort,
+    setSelectedSort,
     filteredGroups,
     counts,
   };

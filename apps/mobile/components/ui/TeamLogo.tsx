@@ -59,7 +59,6 @@ export function TeamLogo({
           {
             width: size,
             height: size,
-            borderRadius,
           },
           style,
         ]}

@@ -22,7 +22,7 @@ import type { PredictionMode } from "../types";
 import { getOutcomeFromPrediction } from "../utils/utils";
 import { formatKickoffDateTime } from "@/utils/fixture";
 import { useMatchCardState } from "../hooks/useMatchCardState";
-import { LIVE_RESULT_COLOR } from "../utils/constants";
+import { LIVE_RESULT_COLOR, FIXTURE_STATE_MAP } from "../utils/constants";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -190,21 +190,6 @@ export function SingleGameMatchCard({
           </View>
         )}
 
-        {/* LIVE badge */}
-        {isLive && (
-          <View style={styles.liveBadgeRow}>
-            <View style={styles.liveBadge}>
-              <View style={styles.liveDot} />
-              <AppText
-                variant="caption"
-                style={styles.liveBadgeText}
-              >
-                LIVE
-              </AppText>
-            </View>
-          </View>
-        )}
-
         {/* Main match content */}
         <View style={styles.matchContent}>
           {/* Home Team */}
@@ -224,7 +209,7 @@ export function SingleGameMatchCard({
             </AppText>
           </View>
 
-          {/* Score Section - always shows prediction */}
+          {/* Score Section */}
           {predictionMode === "MatchWinner" && onSelectOutcome ? (
             <View style={styles.scoreSection}>
               <OutcomePicker
@@ -250,6 +235,17 @@ export function SingleGameMatchCard({
                 onAutoNext={onAutoNext}
                 variant="large"
               />
+              {isLive && (
+                <AppText variant="caption" style={styles.liveStatusText}>
+                  {FIXTURE_STATE_MAP[fixture.state] ?? "Live"}
+                  {fixture.state !== "HT" && fixture.liveMinute != null ? ` - ${fixture.liveMinute}'` : ""}
+                </AppText>
+              )}
+              {(fixture.state === "CANCELLED" || fixture.state === "POSTPONED" || fixture.state === "DELAYED" || fixture.state === "ABANDONED") && (
+                <AppText variant="caption" color="secondary" style={styles.specialStatusText}>
+                  {FIXTURE_STATE_MAP[fixture.state] ?? fixture.state}
+                </AppText>
+              )}
             </View>
           )}
 
@@ -271,7 +267,6 @@ export function SingleGameMatchCard({
           </View>
         </View>
 
-
       </Animated.View>
       </GestureDetector>
     </View>
@@ -286,7 +281,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginTop: 12,
     alignSelf: "stretch",
-    paddingTop: 20,
+    paddingTop: 12,
     paddingHorizontal: 16,
     paddingBottom: 20,
     borderWidth: 1,
@@ -302,31 +297,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: -6,
+    zIndex: 1,
   },
-  liveBadgeRow: {
-    alignItems: "center",
-    marginBottom: 4,
+  resultScore: {
+    fontSize: 28,
+    fontWeight: "700",
+    writingDirection: "ltr",
   },
-  liveBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: LIVE_RESULT_COLOR + "18",
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: LIVE_RESULT_COLOR,
-  },
-  liveBadgeText: {
+  liveStatusText: {
     color: LIVE_RESULT_COLOR,
     fontWeight: "700",
-    fontSize: 11,
+    fontSize: 12,
+  },
+  specialStatusText: {
+    fontWeight: "700",
+    fontSize: 12,
   },
   matchContent: {
     flexDirection: "row",
@@ -336,9 +322,7 @@ const styles = StyleSheet.create({
   },
   teamSection: {
     flex: 1,
-    flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center",
     gap: 10,
     minWidth: 0,
     paddingHorizontal: 2,
@@ -350,12 +334,12 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   scoreSection: {
-    justifyContent: "center",
     alignItems: "center",
     writingDirection: "ltr",
     paddingHorizontal: 4,
     flexShrink: 0,
     paddingTop: 12,
+    gap: 6,
   },
   resultRow: {
     flexDirection: "row",

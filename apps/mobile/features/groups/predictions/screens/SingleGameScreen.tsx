@@ -1,11 +1,19 @@
 import React, { useMemo, useRef, useState, useCallback, useEffect } from "react";
-import { View, StyleSheet, Keyboard, TextInput } from "react-native";
+import { View, StyleSheet, Keyboard, TextInput, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  interpolate,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useTranslation } from "react-i18next";
-import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { GameSlider } from "../components/GameSlider";
 import { SingleGameContent } from "../components/SingleGameContent";
 import { useGroupFixture } from "../hooks/useGroupFixture";
@@ -32,6 +40,7 @@ export function SingleGameScreen({
   const { t } = useTranslation("common");
   const router = useRouter();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const { fixture, allFixtures, isLoading, error } = useGroupFixture(
     groupId,
@@ -59,6 +68,34 @@ export function SingleGameScreen({
   const homeRef = useRef<TextInput | null>(null);
   const awayRef = useRef<TextInput | null>(null);
 
+  // Expand animation — hides back button + bottom slider when card is expanded
+  const expandAnim = useSharedValue(0);
+
+  const headerAnimStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(expandAnim.value, [0, 0.3], [1, 0]),
+    pointerEvents: expandAnim.value > 0.5 ? "none" : "auto",
+  }));
+
+  const bottomAnimStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(expandAnim.value, [0, 0.3], [1, 0]),
+    transform: [
+      { translateY: interpolate(expandAnim.value, [0, 1], [0, 80]) },
+    ],
+    pointerEvents: expandAnim.value > 0.5 ? "none" : "auto",
+  }));
+
+  const handleExpandChange = useCallback(
+    (expanded: boolean) => {
+      expandAnim.value = withTiming(expanded ? 1 : 0, {
+        duration: expanded ? 300 : 250,
+        easing: expanded
+          ? Easing.out(Easing.ease)
+          : Easing.in(Easing.ease),
+      });
+    },
+    [expandAnim]
+  );
+
   useEffect(() => {
     setCurrentFixtureId(fixtureId);
   }, [fixtureId]);
@@ -71,8 +108,6 @@ export function SingleGameScreen({
       : -1;
 
   // `pending` in the dep array triggers recomputation when slider/input changes
-  // update the React Query pending cache — without it the component never re-renders
-  // because getPrediction/isPredictionSaved are stable (empty deps, read from refs).
   const prediction = useMemo(
     () =>
       currentFixtureId != null
@@ -174,45 +209,76 @@ export function SingleGameScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <GroupGamesHeader onBack={() => router.back()}>
-        {allFixtures.length > 1 && (
+      {/* Card — full screen, centered */}
+      <SingleGameContent
+        fixture={currentFixture}
+        prediction={prediction}
+        isSaved={isSaved}
+        groupId={groupId}
+        homeRef={homeRef}
+        awayRef={awayRef}
+        isHomeFocused={isHomeFocused}
+        isAwayFocused={isAwayFocused}
+        onFieldFocus={handleFieldFocus}
+        onFieldBlur={handleFieldBlur}
+        onUpdatePrediction={updatePrediction}
+        onUpdateSliderValue={updateSliderValue}
+        getNextFieldIndex={getNextFieldIndex}
+        navigateToField={navigateToField}
+        predictionMode={predictionMode}
+        onSelectOutcome={
+          predictionMode === "MatchWinner" ? handleSelectOutcome : undefined
+        }
+        onSwipeLeft={
+          currentFixtureIndex >= 0 && currentFixtureIndex < allFixtures.length - 1
+            ? handleSwipeLeft
+            : undefined
+        }
+        onSwipeRight={
+          currentFixtureIndex > 0 ? handleSwipeRight : undefined
+        }
+        onExpandChange={handleExpandChange}
+        totalFixtures={allFixtures.length}
+      />
+
+      {/* Back button — absolute overlay at top */}
+      <Animated.View
+        style={[
+          styles.backRow,
+          { top: insets.top },
+          headerAnimStyle,
+        ]}
+      >
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          style={styles.backButton}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={theme.colors.textSecondary}
+          />
+        </Pressable>
+      </Animated.View>
+
+      {/* Game slider — absolute overlay at bottom */}
+      {allFixtures.length > 1 && (
+        <Animated.View
+          style={[
+            styles.bottomSlider,
+            { bottom: insets.bottom },
+            bottomAnimStyle,
+          ]}
+        >
           <GameSlider
             fixtures={allFixtures}
             currentIndex={currentFixtureIndex >= 0 ? currentFixtureIndex : 0}
             onSelectGame={handleSelectGame}
+            leftOffset={0}
           />
-        )}
-      </GroupGamesHeader>
-      <View style={styles.content}>
-        <SingleGameContent
-          fixture={currentFixture}
-          prediction={prediction}
-          isSaved={isSaved}
-          groupId={groupId}
-          homeRef={homeRef}
-          awayRef={awayRef}
-          isHomeFocused={isHomeFocused}
-          isAwayFocused={isAwayFocused}
-          onFieldFocus={handleFieldFocus}
-          onFieldBlur={handleFieldBlur}
-          onUpdatePrediction={updatePrediction}
-          onUpdateSliderValue={updateSliderValue}
-          getNextFieldIndex={getNextFieldIndex}
-          navigateToField={navigateToField}
-          predictionMode={predictionMode}
-          onSelectOutcome={
-            predictionMode === "MatchWinner" ? handleSelectOutcome : undefined
-          }
-          onSwipeLeft={
-            currentFixtureIndex >= 0 && currentFixtureIndex < allFixtures.length - 1
-              ? handleSwipeLeft
-              : undefined
-          }
-          onSwipeRight={
-            currentFixtureIndex > 0 ? handleSwipeRight : undefined
-          }
-        />
-      </View>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -221,7 +287,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
-    flex: 1,
+  backRow: {
+    position: "absolute",
+    left: 8,
+    zIndex: 10,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bottomSlider: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
 });

@@ -150,17 +150,19 @@ export function GameSlider({
           }}
           style={({ pressed }) => [
             styles.item,
-            {
-              backgroundColor: isActive
-                ? `${theme.colors.primary}18`
-                : theme.colors.surface,
-              borderWidth: 1,
-              borderColor: isActive
-                ? theme.colors.primary
-                : theme.colors.border,
-              shadowOpacity: pressed ? 0 : isActive ? 0.15 : 0.08,
-              transform: [{ scale: pressed ? 0.95 : 1 }],
-            },
+            isActive
+              ? {
+                  backgroundColor: `${theme.colors.primary}18`,
+                  borderWidth: 1,
+                  borderColor: theme.colors.primary,
+                  shadowOpacity: pressed ? 0 : 0.15,
+                }
+              : {
+                  backgroundColor: "transparent",
+                  borderWidth: 0,
+                  shadowOpacity: 0,
+                },
+            { transform: [{ scale: pressed ? 0.95 : 1 }] },
           ]}
         >
           {/* Row 1: logos + short names */}
@@ -264,8 +266,9 @@ const styles = StyleSheet.create({
   },
   teamsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
+    gap: 6,
     width: "100%",
   },
   teamGroup: {

@@ -88,22 +88,6 @@ export function GroupFilterTabs({
                 },
               ]}
             >
-              <View
-                style={[
-                  styles.iconCircle,
-                  {
-                    backgroundColor: isSelected
-                      ? "rgba(255,255,255,0.25)"
-                      : theme.colors.textSecondary + "15",
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={filter.icon}
-                  size={12}
-                  color={isSelected ? "#fff" : theme.colors.textSecondary}
-                />
-              </View>
               <Text
                 style={[
                   styles.tabText,
@@ -156,11 +140,10 @@ const styles = StyleSheet.create({
   tab: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
+    gap: 5,
+    paddingVertical: 6,
     paddingHorizontal: 10,
-    paddingLeft: 8,
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
     borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
     shadowColor: "#000",
@@ -168,27 +151,20 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
-  iconCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   tabText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
   },
   countBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
   },
   countText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
   },
 });
