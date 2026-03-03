@@ -189,6 +189,10 @@ function AppContent() {
                 options={{ headerShown: false }}
               />
               <Stack.Screen
+                name="groups/predict-all"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="profile/head-to-head"
                 options={{ headerShown: false }}
               />

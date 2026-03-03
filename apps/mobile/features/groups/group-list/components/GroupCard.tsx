@@ -777,12 +777,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   card: {
-    borderRadius: 0,
+    borderRadius: 8,
     paddingTop: 14,
-    paddingHorizontal: 0,
-    paddingBottom: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: "#00000015",
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    borderWidth: 1,
+    borderColor: "#00000015",
   },
   cardDraft: {
     borderStyle: "dashed",

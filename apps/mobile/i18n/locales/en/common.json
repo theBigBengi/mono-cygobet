@@ -211,7 +211,11 @@
       "roleMember": "Member — regular member",
       "privacyPrivate": "Private group — invite only",
       "privacyPublic": "Public group — anyone can join"
-    }
+    },
+    "predictAll": "Predict All",
+    "predictAllBanner": "{{count}} games to predict across {{groups}} groups",
+    "predictAllBannerSingle": "{{count}} games to predict in 1 group",
+    "predictAllLoading": "Loading predictions..."
   },
   "lobby": {
     "draft": "Draft",

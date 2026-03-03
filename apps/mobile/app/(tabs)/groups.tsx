@@ -56,6 +56,7 @@ import {
 import type { GroupViewMode } from "@/features/groups/group-list/components/GroupSortRow";
 import { useGroupFilter } from "@/features/groups/group-list/hooks";
 import type { ApiGroupItem } from "@repo/types";
+import { PredictAllBanner } from "@/features/groups/predictions/components/PredictAllBanner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { addDays, format, isToday, isSameDay, startOfDay, endOfDay } from "date-fns";
 import { useUpcomingFixturesQuery } from "@/domains/fixtures";
@@ -1792,16 +1793,24 @@ function GroupsContent() {
   type ListItem =
     | { type: "header" }
     | { type: "sortRow" }
+    | { type: "banner" }
     | { type: "group"; data: ApiGroupItem };
+
+  const hasUnpredicted = groups.some(
+    (g) => g.status === "active" && (g.unpredictedGamesCount ?? 0) > 0
+  );
 
   const listData = useMemo<ListItem[]>(() => {
     const items: ListItem[] = [
       { type: "header" },
-      { type: "sortRow" },
     ];
+    if (hasUnpredicted) {
+      items.push({ type: "banner" });
+    }
+    items.push({ type: "sortRow" });
     filteredGroups.forEach((g) => items.push({ type: "group", data: g }));
     return items;
-  }, [filteredGroups]);
+  }, [filteredGroups, hasUnpredicted]);
 
   const renderListItem = useCallback(({ item }: { item: ListItem }) => {
     if (item.type === "header") {
@@ -1897,6 +1906,10 @@ function GroupsContent() {
           onViewModeToggle={handleToggleViewMode}
         />
       );
+    }
+
+    if (item.type === "banner") {
+      return <PredictAllBanner />;
     }
 
     // Group card or compact row
@@ -2219,6 +2232,7 @@ function GroupsContent() {
   const getItemKey = (item: ListItem, index: number) => {
     if (item.type === "header") return "header";
     if (item.type === "sortRow") return "sortRow";
+    if (item.type === "banner") return "predictAllBanner";
     return String(item.data.id);
   };
 

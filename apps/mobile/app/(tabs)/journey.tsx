@@ -18,8 +18,11 @@ const NODE_SIZE = 56;
 const VERTICAL_GAP = 28;
 const PATH_AMPLITUDE = SCREEN_WIDTH * 0.28;
 
-const POPOVER_WIDTH = SCREEN_WIDTH * 0.7;
+const POPOVER_WIDTH = SCREEN_WIDTH - 32;
+const POPOVER_MARGIN = 16;
 const ARROW_SIZE = 10;
+const POPOVER_EST_HEIGHT = 150;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 // Mock data: 20 nodes going upward
 const NODES = Array.from({ length: 20 }, (_, i) => ({
@@ -35,12 +38,15 @@ export default function JourneyScreen() {
   const insets = useSafeAreaInsets();
   const [activeNodeId, setActiveNodeId] = useState<number | null>(null);
   const [popoverPos, setPopoverPos] = useState<{ cx: number; bottom: number } | null>(null);
-  const currentNodeRef = useRef<View>(null);
+  const nodeRefs = useRef<Record<number, View | null>>({});
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
+  const tabBarSpace = 60 + insets.bottom;
 
   const nodesBottomUp = [...NODES].reverse();
 
-  const handleNodePress = useCallback((nodeId: number, isCurrent: boolean) => {
-    if (!isCurrent) return;
+  const handleNodePress = useCallback((nodeId: number, isLocked: boolean) => {
+    if (isLocked) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (activeNodeId === nodeId) {
@@ -49,11 +55,31 @@ export default function JourneyScreen() {
       return;
     }
 
-    currentNodeRef.current?.measureInWindow((x, y, width, height) => {
-      setPopoverPos({ cx: x + width / 2, bottom: y + height });
-      setActiveNodeId(nodeId);
+    const ref = nodeRefs.current[nodeId];
+    ref?.measureInWindow((x, y, width, height) => {
+      const nodeBottom = y + height;
+      const popoverBottom = nodeBottom + 8 + POPOVER_EST_HEIGHT;
+      const visibleBottom = SCREEN_HEIGHT - tabBarSpace;
+
+      if (popoverBottom > visibleBottom) {
+        const scrollBy = popoverBottom - visibleBottom + 16;
+        scrollRef.current?.scrollTo({
+          y: scrollOffsetRef.current + scrollBy,
+          animated: true,
+        });
+        // Re-measure after scroll settles
+        setTimeout(() => {
+          ref?.measureInWindow((x2, y2, w2, h2) => {
+            setPopoverPos({ cx: x2 + w2 / 2, bottom: y2 + h2 });
+            setActiveNodeId(nodeId);
+          });
+        }, 350);
+      } else {
+        setPopoverPos({ cx: x + width / 2, bottom: y + height });
+        setActiveNodeId(nodeId);
+      }
     });
-  }, [activeNodeId]);
+  }, [activeNodeId, tabBarSpace]);
 
   const dismissPopover = useCallback(() => {
     setActiveNodeId(null);
@@ -66,11 +92,9 @@ export default function JourneyScreen() {
     // TODO: navigate to lesson
   };
 
-  // Clamp popover so it doesn't go off-screen
-  const popoverLeft = popoverPos
-    ? Math.max(12, Math.min(popoverPos.cx - POPOVER_WIDTH / 2, SCREEN_WIDTH - POPOVER_WIDTH - 12))
-    : 0;
-  const arrowScreenX = popoverPos ? popoverPos.cx : 0;
+  // Fixed width, always centered horizontally
+  const popoverLeft = POPOVER_MARGIN;
+  const arrowScreenX = popoverPos ? popoverPos.cx : SCREEN_WIDTH / 2;
   const arrowLeftInPopover = arrowScreenX - popoverLeft - ARROW_SIZE;
 
   return (
@@ -91,11 +115,14 @@ export default function JourneyScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[
           styles.scrollContent,
           { paddingBottom: 120 + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
         onScrollBeginDrag={dismissPopover}
       >
         <View style={styles.pathContainer}>
@@ -148,8 +175,8 @@ export default function JourneyScreen() {
 
                 {/* Node circle */}
                 <Pressable
-                  ref={isCurrent ? currentNodeRef : undefined}
-                  onPress={() => handleNodePress(node.id, isCurrent)}
+                  ref={(el) => { nodeRefs.current[node.id] = el; }}
+                  onPress={() => handleNodePress(node.id, isLocked)}
                   style={[
                     styles.node,
                     {
@@ -197,69 +224,79 @@ export default function JourneyScreen() {
       </ScrollView>
 
       {/* Floating popover overlay */}
-      {activeNodeId !== null && popoverPos && (
-        <>
-          {/* Invisible backdrop to dismiss */}
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={dismissPopover}
-          />
+      {activeNodeId !== null && popoverPos && (() => {
+        const activeNode = NODES.find((n) => n.id === activeNodeId);
+        if (!activeNode) return null;
+        const popoverBg = activeNode.completed
+          ? theme.colors.success
+          : theme.colors.primary;
 
-          {/* Popover */}
-          <View
-            pointerEvents="box-none"
-            style={[
-              styles.popoverContainer,
-              {
-                top: popoverPos.bottom + 8,
-                left: popoverLeft,
-              },
-            ]}
-          >
-            {/* Arrow */}
-            <View
-              style={[
-                styles.arrow,
-                {
-                  left: arrowLeftInPopover,
-                  borderBottomColor: theme.colors.primary,
-                },
-              ]}
+        return (
+          <>
+            {/* Invisible backdrop to dismiss */}
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={dismissPopover}
             />
 
+            {/* Popover */}
             <View
+              pointerEvents="box-none"
               style={[
-                styles.popover,
-                { backgroundColor: theme.colors.primary },
+                styles.popoverContainer,
+                {
+                  top: popoverPos.bottom + 8,
+                  left: popoverLeft,
+                },
               ]}
             >
-              <AppText style={styles.popoverTitle}>
-                Pair letters and sounds
-              </AppText>
-              <AppText style={styles.popoverSubtitle}>
-                Lesson 3 of 5
-              </AppText>
+              {/* Arrow */}
+              <View
+                style={[
+                  styles.arrow,
+                  {
+                    left: arrowLeftInPopover,
+                    borderBottomColor: popoverBg,
+                  },
+                ]}
+              />
 
-              <Pressable
-                onPress={handleStart}
-                style={({ pressed }) => [
-                  styles.startButton,
-                  pressed && { opacity: 0.85 },
+              <View
+                style={[
+                  styles.popover,
+                  { backgroundColor: popoverBg },
                 ]}
               >
-                <AppText
-                  style={[
-                    styles.startButtonText,
-                    { color: theme.colors.primary },
+                <AppText style={styles.popoverTitle}>
+                  Pair letters and sounds
+                </AppText>
+                <AppText style={styles.popoverSubtitle}>
+                  {activeNode.completed
+                    ? `Completed · ${activeNode.points} XP`
+                    : "Lesson 3 of 5"}
+                </AppText>
+
+                <Pressable
+                  onPress={handleStart}
+                  style={({ pressed }) => [
+                    styles.startButton,
+                    pressed && { opacity: 0.85 },
                   ]}
                 >
-                  START +20 XP
-                </AppText>
-              </Pressable>
+                  <AppText
+                    style={[
+                      styles.startButtonText,
+                      { color: popoverBg },
+                    ]}
+                  >
+                    {activeNode.completed ? "REVIEW" : "START +20 XP"}
+                  </AppText>
+                </Pressable>
+              </View>
             </View>
-          </View>
-        </>
-      )}
+          </>
+        );
+      })()}
     </View>
   );
 }

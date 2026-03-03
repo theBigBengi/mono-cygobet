@@ -211,7 +211,11 @@
       "roleMember": "חבר — חבר רגיל",
       "privacyPrivate": "קבוצה פרטית — בהזמנה בלבד",
       "privacyPublic": "קבוצה ציבורית — כולם יכולים להצטרף"
-    }
+    },
+    "predictAll": "נחש הכל",
+    "predictAllBanner": "{{count}} משחקים לניחוש ב-{{groups}} קבוצות",
+    "predictAllBannerSingle": "{{count}} משחקים לניחוש בקבוצה אחת",
+    "predictAllLoading": "טוען ניחושים..."
   },
   "lobby": {
     "onlyInvitedCanJoin": "רק משתמשים שהוזמנו יכולים להצטרף",
