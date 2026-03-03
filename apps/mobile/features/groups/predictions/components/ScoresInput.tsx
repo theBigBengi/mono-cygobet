@@ -10,6 +10,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { toDisplay } from "../utils/fixture-helpers";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 
 type Variant = "small" | "medium" | "large";
@@ -34,11 +35,6 @@ type Props = {
   homeTeamName?: string;
   awayTeamName?: string;
 };
-
-function toDisplay(value: number | null, isEditable: boolean): string {
-  if (value === null) return isEditable ? "" : "-";
-  return String(value);
-}
 
 const variantStyles: Record<
   Variant,
@@ -203,7 +199,7 @@ export function ScoresInput({
               color: homeFocused ? (isLarge ? theme.colors.textPrimary : theme.colors.primaryText) : theme.colors.textPrimary,
             },
           ]}
-          value={toDisplay(prediction.home, isEditable)}
+          value={toDisplay(prediction.home, !isEditable)}
           onChangeText={handleHomeChange}
           keyboardType="number-pad"
           maxLength={2}
@@ -259,7 +255,7 @@ export function ScoresInput({
               color: awayFocused ? (isLarge ? theme.colors.textPrimary : theme.colors.primaryText) : theme.colors.textPrimary,
             },
           ]}
-          value={toDisplay(prediction.away, isEditable)}
+          value={toDisplay(prediction.away, !isEditable)}
           onChangeText={handleAwayChange}
           keyboardType="number-pad"
           maxLength={2}

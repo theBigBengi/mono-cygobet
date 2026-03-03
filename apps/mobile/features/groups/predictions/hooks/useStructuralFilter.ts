@@ -3,7 +3,8 @@
 import { useMemo, useState, useCallback } from "react";
 import { isLive, isFinished, isNotStarted } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
-import { isToPredict } from "./useActionChips";
+import { isToPredict } from "../utils/fixture-helpers";
+import type { SelectionMode } from "../types";
 
 export type TeamChip = {
   id: number;
@@ -50,8 +51,6 @@ function getRoundStatus(fixturesInRound: FixtureItem[]): RoundStatus {
   if (allFinished) return "settled";
   return "upcoming";
 }
-
-type SelectionMode = "games" | "teams" | "leagues";
 
 interface UseStructuralFilterParams {
   fixtures: FixtureItem[];

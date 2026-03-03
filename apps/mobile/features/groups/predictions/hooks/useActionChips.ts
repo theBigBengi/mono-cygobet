@@ -3,6 +3,8 @@
 import { useMemo, useState, useCallback, useRef } from "react";
 import { isLive, isFinished, isNotStarted } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
+import type { SelectionMode } from "../types";
+import { isToPredict } from "../utils/fixture-helpers";
 
 export type ActionChip = {
   id: string;
@@ -58,10 +60,6 @@ export function classifyFixtureTime(
   return null;
 }
 
-export function isToPredict(f: FixtureItem): boolean {
-  return f.prediction == null && isNotStarted(f.state);
-}
-
 function formatNextDate(kickoffAt: string): string {
   const d = new Date(kickoffAt);
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -97,8 +95,6 @@ function getPredictUrgency(
   if (diff < ms24h) return "warning";
   return "normal";
 }
-
-type SelectionMode = "games" | "teams" | "leagues";
 
 interface UseActionChipsParams {
   fixtures: FixtureItem[];

@@ -1,9 +1,6 @@
 import { useMemo } from "react";
-import { groupFixturesByRound } from "@/utils/fixture";
-import type { RoundGroup } from "@/utils/fixture";
 import type { FixtureItem } from "@/types/common";
-
-type SelectionMode = "games" | "teams" | "leagues";
+import type { SelectionMode } from "../types";
 
 /**
  * Unified group type for fixture sections.
@@ -30,6 +27,20 @@ export type FixtureGroup = {
   fixtures: FixtureItem[];
 };
 
+function getDateKey(kickoffAt: string | undefined): string {
+  if (!kickoffAt) return "";
+  const d = new Date(kickoffAt);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatDateLabel(kickoffAt: string | undefined): string {
+  if (!kickoffAt) return "";
+  const d = new Date(kickoffAt);
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
 interface UseGroupedFixturesParams {
   fixtures: FixtureItem[];
   mode: SelectionMode;
@@ -52,34 +63,17 @@ export function useGroupedFixtures({
   groupTeamsIds,
 }: UseGroupedFixturesParams): FixtureGroup[] {
 
-  // Group fixtures based on mode
   const groups = useMemo((): FixtureGroup[] => {
     let result: FixtureGroup[] = [];
 
     if (mode === "leagues") {
       // Leagues mode: hierarchy is Date > Round
-      const getDateKey = (kickoffAt: string | undefined): string => {
-        if (!kickoffAt) return "";
-        const d = new Date(kickoffAt);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      };
-
-      const formatDateLabel = (kickoffAt: string | undefined): string => {
-        if (!kickoffAt) return "";
-        const d = new Date(kickoffAt);
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
-      };
-
       const sortedFixtures = [...fixtures].sort((a, b) => {
-        // Sort by exact kickoff time (chronological order)
         const timeA = new Date(a.kickoffAt ?? 0).getTime();
         const timeB = new Date(b.kickoffAt ?? 0).getTime();
         return timeA - timeB;
       });
 
-      // Build groups: Date headers + Round groups
       let currentDateKey: string | null = null;
       let currentRoundKey: string | null = null;
       let currentGroup: FixtureGroup | null = null;
@@ -89,15 +83,12 @@ export function useGroupedFixtures({
         const round = fixture.round ?? "";
         const roundKey = `${dateKey}-${round}`;
 
-        // Check if date changed - add date header
         if (dateKey !== currentDateKey) {
-          // Push previous round group if exists
           if (currentGroup) {
             result.push(currentGroup);
             currentGroup = null;
           }
           currentDateKey = dateKey;
-          // Add date header group (no fixtures, just header)
           result.push({
             key: `date-${dateKey}`,
             label: formatDateLabel(fixture.kickoffAt),
@@ -108,9 +99,7 @@ export function useGroupedFixtures({
           });
         }
 
-        // Check if round changed within same date
         if (roundKey !== currentRoundKey) {
-          // Push previous round group if exists
           if (currentGroup) {
             result.push(currentGroup);
           }
@@ -122,44 +111,25 @@ export function useGroupedFixtures({
             fixtures: [fixture],
           };
         } else {
-          // Same round - add to current group
           currentGroup?.fixtures.push(fixture);
         }
       }
 
-      // Push the last group
       if (currentGroup) {
         result.push(currentGroup);
       }
     } else {
       // Games/teams mode: hierarchy is Date > League > Round
-      const getDateKey = (kickoffAt: string | undefined): string => {
-        if (!kickoffAt) return "";
-        const d = new Date(kickoffAt);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      };
-
-      const formatDateLabel = (kickoffAt: string | undefined): string => {
-        if (!kickoffAt) return "";
-        const d = new Date(kickoffAt);
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
-      };
-
       const sortedFixtures = [...fixtures].sort((a, b) => {
-        // 1. Sort by exact kickoff time (chronological order)
         const timeA = new Date(a.kickoffAt ?? 0).getTime();
         const timeB = new Date(b.kickoffAt ?? 0).getTime();
         if (timeA !== timeB) return timeA - timeB;
 
-        // 2. Sort by league name (for same-time games)
         const leagueA = a.league?.name ?? "";
         const leagueB = b.league?.name ?? "";
         return leagueA.localeCompare(leagueB);
       });
 
-      // Build groups: Date headers + League/Round groups
       let currentDateKey: string | null = null;
       let currentLeagueRoundKey: string | null = null;
       let currentGroup: FixtureGroup | null = null;
@@ -171,15 +141,12 @@ export function useGroupedFixtures({
         const round = fixture.round ?? "";
         const leagueRoundKey = `${dateKey}-${leagueId}-${round}`;
 
-        // Check if date changed - add date header
         if (dateKey !== currentDateKey) {
-          // Push previous league group if exists
           if (currentGroup) {
             result.push(currentGroup);
             currentGroup = null;
           }
           currentDateKey = dateKey;
-          // Add date header group (no fixtures, just header)
           result.push({
             key: `date-${dateKey}`,
             label: formatDateLabel(fixture.kickoffAt),
@@ -190,9 +157,7 @@ export function useGroupedFixtures({
           });
         }
 
-        // Check if league/round changed within same date
         if (leagueRoundKey !== currentLeagueRoundKey) {
-          // Push previous league group if exists
           if (currentGroup) {
             result.push(currentGroup);
           }
@@ -208,12 +173,10 @@ export function useGroupedFixtures({
             fixtures: [fixture],
           };
         } else {
-          // Same league/round - add to current group
           currentGroup?.fixtures.push(fixture);
         }
       }
 
-      // Push the last group
       if (currentGroup) {
         result.push(currentGroup);
       }
@@ -224,6 +187,3 @@ export function useGroupedFixtures({
 
   return groups;
 }
-
-// Keep backward compatibility - export legacy function
-export { useGroupedFixtures as useGroupedFixturesLegacy };

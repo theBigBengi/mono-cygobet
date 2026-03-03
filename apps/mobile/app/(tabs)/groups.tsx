@@ -40,11 +40,13 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
-import { Screen, AppText, Button, TeamLogo } from "@/components/ui";
+import { Screen, AppText, Button, TeamLogo, GroupAvatar } from "@/components/ui";
 import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { useMyGroupsQuery, useUnreadCountsQuery, useUnreadActivityCountsQuery, useCreateGroupMutation } from "@/domains/groups";
 import { publishGroup } from "@/domains/groups/groups-core.api";
 import { useMyInvitesQuery } from "@/domains/invites";
+import { AVATAR_GRADIENTS } from "@/lib/constants/avatarGradients";
+import { LinearGradient } from "expo-linear-gradient";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import {
   GroupCard,
@@ -79,6 +81,8 @@ function CreateGroupSheet({
   backdropComponent,
   onOpenSort,
   onOpenAdvSheet,
+  onOpenAvatarPicker,
+  avatarValue,
   tabSortOptions,
   groupCount,
 }: {
@@ -87,6 +91,8 @@ function CreateGroupSheet({
   backdropComponent: (props: BottomSheetBackdropProps) => React.JSX.Element;
   onOpenSort: (tab: CreateTab) => void;
   onOpenAdvSheet: (sheet: "prediction" | "scoring" | "ko" | "members") => void;
+  onOpenAvatarPicker: () => void;
+  avatarValue: string;
   tabSortOptions: Record<CreateTab, string>;
   groupCount: number;
 }) {
@@ -103,6 +109,8 @@ function CreateGroupSheet({
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const groupNameInputRef = useRef<TextInput>(null);
+  const descInputRef = useRef<TextInput>(null);
+  const step1ScrollRef = useRef<ScrollView>(null);
   const prevStepRef = useRef(0);
   const router = useRouter();
   const createGroupMutation = useCreateGroupMutation();
@@ -196,6 +204,8 @@ function CreateGroupSheet({
         name: groupName.trim(),
         privacy: "private",
         inviteAccess: "all",
+        avatarType: "gradient",
+        avatarValue,
         onTheNosePoints: 3,
         correctDifferencePoints: 2,
         outcomePoints: 1,
@@ -463,23 +473,49 @@ function CreateGroupSheet({
               </AppText>
             </Pressable>
           ) : (
-            <Pressable
-              onPress={handleBack}
-              style={({ pressed }) => [
-                createStyles.continueBtn,
-                {
-                  borderColor: theme.colors.textSecondary,
-                  opacity: pressed ? 0.5 : 1,
-                },
-              ]}
-            >
-              <AppText
-                variant="caption"
-                style={[createStyles.continueBtnText, { color: theme.colors.textPrimary }]}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              {step === 1 && (
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    slideDirection.current = "forward";
+                    setStep(2);
+                  }}
+                  style={({ pressed }) => ({
+                    opacity: pressed ? 0.6 : 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    paddingVertical: 4,
+                    paddingHorizontal: 10,
+                    borderRadius: 12,
+                    backgroundColor: theme.colors.textPrimary + "08",
+                  })}
+                >
+                  <Ionicons name="options-outline" size={14} color={theme.colors.textSecondary} />
+                  <AppText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                    {t("groupCreation.advanced")}
+                  </AppText>
+                </Pressable>
+              )}
+              <Pressable
+                onPress={handleBack}
+                style={({ pressed }) => [
+                  createStyles.continueBtn,
+                  {
+                    borderColor: theme.colors.textSecondary,
+                    opacity: pressed ? 0.5 : 1,
+                  },
+                ]}
               >
-                {t("common.back")}
-              </AppText>
-            </Pressable>
+                <AppText
+                  variant="caption"
+                  style={[createStyles.continueBtnText, { color: theme.colors.textPrimary }]}
+                >
+                  {t("common.back")}
+                </AppText>
+              </Pressable>
+            </View>
           )}
         </View>
 
@@ -937,14 +973,27 @@ function CreateGroupSheet({
         {step === 1 && (
           <Animated.View entering={slideDirection.current === "forward" ? SlideInDown.duration(250) : undefined} style={{ flex: 1 }}>
           {/* Step 1: Group Details */}
-          <View style={createStyles.wizardContent}>
+          <ScrollView ref={step1ScrollRef} style={{ flex: 1 }} contentContainerStyle={[createStyles.wizardContent, { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 100 : 20 }]} keyboardShouldPersistTaps="handled">
+            <Pressable onPress={onOpenAvatarPicker} style={createStyles.avatarPicker}>
+              <GroupAvatar
+                avatarType="gradient"
+                avatarValue={avatarValue}
+                initials={groupName.trim() ? groupName.trim().substring(0, 2) : "Gr"}
+                size={96}
+                borderRadius={26}
+                flat
+              />
+              <View style={[createStyles.avatarEditBadge, { backgroundColor: theme.colors.background }]}>
+                <Ionicons name="color-palette-outline" size={14} color={theme.colors.textSecondary} />
+              </View>
+            </Pressable>
             <View style={createStyles.fieldGroup}>
               <TextInput
                 style={[
                   createStyles.fieldInput,
                   {
                     color: theme.colors.textPrimary,
-                    borderBottomColor: groupName.length > 0 ? theme.colors.textSecondary + "40" : theme.colors.border,
+                    backgroundColor: theme.colors.textPrimary + "08",
                   },
                 ]}
                 placeholder={t("groupCreation.groupNamePlaceholder")}
@@ -954,23 +1003,37 @@ function CreateGroupSheet({
                 ref={groupNameInputRef}
                 maxLength={40}
                 selectTextOnFocus
+                onFocus={() => {
+                  setTimeout(() => {
+                    step1ScrollRef.current?.scrollTo({ y: 0, animated: true });
+                  }, 300);
+                }}
               />
               <TextInput
                 style={[
                   createStyles.descInput,
-                  { color: theme.colors.textPrimary },
+                  { color: theme.colors.textPrimary, backgroundColor: theme.colors.textPrimary + "08" },
                 ]}
                 placeholder={t("lobby.descriptionPlaceholder")}
                 placeholderTextColor={theme.colors.textSecondary + "50"}
                 value={groupDescription}
                 onChangeText={setGroupDescription}
+                ref={descInputRef}
                 maxLength={200}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
+                onFocus={() => {
+                  setTimeout(() => {
+                    step1ScrollRef.current?.scrollToEnd({ animated: true });
+                  }, 300);
+                }}
               />
             </View>
+          </ScrollView>
 
+          {/* Sticky create button */}
+          <View style={[createStyles.stickyBottom, { bottom: keyboardHeight > 0 ? keyboardHeight : insets.bottom + 16, ...(keyboardHeight > 0 && { backgroundColor: theme.colors.background, shadowColor: theme.colors.background, shadowOffset: { width: 0, height: -30 }, shadowOpacity: 1, shadowRadius: 15, elevation: 8 }) }]}>
             <Pressable
               onPress={handleCreateAndPublish}
               disabled={isCreating || groupName.trim().length === 0}
@@ -991,19 +1054,6 @@ function CreateGroupSheet({
                   {t("groupCreation.createGroup")}
                 </Text>
               )}
-            </Pressable>
-
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                slideDirection.current = "forward";
-                setStep(2);
-              }}
-              style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, alignSelf: "center", marginTop: 16 })}
-            >
-              <AppText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                {t("groupCreation.advanced")}
-              </AppText>
             </Pressable>
           </View>
           </Animated.View>
@@ -1212,12 +1262,27 @@ const createStyles = StyleSheet.create({
   },
   wizardContent: {
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 28,
   },
   wizardTitle: {
     fontWeight: "700",
     marginBottom: 16,
     textAlign: "center",
+  },
+  avatarPicker: {
+    alignSelf: "center",
+    marginBottom: 20,
+    position: "relative",
+  },
+  avatarEditBadge: {
+    position: "absolute",
+    bottom: -4,
+    right: -4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   fieldGroup: {
     gap: 8,
@@ -1227,20 +1292,20 @@ const createStyles = StyleSheet.create({
     fontWeight: "600",
   },
   fieldInput: {
-    fontSize: 30,
+    fontSize: 18,
     fontWeight: "500",
-    borderBottomWidth: 1,
-    paddingHorizontal: 4,
-    paddingTop: 0,
-    paddingBottom: 4,
-    textAlign: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    textAlign: "left",
   },
   descInput: {
     fontSize: 14,
-    marginTop: 20,
+    marginTop: 12,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 4,
-    minHeight: 72,
+    borderRadius: 12,
+    minHeight: 100,
     textAlign: "left",
   },
   fieldCharCount: {
@@ -1248,17 +1313,23 @@ const createStyles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "right",
   },
+  stickyBottom: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+  },
   createBtn: {
-    marginTop: 32,
     borderRadius: 20,
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    alignSelf: "center",
+    alignSelf: "stretch",
     alignItems: "center",
   },
   createBtnText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "700",
   },
   advancedContent: {
@@ -1345,6 +1416,22 @@ const createStyles = StyleSheet.create({
   },
   sheetOptionLabel: {
     fontSize: 15,
+  },
+  avatarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 16,
+    paddingBottom: 20,
+  },
+  avatarGridItem: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.2)",
   },
   headerTitle: {
     fontWeight: "700",
@@ -1704,6 +1791,8 @@ function GroupsContent() {
   const advScoringRef = useRef<BottomSheetModal>(null);
   const advKoRef = useRef<BottomSheetModal>(null);
   const advMembersRef = useRef<BottomSheetModal>(null);
+  const avatarPickerRef = useRef<BottomSheetModal>(null);
+  const [createAvatarValue, setCreateAvatarValue] = useState("0");
   const [createTabSortOptions, setCreateTabSortOptions] = useState<Record<CreateTab, string>>({
     fixtures: "time",
     leagues: "time",
@@ -1753,6 +1842,11 @@ function GroupsContent() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const refs = { prediction: advPredictionRef, scoring: advScoringRef, ko: advKoRef, members: advMembersRef };
     refs[sheet].current?.present();
+  }, []);
+
+  const handleOpenAvatarPicker = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    avatarPickerRef.current?.present();
   }, []);
 
   const handleSelectCreateSort = useCallback((key: string) => {
@@ -2318,6 +2412,8 @@ function GroupsContent() {
         tabSortOptions={createTabSortOptions}
         onOpenSort={handleOpenCreateSort}
         onOpenAdvSheet={handleOpenAdvSheet}
+        onOpenAvatarPicker={handleOpenAvatarPicker}
+        avatarValue={createAvatarValue}
         groupCount={groups.length}
       />
 
@@ -2445,6 +2541,55 @@ function GroupsContent() {
               <Ionicons name={num === 50 ? "radio-button-on" : "radio-button-off"} size={20} color={num === 50 ? theme.colors.primary : theme.colors.textSecondary} />
             </Pressable>
           ))}
+        </View>
+      </BottomSheetModal>
+
+      {/* Avatar picker sheet */}
+      <BottomSheetModal
+        ref={avatarPickerRef}
+        stackBehavior="push"
+        snapPoints={["40%"]}
+        enableDynamicSizing={false}
+        enablePanDownToClose
+        backdropComponent={renderCreateBackdrop}
+        backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+      >
+        <View style={createStyles.sheetContent}>
+          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary }]}>{t("lobby.chooseAvatar")}</Text>
+          <View style={createStyles.avatarGrid}>
+            {AVATAR_GRADIENTS.map((colors, index) => {
+              const isSelected = String(index) === createAvatarValue;
+              return (
+                <Pressable
+                  key={index}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setCreateAvatarValue(String(index));
+                    avatarPickerRef.current?.dismiss();
+                  }}
+                  style={{ alignItems: "center", position: "relative" }}
+                >
+                  <LinearGradient
+                    colors={colors as unknown as [string, string]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[
+                      createStyles.avatarGridItem,
+                      isSelected && { borderColor: theme.colors.primary, borderWidth: 3 },
+                    ]}
+                  >
+                    <Text style={{ fontWeight: "800", fontSize: 20, color: "#fff" }}>GR</Text>
+                  </LinearGradient>
+                  {isSelected && (
+                    <View style={{ position: "absolute", bottom: -4, right: -4, backgroundColor: "#fff", borderRadius: 10, width: 20, height: 20, justifyContent: "center", alignItems: "center" }}>
+                      <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       </BottomSheetModal>
     </View>

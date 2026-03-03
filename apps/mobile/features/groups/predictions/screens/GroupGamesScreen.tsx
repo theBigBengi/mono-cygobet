@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, Pressable, Dimensions, Platform, type ListRenderItemInfo } from "react-native";
-import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedStyle, runOnJS, clamp, withTiming } from "react-native-reanimated";
+import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, type ListRenderItemInfo } from "react-native";
+import Animated, { withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -12,7 +12,6 @@ import {
   ScoreInputNavigationBar,
   SmartFilterChips,
   GroupFixtureCard,
-  GamesSummaryCard,
 } from "../components";
 import { useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { usePredictionNavigation } from "../hooks/usePredictionNavigation";
@@ -21,40 +20,28 @@ import { useCardFocusSaving } from "../hooks/useCardFocusSaving";
 import { useSmartFilters } from "../hooks/useSmartFilters";
 import { useGroupedFixtures } from "../hooks/useGroupedFixtures";
 import { usePredictionsStats } from "../hooks/usePredictionsStats";
+import { useCollapsingHeader } from "../hooks/useCollapsingHeader";
+import { useScrollToNextButton } from "../hooks/useScrollToNextButton";
 import type { PredictionMode, FixtureItem, RenderItem } from "../types";
-import { GroupGamesLastSavedFooter } from "../components/GroupGamesLastSavedFooter";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
-import { GroupGamesSkeleton } from "../components/GroupGamesSkeleton";
+import { GroupGamesListHeader } from "../components/GroupGamesListHeader";
+import { ScrollToNextButton } from "../components/ScrollToNextButton";
+import { buildRenderItems } from "../utils/buildRenderItems";
 import { isFinished as isFinishedState, isLive as isLiveState, isCancelled as isCancelledState } from "@repo/utils";
 import { HEADER_HEIGHT, FOOTER_PADDING, SAVE_PENDING_DELAY_MS, SCROLL_OFFSET } from "../utils/constants";
 
 type Props = {
   groupId: number | null;
-  /** Fixtures passed from parent (already fetched with group). */
   fixtures: FixtureItem[];
   predictionMode?: PredictionMode;
   groupName?: string;
   selectionMode?: "games" | "teams" | "leagues";
   groupTeamsIds?: number[];
-  /** Index to scroll to on mount (deprecated - use scrollToFixtureId) */
   scrollToIndex?: number;
-  /** Fixture ID to scroll to on mount (preferred over scrollToIndex) */
   scrollToFixtureId?: number;
-  /** Maximum points for a perfect prediction (from group rules). */
   maxPossiblePoints?: number;
 };
 
-/**
- * Feature screen for group games score predictions.
- *
- * This file keeps only high-level orchestration:
- * - Normalises fixtures from props and applies filters (teams/rounds/actions).
- * - Groups fixtures by league/date and manages prediction state (local + save).
- * - Wires keyboard height, focus saving, and prev/next field navigation.
- * - Renders list view (FlatList + GroupFixtureCard per fixture); card press
- *   navigates to dedicated single-game route. Handlers are memoized so fixture cards
- *   re-render only when their props change.
- */
 export function GroupGamesScreen({
   groupId,
   fixtures: fixturesProp,
@@ -72,11 +59,9 @@ export function GroupGamesScreen({
   const insets = useSafeAreaInsets();
   const mode = selectionMode ?? "games";
 
-  /** Defer heavy content rendering until navigation animation finishes. */
   const [isReady, setIsReady] = React.useState(false);
   React.useEffect(() => {
     const handle = InteractionManager.runAfterInteractions(() => {
-      // Ensure skeleton is painted for at least one frame before loading content
       requestAnimationFrame(() => {
         setIsReady(true);
       });
@@ -84,7 +69,6 @@ export function GroupGamesScreen({
     return () => handle.cancel();
   }, []);
 
-  /** Normalise fixtures from props; ensure we always have an array. */
   const fixtures = useMemo(() => {
     return Array.isArray(fixturesProp) ? fixturesProp : [];
   }, [fixturesProp]);
@@ -95,7 +79,6 @@ export function GroupGamesScreen({
     }
   }, [groupId, router]);
 
-  /** Filter chips (teams, rounds, actions) and empty-state messaging. */
   const {
     actionChips,
     selectedAction,
@@ -115,8 +98,6 @@ export function GroupGamesScreen({
     onNavigateToLeaderboard: navigateToLeaderboard,
   });
 
-  /** Fixtures grouped based on selection mode; LIVE fixtures are separated. */
-  /** In leagues mode with round filter active, skip grouping (flat list) */
   const skipGrouping = mode === "leagues" && selectedAction === "round";
   const fixtureGroups = useGroupedFixtures({
     fixtures: filteredFixtures,
@@ -125,7 +106,6 @@ export function GroupGamesScreen({
     groupTeamsIds,
   });
 
-  /** Shared prediction state (React Query cache), save-to-server, and MatchWinner 1/X/2. */
   const {
     getPrediction,
     isPredictionSaved,
@@ -142,7 +122,6 @@ export function GroupGamesScreen({
     predictionMode,
   });
 
-  /** Show confirmation if needed, then fill random. Caller shows alerts using t(). */
   const handleFillRandom = useCallback(() => {
     const confirmInfo = getFillRandomConfirm();
     const fixtureIds = filteredFixtures.map((f) => f.id);
@@ -165,7 +144,6 @@ export function GroupGamesScreen({
     }
   }, [getFillRandomConfirm, fillRandomPredictions, filteredFixtures, t]);
 
-  /** Save all pending predictions; show alert on error. */
   const handleSaveAllChanged = useCallback(() => {
     saveAllPending().catch(() => {
       Alert.alert(
@@ -177,7 +155,6 @@ export function GroupGamesScreen({
 
   const predictionModeTyped = predictionMode ?? "CorrectScore";
 
-  /** Memoized map of global match numbers in "x/y" format. */
   const matchNumbersMap = useMemo(() => {
     const map: Record<number, string> = {};
     let globalIndex = 1;
@@ -193,123 +170,13 @@ export function GroupGamesScreen({
     return map;
   }, [fixtureGroups]);
 
-  /** Max possible points for a perfect prediction (from group rules). */
   const maxPoints = maxPossiblePoints ?? 0;
 
-  const renderItems = useMemo((): RenderItem[] => {
-    // 1. Flatten all fixtures to compute progress front
-    const allFixtures: FixtureItem[] = [];
-    fixtureGroups.forEach((g) => g.fixtures.forEach((f) => allFixtures.push(f)));
+  const renderItems = useMemo(
+    () => buildRenderItems(fixtureGroups),
+    [fixtureGroups]
+  );
 
-    let lastFinishedIdx = -1;
-    for (let i = allFixtures.length - 1; i >= 0; i--) {
-      const state = allFixtures[i].state;
-      if (state && isFinishedState(state)) {
-        lastFinishedIdx = i;
-        break;
-      }
-    }
-
-    // Extend fill to the first live match (line reaches it but doesn't fill through)
-    let firstLiveIdx = -1;
-    const searchFrom = lastFinishedIdx >= 0 ? lastFinishedIdx + 1 : 0;
-    if (searchFrom < allFixtures.length) {
-      const nextState = allFixtures[searchFrom].state;
-      if (nextState && isLiveState(nextState)) {
-        firstLiveIdx = searchFrom;
-      }
-    }
-
-    const lastFilledIdx = firstLiveIdx >= 0 ? firstLiveIdx : lastFinishedIdx;
-
-    // Per-fixture timeline state
-    const filled: Record<number, boolean> = {};
-    const connector: Record<number, boolean> = {};
-    allFixtures.forEach((f, i) => {
-      filled[f.id] = i <= lastFilledIdx;
-      // Connector fills between cards, but NOT after the first live match
-      connector[f.id] = i < lastFilledIdx && i < (firstLiveIdx >= 0 ? firstLiveIdx : lastFilledIdx + 1);
-    });
-
-    // 2. Build flat render list
-    const items: RenderItem[] = [];
-    for (const group of fixtureGroups) {
-      if (group.fixtures.length === 0 && group.label) {
-        // Date-only header (no fixtures in this group)
-        items.push({
-          type: "header",
-          key: group.key,
-          label: group.dateLabel || group.label,
-          level: "date",
-          isLive: group.isLive,
-          showTrack: false,
-          isFilled: false,
-        });
-      } else if (group.fixtures.length > 0 && group.label) {
-        // League/round header (group has fixtures — header shown above them)
-        items.push({
-          type: "header",
-          key: `header-${group.key}`,
-          label: group.label,
-          level: group.level ?? "league",
-          isLive: group.isLive,
-          round: group.fixtures[0]?.round,
-          showTrack: false,
-          isFilled: false,
-        });
-      }
-      for (let i = 0; i < group.fixtures.length; i++) {
-        items.push({
-          type: "card",
-          fixture: group.fixtures[i],
-          group,
-          indexInGroup: i,
-          timelineFilled: filled[group.fixtures[i].id] ?? false,
-          timelineConnectorFilled: connector[group.fixtures[i].id] ?? false,
-          isFirstInTimeline: false, // filled below
-          isLastInTimeline: false,
-        });
-      }
-    }
-
-    // 3. Compute timeline state for every item (single O(n) pass)
-    // Start as true since the summary card is always above the first card
-    let seenFirstCard = true;
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-
-      if (item.type === "header") {
-        item.showTrack = seenFirstCard;
-        let nextFilled = false;
-        for (let j = i + 1; j < items.length; j++) {
-          if (items[j].type === "card") {
-            nextFilled = (items[j] as any).timelineFilled;
-            break;
-          }
-        }
-        item.isFilled = nextFilled;
-      } else {
-        item.isFirstInTimeline = !seenFirstCard;
-        item.isLastInTimeline = i === items.length - 1;
-        seenFirstCard = true;
-      }
-    }
-
-    return items;
-  }, [fixtureGroups]);
-
-  /** Build fixture→index map so usePredictionNavigation can scrollToIndex. */
-  React.useEffect(() => {
-    const map = new Map<number, number>();
-    renderItems.forEach((item, i) => {
-      if (item.type === "card") {
-        map.set(item.fixture.id, i);
-      }
-    });
-    updateFixtureIndexMap(map);
-  }, [renderItems, updateFixtureIndexMap]);
-
-  /** Summary stats for the summary card. */
   const summaryStats = useMemo(() => {
     let totalPoints = 0;
     let settledWithPoints = 0;
@@ -332,7 +199,6 @@ export function GroupGamesScreen({
     return { totalPoints, accuracy };
   }, [filteredFixtures]);
 
-  /** Next fixture — first upcoming game that hasn't started yet. */
   const nextToPredictId = useMemo(() => {
     const allFixtures: FixtureItem[] = [];
     fixtureGroups.forEach((g) =>
@@ -346,7 +212,6 @@ export function GroupGamesScreen({
     return null;
   }, [fixtureGroups]);
 
-  /** For MatchWinner mode: set 1/X/2 and trigger a save shortly after. */
   const handleSelectOutcome = React.useCallback(
     (fixtureId: number, outcome: "home" | "draw" | "away") => {
       setOutcomePrediction(fixtureId, outcome);
@@ -355,11 +220,9 @@ export function GroupGamesScreen({
     [setOutcomePrediction, handleSaveAllChanged]
   );
 
-  /** Stats for footer: last saved time, saved count, total count. */
   const { latestUpdatedAt, savedPredictionsCount, totalPredictionsCount } =
     usePredictionsStats({ fixtures: filteredFixtures });
 
-  /** Refs for inputs/cards, scroll ref, focus state, prev/next and scroll-to-card. */
   const {
     inputRefs,
     matchCardRefs,
@@ -378,7 +241,16 @@ export function GroupGamesScreen({
     scrollToMatchCard,
   } = usePredictionNavigation(fixtureGroups);
 
-  /** Bottom sheet ref for filter chips. */
+  React.useEffect(() => {
+    const map = new Map<number, number>();
+    renderItems.forEach((item, i) => {
+      if (item.type === "card") {
+        map.set(item.fixture.id, i);
+      }
+    });
+    updateFixtureIndexMap(map);
+  }, [renderItems, updateFixtureIndexMap]);
+
   const filterSheetRef = useRef<BottomSheetModal>(null);
 
   const handleFilterPress = useCallback(() => {
@@ -398,139 +270,43 @@ export function GroupGamesScreen({
     [],
   );
 
-  /** Scroll position for card reveal animations. */
-  const scrollY = useSharedValue(0);
-  /** Collapsing header: track previous scroll position and header offset. */
-  const previousScrollY = useSharedValue(0);
-  const headerOffset = useSharedValue(0);
   const totalHeaderH = HEADER_HEIGHT + insets.top;
-  /** True only while the user is physically dragging the list. */
-  const isUserDragging = useSharedValue(false);
 
-  const animatedScrollHandler = useAnimatedScrollHandler({
-    onBeginDrag: () => { isUserDragging.value = true; },
-    onScroll: (event) => {
-      const currentY = event.contentOffset.y;
-      const maxScrollY = event.contentSize.height - event.layoutMeasurement.height;
-
-      scrollY.value = currentY;
-
-      // Collapsing header: react to user drag normally (show/hide).
-      // During programmatic navigation: only allow HIDING (scroll up → hide header),
-      // never showing — so jumping to earlier fixtures collapses the header.
-      const delta = previousScrollY.value - currentY;
-      if (isUserDragging.value) {
-        headerOffset.value = clamp(
-          headerOffset.value + delta,
-          -totalHeaderH,
-          0,
-        );
-      }
-
-      previousScrollY.value = clamp(currentY, 0, maxScrollY);
-    },
-    onMomentumEnd: () => {
-      isUserDragging.value = false;
-
-      // Snap to fully visible or fully hidden
-      if (headerOffset.value > -totalHeaderH / 2) {
-        headerOffset.value = withTiming(0, { duration: 200 });
-      } else {
-        headerOffset.value = withTiming(-totalHeaderH, { duration: 200 });
-      }
-    },
+  const {
+    scrollY,
+    headerOffset,
+    animatedScrollHandler,
+    headerAnimatedStyle,
+    scrollBtnAnimatedStyle,
+  } = useCollapsingHeader({
+    totalHeaderHeight: totalHeaderH,
+    headerHeight: HEADER_HEIGHT,
   });
 
-  const headerAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: headerOffset.value }],
-  }));
-
-  /** Scroll button follows header. */
-  const scrollBtnAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{
-      translateY: clamp(headerOffset.value, -HEADER_HEIGHT, 0),
-    }],
-  }));
-
-  /** Track next-to-predict card visibility for floating scroll button. */
-  const VIEWPORT_H = Dimensions.get("window").height;
-  const nextCardY = useSharedValue(-1);
-  const [scrollBtnDir, setScrollBtnDir] = React.useState<"up" | "down" | null>(null);
-
-  // Measure the next-to-predict card position after layout
-  React.useEffect(() => {
-    if (!nextToPredictId || !isReady) {
-      nextCardY.value = -1;
-      setScrollBtnDir(null);
-      return;
-    }
-    const timer = setTimeout(() => {
-      const cardRef = matchCardRefs.current[String(nextToPredictId)];
-      if (cardRef?.current) {
-        cardRef.current.measureInWindow((_x: number, screenY: number) => {
-          if (screenY != null) {
-            nextCardY.value = screenY + scrollY.value;
-          }
-        });
-      }
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [nextToPredictId, isReady, matchCardRefs, scrollY, nextCardY]);
-
-  // Track previous direction on UI thread to avoid redundant runOnJS bridge calls.
-  // 0 = null, 1 = "up", 2 = "down"
-  const prevBtnDir = useSharedValue(0);
-
-  // Check visibility on every scroll frame — only bridge when direction changes
-  useAnimatedReaction(
-    () => ({ scroll: scrollY.value, cardY: nextCardY.value }),
-    ({ scroll, cardY }) => {
-      let nextDir = 0; // null
-      if (cardY >= 0) {
-        const CARD_HEIGHT = 140;
-        const viewportTop = scroll + HEADER_HEIGHT + insets.top;
-        const viewportBottom = scroll + VIEWPORT_H;
-        if (cardY + CARD_HEIGHT < viewportTop) {
-          nextDir = 1; // "up"
-        } else if (cardY > viewportBottom) {
-          nextDir = 2; // "down"
-        }
-      }
-      if (nextDir !== prevBtnDir.value) {
-        prevBtnDir.value = nextDir;
-        runOnJS(setScrollBtnDir)(nextDir === 0 ? null : nextDir === 1 ? "up" : "down");
-      }
-    }
-  );
-
-  const handleScrollToNext = useCallback(() => {
-    if (nextToPredictId) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      // Reveal header if it's hidden (scrolling up to earlier card)
-      if (headerOffset.value < 0) {
-        headerOffset.value = withTiming(0, { duration: 200 });
-      }
-      scrollToMatchCard(nextToPredictId);
-    }
-  }, [nextToPredictId, scrollToMatchCard, headerOffset]);
+  const { scrollBtnDir, handleScrollToNext } = useScrollToNextButton({
+    nextToPredictId,
+    isReady,
+    matchCardRefs,
+    scrollY,
+    headerOffset,
+    insetTop: insets.top,
+    scrollToMatchCard,
+  });
 
   const keyboardHeight = useKeyboardHeight();
 
-  /** Persist focus in state so nav bar and scroll-to-card know current field. */
   const { handleFieldFocus, handleFieldBlur } = useCardFocusSaving({
     currentFocusedField,
     setCurrentFocusedField,
     isNavigatingRef,
   });
 
-  /** O(1) fixture lookup by id — rebuilt only when fixtures change (data load). */
   const fixturesById = useMemo(() => {
     const map = new Map<number, FixtureItem>();
     fixtures.forEach((f) => map.set(f.id, f));
     return map;
   }, [fixtures]);
 
-  /** Get focused team info for navigation bar. */
   const focusedTeamInfo = useMemo(() => {
     if (!currentFocusedField) return null;
     const fixture = fixturesById.get(currentFocusedField.fixtureId);
@@ -542,28 +318,22 @@ export function GroupGamesScreen({
     };
   }, [currentFocusedField, fixturesById]);
 
-  /** Save pending predictions when keyboard hides (tap outside or system dismiss). */
   React.useEffect(() => {
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
       () => handleSaveAllChanged()
     );
-
     return () => {
       keyboardDidHideListener.remove();
     };
   }, [handleSaveAllChanged]);
 
-  /** Collapse header whenever a field receives focus. */
   React.useEffect(() => {
     if (currentFocusedField) {
       headerOffset.value = withTiming(-totalHeaderH, { duration: 200 });
     }
   }, [currentFocusedField, headerOffset, totalHeaderH]);
 
-  /** Scroll to focused card when keyboard first appears (user taps a field directly).
-   *  Programmatic navigation (prev/next/autoNext) already calls scrollToMatchCard,
-   *  so we only scroll here when the keyboard pops up for a fresh tap. */
   const lastKeyboardHeightRef = React.useRef<number>(0);
   React.useEffect(() => {
     if (currentFocusedField && !isNavigatingRef.current) {
@@ -575,7 +345,6 @@ export function GroupGamesScreen({
     lastKeyboardHeightRef.current = currentFocusedField ? keyboardHeight : 0;
   }, [currentFocusedField, keyboardHeight, scrollToMatchCard, isNavigatingRef]);
 
-  /** Create input/card refs for each fixture so cards can focus and scroll. */
   React.useEffect(() => {
     fixtures.forEach((fixture) => {
       const fixtureIdStr = String(fixture.id);
@@ -591,12 +360,9 @@ export function GroupGamesScreen({
     });
   }, [fixtures, inputRefs, matchCardRefs]);
 
-  // Track if initial scroll was done
   const initialScrollDone = React.useRef(false);
-  // Track highlighted fixture for visual feedback after scroll
   const [highlightedFixtureId, setHighlightedFixtureId] = React.useState<number | null>(null);
 
-  // ── Ref-bridges: renderItem reads from refs so its deps stay stable ──
   const currentFocusedFieldRef = useRef(currentFocusedField);
   currentFocusedFieldRef.current = currentFocusedField;
   const highlightedFixtureIdRef = useRef(highlightedFixtureId);
@@ -604,29 +370,22 @@ export function GroupGamesScreen({
   const nextToPredictIdRef = useRef(nextToPredictId);
   nextToPredictIdRef.current = nextToPredictId;
 
-  /** Extra-data trigger: when any hot value changes, FlatList re-calls renderItem
-   *  (which reads fresh values from refs). React.memo on GroupFixtureCard still
-   *  prevents unnecessary card re-renders. */
   const flatListExtraData = useMemo(
     () => ({ pending, currentFocusedField, highlightedFixtureId, nextToPredictId }),
     [pending, currentFocusedField, highlightedFixtureId, nextToPredictId]
   );
 
-  // Scroll to specific fixture on mount (only once, after cards are rendered)
   React.useEffect(() => {
     if (scrollToFixtureId == null || !isReady) return;
     if (initialScrollDone.current) return;
 
     initialScrollDone.current = true;
 
-    // Small delay to ensure cards are laid out after isReady
     setTimeout(() => {
       scrollToMatchCard(scrollToFixtureId);
-      // Just scroll, no highlight
     }, 100);
   }, [scrollToFixtureId, isReady, scrollToMatchCard]);
 
-  /** Save all changed predictions then dismiss keyboard (Done button). */
   const handleDone = useCallback(() => {
     handleSaveAllChanged();
     Keyboard.dismiss();
@@ -634,7 +393,6 @@ export function GroupGamesScreen({
 
   const handleBack = useCallback(() => router.back(), [router]);
 
-  /** Save pending then navigate to dedicated single game screen. */
   const handlePressCard = useCallback(
     (fixtureId: number) => {
       if (groupId != null) {
@@ -645,7 +403,6 @@ export function GroupGamesScreen({
     [groupId, router, saveAllPending]
   );
 
-  /** Update prediction for a field. Navigation is handled by handleAutoNext. */
   const handleCardChange = useCallback(
     (fixtureId: number, type: "home" | "away", text: string) => {
       updatePrediction(fixtureId, type, text);
@@ -653,7 +410,6 @@ export function GroupGamesScreen({
     [updatePrediction]
   );
 
-  /** Move focus to the next input (e.g. after max digits in score field). */
   const handleAutoNext = useCallback(
     (fixtureId: number, type: "home" | "away") => {
       const nextIndex = getNextFieldIndex(fixtureId, type);
@@ -662,12 +418,10 @@ export function GroupGamesScreen({
     [getNextFieldIndex, navigateToField]
   );
 
-  /** FlatList keyExtractor — stable key for each render item. */
   const flatListKeyExtractor = useCallback((item: RenderItem) => {
     return item.type === "header" ? item.key : String(item.fixture.id);
   }, []);
 
-  /** FlatList renderItem — same JSX as the old .map() callback. */
   const flatListRenderItem = useCallback(
     ({ item }: ListRenderItemInfo<RenderItem>) => {
       if (item.type === "header") {
@@ -733,8 +487,6 @@ export function GroupGamesScreen({
         />
       );
     },
-    // Deps only contain values that change on data load / filter change — NOT on keystroke.
-    // Hot state (focus, predictions, highlight) is read from refs; extraData triggers re-calls.
     [
       theme, inputRefs, matchCardRefs, predictionModeTyped, groupName,
       matchNumbersMap, maxPoints, handleFieldFocus, handleFieldBlur,
@@ -743,50 +495,24 @@ export function GroupGamesScreen({
     ]
   );
 
-  /** ListHeaderComponent — skeleton, empty state, or summary card. */
-  const listHeaderComponent = useMemo(() => {
-    if (!isReady) {
-      return <GroupGamesSkeleton />;
-    }
-    if (emptyState && filteredFixtures.length === 0) {
-      return (
-        <View style={styles.emptyStateContainer}>
-          <AppText
-            variant="body"
-            color="secondary"
-            style={styles.emptyStateMessage}
-          >
-            {emptyState.message}
-          </AppText>
-          {emptyState.suggestion && (
-            <AppText
-              variant="body"
-              style={[
-                styles.emptyStateSuggestion,
-                { color: theme.colors.primary },
-              ]}
-              onPress={emptyState.suggestion.action}
-            >
-              {emptyState.suggestion.label}
-            </AppText>
-          )}
-        </View>
-      );
-    }
-    return (
-      <GamesSummaryCard
+  const listHeaderComponent = useMemo(
+    () => (
+      <GroupGamesListHeader
+        isReady={isReady}
+        emptyState={emptyState}
+        filteredFixturesCount={filteredFixtures.length}
         totalPoints={summaryStats.totalPoints}
         predictedCount={savedPredictionsCount}
         totalCount={totalPredictionsCount}
         accuracy={summaryStats.accuracy}
       />
-    );
-  }, [
-    isReady, emptyState, filteredFixtures.length, theme, summaryStats,
-    savedPredictionsCount, totalPredictionsCount,
-  ]);
+    ),
+    [
+      isReady, emptyState, filteredFixtures.length, summaryStats,
+      savedPredictionsCount, totalPredictionsCount,
+    ]
+  );
 
-  /** No fixtures at all (e.g. group has no games selected). */
   if (fixtures.length === 0) {
     return (
       <Screen>
@@ -803,7 +529,6 @@ export function GroupGamesScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.surface }]}
     >
-
       <View style={{ flex: 1 }}>
         <Animated.FlatList
           ref={flatListRef}
@@ -828,7 +553,6 @@ export function GroupGamesScreen({
           initialNumToRender={10}
           maxToRenderPerBatch={6}
           onScrollToIndexFailed={(info) => {
-            // Fallback: scroll to approximate offset, then retry after layout
             flatListRef.current?.scrollToOffset({
               offset: info.averageItemLength * info.index,
               animated: true,
@@ -855,7 +579,6 @@ export function GroupGamesScreen({
           teamLogo={focusedTeamInfo?.logo}
         />
 
-        {/* Header floats above list content — collapses on scroll down */}
         <Animated.View
           style={[styles.headerOverlay, headerAnimatedStyle]}
           pointerEvents="box-none"
@@ -868,35 +591,18 @@ export function GroupGamesScreen({
           />
         </Animated.View>
 
-        {/* Floating scroll-to-next button */}
-        {scrollBtnDir === "up" && (
-          <Animated.View
-            style={[
-              styles.scrollToNextBtn,
-              { backgroundColor: theme.colors.primary, top: HEADER_HEIGHT + insets.top + 12 },
-              scrollBtnAnimatedStyle,
-            ]}
-          >
-            <Pressable onPress={handleScrollToNext} style={styles.scrollToNextBtnInner}>
-              <View style={[styles.scrollToNextArrow, { borderTopColor: "#fff" }, { transform: [{ rotate: "180deg" }] }]} />
-            </Pressable>
-          </Animated.View>
-        )}
-        {scrollBtnDir === "down" && (
-          <Pressable
-            style={[
-              styles.scrollToNextBtn,
-              { backgroundColor: theme.colors.primary },
-              { bottom: keyboardHeight > 0 ? keyboardHeight + (Platform.OS === "android" ? 60 : 10) + 68 : insets.bottom + 8 },
-            ]}
+        {scrollBtnDir && (
+          <ScrollToNextButton
+            direction={scrollBtnDir}
             onPress={handleScrollToNext}
-          >
-            <View style={[styles.scrollToNextArrow, { borderTopColor: "#fff" }]} />
-          </Pressable>
+            insetTop={insets.top}
+            insetBottom={insets.bottom}
+            keyboardHeight={keyboardHeight}
+            scrollBtnAnimatedStyle={scrollBtnAnimatedStyle}
+          />
         )}
       </View>
 
-      {/* Filter chips bottom sheet */}
       <BottomSheetModal
         ref={filterSheetRef}
         enableDynamicSizing
@@ -926,7 +632,6 @@ export function GroupGamesScreen({
   );
 }
 
-/** Layout: full-screen container, scroll content with padding, floating header overlay. */
 const styles = StyleSheet.create({
   container: { flex: 1, overflow: "hidden" },
   filterSheetContent: {
@@ -942,12 +647,11 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
   },
-  /* ── Section headers (same timeline column as cards) ── */
   sectionHeaderRow: {
   },
   sectionHeaderContent: {
     flex: 1,
-    paddingLeft: 4, // align with card leagueInfoRow
+    paddingLeft: 4,
     justifyContent: "center",
   },
   sectionDateRow: {
@@ -958,21 +662,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 0.5,
-  },
-  sectionLeaguePill: {
-    alignSelf: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    borderWidth: 1,
-    marginTop: 0,
-    marginBottom: 12,
-  },
-  sectionLeagueLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
   },
   sectionLiveBadge: {
     flexDirection: "row",
@@ -998,45 +687,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
-  },
-  emptyStateContainer: {
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: "center",
-  },
-  emptyStateMessage: {
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  emptyStateSuggestion: {
-    fontWeight: "600",
-  },
-  /* ── Floating scroll-to-next button ── */
-  scrollToNextBtn: {
-    position: "absolute",
-    left: 16,
-    zIndex: 20,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    // backgroundColor set inline with theme.colors.primary
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scrollToNextBtnInner: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scrollToNextArrow: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 8,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-    // borderTopColor set inline (#fff)
   },
 });

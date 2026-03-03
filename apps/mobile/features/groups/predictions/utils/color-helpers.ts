@@ -32,6 +32,21 @@ export function getContrastTextColor(bgHex: string): string {
   return isLightColor(bgHex) ? "#1a1a1a" : "#ffffff";
 }
 
+/** Get home/away slider thumb colors for a fixture. */
+export function getTeamThumbColors(fixture: {
+  homeTeam?: { firstKitColor?: string | null } | null;
+  awayTeam?: { secondKitColor?: string | null; thirdKitColor?: string | null } | null;
+}) {
+  const homeThumbColor = fixture.homeTeam?.firstKitColor ?? "#22C55E";
+  const awayThumbColor = getAwaySliderColor(
+    fixture.homeTeam?.firstKitColor,
+    fixture.awayTeam?.secondKitColor,
+    fixture.awayTeam?.thirdKitColor,
+    "#3B82F6"
+  );
+  return { homeThumbColor, awayThumbColor };
+}
+
 /** Get slider thumb color for away team, falling back if similar to home. */
 export function getAwaySliderColor(
   homeFirst: string | null | undefined,

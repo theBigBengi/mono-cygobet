@@ -3,6 +3,8 @@ export type { FixtureItem } from "@/types/common";
 
 export type PredictionMode = "CorrectScore" | "MatchWinner";
 
+export type SelectionMode = "games" | "teams" | "leagues";
+
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 
 /** Predictions keyed by fixture id (string). */

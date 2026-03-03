@@ -5,9 +5,9 @@ import { isLive, isFinished, isNotStarted } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 import {
   classifyFixtureTime,
-  isToPredict,
   getTimeBuckets,
 } from "./useActionChips";
+import { isToPredict } from "../utils/fixture-helpers";
 import type { StructuralFilter } from "./useStructuralFilter";
 import type { ActionChip } from "./useActionChips";
 
