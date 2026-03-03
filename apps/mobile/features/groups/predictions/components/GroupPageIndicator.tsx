@@ -10,8 +10,8 @@ import { useTheme } from "@/lib/theme";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const DOT_SIZE = 6;
-const DOT_ACTIVE_SIZE = 8;
-const DOT_GAP = 8;
+const DOT_ACTIVE_WIDTH = 16;
+const DOT_GAP = 6;
 
 type GroupPageIndicatorProps = {
   groupNames: string[];
@@ -44,16 +44,15 @@ export function GroupPageIndicator({
             translateX={translateX}
             currentIndexSV={currentIndexSV}
             pageStep={pageStep}
-            activeColor={theme.colors.primary}
-            inactiveColor={theme.colors.textDisabled}
+            activeColor={theme.colors.textPrimary}
+            inactiveColor={theme.colors.textPrimary}
           />
         ))}
       </View>
       <AppText
-        variant="caption"
-        color="secondary"
+        variant="label"
         numberOfLines={1}
-        style={styles.groupName}
+        style={[styles.groupName, { color: "#000", fontWeight: "700" }]}
       >
         {groupNames[currentIndex] ?? ""}
       </AppText>
@@ -77,28 +76,25 @@ function IndicatorDot({
   inactiveColor: string;
 }) {
   const dotStyle = useAnimatedStyle(() => {
-    // progress = currentIndex + drag fraction (drag left = positive fraction)
     const progress = currentIndexSV.value - translateX.value / pageStep;
     const distance = Math.abs(progress - index);
 
-    const scale = interpolate(distance, [0, 1], [1.4, 1], "clamp");
-    const opacity = interpolate(distance, [0, 1], [1, 0.35], "clamp");
+    const width = interpolate(
+      distance,
+      [0, 1],
+      [DOT_ACTIVE_WIDTH, DOT_SIZE],
+      "clamp"
+    );
+    const opacity = interpolate(distance, [0, 1], [1, 0.25], "clamp");
 
     return {
-      transform: [{ scale }],
+      width,
       opacity,
-      backgroundColor: distance < 0.5 ? activeColor : inactiveColor,
+      backgroundColor: activeColor,
     };
   });
 
-  return (
-    <Animated.View
-      style={[
-        styles.dot,
-        dotStyle,
-      ]}
-    />
-  );
+  return <Animated.View style={[styles.dot, dotStyle]} />;
 }
 
 const styles = StyleSheet.create({
@@ -118,7 +114,7 @@ const styles = StyleSheet.create({
     borderRadius: DOT_SIZE / 2,
   },
   groupName: {
-    fontSize: 11,
+    fontSize: 14,
     textAlign: "center",
     maxWidth: SCREEN_WIDTH * 0.6,
   },

@@ -101,6 +101,7 @@ function CreateGroupSheet({
   const [selectedTeams, setSelectedTeams] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [groupName, setGroupName] = useState("");
+  const [groupDescription, setGroupDescription] = useState("");
   const groupNameInputRef = useRef<TextInput>(null);
   const prevStepRef = useRef(0);
   const router = useRouter();
@@ -118,6 +119,7 @@ function CreateGroupSheet({
   React.useEffect(() => {
     if (step === 1 && prevStepRef.current === 0) {
       setGroupName(`My Group #${groupCount + 1}`);
+      setGroupDescription("Predict match scores and compete with friends");
     }
     if (step === 1) {
       const id = setTimeout(() => groupNameInputRef.current?.focus(), 400);
@@ -125,6 +127,7 @@ function CreateGroupSheet({
     }
     if (step === 0) {
       setGroupName("");
+      setGroupDescription("");
     }
     prevStepRef.current = step;
   }, [step, groupCount]);
@@ -210,6 +213,7 @@ function CreateGroupSheet({
       setSelectedLeagues(new Set());
       setSelectedTeams(new Set());
       setGroupName("");
+      setGroupDescription("");
       router.push(`/groups/${groupId}` as any);
     } catch {
       // stay on screen so user can retry
@@ -940,7 +944,7 @@ function CreateGroupSheet({
                   createStyles.fieldInput,
                   {
                     color: theme.colors.textPrimary,
-                    borderBottomColor: groupName.length > 0 ? theme.colors.primary + "40" : theme.colors.border,
+                    borderBottomColor: groupName.length > 0 ? theme.colors.textSecondary + "40" : theme.colors.border,
                   },
                 ]}
                 placeholder={t("groupCreation.groupNamePlaceholder")}
@@ -950,6 +954,20 @@ function CreateGroupSheet({
                 ref={groupNameInputRef}
                 maxLength={40}
                 selectTextOnFocus
+              />
+              <TextInput
+                style={[
+                  createStyles.descInput,
+                  { color: theme.colors.textPrimary },
+                ]}
+                placeholder={t("lobby.descriptionPlaceholder")}
+                placeholderTextColor={theme.colors.textSecondary + "50"}
+                value={groupDescription}
+                onChangeText={setGroupDescription}
+                maxLength={200}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
               />
             </View>
 
@@ -1194,7 +1212,7 @@ const createStyles = StyleSheet.create({
   },
   wizardContent: {
     paddingHorizontal: 20,
-    paddingTop: "30%",
+    paddingTop: 40,
   },
   wizardTitle: {
     fontWeight: "700",
@@ -1216,6 +1234,14 @@ const createStyles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 4,
     textAlign: "center",
+  },
+  descInput: {
+    fontSize: 14,
+    marginTop: 20,
+    paddingVertical: 10,
+    borderRadius: 4,
+    minHeight: 72,
+    textAlign: "left",
   },
   fieldCharCount: {
     fontSize: 11,

@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 10,
   },
   filterSortButton: {
     flexDirection: "row",
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   filterSortLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "600",
   },
   viewToggle: {

@@ -12,7 +12,6 @@ import {
   Dimensions,
   Pressable,
   TextInput,
-  ActivityIndicator,
 } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
@@ -36,6 +35,7 @@ import { formatKickoffDateTime } from "@/utils/fixture";
 import type { PredictionMode } from "../types";
 import type { FixtureItem } from "@/types/common";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
+import { PredictAllCardSkeleton } from "./PredictAllCardSkeleton";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -184,13 +184,11 @@ export const GroupPage = forwardRef<GroupPageRef, GroupPageProps>(
 
     if (isGroupLoading || fixtures.length === 0) {
       return (
-        <View
-          style={[
-            styles.pageContainer,
-            { justifyContent: "center", alignItems: "center" },
-          ]}
-        >
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+        <View style={styles.pageContainer}>
+          <PredictAllCardSkeleton
+            cardHeight={CARD_HEIGHT}
+            contentTop={CONTENT_TOP}
+          />
         </View>
       );
     }

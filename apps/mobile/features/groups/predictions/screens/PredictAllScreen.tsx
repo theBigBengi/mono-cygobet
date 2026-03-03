@@ -14,9 +14,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
+import { groupsKeys, fetchGroupById } from "@/domains/groups";
 import { usePredictableGroups } from "../hooks/usePredictableGroups";
 import { GroupPage, type GroupPageRef } from "../components/GroupPage";
 import { GroupPageIndicator } from "../components/GroupPageIndicator";
@@ -34,6 +36,7 @@ export function PredictAllScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
+  const queryClient = useQueryClient();
   const { groups, isLoading } = usePredictableGroups();
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -69,6 +72,19 @@ export function PredictAllScreen() {
       router.back();
     }
   }, [isLoading, groups.length, router]);
+
+  // Prefetch next group's data for instant swipe
+  useEffect(() => {
+    const nextIdx = currentIndex + 1;
+    if (nextIdx < totalGroups) {
+      const nextGroup = groups[nextIdx];
+      queryClient.prefetchQuery({
+        queryKey: groupsKeys.detail(nextGroup.id, true),
+        queryFn: () => fetchGroupById(nextGroup.id, { include: "fixtures" }),
+        meta: { scope: "user" },
+      });
+    }
+  }, [currentIndex, totalGroups, groups, queryClient]);
 
   const onIndexChange = useCallback(
     (index: number) => {
@@ -253,7 +269,7 @@ function PageWrapper({
     return {
       opacity: interpolate(distance, [0, 0.6, 1], [1, 0.7, 0.4], "clamp"),
       transform: [
-        { scale: interpolate(distance, [0, 1], [1, 0.94], "clamp") },
+        { scale: interpolate(distance, [0, 1], [1, 0.88], "clamp") },
       ],
     };
   });
