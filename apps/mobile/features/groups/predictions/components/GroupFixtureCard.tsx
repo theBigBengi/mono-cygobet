@@ -73,6 +73,8 @@ export type GroupFixtureCardProps = {
   onScrollToCard: (fixtureId: number) => void;
   /** If provided, called when card is pressed instead of navigating to fixture detail. */
   onPressCard?: (fixtureId: number) => void;
+  /** Hide league name in card info line (e.g. when group is league-based) */
+  hideLeagueName?: boolean;
 };
 
 function GroupFixtureCardInner({
@@ -101,6 +103,7 @@ function GroupFixtureCardInner({
   onSelectOutcome,
   onScrollToCard,
   onPressCard,
+  hideLeagueName,
 }: GroupFixtureCardProps) {
   /** Used for card border/radius styling (first/middle/last in group). */
   const positionInGroup = getPositionInGroup(index, totalInGroup);
@@ -196,6 +199,7 @@ function GroupFixtureCardInner({
       onSelectOutcome={onSelectOutcome ? onSelectOutcomeLocal : undefined}
       onPressCard={onPressCard ? onPressCardLocal : undefined}
       showLeagueInfo
+      hideLeagueName={hideLeagueName}
       timelineFilled={timelineFilled}
       timelineConnectorFilled={timelineConnectorFilled}
       isFirstInTimeline={isFirstInTimeline}

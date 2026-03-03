@@ -1,11 +1,10 @@
 import React, { useCallback } from "react";
-import { View, StyleSheet, TextInput, Pressable, Text } from "react-native";
+import { View, StyleSheet, TextInput, Pressable, Text, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { formatKickoffTime } from "@/utils/fixture";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
-import { Card } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
@@ -39,6 +38,7 @@ type Props = {
   onSelectOutcome?: (outcome: "home" | "draw" | "away") => void;
   onPressCard?: () => void;
   showLeagueInfo?: boolean;
+  hideLeagueName?: boolean;
   matchNumber?: string;
   timelineFilled?: boolean;
   timelineConnectorFilled?: boolean;
@@ -65,6 +65,7 @@ export function MatchPredictionCardVertical({
   onSelectOutcome,
   onPressCard: onPressCardProp,
   showLeagueInfo = true,
+  hideLeagueName = false,
   matchNumber,
   isNextToPredict = false,
   isMaxPoints = false,
@@ -127,104 +128,53 @@ export function MatchPredictionCardVertical({
   const hasPoints = fixturePoints > 0;
   const hasPrediction = prediction.home !== null && prediction.away !== null;
 
-  const successColor = "#10B981";
-  const missedColor = "#EF4444";
-
   const predictionSuccess = isFinished ? (isMaxPoints ? "max" as const : hasPoints) : undefined;
 
-  // Left border — between ScoreInput bg and full color
-  const resultColor = isMaxPoints ? "#FFB020" + "80" : hasPoints ? "#10B981" + "95" : "#EF4444" + "B0";
+  const isConnected = positionInGroup === "middle" || positionInGroup === "bottom";
+  const hasThickBottom = positionInGroup === "bottom" || positionInGroup === "single";
 
   return (
-    <View ref={cardRef} style={[styles.outerRow, styles.outerRowSpacing]}>
+    <View ref={cardRef} style={[styles.outerRow, !isConnected && positionInGroup !== "top" && styles.outerRowSpacing]}>
       <View style={styles.cardShadowWrapper}>
-        <Card
+        <View
           style={[
             styles.matchCard,
+            cardRadiusStyle,
+            isConnected && styles.cardConnected,
+            hasThickBottom && styles.cardWithBottomBorder,
             {
               backgroundColor: isHighlighted
-                ? theme.colors.primary + "15"
-                : theme.colors.cardBackground,
-              borderColor: theme.colors.border,
+                ? theme.colors.primary + "08"
+                : theme.colors.background,
+              borderColor: "transparent",
+              borderBottomColor: "transparent",
+              ...(Platform.OS === "android" && positionInGroup !== "single"
+                ? { elevation: 0 }
+                : {}),
             },
           ]}
         >
-          {/* League info row */}
+          {/* Debug: purple line for league info */}
           {showLeagueInfo && (
-            <View style={[styles.leagueInfoRow, { backgroundColor: theme.colors.textSecondary + "08" }]}>
-              {/* Points tint — right side only */}
-              {isFinished && !isCancelled ? (
-                <View style={[
-                  styles.leagueInfoRightTint,
-                  isMaxPoints
-                    ? { backgroundColor: "#10B981" + "15" }
-                    : hasPoints
-                      ? { backgroundColor: "#FFB020" + "20" }
-                      : { backgroundColor: "#EF4444" + "12" },
-                ]} />
-              ) : isLive ? (
-                <View style={[
-                  styles.leagueInfoRightTint,
-                  { backgroundColor: "#EF4444" },
-                ]} />
-              ) : isNextToPredict ? (
-                <View style={[
-                  styles.leagueInfoRightTint,
-                  { backgroundColor: theme.colors.primary },
-                ]} />
-              ) : null}
-              <View style={styles.leagueInfoLeft}>
-                <Text
-                  style={[styles.leagueText, { color: theme.colors.textSecondary }]}
-                  numberOfLines={1}
-                >
-                  {fixture.league?.name}
-                </Text>
-                {(fixture.round || fixture.stage) && (
-                  <>
-                    <Text style={[styles.separator, { color: theme.colors.textSecondary }]}>•</Text>
-                    <Text style={[styles.leagueText, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                      {fixture.round
-                        ? isNaN(Number(fixture.round))
-                          ? fixture.round.replace(/^Knockout Round\s*/i, "").replace(/^Round of\s*/i, "R")
-                          : `R${fixture.round}`
-                        : (fixture.stage ?? "").replace(/^Knockout Round\s*/i, "").replace(/^Round of\s*/i, "R")}
-                      {fixture.leg && fixture.leg !== "1/1" ? ` · ${fixture.leg}` : ""}
-                    </Text>
-                  </>
-                )}
-              </View>
-              {/* Time / Live minute */}
-              <Text style={[styles.leagueText, isLive ? { color: "#EF4444", fontWeight: "700" } : { color: theme.colors.textSecondary }]}>
-                {isLive ? `${fixture.liveMinute != null ? fixture.liveMinute : 0}′` : formatKickoffTime(fixture.kickoffAt)}
+            <View style={styles.leagueInfoRow}>
+              <Text
+                style={[styles.leagueText, { color: theme.colors.textSecondary }]}
+                numberOfLines={1}
+              >
+                {!hideLeagueName ? fixture.league?.name : ""}
+                {(fixture.round || fixture.stage) ? `${!hideLeagueName ? " · " : ""}${
+                  fixture.round
+                    ? isNaN(Number(fixture.round))
+                      ? fixture.round.replace(/^Knockout Round\s*/i, "").replace(/^Round of\s*/i, "R")
+                      : `R${fixture.round}`
+                    : (fixture.stage ?? "").replace(/^Knockout Round\s*/i, "").replace(/^Round of\s*/i, "R")
+                }${fixture.leg && fixture.leg !== "1/1" ? ` · ${fixture.leg}` : ""}` : ""}
+                {isFinished && !isCancelled
+                  ? ` · ${hasPoints ? `+${fixturePoints}` : "0"} pts`
+                  : isLive
+                    ? ` · ${fixture.liveMinute != null ? `${fixture.liveMinute}′` : "LIVE"}`
+                    : ` · ${formatKickoffTime(fixture.kickoffAt)}`}
               </Text>
-              {/* Divider */}
-              <View style={[styles.leagueDivider, { backgroundColor: theme.colors.border }]} />
-              {/* Points text */}
-              {isFinished && !isCancelled ? (
-                <View style={styles.predictionColumn} >
-                  <Text style={[
-                    styles.pointsText,
-                    isMaxPoints
-                      ? { color: "#10B981" }
-                      : hasPoints
-                        ? { color: "#D4920A" }
-                        : { color: "#EF4444" },
-                  ]}>
-                    {hasPoints ? `+${fixturePoints}` : "0"} pts
-                  </Text>
-                </View>
-              ) : isNextToPredict ? (
-                <View style={styles.predictionColumn} >
-                  <Text style={[styles.pointsText, { color: "#FFFFFF", fontWeight: "700" }]}>NEXT</Text>
-                </View>
-              ) : isLive ? (
-                <View style={styles.predictionColumn} >
-                  <Text style={[styles.pointsText, { color: "#FFFFFF", fontWeight: "700" }]}>LIVE</Text>
-                </View>
-              ) : (
-                <View style={styles.predictionColumn} />
-              )}
             </View>
           )}
 
@@ -234,9 +184,6 @@ export function MatchPredictionCardVertical({
               isCancelled && { opacity: 0.6 },
             ]}
           >
-            {/* Continuous divider spanning both rows */}
-            <View style={[styles.continuousDivider, { backgroundColor: theme.colors.border }]} />
-
             {/* Home Row */}
             <View style={styles.teamRow}>
               <Pressable
@@ -284,7 +231,7 @@ export function MatchPredictionCardVertical({
               )}
             </View>
 
-            {/* Away Row */}
+            {/* Away Row - green debug */}
             <View style={styles.teamRow}>
               <Pressable
                 style={styles.matchPressable}
@@ -340,7 +287,7 @@ export function MatchPredictionCardVertical({
               />
             )}
           </View>
-        </Card>
+        </View>
       </View>
     </View>
   );
@@ -349,78 +296,49 @@ export function MatchPredictionCardVertical({
 const styles = StyleSheet.create({
   outerRow: {},
   outerRowSpacing: {
-    marginBottom: 12,
+    marginBottom: 0,
   },
   cardShadowWrapper: {
     flex: 1,
-    borderRadius: 10,
-  },
-  cardShadowWrapperPressed: {
-    opacity: 0.7,
   },
   matchCard: {
-    marginHorizontal: 0,
-    marginBottom: 0,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
     borderWidth: 1,
+    shadowOpacity: 0,
+    elevation: 0,
   },
+  cardConnected: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  cardWithBottomBorder: {},
   leagueInfoRow: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-    marginHorizontal: -12,
-    marginTop: -10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 8,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    overflow: "hidden",
-  },
-  leagueInfoRightTint: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    right: 0,
-    width: 72, // predictionColumn(52) + gap(8) + padding(12)
-    borderTopRightRadius: 10,
-  },
-  leagueInfoLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flex: 1,
+    justifyContent: "flex-start",
+    marginBottom: 0,
   },
   leagueText: {
     fontSize: 11,
     fontWeight: "500",
-    opacity: 0.7,
   },
   separator: {
     fontSize: 11,
     opacity: 0.4,
     marginHorizontal: -3,
   },
-  nextChip: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 4,
-  },
-  nextChipText: {
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+  statusChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   predictionColumn: {
-    width: 52,
+    width: 36,
     alignItems: "center",
   },
   matchContent: {
     flexDirection: "column",
-    gap: 6,
+    gap: 0,
   },
   teamRow: {
     flexDirection: "row",
@@ -436,27 +354,8 @@ const styles = StyleSheet.create({
   teamPressable: {
     flex: 1,
   },
-  continuousDivider: {
-    position: "absolute",
-    width: 1,
-    top: 0,
-    bottom: 0,
-    right: 60, // 52 (predictionColumn) + 8 (gap)
-    opacity: 0.5,
-  },
-  leagueDivider: {
-    width: 1,
-    alignSelf: "stretch",
-    marginVertical: -6, // cancel out leagueInfoRow paddingVertical
-    opacity: 0.5,
-  },
   pointsText: {
     fontSize: 11,
     fontWeight: "700",
-  },
-  timeText: {
-    fontSize: 11,
-    fontWeight: "500",
-    opacity: 0.7,
   },
 });

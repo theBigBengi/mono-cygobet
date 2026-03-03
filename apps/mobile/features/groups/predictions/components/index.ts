@@ -16,6 +16,7 @@ export { MatchDraftCard } from "./MatchDraftCard";
 export { MatchPredictionCardVertical } from "./MatchPredictionCardVertical";
 export { SingleGameMatchCard } from "./SingleGameMatchCard";
 export { SingleGameContent } from "./SingleGameContent";
+export { NextCardPeek } from "./NextCardPeek";
 export { SmartFilterChips } from "./SmartFilterChips";
 export { ScoreInputNavigationBar } from "./ScoreInputNavigationBar";
 export { FixtureGroupSection } from "./FixtureGroupSection";

@@ -1,6 +1,5 @@
 // features/groups/group-list/components/GroupSortRow.tsx
-// Sort row displayed between filter tabs and group list.
-// Shows current sort option (tappable to open sort sheet) and a view toggle icon.
+// Summary row: filter/sort label (tappable) on left, view toggle on right.
 
 import React from "react";
 import { View, Pressable, StyleSheet, Text } from "react-native";
@@ -8,9 +7,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
-import type { GroupSortType } from "../hooks/useGroupFilter";
+import type { GroupFilterType, GroupSortType } from "../hooks/useGroupFilter";
 
 export type GroupViewMode = "card" | "row";
+
+const FILTER_LABEL_KEYS: Record<GroupFilterType, string> = {
+  all: "groups.filterAll",
+  active: "groups.filterActive",
+  drafts: "groups.filterDrafts",
+  ended: "groups.filterEnded",
+};
 
 const SORT_LABEL_KEYS: Record<GroupSortType, string> = {
   recents: "groups.sortRecents",
@@ -20,19 +26,26 @@ const SORT_LABEL_KEYS: Record<GroupSortType, string> = {
 };
 
 interface GroupSortRowProps {
+  selectedFilter: GroupFilterType;
   selectedSort: GroupSortType;
   viewMode: GroupViewMode;
-  onSortPress: () => void;
+  onFilterSortPress: () => void;
   onViewModeToggle: () => void;
 }
 
-export function GroupSortRow({ selectedSort, viewMode, onSortPress, onViewModeToggle }: GroupSortRowProps) {
+export function GroupSortRow({
+  selectedFilter,
+  selectedSort,
+  viewMode,
+  onFilterSortPress,
+  onViewModeToggle,
+}: GroupSortRowProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
 
-  const handleSortPress = () => {
+  const handleFilterSortPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onSortPress();
+    onFilterSortPress();
   };
 
   const handleViewToggle = () => {
@@ -40,28 +53,31 @@ export function GroupSortRow({ selectedSort, viewMode, onSortPress, onViewModeTo
     onViewModeToggle();
   };
 
+  const filterLabel = t(FILTER_LABEL_KEYS[selectedFilter]);
+  const sortLabel = t(SORT_LABEL_KEYS[selectedSort]);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Pressable
-        onPress={handleSortPress}
+        onPress={handleFilterSortPress}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         style={({ pressed }) => [
-          styles.sortButton,
+          styles.filterSortButton,
           pressed && { opacity: 0.5 },
         ]}
       >
         <Ionicons
-          name="swap-vertical"
-          size={18}
+          name="options-outline"
+          size={14}
           color={theme.colors.textSecondary}
         />
         <Text
           style={[
-            styles.sortLabel,
+            styles.filterSortLabel,
             { color: theme.colors.textSecondary },
           ]}
         >
-          {t(SORT_LABEL_KEYS[selectedSort])}
+          {filterLabel} {"\u00B7"} {sortLabel}
         </Text>
       </Pressable>
 
@@ -75,7 +91,7 @@ export function GroupSortRow({ selectedSort, viewMode, onSortPress, onViewModeTo
       >
         <Ionicons
           name={viewMode === "card" ? "list" : "grid-outline"}
-          size={20}
+          size={16}
           color={theme.colors.textSecondary}
         />
       </Pressable>
@@ -91,13 +107,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
   },
-  sortButton: {
+  filterSortButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  sortLabel: {
-    fontSize: 13,
+  filterSortLabel: {
+    fontSize: 11,
     fontWeight: "600",
   },
   viewToggle: {

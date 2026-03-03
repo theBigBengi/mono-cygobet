@@ -22,7 +22,7 @@ import type { PredictionMode } from "../types";
 import { getOutcomeFromPrediction } from "../utils/utils";
 import { formatKickoffDateTime } from "@/utils/fixture";
 import { useMatchCardState } from "../hooks/useMatchCardState";
-import { LIVE_RESULT_COLOR, FIXTURE_STATE_MAP } from "../utils/constants";
+import { FIXTURE_STATE_MAP } from "../utils/constants";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -176,7 +176,7 @@ export function SingleGameMatchCard({
         {/* Live red tint overlay */}
         {isLive && (
           <View
-            style={[StyleSheet.absoluteFill, styles.liveTint]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.live + "08" }]}
             pointerEvents="none"
           />
         )}
@@ -236,7 +236,7 @@ export function SingleGameMatchCard({
                 variant="large"
               />
               {isLive && (
-                <AppText variant="caption" style={styles.liveStatusText}>
+                <AppText variant="caption" style={[styles.liveStatusText, { color: theme.colors.live }]}>
                   {FIXTURE_STATE_MAP[fixture.state] ?? "Live"}
                   {fixture.state !== "HT" && fixture.liveMinute != null ? ` - ${fixture.liveMinute}'` : ""}
                 </AppText>
@@ -289,9 +289,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: "hidden",
   },
-  liveTint: {
-    backgroundColor: LIVE_RESULT_COLOR + "08",
-  },
+  liveTint: {},
   infoPill: {
     alignSelf: "center",
     paddingHorizontal: 12,
@@ -306,7 +304,6 @@ const styles = StyleSheet.create({
     writingDirection: "ltr",
   },
   liveStatusText: {
-    color: LIVE_RESULT_COLOR,
     fontWeight: "700",
     fontSize: 12,
   },

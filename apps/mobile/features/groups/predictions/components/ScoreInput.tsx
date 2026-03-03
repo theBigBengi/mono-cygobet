@@ -71,26 +71,28 @@ function ScoreInputInner({
         <View
           style={[
             styles.input,
+            type === "home" ? styles.inputHome : styles.inputAway,
             {
-              backgroundColor: theme.colors.surface,
+              backgroundColor: "transparent",
               borderColor: isFocused
                 ? theme.colors.primary + "80"
-                : theme.colors.border,
+                : theme.colors.textSecondary + "60",
               borderWidth: 1,
               justifyContent: "center",
               alignItems: "center",
             },
+            type === "home" && { borderBottomWidth: 0 },
           ]}
         >
           <AppText
             style={{
-              fontSize: 18,
+              fontSize: 15,
               fontWeight: "700",
               color: isFocused
                 ? theme.colors.primary
                 : hasValue
-                  ? "#374151"
-                  : theme.colors.textSecondary + "80",
+                  ? theme.colors.textPrimary
+                  : theme.colors.textSecondary,
             }}
           >
             {displayText}
@@ -119,25 +121,56 @@ function ScoreInputInner({
     );
   }
 
-  // Live game - neutral dark tones
+  // Live game - same style as editable but text always secondary
   if (isLive) {
     return (
       <View
         style={[
           styles.finishedInput,
+          type === "home" ? styles.inputHome : styles.inputAway,
           {
-            backgroundColor: theme.colors.surface,
-            borderColor: "#6B7280",
+            backgroundColor: "transparent",
+            borderColor: theme.colors.textSecondary + "60",
             borderWidth: 1,
           },
+          type === "home" && { borderBottomWidth: 0 },
         ]}
       >
         <AppText
           variant="body"
           style={{
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "700",
-            color: "#374151",
+            color: theme.colors.textSecondary,
+          }}
+        >
+          {toDisplay(value, !isEditable)}
+        </AppText>
+      </View>
+    );
+  }
+
+  // Non-editable, not finished - same style as editable but text always secondary
+  if (!isFinished) {
+    return (
+      <View
+        style={[
+          styles.finishedInput,
+          type === "home" ? styles.inputHome : styles.inputAway,
+          {
+            backgroundColor: "transparent",
+            borderColor: theme.colors.textSecondary + "60",
+            borderWidth: 1,
+          },
+          type === "home" && { borderBottomWidth: 0 },
+        ]}
+      >
+        <AppText
+          variant="body"
+          style={{
+            fontSize: 15,
+            fontWeight: "700",
+            color: theme.colors.textSecondary,
           }}
         >
           {toDisplay(value, !isEditable)}
@@ -148,44 +181,46 @@ function ScoreInputInner({
 
   // Finished game - show result with correct/incorrect styling
   const bgColor = isCorrect === "max"
-    ? "#10B981" + "20"
+    ? theme.colors.success + "20"
     : isCorrect === true
-      ? "#FFB020" + "20"
+      ? theme.colors.warning + "20"
       : isCorrect === false
-        ? "#EF4444" + "15"
+        ? theme.colors.danger + "15"
         : theme.colors.surface;
 
   const borderColor = isCorrect === "max"
-    ? "#10B981" + "60"
+    ? theme.colors.success + "60"
     : isCorrect === true
-      ? "#FFB020" + "60"
+      ? theme.colors.warning + "60"
       : isCorrect === false
-        ? "#EF4444" + "40"
+        ? theme.colors.danger + "40"
         : theme.colors.border;
 
   const textColor = isCorrect === "max"
-    ? "#10B981"
+    ? theme.colors.success
     : isCorrect === true
-      ? "#D4920A"
+      ? theme.colors.warning
       : isCorrect === false
-        ? "#EF4444"
+        ? theme.colors.danger
         : theme.colors.textSecondary;
 
   return (
     <View
       style={[
         styles.finishedInput,
+        type === "home" ? styles.inputHome : styles.inputAway,
         {
           backgroundColor: bgColor,
           borderColor: borderColor,
           borderWidth: 1,
         },
+        type === "home" && { borderBottomWidth: 0 },
       ]}
     >
       <AppText
         variant="body"
         style={{
-          fontSize: 18,
+          fontSize: 15,
           fontWeight: "700",
           color: textColor,
         }}
@@ -200,23 +235,35 @@ export const ScoreInput = React.memo(ScoreInputInner);
 
 const styles = StyleSheet.create({
   inputWrapper: {
-    borderRadius: 10,
+    borderRadius: 6,
   },
   inputWrapperFocused: {
   },
+  inputHome: {
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  inputAway: {
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
+  },
   input: {
-    width: 36,
-    height: 36,
-    fontSize: 18,
+    width: 28,
+    height: 28,
+    fontSize: 15,
     fontWeight: "700",
-    borderRadius: 10,
+    borderRadius: 6,
     textAlignVertical: "center",
     includeFontPadding: false,
   },
   finishedInput: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     justifyContent: "center",
     alignItems: "center",
   },

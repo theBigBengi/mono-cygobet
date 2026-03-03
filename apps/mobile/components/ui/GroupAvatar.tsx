@@ -10,6 +10,8 @@ type Props = {
   initials: string;
   size?: number;
   borderRadius?: number;
+  /** Remove border, shadow, and elevation */
+  flat?: boolean;
 };
 
 function GroupAvatarInner({
@@ -18,6 +20,7 @@ function GroupAvatarInner({
   initials,
   size = 80,
   borderRadius = 20,
+  flat = false,
 }: Props) {
   const { theme } = useTheme();
 
@@ -28,6 +31,12 @@ function GroupAvatarInner({
       height: size,
       borderRadius,
       shadowColor: "#000",
+    },
+    flat && {
+      borderWidth: 0,
+      borderBottomWidth: 0,
+      shadowOpacity: 0,
+      elevation: 0,
     },
   ];
 

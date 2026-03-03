@@ -221,14 +221,7 @@ export function VerticalScoreSlider({
 
   return (
     <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.container, {
-        borderColor: theme.colors.border,
-        ...(side === "right"
-          ? { borderRightWidth: 1 }
-          : side === "left"
-            ? { borderLeftWidth: 1 }
-            : {}),
-      }]}>
+      <Animated.View style={styles.container}>
         {/* Digit track + logo cell */}
         <View style={styles.track} pointerEvents="none">
           {[9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((digit) => (
@@ -257,12 +250,12 @@ export function VerticalScoreSlider({
             thumbStyle,
             {
               backgroundColor: thumbColor,
-              left: side === "left" ? 0 : side === "right" ? STRIP_WIDTH - THUMB_WIDTH : (STRIP_WIDTH - THUMB_WIDTH) / 2,
-              // Rounded only on the side that pops towards card
+              left: side === "left" ? STRIP_WIDTH - THUMB_WIDTH : side === "right" ? 0 : (STRIP_WIDTH - THUMB_WIDTH) / 2,
+              // Rounded on the side that pops towards card center
               ...(side === "left"
-                ? { borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderTopRightRadius: THUMB_HEIGHT / 2, borderBottomRightRadius: THUMB_HEIGHT / 2, paddingRight: THUMB_WIDTH - STRIP_WIDTH }
+                ? { borderTopLeftRadius: THUMB_HEIGHT / 2, borderBottomLeftRadius: THUMB_HEIGHT / 2, borderTopRightRadius: 0, borderBottomRightRadius: 0, paddingLeft: THUMB_WIDTH - STRIP_WIDTH }
                 : side === "right"
-                  ? { borderTopLeftRadius: THUMB_HEIGHT / 2, borderBottomLeftRadius: THUMB_HEIGHT / 2, borderTopRightRadius: 0, borderBottomRightRadius: 0, paddingLeft: THUMB_WIDTH - STRIP_WIDTH }
+                  ? { borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderTopRightRadius: THUMB_HEIGHT / 2, borderBottomRightRadius: THUMB_HEIGHT / 2, paddingRight: THUMB_WIDTH - STRIP_WIDTH }
                   : { borderRadius: THUMB_HEIGHT / 2 }),
             },
           ]}
@@ -288,6 +281,7 @@ const styles = StyleSheet.create({
     position: "relative",
     alignItems: "center",
     overflow: "visible",
+    // backgroundColor: "rgba(255,0,0,0.15)", // DEBUG red — slider track
   },
   track: {
     flexDirection: "column",

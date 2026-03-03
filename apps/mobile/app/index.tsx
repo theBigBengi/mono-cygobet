@@ -55,8 +55,8 @@ export default function Index() {
     if (!user?.username) {
       return <Redirect href="/username" />;
     }
-    // If user has username, redirect to home
-    return <Redirect href="/(tabs)/home" />;
+    // If user has username, redirect to groups
+    return <Redirect href="/(tabs)/groups" />;
   }
 
   if (status === "onboarding") {

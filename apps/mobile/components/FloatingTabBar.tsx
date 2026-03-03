@@ -1,18 +1,25 @@
 // components/FloatingTabBar.tsx
-// Game-like floating bottom tab bar with 3D effects
+// Standard docked bottom tab bar — icon + label per tab.
 
 import React, { useMemo } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import { CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
+import { LinearGradient } from "expo-linear-gradient";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAtomValue } from "jotai";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "./ui";
 import { useUnreadCountsQuery } from "@/domains/groups";
-import { tabBarBadgeAtom } from "@/lib/state/tabBarBadge.atom";
+
+const ICON_MAP: Record<string, { default: string; focused: string }> = {
+  groups: { default: "people-outline", focused: "people" },
+  journey: { default: "trail-sign-outline", focused: "trail-sign" },
+  settings: { default: "settings-outline", focused: "settings" },
+};
+
+/** Routes hidden from the tab bar (href: null in layout). */
+const HIDDEN_TABS = new Set(["activity", "profile", "home"]);
 
 export function FloatingTabBar({
   state,
@@ -21,7 +28,6 @@ export function FloatingTabBar({
 }: BottomTabBarProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const badge = useAtomValue(tabBarBadgeAtom);
   const { data: unreadData } = useUnreadCountsQuery();
 
   const totalUnreadCount = useMemo(() => {
@@ -29,19 +35,8 @@ export function FloatingTabBar({
     return Object.values(counts).reduce((sum, c) => sum + c, 0);
   }, [unreadData]);
 
-  const hasSelection = badge.visible;
-  const countNumber = badge.count;
-
   const handlePress = (route: typeof state.routes[0], isFocused: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    // Special handling for home tab when there's a selection
-    if (route.name === "home" && hasSelection) {
-      if (isFocused) {
-        badge.onActiveTap?.();
-        return;
-      }
-    }
 
     const event = navigation.emit({
       type: "tabPress",
@@ -54,48 +49,26 @@ export function FloatingTabBar({
     }
   };
 
+  const surfaceColor = theme.colors.background;
+
   return (
-    <View
-      style={[
-        styles.outerContainer,
-        { bottom: Math.max(insets.bottom, 12) },
-      ]}
-      pointerEvents="box-none"
+    <LinearGradient
+      colors={[surfaceColor + "F2", surfaceColor, surfaceColor]}
+      locations={[0, 0.4, 1]}
+      style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}
     >
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            borderBottomColor: theme.colors.textSecondary + "40",
-            shadowColor: "#000",
-          },
-        ]}
-      >
-        {state.routes.filter((route) => {
-          // TODO: Temporarily hidden tabs — remove filter to restore
-          return route.name !== "activity" && route.name !== "profile";
-        }).map((route) => {
+      {state.routes
+        .filter((route) => !HIDDEN_TABS.has(route.name))
+        .map((route) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === state.routes.indexOf(route);
-          const isHomeTab = route.name === "home";
-          const showBadge = isHomeTab && hasSelection;
-
-          const iconName =
-            route.name === "home"
-              ? "add"
-              : route.name === "groups"
-                ? "people"
-                : route.name === "journey"
-                  ? "trail-sign-outline"
-                  : route.name === "activity"
-                    ? "flash"
-                    : route.name === "profile"
-                      ? "person"
-                      : route.name === "settings"
-                        ? "settings-outline"
-                        : null;
+          const icons = ICON_MAP[route.name];
+          const iconName = icons
+            ? isFocused ? icons.focused : icons.default
+            : null;
+          const label = options.tabBarLabel as string | undefined
+            ?? options.title
+            ?? route.name;
 
           return (
             <Pressable
@@ -104,129 +77,91 @@ export function FloatingTabBar({
               accessibilityState={isFocused ? { selected: true } : {}}
               accessibilityLabel={options.tabBarAccessibilityLabel}
               onPress={() => handlePress(route, isFocused)}
-              style={({ pressed }) => [
-                styles.tab,
-                isHomeTab && styles.homeTab,
-                isHomeTab && {
-                  backgroundColor: showBadge
-                    ? theme.colors.success
-                    : theme.colors.primary,
-                  borderColor: showBadge
-                    ? theme.colors.success
-                    : theme.colors.primary,
-                  shadowColor: showBadge
-                    ? theme.colors.success
-                    : theme.colors.primary,
-                  shadowOpacity: pressed ? 0 : 0.4,
-                  transform: [{ scale: pressed ? 0.92 : 1 }],
-                },
-                !isHomeTab && {
-                  backgroundColor: isFocused
-                    ? theme.colors.primary + "15"
-                    : "transparent",
-                  transform: [{ scale: pressed ? 0.9 : 1 }],
-                },
-              ]}
+              style={styles.tab}
             >
-              <View style={styles.iconCircle}>
-                {showBadge ? (
-                  <Ionicons
-                    name="checkmark"
-                    size={28}
-                    color="#fff"
-                  />
-                ) : (
-                  <Ionicons
-                    name={iconName as any}
-                    size={isHomeTab ? 28 : 22}
-                    color={
-                      isHomeTab
-                        ? "#fff"
-                        : isFocused
-                          ? theme.colors.primary
-                          : theme.colors.textSecondary
-                    }
-                  />
+              <View style={styles.iconWrap}>
+                <Ionicons
+                  name={iconName as any}
+                  size={24}
+                  color={
+                    isFocused
+                      ? theme.colors.textPrimary
+                      : theme.colors.textSecondary
+                  }
+                />
+                {route.name === "groups" && totalUnreadCount > 0 && (
+                  <View
+                    style={[
+                      styles.badge,
+                      { backgroundColor: theme.colors.primary },
+                    ]}
+                    pointerEvents="none"
+                  >
+                    <AppText
+                      variant="caption"
+                      style={[
+                        styles.badgeText,
+                        { color: theme.colors.primaryText },
+                      ]}
+                    >
+                      {totalUnreadCount > 99 ? "99+" : String(totalUnreadCount)}
+                    </AppText>
+                  </View>
                 )}
               </View>
-              {route.name === "groups" && totalUnreadCount > 0 && (
-                <View
-                  style={[
-                    styles.unreadCountBadge,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                  pointerEvents="none"
-                >
-                  <AppText
-                    variant="caption"
-                    style={[
-                      styles.unreadCountText,
-                      { color: theme.colors.primaryText },
-                    ]}
-                  >
-                    {totalUnreadCount > 99 ? "99+" : String(totalUnreadCount)}
-                  </AppText>
-                </View>
-              )}
+              <AppText
+                variant="caption"
+                style={[
+                  styles.label,
+                  {
+                    color: isFocused
+                      ? theme.colors.textPrimary
+                      : theme.colors.textSecondary,
+                    fontWeight: isFocused ? "700" : "500",
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {label}
+              </AppText>
             </Pressable>
           );
         })}
-      </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {
+  container: {
     position: "absolute",
     left: 0,
     right: 0,
-    paddingHorizontal: 50,
-  },
-  container: {
+    bottom: 0,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-evenly",
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
+    justifyContent: "space-around",
+    paddingTop: 16,
   },
   tab: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
+    gap: 2,
   },
-  homeTab: {
-    width: 52,
-    height: 52,
-    paddingVertical: 0,
-    paddingHorizontal: 0,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  iconWrap: {
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
   },
-  unreadCountBadge: {
+  label: {
+    fontSize: 10,
+    letterSpacing: 0.1,
+  },
+  badge: {
     position: "absolute",
-    top: 0,
-    right: 0,
+    top: -4,
+    right: -10,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -234,7 +169,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  unreadCountText: {
+  badgeText: {
     fontSize: 10,
     fontWeight: "700",
   },

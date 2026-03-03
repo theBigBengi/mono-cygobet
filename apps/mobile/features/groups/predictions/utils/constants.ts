@@ -36,7 +36,7 @@ export const INPUT_STYLE = {
 } as const;
 
 /** Card border radius value */
-export const CARD_BORDER_RADIUS = 12;
+export const CARD_BORDER_RADIUS = 14;
 
 /**
  * Timeline constants — single source of truth for the vertical timeline.
@@ -58,9 +58,6 @@ export const TIMELINE = {
   /** Waypoint circle border width */
   WAYPOINT_BORDER_WIDTH: 1.5,
 } as const;
-
-/** Live result text color */
-export const LIVE_RESULT_COLOR = "#EF4444";
 
 /** Mapping of fixture states to display text */
 export const FIXTURE_STATE_MAP: Record<string, string> = {

@@ -14,7 +14,7 @@ export default function TabsLayout() {
 
   return (
     <Tabs
-      initialRouteName="home"
+      initialRouteName="groups"
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
@@ -35,41 +35,8 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* TODO: Temporarily hidden — restore when ready
-      <Tabs.Screen
-        name="activity"
-        options={{
-          title: t("tabs.activity"),
-          tabBarLabel: t("tabs.activity"),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="flash" size={size} color={color} />
-          ),
-        }}
-      />
-      */}
       <Tabs.Screen name="activity" options={{ href: null }} />
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: t("tabs.games"),
-          tabBarLabel: t("tabs.games"),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add" size={size} color={color} />
-          ),
-        }}
-      />
-      {/* TODO: Temporarily hidden — restore when ready
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: t("tabs.profile"),
-          tabBarLabel: t("tabs.profile"),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
-          ),
-        }}
-      />
-      */}
+      <Tabs.Screen name="home" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen
         name="journey"

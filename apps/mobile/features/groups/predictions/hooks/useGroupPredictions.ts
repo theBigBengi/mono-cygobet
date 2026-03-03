@@ -263,6 +263,8 @@ export function useGroupPredictions({
     try {
       const result = await saveMutation.mutateAsync({ predictions: toSave });
       const savedIds = new Set(result.saved?.map((s) => s.fixtureId) ?? []);
+      const rejectedIds = new Set(result.rejected?.map((r) => r.fixtureId) ?? []);
+      const handledIds = new Set([...savedIds, ...rejectedIds]);
 
       queryClient.setQueryData(
         groupsKeys.detail(groupId, true),
@@ -309,9 +311,9 @@ export function useGroupPredictions({
           Object.entries(old).forEach(([id, pred]) => {
             const fixtureId = parseInt(id, 10);
             const savedPred = currentPending[id];
-            // Only clear if pending value matches what was actually saved (preserve changes made while save was in flight)
+            // Clear if saved/rejected AND pending value hasn't changed while save was in flight
             const shouldClear =
-              savedIds.has(fixtureId) &&
+              handledIds.has(fixtureId) &&
               savedPred &&
               pred.home === savedPred.home &&
               pred.away === savedPred.away;

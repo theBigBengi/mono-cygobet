@@ -2,7 +2,6 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { LIVE_RESULT_COLOR } from "../utils/constants";
 import type { GameResultOrTime } from "../utils/fixture-helpers";
 
 type ResultDisplayProps = {
@@ -87,7 +86,7 @@ function ResultDisplayInner({
           style={[
             styles.resultText,
             { color: theme.colors.textSecondary },
-            isLive && styles.liveResultText,
+            isLive && { color: theme.colors.live, fontWeight: "700" as const },
             isHomeWinner && styles.winnerResultText,
           ]}
         >
@@ -105,7 +104,7 @@ function ResultDisplayInner({
           style={[
             styles.resultText,
             { color: theme.colors.textSecondary },
-            isLive && styles.liveResultText,
+            isLive && { color: theme.colors.live, fontWeight: "700" as const },
             isAwayWinner && styles.winnerResultText,
           ]}
         >
@@ -125,7 +124,7 @@ function ResultDisplayInner({
             color={result.home ? homeScoreColor : "secondary"}
             style={[
               styles.resultText,
-              result.home && isLive && styles.liveResultText,
+              result.home && isLive && { color: theme.colors.live, fontWeight: "700" as const },
               isHomeWinner && styles.winnerResultText,
             ]}
           >
@@ -138,7 +137,7 @@ function ResultDisplayInner({
             color={result.away ? awayScoreColor : "secondary"}
             style={[
               styles.resultText,
-              result.away && isLive && styles.liveResultText,
+              result.away && isLive && { color: theme.colors.live, fontWeight: "700" as const },
               isAwayWinner && styles.winnerResultText,
             ]}
           >
@@ -163,23 +162,19 @@ const styles = StyleSheet.create({
     writingDirection: "ltr",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 0,
   },
   timeResultBadge: {
-    width: 36,
-    height: 36,
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
   },
   resultText: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "700",
-    lineHeight: 36,
+    lineHeight: 28,
     textAlignVertical: "center",
-  },
-  liveResultText: {
-    color: LIVE_RESULT_COLOR,
-    fontWeight: "700",
   },
   winnerResultText: {},
   cancelledText: {

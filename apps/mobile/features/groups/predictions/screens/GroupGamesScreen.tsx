@@ -1,12 +1,11 @@
 import React, { useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, Pressable, Dimensions, Platform, type ListRenderItemInfo } from "react-native";
-import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedStyle, runOnJS, clamp, withTiming, withSpring, interpolate, Easing } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
+import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedReaction, useAnimatedStyle, runOnJS, clamp, withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView, type BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
@@ -379,8 +378,25 @@ export function GroupGamesScreen({
     scrollToMatchCard,
   } = usePredictionNavigation(fixtureGroups);
 
-  /** Filter panel animation value. */
-  const filterAnim = useSharedValue(0);
+  /** Bottom sheet ref for filter chips. */
+  const filterSheetRef = useRef<BottomSheetModal>(null);
+
+  const handleFilterPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    filterSheetRef.current?.present();
+  }, []);
+
+  const renderFilterBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
 
   /** Scroll position for card reveal animations. */
   const scrollY = useSharedValue(0);
@@ -399,13 +415,6 @@ export function GroupGamesScreen({
 
       scrollY.value = currentY;
 
-      // Lock header in place when filter panel is open
-      if (filterAnim.value > 0.5) {
-        headerOffset.value = 0;
-        previousScrollY.value = clamp(currentY, 0, maxScrollY);
-        return;
-      }
-
       // Collapsing header: react to user drag normally (show/hide).
       // During programmatic navigation: only allow HIDING (scroll up → hide header),
       // never showing — so jumping to earlier fixtures collapses the header.
@@ -422,7 +431,6 @@ export function GroupGamesScreen({
     },
     onMomentumEnd: () => {
       isUserDragging.value = false;
-      if (filterAnim.value > 0.5) return;
 
       // Snap to fully visible or fully hidden
       if (headerOffset.value > -totalHeaderH / 2) {
@@ -437,11 +445,10 @@ export function GroupGamesScreen({
     transform: [{ translateY: headerOffset.value }],
   }));
 
-  /** Scroll button follows header and panel expansion. */
+  /** Scroll button follows header. */
   const scrollBtnAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{
-      translateY: clamp(headerOffset.value, -HEADER_HEIGHT, 0) +
-        interpolate(filterAnim.value, [0, 1], [0, 120]),
+      translateY: clamp(headerOffset.value, -HEADER_HEIGHT, 0),
     }],
   }));
 
@@ -627,11 +634,6 @@ export function GroupGamesScreen({
 
   const handleBack = useCallback(() => router.back(), [router]);
 
-  /** Expandable filters panel. */
-  const [filtersOpen, setFiltersOpen] = React.useState(false);
-  const FILTER_PANEL_H = 120;
-
-
   /** Save pending then navigate to dedicated single game screen. */
   const handlePressCard = useCallback(
     (fixtureId: number) => {
@@ -673,23 +675,21 @@ export function GroupGamesScreen({
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionHeaderContent}>
               {item.isLive ? (
-                <View style={styles.sectionLiveBadge}>
-                  <View style={styles.sectionLiveDot} />
-                  <Text style={styles.sectionLiveText}>LIVE</Text>
+                <View style={[styles.sectionLiveBadge, { backgroundColor: theme.colors.live + "15" }]}>
+                  <View style={[styles.sectionLiveDot, { backgroundColor: theme.colors.live }]} />
+                  <Text style={[styles.sectionLiveText, { color: theme.colors.live }]}>LIVE</Text>
                 </View>
               ) : item.level === "date" ? (
                 <View style={styles.sectionDateRow}>
-                  <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.border }]} />
                   <Text
                     style={[
                       styles.sectionDateLabel,
-                      { color: theme.colors.primary },
+                      { color: theme.colors.textPrimary },
                     ]}
                     numberOfLines={1}
                   >
                     {item.label}
                   </Text>
-                  <View style={[styles.sectionDateLine, { backgroundColor: theme.colors.border }]} />
                 </View>
               ) : null}
             </View>
@@ -729,6 +729,7 @@ export function GroupGamesScreen({
           }
           onScrollToCard={scrollToMatchCard}
           onPressCard={handlePressCard}
+          hideLeagueName={mode === "leagues"}
         />
       );
     },
@@ -800,7 +801,7 @@ export function GroupGamesScreen({
 
   return (
     <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={[styles.container, { backgroundColor: theme.colors.surface }]}
     >
 
       <View style={{ flex: 1 }}>
@@ -863,24 +864,7 @@ export function GroupGamesScreen({
             onBack={handleBack}
             backOnly
             title={groupName}
-            expandAnim={hasAnyChips ? filterAnim : undefined}
-            expandHeight={FILTER_PANEL_H}
-            isExpanded={filtersOpen}
-            onToggleExpand={setFiltersOpen}
-            expandedContent={
-              <View style={{ position: "absolute", left: 10, right: 10, top: 0, bottom: 0, justifyContent: "center", alignItems: "center" }}>
-                <SmartFilterChips
-                  actionChips={actionChips}
-                  selectedAction={selectedAction}
-                  onSelectAction={selectAction}
-                  structuralFilter={structuralFilter}
-                  onSelectTeam={selectTeam}
-                  onSelectCompetition={selectCompetition}
-                  onSelectRound={selectRound}
-                  onNavigateRound={navigateRound}
-                />
-              </View>
-            }
+            onFilterPress={hasAnyChips ? handleFilterPress : undefined}
           />
         </Animated.View>
 
@@ -911,6 +895,33 @@ export function GroupGamesScreen({
           </Pressable>
         )}
       </View>
+
+      {/* Filter chips bottom sheet */}
+      <BottomSheetModal
+        ref={filterSheetRef}
+        enableDynamicSizing
+        enablePanDownToClose
+        backdropComponent={renderFilterBackdrop}
+        backgroundStyle={{
+          backgroundColor: theme.colors.surface,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+      >
+        <BottomSheetView style={[styles.filterSheetContent, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <SmartFilterChips
+            actionChips={actionChips}
+            selectedAction={selectedAction}
+            onSelectAction={selectAction}
+            structuralFilter={structuralFilter}
+            onSelectTeam={selectTeam}
+            onSelectCompetition={selectCompetition}
+            onSelectRound={selectRound}
+            onNavigateRound={navigateRound}
+          />
+        </BottomSheetView>
+      </BottomSheetModal>
     </View>
   );
 }
@@ -918,6 +929,10 @@ export function GroupGamesScreen({
 /** Layout: full-screen container, scroll content with padding, floating header overlay. */
 const styles = StyleSheet.create({
   container: { flex: 1, overflow: "hidden" },
+  filterSheetContent: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
   scrollView: { flex: 1 },
   contentContainer: { paddingHorizontal: 12 },
   headerOverlay: {
@@ -936,21 +951,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   sectionDateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingTop: 8,
-    paddingBottom: 20,
-  },
-  sectionDateLine: {
-    flex: 1,
-    height: 1.5,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   sectionDateLabel: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
   sectionLeaguePill: {
     alignSelf: "center",
@@ -975,19 +982,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 10,
-    backgroundColor: "#EF444415",
   },
   sectionLiveDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#EF4444",
   },
   sectionLiveText: {
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.5,
-    color: "#EF4444",
   },
   emptyContainer: {
     flex: 1,

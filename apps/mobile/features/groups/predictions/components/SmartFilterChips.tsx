@@ -14,9 +14,6 @@ import { TeamPickerSheet } from "./TeamPickerSheet";
 import { CompetitionPickerSheet } from "./CompetitionPickerSheet";
 import type { ActionChip, StructuralFilter } from "../hooks/useSmartFilters";
 
-const AMBER = "#F59E0B";
-const RED = "#EF4444";
-
 interface SmartFilterChipsProps {
   actionChips: ActionChip[];
   selectedAction: string;
@@ -230,13 +227,13 @@ export function SmartFilterChips({
           let bottomBorderColor = theme.colors.textSecondary + "40";
           if (isActive) {
             if (live || urgent) {
-              bgColor = RED;
-              borderColor = RED;
+              bgColor = theme.colors.live;
+              borderColor = theme.colors.live;
               textColor = "#fff";
               bottomBorderColor = "rgba(0,0,0,0.2)";
             } else if (predict && !urgent) {
-              bgColor = AMBER;
-              borderColor = AMBER;
+              bgColor = theme.colors.warning;
+              borderColor = theme.colors.warning;
               textColor = "#fff";
               bottomBorderColor = "rgba(0,0,0,0.2)";
             } else {
@@ -265,7 +262,7 @@ export function SmartFilterChips({
                 <View
                   style={[
                     styles.dot,
-                    { backgroundColor: isActive ? "#fff" : RED },
+                    { backgroundColor: isActive ? "#fff" : theme.colors.live },
                   ]}
                 />
               )}

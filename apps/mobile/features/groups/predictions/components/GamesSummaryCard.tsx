@@ -1,6 +1,5 @@
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
 
 type Props = {
@@ -23,15 +22,11 @@ export function GamesSummaryCard({
       <View
         style={[
           styles.card,
-          {
-            backgroundColor: theme.colors.cardBackground,
-            borderColor: theme.colors.border,
-          },
+          { backgroundColor: theme.colors.border + "40" },
         ]}
       >
         <View style={styles.row}>
           <View style={styles.stat}>
-            <Ionicons name="flash" size={16} color={theme.colors.primary} />
             <Text style={[styles.value, { color: theme.colors.textPrimary }]}>
               {totalPoints}
             </Text>
@@ -45,11 +40,6 @@ export function GamesSummaryCard({
           />
 
           <View style={styles.stat}>
-            <Ionicons
-              name="football-outline"
-              size={16}
-              color={theme.colors.primary}
-            />
             <Text style={[styles.value, { color: theme.colors.textPrimary }]}>
               {predictedCount}
               <Text style={[styles.total, { color: theme.colors.textSecondary }]}>
@@ -66,17 +56,12 @@ export function GamesSummaryCard({
           />
 
           <View style={styles.stat}>
-            <Ionicons
-              name="trophy-outline"
-              size={16}
-              color={accuracy > 50 ? "#10B981" : theme.colors.textSecondary}
-            />
             <Text
               style={[
                 styles.value,
                 {
                   color:
-                    accuracy > 50 ? "#10B981" : theme.colors.textPrimary,
+                    accuracy > 50 ? theme.colors.success : theme.colors.textPrimary,
                 },
               ]}
             >
@@ -94,13 +79,12 @@ export function GamesSummaryCard({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: 16,
+    marginBottom: 16,
   },
   card: {
     flex: 1,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 8,
   },

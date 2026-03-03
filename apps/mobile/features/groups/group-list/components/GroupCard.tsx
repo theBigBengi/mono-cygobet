@@ -2,17 +2,30 @@
 // Unified card component for displaying groups in the groups list.
 // Styled to match the lobby and games screen design patterns.
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useRef, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable, Text } from "react-native";
+import { View, StyleSheet, Pressable, Text, ScrollView } from "react-native";
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, FontAwesome6, Feather } from "@expo/vector-icons";
+import { Dimensions } from "react-native";
 import Animated, {
   FadeIn,
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedRef,
+  useFrameCallback,
+  interpolate,
+  Extrapolation,
+  measure,
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
@@ -54,7 +67,7 @@ export interface GroupCardProps {
   isHudLoading?: boolean;
 }
 
-const AVATAR_SIZE = 56;
+const AVATAR_SIZE = 62;
 
 // ─── HUD Cell Sub-components ──────────────────────────────────────────
 
@@ -295,134 +308,193 @@ function HudSkeleton({ borderColor }: { borderColor: string }) {
   );
 }
 
+// ─── Pulsing Predict Text ─────────────────────────────────────────────
+
+const SCREEN_HEIGHT = Dimensions.get("window").height;
+const PULSE_START = SCREEN_HEIGHT * 0.20;
+const PULSE_END = SCREEN_HEIGHT * 0.50;
+
+function PulsingPredictText({ color, isActive }: { color: string; isActive: Animated.SharedValue<number> }) {
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withTiming(0.4, { duration: 700 }),
+      -1,
+      true
+    );
+  }, []);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: isActive.value === 1 ? opacity.value : 1,
+  }));
+
+  return (
+    <Animated.Text
+      style={[
+        styles.predictButtonText,
+        { color },
+        style,
+      ]}
+    >
+      Predict game
+    </Animated.Text>
+  );
+}
+
+
 // ─── NextGameRow Sub-component ────────────────────────────────────────
 
 interface NextGameRowProps {
   nextGame: NonNullable<ApiGroupItem["nextGame"]>;
+  selectionMode: ApiGroupItem["selectionMode"];
+  isLive: boolean;
+  liveCount: number;
+  extraGames?: NonNullable<ApiGroupItem["fixtures"]>;
   urgencyColor: string | null;
   textSecondary: string;
   textPrimary: string;
   borderColor: string;
   surfaceColor: string;
+  primaryColor: string;
+  userRank: number | undefined;
+  unreadCount: number;
+  unreadActivityCount: number;
+  lastMessageAt: string | undefined;
   onPredictPress: () => void;
 }
 
+const SELECTION_MODE_ICON: Record<string, { name: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }> = {
+  teams: { name: "tshirt-crew-outline" },
+  leagues: { name: "trophy-outline" },
+  games: { name: "gesture-tap" },
+};
+
 const NextGameRow = React.memo(function NextGameRowInner({
   nextGame,
+  selectionMode,
+  isLive,
+  liveCount,
+  extraGames,
   urgencyColor,
   textSecondary,
   textPrimary,
   borderColor,
   surfaceColor,
+  primaryColor,
+  userRank,
+  unreadCount,
+  unreadActivityCount,
+  lastMessageAt,
   onPredictPress,
 }: NextGameRowProps) {
   const { t } = useTranslation("common");
   const countdown = useCountdown(nextGame.kickoffAt ?? null);
   const hasPrediction = !!nextGame.prediction;
 
+  const animatedRef = useAnimatedRef<Animated.View>();
+  const isInRange = useSharedValue(0);
+
+  useFrameCallback(() => {
+    const measurement = measure(animatedRef);
+    if (measurement) {
+      isInRange.value = measurement.pageY >= PULSE_START && measurement.pageY <= PULSE_END ? 1 : 0;
+    }
+  });
+
+  const rowStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(isInRange.value === 1 ? 1 : 0.4, { duration: 200 }),
+  }));
+
   return (
     <View
-      style={[
-        styles.nextGameRow,
-        { borderTopColor: borderColor },
-      ]}
+      style={styles.nextGameRow}
     >
       <Text
         style={[
           styles.nextGameLabel,
-          { color: textSecondary },
+          { color: textPrimary, fontWeight: "700" },
         ]}
+        numberOfLines={1}
       >
-        {t("groups.nextGame")} · {countdown}
+        {extraGames ? `${extraGames.length + 1} games in ${countdown}` : `Next ${countdown}`}
       </Text>
-      <View style={styles.nextGameMainRow}>
-        <Text
-          style={[
-            styles.nextGameText,
-            { color: textPrimary, flex: 1 },
-          ]}
-          numberOfLines={1}
-        >
-          {nextGame.homeTeam?.name ?? "?"} - {nextGame.awayTeam?.name ?? "?"}
-        </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.nextGameCardsScroll} contentContainerStyle={styles.nextGameCardsContent}>
+        <View style={[styles.nextGameCard, { backgroundColor: borderColor + "80" }]}>
+          <View style={styles.nextGameCardTeams}>
+            <Text style={[styles.nextGameMatchNames, { color: textSecondary }]} numberOfLines={1}>
+              {nextGame.homeTeam?.name ?? "?"}
+            </Text>
+            <Text style={[styles.nextGameMatchNames, { color: textSecondary }]} numberOfLines={1}>
+              {nextGame.awayTeam?.name ?? "?"}
+            </Text>
+          </View>
+          <View style={styles.nextGameCardDateTime}>
+            <Text style={[styles.nextGameCardDate, { color: textSecondary }]}>
+              {new Date(nextGame.kickoffAt).toLocaleDateString([], { day: "numeric", month: "short" })}
+            </Text>
+            <Text style={[styles.nextGameCardTime, { color: textSecondary }]}>
+              {new Date(nextGame.kickoffAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </Text>
+          </View>
+        </View>
+        {extraGames?.map((g) => (
+          <View key={g.id} style={[styles.nextGameCard, { backgroundColor: borderColor + "80" }]}>
+            <View style={styles.nextGameCardTeams}>
+              <Text style={[styles.nextGameMatchNames, { color: textSecondary }]} numberOfLines={1}>
+                {g.homeTeam?.name ?? "?"}
+              </Text>
+              <Text style={[styles.nextGameMatchNames, { color: textSecondary }]} numberOfLines={1}>
+                {g.awayTeam?.name ?? "?"}
+              </Text>
+            </View>
+            <View style={styles.nextGameCardDateTime}>
+              <Text style={[styles.nextGameCardDate, { color: textSecondary }]}>
+                {new Date(g.kickoffAt).toLocaleDateString([], { day: "numeric", month: "short" })}
+              </Text>
+              <Text style={[styles.nextGameCardTime, { color: textSecondary }]}>
+                {new Date(g.kickoffAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+      <Animated.View ref={animatedRef} style={[styles.nextGameMainRow, rowStyle]}>
+        <View style={styles.inlineHud}>
+          {userRank != null && (
+            <View style={[styles.rankSquare, { borderColor: textPrimary }]}>
+              <Text style={[styles.rankSquareText, { color: textPrimary }]}>
+                #{userRank}
+              </Text>
+            </View>
+          )}
+          {unreadCount > 0 && (
+            <Ionicons name="chatbubbles-outline" size={20} color={textPrimary} />
+          )}
+          {unreadActivityCount > 0 && (
+            <MaterialCommunityIcons name="bell-outline" size={20} color={textPrimary} />
+          )}
+          {isLive && (
+            <Ionicons name="radio" size={20} color={textPrimary} />
+          )}
+        </View>
       {hasPrediction ? (
-        <View style={styles.predictionBoxes}>
-          {/* Home team */}
-          <View style={styles.teamPrediction}>
-            <Text style={[styles.teamCode, { color: textSecondary }]}>
-              {nextGame.homeTeam?.shortCode ?? "H"}
-            </Text>
-            <View
-              style={[
-                styles.scoreBox,
-                {
-                  backgroundColor: surfaceColor,
-                  borderColor: borderColor,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.scoreText,
-                  { color: textPrimary },
-                ]}
-              >
-                {nextGame.prediction?.home}
-              </Text>
-            </View>
-          </View>
-          {/* Away team */}
-          <View style={styles.teamPrediction}>
-            <Text style={[styles.teamCode, { color: textSecondary }]}>
-              {nextGame.awayTeam?.shortCode ?? "A"}
-            </Text>
-            <View
-              style={[
-                styles.scoreBox,
-                {
-                  backgroundColor: surfaceColor,
-                  borderColor: borderColor,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.scoreText,
-                  { color: textPrimary },
-                ]}
-              >
-                {nextGame.prediction?.away}
-              </Text>
-            </View>
-          </View>
+        <View style={[styles.predictedCircle, { backgroundColor: textPrimary }]}>
+          <Feather name="check-square" size={18} color="#FFFFFF" />
         </View>
       ) : (
         <Pressable
           onPress={onPredictPress}
           style={({ pressed }) => [
             styles.predictButton,
-            {
-              borderColor: borderColor,
-              opacity: pressed ? 0.7 : 1,
-            },
+            { backgroundColor: pressed ? textPrimary + "CC" : textPrimary },
           ]}
         >
-          <MaterialCommunityIcons
-            name="notebook-edit-outline"
-            size={14}
-            color={textPrimary}
-          />
-          <Text
-            style={[
-              styles.predictButtonText,
-              { color: textPrimary },
-            ]}
-          >
-            {t("predictions.predict")}
-          </Text>
+          <FontAwesome6 name="pen-to-square" size={18} color="#FFFFFF" />
+          <PulsingPredictText color="#FFFFFF" isActive={isInRange} />
         </Pressable>
       )}
-      </View>
+      </Animated.View>
     </View>
   );
 });
@@ -433,7 +505,8 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const router = useRouter();
-  const [isPressed, setIsPressed] = useState(false);
+  const insets = useSafeAreaInsets();
+  const sheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
   const initials = getInitials(group.name);
   const liveCount = group.liveGamesCount ?? 0;
@@ -482,13 +555,21 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
 
   const urgencyColor = URGENCY_COLORS[urgencyLevel];
 
+  // Fixtures sharing the same kickoff as nextGame
+  const sameKickoffFixtures = useMemo(() => {
+    if (!group.fixtures || !group.nextGame) return [];
+    const nextKickoff = group.nextGame.kickoffAt;
+    return group.fixtures.filter((f) => f.state === "NS" && f.kickoffAt === nextKickoff && f.id !== group.nextGame!.id);
+  }, [group.fixtures, group.nextGame]);
+  const hasMultipleGames = sameKickoffFixtures.length > 0;
+
   // Memoize theme-dependent inline style objects
   const cardStyles = useMemo(() => ({
     shadowWrapper: {
-      backgroundColor: theme.colors.cardBackground,
+      backgroundColor: "transparent",
     },
     card: {
-      backgroundColor: theme.colors.cardBackground,
+      backgroundColor: "transparent",
       borderColor: theme.colors.border,
       borderBottomColor: theme.colors.textSecondary + "40",
     },
@@ -514,196 +595,155 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
 
   const statusColor = getStatusColor();
 
-  const handlePressIn = () => {
-    setIsPressed(true);
-  };
-
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress(group.id);
   };
 
-  const handlePressOut = () => {
-    setIsPressed(false);
+  const handleMorePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    sheetRef.current?.present();
   };
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
 
   return (
     <View style={styles.container}>
-      <Pressable
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-      >
-        <View
-          style={[
-            styles.cardShadowWrapper,
-            cardStyles.shadowWrapper,
-            {
-              shadowColor: "#000",
-              shadowOpacity: isPressed ? 0 : 0.12,
-            },
-            isPressed && styles.cardPressed,
-          ]}
-        >
-          <View
-            style={[
-              styles.card,
-              cardStyles.card,
-              isDraft && styles.cardDraft,
-            ]}
-          >
-            {/* Top Row: Avatar + Info + Chevron */}
-            <View style={styles.topRow}>
-              <GroupAvatar
-                avatarType={group.avatarType}
-                avatarValue={group.avatarValue}
-                initials={initials}
-                size={AVATAR_SIZE}
-                borderRadius={14}
-              />
+      <View style={styles.card}>
+        {/* Top Row: Avatar + Info + More button */}
+        <View style={styles.topRow}>
+          <Pressable onPress={handlePress} style={styles.topRowLeft}>
+            <GroupAvatar
+              avatarType={group.avatarType}
+              avatarValue={group.avatarValue}
+              initials={initials}
+              size={AVATAR_SIZE}
+              borderRadius={4}
+              flat
+            />
 
-              <View style={styles.info}>
-                <View style={styles.nameRow}>
-                  <Text
-                    style={[styles.name, cardStyles.name, { flex: 1 }]}
-                    numberOfLines={1}
-                  >
-                    {group.name}
-                  </Text>
-                  {group.isOfficial && (
-                    <View style={styles.officialBadge}>
-                      <Ionicons name="shield-checkmark" size={12} color="#D4A017" />
-                    </View>
-                  )}
-                </View>
-                {/* League mode subtitle */}
-                {group.selectionMode === "leagues" && group.nextGame?.league && (
-                  <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                    {group.nextGame.league.name}
-                  </Text>
-                )}
-                {/* Teams mode subtitle */}
-                {group.selectionMode === "teams" && group.groupTeams && group.groupTeams.length > 0 && (
-                  <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                    {group.groupTeams.map((team) => team.shortCode ?? team.name.slice(0, 3).toUpperCase()).join(", ")}
-                  </Text>
-                )}
-                {/* Games mode subtitle */}
-                {group.selectionMode === "games" && totalFixtures > 0 && (
-                  <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-                    {t("groups.freePick")}
-                  </Text>
+            <View style={styles.info}>
+              <View style={styles.nameRow}>
+                <Text
+                  style={[styles.name, cardStyles.name, { flex: 1 }]}
+                  numberOfLines={1}
+                >
+                  {group.name}
+                </Text>
+                {group.isOfficial && (
+                  <View style={styles.officialBadge}>
+                    <Ionicons name="shield-checkmark" size={12} color="#D4A017" />
+                  </View>
                 )}
               </View>
-
-              {/* Right side: Role & Privacy badges */}
-              <View style={styles.rightBadges}>
-                {/* Role badge */}
-                <View
-                  style={[
-                    styles.roleBadge,
-                    cardStyles.badgeBg,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.roleText,
-                      cardStyles.badgeText,
-                    ]}
-                  >
-                    {group.userRole === "owner"
-                      ? "C"
-                      : group.userRole === "admin"
-                        ? "A"
-                        : "M"}
-                  </Text>
-                </View>
-                {/* Privacy badge */}
-                <View
-                  style={[
-                    styles.privacyBadge,
-                    cardStyles.badgeBg,
-                  ]}
-                >
-                  <Ionicons
-                    name={group.privacy === "private" ? "lock-closed" : "globe-outline"}
-                    size={12}
-                    color={theme.colors.textSecondary}
-                  />
-                </View>
-              </View>
+              {group.selectionMode === "teams" && group.groupTeams && group.groupTeams.length > 0 && (
+                <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={3}>
+                  Team Pick: {group.groupTeams.map((t) => t.name).join(" · ")}
+                </Text>
+              )}
+              {group.selectionMode === "leagues" && group.nextGame?.league && (
+                <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                  League Pick: {group.nextGame.league.name}
+                </Text>
+              )}
+              {group.selectionMode === "games" && totalFixtures > 0 && (
+                <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+                  Free Pick
+                </Text>
+              )}
             </View>
+          </Pressable>
 
-            {/* Next Game Row (for active groups) */}
-            {!isDraft && !isEnded && group.nextGame && (
-              <NextGameRow
-                nextGame={group.nextGame}
-                urgencyColor={urgencyColor}
-                textSecondary={theme.colors.textSecondary}
-                textPrimary={theme.colors.textPrimary}
-                borderColor={theme.colors.border}
-                surfaceColor={theme.colors.surface}
-                onPredictPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push(`/groups/${group.id}/fixtures/${group.nextGame!.id}` as any);
-                }}
+          <Pressable onPress={handleMorePress} style={styles.moreButton}>
+            <Ionicons
+              name="ellipsis-horizontal"
+              size={18}
+              color={theme.colors.textSecondary}
+            />
+          </Pressable>
+        </View>
+
+        {/* Next Game Row (for active groups) */}
+        {!isDraft && !isEnded && group.nextGame && (
+          <NextGameRow
+            nextGame={group.nextGame}
+            selectionMode={group.selectionMode}
+            isLive={liveCount > 0}
+            liveCount={liveCount}
+            extraGames={hasMultipleGames ? sameKickoffFixtures : undefined}
+            urgencyColor={urgencyColor}
+            textSecondary={theme.colors.textSecondary}
+            textPrimary={theme.colors.textPrimary}
+              borderColor={theme.colors.border}
+              surfaceColor={theme.colors.surface}
+              primaryColor={theme.colors.primary}
+              userRank={userRank}
+              unreadCount={unreadCount}
+              unreadActivityCount={unreadActivityCount}
+              lastMessageAt={group.lastMessageAt}
+              onPredictPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/groups/${group.id}/fixtures/${group.nextGame!.id}` as any);
+              }}
+          />
+        )}
+
+        {/* Draft hint */}
+        {isDraft && (
+          <Pressable onPress={handlePress}>
+            <View
+              style={[
+                styles.draftHint,
+                cardStyles.draftHint,
+              ]}
+            >
+              <Ionicons
+                name="construct-outline"
+                size={16}
+                color={theme.colors.warning}
               />
-            )}
-
-            {/* Alert HUD - skeleton while unread data loads, real cells after */}
-            {!isDraft && !isEnded && (
-              <View style={[styles.statsHud, cardStyles.statsHud]}>
-                {isHudLoading ? (
-                  <HudSkeleton borderColor={theme.colors.border} />
-                ) : (
-                  <Animated.View entering={FadeIn.duration(300)} style={styles.hudInner}>
-                    <RankingHudCell
-                      rankChange={group.userRankChange ?? 0}
-                      userRank={userRank}
-                      textSecondary={theme.colors.textSecondary}
-                    />
-                    <ActivityHudCell
-                      unreadActivityCount={unreadActivityCount}
-                      primaryColor={theme.colors.primary}
-                      textSecondary={theme.colors.textSecondary}
-                    />
-                    <ChatHudCell
-                      unreadCount={unreadCount}
-                      lastMessageAt={group.lastMessageAt}
-                      primaryColor={theme.colors.primary}
-                      textSecondary={theme.colors.textSecondary}
-                    />
-                  </Animated.View>
-                )}
-              </View>
-            )}
-
-            {/* Draft hint */}
-            {isDraft && (
-              <View
+              <Text
                 style={[
-                  styles.draftHint,
-                  cardStyles.draftHint,
+                  styles.draftHintText,
+                  { color: theme.colors.warning },
                 ]}
               >
-                <Ionicons
-                  name="construct-outline"
-                  size={16}
-                  color={theme.colors.warning}
-                />
-                <Text
-                  style={[
-                    styles.draftHintText,
-                    { color: theme.colors.warning },
-                  ]}
-                >
-                  {t("groups.tapToFinish")}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-      </Pressable>
+                {t("groups.tapToFinish")}
+              </Text>
+            </View>
+          </Pressable>
+        )}
+      </View>
+
+      {/* Bottom sheet drawer */}
+      <BottomSheetModal
+        ref={sheetRef}
+        enableDynamicSizing
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: theme.colors.surface,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+      >
+        <BottomSheetView style={[styles.drawerContent, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <Text style={[styles.drawerTitle, { color: theme.colors.textPrimary }]}>
+            {group.name}
+          </Text>
+        </BottomSheetView>
+      </BottomSheetModal>
     </View>
   );
 }
@@ -731,27 +771,27 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
-  cardPressed: {
-    shadowOpacity: 0,
-    elevation: 0,
-    transform: [{ scale: 0.98 }, { translateY: 2 }],
+  topRowLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
   },
   card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
+    borderRadius: 0,
     paddingTop: 14,
-    paddingHorizontal: 14,
+    paddingHorizontal: 0,
     paddingBottom: 0,
-    overflow: "hidden",
+    borderBottomWidth: 1,
+    borderBottomColor: "#00000015",
   },
   cardDraft: {
     borderStyle: "dashed",
   },
   topRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
+    alignItems: "flex-start",
+    gap: 10,
   },
   avatar: {
     width: AVATAR_SIZE,
@@ -793,44 +833,128 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 12,
     fontWeight: "500",
+    paddingRight: "10%",
   },
   nextGameRow: {
     marginTop: 14,
     marginHorizontal: -14,
     paddingHorizontal: 14,
-    paddingTop: 14,
+    paddingTop: 0,
     paddingBottom: 12,
-    borderTopWidth: 1,
   },
   nextGameMainRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 4,
+    marginTop: 14,
+  },
+  moreButton: {
+    width: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  liveIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  liveBadge: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#3B82F6",
+  },
+  rankSquare: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rankSquareText: {
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  inlineHud: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  modeIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
   },
   nextGameLabel: {
-    fontSize: 11,
+    fontSize: 13,
+    fontWeight: "700",
+    paddingRight: "10%",
+  },
+  nextGameCardsScroll: {
+    marginTop: 6,
+  },
+  nextGameCardsContent: {
+    gap: 8,
+  },
+  nextGameCard: {
+    width: 185,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  nextGameCardTeams: {
+    flex: 1,
+    gap: 4,
+  },
+  nextGameMatchNames: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  nextGameCardDateTime: {
+    alignItems: "center",
+    marginLeft: 8,
+    gap: 2,
+  },
+  nextGameCardDate: {
+    fontSize: 10,
     fontWeight: "500",
+  },
+  nextGameCardTime: {
+    fontSize: 11,
+    fontWeight: "700",
   },
   nextGameText: {
     fontSize: 14,
     fontWeight: "600",
     marginTop: 2,
   },
+  predictedCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   predictButton: {
+    height: 32,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
-    height: 30,
-    paddingHorizontal: 10,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
+    gap: 8,
+    paddingHorizontal: 8,
+    borderRadius: 16,
   },
   predictButtonText: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "500",
+    marginLeft: 2,
   },
   predictionBoxes: {
     flexDirection: "row",
@@ -949,5 +1073,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 12,
     borderRadius: 4,
+  },
+  drawerContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  drawerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 16,
   },
 });

@@ -49,9 +49,8 @@ import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import {
   GroupCard,
   GroupCardRow,
-  GroupFilterTabs,
   GroupSortRow,
-  SortSheet,
+  FilterSortSheet,
   GroupsInfoSheet,
 } from "@/features/groups/group-list/components";
 import type { GroupViewMode } from "@/features/groups/group-list/components/GroupSortRow";
@@ -1385,7 +1384,7 @@ const createStyles = StyleSheet.create({
     right: 8,
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1504,7 +1503,7 @@ const createStyles = StyleSheet.create({
   gameAddBtn: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1673,7 +1672,7 @@ function GroupsContent() {
   const infoSheetRef = useRef<BottomSheetModal>(null);
   const createSheetRef = useRef<BottomSheetModal>(null);
   const createSortSheetRef = useRef<BottomSheetModal>(null);
-  const sortSheetRef = useRef<BottomSheetModal>(null);
+  const filterSortSheetRef = useRef<BottomSheetModal>(null);
   const advPredictionRef = useRef<BottomSheetModal>(null);
   const advScoringRef = useRef<BottomSheetModal>(null);
   const advKoRef = useRef<BottomSheetModal>(null);
@@ -1708,8 +1707,8 @@ function GroupsContent() {
     createSheetRef.current?.present();
   }, []);
 
-  const handleOpenSort = useCallback(() => {
-    sortSheetRef.current?.present();
+  const handleOpenFilterSort = useCallback(() => {
+    filterSortSheetRef.current?.present();
   }, []);
 
   const CREATE_SORT_OPTIONS = useMemo(() => [
@@ -1792,14 +1791,12 @@ function GroupsContent() {
   // Build list data: header, tabs, sortRow, then groups
   type ListItem =
     | { type: "header" }
-    | { type: "tabs" }
     | { type: "sortRow" }
     | { type: "group"; data: ApiGroupItem };
 
   const listData = useMemo<ListItem[]>(() => {
     const items: ListItem[] = [
       { type: "header" },
-      { type: "tabs" },
       { type: "sortRow" },
     ];
     filteredGroups.forEach((g) => items.push({ type: "group", data: g }));
@@ -1828,9 +1825,9 @@ function GroupsContent() {
                 ]}
               >
                 <Ionicons
-                  name="search"
-                  size={22}
-                  color={theme.colors.primary}
+                  name="search-outline"
+                  size={26}
+                  color={theme.colors.textPrimary}
                 />
               </Pressable>
               <Pressable
@@ -1843,8 +1840,8 @@ function GroupsContent() {
               >
                 <Ionicons
                   name={pendingInviteCount > 0 ? "mail" : "mail-outline"}
-                  size={22}
-                  color={theme.colors.primary}
+                  size={26}
+                  color={theme.colors.textPrimary}
                 />
                 {pendingInviteCount > 0 && (
                   <View style={styles.inviteBadge}>
@@ -1863,9 +1860,9 @@ function GroupsContent() {
                 ]}
               >
                 <Ionicons
-                  name="add"
-                  size={28}
-                  color={theme.colors.primary}
+                  name="add-outline"
+                  size={30}
+                  color={theme.colors.textPrimary}
                 />
               </Pressable>
               {/* TODO: restore info button in future iteration
@@ -1890,29 +1887,13 @@ function GroupsContent() {
       );
     }
 
-    if (item.type === "tabs") {
-      return (
-        <View
-          style={[
-            { backgroundColor: theme.colors.background, paddingBottom: 8 },
-            isTabsSticky && styles.tabsStickyDropShadow,
-          ]}
-        >
-          <GroupFilterTabs
-            selectedFilter={selectedFilter}
-            onFilterChange={setSelectedFilter}
-            counts={counts}
-          />
-        </View>
-      );
-    }
-
     if (item.type === "sortRow") {
       return (
         <GroupSortRow
+          selectedFilter={selectedFilter}
           selectedSort={selectedSort}
           viewMode={viewMode}
-          onSortPress={handleOpenSort}
+          onFilterSortPress={handleOpenFilterSort}
           onViewModeToggle={handleToggleViewMode}
         />
       );
@@ -1937,7 +1918,7 @@ function GroupsContent() {
         isHudLoading={isHudLoading}
       />
     );
-  }, [theme, handleOpenCreate, handleOpenInfo, handleOpenInvites, handleOpenSearch, handleOpenSort, handleToggleViewMode, viewMode, pendingInviteCount, isTabsSticky, selectedFilter, setSelectedFilter, selectedSort, counts, handleGroupPress, unreadCounts, unreadActivityCounts, isHudLoading]);
+  }, [theme, handleOpenCreate, handleOpenInfo, handleOpenInvites, handleOpenSearch, handleOpenFilterSort, handleToggleViewMode, viewMode, pendingInviteCount, isTabsSticky, selectedFilter, selectedSort, handleGroupPress, unreadCounts, unreadActivityCounts, isHudLoading]);
 
   // Loading state — skeleton
   if (isLoading) {
@@ -1983,7 +1964,7 @@ function GroupsContent() {
             gap: 8,
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.border,
-            backgroundColor: theme.colors.background,
+            backgroundColor: theme.colors.surface,
           }}>
             {[70, 85, 60, 55, 60].map((w, i) => (
               <View
@@ -2237,7 +2218,6 @@ function GroupsContent() {
 
   const getItemKey = (item: ListItem, index: number) => {
     if (item.type === "header") return "header";
-    if (item.type === "tabs") return "tabs";
     if (item.type === "sortRow") return "sortRow";
     return String(item.data.id);
   };
@@ -2253,7 +2233,7 @@ function GroupsContent() {
           data={listData}
           keyExtractor={getItemKey}
           renderItem={renderListItem}
-          stickyHeaderIndices={[1]}
+          stickyHeaderIndices={[0]}
           onScroll={handleScroll}
           scrollEventThrottle={16}
           windowSize={5}
@@ -2359,10 +2339,13 @@ function GroupsContent() {
         </View>
       </BottomSheetModal>
 
-      <SortSheet
-        sheetRef={sortSheetRef}
+      <FilterSortSheet
+        sheetRef={filterSortSheetRef}
+        selectedFilter={selectedFilter}
         selectedSort={selectedSort}
+        onFilterChange={setSelectedFilter}
         onSortChange={setSelectedSort}
+        counts={counts}
       />
 
       {/* Advanced settings sheets */}
@@ -2434,7 +2417,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 0,
     paddingHorizontal: 16,
   },
   headerTop: {

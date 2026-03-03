@@ -29,6 +29,8 @@ import { DebugCTAScreen } from "./DebugCTAScreen";
 import { DebugLeaderboardScreen } from "./DebugLeaderboardScreen";
 import { DebugPredictionsOverviewScreen } from "./DebugPredictionsOverviewScreen";
 import { DebugSingleGameScreen } from "./DebugSingleGameScreen";
+import { DebugGroupCardScreen } from "../../group-list/screens/DebugGroupCardScreen";
+import { DebugSwipeCardScreen } from "./DebugSwipeCardScreen";
 
 interface GroupLobbyActiveScreenProps {
   group: ApiGroupItem;
@@ -58,6 +60,8 @@ export function GroupLobbyActiveScreen({
   const [showDebugLeaderboard, setShowDebugLeaderboard] = useState(false);
   const [showDebugOverview, setShowDebugOverview] = useState(false);
   const [showDebugSingleGame, setShowDebugSingleGame] = useState(false);
+  const [showDebugGroupCard, setShowDebugGroupCard] = useState(false);
+  const [showDebugSwipeCard, setShowDebugSwipeCard] = useState(false);
 
   // Invalidate lobby summary when screen gains focus (e.g. returning from games screen after saving predictions)
   useFocusEffect(
@@ -265,6 +269,18 @@ export function GroupLobbyActiveScreen({
           >
             <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG GAME</Text>
           </Pressable>
+          <Pressable
+            onPress={() => setShowDebugGroupCard(true)}
+            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#3B82F6", alignItems: "center" }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG CARD</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setShowDebugSwipeCard(true)}
+            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#EC4899", alignItems: "center" }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>SWIPE CARD</Text>
+          </Pressable>
         </View>
 
         <Modal visible={showDebugCTA} animationType="slide" presentationStyle="fullScreen">
@@ -301,6 +317,26 @@ export function GroupLobbyActiveScreen({
           <DebugSingleGameScreen />
           <Pressable
             onPress={() => setShowDebugSingleGame(false)}
+            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={showDebugGroupCard} animationType="slide" presentationStyle="fullScreen">
+          <DebugGroupCardScreen />
+          <Pressable
+            onPress={() => setShowDebugGroupCard(false)}
+            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={showDebugSwipeCard} animationType="slide" presentationStyle="fullScreen">
+          <DebugSwipeCardScreen />
+          <Pressable
+            onPress={() => setShowDebugSwipeCard(false)}
             style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
           >
             <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>

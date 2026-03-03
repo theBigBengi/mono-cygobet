@@ -8,6 +8,7 @@ import Animated, {
   Easing,
   runOnJS,
   interpolate,
+  type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,7 +24,7 @@ import type { GroupPrediction } from "@/features/group-creation/selection/games"
 import type { PredictionMode } from "../types";
 
 const DRAG_DISMISS_DISTANCE = 250;
-const SCREEN_WIDTH = Dimensions.get("window").width;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 export type SingleGameContentProps = {
   fixture: FixtureItem;
@@ -54,11 +55,11 @@ export type SingleGameContentProps = {
     fixtureId: number,
     outcome: "home" | "draw" | "away"
   ) => void;
-  onSwipeLeft?: () => void;
-  onSwipeRight?: () => void;
+  onSwipeUp?: () => void;
+  onSwipeDown?: () => void;
   onExpandChange?: (expanded: boolean) => void;
-  /** Total number of fixtures — shows stacked cards behind when > 1 */
-  totalFixtures?: number;
+  /** Shared value written during vertical swipe — parent uses it to animate peek card */
+  swipeProgress?: SharedValue<number>;
 };
 
 /**
@@ -84,10 +85,10 @@ export const SingleGameContent = React.memo(function SingleGameContent({
   navigateToField,
   predictionMode,
   onSelectOutcome,
-  onSwipeLeft,
-  onSwipeRight,
+  onSwipeUp,
+  onSwipeDown,
   onExpandChange,
-  totalFixtures = 1,
+  swipeProgress: swipeProgressProp,
 }: SingleGameContentProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -101,22 +102,23 @@ export const SingleGameContent = React.memo(function SingleGameContent({
   const containerHeight = useSharedValue(0);
   const cardOffsetY = useSharedValue(0);
 
-  const swipeX = useSharedValue(0);
+  const swipeY = useSharedValue(0);
   const enterAnim = useSharedValue(1);
+  const enterDirectionSV = useSharedValue(1); // 1 = from below, -1 = from above
 
   // SharedValues for worklet-safe boundary checks
-  const canSwipeLeftSV = useSharedValue(onSwipeLeft != null ? 1 : 0);
-  const canSwipeRightSV = useSharedValue(onSwipeRight != null ? 1 : 0);
-  canSwipeLeftSV.value = onSwipeLeft != null ? 1 : 0;
-  canSwipeRightSV.value = onSwipeRight != null ? 1 : 0;
+  const canSwipeUpSV = useSharedValue(onSwipeUp != null ? 1 : 0);
+  const canSwipeDownSV = useSharedValue(onSwipeDown != null ? 1 : 0);
+  canSwipeUpSV.value = onSwipeUp != null ? 1 : 0;
+  canSwipeDownSV.value = onSwipeDown != null ? 1 : 0;
 
   // Stable refs for callbacks (read on JS thread only)
   const onExpandChangeRef = React.useRef(onExpandChange);
   onExpandChangeRef.current = onExpandChange;
-  const onSwipeLeftRef = React.useRef(onSwipeLeft);
-  onSwipeLeftRef.current = onSwipeLeft;
-  const onSwipeRightRef = React.useRef(onSwipeRight);
-  onSwipeRightRef.current = onSwipeRight;
+  const onSwipeUpRef = React.useRef(onSwipeUp);
+  onSwipeUpRef.current = onSwipeUp;
+  const onSwipeDownRef = React.useRef(onSwipeDown);
+  onSwipeDownRef.current = onSwipeDown;
   const callOnExpandChange = useCallback((expanded: boolean) => {
     onExpandChangeRef.current?.(expanded);
   }, []);
@@ -150,37 +152,6 @@ export const SingleGameContent = React.memo(function SingleGameContent({
     callOnExpandChange(false);
   }, [expandAnim, isExpandedSV, callOnExpandChange]);
 
-  const swipeDownGesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .activeOffsetY([0, 15])
-        .onUpdate((e) => {
-          if (isExpandedSV.value === 0) return;
-          if (e.translationY > 0) {
-            expandAnim.value =
-              1 - Math.min(e.translationY / DRAG_DISMISS_DISTANCE, 1);
-          }
-        })
-        .onEnd(() => {
-          if (isExpandedSV.value === 0) return;
-          if (expandAnim.value < 0.5) {
-            expandAnim.value = withTiming(0, {
-              duration: 150,
-              easing: Easing.in(Easing.ease),
-            });
-            isExpandedSV.value = 0;
-            runOnJS(setIsExpanded)(false);
-            runOnJS(callOnExpandChange)(false);
-          } else {
-            expandAnim.value = withTiming(1, {
-              duration: 150,
-              easing: Easing.out(Easing.ease),
-            });
-          }
-        }),
-    [expandAnim, isExpandedSV, callOnExpandChange]
-  );
-
   const triggerEnterAnim = useCallback(() => {
     enterAnim.value = 0;
     enterAnim.value = withTiming(1, {
@@ -189,58 +160,108 @@ export const SingleGameContent = React.memo(function SingleGameContent({
     });
   }, [enterAnim]);
 
-  const callSwipeLeft = useCallback(() => {
-    const cb = onSwipeLeftRef.current;
-    swipeX.value = 0;
+  const callSwipeUp = useCallback(() => {
+    const cb = onSwipeUpRef.current;
+    swipeY.value = 0;
+    if (swipeProgressProp) swipeProgressProp.value = 0;
     if (cb) {
+      enterDirectionSV.value = 1;
       cb();
       triggerEnterAnim();
     }
-  }, [swipeX, triggerEnterAnim]);
-  const callSwipeRight = useCallback(() => {
-    const cb = onSwipeRightRef.current;
-    swipeX.value = 0;
+  }, [swipeY, swipeProgressProp, enterDirectionSV, triggerEnterAnim]);
+
+  const callSwipeDown = useCallback(() => {
+    const cb = onSwipeDownRef.current;
+    swipeY.value = 0;
+    if (swipeProgressProp) swipeProgressProp.value = 0;
     if (cb) {
+      enterDirectionSV.value = -1;
       cb();
       triggerEnterAnim();
     }
-  }, [swipeX, triggerEnterAnim]);
+  }, [swipeY, swipeProgressProp, enterDirectionSV, triggerEnterAnim]);
 
-  const SWIPE_THRESHOLD = 20;
+  const SWIPE_Y_THRESHOLD = 30;
 
-  const swipeHorizontalGesture = useMemo(
+  const verticalPanGesture = useMemo(
     () =>
       Gesture.Pan()
-        .activeOffsetX([-6, 6])
-        .failOffsetY([-20, 20])
+        .activeOffsetY([-10, 10])
+        .failOffsetX([-20, 20])
         .onUpdate((e) => {
-          if (isExpandedSV.value === 1) return;
-          swipeX.value = e.translationX;
+          if (isExpandedSV.value === 1) {
+            // Expanded: only allow swipe down to collapse
+            if (e.translationY > 0) {
+              expandAnim.value =
+                1 - Math.min(e.translationY / DRAG_DISMISS_DISTANCE, 1);
+            }
+          } else {
+            // Collapsed: track vertical swipe for game navigation
+            swipeY.value = e.translationY;
+            if (swipeProgressProp) {
+              swipeProgressProp.value =
+                e.translationY < 0
+                  ? Math.min(-e.translationY / 200, 1)
+                  : 0;
+            }
+          }
         })
         .onEnd((e) => {
-          if (isExpandedSV.value === 1) return;
-          const flingLeft = (e.translationX < -SWIPE_THRESHOLD || e.velocityX < -300) && canSwipeLeftSV.value === 1;
-          const flingRight = (e.translationX > SWIPE_THRESHOLD || e.velocityX > 300) && canSwipeRightSV.value === 1;
-          // Fling left → next game
-          if (flingLeft) {
-            swipeX.value = withTiming(
-              -SCREEN_WIDTH,
-              { duration: 200, easing: Easing.in(Easing.ease) },
-              () => runOnJS(callSwipeLeft)()
-            );
-          // Fling right → previous game
-          } else if (flingRight) {
-            swipeX.value = withTiming(
-              SCREEN_WIDTH,
-              { duration: 200, easing: Easing.in(Easing.ease) },
-              () => runOnJS(callSwipeRight)()
-            );
-          // Didn't pass threshold — snap back
+          if (isExpandedSV.value === 1) {
+            if (expandAnim.value < 0.5) {
+              expandAnim.value = withTiming(0, {
+                duration: 150,
+                easing: Easing.in(Easing.ease),
+              });
+              isExpandedSV.value = 0;
+              runOnJS(setIsExpanded)(false);
+              runOnJS(callOnExpandChange)(false);
+            } else {
+              expandAnim.value = withTiming(1, {
+                duration: 150,
+                easing: Easing.out(Easing.ease),
+              });
+            }
           } else {
-            swipeX.value = withTiming(0, { duration: 200 });
+            const flingUp =
+              (e.translationY < -SWIPE_Y_THRESHOLD || e.velocityY < -300) &&
+              canSwipeUpSV.value === 1;
+            const flingDown =
+              (e.translationY > SWIPE_Y_THRESHOLD || e.velocityY > 300) &&
+              canSwipeDownSV.value === 1;
+
+            if (flingUp) {
+              swipeY.value = withTiming(
+                -SCREEN_HEIGHT * 0.5,
+                { duration: 200, easing: Easing.in(Easing.ease) },
+                () => runOnJS(callSwipeUp)()
+              );
+            } else if (flingDown) {
+              swipeY.value = withTiming(
+                SCREEN_HEIGHT * 0.5,
+                { duration: 200, easing: Easing.in(Easing.ease) },
+                () => runOnJS(callSwipeDown)()
+              );
+            } else {
+              swipeY.value = withTiming(0, { duration: 200 });
+              if (swipeProgressProp) {
+                swipeProgressProp.value = withTiming(0, { duration: 200 });
+              }
+            }
           }
         }),
-    [isExpandedSV, swipeX, canSwipeLeftSV, canSwipeRightSV, callSwipeLeft, callSwipeRight]
+    [
+      isExpandedSV,
+      swipeY,
+      expandAnim,
+      canSwipeUpSV,
+      canSwipeDownSV,
+      callSwipeUp,
+      callSwipeDown,
+      callOnExpandChange,
+      swipeProgressProp,
+    ]
   );
 
   const tapGesture = useMemo(
@@ -254,12 +275,8 @@ export const SingleGameContent = React.memo(function SingleGameContent({
   );
 
   const composedGesture = useMemo(
-    () =>
-      Gesture.Exclusive(
-        Gesture.Race(swipeDownGesture, swipeHorizontalGesture),
-        tapGesture
-      ),
-    [swipeDownGesture, swipeHorizontalGesture, tapGesture]
+    () => Gesture.Exclusive(verticalPanGesture, tapGesture),
+    [verticalPanGesture, tapGesture]
   );
 
   // ── Animation styles ──
@@ -275,29 +292,24 @@ export const SingleGameContent = React.memo(function SingleGameContent({
     };
   });
 
-  // Inner card: visual (border, radius, swipe offset + Tinder rotation + enter scale)
+  // Inner card: visual (border, radius, vertical swipe offset + enter slide)
   const cardInnerAnimStyle = useAnimatedStyle(() => {
-    const rotation = interpolate(
-      swipeX.value,
-      [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-      [-12, 0, 12]
+    const enterTranslateY = interpolate(
+      enterAnim.value,
+      [0, 1],
+      [enterDirectionSV.value * 50, 0]
     );
-    // Enter from stack position: stack front card is at left/right: 20, top: 8
-    // Main card is at marginHorizontal: 24, so extra margin = 20 - 24 = ~0 (clamped)
-    const enterMarginExtra = interpolate(enterAnim.value, [0, 1], [0, 0]);
-    const enterTranslateY = interpolate(enterAnim.value, [0, 1], [8, 0]);
-    // Brief opacity delay so stack card is visible first, then content fades in
-    const enterOpacity = interpolate(enterAnim.value, [0, 0.15, 0.5, 1], [0, 0, 1, 1]);
+    const enterOpacity = interpolate(
+      enterAnim.value,
+      [0, 0.15, 0.5, 1],
+      [0, 0, 1, 1]
+    );
     return {
       borderRadius: interpolate(expandAnim.value, [0, 1], [16, 0]),
       borderWidth: interpolate(expandAnim.value, [0, 1], [1, 0]),
-      marginHorizontal: interpolate(expandAnim.value, [0, 1], [24 + enterMarginExtra, 0]),
+      marginHorizontal: interpolate(expandAnim.value, [0, 1], [24, 0]),
       opacity: enterOpacity,
-      transform: [
-        { translateX: swipeX.value },
-        { rotate: `${rotation}deg` },
-        { translateY: enterTranslateY },
-      ],
+      transform: [{ translateY: swipeY.value + enterTranslateY }],
     };
   });
 
@@ -340,33 +352,6 @@ export const SingleGameContent = React.memo(function SingleGameContent({
     zIndex: expandAnim.value > 0.01 ? 100 : 0,
   }));
 
-  // Stack cards animate forward during swipe AND stay forward during enter anim
-  const stackFrontAnimStyle = useAnimatedStyle(() => {
-    const swipeP = Math.min(Math.abs(swipeX.value) / (SCREEN_WIDTH * 0.5), 1);
-    const enterP = 1 - enterAnim.value; // 1 at start of enter, 0 when done
-    const p = Math.max(swipeP, enterP);
-    return {
-      top: interpolate(p, [0, 1], [8, 0]),
-      bottom: interpolate(p, [0, 1], [-8, 0]),
-      left: interpolate(p, [0, 1], [32, 26]),
-      right: interpolate(p, [0, 1], [32, 26]),
-      opacity: interpolate(p, [0, 1], [0.8, 1]),
-    };
-  });
-
-  const stackBackAnimStyle = useAnimatedStyle(() => {
-    const swipeP = Math.min(Math.abs(swipeX.value) / (SCREEN_WIDTH * 0.5), 1);
-    const enterP = 1 - enterAnim.value;
-    const p = Math.max(swipeP, enterP);
-    return {
-      top: interpolate(p, [0, 1], [16, 8]),
-      bottom: interpolate(p, [0, 1], [-16, -8]),
-      left: interpolate(p, [0, 1], [40, 32]),
-      right: interpolate(p, [0, 1], [40, 32]),
-      opacity: interpolate(p, [0, 1], [0.5, 0.8]),
-    };
-  });
-
   const homeThumbColor = fixture.homeTeam?.firstKitColor ?? "#22C55E";
   const awayThumbColor = getAwaySliderColor(
     fixture.homeTeam?.firstKitColor,
@@ -403,33 +388,6 @@ export const SingleGameContent = React.memo(function SingleGameContent({
           cardOffsetY.value = e.nativeEvent.layout.y;
         }}
       >
-        {/* Stacked cards behind — animate forward as main card is swiped */}
-        {totalFixtures > 1 && (
-          <Animated.View style={[styles.stackContainer, collapsedFadeStyle]} pointerEvents="none">
-            {totalFixtures > 2 && (
-              <Animated.View
-                style={[
-                  styles.stackCard,
-                  {
-                    backgroundColor: theme.colors.cardBackground,
-                    borderColor: theme.colors.border,
-                  },
-                  stackBackAnimStyle,
-                ]}
-              />
-            )}
-            <Animated.View
-              style={[
-                styles.stackCard,
-                {
-                  backgroundColor: theme.colors.cardBackground,
-                  borderColor: theme.colors.border,
-                },
-                stackFrontAnimStyle,
-              ]}
-            />
-          </Animated.View>
-        )}
           <Animated.View
             style={[styles.v2CardRow, cardRowAnimStyle]}
             onLayout={(e) => {
@@ -693,15 +651,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: "center",
     marginTop: 2,
-  },
-  stackContainer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: -1,
-  },
-  stackCard: {
-    position: "absolute",
-    borderRadius: 16,
-    borderWidth: 1,
   },
   teamNamesRow: {
     flexDirection: "row",

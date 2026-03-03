@@ -49,7 +49,7 @@ export type Colors = {
 };
 export const lightColors: Colors = {
   // Surfaces — רקע אפור ניטרלי קל, כרטיסים לבנים
-  background: "#F6F6F6", // אפור ניטרלי קל — לא לבן טהור, לא כהה מדי
+  background: "#FFFFFF", // לבן — אחיד עם surface
   surface: "#FFFFFF", // לבן — sections/containers
   cardBackground: "#FFFFFF", // לבן — כרטיסים בולטים על הרקע
   surfaceElevated: "#FFFFFF", // לבן — modals
