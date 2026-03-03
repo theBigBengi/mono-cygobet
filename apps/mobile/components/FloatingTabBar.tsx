@@ -87,13 +87,15 @@ export function FloatingTabBar({
               ? "add"
               : route.name === "groups"
                 ? "people"
-                : route.name === "activity"
-                  ? "flash"
-                  : route.name === "profile"
-                    ? "person"
-                    : route.name === "settings"
-                      ? "settings-outline"
-                      : null;
+                : route.name === "journey"
+                  ? "trail-sign-outline"
+                  : route.name === "activity"
+                    ? "flash"
+                    : route.name === "profile"
+                      ? "person"
+                      : route.name === "settings"
+                        ? "settings-outline"
+                        : null;
 
           return (
             <Pressable
@@ -179,7 +181,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    paddingHorizontal: 80,
+    paddingHorizontal: 50,
   },
   container: {
     flexDirection: "row",

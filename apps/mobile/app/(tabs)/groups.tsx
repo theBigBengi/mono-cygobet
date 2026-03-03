@@ -17,6 +17,7 @@ import {
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Keyboard,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from "react-native";
@@ -27,6 +28,7 @@ import Animated, {
   withTiming,
   SlideInRight,
   SlideInDown,
+  FadeIn,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -105,6 +107,13 @@ function CreateGroupSheet({
   const createGroupMutation = useCreateGroupMutation();
   const [isCreating, setIsCreating] = useState(false);
   const slideDirection = useRef<"forward" | "back">("forward");
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  React.useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardWillShow", (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener("keyboardWillHide", () => setKeyboardHeight(0));
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   React.useEffect(() => {
     if (step === 1 && prevStepRef.current === 0) {
@@ -1132,6 +1141,17 @@ function CreateGroupSheet({
           </View>
         )}
 
+        {/* Creating overlay */}
+        {isCreating && (
+          <Animated.View
+            entering={FadeIn.duration(300)}
+            style={[createStyles.creatingOverlay, { backgroundColor: theme.colors.background + "E6", paddingBottom: keyboardHeight }]}
+            pointerEvents="box-only"
+          >
+            <ActivityIndicator size="small" color={theme.colors.textSecondary} />
+          </Animated.View>
+        )}
+
       </View>
 
     </BottomSheetModal>
@@ -1141,6 +1161,12 @@ function CreateGroupSheet({
 const createStyles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  creatingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+    alignItems: "center",
+    justifyContent: "center",
   },
   loadingWrap: {
     alignItems: "center",

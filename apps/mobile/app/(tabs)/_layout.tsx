@@ -72,6 +72,16 @@ export default function TabsLayout() {
       */}
       <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen
+        name="journey"
+        options={{
+          title: t("tabs.journey"),
+          tabBarLabel: t("tabs.journey"),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="trail-sign-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: t("tabs.settings"),

@@ -16,8 +16,9 @@ import { useTheme } from "@/lib/theme";
 import { getContrastTextColor } from "../utils/color-helpers";
 
 const CELL_HEIGHT = 44;
-const STRIP_WIDTH = 52;
-const THUMB_SIZE = 58;
+const STRIP_WIDTH = 40;
+const THUMB_WIDTH = 56;
+const THUMB_HEIGHT = 44;
 // 11 cells: digits 9..0 (yIndex 0–9) + logo (yIndex 10)
 const MAX_Y = 10 * CELL_HEIGHT;
 
@@ -38,11 +39,13 @@ function AnimatedDigit({
   yIndex,
   tabY,
   secondaryColor,
+  side,
 }: {
   digit: number;
   yIndex: number;
   tabY: SharedValue<number>;
   secondaryColor: string;
+  side?: "left" | "right";
 }) {
   const animatedStyle = useAnimatedStyle(() => {
     const distance =
@@ -69,10 +72,12 @@ function AnimatedDashCell({
   yIndex,
   tabY,
   secondaryColor,
+  side,
 }: {
   yIndex: number;
   tabY: SharedValue<number>;
   secondaryColor: string;
+  side?: "left" | "right";
 }) {
   const animatedStyle = useAnimatedStyle(() => {
     const distance =
@@ -202,9 +207,13 @@ export function VerticalScoreSlider({
       });
     });
 
-  const thumbStyle = useAnimatedStyle(() => ({
-    top: tabY.value + CELL_HEIGHT / 2 - THUMB_SIZE / 2,
-  }));
+  const thumbStyle = useAnimatedStyle(() => {
+    const rawTop = tabY.value + CELL_HEIGHT / 2 - THUMB_HEIGHT / 2;
+    const maxTop = 11 * CELL_HEIGHT - THUMB_HEIGHT;
+    return {
+      top: Math.max(0, Math.min(rawTop, maxTop)),
+    };
+  });
 
   const textColor = getContrastTextColor(thumbColor);
   const secondaryColor = theme.colors.textSecondary;
@@ -212,7 +221,14 @@ export function VerticalScoreSlider({
 
   return (
     <GestureDetector gesture={panGesture}>
-      <Animated.View style={styles.container}>
+      <Animated.View style={[styles.container, {
+        borderColor: theme.colors.border,
+        ...(side === "right"
+          ? { borderRightWidth: 1 }
+          : side === "left"
+            ? { borderLeftWidth: 1 }
+            : {}),
+      }]}>
         {/* Digit track + logo cell */}
         <View style={styles.track} pointerEvents="none">
           {[9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((digit) => (
@@ -222,6 +238,7 @@ export function VerticalScoreSlider({
               yIndex={9 - digit}
               tabY={tabY}
               secondaryColor={secondaryColor}
+              side={side}
             />
           ))}
           {/* Dash cell at bottom (yIndex 10) — null/undefined state */}
@@ -229,6 +246,7 @@ export function VerticalScoreSlider({
             yIndex={10}
             tabY={tabY}
             secondaryColor={secondaryColor}
+            side={side}
           />
         </View>
 
@@ -239,13 +257,13 @@ export function VerticalScoreSlider({
             thumbStyle,
             {
               backgroundColor: thumbColor,
-              left: side === "left" ? 0 : side === "right" ? STRIP_WIDTH - THUMB_SIZE : (STRIP_WIDTH - THUMB_SIZE) / 2,
+              left: side === "left" ? 0 : side === "right" ? STRIP_WIDTH - THUMB_WIDTH : (STRIP_WIDTH - THUMB_WIDTH) / 2,
               // Rounded only on the side that pops towards card
               ...(side === "left"
-                ? { borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderTopRightRadius: THUMB_SIZE / 2, borderBottomRightRadius: THUMB_SIZE / 2 }
+                ? { borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderTopRightRadius: THUMB_HEIGHT / 2, borderBottomRightRadius: THUMB_HEIGHT / 2, paddingRight: THUMB_WIDTH - STRIP_WIDTH }
                 : side === "right"
-                  ? { borderTopLeftRadius: THUMB_SIZE / 2, borderBottomLeftRadius: THUMB_SIZE / 2, borderTopRightRadius: 0, borderBottomRightRadius: 0 }
-                  : { borderRadius: THUMB_SIZE / 2 }),
+                  ? { borderTopLeftRadius: THUMB_HEIGHT / 2, borderBottomLeftRadius: THUMB_HEIGHT / 2, borderTopRightRadius: 0, borderBottomRightRadius: 0, paddingLeft: THUMB_WIDTH - STRIP_WIDTH }
+                  : { borderRadius: THUMB_HEIGHT / 2 }),
             },
           ]}
           pointerEvents="none"
@@ -289,12 +307,12 @@ const styles = StyleSheet.create({
   },
   thumb: {
     position: "absolute",
-    width: THUMB_SIZE,
-    height: THUMB_SIZE,
+    width: THUMB_WIDTH,
+    height: THUMB_HEIGHT,
     borderRadius: 0,
     alignItems: "center",
     justifyContent: "center",
-    left: (STRIP_WIDTH - THUMB_SIZE) / 2,
+    left: (STRIP_WIDTH - THUMB_WIDTH) / 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,

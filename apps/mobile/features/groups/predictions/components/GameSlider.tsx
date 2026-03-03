@@ -9,14 +9,15 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import type { FixtureItem } from "@/types/common";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const SLIDER_ITEM_WIDTH = 110;
-const SLIDER_ITEM_MARGIN = 8;
+const SLIDER_ITEM_WIDTH = 80;
+const SLIDER_ITEM_MARGIN = 2;
 const SLIDER_ITEM_TOTAL = SLIDER_ITEM_WIDTH + SLIDER_ITEM_MARGIN;
 const LOGO_SIZE = 16;
 /** Width of the back button area in the header */
@@ -150,63 +151,51 @@ export function GameSlider({
           }}
           style={({ pressed }) => [
             styles.item,
-            isActive
-              ? {
-                  backgroundColor: `${theme.colors.primary}18`,
-                  borderWidth: 1,
-                  borderColor: theme.colors.primary,
-                  shadowOpacity: pressed ? 0 : 0.15,
-                }
-              : {
-                  backgroundColor: "transparent",
-                  borderWidth: 0,
-                  shadowOpacity: 0,
-                },
+            {
+              backgroundColor: "transparent",
+              borderWidth: 0,
+              shadowOpacity: 0,
+            },
             { transform: [{ scale: pressed ? 0.95 : 1 }] },
           ]}
         >
-          {/* Row 1: logos + short names */}
-          <View style={styles.teamsRow}>
-            <View style={styles.teamGroup}>
-              <TeamLogo
-                imagePath={fixture.homeTeam?.imagePath}
-                teamName={homeName}
-                size={LOGO_SIZE}
-              />
-              <AppText
-                variant="caption"
-                numberOfLines={1}
-                style={[
-                  styles.abbr,
-                  isActive && {
-                    fontWeight: "600",
-                    color: theme.colors.primary,
-                  },
-                ]}
-              >
-                {homeAbbr}
-              </AppText>
-            </View>
-            <View style={styles.teamGroup}>
-              <AppText
-                variant="caption"
-                numberOfLines={1}
-                style={[
-                  styles.abbr,
-                  isActive && {
-                    fontWeight: "600",
-                    color: theme.colors.primary,
-                  },
-                ]}
-              >
-                {awayAbbr}
-              </AppText>
-              <TeamLogo
-                imagePath={fixture.awayTeam?.imagePath}
-                teamName={awayName}
-                size={LOGO_SIZE}
-              />
-            </View>
+          <View style={[styles.teamsRow, !isActive && { opacity: 0.4 }]}>
+            <AppText
+              variant="caption"
+              numberOfLines={1}
+              style={[
+                styles.abbr,
+                isActive && {
+                  fontWeight: "700",
+                  color: theme.colors.textPrimary,
+                },
+              ]}
+            >
+              {homeAbbr}
+            </AppText>
+            <AppText
+              variant="caption"
+              numberOfLines={1}
+              style={[
+                styles.abbr,
+                { opacity: 0.5 },
+              ]}
+            >
+              v
+            </AppText>
+            <AppText
+              variant="caption"
+              numberOfLines={1}
+              style={[
+                styles.abbr,
+                isActive && {
+                  fontWeight: "700",
+                  color: theme.colors.textPrimary,
+                },
+              ]}
+            >
+              {awayAbbr}
+            </AppText>
           </View>
         </Pressable>
       );
@@ -242,6 +231,21 @@ export function GameSlider({
         initialNumToRender={5}
         removeClippedSubviews
       />
+      {/* Fade edges */}
+      <LinearGradient
+        colors={[theme.colors.background, theme.colors.background + "00"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.fadeLeft}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={[theme.colors.background + "00", theme.colors.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.fadeRight}
+        pointerEvents="none"
+      />
     </Animated.View>
   );
 }
@@ -250,13 +254,28 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 10,
     minHeight: 48,
+    position: "relative",
+  },
+  fadeLeft: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 40,
+  },
+  fadeRight: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 40,
   },
   item: {
     width: SLIDER_ITEM_WIDTH,
     marginRight: SLIDER_ITEM_MARGIN,
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
     flexDirection: "column",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -268,7 +287,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 6,
+    gap: 2,
     width: "100%",
   },
   teamGroup: {
