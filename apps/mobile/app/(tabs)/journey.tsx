@@ -1,20 +1,25 @@
-import React from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   StyleSheet,
   ScrollView,
   Dimensions,
   StatusBar,
+  Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
+import * as Haptics from "expo-haptics";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const NODE_SIZE = 56;
 const VERTICAL_GAP = 28;
-const PATH_AMPLITUDE = SCREEN_WIDTH * 0.28; // how far left/right the path sways
+const PATH_AMPLITUDE = SCREEN_WIDTH * 0.28;
+
+const POPOVER_WIDTH = SCREEN_WIDTH * 0.7;
+const ARROW_SIZE = 10;
 
 // Mock data: 20 nodes going upward
 const NODES = Array.from({ length: 20 }, (_, i) => ({
@@ -28,9 +33,45 @@ export default function JourneyScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation("common");
   const insets = useSafeAreaInsets();
+  const [activeNodeId, setActiveNodeId] = useState<number | null>(null);
+  const [popoverPos, setPopoverPos] = useState<{ cx: number; bottom: number } | null>(null);
+  const currentNodeRef = useRef<View>(null);
 
-  // Nodes ordered bottom-to-top for display (reversed so scroll starts at bottom)
   const nodesBottomUp = [...NODES].reverse();
+
+  const handleNodePress = useCallback((nodeId: number, isCurrent: boolean) => {
+    if (!isCurrent) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (activeNodeId === nodeId) {
+      setActiveNodeId(null);
+      setPopoverPos(null);
+      return;
+    }
+
+    currentNodeRef.current?.measureInWindow((x, y, width, height) => {
+      setPopoverPos({ cx: x + width / 2, bottom: y + height });
+      setActiveNodeId(nodeId);
+    });
+  }, [activeNodeId]);
+
+  const dismissPopover = useCallback(() => {
+    setActiveNodeId(null);
+    setPopoverPos(null);
+  }, []);
+
+  const handleStart = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    dismissPopover();
+    // TODO: navigate to lesson
+  };
+
+  // Clamp popover so it doesn't go off-screen
+  const popoverLeft = popoverPos
+    ? Math.max(12, Math.min(popoverPos.cx - POPOVER_WIDTH / 2, SCREEN_WIDTH - POPOVER_WIDTH - 12))
+    : 0;
+  const arrowScreenX = popoverPos ? popoverPos.cx : 0;
+  const arrowLeftInPopover = arrowScreenX - popoverLeft - ARROW_SIZE;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
@@ -55,19 +96,17 @@ export default function JourneyScreen() {
           { paddingBottom: 120 + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={dismissPopover}
       >
         <View style={styles.pathContainer}>
           {nodesBottomUp.map((node, index) => {
-            // Serpentine path: sine wave pattern
             const reversedIndex = NODES.length - 1 - index;
-            const xOffset =
-              Math.sin(reversedIndex * 0.6) * PATH_AMPLITUDE;
+            const xOffset = Math.sin(reversedIndex * 0.6) * PATH_AMPLITUDE;
 
             const isCompleted = node.completed;
             const isCurrent = node.current;
             const isLocked = !isCompleted && !isCurrent;
 
-            // Colors
             const bgColor = isCompleted
               ? theme.colors.success
               : isCurrent
@@ -77,11 +116,12 @@ export default function JourneyScreen() {
               ? theme.colors.textDisabled
               : "#FFFFFF";
 
-            // Draw connector line to next node
             const showConnector = index < nodesBottomUp.length - 1;
             const nextReversedIndex = NODES.length - 2 - index;
-            const nextXOffset =
-              Math.sin(nextReversedIndex * 0.6) * PATH_AMPLITUDE;
+            const nextXOffset = Math.sin(nextReversedIndex * 0.6) * PATH_AMPLITUDE;
+
+            const currentNodeSize = isCurrent ? NODE_SIZE + 8 : NODE_SIZE;
+            const nodeLeft = SCREEN_WIDTH / 2 + xOffset - currentNodeSize / 2;
 
             return (
               <View key={node.id} style={styles.nodeRow}>
@@ -107,18 +147,17 @@ export default function JourneyScreen() {
                 )}
 
                 {/* Node circle */}
-                <View
+                <Pressable
+                  ref={isCurrent ? currentNodeRef : undefined}
+                  onPress={() => handleNodePress(node.id, isCurrent)}
                   style={[
                     styles.node,
                     {
-                      width: isCurrent ? NODE_SIZE + 8 : NODE_SIZE,
-                      height: isCurrent ? NODE_SIZE + 8 : NODE_SIZE,
-                      borderRadius: (isCurrent ? NODE_SIZE + 8 : NODE_SIZE) / 2,
+                      width: currentNodeSize,
+                      height: currentNodeSize,
+                      borderRadius: currentNodeSize / 2,
                       backgroundColor: bgColor,
-                      left:
-                        SCREEN_WIDTH / 2 +
-                        xOffset -
-                        (isCurrent ? NODE_SIZE + 8 : NODE_SIZE) / 2,
+                      left: nodeLeft,
                       borderWidth: isCurrent ? 3 : 0,
                       borderColor: isCurrent
                         ? theme.colors.primary + "40"
@@ -150,12 +189,77 @@ export default function JourneyScreen() {
                       {node.points}
                     </AppText>
                   )}
-                </View>
+                </Pressable>
               </View>
             );
           })}
         </View>
       </ScrollView>
+
+      {/* Floating popover overlay */}
+      {activeNodeId !== null && popoverPos && (
+        <>
+          {/* Invisible backdrop to dismiss */}
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={dismissPopover}
+          />
+
+          {/* Popover */}
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.popoverContainer,
+              {
+                top: popoverPos.bottom + 8,
+                left: popoverLeft,
+              },
+            ]}
+          >
+            {/* Arrow */}
+            <View
+              style={[
+                styles.arrow,
+                {
+                  left: arrowLeftInPopover,
+                  borderBottomColor: theme.colors.primary,
+                },
+              ]}
+            />
+
+            <View
+              style={[
+                styles.popover,
+                { backgroundColor: theme.colors.primary },
+              ]}
+            >
+              <AppText style={styles.popoverTitle}>
+                Pair letters and sounds
+              </AppText>
+              <AppText style={styles.popoverSubtitle}>
+                Lesson 3 of 5
+              </AppText>
+
+              <Pressable
+                onPress={handleStart}
+                style={({ pressed }) => [
+                  styles.startButton,
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <AppText
+                  style={[
+                    styles.startButtonText,
+                    { color: theme.colors.primary },
+                  ]}
+                >
+                  START +20 XP
+                </AppText>
+              </Pressable>
+            </View>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -196,5 +300,57 @@ const styles = StyleSheet.create({
   },
   nodeText: {
     textAlign: "center",
+  },
+  popoverContainer: {
+    position: "absolute",
+    width: POPOVER_WIDTH,
+    zIndex: 100,
+  },
+  arrow: {
+    position: "absolute",
+    top: 0,
+    width: 0,
+    height: 0,
+    zIndex: 101,
+    borderLeftWidth: ARROW_SIZE,
+    borderRightWidth: ARROW_SIZE,
+    borderBottomWidth: ARROW_SIZE,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+  },
+  popover: {
+    marginTop: ARROW_SIZE,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10,
+  },
+  popoverTitle: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  popoverSubtitle: {
+    color: "rgba(255,255,255,0.75)",
+    fontSize: 13,
+    fontWeight: "500",
+    marginBottom: 14,
+  },
+  startButton: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  startButtonText: {
+    fontSize: 14,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
 });

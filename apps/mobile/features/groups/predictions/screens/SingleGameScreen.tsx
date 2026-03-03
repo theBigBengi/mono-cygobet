@@ -18,6 +18,7 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useTranslation } from "react-i18next";
 import { canPredict } from "@repo/utils";
+import * as Haptics from "expo-haptics";
 import { useGroupFixture } from "../hooks/useGroupFixture";
 import { useGroupPredictions } from "../hooks/useGroupPredictions";
 import { VerticalScoreSlider } from "../components/VerticalScoreSlider";
@@ -31,7 +32,7 @@ import type { GroupPrediction } from "@/features/group-creation/selection/games"
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SWIPE_THRESHOLD = SCREEN_HEIGHT * 0.65;
 const CARD_GAP = 12;
-const PEEK = 72;
+const PEEK = 48;
 
 export type SingleGameScreenProps = {
   groupId: number | null;
@@ -79,38 +80,49 @@ export function SingleGameScreen({
   const CARD_HEIGHT = VISIBLE_HEIGHT - PEEK - CARD_GAP;
   const STEP = CARD_HEIGHT + CARD_GAP;
 
-  // Find initial index from fixtureId
+  // If the initial fixture is finished → single expanded card, no strip
+  const isFinishedGame = fixture != null && !canPredict(fixture.state, fixture.startTs);
+
+  // Strip only contains predictable fixtures
+  const predictableFixtures = React.useMemo(
+    () => allFixtures.filter((f) => canPredict(f.state, f.startTs)),
+    [allFixtures]
+  );
+  const stripFixtures = isFinishedGame ? [] : predictableFixtures;
+
+  // Find initial index from fixtureId within predictable fixtures
   const initialIndex =
     fixtureId != null
       ? Math.max(
           0,
-          allFixtures.findIndex((f) => f.id === fixtureId)
+          stripFixtures.findIndex((f) => f.id === fixtureId)
         )
       : 0;
 
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const currentIndexSV = useSharedValue(initialIndex);
   const translateY = useSharedValue(0);
+  const expandProgress = useSharedValue(isFinishedGame ? 1 : 0);
 
   // Sync when fixtureId prop changes
   useEffect(() => {
-    if (fixtureId != null) {
-      const idx = allFixtures.findIndex((f) => f.id === fixtureId);
+    if (fixtureId != null && !isFinishedGame) {
+      const idx = stripFixtures.findIndex((f) => f.id === fixtureId);
       if (idx >= 0) {
         currentIndexSV.value = idx;
         setCurrentIndex(idx);
       }
     }
-  }, [fixtureId, allFixtures, currentIndexSV]);
+  }, [fixtureId, stripFixtures, isFinishedGame, currentIndexSV]);
 
   const updateRouterParams = useCallback(
     (index: number) => {
-      const f = allFixtures[index];
+      const f = stripFixtures[index];
       if (f) {
         router.setParams({ fixtureId: String(f.id) });
       }
     },
-    [allFixtures, router]
+    [stripFixtures, router]
   );
 
   const onIndexChange = useCallback(
@@ -121,12 +133,16 @@ export function SingleGameScreen({
     [updateRouterParams]
   );
 
-  const totalCards = allFixtures.length;
+  const totalCards = stripFixtures.length;
 
   const panGesture = Gesture.Pan()
     .activeOffsetY([-10, 10])
     .failOffsetX([-20, 20])
+    .onStart(() => {
+      if (expandProgress.value > 0) return;
+    })
     .onUpdate((e) => {
+      if (expandProgress.value > 0) return;
       const idx = currentIndexSV.value;
       if (
         (idx === 0 && e.translationY > 0) ||
@@ -138,6 +154,7 @@ export function SingleGameScreen({
       }
     })
     .onEnd((e) => {
+      if (expandProgress.value > 0) return;
       const idx = currentIndexSV.value;
       const flingUp =
         (e.translationY < -SWIPE_THRESHOLD || e.velocityY < -500) &&
@@ -146,6 +163,7 @@ export function SingleGameScreen({
         (e.translationY > SWIPE_THRESHOLD || e.velocityY > 500) && idx > 0;
 
       if (flingUp) {
+        expandProgress.value = 0;
         runOnJS(savePending)();
         translateY.value = withTiming(-STEP, { duration: 300 }, () => {
           currentIndexSV.value += 1;
@@ -153,6 +171,7 @@ export function SingleGameScreen({
           runOnJS(onIndexChange)(currentIndexSV.value);
         });
       } else if (flingDown) {
+        expandProgress.value = 0;
         runOnJS(savePending)();
         translateY.value = withTiming(STEP, { duration: 300 }, () => {
           currentIndexSV.value -= 1;
@@ -187,30 +206,59 @@ export function SingleGameScreen({
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      {/* Viewport — clips the strip */}
-      <View style={styles.viewport}>
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={stripStyle}>
-            {allFixtures.map((f, i) => (
-              <PeekCard
-                key={f.id}
-                fixture={f}
-                index={i}
-                currentIndex={currentIndex}
-                cardHeight={CARD_HEIGHT}
-                contentTop={CONTENT_TOP}
-                cardBackground={theme.colors.cardBackground}
-                currentIndexSV={currentIndexSV}
-                translateY={translateY}
-                prediction={getPrediction(f.id)}
-                isSaved={isPredictionSaved(f.id)}
-                onUpdatePrediction={updatePrediction}
-                onUpdateSliderValue={updateSliderValue}
-              />
-            ))}
-          </Animated.View>
-        </GestureDetector>
-      </View>
+      {/* Darkened backdrop behind cards */}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.06)" }]} />
+
+      {isFinishedGame && fixture ? (
+        /* Single expanded card for finished games */
+        <View style={styles.viewport}>
+          <PeekCard
+            fixture={fixture}
+            index={0}
+            currentIndex={0}
+            cardHeight={SCREEN_HEIGHT}
+            expandAmount={0}
+            expandProgress={expandProgress}
+            contentTop={CONTENT_TOP}
+            cardBackground={theme.colors.cardBackground}
+            currentIndexSV={currentIndexSV}
+            translateY={translateY}
+            prediction={getPrediction(fixture.id)}
+            isSaved={isPredictionSaved(fixture.id)}
+            onUpdatePrediction={updatePrediction}
+            onUpdateSliderValue={updateSliderValue}
+            isFinishedGame={true}
+          />
+        </View>
+      ) : (
+        /* Viewport — clips the strip for predictable games */
+        <View style={styles.viewport}>
+          <GestureDetector gesture={panGesture}>
+            <Animated.View style={stripStyle}>
+              {stripFixtures.map((f, i) => (
+                <PeekCard
+                  key={f.id}
+                  fixture={f}
+                  index={i}
+                  currentIndex={currentIndex}
+                  cardHeight={CARD_HEIGHT}
+                  expandAmount={PEEK + CARD_GAP}
+                  expandProgress={expandProgress}
+                  contentTop={CONTENT_TOP}
+                  cardBackground={theme.colors.cardBackground}
+                  currentIndexSV={currentIndexSV}
+                  translateY={translateY}
+                  prediction={getPrediction(f.id)}
+                  isSaved={isPredictionSaved(f.id)}
+                  onUpdatePrediction={updatePrediction}
+                  onUpdateSliderValue={updateSliderValue}
+                  isFinishedGame={false}
+                />
+              ))}
+            </Animated.View>
+          </GestureDetector>
+        </View>
+      )}
 
       {/* Fixed header — doesn't scroll with cards */}
       <View
@@ -249,6 +297,8 @@ function PeekCard({
   index,
   currentIndex,
   cardHeight,
+  expandAmount,
+  expandProgress,
   contentTop,
   cardBackground,
   currentIndexSV,
@@ -257,17 +307,21 @@ function PeekCard({
   isSaved,
   onUpdatePrediction,
   onUpdateSliderValue,
+  isFinishedGame,
 }: {
   fixture: FixtureItem;
   index: number;
   currentIndex: number;
   cardHeight: number;
+  expandAmount: number;
+  expandProgress: Animated.SharedValue<number>;
   contentTop: number;
   cardBackground: string;
   currentIndexSV: Animated.SharedValue<number>;
   translateY: Animated.SharedValue<number>;
   prediction: GroupPrediction;
   isSaved: boolean;
+  isFinishedGame: boolean;
   onUpdatePrediction: (
     fixtureId: number,
     type: "home" | "away",
@@ -321,17 +375,17 @@ function PeekCard({
   );
 
   const STEP = cardHeight + CARD_GAP;
-  const overlayStyle = useAnimatedStyle(() => {
+  const cardOpacityStyle = useAnimatedStyle(() => {
     const isCurrentAnim = currentIndexSV.value === index;
     const drag = Math.abs(translateY.value);
 
     if (isCurrentAnim) {
-      // Mirror of peek card: darkens when same visible area remains as peek has at rest
+      // Current card: 1 → 0.25 gradually over the full swipe
       return {
         opacity: interpolate(
           drag,
-          [cardHeight - PEEK - cardHeight * 0.15, cardHeight - PEEK],
-          [0, 0.45],
+          [0, STEP],
+          [1, 0.25],
           "clamp"
         ),
       };
@@ -341,33 +395,56 @@ function PeekCard({
     const isPrevPeek =
       index === currentIndexSV.value - 1 && translateY.value > 0;
     if (isNextPeek || isPrevPeek) {
-      // Peek card brightens as it's dragged into view (symmetric to current)
+      // Peek card: 0.25 → 1 gradually over the full swipe
       return {
         opacity: interpolate(
           drag,
-          [0, cardHeight * 0.15],
-          [0.45, 0],
+          [0, STEP],
+          [0.25, 1],
           "clamp"
         ),
       };
     }
-    return { opacity: 0.45 };
+    return { opacity: 0.25 };
   });
 
+  // Expand: card grows downward, negative margin keeps strip layout intact
+  const expandStyle = useAnimatedStyle(() => ({
+    height: cardHeight + expandProgress.value * expandAmount,
+    marginBottom: CARD_GAP - expandProgress.value * expandAmount,
+  }));
+
+  const contentFadeOut = useAnimatedStyle(() => ({
+    opacity: interpolate(expandProgress.value, [0, 0.4], [1, 0], "clamp"),
+  }));
+  const contentFadeIn = useAnimatedStyle(() => ({
+    opacity: interpolate(expandProgress.value, [0.5, 1], [0, 1], "clamp"),
+  }));
+
+  const toggleExpand = useCallback(() => {
+    if (!isCurrent || isFinishedGame) return;
+    const target = expandProgress.value === 0 ? 1 : 0;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    expandProgress.value = withTiming(target, { duration: 300 });
+  }, [isCurrent, isFinishedGame, expandProgress]);
+
   return (
-    <View
+    <Animated.View
       style={[
         styles.card,
-        {
-          height: cardHeight,
-          marginBottom: CARD_GAP,
-          backgroundColor: cardBackground,
-        },
+        { backgroundColor: cardBackground },
+        expandStyle,
+        cardOpacityStyle,
       ]}
     >
-      <View style={[styles.cardInner, { paddingTop: contentTop }]}>
+      <Pressable
+        style={[styles.cardInner, { paddingTop: contentTop }]}
+        onPress={toggleExpand}
+      >
         {isNearby ? (
-          <View style={styles.cardContentRow}>
+          <>
+          {/* Collapsed content — fades out on expand */}
+          <Animated.View style={[styles.cardContentRow, contentFadeOut]}>
             {/* Home slider (left) */}
             <View
               style={styles.sliderContainer}
@@ -454,7 +531,14 @@ function PeekCard({
                 side="left"
               />
             </View>
-          </View>
+          </Animated.View>
+          {/* Expanded content — fades in on expand */}
+          <Animated.View style={[styles.expandedContent, contentFadeIn]}>
+            <AppText variant="body" style={styles.expandedTitle} numberOfLines={2}>
+              {fixture.homeTeam?.name ?? "Home"}  vs  {fixture.awayTeam?.name ?? "Away"}
+            </AppText>
+          </Animated.View>
+          </>
         ) : (
           // Lightweight placeholder for distant cards
           <View style={styles.placeholderContent}>
@@ -469,9 +553,8 @@ function PeekCard({
             </AppText>
           </View>
         )}
-      </View>
-      <Animated.View style={[styles.darkOverlay, overlayStyle]} />
-    </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -493,11 +576,6 @@ const styles = StyleSheet.create({
   },
   cardInner: {
     flex: 1,
-  },
-  darkOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    borderRadius: 32,
   },
   // Full card content layout
   cardContentRow: {
@@ -551,6 +629,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 3,
     marginTop: -260,
+  },
+  expandedContent: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  expandedTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
   },
   // Lightweight placeholder
   placeholderContent: {

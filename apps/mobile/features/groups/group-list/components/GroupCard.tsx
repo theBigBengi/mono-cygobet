@@ -362,6 +362,7 @@ interface NextGameRowProps {
   unreadActivityCount: number;
   lastMessageAt: string | undefined;
   onPredictPress: () => void;
+  onMorePress: () => void;
 }
 
 const SELECTION_MODE_ICON: Record<string, { name: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }> = {
@@ -387,6 +388,7 @@ const NextGameRow = React.memo(function NextGameRowInner({
   unreadActivityCount,
   lastMessageAt,
   onPredictPress,
+  onMorePress,
 }: NextGameRowProps) {
   const { t } = useTranslation("common");
   const countdown = useCountdown(nextGame.kickoffAt ?? null);
@@ -477,21 +479,24 @@ const NextGameRow = React.memo(function NextGameRowInner({
           {isLive && (
             <Ionicons name="radio" size={20} color={textPrimary} />
           )}
+          <Pressable onPress={onMorePress}>
+            <Ionicons name="ellipsis-horizontal" size={20} color={textPrimary} />
+          </Pressable>
         </View>
       {hasPrediction ? (
-        <View style={[styles.predictedCircle, { backgroundColor: textPrimary }]}>
-          <Feather name="check-square" size={18} color="#FFFFFF" />
+        <View style={[styles.predictedCircle, { borderColor: textPrimary + "40" }]}>
+          <Feather name="check-square" size={18} color={textPrimary} />
         </View>
       ) : (
         <Pressable
           onPress={onPredictPress}
           style={({ pressed }) => [
             styles.predictButton,
-            { backgroundColor: pressed ? textPrimary + "CC" : textPrimary },
+            { borderColor: textPrimary + "40", opacity: pressed ? 0.5 : 1 },
           ]}
         >
-          <FontAwesome6 name="pen-to-square" size={18} color="#FFFFFF" />
-          <PulsingPredictText color="#FFFFFF" isActive={isInRange} />
+          <FontAwesome6 name="pen-to-square" size={18} color={textPrimary} />
+          <PulsingPredictText color={textPrimary} isActive={isInRange} />
         </Pressable>
       )}
       </Animated.View>
@@ -664,13 +669,6 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
             </View>
           </Pressable>
 
-          <Pressable onPress={handleMorePress} style={styles.moreButton}>
-            <Ionicons
-              name="ellipsis-horizontal"
-              size={18}
-              color={theme.colors.textSecondary}
-            />
-          </Pressable>
         </View>
 
         {/* Next Game Row (for active groups) */}
@@ -695,6 +693,7 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 router.push(`/groups/${group.id}/fixtures/${group.nextGame!.id}` as any);
               }}
+              onMorePress={handleMorePress}
           />
         )}
 
@@ -878,7 +877,7 @@ const styles = StyleSheet.create({
   inlineHud: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    gap: 20,
   },
   modeIconCircle: {
     width: 28,
@@ -939,6 +938,8 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    borderWidth: 1.5,
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -950,6 +951,8 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 8,
     borderRadius: 16,
+    borderWidth: 1.5,
+    backgroundColor: "transparent",
   },
   predictButtonText: {
     fontSize: 12,
