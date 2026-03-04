@@ -24,7 +24,7 @@ export function useGroupPredictions({
 }: UseGroupPredictionsArgs) {
   const queryClient = useQueryClient();
 
-  const { data: groupData } = useGroupQuery(groupId, { includeFixtures: true });
+  const { data: groupData } = useGroupQuery(groupId, { includeFixtures: true, staleTime: 5 * 60 * 1000 });
   const fixtures = useMemo<FixtureItem[]>(() => {
     const list = groupData?.data?.fixtures;
     return Array.isArray(list) ? (list as FixtureItem[]) : [];

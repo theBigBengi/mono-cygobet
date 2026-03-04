@@ -4,7 +4,6 @@
 import React, { useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
-import { CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,7 +17,7 @@ import {
   isLive as isLiveState,
 } from "@repo/utils";
 
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { TeamLogo } from "@/components/ui";
 import type { FixtureItem } from "@/types/common";
 
@@ -79,11 +78,9 @@ function FixtureRow({
       {/* Status (time / live / points / FT) — fixed left column */}
       <View style={styles.statusCol}>
         {isLive ? (
-          <View style={styles.liveStatusRow}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveMinuteText}>
-              {fixture.liveMinute ?? 0}{"\u2032"}
-            </Text>
+          <View style={[styles.statusBox, { backgroundColor: "#3B82F6" + "15" }]}>
+            <Text style={[styles.statusDayText, { color: "#3B82F6" }]}>{fixture.liveMinute ?? 0}</Text>
+            <Text style={[styles.statusMonthText, { color: "#3B82F6" }]}>Live</Text>
           </View>
         ) : isFinished && fixture.prediction?.points != null ? (
           <View style={[styles.pointsBadge, {
@@ -113,32 +110,62 @@ function FixtureRow({
             const isToday = k.getDate() === n.getDate() && k.getMonth() === n.getMonth() && k.getFullYear() === n.getFullYear();
             const isTomorrow = k.getDate() === tmr.getDate() && k.getMonth() === tmr.getMonth() && k.getFullYear() === tmr.getFullYear();
             if (isToday) {
+              const urgentColor = !hasPrediction ? CRITICAL_COLOR : theme.colors.textSecondary;
               const diff = k.getTime() - n.getTime();
               if (diff <= 0) {
-                statusLabel = formatTime(fixture.kickoffAt);
-                statusIcon = "schedule";
+                const hh = k.getHours().toString().padStart(2, "0");
+                const mm = k.getMinutes().toString().padStart(2, "0");
+                return (
+                  <View style={[styles.statusBox, { backgroundColor: urgentColor + "12" }]}>
+                    <Text style={[styles.statusDayText, { color: urgentColor }]}>{hh}</Text>
+                    <Text style={[styles.statusMonthText, { color: urgentColor }]}>{mm}</Text>
+                  </View>
+                );
               } else {
                 const totalMin = Math.floor(diff / 60000);
                 const h = Math.floor(totalMin / 60);
                 const m = totalMin % 60;
-                statusLabel = h === 0 ? `${m}m` : m > 0 ? `${h}h ${m}m` : `${h}h`;
-                statusUrgent = totalMin <= 60;
-                statusIcon = "av-timer";
+                if (h === 0) {
+                  return (
+                    <View style={[styles.statusBox, { backgroundColor: urgentColor + "12" }]}>
+                      <Text style={[styles.statusDayText, { color: urgentColor }]}>{m}</Text>
+                      <Text style={[styles.statusMonthText, { color: urgentColor }]}>min</Text>
+                    </View>
+                  );
+                } else {
+                  return (
+                    <View style={[styles.statusBox, { backgroundColor: urgentColor + "12" }]}>
+                      <Text style={[styles.statusDayText, { color: urgentColor }]}>{h}h</Text>
+                      <Text style={[styles.statusMonthText, { color: urgentColor }]}>{m}m</Text>
+                    </View>
+                  );
+                }
               }
             } else if (isTomorrow) {
-              statusLabel = formatTime(fixture.kickoffAt);
-              statusIcon = "schedule";
+              const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+              const sc = theme.colors.textPrimary + "CC";
+              return (
+                <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12" }]}>
+                  <Text style={[styles.statusMonthText, { color: sc }]}>{MONTHS[k.getMonth()]}</Text>
+                  <Text style={[styles.statusDayText, { color: sc }]}>{k.getDate()}</Text>
+                </View>
+              );
             } else {
-              statusLabel = `${k.getDate().toString().padStart(2, "0")}/${(k.getMonth() + 1).toString().padStart(2, "0")}`;
-              statusIcon = "event";
+              const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+              const statusMonth = MONTHS[k.getMonth()];
+              const statusDay = k.getDate();
+              const sc = theme.colors.textPrimary + "CC";
+              return (
+                <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12" }]}>
+                  <Text style={[styles.statusMonthText, { color: sc }]}>{statusMonth}</Text>
+                  <Text style={[styles.statusDayText, { color: sc }]}>{statusDay}</Text>
+                </View>
+              );
             }
           }
           const statusColor = statusUrgent ? CRITICAL_COLOR : theme.colors.textSecondary;
           return (
-            <View style={styles.statusWithIcon}>
-              {statusIcon && (
-                <MaterialIcons name={statusIcon} size={11} color={statusColor} />
-              )}
+            <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12" }]}>
               <Text style={[styles.statusText, { color: statusColor }]}>
                 {statusLabel}
               </Text>
@@ -147,106 +174,72 @@ function FixtureRow({
         })()}
       </View>
 
-      {/* Home name — flex, right-aligned toward logo */}
-      <Text
-        style={[styles.teamName, styles.homeTeamName, { color: theme.colors.textPrimary }]}
-        numberOfLines={1}
-      >
-        {fixture.homeTeam?.shortCode ?? fixture.homeTeam?.name ?? ""}
-      </Text>
-
-      {/* Home logo — fixed column */}
-      <View style={styles.logoCol}>
-        <TeamLogo
-          imagePath={fixture.homeTeam?.imagePath}
-          teamName={fixture.homeTeam?.name ?? ""}
-          size={20}
-          rounded={false}
-        />
+      {/* Team names stacked vertically */}
+      <View style={styles.teamsCol}>
+        <Text
+          style={[styles.teamNameStacked, { color: theme.colors.textPrimary }]}
+          numberOfLines={1}
+        >
+          {fixture.homeTeam?.shortCode ?? fixture.homeTeam?.name ?? ""}
+        </Text>
+        <Text
+          style={[styles.teamNameStacked, { color: theme.colors.textPrimary }]}
+          numberOfLines={1}
+        >
+          {fixture.awayTeam?.shortCode ?? fixture.awayTeam?.name ?? ""}
+        </Text>
       </View>
 
-      {/* VS / Live score / Final score — fixed center column */}
-      <View style={styles.vsCol}>
-        {isLive ? (
-          <Text style={[styles.vsText, { color: "#3B82F6", fontWeight: "700", opacity: 1, fontSize: 13 }]}>
-            {fixture.homeScore90 ?? 0}:{fixture.awayScore90 ?? 0}
+      {/* Live/Finished: score first, then prediction */}
+      {/* Upcoming: prediction only */}
+
+      <View style={{ flex: 1 }} />
+
+      {(isLive || isFinished) && (
+        <View style={styles.vsCol}>
+          <Text style={[styles.vsText, { color: isLive ? "#3B82F6" : theme.colors.textPrimary }]}>
+            {fixture.homeScore90 ?? 0}
           </Text>
-        ) : isFinished ? (
-          <Text style={[styles.vsText, { color: theme.colors.textPrimary, fontWeight: "700", opacity: 1, fontSize: 13 }]}>
-            {fixture.homeScore90 ?? 0}:{fixture.awayScore90 ?? 0}
+          <Text style={[styles.vsText, { color: isLive ? "#3B82F6" : theme.colors.textPrimary }]}>
+            {fixture.awayScore90 ?? 0}
           </Text>
+        </View>
+      )}
+
+      <View style={styles.predictionCompact}>
+        {hasPrediction ? (
+          <>
+            <Text style={[styles.predictionCompactText, {
+              color: predictionResult === "max" ? "#10B981"
+                : predictionResult === true ? "#FFB020"
+                : predictionResult === false ? "#EF4444"
+                : theme.colors.textPrimary,
+            }]}>
+              {fixture.prediction!.home}
+            </Text>
+            <Text style={[styles.predictionCompactText, {
+              color: predictionResult === "max" ? "#10B981"
+                : predictionResult === true ? "#FFB020"
+                : predictionResult === false ? "#EF4444"
+                : theme.colors.textPrimary,
+                          }]}>
+              {fixture.prediction!.away}
+            </Text>
+          </>
         ) : (
-          <Text style={[styles.vsText, { color: theme.colors.textSecondary }]}>
-            {vsLabel}
+          <Text style={[styles.predictionCompactText, {
+            color: urgencyColor ?? theme.colors.textSecondary + "60",
+          }]}>
+            {"\u2013"}
           </Text>
         )}
       </View>
 
-      {/* Away logo — fixed column */}
-      <View style={styles.logoCol}>
-        <TeamLogo
-          imagePath={fixture.awayTeam?.imagePath}
-          teamName={fixture.awayTeam?.name ?? ""}
-          size={20}
-          rounded={false}
-        />
-      </View>
-
-      {/* Away name — flex, left-aligned toward logo */}
-      <Text
-        style={[styles.teamName, styles.awayTeamName, { color: theme.colors.textPrimary }]}
-        numberOfLines={1}
-      >
-        {fixture.awayTeam?.shortCode ?? fixture.awayTeam?.name ?? ""}
-      </Text>
-
-      {/* Right column — prediction boxes (colored by result for finished) */}
-      <View style={styles.predictionBoxes}>
-        <View style={[styles.predictionBox, {
-          backgroundColor: predictionResult === "max" ? "#10B981" + "20"
-            : predictionResult === true ? "#FFB020" + "20"
-            : predictionResult === false ? "#EF4444" + "15"
-            : theme.colors.surface,
-          borderColor: predictionResult === "max" ? "#10B981" + "60"
-            : predictionResult === true ? "#FFB020" + "60"
-            : predictionResult === false ? "#EF4444" + "40"
-            : hasPrediction ? theme.colors.border
-            : urgencyColor ? urgencyColor + "40"
-            : theme.colors.border + "60",
-        }]}>
-          <Text style={[styles.predictionBoxText, {
-            color: predictionResult === "max" ? "#10B981"
-              : predictionResult === true ? "#FFB020"
-              : predictionResult === false ? "#EF4444"
-              : hasPrediction ? theme.colors.textPrimary
-              : urgencyColor ?? theme.colors.textSecondary + "60",
-          }]}>
-            {hasPrediction ? fixture.prediction!.home : "\u2013"}
-          </Text>
-        </View>
-        <Text style={[styles.predictionSeparator, { color: urgencyColor && !hasPrediction ? urgencyColor + "60" : theme.colors.textSecondary + "60" }]}>:</Text>
-        <View style={[styles.predictionBox, {
-          backgroundColor: predictionResult === "max" ? "#10B981" + "20"
-            : predictionResult === true ? "#FFB020" + "20"
-            : predictionResult === false ? "#EF4444" + "15"
-            : theme.colors.surface,
-          borderColor: predictionResult === "max" ? "#10B981" + "60"
-            : predictionResult === true ? "#FFB020" + "60"
-            : predictionResult === false ? "#EF4444" + "40"
-            : hasPrediction ? theme.colors.border
-            : urgencyColor ? urgencyColor + "40"
-            : theme.colors.border + "60",
-        }]}>
-          <Text style={[styles.predictionBoxText, {
-            color: predictionResult === "max" ? "#10B981"
-              : predictionResult === true ? "#FFB020"
-              : predictionResult === false ? "#EF4444"
-              : hasPrediction ? theme.colors.textPrimary
-              : urgencyColor ?? theme.colors.textSecondary + "60",
-          }]}>
-            {hasPrediction ? fixture.prediction!.away : "\u2013"}
-          </Text>
-        </View>
+      <View style={[styles.checkCircle, hasPrediction
+        ? { backgroundColor: theme.colors.textSecondary + "15" }
+        : { borderWidth: 1, borderColor: theme.colors.textSecondary + "40" }
+      ]}>
+        <Ionicons name={hasPrediction ? "checkmark" : "add"} size={12} color={theme.colors.textSecondary} />
       </View>
 
     </Pressable>
@@ -361,7 +354,6 @@ export function LobbyPredictionsCTA({
   if (isLoading) {
     return (
       <View style={styles.outerWrapper}>
-        <View style={[styles.wrapper, { backgroundColor: theme.colors.cardBackground }]}>
           <View
             style={[
               styles.container,
@@ -405,7 +397,6 @@ export function LobbyPredictionsCTA({
               ]}
             />
           </View>
-        </View>
       </View>
     );
   }
@@ -414,7 +405,6 @@ export function LobbyPredictionsCTA({
   if (fixtures.length === 0 && totalFixtures === 0) return null;
 
   const vsLabel = t("lobby.ctaVs");
-  const borderBottomColor = theme.colors.textSecondary + "40";
 
   // --- Fixture rows helper ---
   const renderRows = (list: FixtureItem[], max: number) => {
@@ -432,21 +422,20 @@ export function LobbyPredictionsCTA({
           />
         ))}
         {overflow > 0 && (
-          <Pressable
-            onPress={() => onPress()}
-            style={({ pressed }) => [
-              styles.moreButton,
-              {
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.cardBackground,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={[styles.moreText, { color: theme.colors.primary }]}>
-              {t("lobby.ctaMoreGames", { count: overflow })}
-            </Text>
-          </Pressable>
+          <View style={styles.viewAllContainer}>
+            <Pressable
+              onPress={() => onPress()}
+              style={({ pressed }) => [
+                styles.viewAllButton,
+                { borderColor: theme.colors.border },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.viewAllText, { color: theme.colors.textPrimary }]}>
+                {t("lobby.ctaMoreGames", { count: overflow })}
+              </Text>
+            </Pressable>
+          </View>
         )}
       </>
     );
@@ -454,17 +443,17 @@ export function LobbyPredictionsCTA({
 
   return (
     <View style={styles.outerWrapper}>
-      <View style={[styles.wrapper, { backgroundColor: theme.colors.cardBackground }]}>
-        <View
-          style={[
-            styles.container,
-            {
-              backgroundColor: theme.colors.cardBackground,
-              borderColor: theme.colors.border,
-              borderBottomColor,
-            },
-          ]}
-        >
+      <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+        Predictions
+      </Text>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.colors.cardBackground,
+          },
+        ]}
+      >
           {/* === RESULTS — last finished games with scores + predictions + points === */}
         {mode === "results" && (() => {
           const MAX_RESULTS = 4;
@@ -472,29 +461,23 @@ export function LobbyPredictionsCTA({
           const overflow = finishedFixtures.length - MAX_RESULTS;
           return (
             <>
-              <View style={[styles.dayHeader, { backgroundColor: theme.colors.textSecondary + "12" }]}>
-                <Text style={[styles.dayHeaderText, { color: theme.colors.textSecondary }]}>
-                  {t("lobby.ctaAllFinished")}
-                </Text>
-              </View>
               {recentResults.map((f) => (
                 <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} />
               ))}
-              <Pressable
-                onPress={() => onPress()}
-                style={({ pressed }) => [
-                  styles.moreButton,
-                  { borderColor: theme.colors.border, backgroundColor: theme.colors.cardBackground },
-                  pressed && styles.pressed,
-                ]}
-              >
-                <View style={styles.moreButtonContent}>
-                  <Text style={[styles.moreText, { color: theme.colors.primary }]}>
+              <View style={styles.viewAllContainer}>
+                <Pressable
+                  onPress={() => onPress()}
+                  style={({ pressed }) => [
+                    styles.viewAllButton,
+                    { borderColor: theme.colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.viewAllText, { color: theme.colors.textPrimary }]}>
                     {overflow > 0 ? t("lobby.ctaMoreGames", { count: overflow }) : t("lobby.viewAllGames")}
                   </Text>
-                  <MaterialIcons name="chevron-right" size={16} color={theme.colors.primary} />
-                </View>
-              </Pressable>
+                </Pressable>
+              </View>
             </>
           );
         })()}
@@ -502,9 +485,6 @@ export function LobbyPredictionsCTA({
         {/* === LIVE SECTION (live & liveAction) === */}
         {(mode === "live" || mode === "liveAction") && (
           <>
-            <View style={[styles.dayHeader, { backgroundColor: "#3B82F6" + "12" }]}>
-              <Text style={[styles.dayHeaderText, { color: "#3B82F6" }]}>LIVE</Text>
-            </View>
             {renderRows(liveFixtures, liveFixtures.length)}
             {upcomingFixtures.length > 0 && <View style={{ height: 8 }} />}
           </>
@@ -552,116 +532,51 @@ export function LobbyPredictionsCTA({
 
           return (
             <>
-              {todayGames.length > 0 && (() => {
-                const idx = groupIndex++;
-                return (
-                  <>
-                    <View style={[styles.dayHeader, idx > 0 && { marginTop: 12 }, { backgroundColor: todayColor + "12" }]}>
-                      <Text style={[styles.dayHeaderText, { color: todayColor }]}>
-                        {t("lobby.ctaToday")}
-                      </Text>
-                    </View>
-                    {todayGames.map((f) => (
-                      <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} urgencyColor={todayColor !== SUCCESS_COLOR ? todayColor : undefined} />
-                    ))}
-                  </>
-                );
-              })()}
+              {todayGames.map((f) => (
+                <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} urgencyColor={todayColor !== SUCCESS_COLOR ? todayColor : undefined} />
+              ))}
+              {tomorrowGames.map((f) => (
+                <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} urgencyColor={tomorrowColor !== SUCCESS_COLOR ? tomorrowColor : undefined} />
+              ))}
+              {laterGames.map((f) => (
+                <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} urgencyColor={laterColor !== SUCCESS_COLOR ? laterColor : undefined} />
+              ))}
 
-              {tomorrowGames.length > 0 && (() => {
-                const idx = groupIndex++;
-                return (
-                  <>
-                    <View style={[styles.dayHeader, idx > 0 && { marginTop: 12 }, { backgroundColor: tomorrowColor + "12" }]}>
-                      <Text style={[styles.dayHeaderText, { color: tomorrowColor }]}>
-                        {t("lobby.ctaTomorrow")}
-                      </Text>
-                    </View>
-                    {tomorrowGames.map((f) => (
-                      <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} urgencyColor={tomorrowColor !== SUCCESS_COLOR ? tomorrowColor : undefined} />
-                    ))}
-                  </>
-                );
-              })()}
-
-              {laterGames.length > 0 && (() => {
-                const idx = groupIndex++;
-                return (
-                  <>
-                    <View style={[styles.dayHeader, idx > 0 && { marginTop: 12 }, { backgroundColor: laterColor + "12" }]}>
-                      <Text style={[styles.dayHeaderText, { color: laterColor }]}>
-                        {t("lobby.ctaNext")}
-                      </Text>
-                    </View>
-                    {laterGames.map((f) => (
-                      <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} urgencyColor={laterColor !== SUCCESS_COLOR ? laterColor : undefined} />
-                    ))}
-                  </>
-                );
-              })()}
-
-              <Pressable
-                onPress={() => onPress()}
-                style={({ pressed }) => [
-                  styles.moreButton,
-                  { borderColor: theme.colors.border, backgroundColor: theme.colors.cardBackground },
-                  pressed && styles.pressed,
-                ]}
-              >
-                <View style={styles.moreButtonContent}>
-                  <Text style={[styles.moreText, { color: theme.colors.primary }]}>
+              <View style={styles.viewAllContainer}>
+                <Pressable
+                  onPress={() => onPress()}
+                  style={({ pressed }) => [
+                    styles.viewAllButton,
+                    { borderColor: theme.colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.viewAllText, { color: theme.colors.textPrimary }]}>
                     {overflow > 0 ? t("lobby.ctaMoreGames", { count: overflow }) : t("lobby.viewAllGames")}
                   </Text>
-                  <MaterialIcons name="chevron-right" size={16} color={theme.colors.primary} />
-                </View>
-              </Pressable>
+                </Pressable>
+              </View>
             </>
           );
         })()}
 
 
         </View>
-      </View>
-      <View style={styles.footerRow}>
-        <Text style={[styles.progressText, { color: theme.colors.textSecondary + "80" }]}>
-          {t("lobby.predictionsProgress", {
-            count: predictionsCount,
-            total: totalFixtures,
-          })}
-        </Text>
-        {lastSavedAt && (
-          <View style={styles.savedRow}>
-            <MaterialIcons name="save" size={10} color={theme.colors.textSecondary + "80"} />
-            <Text style={[styles.progressText, { color: theme.colors.textSecondary + "80" }]}>
-              {lastSavedAt}
-            </Text>
-          </View>
-        )}
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   outerWrapper: {
-    marginHorizontal: 16,
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    marginBottom: 24,
   },
-  wrapper: {
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 6,
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 8,
   },
   container: {
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
   },
   headerRow: {
     flexDirection: "row",
@@ -679,13 +594,21 @@ const styles = StyleSheet.create({
   fixtureRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 5,
     paddingHorizontal: 4,
   },
   logoCol: {
     width: 20,
     alignItems: "center",
     justifyContent: "center",
+  },
+  teamsCol: {
+    gap: 2,
+    marginLeft: 4,
+  },
+  teamNameStacked: {
+    fontSize: 13,
+    fontWeight: "600",
   },
   teamName: {
     flex: 1,
@@ -701,27 +624,42 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   vsCol: {
-    width: 28,
     alignItems: "center",
     justifyContent: "center",
-    marginHorizontal: 0,
+    marginRight: -4,
   },
   vsText: {
-    fontSize: 10,
-    fontWeight: "500",
-    opacity: 0.4,
+    fontSize: 15,
+    fontWeight: "800",
+    lineHeight: 18,
   },
   statusCol: {
     width: 56,
   },
-  statusWithIcon: {
-    flexDirection: "row",
+  statusBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 6,
     alignItems: "center",
-    gap: 3,
+    justifyContent: "center",
   },
   statusText: {
     fontSize: 11,
-    fontWeight: "500",
+    fontWeight: "600",
+  },
+  statusMonthText: {
+    fontSize: 9,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  statusDayText: {
+    fontSize: 17,
+    fontWeight: "800",
+    lineHeight: 19,
+  },
+  statusTimeText: {
+    fontSize: 11,
+    fontWeight: "700",
   },
   liveStatusRow: {
     flexDirection: "row",
@@ -739,6 +677,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#3B82F6",
   },
+  predictionCompact: {
+    width: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  predictionCompactText: {
+    fontSize: 15,
+    fontWeight: "800",
+    lineHeight: 18,
+  },
   predictionBoxes: {
     flexDirection: "row",
     alignItems: "center",
@@ -749,7 +697,6 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 6,
-    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -760,6 +707,10 @@ const styles = StyleSheet.create({
   predictionSeparator: {
     fontSize: 10,
     fontWeight: "600",
+  },
+  predictionDivider: {
+    width: "80%",
+    height: 1,
   },
   pointsBadge: {
     paddingHorizontal: 6,
@@ -772,33 +723,28 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
   },
-  moreButton: {
+  viewAllContainer: {
+    alignItems: "center",
     marginTop: 8,
-    paddingVertical: 8,
-    borderRadius: 8,
+  },
+  viewAllButton: {
+    paddingVertical: 7,
+    paddingHorizontal: 20,
+    borderRadius: 20,
     borderWidth: 1,
-    alignItems: "center",
   },
-  moreButtonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-  moreText: {
-    fontSize: 12,
-    fontWeight: "600",
+  viewAllText: {
+    fontSize: 13,
+    fontWeight: "700",
   },
   dayHeader: {
-    marginBottom: 6,
+    marginBottom: 4,
     paddingVertical: 4,
-    borderRadius: 6,
-    alignItems: "center",
+    paddingHorizontal: 4,
   },
   dayHeaderText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 1,
-    textTransform: "uppercase",
   },
   footerRow: {
     flexDirection: "row",
@@ -814,6 +760,14 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 10,
     fontWeight: "500",
+  },
+  checkCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 4,
   },
   pressed: {
     opacity: 0.8,
@@ -835,8 +789,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   skeletonButton: {
-    height: 44,
-    borderRadius: 12,
+    height: 34,
+    borderRadius: 20,
     marginTop: 12,
+    width: 120,
+    alignSelf: "center",
   },
 });

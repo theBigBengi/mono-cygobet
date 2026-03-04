@@ -42,13 +42,11 @@ export const FixtureInfoHeader = React.memo(function FixtureInfoHeader({
 
 const styles = StyleSheet.create({
   fixtureInfo: {
-    position: "absolute",
-    bottom: "100%",
-    left: 0,
-    right: 0,
     alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 8,
-    paddingBottom: 4,
+    paddingVertical: 12,
+    // backgroundColor: "rgba(255,0,255,0.4)", // DEBUG MAGENTA — fixture info above track
   },
   leagueText: {
     fontSize: 12,

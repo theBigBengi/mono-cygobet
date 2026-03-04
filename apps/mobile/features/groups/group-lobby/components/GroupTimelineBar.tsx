@@ -99,22 +99,6 @@ function GroupTimelineBarInner({
   return (
     <View style={styles.container}>
       <View style={styles.barContainer}>
-        {/* Flag icon at start */}
-        <View
-          style={[
-            styles.flagContainer,
-            {
-              backgroundColor: theme.colors.primary,
-            },
-          ]}
-        >
-          <Entypo
-            name="flag"
-            size={14}
-            color={theme.colors.primaryText}
-          />
-        </View>
-
         {/* Track with dot inside */}
         <View style={[styles.track, { backgroundColor: theme.colors.border }]}>
           {/* Filled portion */}
@@ -123,7 +107,7 @@ function GroupTimelineBarInner({
               styles.fill,
               {
                 width: `${clampedProgress * 100}%`,
-                backgroundColor: theme.colors.primary,
+                backgroundColor: theme.colors.textPrimary,
               },
             ]}
           />
@@ -133,32 +117,12 @@ function GroupTimelineBarInner({
               style={[
                 styles.currentDot,
                 {
-                  backgroundColor: theme.colors.primary,
+                  backgroundColor: theme.colors.textPrimary,
                   left: `${clampedProgress * 100}%`,
                 },
               ]}
             />
           )}
-        </View>
-
-        {/* Trophy icon at end */}
-        <View
-          style={[
-            styles.trophyContainer,
-            {
-              backgroundColor: isCompleted
-                ? theme.colors.primary
-                : theme.colors.border,
-            },
-          ]}
-        >
-          <Ionicons
-            name="trophy"
-            size={14}
-            color={isCompleted
-              ? theme.colors.primaryText
-              : theme.colors.textSecondary}
-          />
         </View>
       </View>
 
@@ -225,7 +189,7 @@ const styles = StyleSheet.create({
   labelsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 4,
+    marginTop: -4,
     paddingEnd: 0,
   },
   dateLabel: {

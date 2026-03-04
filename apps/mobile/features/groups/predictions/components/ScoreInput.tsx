@@ -74,14 +74,11 @@ function ScoreInputInner({
             type === "home" ? styles.inputHome : styles.inputAway,
             {
               backgroundColor: "transparent",
-              borderColor: isFocused
-                ? theme.colors.primary + "80"
-                : theme.colors.textSecondary + "60",
-              borderWidth: 1,
+              borderColor: "transparent",
+              borderWidth: 0,
               justifyContent: "center",
               alignItems: "center",
             },
-            type === "home" && { borderBottomWidth: 0 },
           ]}
         >
           <AppText
@@ -130,10 +127,7 @@ function ScoreInputInner({
           type === "home" ? styles.inputHome : styles.inputAway,
           {
             backgroundColor: "transparent",
-            borderColor: theme.colors.textSecondary + "60",
-            borderWidth: 1,
           },
-          type === "home" && { borderBottomWidth: 0 },
         ]}
       >
         <AppText
@@ -159,10 +153,7 @@ function ScoreInputInner({
           type === "home" ? styles.inputHome : styles.inputAway,
           {
             backgroundColor: "transparent",
-            borderColor: theme.colors.textSecondary + "60",
-            borderWidth: 1,
           },
-          type === "home" && { borderBottomWidth: 0 },
         ]}
       >
         <AppText
@@ -211,10 +202,7 @@ function ScoreInputInner({
         type === "home" ? styles.inputHome : styles.inputAway,
         {
           backgroundColor: bgColor,
-          borderColor: borderColor,
-          borderWidth: 1,
         },
-        type === "home" && { borderBottomWidth: 0 },
       ]}
     >
       <AppText
@@ -253,7 +241,7 @@ const styles = StyleSheet.create({
   },
   input: {
     width: 28,
-    height: 28,
+    height: 22,
     fontSize: 15,
     fontWeight: "700",
     borderRadius: 6,
@@ -262,7 +250,7 @@ const styles = StyleSheet.create({
   },
   finishedInput: {
     width: 28,
-    height: 28,
+    height: 22,
     borderRadius: 6,
     justifyContent: "center",
     alignItems: "center",

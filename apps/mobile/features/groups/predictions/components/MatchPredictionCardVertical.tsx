@@ -1,10 +1,10 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { View, StyleSheet, TextInput, Pressable, Text, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { formatKickoffTime } from "@/utils/fixture";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
-import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
@@ -15,6 +15,9 @@ import { ScoreInput } from "./ScoreInput";
 import { OutcomePicker } from "./OutcomePicker";
 import { TeamRow } from "./TeamRow";
 import { ResultDisplay } from "./ResultDisplay";
+
+const CRITICAL_COLOR = "#EF4444";
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 type InputRefs = {
   home: React.RefObject<TextInput | null>;
@@ -133,6 +136,109 @@ export function MatchPredictionCardVertical({
   const isConnected = positionInGroup === "middle" || positionInGroup === "bottom";
   const hasThickBottom = positionInGroup === "bottom" || positionInGroup === "single";
 
+  // --- Status box logic (same as LobbyPredictionsCTA) ---
+  const statusBox = useMemo(() => {
+    const now = new Date();
+    const tmr = new Date(now);
+    tmr.setDate(tmr.getDate() + 1);
+    const isSameDay = (d: Date, ref: Date) =>
+      d.getDate() === ref.getDate() && d.getMonth() === ref.getMonth() && d.getFullYear() === ref.getFullYear();
+
+    const predResult: "max" | true | false | undefined =
+      isFinished && hasPrediction
+        ? isMaxPoints ? "max" : hasPoints ? true : false
+        : undefined;
+
+    // Live
+    if (isLive) {
+      return (
+        <View style={[styles.statusBox, { backgroundColor: "#3B82F6" + "15" }]}>
+          <Text style={[styles.statusDayText, { color: "#3B82F6" }]}>{fixture.liveMinute ?? 0}</Text>
+          <Text style={[styles.statusMonthText, { color: "#3B82F6" }]}>Live</Text>
+        </View>
+      );
+    }
+
+    // Finished with prediction points
+    if (isFinished && fixture.prediction?.points != null) {
+      const bgColor = predResult === "max" ? "#10B981" + "20"
+        : predResult === true ? "#FFB020" + "20"
+        : "#EF4444" + "15";
+      const textColor = predResult === "max" ? "#10B981"
+        : predResult === true ? "#FFB020"
+        : "#EF4444";
+      return (
+        <View style={[styles.statusBox, { backgroundColor: bgColor }]}>
+          <Text style={[styles.statusDayText, { color: textColor }]}>{fixture.prediction.points}</Text>
+          <Text style={[styles.statusMonthText, { color: textColor }]}>pts</Text>
+        </View>
+      );
+    }
+
+    // Finished without prediction
+    if (isFinished) {
+      return (
+        <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12" }]}>
+          <Text style={[styles.statusText, { color: theme.colors.textSecondary }]}>FT</Text>
+        </View>
+      );
+    }
+
+    // Upcoming — date/countdown
+    if (fixture.kickoffAt) {
+      const k = new Date(fixture.kickoffAt);
+      const isToday = isSameDay(k, now);
+      const urgentColor = !hasPrediction ? CRITICAL_COLOR : theme.colors.textSecondary;
+
+      if (isToday) {
+        const diff = k.getTime() - now.getTime();
+        if (diff <= 0) {
+          const hh = k.getHours().toString().padStart(2, "0");
+          const mm = k.getMinutes().toString().padStart(2, "0");
+          return (
+            <View style={[styles.statusBox, { backgroundColor: urgentColor + "12" }]}>
+              <Text style={[styles.statusDayText, { color: urgentColor }]}>{hh}</Text>
+              <Text style={[styles.statusMonthText, { color: urgentColor }]}>{mm}</Text>
+            </View>
+          );
+        }
+        const totalMin = Math.floor(diff / 60000);
+        const h = Math.floor(totalMin / 60);
+        const m = totalMin % 60;
+        if (h === 0) {
+          return (
+            <View style={[styles.statusBox, { backgroundColor: urgentColor + "12" }]}>
+              <Text style={[styles.statusDayText, { color: urgentColor }]}>{m}</Text>
+              <Text style={[styles.statusMonthText, { color: urgentColor }]}>min</Text>
+            </View>
+          );
+        }
+        return (
+          <View style={[styles.statusBox, { backgroundColor: urgentColor + "12" }]}>
+            <Text style={[styles.statusDayText, { color: urgentColor }]}>{h}h</Text>
+            <Text style={[styles.statusMonthText, { color: urgentColor }]}>{m}m</Text>
+          </View>
+        );
+      }
+
+      // Tomorrow or later
+      const sc = theme.colors.textSecondary;
+      return (
+        <View style={[styles.statusBox, { backgroundColor: sc + "12" }]}>
+          <Text style={[styles.statusMonthText, { color: sc }]}>{MONTHS[k.getMonth()]}</Text>
+          <Text style={[styles.statusDayText, { color: sc }]}>{k.getDate()}</Text>
+        </View>
+      );
+    }
+
+    // Fallback
+    return (
+      <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12" }]}>
+        <Text style={[styles.statusText, { color: theme.colors.textSecondary }]}>{"\u2014"}</Text>
+      </View>
+    );
+  }, [isLive, isFinished, fixture, hasPrediction, hasPoints, isMaxPoints, theme]);
+
   return (
     <View ref={cardRef} style={[styles.outerRow, !isConnected && positionInGroup !== "top" && styles.outerRowSpacing]}>
       <View style={styles.cardShadowWrapper}>
@@ -143,9 +249,7 @@ export function MatchPredictionCardVertical({
             isConnected && styles.cardConnected,
             hasThickBottom && styles.cardWithBottomBorder,
             {
-              backgroundColor: isHighlighted
-                ? theme.colors.primary + "08"
-                : theme.colors.background,
+              backgroundColor: "transparent",
               borderColor: "transparent",
               borderBottomColor: "transparent",
               ...(Platform.OS === "android" && positionInGroup !== "single"
@@ -154,138 +258,124 @@ export function MatchPredictionCardVertical({
             },
           ]}
         >
-          {/* Debug: purple line for league info */}
-          {showLeagueInfo && (
-            <View style={styles.leagueInfoRow}>
-              <Text
-                style={[styles.leagueText, { color: theme.colors.textSecondary }]}
-                numberOfLines={1}
-              >
-                {!hideLeagueName ? fixture.league?.name : ""}
-                {(fixture.round || fixture.stage) ? `${!hideLeagueName ? " · " : ""}${
-                  fixture.round
-                    ? isNaN(Number(fixture.round))
-                      ? fixture.round.replace(/^Knockout Round\s*/i, "").replace(/^Round of\s*/i, "R")
-                      : `R${fixture.round}`
-                    : (fixture.stage ?? "").replace(/^Knockout Round\s*/i, "").replace(/^Round of\s*/i, "R")
-                }${fixture.leg && fixture.leg !== "1/1" ? ` · ${fixture.leg}` : ""}` : ""}
-                {isFinished && !isCancelled
-                  ? ` · ${hasPoints ? `+${fixturePoints}` : "0"} pts`
-                  : isLive
-                    ? ` · ${fixture.liveMinute != null ? `${fixture.liveMinute}′` : "LIVE"}`
-                    : ` · ${formatKickoffTime(fixture.kickoffAt)}`}
-              </Text>
+          <View style={styles.cardRow}>
+            {/* Status Box — left column */}
+            <View style={styles.statusCol}>
+              {statusBox}
             </View>
-          )}
 
-          <View
-            style={[
-              styles.matchContent,
-              isCancelled && { opacity: 0.6 },
-            ]}
-          >
-            {/* Home Row */}
-            <View style={styles.teamRow}>
-              <Pressable
-                style={styles.matchPressable}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onPressCard();
-                }}
+            {/* Card content — right side */}
+            <View style={styles.cardContent}>
+              <View
+                style={[
+                  styles.matchContent,
+                  isCancelled && { opacity: 0.6 },
+                ]}
               >
-                <View style={styles.teamPressable}>
-                  <TeamRow
-                    team={fixture.homeTeam}
-                    teamName={homeTeamName}
-                    isWinner={isHomeWinner}
-                    isUpcoming={!isFinished && !isLive}
-                  />
+                {/* Home Row */}
+                <View style={styles.teamRow}>
+                  <Pressable
+                    style={styles.matchPressable}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      onPressCard();
+                    }}
+                  >
+                    <View style={styles.teamPressable}>
+                      <TeamRow
+                        team={fixture.homeTeam}
+                        teamName={homeTeamName}
+                        isWinner={isHomeWinner}
+                        isUpcoming={!isFinished && !isLive}
+                      />
+                    </View>
+                    <ResultDisplay
+                      result={gameResultOrTime}
+                      isLive={isLive}
+                      isFinished={isFinished}
+                      isCancelled={isCancelled}
+                      isHomeWinner={isHomeWinner}
+                      isAwayWinner={isAwayWinner}
+                      type="home"
+                    />
+                  </Pressable>
+                  {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
+                    <View style={styles.predictionColumn} >
+                      <ScoreInput
+                        type="home"
+                        value={prediction.home}
+                        isFocused={isHomeFocused}
+                        isEditable={isEditable}
+                        isFinished={isFinished}
+                        inputRef={homeRef}
+                        onChange={handleHomeChange}
+                        onFocus={handleHomeFocus}
+                        onBlur={onBlur}
+                        onAutoNext={onAutoNext ? handleHomeAutoNext : undefined}
+                        isCorrect={predictionSuccess}
+                        isLive={isLive}
+                      />
+                    </View>
+                  )}
                 </View>
-                <ResultDisplay
-                  result={gameResultOrTime}
-                  isLive={isLive}
-                  isFinished={isFinished}
-                  isCancelled={isCancelled}
-                  isHomeWinner={isHomeWinner}
-                  isAwayWinner={isAwayWinner}
-                  type="home"
-                />
-              </Pressable>
-              {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
-                <View style={styles.predictionColumn} >
-                  <ScoreInput
-                    type="home"
-                    value={prediction.home}
-                    isFocused={isHomeFocused}
+
+                {/* Away Row */}
+                <View style={styles.teamRow}>
+                  <Pressable
+                    style={styles.matchPressable}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      onPressCard();
+                    }}
+                  >
+                    <View style={styles.teamPressable}>
+                      <TeamRow
+                        team={fixture.awayTeam}
+                        teamName={awayTeamName}
+                        isWinner={isAwayWinner}
+                        isUpcoming={!isFinished && !isLive}
+                      />
+                    </View>
+                    <ResultDisplay
+                      result={gameResultOrTime}
+                      isLive={isLive}
+                      isFinished={isFinished}
+                      isCancelled={isCancelled}
+                      isHomeWinner={isHomeWinner}
+                      isAwayWinner={isAwayWinner}
+                      type="away"
+                    />
+                  </Pressable>
+                  {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
+                    <View style={styles.predictionColumn} >
+                      <ScoreInput
+                        type="away"
+                        value={prediction.away}
+                        isFocused={isAwayFocused}
+                        isEditable={isEditable}
+                        isFinished={isFinished}
+                        inputRef={awayRef}
+                        onChange={handleAwayChange}
+                        onFocus={handleAwayFocus}
+                        onBlur={onBlur}
+                        onAutoNext={onAutoNext ? handleAwayAutoNext : undefined}
+                        isCorrect={predictionSuccess}
+                        isLive={isLive}
+                      />
+                    </View>
+                  )}
+                </View>
+
+                {/* OutcomePicker for MatchWinner mode */}
+                {predictionMode === "MatchWinner" && onSelectOutcome && (
+                  <OutcomePicker
+                    selectedOutcome={getOutcomeFromPrediction(prediction)}
                     isEditable={isEditable}
-                    isFinished={isFinished}
-                    inputRef={homeRef}
-                    onChange={handleHomeChange}
-                    onFocus={handleHomeFocus}
-                    onBlur={onBlur}
-                    onAutoNext={onAutoNext ? handleHomeAutoNext : undefined}
-                    isCorrect={predictionSuccess}
-                    isLive={isLive}
+                    onSelect={onSelectOutcome}
                   />
-                </View>
-              )}
+                )}
+              </View>
             </View>
-
-            {/* Away Row - green debug */}
-            <View style={styles.teamRow}>
-              <Pressable
-                style={styles.matchPressable}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onPressCard();
-                }}
-              >
-                <View style={styles.teamPressable}>
-                  <TeamRow
-                    team={fixture.awayTeam}
-                    teamName={awayTeamName}
-                    isWinner={isAwayWinner}
-                    isUpcoming={!isFinished && !isLive}
-                  />
-                </View>
-                <ResultDisplay
-                  result={gameResultOrTime}
-                  isLive={isLive}
-                  isFinished={isFinished}
-                  isCancelled={isCancelled}
-                  isHomeWinner={isHomeWinner}
-                  isAwayWinner={isAwayWinner}
-                  type="away"
-                />
-              </Pressable>
-              {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
-                <View style={styles.predictionColumn} >
-                  <ScoreInput
-                    type="away"
-                    value={prediction.away}
-                    isFocused={isAwayFocused}
-                    isEditable={isEditable}
-                    isFinished={isFinished}
-                    inputRef={awayRef}
-                    onChange={handleAwayChange}
-                    onFocus={handleAwayFocus}
-                    onBlur={onBlur}
-                    onAutoNext={onAutoNext ? handleAwayAutoNext : undefined}
-                    isCorrect={predictionSuccess}
-                    isLive={isLive}
-                  />
-                </View>
-              )}
-            </View>
-
-            {/* OutcomePicker for MatchWinner mode */}
-            {predictionMode === "MatchWinner" && onSelectOutcome && (
-              <OutcomePicker
-                selectedOutcome={getOutcomeFromPrediction(prediction)}
-                isEditable={isEditable}
-                onSelect={onSelectOutcome}
-              />
-            )}
           </View>
         </View>
       </View>
@@ -294,18 +384,18 @@ export function MatchPredictionCardVertical({
 }
 
 const styles = StyleSheet.create({
-  outerRow: {},
+  outerRow: {
+    marginBottom: 10,
+  },
   outerRowSpacing: {
-    marginBottom: 0,
+    marginBottom: 10,
   },
   cardShadowWrapper: {
     flex: 1,
   },
   matchCard: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 8,
-    borderWidth: 1,
+    borderWidth: 0,
+    borderRadius: 10,
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -313,6 +403,38 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   cardWithBottomBorder: {},
+  cardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  statusCol: {
+    width: 42,
+  },
+  statusBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusDayText: {
+    fontSize: 17,
+    fontWeight: "800",
+    lineHeight: 19,
+  },
+  statusMonthText: {
+    fontSize: 9,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  cardContent: {
+    flex: 1,
+  },
   leagueInfoRow: {
     flexDirection: "row",
     justifyContent: "flex-start",
@@ -321,16 +443,6 @@ const styles = StyleSheet.create({
   leagueText: {
     fontSize: 11,
     fontWeight: "500",
-  },
-  separator: {
-    fontSize: 11,
-    opacity: 0.4,
-    marginHorizontal: -3,
-  },
-  statusChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
   },
   predictionColumn: {
     width: 36,

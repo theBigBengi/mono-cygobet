@@ -5,7 +5,7 @@ import React, { useMemo } from "react";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { useGroupActivityQuery } from "@/domains/groups";
 import { formatRelativeTime } from "@/utils/date";
 import type { ApiGroupActivityItem } from "@repo/types";
@@ -39,7 +39,7 @@ function getEventIcon(eventType: string): IoniconsName {
     case "fixture_live":
       return "football";
     case "fixture_ft":
-      return "checkmark-circle";
+      return "checkmark";
     default:
       return "ellipse";
   }
@@ -67,9 +67,9 @@ function ActivityRow({ item, colors, isLast }: { item: ApiGroupActivityItem; col
   const iconColor = getEventColor(item.eventType, colors);
 
   return (
-    <View style={[styles.row, !isLast && { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
-      <View style={[styles.rowIcon, { backgroundColor: iconColor + "18" }]}>
-        <Ionicons name={iconName} size={14} color={iconColor} />
+    <View style={styles.row}>
+      <View style={[styles.rowIcon, { backgroundColor: colors.textPrimary }]}>
+        <Ionicons name={iconName} size={13} color="#FFFFFF" />
       </View>
       <Text style={[styles.rowBody, { color: colors.textPrimary }]} numberOfLines={1}>
         {item.body}
@@ -92,7 +92,6 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress }: LobbyActivi
     [data]
   );
 
-  const borderBottomColor = theme.colors.textSecondary + "40";
   const primaryIconBg = theme.colors.primary + "15";
   const hasItems = recentItems.length > 0;
 
@@ -104,10 +103,13 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress }: LobbyActivi
           {
             backgroundColor: theme.colors.surface,
             borderColor: theme.colors.border,
-            borderBottomColor,
           },
         ]}
       >
+        <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+          {t("lobby.activity")}
+        </Text>
+
         {/* Activity List */}
         {hasItems ? (
           <View style={styles.list}>
@@ -121,42 +123,28 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress }: LobbyActivi
             ))}
           </View>
         ) : (
-          <View style={styles.emptyState}>
-            <Ionicons name="newspaper-outline" size={28} color={theme.colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-              {t("activity.empty")}
-            </Text>
-          </View>
+          <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+            {t("activity.empty")}
+          </Text>
         )}
 
         {/* View All Button - only when there's activity */}
-        {hasItems && <Pressable
-          onPress={onPress}
-          style={({ pressed }) => [
-            styles.viewAllButton,
-            {
-              backgroundColor: theme.colors.cardBackground,
-              borderColor: theme.colors.border,
-              borderBottomColor,
-              transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
-            },
-            pressed && styles.pressed,
-          ]}
-        >
-          <View style={[styles.buttonIconCircle, { backgroundColor: primaryIconBg }]}>
-            <Ionicons name="newspaper-outline" size={16} color={theme.colors.primary} />
-          </View>
-          <Text style={[styles.buttonText, { color: theme.colors.textPrimary }]}>
-            {t("lobby.activity")}
-          </Text>
-          {unreadCount > 0 && (
-            <View style={[styles.badge, { backgroundColor: theme.colors.danger }]}>
-              <Text style={styles.badgeText}>
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </Text>
-            </View>
-          )}
-        </Pressable>}
+        {hasItems && <View style={styles.viewAllContainer}>
+          <Pressable
+            onPress={onPress}
+            style={({ pressed }) => [
+              styles.viewAllButton,
+              {
+                borderColor: theme.colors.border,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={[styles.buttonText, { color: theme.colors.textPrimary }]}>
+              See all
+            </Text>
+          </Pressable>
+        </View>}
       </View>
     </View>
   );
@@ -167,17 +155,16 @@ export const LobbyActivityBanner = React.memo(LobbyActivityBannerInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
+    marginBottom: 24,
   },
   wrapper: {
     borderRadius: 16,
-    borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
+    paddingVertical: 16,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 8,
   },
   list: {
     marginBottom: 12,
@@ -186,12 +173,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 10,
+    paddingVertical: 5,
   },
   rowIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -216,15 +203,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
   },
-  viewAllButton: {
-    flexDirection: "row",
+  viewAllContainer: {
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 10,
-    borderRadius: 12,
+  },
+  viewAllButton: {
+    paddingVertical: 7,
+    paddingHorizontal: 20,
+    borderRadius: 20,
     borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
   },
   buttonIconCircle: {
     width: 28,
@@ -234,10 +220,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   buttonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    fontSize: 13,
+    fontWeight: "700",
   },
   badge: {
     minWidth: 20,

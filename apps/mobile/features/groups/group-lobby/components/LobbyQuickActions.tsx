@@ -27,7 +27,7 @@ export interface LobbyQuickActionsProps {
 function renderIcon(icon: QuickAction["icon"], color: string, size: number) {
   switch (icon) {
     case "chat":
-      return <Entypo name="chat" size={size} color={color} />;
+      return <Ionicons name="chatbubbles-outline" size={size} color={color} />;
     case "link":
       return <Ionicons name="link-outline" size={size} color={color} />;
     case "stats":
@@ -73,52 +73,67 @@ function LobbyQuickActionsInner({
     );
   }
 
+  const leftActions = actions.filter((a) => a.icon !== "link");
+  const rightActions = actions.filter((a) => a.icon === "link");
+
+  const renderAction = (action: QuickAction, index: number) => {
+    const hasBadge = action.badge != null && action.badge > 0;
+    return (
+      <Pressable
+        key={index}
+        onPress={action.onPress}
+        style={({ pressed }) => [
+          styles.pill,
+          {
+            backgroundColor: pressed
+              ? theme.colors.textPrimary + "10"
+              : "transparent",
+          },
+        ]}
+      >
+        {renderIcon(action.icon, theme.colors.textSecondary, 22)}
+        {hasBadge && (
+          <View
+            style={[
+              styles.badge,
+              { backgroundColor: theme.colors.danger },
+            ]}
+          >
+            <Text style={styles.badgeText}>
+              {action.badge! > 99 ? "99+" : action.badge}
+            </Text>
+          </View>
+        )}
+      </Pressable>
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {actions.map((action, index) => {
-          const hasBadge = action.badge != null && action.badge > 0;
-          return (
-            <Pressable
-              key={index}
-              onPress={action.onPress}
-              style={({ pressed }) => [
-                styles.pill,
-                {
-                  backgroundColor: pressed
-                    ? theme.colors.primary + "18"
-                    : theme.colors.surface,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-            >
-              {renderIcon(action.icon, theme.colors.primary, 16)}
-              <Text
-                style={[styles.pillLabel, { color: theme.colors.textPrimary }]}
-                numberOfLines={1}
+      <View style={styles.row}>
+        <View style={styles.leftGroup}>
+          {leftActions.map(renderAction)}
+        </View>
+        {rightActions.length > 0 && (
+          <View style={styles.rightGroup}>
+            {rightActions.map((action, index) => (
+              <Pressable
+                key={index}
+                onPress={action.onPress}
+                style={({ pressed }) => [
+                  styles.invitePill,
+                  {
+                    backgroundColor: theme.colors.textPrimary,
+                  },
+                  pressed && styles.pressed,
+                ]}
               >
-                {action.label}
-              </Text>
-              {hasBadge && (
-                <View
-                  style={[
-                    styles.badge,
-                    { backgroundColor: theme.colors.danger },
-                  ]}
-                >
-                  <Text style={styles.badgeText}>
-                    {action.badge! > 99 ? "99+" : action.badge}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+                {renderIcon(action.icon, "#FFFFFF", 24)}
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -127,22 +142,40 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 8,
-    marginBottom: 12,
+    marginTop: 2,
+    marginBottom: 20,
   },
   row: {
     flexDirection: "row",
-    gap: 8,
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
+  },
+  leftGroup: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  rightGroup: {
+    flexDirection: "row",
+  },
+  invitePill: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pressed: {
+    opacity: 0.7,
   },
   pill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1,
+    justifyContent: "center",
+    gap: 4,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
   },
   pillLabel: {
     fontSize: 13,

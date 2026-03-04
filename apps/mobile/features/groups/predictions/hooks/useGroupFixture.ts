@@ -12,6 +12,7 @@ export function useGroupFixture(
 ) {
   const { data, isLoading, error } = useGroupQuery(groupId, {
     includeFixtures: true,
+    staleTime: 5 * 60 * 1000,
   });
 
   const fixtures = useMemo((): FixtureItem[] => {

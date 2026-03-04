@@ -171,6 +171,7 @@ export function SingleGameScreen({
             onUpdateSliderValue={updateSliderValue}
             isInteractive={false}
             isFinishedGame
+            totalCards={1}
           />
         </View>
       ) : (
@@ -197,6 +198,7 @@ export function SingleGameScreen({
                   onUpdateSliderValue={updateSliderValue}
                   isInteractive={currentIndex === i}
                   isNearby={Math.abs(currentIndex - i) <= 1}
+                  totalCards={stripFixtures.length}
                 />
               ))}
             </Animated.View>

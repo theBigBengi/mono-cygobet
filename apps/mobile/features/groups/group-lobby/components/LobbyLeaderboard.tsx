@@ -4,20 +4,20 @@
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
-import { CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
-import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
+  withDelay,
+  Easing,
 } from "react-native-reanimated";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiRankingItem } from "@repo/types";
 
-const RANK_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"] as const; // Gold, Silver, Bronze
-const PODIUM_HEIGHTS = [120, 155, 110] as const; // 2nd, 1st, 3rd place heights
+const RANK_COLORS = ["#FFD700", "#8E9AAF", "#C4956A"] as const; // Gold, Cool Silver, Warm Bronze
+const PODIUM_HEIGHTS = [36, 36, 36] as const; // unused — kept for skeleton
 
 export interface LobbyLeaderboardProps {
   ranking: ApiRankingItem[] | undefined;
@@ -60,6 +60,46 @@ function LobbyLeaderboardInner({
     opacity: opacity.value,
   }));
 
+  // ── Entrance animation for podium bars ──
+  const bar0Progress = useSharedValue(0); // 1st place
+  const bar1Progress = useSharedValue(0); // 2nd place
+  const bar2Progress = useSharedValue(0); // 3rd place
+  const bar3Progress = useSharedValue(0); // user (if not in top 3)
+  const contentFade = useSharedValue(0);
+
+  const barEasing = Easing.out(Easing.cubic);
+
+  useEffect(() => {
+    const hasData = !isLoading && top3.length > 0 && !allRanking.every((r) => r.totalPoints === 0);
+    if (!hasData) {
+      bar0Progress.value = 0;
+      bar1Progress.value = 0;
+      bar2Progress.value = 0;
+      bar3Progress.value = 0;
+      contentFade.value = 0;
+      return;
+    }
+    bar0Progress.value = 0;
+    bar1Progress.value = 0;
+    bar2Progress.value = 0;
+    bar3Progress.value = 0;
+    contentFade.value = 0;
+
+    bar0Progress.value = withDelay(100, withTiming(1, { duration: 500, easing: barEasing }));
+    bar1Progress.value = withDelay(250, withTiming(1, { duration: 500, easing: barEasing }));
+    bar2Progress.value = withDelay(400, withTiming(1, { duration: 500, easing: barEasing }));
+    bar3Progress.value = withDelay(550, withTiming(1, { duration: 500, easing: barEasing }));
+    contentFade.value = withDelay(900, withTiming(1, { duration: 300 }));
+  }, [ranking]);
+
+  // Animated styles — must be called unconditionally (before early returns)
+  const bar0Style = useAnimatedStyle(() => ({ opacity: bar0Progress.value }));
+  const bar1Style = useAnimatedStyle(() => ({ opacity: bar1Progress.value }));
+  const bar2Style = useAnimatedStyle(() => ({ opacity: bar2Progress.value }));
+  const bar3Style = useAnimatedStyle(() => ({ opacity: bar3Progress.value }));
+  const contentFadeStyle = useAnimatedStyle(() => ({ opacity: contentFade.value }));
+  const barStyles = [bar0Style, bar1Style, bar2Style];
+
   // Find current user's row
   const userRow = currentUserId
     ? allRanking.find((r) => r.userId === currentUserId)
@@ -72,38 +112,56 @@ function LobbyLeaderboardInner({
         <View
           style={[
             styles.wrapper,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
-            },
+            { backgroundColor: theme.colors.surface },
           ]}
         >
-          {/* Skeleton Podium */}
-          <View style={styles.podiumRow}>
-            {PODIUM_HEIGHTS.map((height, index) => (
-              <View key={index} style={styles.podiumSlot}>
+          {/* Podium section */}
+          <View style={[styles.podiumSection, { borderColor: theme.colors.border }]}>
+            <View style={styles.podiumRow}>
+              {PODIUM_HEIGHTS.map((height, index) => (
+                <View key={index} style={styles.podiumSlot}>
+                  <Animated.View
+                    style={[
+                      styles.skeletonPodiumCard,
+                      {
+                        height,
+                        backgroundColor: theme.colors.border,
+                      },
+                      animatedStyle,
+                    ]}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Divider */}
+
+          {/* Bottom section */}
+          <View style={styles.bottomSection}>
+            <View style={styles.bottomRow}>
+              <View style={styles.bottomLeft}>
                 <Animated.View
                   style={[
-                    styles.skeletonPodiumCard,
-                    {
-                      height,
-                      backgroundColor: theme.colors.border,
-                    },
+                    { width: 100, height: 14, borderRadius: 4, backgroundColor: theme.colors.border },
+                    animatedStyle,
+                  ]}
+                />
+                <Animated.View
+                  style={[
+                    { width: 60, height: 10, borderRadius: 4, backgroundColor: theme.colors.border, marginTop: 4 },
                     animatedStyle,
                   ]}
                 />
               </View>
-            ))}
+              <Animated.View
+                style={[
+                  { width: 70, height: 32, borderRadius: 20, backgroundColor: theme.colors.border },
+                  animatedStyle,
+                ]}
+              />
+            </View>
           </View>
-
-          {/* Skeleton Button */}
-          <Animated.View
-            style={[
-              styles.skeletonButton,
-              { backgroundColor: theme.colors.border },
-              animatedStyle,
-            ]}
-          />
         </View>
       </View>
     );
@@ -116,219 +174,95 @@ function LobbyLeaderboardInner({
       ? t("lobby.rankingNoPointsYet")
       : t("lobby.rankingPending");
     const members = allZeroPoints ? allRanking : [];
-    const borderBottomColor = theme.colors.textSecondary + "40";
-
+  
     return (
       <View style={styles.container}>
         <View
           style={[
             styles.wrapper,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
-              borderBottomColor,
-            },
+            { backgroundColor: theme.colors.surface },
           ]}
         >
-          {/* Message on top */}
-          <Text style={[styles.zeroHeaderText, { color: theme.colors.textSecondary, textAlign: "center", marginBottom: 12, paddingHorizontal: 16 }]}>
-            {message}
-          </Text>
+          {/* Bottom section */}
+          <View style={styles.bottomSection}>
+            <View style={styles.bottomRow}>
+              {/* Left: title + member count + status message */}
+              <View style={styles.bottomLeft}>
+                <Text style={[styles.bottomTitle, { color: theme.colors.textPrimary }]}>
+                  {t("lobby.leaderboard")}
+                </Text>
+<Text style={[styles.bottomSubtitle, { color: theme.colors.textSecondary, marginTop: 10 }]}>
+                  {message}
+                </Text>
+              </View>
 
-          {/* Placeholder podium: left=2nd, center=1st, right=3rd */}
-          <View style={styles.podiumRow}>
-              {([1, 0, 2] as const).map((rankIndex, visualIndex) => {
-                const height = PODIUM_HEIGHTS[visualIndex];
-                const rankColor = RANK_COLORS[rankIndex];
-                return (
-                  <View key={visualIndex} style={styles.podiumSlot}>
-                    <View
-                      style={[
-                        styles.podiumCard,
-                        {
-                          height,
-                          backgroundColor: theme.colors.cardBackground,
-                          borderColor: rankColor + "40",
-                          shadowColor: rankColor,
-                        },
-                      ]}
-                    >
-                      {/* Rank Badge */}
-                      <View
-                        style={[
-                          styles.rankBadge,
-                          { backgroundColor: rankColor },
-                        ]}
-                      >
-                        <Text style={styles.rankBadgeText}>{rankIndex + 1}</Text>
-                      </View>
-
-                      {/* Avatar */}
-                      <View
-                        style={[
-                          styles.avatar,
-                          {
-                            backgroundColor: rankColor + "30",
-                            borderColor: rankColor,
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.avatarText, { color: rankColor }]}>
-                          ?
-                        </Text>
-                      </View>
-
-                      {/* Name */}
-                      <Text
-                        style={[
-                          styles.playerName,
-                          { color: theme.colors.textSecondary },
-                        ]}
-                      >
-                        —
-                      </Text>
-
-                      {/* Points */}
-                      <View style={styles.pointsRow}>
-                        <Text style={[styles.pointsValue, { color: rankColor }]}>
-                          –
-                        </Text>
-                        <Text style={[styles.pointsLabel, { color: theme.colors.textSecondary }]}>
-                          pts
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
+              {/* Right: View All button (only in zero-points state) */}
+              {allZeroPoints && <Pressable
+                onPress={onPress}
+                style={({ pressed }) => [
+                  styles.bottomButton,
+                  { borderColor: theme.colors.textSecondary + "40" },
+                  pressed && { opacity: 0.6 },
+                ]}
+              >
+                <Text style={[styles.bottomButtonText, { color: theme.colors.textSecondary }]}>
+                  {t("lobby.viewAll")}
+                </Text>
+              </Pressable>}
             </View>
-
-          {/* View Full Ranking Button */}
-          <Pressable
-            onPress={onPress}
-            style={({ pressed }) => [
-              styles.viewAllButton,
-              {
-                backgroundColor: theme.colors.cardBackground,
-                borderColor: theme.colors.border,
-                borderBottomColor,
-                marginTop: 12,
-                transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={[styles.buttonText, { color: theme.colors.textSecondary }]}>
-              {t("lobby.leaderboard")}
-            </Text>
-            <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
-          </Pressable>
+          </View>
         </View>
       </View>
     );
   }
 
-  // Reorder for podium: [2nd, 1st, 3rd]
-  const podiumOrder = top3.length >= 2
-    ? [top3[1], top3[0], top3[2]].filter(Boolean)
-    : top3;
+  // Ordered 1st, 2nd, 3rd for horizontal layout
+  const maxPoints = top3.length > 0 ? Math.max(...top3.map((r) => r.totalPoints), 1) : 1;
 
-  const allSameRank = top3.length > 1 && top3.every((r) => r.rank === top3[0].rank);
-
-  const renderPodiumCard = (item: ApiRankingItem | undefined, podiumIndex: number) => {
-    if (!item) return <View key={podiumIndex} style={styles.podiumSlot} />;
-
-    const actualRank = item.rank;
-    const rankColorIndex = actualRank - 1;
+  const renderHorizontalBar = (item: ApiRankingItem, index: number) => {
     const isCurrentUser = currentUserId != null && item.userId === currentUserId;
     const displayName = isCurrentUser ? t("lobby.you") : (item.username ?? `#${item.rank}`);
-    const height = allSameRank ? PODIUM_HEIGHTS[1] : PODIUM_HEIGHTS[podiumIndex];
-    const isFirst = actualRank === 1;
+    const barWidth = `${Math.max((item.totalPoints / maxPoints) * 100, 30)}%`;
+
     return (
-      <Pressable
-        key={item.userId}
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.podiumSlot,
-          pressed && styles.pressed,
-        ]}
-      >
-        <View
-          style={[
-            styles.podiumCard,
-            {
-              height,
-              backgroundColor: theme.colors.cardBackground,
-              borderColor: RANK_COLORS[rankColorIndex] + "40",
-              shadowColor: RANK_COLORS[rankColorIndex],
-            },
-            isFirst && styles.podiumCardFirst,
-          ]}
-        >
-          {/* Rank Badge */}
-          <View
-            style={[
-              styles.rankBadge,
-              { backgroundColor: RANK_COLORS[rankColorIndex] },
-            ]}
-          >
-            <Text style={styles.rankBadgeText}>{actualRank}</Text>
-          </View>
-
-          {/* Avatar */}
-          <View
-            style={[
-              styles.avatar,
-              {
-                backgroundColor: RANK_COLORS[rankColorIndex] + "30",
-                borderColor: RANK_COLORS[rankColorIndex],
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.avatarText,
-                { color: RANK_COLORS[rankColorIndex] },
-              ]}
-            >
-              {getInitials(item.username)}
-            </Text>
-          </View>
-
-          {/* Name */}
-          <Text
-            style={[
-              styles.playerName,
-              { color: theme.colors.textPrimary },
-              isCurrentUser && styles.playerNameHighlight,
-            ]}
-            numberOfLines={1}
-          >
-            {displayName}
-          </Text>
-
-          {/* Points */}
-          <View style={styles.pointsRow}>
-            <Text
-              style={[
-                styles.pointsValue,
-                { color: RANK_COLORS[rankColorIndex] },
-              ]}
-            >
-              {item.totalPoints}
-            </Text>
-            <Text style={[styles.pointsLabel, { color: theme.colors.textSecondary }]}>
-              pts
-            </Text>
-          </View>
+      <View key={item.userId} style={styles.barRow}>
+        <View style={[styles.barRankCircle, { backgroundColor: theme.colors.textPrimary }]}>
+          <Text style={styles.barRankText}>{item.rank}</Text>
         </View>
-      </Pressable>
+        <View style={styles.barContent}>
+          <Animated.View
+            style={[
+              styles.bar,
+              {
+                width: barWidth,
+                backgroundColor: theme.colors.textPrimary + "10",
+              },
+              barStyles[index],
+            ]}
+          >
+            <Animated.View style={[styles.barPointsContainer, contentFadeStyle]}>
+              <Text style={[styles.barPoints, { color: theme.colors.textPrimary }]}>
+                {item.totalPoints}
+                <Text style={{ color: theme.colors.textSecondary, fontSize: 10 }}> pts</Text>
+              </Text>
+            </Animated.View>
+          </Animated.View>
+          <Animated.View style={[styles.barNameOverlay, contentFadeStyle]}>
+            <Text
+              style={[
+                styles.barName,
+                { color: theme.colors.textPrimary },
+                isCurrentUser && { fontWeight: "800" },
+              ]}
+              numberOfLines={1}
+            >
+              {displayName}
+            </Text>
+          </Animated.View>
+        </View>
+      </View>
     );
   };
-
-  const borderBottomColor = theme.colors.textSecondary + "40";
-  const primaryAlpha40 = theme.colors.primary + "40";
-  const primaryAlpha15 = theme.colors.primary + "15";
 
   return (
     <Pressable
@@ -339,68 +273,70 @@ function LobbyLeaderboardInner({
       <View
         style={[
           styles.wrapper,
-          {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            borderBottomColor,
-          },
           pressed && styles.wrapperPressed,
         ]}
       >
-        {/* Podium */}
-        <View style={styles.podiumRow}>
-          {podiumOrder.map((item, index) => renderPodiumCard(item, index))}
-        </View>
-
-        {/* User's position if not in top 3 */}
-        {userRow && !userInTop3 && (
+        {/* Title + View All */}
+        <View style={styles.bottomRow}>
+          <View style={styles.bottomLeft}>
+            <Text style={[styles.bottomTitle, { color: theme.colors.textPrimary }]}>
+              {t("lobby.leaderboard")}
+            </Text>
+          </View>
           <Pressable
             onPress={onPress}
-            style={({ pressed }) => [
-              styles.userCard,
-              {
-                backgroundColor: theme.colors.cardBackground,
-                borderColor: theme.colors.border,
-              },
-              pressed && styles.pressed,
+            style={({ pressed: p }) => [
+              styles.bottomButton,
+              { borderColor: theme.colors.border },
+              p && { opacity: 0.6 },
             ]}
           >
-            <View style={[styles.userRankCircle, { backgroundColor: theme.colors.border }]}>
-              <Text style={[styles.userRankText, { color: theme.colors.textSecondary }]}>
-                {userRow.rank}
-              </Text>
-            </View>
-            <Text
-              style={[styles.userName, { color: theme.colors.textPrimary }]}
-              numberOfLines={1}
-            >
-              {t("lobby.you")}
-            </Text>
-            <Text style={[styles.userPoints, { color: theme.colors.textSecondary }]}>
-              {userRow.totalPoints} pts
+            <Text style={[styles.bottomButtonText, { color: theme.colors.textSecondary }]}>
+              {t("lobby.viewAll")}
             </Text>
           </Pressable>
-        )}
+        </View>
 
-        {/* View Full Ranking Button */}
-        <Pressable
-          onPress={onPress}
-          style={({ pressed }) => [
-            styles.viewAllButton,
-            {
-              backgroundColor: theme.colors.cardBackground,
-              borderColor: theme.colors.border,
-              borderBottomColor,
-              transform: [{ scale: pressed ? 0.96 : 1 }, { translateY: pressed ? 2 : 0 }],
-            },
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={[styles.buttonText, { color: theme.colors.textSecondary }]}>
-            {t("lobby.leaderboard")}
-          </Text>
-          <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
-        </Pressable>
+        {/* Horizontal bars */}
+        <View style={styles.barsContainer}>
+          {top3.map((item, index) => renderHorizontalBar(item, index))}
+
+          {/* User's position if not in top 3 */}
+          {userRow && !userInTop3 && (
+            <Animated.View style={[styles.barRow, bar3Style]}>
+              <View style={[styles.barRankCircle, { backgroundColor: theme.colors.textPrimary }]}>
+                <Text style={styles.barRankText}>{userRow.rank}</Text>
+              </View>
+              <View style={styles.barContent}>
+                <Animated.View
+                  style={[
+                    styles.bar,
+                    {
+                      width: `${Math.max((userRow.totalPoints / maxPoints) * 100, 30)}%`,
+                      backgroundColor: theme.colors.textPrimary + "10",
+                    },
+                    bar3Style,
+                  ]}
+                >
+                  <Animated.View style={[styles.barPointsContainer, contentFadeStyle]}>
+                    <Text style={[styles.barPoints, { color: theme.colors.textPrimary }]}>
+                      {userRow.totalPoints}
+                      <Text style={{ color: theme.colors.textSecondary, fontSize: 10 }}> pts</Text>
+                    </Text>
+                  </Animated.View>
+                </Animated.View>
+                <Animated.View style={[styles.barNameOverlay, contentFadeStyle]}>
+                  <Text
+                    style={[styles.barName, { color: theme.colors.textPrimary, fontWeight: "800" }]}
+                    numberOfLines={1}
+                  >
+                    {t("lobby.you")}
+                  </Text>
+                </Animated.View>
+              </View>
+            </Animated.View>
+          )}
+        </View>
       </View>
       )}
     </Pressable>
@@ -412,23 +348,71 @@ export const LobbyLeaderboard = React.memo(LobbyLeaderboardInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 24,
   },
   wrapper: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
   },
   wrapperPressed: {
-    shadowOpacity: 0,
-    elevation: 0,
-    transform: [{ scale: 0.98 }, { translateY: 2 }],
+    opacity: 0.7,
+  },
+  barsContainer: {
+    marginTop: 12,
+    gap: 8,
+  },
+  barRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  barRankCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  barRankText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#fff",
+  },
+  barContent: {
+    flex: 1,
+    position: "relative",
+    height: 36,
+    justifyContent: "center",
+  },
+  bar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+  },
+  barPointsContainer: {
+    marginLeft: "auto",
+  },
+  barNameOverlay: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    top: 0,
+    bottom: 0,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  barName: {
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+  },
+  barPoints: {
+    fontSize: 14,
+    fontWeight: "800",
+    marginLeft: 8,
   },
   memberCountRow: {
     alignItems: "center",
@@ -470,33 +454,90 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 4,
   },
+  podiumSection: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 0,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+  },
+  podiumDivider: {
+    height: 1,
+  },
+  bottomSection: {
+  },
+  bottomRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+  bottomLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  bottomTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  bottomSubtitle: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  bottomMemberCount: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  bottomButton: {
+  },
+  bottomButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#1a1a1a",
+  },
   podiumRow: {
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "center",
-    gap: 8,
-    marginBottom: 12,
+    gap: 10,
+    minHeight: PODIUM_HEIGHTS[1] + 16,
     paddingTop: 8,
   },
   podiumSlot: {
     flex: 1,
-    maxWidth: 110,
+    maxWidth: 90,
   },
   podiumCard: {
-    borderRadius: 12,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
-    padding: 8,
+    borderBottomWidth: 0,
+    padding: 10,
     alignItems: "center",
-    justifyContent: "center",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 5,
+    justifyContent: "flex-end",
+    gap: 2,
+  },
+  podiumCardContent: {
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 2,
   },
   podiumCardFirst: {
-    shadowOpacity: 0.25,
-    elevation: 6,
+    borderWidth: 1.5,
+  },
+  rankBadgeFloating: {
+    position: "absolute",
+    top: -10,
+    alignSelf: "center",
+    zIndex: 10,
+  },
+  rankBadgeCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
   },
   rankBadge: {
     position: "absolute",
@@ -516,10 +557,10 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    borderWidth: 2,
+    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   avatarText: {
     fontSize: 13,
@@ -548,15 +589,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "uppercase",
   },
-  userCard: {
+  userDivider: {
+    height: 1,
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  userRow: {
+    marginTop: 18,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderBottomWidth: 2,
-    marginBottom: 12,
     gap: 8,
   },
   userRankCircle: {
@@ -576,8 +617,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   userPoints: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
+    textTransform: "uppercase",
+    flexShrink: 0,
+    marginLeft: "auto",
   },
   viewAllButton: {
     flexDirection: "row",

@@ -123,9 +123,8 @@ function GroupLobbyHeaderInner({
           </View>
         )}
 
-        {/* Main Content */}
+        {/* Main Content — avatar left, name + stats right */}
         <View style={styles.hudContent}>
-          {/* Shield/Badge with Avatar */}
           <Pressable
             style={styles.shieldContainer}
             onPress={onInfoPress}
@@ -135,62 +134,56 @@ function GroupLobbyHeaderInner({
               avatarType={avatarType}
               avatarValue={avatarValue}
               initials={initials}
+              flat
+              borderRadius={12}
             />
-            {/* Info badge */}
-            {onInfoPress && (
-              <View style={[styles.infoBadge, { backgroundColor: theme.colors.background }]}>
-                <Ionicons name="information-circle" size={18} color={theme.colors.primary} />
-              </View>
-            )}
           </Pressable>
 
-          {/* Name */}
-          <View style={styles.hudNameRow}>
-            {isOfficial && (
-              <View style={styles.officialBadge}>
-                <Ionicons name="shield-checkmark" size={14} color="#D4A017" />
-              </View>
-            )}
-            <Text
-              style={[styles.hudName, { color: theme.colors.textPrimary }]}
-              numberOfLines={2}
-            >
-              {name}
-            </Text>
-          </View>
-
-          {/* Stats Row */}
-          <View style={styles.hudStats}>
-            {/* Status */}
-            <View style={[styles.hudStatPill, { backgroundColor: statusColor + "15", borderColor: statusColor + "30" }]}>
-              <View style={[styles.hudStatusDot, { backgroundColor: statusColor }]} />
-              <Text style={[styles.hudStatText, { color: statusColor }]}>
-                {statusLabel}
+          <View style={styles.hudTextCol}>
+            <View style={styles.hudNameRow}>
+              {isOfficial && (
+                <View style={styles.officialBadge}>
+                  <Ionicons name="shield-checkmark" size={14} color="#D4A017" />
+                </View>
+              )}
+              <Text
+                style={[styles.hudName, { color: theme.colors.textPrimary }]}
+                numberOfLines={1}
+              >
+                {name}
               </Text>
             </View>
 
-            <Text style={[styles.hudDivider, { color: theme.colors.border }]}>•</Text>
-
-            {/* Members */}
-            {memberCount != null && (
-              <>
-                <Ionicons name="people" size={14} color={theme.colors.textSecondary} />
-                <Text style={[styles.hudStatValue, { color: theme.colors.textSecondary }]}>
-                  {memberCount}
+            <View style={styles.hudStats}>
+              <View style={[styles.hudStatPill, { backgroundColor: statusColor + "15", borderColor: statusColor + "30" }]}>
+                <View style={[styles.hudStatusDot, { backgroundColor: statusColor }]} />
+                <Text style={[styles.hudStatText, { color: statusColor }]}>
+                  {statusLabel}
                 </Text>
-              </>
-            )}
+              </View>
 
-            {privacy && (
-              <>
-                <Text style={[styles.hudDivider, { color: theme.colors.border }]}>•</Text>
-                <Ionicons
-                  name={privacy === "public" ? "globe-outline" : "lock-closed-outline"}
-                  size={14}
-                  color={theme.colors.textSecondary}
-                />
-              </>
-            )}
+              <Text style={[styles.hudDivider, { color: theme.colors.border }]}>•</Text>
+
+              {memberCount != null && (
+                <>
+                  <Ionicons name="people" size={14} color={theme.colors.textSecondary} />
+                  <Text style={[styles.hudStatValue, { color: theme.colors.textSecondary }]}>
+                    {memberCount}
+                  </Text>
+                </>
+              )}
+
+              {privacy && (
+                <>
+                  <Text style={[styles.hudDivider, { color: theme.colors.border }]}>•</Text>
+                  <Ionicons
+                    name={privacy === "public" ? "globe-outline" : "lock-closed-outline"}
+                    size={14}
+                    color={theme.colors.textSecondary}
+                  />
+                </>
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -264,35 +257,21 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   hudContent: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 48,
-    paddingTop: 52,
+    paddingHorizontal: 16,
+    gap: 12,
   },
   shieldContainer: {
-    marginBottom: 12,
-    position: "relative",
   },
-  infoBadge: {
-    position: "absolute",
-    bottom: -2,
-    right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
+  hudTextCol: {
+    flex: 1,
   },
   hudNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   officialBadge: {
     width: 24,
@@ -303,9 +282,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   hudName: {
-    fontSize: 22,
-    fontWeight: "800",
-    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "700",
   },
   hudStats: {
     flexDirection: "row",

@@ -189,6 +189,7 @@ export const GroupPage = forwardRef<GroupPageRef, GroupPageProps>(
                     onUpdatePrediction={stableUpdatePrediction}
                     onUpdateSliderValue={stableUpdateSliderValue}
                     isInteractive={isCurrent && currentIndex === i}
+                    totalCards={predictableFixtures.length}
                   />
                 );
               })}

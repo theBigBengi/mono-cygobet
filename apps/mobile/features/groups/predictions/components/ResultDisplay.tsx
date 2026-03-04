@@ -166,14 +166,14 @@ const styles = StyleSheet.create({
   },
   timeResultBadge: {
     width: 28,
-    height: 28,
+    height: 22,
     alignItems: "center",
     justifyContent: "center",
   },
   resultText: {
     fontSize: 15,
     fontWeight: "700",
-    lineHeight: 28,
+    lineHeight: 22,
     textAlignVertical: "center",
   },
   winnerResultText: {},

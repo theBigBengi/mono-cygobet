@@ -9,6 +9,7 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { Screen } from "@/components/ui";
+import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth/useAuth";
 import {
   useGroupRankingQuery,
@@ -52,6 +53,7 @@ export function GroupLobbyActiveScreen({
   onScroll,
 }: GroupLobbyActiveScreenProps) {
   const { t } = useTranslation("common");
+  const { theme } = useTheme();
   const router = useRouter();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -180,7 +182,7 @@ export function GroupLobbyActiveScreen({
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Screen
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
@@ -189,7 +191,7 @@ export function GroupLobbyActiveScreen({
         extendIntoStatusBar
       >
         {/* Spacer: pushes content below sticky header (status bar + some padding) */}
-        <View style={{ height: insets.top + 8 }} />
+        <View style={{ height: insets.top + 70 }} />
 
         <GroupLobbyHeader
           name={group.name}

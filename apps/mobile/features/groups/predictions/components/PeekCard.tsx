@@ -47,6 +47,8 @@ type PeekCardProps = {
   isNearby?: boolean;
   /** Finished game — no expand toggle */
   isFinishedGame?: boolean;
+  /** Total number of cards in the group */
+  totalCards: number;
 };
 
 export const PeekCard = React.memo(function PeekCard({
@@ -67,6 +69,7 @@ export const PeekCard = React.memo(function PeekCard({
   isInteractive,
   isNearby = true,
   isFinishedGame = false,
+  totalCards,
 }: PeekCardProps) {
   const { theme } = useTheme();
   const isEditable = canPredict(fixture.state, fixture.startTs);
@@ -174,12 +177,14 @@ export const PeekCard = React.memo(function PeekCard({
               </View>
 
               <View style={styles.centerContent}>
-                <View style={styles.centerTrack}>
+                <View style={styles.aboveTrack}>
                   <FixtureInfoHeader
                     leagueName={fixture.league?.name}
                     round={fixture.round}
                     kickoffAt={fixture.kickoffAt}
                   />
+                </View>
+                <View style={styles.centerTrack}>
                   <View
                     style={styles.scoreCenter}
                     pointerEvents={isInteractive ? "auto" : "none"}
@@ -204,6 +209,11 @@ export const PeekCard = React.memo(function PeekCard({
                       awayTeamName={fixture.awayTeam?.name}
                     />
                   </View>
+                </View>
+                <View style={styles.belowTrack}>
+                  <AppText variant="caption" color="secondary">
+                    {index + 1}/{totalCards}
+                  </AppText>
                 </View>
               </View>
 
@@ -267,16 +277,27 @@ const styles = StyleSheet.create({
     paddingTop: 48,
     paddingBottom: 12,
     justifyContent: "center",
+    // backgroundColor: "rgba(0,80,255,0.35)", // DEBUG BLUE — sliders
   },
   centerContent: {
     flex: 1,
-    paddingTop: 48,
-    paddingBottom: 12,
+    // backgroundColor: "rgba(255,0,0,0.35)", // DEBUG RED — center padding
+  },
+  aboveTrack: {
+    flex: 1,
     justifyContent: "center",
+    alignItems: "center",
+  },
+  belowTrack: {
+    flex: 1,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingBottom: 12,
   },
   centerTrack: {
     height: 484,
     position: "relative",
+    // backgroundColor: "rgba(0,180,0,0.35)", // DEBUG GREEN — slider track zone
   },
   scoreCenter: {
     flex: 1,
@@ -284,6 +305,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 3,
     marginTop: -260,
+    // backgroundColor: "rgba(255,140,0,0.4)", // DEBUG ORANGE — score input area
   },
   expandedContent: {
     ...StyleSheet.absoluteFillObject,

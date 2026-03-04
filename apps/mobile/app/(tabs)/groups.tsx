@@ -4,7 +4,8 @@
 // - Empty state when no groups exist.
 // - Navigates to group details on press.
 
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   StyleSheet,
@@ -42,7 +43,8 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { Screen, AppText, Button, TeamLogo, GroupAvatar } from "@/components/ui";
 import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
-import { useMyGroupsQuery, useUnreadCountsQuery, useUnreadActivityCountsQuery, useCreateGroupMutation } from "@/domains/groups";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMyGroupsQuery, useUnreadCountsQuery, useUnreadActivityCountsQuery, useCreateGroupMutation, groupsKeys, fetchGroupById } from "@/domains/groups";
 import { publishGroup } from "@/domains/groups/groups-core.api";
 import { useMyInvitesQuery } from "@/domains/invites";
 import { AVATAR_GRADIENTS } from "@/lib/constants/avatarGradients";
@@ -139,12 +141,32 @@ function CreateGroupSheet({
     }
     prevStepRef.current = step;
   }, [step, groupCount]);
-  // Per-tab view mode (sort lives in parent because sort sheet is a sibling)
+  // Per-tab view mode — persisted per tab
+  const VIEW_MODE_KEY = "create_tab_view_mode";
   const [tabViewMode, setTabViewMode] = useState<Record<CreateTab, "list" | "grid">>({
-    fixtures: "list",
-    leagues: "list",
-    teams: "list",
+    fixtures: "grid",
+    leagues: "grid",
+    teams: "grid",
   });
+
+  useEffect(() => {
+    AsyncStorage.getItem(VIEW_MODE_KEY).then((val) => {
+      if (val) {
+        try {
+          const parsed = JSON.parse(val);
+          setTabViewMode((prev) => ({ ...prev, ...parsed }));
+        } catch {}
+      }
+    });
+  }, []);
+
+  const setTabViewModeAndPersist = useCallback((updater: (prev: Record<CreateTab, "list" | "grid">) => Record<CreateTab, "list" | "grid">) => {
+    setTabViewMode((prev) => {
+      const next = updater(prev);
+      AsyncStorage.setItem(VIEW_MODE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
   const scrollRef = useRef<ScrollView>(null);
 
   const viewMode = tabViewMode[activeTab];
@@ -615,7 +637,7 @@ function CreateGroupSheet({
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setTabViewMode((prev) => ({ ...prev, [activeTab]: prev[activeTab] === "list" ? "grid" : "list" }));
+                setTabViewModeAndPersist((prev) => ({ ...prev, [activeTab]: prev[activeTab] === "list" ? "grid" : "list" }));
               }}
               style={({ pressed }) => [
                 createStyles.viewModeBtn,
@@ -1615,9 +1637,9 @@ const createStyles = StyleSheet.create({
     flex: 1,
   },
   gameAddBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1919,6 +1941,22 @@ function GroupsContent() {
   const hasUnpredicted = groups.some(
     (g) => g.status === "active" && (g.unpredictedGamesCount ?? 0) > 0
   );
+
+  // Prefetch first predictable group's fixtures for instant Predict All load
+  const queryClient = useQueryClient();
+  React.useEffect(() => {
+    if (!hasUnpredicted) return;
+    const first = groups.find(
+      (g) => g.status === "active" && (g.unpredictedGamesCount ?? 0) > 0
+    );
+    if (first) {
+      queryClient.prefetchQuery({
+        queryKey: groupsKeys.detail(first.id, true),
+        queryFn: () => fetchGroupById(first.id, { include: "fixtures" }),
+        meta: { scope: "user" },
+      });
+    }
+  }, [hasUnpredicted, groups, queryClient]);
 
   const listData = useMemo<ListItem[]>(() => {
     const items: ListItem[] = [
