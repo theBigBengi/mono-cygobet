@@ -1,10 +1,16 @@
 // features/groups/group-lobby/components/GroupLobbyHeader.tsx
 // Game HUD style header for lobby screen with integrated navigation.
 
-import React from "react";
+import React, { useEffect } from "react";
 import { View, StyleSheet, Text, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome6 } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { Card, AppText, GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiGroupStatus, ApiGroupPrivacy } from "@repo/types";
@@ -32,6 +38,12 @@ interface GroupLobbyHeaderProps {
   hideNavButtons?: boolean;
   /** Whether this is an official group */
   isOfficial?: boolean;
+  /** Creator username to display below group name */
+  creatorName?: string | null;
+  /** Share/invite button press */
+  onSharePress?: () => void;
+  /** Show skeleton loading state */
+  isLoading?: boolean;
 }
 
 function getInitials(name: string): string {
@@ -57,10 +69,29 @@ function GroupLobbyHeaderInner({
   onSettingsPress,
   hideNavButtons = false,
   isOfficial = false,
+  creatorName,
+  onSharePress,
+  isLoading = false,
 }: GroupLobbyHeaderProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const initials = getInitials(name);
+
+  const skeletonOpacity = useSharedValue(0.3);
+
+  useEffect(() => {
+    if (isLoading) {
+      skeletonOpacity.value = withRepeat(
+        withTiming(1, { duration: 800 }),
+        -1,
+        true
+      );
+    }
+  }, [isLoading, skeletonOpacity]);
+
+  const skeletonStyle = useAnimatedStyle(() => ({
+    opacity: skeletonOpacity.value,
+  }));
 
   const STATUS_LABELS: Record<ApiGroupStatus, string> = {
     draft: t("lobby.draft"),
@@ -123,10 +154,19 @@ function GroupLobbyHeaderInner({
           </View>
         )}
 
-        {/* Main Content — avatar left, name + stats right */}
-        <View style={styles.hudContent}>
+        {/* Avatar — centered */}
+        {isLoading ? (
+          <Animated.View
+            style={[
+              styles.avatarCenter,
+              styles.skeletonAvatar,
+              { backgroundColor: theme.colors.border },
+              skeletonStyle,
+            ]}
+          />
+        ) : (
           <Pressable
-            style={styles.shieldContainer}
+            style={styles.avatarCenter}
             onPress={onInfoPress}
             disabled={!onInfoPress}
           >
@@ -134,57 +174,78 @@ function GroupLobbyHeaderInner({
               avatarType={avatarType}
               avatarValue={avatarValue}
               initials={initials}
+              size={120}
+              borderRadius={20}
               flat
-              borderRadius={12}
             />
           </Pressable>
+        )}
 
-          <View style={styles.hudTextCol}>
-            <View style={styles.hudNameRow}>
-              {isOfficial && (
-                <View style={styles.officialBadge}>
-                  <Ionicons name="shield-checkmark" size={14} color="#D4A017" />
-                </View>
-              )}
-              <Text
-                style={[styles.hudName, { color: theme.colors.textPrimary }]}
-                numberOfLines={1}
-              >
-                {name}
-              </Text>
+        {/* Name + creator + share */}
+        <View style={styles.hudTextBelow}>
+          {isLoading ? (
+            <View style={styles.hudTitleLeft}>
+              <Animated.View
+                style={[
+                  styles.skeletonBar,
+                  { width: 160, height: 14, backgroundColor: theme.colors.border },
+                  skeletonStyle,
+                ]}
+              />
+              <Animated.View
+                style={[
+                  styles.skeletonBar,
+                  { width: 100, height: 12, marginTop: 8, backgroundColor: theme.colors.border },
+                  skeletonStyle,
+                ]}
+              />
             </View>
+          ) : (
+            <View style={styles.hudTitleRow}>
+              <View style={styles.hudTitleLeft}>
+                <View style={styles.hudNameRow}>
+                  {isOfficial && (
+                    <View style={styles.officialBadge}>
+                      <Ionicons name="shield-checkmark" size={16} color="#D4A017" />
+                    </View>
+                  )}
+                  <Text
+                    style={[styles.hudName, { color: theme.colors.textPrimary }]}
+                    numberOfLines={1}
+                  >
+                    {name}
+                  </Text>
+                </View>
 
-            <View style={styles.hudStats}>
-              <View style={[styles.hudStatPill, { backgroundColor: statusColor + "15", borderColor: statusColor + "30" }]}>
-                <View style={[styles.hudStatusDot, { backgroundColor: statusColor }]} />
-                <Text style={[styles.hudStatText, { color: statusColor }]}>
-                  {statusLabel}
-                </Text>
+                {creatorName && (
+                  <View style={styles.creatorRow}>
+                    <View style={[styles.creatorAvatar, { backgroundColor: theme.colors.textPrimary + "15" }]}>
+                      <Text style={[styles.creatorInitial, { color: theme.colors.textPrimary }]}>
+                        {creatorName.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={[styles.creatorText, { color: theme.colors.textSecondary }]}>
+                      {creatorName}
+                    </Text>
+                  </View>
+                )}
               </View>
 
-              <Text style={[styles.hudDivider, { color: theme.colors.border }]}>•</Text>
-
-              {memberCount != null && (
-                <>
-                  <Ionicons name="people" size={14} color={theme.colors.textSecondary} />
-                  <Text style={[styles.hudStatValue, { color: theme.colors.textSecondary }]}>
-                    {memberCount}
-                  </Text>
-                </>
-              )}
-
-              {privacy && (
-                <>
-                  <Text style={[styles.hudDivider, { color: theme.colors.border }]}>•</Text>
-                  <Ionicons
-                    name={privacy === "public" ? "globe-outline" : "lock-closed-outline"}
-                    size={14}
-                    color={theme.colors.textSecondary}
-                  />
-                </>
+              {onSharePress && (
+                <Pressable
+                  onPress={onSharePress}
+                  style={({ pressed }) => [
+                    styles.shareButton,
+                    { borderColor: theme.colors.textPrimary },
+                    pressed && { opacity: 0.6 },
+                  ]}
+                >
+                  <FontAwesome6 name="share" size={16} color={theme.colors.textPrimary} />
+                </Pressable>
               )}
             </View>
-          </View>
+          )}
+
         </View>
       </View>
     );
@@ -256,16 +317,57 @@ const styles = StyleSheet.create({
   navButtonPressed: {
     opacity: 0.6,
   },
-  hudContent: {
+  avatarCenter: {
+    alignSelf: "center",
+    marginBottom: 32,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  hudTextBelow: {
+    paddingHorizontal: 16,
+  },
+  hudTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    gap: 12,
+    justifyContent: "space-between",
   },
-  shieldContainer: {
-  },
-  hudTextCol: {
+  hudTitleLeft: {
     flex: 1,
+    marginRight: 12,
+  },
+  shareButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  creatorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  creatorAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  creatorInitial: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  creatorText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   hudNameRow: {
     flexDirection: "row",
@@ -282,39 +384,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   hudName: {
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: "700",
-  },
-  hudStats: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  hudStatPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderBottomWidth: 2,
-  },
-  hudStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  hudStatText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  hudStatValue: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  hudDivider: {
-    fontSize: 10,
   },
   // Original Styles
   card: {
@@ -333,5 +404,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 18,
     marginBottom: 4,
+  },
+  skeletonAvatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 20,
+    alignSelf: "center",
+    marginBottom: 32,
+  },
+  skeletonBar: {
+    borderRadius: 6,
   },
 });

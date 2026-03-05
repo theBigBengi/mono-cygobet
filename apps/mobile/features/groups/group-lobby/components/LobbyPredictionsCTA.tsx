@@ -1,7 +1,7 @@
 // features/groups/group-lobby/components/LobbyPredictionsCTA.tsx
 // Lobby predictions CTA - dynamic smart card with mode-based content
 
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import Animated, {
@@ -17,7 +17,7 @@ import {
   isLive as isLiveState,
 } from "@repo/utils";
 
-import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons, Fontisto } from "@expo/vector-icons";
 import { TeamLogo } from "@/components/ui";
 import type { FixtureItem } from "@/types/common";
 
@@ -27,16 +27,12 @@ export interface LobbyPredictionsCTAProps {
   onPress: (fixtureId?: number) => void;
   fixtures?: FixtureItem[];
   isLoading?: boolean;
+  /** Number of completed fixtures in the group — used to compute game numbers */
+  completedFixturesCount?: number;
 }
 
 const LIVE_COLOR = "#EF4444";
-const ACTION_COLOR = "#F59E0B";
 const CRITICAL_COLOR = "#EF4444";
-const SUCCESS_COLOR = "#22C55E";
-
-const ONE_DAY = 24 * 60 * 60 * 1000;
-
-type CTAMode = "action" | "live" | "liveAction" | "allSet" | "results";
 
 function FixtureRow({
   fixture,
@@ -44,12 +40,16 @@ function FixtureRow({
   theme,
   vsLabel,
   urgencyColor,
+  gameNumber,
+  useFullName,
 }: {
   fixture: FixtureItem;
   onPress: (fixtureId?: number) => void;
   theme: any;
   vsLabel: string;
   urgencyColor?: string;
+  gameNumber?: number;
+  useFullName?: boolean;
 }) {
   const isLive = isLiveState(fixture.state);
   const isFinished = isFinishedState(fixture.state);
@@ -75,6 +75,13 @@ function FixtureRow({
       onPress={() => onPress(fixture.id)}
       style={({ pressed }) => [styles.fixtureRow, pressed && styles.pressed]}
     >
+      {/* Game number */}
+      {gameNumber != null && (
+        <Text style={[styles.gameNumber, { color: theme.colors.textSecondary }]}>
+          {gameNumber}
+        </Text>
+      )}
+
       {/* Status (time / live / points / FT) — fixed left column */}
       <View style={styles.statusCol}>
         {isLive ? (
@@ -180,13 +187,13 @@ function FixtureRow({
           style={[styles.teamNameStacked, { color: theme.colors.textPrimary }]}
           numberOfLines={1}
         >
-          {fixture.homeTeam?.shortCode ?? fixture.homeTeam?.name ?? ""}
+          {useFullName ? (fixture.homeTeam?.name ?? "") : (fixture.homeTeam?.shortCode ?? fixture.homeTeam?.name ?? "")}
         </Text>
         <Text
           style={[styles.teamNameStacked, { color: theme.colors.textPrimary }]}
           numberOfLines={1}
         >
-          {fixture.awayTeam?.shortCode ?? fixture.awayTeam?.name ?? ""}
+          {useFullName ? (fixture.awayTeam?.name ?? "") : (fixture.awayTeam?.shortCode ?? fixture.awayTeam?.name ?? "")}
         </Text>
       </View>
 
@@ -210,25 +217,25 @@ function FixtureRow({
         {hasPrediction ? (
           <>
             <Text style={[styles.predictionCompactText, {
-              color: predictionResult === "max" ? "#10B981"
-                : predictionResult === true ? "#FFB020"
-                : predictionResult === false ? "#EF4444"
-                : theme.colors.textPrimary,
+              color: predictionResult === "max" ? "#10B981" + "90"
+                : predictionResult === true ? "#FFB020" + "90"
+                : predictionResult === false ? "#EF4444" + "90"
+                : theme.colors.textPrimary + "80",
             }]}>
               {fixture.prediction!.home}
             </Text>
             <Text style={[styles.predictionCompactText, {
-              color: predictionResult === "max" ? "#10B981"
-                : predictionResult === true ? "#FFB020"
-                : predictionResult === false ? "#EF4444"
-                : theme.colors.textPrimary,
-                          }]}>
+              color: predictionResult === "max" ? "#10B981" + "90"
+                : predictionResult === true ? "#FFB020" + "90"
+                : predictionResult === false ? "#EF4444" + "90"
+                : theme.colors.textPrimary + "80",
+            }]}>
               {fixture.prediction!.away}
             </Text>
           </>
         ) : (
           <Text style={[styles.predictionCompactText, {
-            color: urgencyColor ?? theme.colors.textSecondary + "60",
+            color: theme.colors.textPrimary,
           }]}>
             {"\u2013"}
           </Text>
@@ -239,7 +246,7 @@ function FixtureRow({
         ? { backgroundColor: theme.colors.textSecondary + "15" }
         : { borderWidth: 1, borderColor: theme.colors.textSecondary + "40" }
       ]}>
-        <Ionicons name={hasPrediction ? "checkmark" : "add"} size={12} color={theme.colors.textSecondary} />
+        <Ionicons name={hasPrediction ? "checkmark" : "add"} size={hasPrediction ? 12 : 14} color={hasPrediction ? theme.colors.textSecondary : theme.colors.textPrimary} />
       </View>
 
     </Pressable>
@@ -252,9 +259,11 @@ export function LobbyPredictionsCTA({
   onPress,
   fixtures = [],
   isLoading = false,
+  completedFixturesCount = 0,
 }: LobbyPredictionsCTAProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const [useFullName, setUseFullName] = useState(false);
   const skeletonOpacity = useSharedValue(0.3);
 
   useEffect(() => {
@@ -271,83 +280,19 @@ export function LobbyPredictionsCTA({
     opacity: skeletonOpacity.value,
   }));
 
-  // --- Mode computation ---
-  const { mode, liveFixtures, upcomingFixtures, finishedFixtures } =
-    useMemo(() => {
-      const empty = {
-        mode: "allSet" as CTAMode,
-        liveFixtures: [] as FixtureItem[],
-        upcomingFixtures: [] as FixtureItem[],
-        finishedFixtures: [] as FixtureItem[],
-      };
-      if (fixtures.length === 0) return empty;
+  const liveCount = useMemo(() => {
+    return fixtures.filter((f) => isLiveState(f.state) && !isCancelledState(f.state)).length;
+  }, [fixtures]);
 
-      const now = Date.now();
-
-      const live = fixtures.filter(
-        (f) => isLiveState(f.state) && !isCancelledState(f.state),
-      );
-
-      const unpredicted = fixtures.filter((f) => {
+  const nextGames = useMemo(() => {
+    const now = Date.now();
+    return fixtures
+      .filter((f) => {
         if (!f.kickoffAt || isCancelledState(f.state)) return false;
-        const isUpcoming = new Date(f.kickoffAt).getTime() > now;
-        const hasPred = f.prediction?.home != null && f.prediction?.away != null;
-        return isUpcoming && !hasPred;
-      });
-
-      const allFinished = fixtures.every(
-        (f) => isFinishedState(f.state) || isCancelledState(f.state),
-      );
-
-      const upcoming = fixtures
-        .filter((f) => {
-          if (!f.kickoffAt || isCancelledState(f.state)) return false;
-          return new Date(f.kickoffAt).getTime() > now && !isLiveState(f.state);
-        })
-        .sort(
-          (a, b) =>
-            new Date(a.kickoffAt!).getTime() -
-            new Date(b.kickoffAt!).getTime(),
-        );
-
-      const finished = fixtures
-        .filter((f) => isFinishedState(f.state) && !isCancelledState(f.state))
-        .sort(
-          (a, b) =>
-            new Date(b.kickoffAt!).getTime() -
-            new Date(a.kickoffAt!).getTime(),
-        );
-
-      let computedMode: CTAMode;
-      if (live.length > 0 && unpredicted.length > 0)
-        computedMode = "liveAction";
-      else if (live.length > 0) computedMode = "live";
-      else if (unpredicted.length > 0) computedMode = "action";
-      else if (allFinished) computedMode = "results";
-      else computedMode = "allSet";
-
-      return {
-        mode: computedMode,
-        liveFixtures: live,
-        upcomingFixtures: upcoming,
-        finishedFixtures: finished,
-      };
-    }, [fixtures]);
-
-  // --- Last saved time ---
-  const lastSavedAt = useMemo(() => {
-    let latest = 0;
-    for (const f of fixtures) {
-      if (f.prediction?.updatedAt) {
-        const t = new Date(f.prediction.updatedAt).getTime();
-        if (t > latest) latest = t;
-      }
-    }
-    if (latest === 0) return null;
-    const d = new Date(latest);
-    const time = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
-    const date = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
-    return `${date} ${time}`;
+        return new Date(f.kickoffAt).getTime() > now && !isLiveState(f.state) && !isFinishedState(f.state);
+      })
+      .sort((a, b) => new Date(a.kickoffAt!).getTime() - new Date(b.kickoffAt!).getTime())
+      .slice(0, 5);
   }, [fixtures]);
 
   // --- Skeleton ---
@@ -406,46 +351,27 @@ export function LobbyPredictionsCTA({
 
   const vsLabel = t("lobby.ctaVs");
 
-  // --- Fixture rows helper ---
-  const renderRows = (list: FixtureItem[], max: number) => {
-    const visible = list.slice(0, max);
-    const overflow = list.length - max;
-    return (
-      <>
-        {visible.map((f) => (
-          <FixtureRow
-            key={f.id}
-            fixture={f}
-            onPress={onPress}
-            theme={theme}
-            vsLabel={vsLabel}
-          />
-        ))}
-        {overflow > 0 && (
-          <View style={styles.viewAllContainer}>
-            <Pressable
-              onPress={() => onPress()}
-              style={({ pressed }) => [
-                styles.viewAllButton,
-                { borderColor: theme.colors.border },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={[styles.viewAllText, { color: theme.colors.textPrimary }]}>
-                {t("lobby.ctaMoreGames", { count: overflow })}
-              </Text>
-            </Pressable>
-          </View>
-        )}
-      </>
-    );
-  };
-
   return (
     <View style={styles.outerWrapper}>
-      <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
-        Predictions
-      </Text>
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+          Upcoming
+        </Text>
+        <Pressable onPress={() => setUseFullName((v) => !v)} hitSlop={8} style={{
+          marginRight: 3,
+          borderWidth: 1,
+          borderColor: useFullName ? theme.colors.primary : theme.colors.textSecondary + "30",
+          backgroundColor: useFullName ? theme.colors.primary + "15" : "transparent",
+          borderRadius: 6,
+          padding: 4,
+        }}>
+          <Fontisto
+            name="text-width"
+            size={16}
+            color={useFullName ? theme.colors.primary : theme.colors.textSecondary}
+          />
+        </Pressable>
+      </View>
       <View
         style={[
           styles.container,
@@ -454,114 +380,48 @@ export function LobbyPredictionsCTA({
           },
         ]}
       >
-          {/* === RESULTS — last finished games with scores + predictions + points === */}
-        {mode === "results" && (() => {
-          const MAX_RESULTS = 4;
-          const recentResults = finishedFixtures.slice(0, MAX_RESULTS);
-          const overflow = finishedFixtures.length - MAX_RESULTS;
+        {nextGames.map((f, i) => {
+          const isToday = f.kickoffAt ? (() => {
+            const k = new Date(f.kickoffAt);
+            const n = new Date();
+            return k.getDate() === n.getDate() && k.getMonth() === n.getMonth() && k.getFullYear() === n.getFullYear();
+          })() : false;
+          const hasPred = f.prediction?.home != null && f.prediction?.away != null;
+          const urgent = isToday && !hasPred ? CRITICAL_COLOR : undefined;
           return (
-            <>
-              {recentResults.map((f) => (
-                <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} />
-              ))}
-              <View style={styles.viewAllContainer}>
-                <Pressable
-                  onPress={() => onPress()}
-                  style={({ pressed }) => [
-                    styles.viewAllButton,
-                    { borderColor: theme.colors.border },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={[styles.viewAllText, { color: theme.colors.textPrimary }]}>
-                    {overflow > 0 ? t("lobby.ctaMoreGames", { count: overflow }) : t("lobby.viewAllGames")}
-                  </Text>
-                </Pressable>
-              </View>
-            </>
+            <FixtureRow
+              key={f.id}
+              fixture={f}
+              onPress={onPress}
+              theme={theme}
+              vsLabel={vsLabel}
+              urgencyColor={urgent}
+              gameNumber={completedFixturesCount + liveCount + i + 1}
+              useFullName={useFullName}
+            />
           );
-        })()}
+        })}
 
-        {/* === LIVE SECTION (live & liveAction) === */}
-        {(mode === "live" || mode === "liveAction") && (
-          <>
-            {renderRows(liveFixtures, liveFixtures.length)}
-            {upcomingFixtures.length > 0 && <View style={{ height: 8 }} />}
-          </>
-        )}
+      </View>
 
-        {/* === DAY-GROUPED UPCOMING — unified for action, liveAction, live, allSet === */}
-        {mode !== "results" && (() => {
-          const now = new Date();
-          const tmr = new Date(now);
-          tmr.setDate(tmr.getDate() + 1);
-          const isSameDay = (d: Date, ref: Date) => d.getDate() === ref.getDate() && d.getMonth() === ref.getMonth() && d.getFullYear() === ref.getFullYear();
-
-          const allToday = upcomingFixtures.filter((f) => isSameDay(new Date(f.kickoffAt!), now));
-          const allTomorrow = upcomingFixtures.filter((f) => isSameDay(new Date(f.kickoffAt!), tmr));
-          const allLater = upcomingFixtures.filter((f) => !isSameDay(new Date(f.kickoffAt!), now) && !isSameDay(new Date(f.kickoffAt!), tmr));
-
-          const MAX_ROWS = 8;
-          const LATER_MIN = 3;
-          const liveCount = (mode === "live" || mode === "liveAction") ? liveFixtures.length : 0;
-          const todayGames = allToday.slice(0, MAX_ROWS);
-          const tomorrowGames = allTomorrow.slice(0, Math.max(0, MAX_ROWS - todayGames.length));
-          const beforeLater = liveCount + todayGames.length + tomorrowGames.length;
-          const laterSlots = MAX_ROWS - beforeLater;
-          const laterGames = beforeLater >= MAX_ROWS || laterSlots < LATER_MIN
-            ? []
-            : allLater.slice(0, laterSlots);
-          const totalShown = todayGames.length + tomorrowGames.length + laterGames.length;
-          const totalAll = allToday.length + allTomorrow.length + allLater.length;
-          const overflow = totalAll - totalShown;
-
-          if (totalAll === 0) return null;
-
-          // Header color: any unpredicted → urgency color, else green
-          const hasUnpredicted = (list: FixtureItem[]) => list.some((f) => f.prediction?.home == null || f.prediction?.away == null);
-          const todayColor = todayGames.length > 0 && hasUnpredicted(allToday) ? CRITICAL_COLOR : SUCCESS_COLOR;
-          const tomorrowColor = tomorrowGames.length > 0 && hasUnpredicted(allTomorrow) ? ACTION_COLOR : SUCCESS_COLOR;
-          const laterColor = laterGames.length > 0 && hasUnpredicted(allLater) ? ACTION_COLOR : SUCCESS_COLOR;
-
-          // Button color = highest urgency in card
-          const buttonColor = todayColor === CRITICAL_COLOR ? CRITICAL_COLOR
-            : tomorrowColor === ACTION_COLOR || laterColor === ACTION_COLOR ? ACTION_COLOR
-            : SUCCESS_COLOR;
-
-          let groupIndex = 0;
-
-          return (
-            <>
-              {todayGames.map((f) => (
-                <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} urgencyColor={todayColor !== SUCCESS_COLOR ? todayColor : undefined} />
-              ))}
-              {tomorrowGames.map((f) => (
-                <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} urgencyColor={tomorrowColor !== SUCCESS_COLOR ? tomorrowColor : undefined} />
-              ))}
-              {laterGames.map((f) => (
-                <FixtureRow key={f.id} fixture={f} onPress={onPress} theme={theme} vsLabel={vsLabel} urgencyColor={laterColor !== SUCCESS_COLOR ? laterColor : undefined} />
-              ))}
-
-              <View style={styles.viewAllContainer}>
-                <Pressable
-                  onPress={() => onPress()}
-                  style={({ pressed }) => [
-                    styles.viewAllButton,
-                    { borderColor: theme.colors.border },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={[styles.viewAllText, { color: theme.colors.textPrimary }]}>
-                    {overflow > 0 ? t("lobby.ctaMoreGames", { count: overflow }) : t("lobby.viewAllGames")}
-                  </Text>
-                </Pressable>
-              </View>
-            </>
-          );
-        })()}
-
-
-        </View>
+      {/* Summary + View All */}
+      <View style={styles.footerSummaryRow}>
+        <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>
+          +{totalFixtures - completedFixturesCount - liveCount - nextGames.length} {t("lobby.summaryMoreGames", { defaultValue: "more games" })}  ·  {totalFixtures - predictionsCount} {t("lobby.summaryNeedPrediction", { defaultValue: "need prediction" })}
+        </Text>
+        <Pressable
+          onPress={() => onPress()}
+          style={({ pressed }) => [
+            styles.viewAllButton,
+            { borderColor: theme.colors.border },
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text style={[styles.viewAllText, { color: theme.colors.textPrimary }]}>
+            {t("lobby.viewGames", { defaultValue: "View Games" })}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -571,10 +431,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
   sectionTitle: {
     fontSize: 15,
     fontWeight: "700",
-    marginBottom: 8,
   },
   container: {
   },
@@ -595,7 +460,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 5,
-    paddingHorizontal: 4,
+  },
+  gameNumber: {
+    fontSize: 11,
+    fontWeight: "600",
+    marginRight: 10,
+    textAlign: "left",
   },
   logoCol: {
     width: 20,
@@ -634,7 +504,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   statusCol: {
-    width: 56,
+    width: 46,
   },
   statusBox: {
     width: 42,
@@ -723,8 +593,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
   },
-  viewAllContainer: {
+  footerSummaryRow: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 8,
   },
   viewAllButton: {
@@ -771,6 +643,11 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
+  },
+  summaryText: {
+    width: "50%",
+    fontSize: 11,
+    fontWeight: "500",
   },
   // Skeleton
   skeletonBar: {

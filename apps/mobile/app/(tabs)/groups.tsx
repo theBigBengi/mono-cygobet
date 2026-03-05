@@ -35,6 +35,7 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
+  BottomSheetView,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import { useRouter } from "expo-router";
@@ -44,7 +45,7 @@ import * as Haptics from "expo-haptics";
 import { Screen, AppText, Button, TeamLogo, GroupAvatar } from "@/components/ui";
 import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMyGroupsQuery, useUnreadCountsQuery, useUnreadActivityCountsQuery, useCreateGroupMutation, groupsKeys, fetchGroupById } from "@/domains/groups";
+import { useMyGroupsQuery, useUnreadCountsQuery, useUnreadActivityCountsQuery, useCreateGroupMutation, useGroupPreviewQuery, groupsKeys, fetchGroupById } from "@/domains/groups";
 import { publishGroup } from "@/domains/groups/groups-core.api";
 import { useMyInvitesQuery } from "@/domains/invites";
 import { AVATAR_GRADIENTS } from "@/lib/constants/avatarGradients";
@@ -85,6 +86,13 @@ function CreateGroupSheet({
   onOpenAdvSheet,
   onOpenAvatarPicker,
   avatarValue,
+  nudgeWindowMinutes,
+  inviteAccess,
+  onNudgeWindowChange,
+  onInviteAccessChange,
+  onTheNosePoints,
+  differencePoints,
+  outcomePoints,
   tabSortOptions,
   groupCount,
 }: {
@@ -92,9 +100,16 @@ function CreateGroupSheet({
   topInset: number;
   backdropComponent: (props: BottomSheetBackdropProps) => React.JSX.Element;
   onOpenSort: (tab: CreateTab) => void;
-  onOpenAdvSheet: (sheet: "prediction" | "scoring" | "ko" | "members") => void;
+  onOpenAdvSheet: (sheet: "prediction" | "scoring" | "ko" | "members" | "nudgeWindow") => void;
   onOpenAvatarPicker: () => void;
   avatarValue: string;
+  nudgeWindowMinutes: number;
+  inviteAccess: "all" | "admin_only";
+  onNudgeWindowChange: (val: number) => void;
+  onInviteAccessChange: (val: "all" | "admin_only") => void;
+  onTheNosePoints: number;
+  differencePoints: number;
+  outcomePoints: number;
   tabSortOptions: Record<CreateTab, string>;
   groupCount: number;
 }) {
@@ -117,6 +132,8 @@ function CreateGroupSheet({
   const router = useRouter();
   const createGroupMutation = useCreateGroupMutation();
   const [isCreating, setIsCreating] = useState(false);
+  const [nudgeEnabled, setNudgeEnabled] = useState(true);
+  const [draftPrivacy, setDraftPrivacy] = useState<"private" | "public">("private");
   const slideDirection = useRef<"forward" | "back">("forward");
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -224,18 +241,18 @@ function CreateGroupSheet({
       // Publish with defaults
       await publishGroup(groupId, {
         name: groupName.trim(),
-        privacy: "private",
-        inviteAccess: "all",
+        privacy: draftPrivacy,
+        inviteAccess,
         avatarType: "gradient",
         avatarValue,
-        onTheNosePoints: 3,
-        correctDifferencePoints: 2,
-        outcomePoints: 1,
+        onTheNosePoints,
+        correctDifferencePoints: differencePoints,
+        outcomePoints,
         predictionMode: "CorrectScore",
         koRoundMode: "FullTime",
         maxMembers: 50,
-        nudgeEnabled: true,
-        nudgeWindowMinutes: 60,
+        nudgeEnabled,
+        nudgeWindowMinutes,
       });
 
       // Close sheet & navigate to group
@@ -308,6 +325,31 @@ function CreateGroupSheet({
   const fixtures = useMemo(() => fixturesQuery.data?.data ?? [], [fixturesQuery.data]);
   const leagues = useMemo(() => leaguesQuery.data?.data ?? [], [leaguesQuery.data]);
   const teams = useMemo(() => teamsQuery.data?.data ?? [], [teamsQuery.data]);
+
+  // Preview query — server resolves fixtures for any selection mode
+  const previewBody = useMemo(() => ({
+    selectionMode: (activeTab === "fixtures" ? "games" : activeTab) as "games" | "leagues" | "teams",
+    ...(activeTab === "fixtures" && { fixtureIds: Array.from(selectedGames).map(Number) }),
+    ...(activeTab === "leagues" && { leagueIds: Array.from(selectedLeagues).map(Number) }),
+    ...(activeTab === "teams" && { teamIds: Array.from(selectedTeams).map(Number) }),
+  }), [activeTab, selectedGames, selectedLeagues, selectedTeams]);
+  const { data: preview } = useGroupPreviewQuery(previewBody);
+
+  const durationLabel = useMemo(() => {
+    if (!preview?.data?.startDate || !preview?.data?.endDate) return t("lobby.addGamesToSeeDuration");
+    const start = format(new Date(preview.data.startDate), "dd/MM");
+    const end = format(new Date(preview.data.endDate), "dd/MM");
+    if (start === end) return start;
+    const days = Math.ceil((new Date(preview.data.endDate).getTime() - new Date(preview.data.startDate).getTime()) / 86400000);
+    return `${start} – ${end}${days > 0 ? ` · ${days}d` : ""}`;
+  }, [preview, t]);
+
+  // Selection summary for "view all" row
+  const selectionSummary = useMemo(() => {
+    if (activeTab === "fixtures") return `${selectedGames.size} ${selectedGames.size === 1 ? "game" : "games"}`;
+    if (activeTab === "leagues") return `${selectedLeagues.size} ${selectedLeagues.size === 1 ? "league" : "leagues"}`;
+    return `${selectedTeams.size} ${selectedTeams.size === 1 ? "team" : "teams"}`;
+  }, [activeTab, selectedGames.size, selectedLeagues.size, selectedTeams.size]);
 
   // Skeleton pulse
   const skelOpacity = useSharedValue(0.4);
@@ -465,79 +507,36 @@ function CreateGroupSheet({
                   : t("groupCreation.step2Desc")}
             </AppText>
           </View>
-          {step === 0 ? (
+          {step !== 0 && (
             <Pressable
-              onPress={handleContinue}
-              disabled={!hasSelection}
-              style={({ pressed }) => [
-                createStyles.continueBtn,
-                {
-                  backgroundColor: hasSelection
-                    ? theme.colors.primary
-                    : theme.colors.textSecondary + "20",
-                  borderColor: hasSelection
-                    ? theme.colors.primary
-                    : theme.colors.textSecondary + "40",
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
+              onPress={handleBack}
+              style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, padding: 6, position: "absolute", left: 12, top: 10 })}
             >
-              <AppText
-                variant="caption"
-                style={[
-                  createStyles.continueBtnText,
-                  { color: hasSelection ? "#fff" : theme.colors.textSecondary },
-                ]}
-              >
-                {hasSelection && activeTab === "fixtures"
-                  ? `${t("common.continue")} (${selectionCount})`
-                  : t("common.continue")}
+              <Ionicons name="arrow-back-circle-outline" size={24} color={theme.colors.textSecondary} />
+            </Pressable>
+          )}
+          {step === 1 && (
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                slideDirection.current = "forward";
+                setStep(2);
+              }}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.6 : 1,
+                paddingVertical: 5,
+                paddingHorizontal: 12,
+                borderRadius: 14,
+                backgroundColor: theme.colors.textPrimary + "0A",
+                position: "absolute",
+                right: 12,
+                top: 10,
+              })}
+            >
+              <AppText variant="caption" style={{ color: theme.colors.primary, fontWeight: "600" }}>
+                {t("groupCreation.advanced")}
               </AppText>
             </Pressable>
-          ) : (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              {step === 1 && (
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    slideDirection.current = "forward";
-                    setStep(2);
-                  }}
-                  style={({ pressed }) => ({
-                    opacity: pressed ? 0.6 : 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                    paddingVertical: 4,
-                    paddingHorizontal: 10,
-                    borderRadius: 12,
-                    backgroundColor: theme.colors.textPrimary + "08",
-                  })}
-                >
-                  <Ionicons name="options-outline" size={14} color={theme.colors.textSecondary} />
-                  <AppText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                    {t("groupCreation.advanced")}
-                  </AppText>
-                </Pressable>
-              )}
-              <Pressable
-                onPress={handleBack}
-                style={({ pressed }) => [
-                  createStyles.continueBtn,
-                  {
-                    borderColor: theme.colors.textSecondary,
-                    opacity: pressed ? 0.5 : 1,
-                  },
-                ]}
-              >
-                <AppText
-                  variant="caption"
-                  style={[createStyles.continueBtnText, { color: theme.colors.textPrimary }]}
-                >
-                  {t("common.back")}
-                </AppText>
-              </Pressable>
-            </View>
           )}
         </View>
 
@@ -618,7 +617,7 @@ function CreateGroupSheet({
 
         {/* Content area */}
         {step === 0 && (
-        <Animated.View entering={slideDirection.current === "forward" ? SlideInRight.duration(250) : undefined} style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
         <ScrollView style={createStyles.content} contentContainerStyle={createStyles.contentInner}>
           {/* Sort row — scrolls with content */}
           <View style={[createStyles.sortRow, { borderBottomColor: theme.colors.border }]}>
@@ -680,8 +679,27 @@ function CreateGroupSheet({
                     { backgroundColor: theme.colors.textSecondary + "10" },
                   ]}
                 >
-                  <Text style={[createStyles.gameGridTime, { color: theme.colors.textSecondary }]}>{fmtTime(f)}</Text>
-                  <Text style={[createStyles.gameGridMeta, { color: theme.colors.textSecondary }]} numberOfLines={1}>{footerText}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[createStyles.gameGridTime, { color: theme.colors.textSecondary }]}>{fmtTime(f)}</Text>
+                      {footerText ? <Text style={[createStyles.gameGridMeta, { color: theme.colors.textSecondary }]} numberOfLines={1}>{footerText}</Text> : null}
+                    </View>
+                    <View
+                      style={[
+                        createStyles.gameGridAddBtn,
+                        {
+                          borderColor: isSelected ? theme.colors.primary : theme.colors.textSecondary + "60",
+                          backgroundColor: isSelected ? theme.colors.primary : "transparent",
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={isSelected ? "checkmark" : "add"}
+                        size={14}
+                        color={isSelected ? "#fff" : theme.colors.textSecondary}
+                      />
+                    </View>
+                  </View>
                   <View style={createStyles.gameGridTeams}>
                     <View style={createStyles.gameGridTeamRow}>
                       <TeamLogo imagePath={f.homeTeam?.imagePath} teamName={f.homeTeam?.name ?? "?"} size={20} />
@@ -691,21 +709,6 @@ function CreateGroupSheet({
                       <TeamLogo imagePath={f.awayTeam?.imagePath} teamName={f.awayTeam?.name ?? "?"} size={20} />
                       <Text style={[createStyles.gameGridTeamName, { color: theme.colors.textPrimary }]} numberOfLines={1}>{f.awayTeam?.name ?? "TBD"}</Text>
                     </View>
-                  </View>
-                  <View
-                    style={[
-                      createStyles.leagueGridAddBtn,
-                      {
-                        borderColor: isSelected ? theme.colors.primary : theme.colors.textSecondary + "60",
-                        backgroundColor: isSelected ? theme.colors.primary : "transparent",
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name={isSelected ? "checkmark" : "add"}
-                      size={18}
-                      color={isSelected ? "#fff" : theme.colors.textSecondary}
-                    />
                   </View>
                 </Pressable>
               );
@@ -727,7 +730,7 @@ function CreateGroupSheet({
                 <>
                   {fixturesByLeague.map((section) => (
                     <View key={section.league.id} style={createStyles.leagueSection}>
-                      <Text style={[createStyles.leagueHeader, { color: theme.colors.textSecondary }]}>
+                      <Text style={[createStyles.leagueHeader, { color: theme.colors.textPrimary }]}>
                         {section.league.name}
                       </Text>
                       <View style={createStyles.gameGrid}>
@@ -751,7 +754,7 @@ function CreateGroupSheet({
                   onPress={() => toggleGame(gameKey)}
                   style={createStyles.gameCard}
                 >
-                  <Text style={[createStyles.gameFooterText, { color: theme.colors.textSecondary, marginBottom: 4 }]}>{footer}</Text>
+                  {footer ? <Text style={[createStyles.gameFooterText, { color: theme.colors.textSecondary, marginBottom: 4 }]}>{footer}</Text> : null}
                   <View style={createStyles.gameBody}>
                     <View style={createStyles.gameTeams}>
                       <View style={createStyles.gameTeamRow}>
@@ -774,7 +777,7 @@ function CreateGroupSheet({
                     >
                       <Ionicons
                         name={isSelected ? "checkmark" : "add"}
-                        size={18}
+                        size={14}
                         color={isSelected ? "#fff" : theme.colors.textSecondary}
                       />
                     </View>
@@ -798,7 +801,7 @@ function CreateGroupSheet({
               <>
               {fixturesByLeague.map((section) => (
                 <View key={section.league.id} style={createStyles.leagueSection}>
-                  <Text style={[createStyles.leagueHeader, { color: theme.colors.textSecondary }]}>
+                  <Text style={[createStyles.leagueHeader, { color: theme.colors.textPrimary }]}>
                     {section.league.name}
                   </Text>
                   {section.fixtures.map((f) =>
@@ -891,7 +894,7 @@ function CreateGroupSheet({
                           },
                         ]}
                       >
-                        <Ionicons name={isSelected ? "checkmark" : "add"} size={16} color={isSelected ? "#fff" : theme.colors.textSecondary} />
+                        <Ionicons name={isSelected ? "checkmark" : "add"} size={14} color={isSelected ? "#fff" : theme.colors.textSecondary} />
                       </View>
                     </Pressable>
                   );
@@ -981,7 +984,7 @@ function CreateGroupSheet({
                           },
                         ]}
                       >
-                        <Ionicons name={isSelected ? "checkmark" : "add"} size={16} color={isSelected ? "#fff" : theme.colors.textSecondary} />
+                        <Ionicons name={isSelected ? "checkmark" : "add"} size={14} color={isSelected ? "#fff" : theme.colors.textSecondary} />
                       </View>
                     </Pressable>
                   );
@@ -990,10 +993,10 @@ function CreateGroupSheet({
             );
           })()}
         </ScrollView>
-        </Animated.View>
+        </View>
         )}
         {step === 1 && (
-          <Animated.View entering={slideDirection.current === "forward" ? SlideInDown.duration(250) : undefined} style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
           {/* Step 1: Group Details */}
           <ScrollView ref={step1ScrollRef} style={{ flex: 1 }} contentContainerStyle={[createStyles.wizardContent, { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 100 : 20 }]} keyboardShouldPersistTaps="handled">
             <Pressable onPress={onOpenAvatarPicker} style={createStyles.avatarPicker}>
@@ -1055,133 +1058,167 @@ function CreateGroupSheet({
           </ScrollView>
 
           {/* Sticky create button */}
-          <View style={[createStyles.stickyBottom, { bottom: keyboardHeight > 0 ? keyboardHeight : insets.bottom + 16, ...(keyboardHeight > 0 && { backgroundColor: theme.colors.background, shadowColor: theme.colors.background, shadowOffset: { width: 0, height: -30 }, shadowOpacity: 1, shadowRadius: 15, elevation: 8 }) }]}>
+          <View style={[createStyles.stickyBottom, { bottom: keyboardHeight > 0 ? keyboardHeight : insets.bottom + 16, paddingHorizontal: 16, ...(keyboardHeight > 0 && { backgroundColor: theme.colors.background, shadowColor: theme.colors.background, shadowOffset: { width: 0, height: -30 }, shadowOpacity: 1, shadowRadius: 15, elevation: 8 }) }]}>
             <Pressable
               onPress={handleCreateAndPublish}
               disabled={isCreating || groupName.trim().length === 0}
               style={({ pressed }) => [
-                createStyles.createBtn,
+                createStyles.continueBottomBtn,
                 {
-                  backgroundColor: groupName.trim().length > 0 && !isCreating
-                    ? theme.colors.primary
-                    : theme.colors.textSecondary + "30",
-                  opacity: pressed ? 0.85 : 1,
+                  borderColor: groupName.trim().length > 0 && !isCreating
+                    ? theme.colors.primary + "40"
+                    : theme.colors.textSecondary + "20",
+                  marginBottom: 0,
+                  opacity: pressed ? 0.7 : 1,
                 },
               ]}
             >
               {isCreating ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={theme.colors.primary} />
               ) : (
-                <Text style={createStyles.createBtnText}>
-                  {t("groupCreation.createGroup")}
-                </Text>
+                <>
+                  <AppText variant="caption" style={{ color: groupName.trim().length > 0 ? theme.colors.primary : theme.colors.textSecondary + "60", fontWeight: "600", fontSize: 13 }}>
+                    {t("groupCreation.createGroup")}
+                  </AppText>
+                  <Ionicons name="arrow-forward" size={14} color={groupName.trim().length > 0 ? theme.colors.primary : theme.colors.textSecondary + "60"} />
+                </>
               )}
             </Pressable>
           </View>
-          </Animated.View>
+          </View>
         )}
         {step === 2 && (
-          <Animated.View entering={slideDirection.current === "forward" ? SlideInRight.duration(250) : undefined} style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
           {/* Step 2: Advanced */}
           <ScrollView style={{ flex: 1 }} contentContainerStyle={createStyles.advancedContent}>
-            {/* Prediction Rules */}
-            <View style={createStyles.advSection}>
-              <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary }]}>
-                {t("lobby.predictionRules")}
+            {/* Info */}
+            <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary }]}>
+              {t("lobby.info")}
+            </Text>
+            <View style={createStyles.advRow}>
+              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.groupDuration")}</Text>
+              <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>
+                {durationLabel}
               </Text>
-              <View style={[createStyles.advCard, { backgroundColor: theme.colors.textSecondary + "08", borderColor: theme.colors.border }]}>
-                <Pressable
-                  onPress={() => onOpenAdvSheet("prediction")}
-                  style={({ pressed }) => [createStyles.advRow, { borderBottomWidth: 1, borderBottomColor: theme.colors.border, opacity: pressed ? 0.6 : 1 }]}
-                >
-                  <View style={createStyles.advRowLeft}>
-                    <Ionicons name="dice-outline" size={18} color={theme.colors.textSecondary} />
-                    <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.predictionMode")}</Text>
-                  </View>
-                  <View style={createStyles.advRowRight}>
-                    <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{t("lobby.exactResult")}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary + "80"} />
-                  </View>
-                </Pressable>
-                <Pressable
-                  onPress={() => onOpenAdvSheet("scoring")}
-                  style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
-                >
-                  <View style={createStyles.advRowLeft}>
-                    <Ionicons name="trophy-outline" size={18} color={theme.colors.textSecondary} />
-                    <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.scoring")}</Text>
-                  </View>
-                  <View style={createStyles.advRowRight}>
-                    <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>3 · 2 · 1</Text>
-                    <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary + "80"} />
-                  </View>
-                </Pressable>
-              </View>
+            </View>
+            <View style={createStyles.advRow}>
+              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.games")}</Text>
+              <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{preview?.data?.fixtureCount ?? 0} {(preview?.data?.fixtureCount ?? 0) === 1 ? "game" : "games"}</Text>
             </View>
 
-            {/* Advanced */}
-            <View style={createStyles.advSection}>
-              <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary }]}>
-                {t("lobby.advanced")}
-              </Text>
-              <View style={[createStyles.advCard, { backgroundColor: theme.colors.textSecondary + "08", borderColor: theme.colors.border }]}>
-                <Pressable
-                  onPress={() => onOpenAdvSheet("ko")}
-                  style={({ pressed }) => [createStyles.advRow, { borderBottomWidth: 1, borderBottomColor: theme.colors.border, opacity: pressed ? 0.6 : 1 }]}
-                >
-                  <View style={createStyles.advRowLeft}>
-                    <Ionicons name="flag-outline" size={18} color={theme.colors.textSecondary} />
-                    <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.koRoundMode")}</Text>
-                  </View>
-                  <View style={createStyles.advRowRight}>
-                    <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{t("lobby.90min")}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary + "80"} />
-                  </View>
-                </Pressable>
-                <Pressable
-                  onPress={() => onOpenAdvSheet("members")}
-                  style={({ pressed }) => [createStyles.advRow, { borderBottomWidth: 1, borderBottomColor: theme.colors.border, opacity: pressed ? 0.6 : 1 }]}
-                >
-                  <View style={createStyles.advRowLeft}>
-                    <Ionicons name="people-outline" size={18} color={theme.colors.textSecondary} />
-                    <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.maxMembers")}</Text>
-                  </View>
-                  <View style={createStyles.advRowRight}>
-                    <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>50</Text>
-                    <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary + "80"} />
-                  </View>
-                </Pressable>
-                <View style={[createStyles.advRow, { borderBottomWidth: 1, borderBottomColor: theme.colors.border }]}>
-                  <View style={createStyles.advRowLeft}>
-                    <Ionicons name="notifications-outline" size={18} color={theme.colors.textSecondary} />
-                    <View>
-                      <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.nudge")}</Text>
-                      <Text style={[createStyles.advRowSub, { color: theme.colors.textSecondary }]}>{t("lobby.nudgeDescription")}</Text>
-                    </View>
-                  </View>
-                  <View style={[createStyles.advToggle, { backgroundColor: theme.colors.primary }]}>
-                    <View style={createStyles.advToggleKnob} />
-                  </View>
-                </View>
-                <View style={createStyles.advRow}>
-                  <View style={createStyles.advRowLeft}>
-                    <Ionicons name="lock-closed-outline" size={18} color={theme.colors.textSecondary} />
-                    <View>
-                      <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.private")}</Text>
-                      <Text style={[createStyles.advRowSub, { color: theme.colors.textSecondary }]}>{t("lobby.privateDescription")}</Text>
-                    </View>
-                  </View>
-                  <View style={[createStyles.advToggle, { backgroundColor: theme.colors.primary }]}>
-                    <View style={createStyles.advToggleKnob} />
-                  </View>
-                </View>
+            {/* Predictions */}
+            <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
+              {t("lobby.predictionRules")}
+            </Text>
+            <Pressable
+              onPress={() => onOpenAdvSheet("prediction")}
+              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.predictionMode")}</Text>
+              <View style={createStyles.advRowRight}>
+                <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{t("lobby.exactResult")}</Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
               </View>
-            </View>
+            </Pressable>
+            <Pressable
+              onPress={() => onOpenAdvSheet("scoring")}
+              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.scoring")}</Text>
+              <View style={createStyles.advRowRight}>
+                <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{onTheNosePoints} · {differencePoints} · {outcomePoints}</Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
+              </View>
+            </Pressable>
+            <Pressable
+              onPress={() => onOpenAdvSheet("ko")}
+              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.koRoundMode")}</Text>
+              <View style={createStyles.advRowRight}>
+                <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{t("lobby.90min")}</Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
+              </View>
+            </Pressable>
+
+            {/* Group */}
+            <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
+              {t("lobby.advanced")}
+            </Text>
+            <Pressable
+              onPress={() => onOpenAdvSheet("members")}
+              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.maxMembers")}</Text>
+              <View style={createStyles.advRowRight}>
+                <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>50</Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
+              </View>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setNudgeEnabled((prev) => !prev);
+              }}
+              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.nudge")}</Text>
+                <Text style={[createStyles.advRowSub, { color: theme.colors.textSecondary }]}>{t("lobby.nudgeDescription")}</Text>
+              </View>
+              <View style={[createStyles.advToggle, { backgroundColor: nudgeEnabled ? theme.colors.primary : theme.colors.textSecondary + "30" }]}>
+                <View style={[createStyles.advToggleKnob, { alignSelf: nudgeEnabled ? "flex-end" : "flex-start" }]} />
+              </View>
+            </Pressable>
+            {nudgeEnabled && (
+              <Pressable
+                onPress={() => onOpenAdvSheet("nudgeWindow")}
+                style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.minutesBeforeKickoff")}</Text>
+                <View style={createStyles.advRowRight}>
+                  <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{nudgeWindowMinutes} min</Text>
+                  <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
+                </View>
+              </Pressable>
+            )}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setDraftPrivacy((prev) => prev === "private" ? "public" : "private");
+              }}
+              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.private")}</Text>
+                <Text style={[createStyles.advRowSub, { color: theme.colors.textSecondary }]}>{draftPrivacy === "private" ? t("lobby.privateDescription") : t("lobby.publicDescription")}</Text>
+              </View>
+              <View style={[createStyles.advToggle, { backgroundColor: draftPrivacy === "private" ? theme.colors.primary : theme.colors.textSecondary + "30" }]}>
+                <View style={[createStyles.advToggleKnob, { alignSelf: draftPrivacy === "private" ? "flex-end" : "flex-start" }]} />
+              </View>
+            </Pressable>
+            {draftPrivacy === "private" && (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onInviteAccessChange(inviteAccess === "all" ? "admin_only" : "all");
+                }}
+                style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.inviteSharing")}</Text>
+                  <Text style={[createStyles.advRowSub, { color: theme.colors.textSecondary }]}>{inviteAccess === "all" ? t("lobby.allMembersCanShare") : t("lobby.onlyAdminsCanShare")}</Text>
+                </View>
+                <View style={[createStyles.advToggle, { backgroundColor: inviteAccess === "all" ? theme.colors.primary : theme.colors.textSecondary + "30" }]}>
+                  <View style={[createStyles.advToggleKnob, { alignSelf: inviteAccess === "all" ? "flex-end" : "flex-start" }]} />
+                </View>
+              </Pressable>
+            )}
           </ScrollView>
-          </Animated.View>
+          </View>
         )}
 
-        {/* Bottom tabs — only on step 0 */}
+        {/* Bottom: continue + tabs — only on step 0 */}
         {step === 0 && (
           <View
             style={[
@@ -1197,37 +1234,55 @@ function CreateGroupSheet({
               },
             ]}
           >
-            {CREATE_TABS.map((tab) => {
-              const isActive = activeTab === tab.key;
-              return (
-                <Pressable
-                  key={tab.key}
-                  onPress={() => handleTabPress(tab.key)}
-                  style={({ pressed }) => [
-                    createStyles.tab,
-                    {
-                      backgroundColor: theme.colors.textSecondary + "15",
-                      transform: [{ scale: pressed ? 0.95 : 1 }],
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={tab.icon}
-                    size={24}
-                    color={isActive ? theme.colors.primary : theme.colors.textSecondary}
-                  />
-                  <AppText
-                    variant="caption"
-                    style={[
-                      createStyles.tabLabel,
-                      { color: isActive ? theme.colors.primary : theme.colors.textSecondary },
+            <Pressable
+              onPress={handleContinue}
+              disabled={!hasSelection}
+              style={({ pressed }) => [
+                createStyles.continueBottomBtn,
+                {
+                  borderColor: hasSelection ? theme.colors.primary + "40" : theme.colors.textSecondary + "20",
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <AppText variant="caption" style={{ color: hasSelection ? theme.colors.primary : theme.colors.textSecondary + "60", fontWeight: "600", fontSize: 13 }}>
+                {hasSelection ? `${t("common.continue")} (${selectionCount})` : t("common.continue")}
+              </AppText>
+              <Ionicons name="arrow-forward" size={14} color={hasSelection ? theme.colors.primary : theme.colors.textSecondary + "60"} />
+            </Pressable>
+            <View style={createStyles.tabRow}>
+              {CREATE_TABS.map((tab) => {
+                const isActive = activeTab === tab.key;
+                return (
+                  <Pressable
+                    key={tab.key}
+                    onPress={() => handleTabPress(tab.key)}
+                    style={({ pressed }) => [
+                      createStyles.tab,
+                      {
+                        backgroundColor: theme.colors.textSecondary + "15",
+                        transform: [{ scale: pressed ? 0.95 : 1 }],
+                      },
                     ]}
                   >
-                    {t(tab.labelKey)}
-                  </AppText>
-                </Pressable>
-              );
-            })}
+                    <Ionicons
+                      name={tab.icon}
+                      size={24}
+                      color={isActive ? theme.colors.primary : theme.colors.textSecondary}
+                    />
+                    <AppText
+                      variant="caption"
+                      style={[
+                        createStyles.tabLabel,
+                        { color: isActive ? theme.colors.primary : theme.colors.textSecondary },
+                      ]}
+                    >
+                      {t(tab.labelKey)}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         )}
 
@@ -1339,7 +1394,6 @@ const createStyles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    alignItems: "center",
     paddingVertical: 6,
     paddingHorizontal: 20,
   },
@@ -1358,86 +1412,83 @@ const createStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
-    gap: 20,
-  },
-  advSection: {
-    gap: 8,
   },
   advSectionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  advCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: "hidden",
+    fontSize: 12,
+    fontWeight: "500",
+    marginBottom: 4,
   },
   advRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-  },
-  advRowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    flex: 1,
+    paddingVertical: 10,
   },
   advRowLabel: {
     fontSize: 15,
-    fontWeight: "500",
   },
   advRowValue: {
     fontSize: 14,
-    fontWeight: "600",
   },
   advRowSub: {
     fontSize: 11,
-    fontWeight: "400",
     marginTop: 2,
   },
   advToggle: {
-    width: 42,
-    height: 24,
-    borderRadius: 12,
+    width: 34,
+    height: 20,
+    borderRadius: 10,
     justifyContent: "center",
     paddingHorizontal: 2,
   },
+  nudgeChipsContainer: {
+    paddingVertical: 8,
+    paddingLeft: 12,
+  },
+  nudgeChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  nudgeChip: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
   advToggleKnob: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: "#fff",
     alignSelf: "flex-end",
   },
   advRowRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
   },
   sheetContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
   },
   sheetTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 16,
+    fontSize: 15,
+    fontWeight: "600",
+    textAlign: "center",
+    paddingBottom: 12,
+    marginBottom: 8,
+    borderBottomWidth: 1,
   },
   sheetOption: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 14,
-    borderBottomWidth: 1,
   },
   sheetOptionLabel: {
-    fontSize: 15,
+    fontSize: 14,
   },
   avatarGrid: {
     flexDirection: "row",
@@ -1458,10 +1509,22 @@ const createStyles = StyleSheet.create({
   headerTitle: {
     fontWeight: "700",
     fontSize: 20,
+    textAlign: "center",
   },
   headerDesc: {
     fontSize: 13,
     marginTop: 2,
+    textAlign: "center",
+  },
+  continueBottomBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginBottom: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   continueBtn: {
     flexDirection: "row",
@@ -1514,13 +1577,22 @@ const createStyles = StyleSheet.create({
     fontWeight: "500",
     marginTop: -2,
   },
+  gameGridAddBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
+  },
   leagueGridAddBtn: {
     position: "absolute",
     top: 8,
     right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1704,10 +1776,12 @@ const createStyles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  tabRow: {
     flexDirection: "row",
     gap: 10,
-    paddingHorizontal: 16,
-    paddingTop: 12,
   },
   tab: {
     flex: 1,
@@ -1813,8 +1887,14 @@ function GroupsContent() {
   const advScoringRef = useRef<BottomSheetModal>(null);
   const advKoRef = useRef<BottomSheetModal>(null);
   const advMembersRef = useRef<BottomSheetModal>(null);
+  const advNudgeWindowRef = useRef<BottomSheetModal>(null);
   const avatarPickerRef = useRef<BottomSheetModal>(null);
   const [createAvatarValue, setCreateAvatarValue] = useState("0");
+  const [createNudgeWindowMinutes, setCreateNudgeWindowMinutes] = useState(60);
+  const [createInviteAccess, setCreateInviteAccess] = useState<"all" | "admin_only">("all");
+  const [createOnTheNosePoints, setCreateOnTheNosePoints] = useState(3);
+  const [createDifferencePoints, setCreateDifferencePoints] = useState(2);
+  const [createOutcomePoints, setCreateOutcomePoints] = useState(1);
   const [createTabSortOptions, setCreateTabSortOptions] = useState<Record<CreateTab, string>>({
     fixtures: "time",
     leagues: "time",
@@ -1860,9 +1940,9 @@ function GroupsContent() {
     createSortSheetRef.current?.present();
   }, []);
 
-  const handleOpenAdvSheet = useCallback((sheet: "prediction" | "scoring" | "ko" | "members") => {
+  const handleOpenAdvSheet = useCallback((sheet: "prediction" | "scoring" | "ko" | "members" | "nudgeWindow") => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const refs = { prediction: advPredictionRef, scoring: advScoringRef, ko: advKoRef, members: advMembersRef };
+    const refs = { prediction: advPredictionRef, scoring: advScoringRef, ko: advKoRef, members: advMembersRef, nudgeWindow: advNudgeWindowRef };
     refs[sheet].current?.present();
   }, []);
 
@@ -2452,6 +2532,13 @@ function GroupsContent() {
         onOpenAdvSheet={handleOpenAdvSheet}
         onOpenAvatarPicker={handleOpenAvatarPicker}
         avatarValue={createAvatarValue}
+        nudgeWindowMinutes={createNudgeWindowMinutes}
+        inviteAccess={createInviteAccess}
+        onNudgeWindowChange={setCreateNudgeWindowMinutes}
+        onInviteAccessChange={setCreateInviteAccess}
+        onTheNosePoints={createOnTheNosePoints}
+        differencePoints={createDifferencePoints}
+        outcomePoints={createOutcomePoints}
         groupCount={groups.length}
       />
 
@@ -2459,8 +2546,7 @@ function GroupsContent() {
       <BottomSheetModal
         ref={createSortSheetRef}
         stackBehavior="push"
-        snapPoints={["30%"]}
-        enableDynamicSizing={false}
+        enableDynamicSizing
         enablePanDownToClose
         backdropComponent={renderCreateBackdrop}
         backgroundStyle={{
@@ -2470,7 +2556,7 @@ function GroupsContent() {
         }}
         handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
       >
-        <View style={createStyles.sortSheet}>
+        <BottomSheetView style={createStyles.sortSheet}>
           <Text style={[createStyles.sortSheetTitle, { color: theme.colors.textSecondary }]}>
             {t("groupCreation.sortBy")}
           </Text>
@@ -2510,7 +2596,7 @@ function GroupsContent() {
               {t("groupCreation.cancel")}
             </Text>
           </Pressable>
-        </View>
+        </BottomSheetView>
       </BottomSheetModal>
 
       <FilterSortSheet
@@ -2523,78 +2609,105 @@ function GroupsContent() {
       />
 
       {/* Advanced settings sheets */}
-      <BottomSheetModal ref={advPredictionRef} stackBehavior="push" snapPoints={["30%"]} enableDynamicSizing={false} enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
-        <View style={createStyles.sheetContent}>
-          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary }]}>{t("lobby.predictionMode")}</Text>
+      <BottomSheetModal ref={advPredictionRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+        <BottomSheetView style={createStyles.sheetContent}>
+          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.predictionMode")}</Text>
           {[
             { value: "result", label: t("lobby.exactResult") },
             { value: "3way", label: t("lobby.matchWinner") },
           ].map((opt) => (
-            <Pressable key={opt.value} style={({ pressed }) => [createStyles.sheetOption, { borderBottomColor: theme.colors.border, opacity: pressed ? 0.6 : 1 }]}>
+            <Pressable key={opt.value} style={({ pressed }) => [createStyles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}>
               <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{opt.label}</Text>
-              <Ionicons name={opt.value === "result" ? "radio-button-on" : "radio-button-off"} size={20} color={opt.value === "result" ? theme.colors.primary : theme.colors.textSecondary} />
+              <Ionicons name={opt.value === "result" ? "radio-button-on" : "radio-button-off"} size={18} color={opt.value === "result" ? theme.colors.primary : theme.colors.textSecondary} />
             </Pressable>
           ))}
-        </View>
+        </BottomSheetView>
       </BottomSheetModal>
 
-      <BottomSheetModal ref={advScoringRef} stackBehavior="push" snapPoints={["35%"]} enableDynamicSizing={false} enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
-        <View style={createStyles.sheetContent}>
-          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary }]}>{t("lobby.scoring")}</Text>
+      <BottomSheetModal ref={advScoringRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+        <BottomSheetView style={createStyles.sheetContent}>
+          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.scoring")}</Text>
           {[
-            { label: t("lobby.onTheNose"), value: "3" },
-            { label: t("lobby.goalPointDifference"), value: "2" },
-            { label: t("lobby.outcome"), value: "1" },
-          ].map((opt, i) => (
-            <View key={opt.label} style={[createStyles.sheetOption, { borderBottomColor: theme.colors.border, borderBottomWidth: i < 2 ? 1 : 0 }]}>
+            { label: t("lobby.onTheNose"), value: createOnTheNosePoints, set: setCreateOnTheNosePoints },
+            { label: t("lobby.goalPointDifference"), value: createDifferencePoints, set: setCreateDifferencePoints },
+            { label: t("lobby.outcome"), value: createOutcomePoints, set: setCreateOutcomePoints },
+          ].map((opt) => (
+            <View key={opt.label} style={[createStyles.sheetOption]}>
               <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{opt.label}</Text>
-              <Text style={{ color: theme.colors.primary, fontWeight: "700", fontSize: 15 }}>{opt.value}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <Pressable
+                  onPress={() => { if (opt.value > 0) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); opt.set(opt.value - 1); } }}
+                  hitSlop={8}
+                  style={{ opacity: opt.value > 0 ? 1 : 0.3 }}
+                >
+                  <Ionicons name="remove-circle-outline" size={24} color={theme.colors.textPrimary} />
+                </Pressable>
+                <Text style={{ color: theme.colors.textPrimary, fontWeight: "700", fontSize: 16, minWidth: 20, textAlign: "center" }}>{opt.value}</Text>
+                <Pressable
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); opt.set(opt.value + 1); }}
+                  hitSlop={8}
+                >
+                  <Ionicons name="add-circle-outline" size={24} color={theme.colors.textPrimary} />
+                </Pressable>
+              </View>
             </View>
           ))}
-        </View>
+        </BottomSheetView>
       </BottomSheetModal>
 
-      <BottomSheetModal ref={advKoRef} stackBehavior="push" snapPoints={["35%"]} enableDynamicSizing={false} enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
-        <View style={createStyles.sheetContent}>
-          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary }]}>{t("lobby.koRoundMode")}</Text>
+      <BottomSheetModal ref={advKoRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+        <BottomSheetView style={createStyles.sheetContent}>
+          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.koRoundMode")}</Text>
           {[
             { value: "90min", label: t("lobby.90min") },
             { value: "extraTime", label: t("lobby.extraTime") },
             { value: "penalties", label: t("lobby.penalties") },
           ].map((opt) => (
-            <Pressable key={opt.value} style={({ pressed }) => [createStyles.sheetOption, { borderBottomColor: theme.colors.border, opacity: pressed ? 0.6 : 1 }]}>
+            <Pressable key={opt.value} style={({ pressed }) => [createStyles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}>
               <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{opt.label}</Text>
-              <Ionicons name={opt.value === "90min" ? "radio-button-on" : "radio-button-off"} size={20} color={opt.value === "90min" ? theme.colors.primary : theme.colors.textSecondary} />
+              <Ionicons name={opt.value === "90min" ? "radio-button-on" : "radio-button-off"} size={18} color={opt.value === "90min" ? theme.colors.primary : theme.colors.textSecondary} />
             </Pressable>
           ))}
-        </View>
+        </BottomSheetView>
       </BottomSheetModal>
 
-      <BottomSheetModal ref={advMembersRef} stackBehavior="push" snapPoints={["40%"]} enableDynamicSizing={false} enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
-        <View style={createStyles.sheetContent}>
-          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary }]}>{t("lobby.maxMembers")}</Text>
+      <BottomSheetModal ref={advMembersRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+        <BottomSheetView style={createStyles.sheetContent}>
+          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.maxMembers")}</Text>
           {[10, 20, 30, 50, 100].map((num) => (
-            <Pressable key={num} style={({ pressed }) => [createStyles.sheetOption, { borderBottomColor: theme.colors.border, opacity: pressed ? 0.6 : 1 }]}>
+            <Pressable key={num} style={({ pressed }) => [createStyles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}>
               <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{num}</Text>
-              <Ionicons name={num === 50 ? "radio-button-on" : "radio-button-off"} size={20} color={num === 50 ? theme.colors.primary : theme.colors.textSecondary} />
+              <Ionicons name={num === 50 ? "radio-button-on" : "radio-button-off"} size={18} color={num === 50 ? theme.colors.primary : theme.colors.textSecondary} />
             </Pressable>
           ))}
-        </View>
+        </BottomSheetView>
+      </BottomSheetModal>
+
+      {/* Nudge window sheet */}
+      <BottomSheetModal ref={advNudgeWindowRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+        <BottomSheetView style={createStyles.sheetContent}>
+          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.minutesBeforeKickoff")}</Text>
+          {[30, 60, 120, 180].map((min) => (
+            <Pressable key={min} onPress={() => { setCreateNudgeWindowMinutes(min); advNudgeWindowRef.current?.dismiss(); }} style={({ pressed }) => [createStyles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}>
+              <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{min} min</Text>
+              <Ionicons name={min === createNudgeWindowMinutes ? "radio-button-on" : "radio-button-off"} size={18} color={min === createNudgeWindowMinutes ? theme.colors.primary : theme.colors.textSecondary} />
+            </Pressable>
+          ))}
+        </BottomSheetView>
       </BottomSheetModal>
 
       {/* Avatar picker sheet */}
       <BottomSheetModal
         ref={avatarPickerRef}
         stackBehavior="push"
-        snapPoints={["40%"]}
-        enableDynamicSizing={false}
+        enableDynamicSizing
         enablePanDownToClose
         backdropComponent={renderCreateBackdrop}
         backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}
         handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
       >
-        <View style={createStyles.sheetContent}>
-          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary }]}>{t("lobby.chooseAvatar")}</Text>
+        <BottomSheetView style={createStyles.sheetContent}>
+          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.chooseAvatar")}</Text>
           <View style={createStyles.avatarGrid}>
             {AVATAR_GRADIENTS.map((colors, index) => {
               const isSelected = String(index) === createAvatarValue;
@@ -2628,7 +2741,7 @@ function GroupsContent() {
               );
             })}
           </View>
-        </View>
+        </BottomSheetView>
       </BottomSheetModal>
     </View>
   );

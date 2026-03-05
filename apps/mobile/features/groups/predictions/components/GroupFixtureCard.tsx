@@ -75,6 +75,10 @@ export type GroupFixtureCardProps = {
   onPressCard?: (fixtureId: number) => void;
   /** Hide league name in card info line (e.g. when group is league-based) */
   hideLeagueName?: boolean;
+  /** Hide round in card info line (e.g. when grouped by round) */
+  hideRound?: boolean;
+  /** Card layout mode: vertical (two rows) or horizontal (single row) */
+  cardLayout?: "vertical" | "horizontal";
 };
 
 function GroupFixtureCardInner({
@@ -104,6 +108,8 @@ function GroupFixtureCardInner({
   onScrollToCard,
   onPressCard,
   hideLeagueName,
+  hideRound,
+  cardLayout,
 }: GroupFixtureCardProps) {
   /** Used for card border/radius styling (first/middle/last in group). */
   const positionInGroup = getPositionInGroup(index, totalInGroup);
@@ -200,12 +206,14 @@ function GroupFixtureCardInner({
       onPressCard={onPressCard ? onPressCardLocal : undefined}
       showLeagueInfo
       hideLeagueName={hideLeagueName}
+      hideRound={hideRound}
       timelineFilled={timelineFilled}
       timelineConnectorFilled={timelineConnectorFilled}
       isFirstInTimeline={isFirstInTimeline}
       isLastInTimeline={isLastInTimeline}
       isNextToPredict={isNextToPredict}
       isMaxPoints={isMaxPoints}
+      cardLayout={cardLayout}
     />
   );
 }
@@ -245,6 +253,8 @@ function arePropsEqual(
   if (prevProps.isLastInTimeline !== nextProps.isLastInTimeline) return false;
   if (prevProps.isNextToPredict !== nextProps.isNextToPredict) return false;
   if (prevProps.isMaxPoints !== nextProps.isMaxPoints) return false;
+  if (prevProps.cardLayout !== nextProps.cardLayout) return false;
+  if (prevProps.hideRound !== nextProps.hideRound) return false;
 
   // Callbacks and refs are stable (from useCallback/useRef), no need to compare
   return true;

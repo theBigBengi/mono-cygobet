@@ -338,6 +338,7 @@ export interface AdminRunJobResponse {
     jobKey: string;
     jobRunId: number | null;
     result: unknown;
+    providerError?: { code: string; statusCode?: number };
   };
   message: string;
 }

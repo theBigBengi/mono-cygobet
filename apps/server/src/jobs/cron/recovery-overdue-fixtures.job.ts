@@ -67,7 +67,7 @@ export async function runRecoveryOverdueFixturesJob(
       ? (meta.maxOverdueHours ?? DEFAULT_MAX_OVERDUE_HOURS)
       : DEFAULT_MAX_OVERDUE_HOURS,
     1,
-    168
+    8760
   );
 
   return runJob({

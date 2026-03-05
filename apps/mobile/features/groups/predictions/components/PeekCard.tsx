@@ -8,6 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { canPredict } from "@repo/utils";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { VerticalScoreSlider } from "./VerticalScoreSlider";
@@ -157,9 +158,8 @@ export const PeekCard = React.memo(function PeekCard({
         cardOpacityStyle,
       ]}
     >
-      <Pressable
+      <View
         style={[styles.cardInner, { paddingTop: contentTop }]}
-        onPress={toggleExpand}
       >
         {isNearby ? (
           <>
@@ -214,6 +214,11 @@ export const PeekCard = React.memo(function PeekCard({
                   <AppText variant="caption" color="secondary">
                     {index + 1}/{totalCards}
                   </AppText>
+                  {!isFinishedGame && isInteractive && (
+                    <Pressable onPress={toggleExpand} style={styles.expandButton} hitSlop={12}>
+                      <Ionicons name="expand-outline" size={20} color={theme.colors.textSecondary} />
+                    </Pressable>
+                  )}
                 </View>
               </View>
 
@@ -238,6 +243,9 @@ export const PeekCard = React.memo(function PeekCard({
               >
                 {fixture.homeTeam?.name ?? "Home"}  vs  {fixture.awayTeam?.name ?? "Away"}
               </AppText>
+              <Pressable onPress={toggleExpand} style={styles.collapseButton} hitSlop={12}>
+                <Ionicons name="contract-outline" size={24} color={theme.colors.textSecondary} />
+              </Pressable>
             </Animated.View>
           </>
         ) : (
@@ -253,7 +261,7 @@ export const PeekCard = React.memo(function PeekCard({
             </AppText>
           </View>
         )}
-      </Pressable>
+      </View>
     </Animated.View>
   );
 });
@@ -306,6 +314,13 @@ const styles = StyleSheet.create({
     zIndex: 3,
     marginTop: -260,
     // backgroundColor: "rgba(255,140,0,0.4)", // DEBUG ORANGE — score input area
+  },
+  expandButton: {
+    marginTop: 8,
+  },
+  collapseButton: {
+    position: "absolute",
+    bottom: 32,
   },
   expandedContent: {
     ...StyleSheet.absoluteFillObject,

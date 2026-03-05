@@ -1,11 +1,12 @@
-import React, { useMemo, useCallback, useRef } from "react";
+import React, { useMemo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Keyboard, Alert, Text, InteractionManager, type ListRenderItemInfo } from "react-native";
+import { View, StyleSheet, Keyboard, Alert, Text, Pressable, InteractionManager, type ListRenderItemInfo } from "react-native";
 import Animated, { withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView, type BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
+import { Ionicons } from "@expo/vector-icons";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
@@ -58,6 +59,12 @@ export function GroupGamesScreen({
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const mode = selectionMode ?? "games";
+
+  const [cardLayout, setCardLayout] = useState<"vertical" | "horizontal">("vertical");
+  const toggleCardLayout = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCardLayout((prev) => (prev === "vertical" ? "horizontal" : "vertical"));
+  }, []);
 
   const [isReady, setIsReady] = React.useState(false);
   React.useEffect(() => {
@@ -253,9 +260,47 @@ export function GroupGamesScreen({
 
   const filterSheetRef = useRef<BottomSheetModal>(null);
 
+  // Draft state for filter sheet — only committed on Apply
+  const [draftAction, setDraftAction] = useState(selectedAction);
+  const [draftTeamId, setDraftTeamId] = useState<number | null>(
+    structuralFilter?.type === "teams" ? structuralFilter.selectedTeamId : null
+  );
+  const [draftCompetitionId, setDraftCompetitionId] = useState<number | null>(
+    structuralFilter?.type === "teams" ? structuralFilter.selectedCompetitionId : null
+  );
+  const [draftRound, setDraftRound] = useState<string>(
+    structuralFilter?.type === "rounds" ? structuralFilter.selectedRound : ""
+  );
+
   const handleFilterPress = useCallback(() => {
+    // Sync draft state to current real state when opening
+    setDraftAction(selectedAction);
+    if (structuralFilter?.type === "teams") {
+      setDraftTeamId(structuralFilter.selectedTeamId);
+      setDraftCompetitionId(structuralFilter.selectedCompetitionId);
+    }
+    if (structuralFilter?.type === "rounds") {
+      setDraftRound(structuralFilter.selectedRound);
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     filterSheetRef.current?.present();
+  }, [selectedAction, structuralFilter]);
+
+  const handleFilterApply = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    selectAction(draftAction);
+    if (structuralFilter?.type === "teams") {
+      selectTeam(draftTeamId);
+      selectCompetition(draftCompetitionId);
+    }
+    if (structuralFilter?.type === "rounds" && draftRound) {
+      selectRound(draftRound);
+    }
+    filterSheetRef.current?.dismiss();
+  }, [draftAction, draftTeamId, draftCompetitionId, draftRound, selectAction, selectTeam, selectCompetition, selectRound, structuralFilter]);
+
+  const handleFilterCancel = useCallback(() => {
+    filterSheetRef.current?.dismiss();
   }, []);
 
   const renderFilterBackdrop = useCallback(
@@ -371,8 +416,8 @@ export function GroupGamesScreen({
   nextToPredictIdRef.current = nextToPredictId;
 
   const flatListExtraData = useMemo(
-    () => ({ pending, currentFocusedField, highlightedFixtureId, nextToPredictId }),
-    [pending, currentFocusedField, highlightedFixtureId, nextToPredictId]
+    () => ({ pending, currentFocusedField, highlightedFixtureId, nextToPredictId, cardLayout }),
+    [pending, currentFocusedField, highlightedFixtureId, nextToPredictId, cardLayout]
   );
 
   React.useEffect(() => {
@@ -445,6 +490,18 @@ export function GroupGamesScreen({
                     {item.label}
                   </Text>
                 </View>
+              ) : item.level === "round" && item.label ? (
+                <View style={styles.sectionDateRow}>
+                  <Text
+                    style={[
+                      styles.sectionRoundLabel,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.label}
+                  </Text>
+                </View>
               ) : null}
             </View>
           </View>
@@ -484,6 +541,8 @@ export function GroupGamesScreen({
           onScrollToCard={scrollToMatchCard}
           onPressCard={handlePressCard}
           hideLeagueName={mode === "leagues"}
+          hideRound={mode === "leagues"}
+          cardLayout={cardLayout}
         />
       );
     },
@@ -492,6 +551,7 @@ export function GroupGamesScreen({
       matchNumbersMap, maxPoints, handleFieldFocus, handleFieldBlur,
       handleCardChange, handleAutoNext, predictionMode, handleSelectOutcome,
       scrollToMatchCard, handlePressCard, getPrediction, isPredictionSaved,
+      cardLayout,
     ]
   );
 
@@ -588,6 +648,15 @@ export function GroupGamesScreen({
             backOnly
             title={groupName}
             onFilterPress={hasAnyChips ? handleFilterPress : undefined}
+            rightContent={
+              <Pressable onPress={toggleCardLayout} style={styles.layoutToggle}>
+                <Ionicons
+                  name={cardLayout === "vertical" ? "reorder-two-outline" : "list-outline"}
+                  size={20}
+                  color={theme.colors.textPrimary}
+                />
+              </Pressable>
+            }
           />
         </Animated.View>
 
@@ -616,16 +685,59 @@ export function GroupGamesScreen({
         handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
       >
         <BottomSheetView style={[styles.filterSheetContent, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          {/* Centered title */}
+          <AppText style={[styles.filterSheetTitle, { color: theme.colors.textPrimary }]}>
+            {t("predictions.filterAndSort", { defaultValue: "Filter & Sort" })}
+          </AppText>
+          {/* Divider below title */}
+          <View style={[styles.filterSheetDivider, { backgroundColor: theme.colors.border }]} />
           <SmartFilterChips
             actionChips={actionChips}
-            selectedAction={selectedAction}
-            onSelectAction={selectAction}
-            structuralFilter={structuralFilter}
-            onSelectTeam={selectTeam}
-            onSelectCompetition={selectCompetition}
-            onSelectRound={selectRound}
+            selectedAction={draftAction}
+            onSelectAction={setDraftAction}
+            structuralFilter={
+              structuralFilter
+                ? structuralFilter.type === "teams"
+                  ? { ...structuralFilter, selectedTeamId: draftTeamId, selectedCompetitionId: draftCompetitionId }
+                  : structuralFilter.type === "rounds"
+                    ? { ...structuralFilter, selectedRound: draftRound || structuralFilter.selectedRound }
+                    : structuralFilter
+                : null
+            }
+            onSelectTeam={setDraftTeamId}
+            onSelectCompetition={setDraftCompetitionId}
+            onSelectRound={setDraftRound}
             onNavigateRound={navigateRound}
           />
+
+          {/* Cancel / Apply buttons */}
+          <View style={styles.filterSheetButtonRow}>
+            <Pressable
+              onPress={handleFilterCancel}
+              style={({ pressed }) => [
+                styles.filterSheetCancelBtn,
+                { borderColor: theme.colors.textSecondary + "60" },
+                pressed && { opacity: 0.6 },
+              ]}
+            >
+              <Text style={[styles.filterSheetBtnText, { color: theme.colors.textPrimary }]}>
+                {t("groups.cancel", { defaultValue: "Cancel" })}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleFilterApply}
+              style={({ pressed }) => [
+                styles.filterSheetApplyBtn,
+                { backgroundColor: theme.colors.primary },
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={[styles.filterSheetBtnText, { color: "#fff" }]}>
+                {t("groups.apply", { defaultValue: "Apply" })}
+              </Text>
+            </Pressable>
+          </View>
         </BottomSheetView>
       </BottomSheetModal>
     </View>
@@ -635,8 +747,42 @@ export function GroupGamesScreen({
 const styles = StyleSheet.create({
   container: { flex: 1, overflow: "hidden" },
   filterSheetContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: 20,
+    paddingTop: 4,
+  },
+  filterSheetTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "center",
+    paddingBottom: 12,
+  },
+  filterSheetDivider: {
+    height: 1,
+    marginBottom: 16,
+  },
+  filterSheetButtonRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 24,
+  },
+  filterSheetCancelBtn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+  filterSheetApplyBtn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 24,
+  },
+  filterSheetBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
   },
   scrollView: { flex: 1 },
   contentContainer: { paddingHorizontal: 12 },
@@ -663,6 +809,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
   },
+  sectionRoundLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
   sectionLiveBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -687,5 +837,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
+  },
+  layoutToggle: {
+    padding: 8,
   },
 });

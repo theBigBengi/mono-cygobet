@@ -3,7 +3,7 @@
 
 import React, { useEffect } from "react";
 import { View, ScrollView, StyleSheet, Pressable, Text } from "react-native";
-import { Ionicons, Entypo, Fontisto } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -13,7 +13,7 @@ import Animated, {
 import { useTheme } from "@/lib/theme";
 
 export interface QuickAction {
-  icon: "chat" | "link" | "stats" | "activity";
+  icon: "cards" | "chat" | "stats" | "activity";
   label: string;
   badge?: number;
   onPress: () => void;
@@ -22,16 +22,18 @@ export interface QuickAction {
 export interface LobbyQuickActionsProps {
   actions: QuickAction[];
   isLoading?: boolean;
+  predictionsCount?: number;
+  totalFixtures?: number;
 }
 
 function renderIcon(icon: QuickAction["icon"], color: string, size: number) {
   switch (icon) {
+case "cards":
+      return <MaterialCommunityIcons name="cards-outline" size={size + 2} color={color} />;
     case "chat":
       return <Ionicons name="chatbubbles-outline" size={size} color={color} />;
-    case "link":
-      return <Ionicons name="link-outline" size={size} color={color} />;
-    case "stats":
-      return <Fontisto name="list-1" size={size - 3} color={color} />;
+case "stats":
+      return <MaterialIcons name="view-comfortable" size={size + 4} color={color} />;
     case "activity":
       return <Ionicons name="newspaper-outline" size={size} color={color} />;
   }
@@ -40,6 +42,8 @@ function renderIcon(icon: QuickAction["icon"], color: string, size: number) {
 function LobbyQuickActionsInner({
   actions,
   isLoading = false,
+  predictionsCount = 0,
+  totalFixtures = 0,
 }: LobbyQuickActionsProps) {
   const { theme } = useTheme();
   const opacity = useSharedValue(0.3);
@@ -73,25 +77,23 @@ function LobbyQuickActionsInner({
     );
   }
 
-  const leftActions = actions.filter((a) => a.icon !== "link");
-  const rightActions = actions.filter((a) => a.icon === "link");
-
   const renderAction = (action: QuickAction, index: number) => {
     const hasBadge = action.badge != null && action.badge > 0;
+    const isFirst = action.icon === "cards";
     return (
       <Pressable
         key={index}
         onPress={action.onPress}
         style={({ pressed }) => [
           styles.pill,
+          isFirst && styles.primaryPill,
           {
-            backgroundColor: pressed
-              ? theme.colors.textPrimary + "10"
-              : "transparent",
+            backgroundColor: pressed ? theme.colors.textPrimary + "10" : "transparent",
+            borderColor: isFirst ? theme.colors.textPrimary + "20" : "transparent",
           },
         ]}
       >
-        {renderIcon(action.icon, theme.colors.textSecondary, 22)}
+        {renderIcon(action.icon, isFirst ? theme.colors.textPrimary : theme.colors.textSecondary, 22)}
         {hasBadge && (
           <View
             style={[
@@ -108,31 +110,37 @@ function LobbyQuickActionsInner({
     );
   };
 
+  const cardsAction = actions.find((a) => a.icon === "cards");
+  const otherActions = actions.filter((a) => a.icon !== "cards");
+
   return (
     <View style={styles.container}>
+      {cardsAction && (
+        <Pressable
+          onPress={cardsAction.onPress}
+          style={({ pressed }) => [
+            styles.card,
+            styles.cardsRow,
+            { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.border },
+            pressed && { opacity: 0.8 },
+          ]}
+        >
+          {renderAction(cardsAction, 0)}
+          <View style={styles.cardsTextCol}>
+            <Text style={[styles.cardsTitle, { color: theme.colors.textPrimary }]}>
+              Predict All
+            </Text>
+            <Text style={[styles.cardsSubtitle, { color: theme.colors.textSecondary }]}>
+              {totalFixtures - predictionsCount} of {totalFixtures} left
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+        </Pressable>
+      )}
       <View style={styles.row}>
         <View style={styles.leftGroup}>
-          {leftActions.map(renderAction)}
+          {otherActions.map((a, i) => renderAction(a, i + 1))}
         </View>
-        {rightActions.length > 0 && (
-          <View style={styles.rightGroup}>
-            {rightActions.map((action, index) => (
-              <Pressable
-                key={index}
-                onPress={action.onPress}
-                style={({ pressed }) => [
-                  styles.invitePill,
-                  {
-                    backgroundColor: theme.colors.textPrimary,
-                  },
-                  pressed && styles.pressed,
-                ]}
-              >
-                {renderIcon(action.icon, "#FFFFFF", 24)}
-              </Pressable>
-            ))}
-          </View>
-        )}
       </View>
     </View>
   );
@@ -142,33 +150,48 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 2,
-    marginBottom: 20,
+    marginTop: 20,
+    marginBottom: 12,
+    paddingHorizontal: 16,
+  },
+  card: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 10,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
+  },
+  cardsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  cardsTextCol: {
+    flex: 1,
+  },
+  cardsTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  cardsSubtitle: {
+    fontSize: 13,
+    fontWeight: "500",
+    marginTop: 1,
   },
   leftGroup: {
     flexDirection: "row",
     gap: 8,
-  },
-  rightGroup: {
-    flexDirection: "row",
-  },
-  invitePill: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
+    flex: 1,
     justifyContent: "center",
   },
-  pressed: {
-    opacity: 0.7,
-  },
-  pill: {
+pill: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -176,6 +199,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
+  },
+  primaryPill: {
+    borderWidth: 1,
   },
   pillLabel: {
     fontSize: 13,

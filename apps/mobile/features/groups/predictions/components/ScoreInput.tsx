@@ -171,22 +171,6 @@ function ScoreInputInner({
   }
 
   // Finished game - show result with correct/incorrect styling
-  const bgColor = isCorrect === "max"
-    ? theme.colors.success + "20"
-    : isCorrect === true
-      ? theme.colors.warning + "20"
-      : isCorrect === false
-        ? theme.colors.danger + "15"
-        : theme.colors.surface;
-
-  const borderColor = isCorrect === "max"
-    ? theme.colors.success + "60"
-    : isCorrect === true
-      ? theme.colors.warning + "60"
-      : isCorrect === false
-        ? theme.colors.danger + "40"
-        : theme.colors.border;
-
   const textColor = isCorrect === "max"
     ? theme.colors.success
     : isCorrect === true
@@ -201,7 +185,7 @@ function ScoreInputInner({
         styles.finishedInput,
         type === "home" ? styles.inputHome : styles.inputAway,
         {
-          backgroundColor: bgColor,
+          backgroundColor: "transparent",
         },
       ]}
     >

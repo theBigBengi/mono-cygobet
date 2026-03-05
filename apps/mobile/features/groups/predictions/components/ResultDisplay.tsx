@@ -86,7 +86,7 @@ function ResultDisplayInner({
           style={[
             styles.resultText,
             { color: theme.colors.textSecondary },
-            isLive && { color: theme.colors.live, fontWeight: "700" as const },
+            isLive && { color: "#3B82F6", fontWeight: "700" as const },
             isHomeWinner && styles.winnerResultText,
           ]}
         >
@@ -104,7 +104,7 @@ function ResultDisplayInner({
           style={[
             styles.resultText,
             { color: theme.colors.textSecondary },
-            isLive && { color: theme.colors.live, fontWeight: "700" as const },
+            isLive && { color: "#3B82F6", fontWeight: "700" as const },
             isAwayWinner && styles.winnerResultText,
           ]}
         >
@@ -124,7 +124,7 @@ function ResultDisplayInner({
             color={result.home ? homeScoreColor : "secondary"}
             style={[
               styles.resultText,
-              result.home && isLive && { color: theme.colors.live, fontWeight: "700" as const },
+              result.home && isLive && { color: "#3B82F6", fontWeight: "700" as const },
               isHomeWinner && styles.winnerResultText,
             ]}
           >
@@ -137,7 +137,7 @@ function ResultDisplayInner({
             color={result.away ? awayScoreColor : "secondary"}
             style={[
               styles.resultText,
-              result.away && isLive && { color: theme.colors.live, fontWeight: "700" as const },
+              result.away && isLive && { color: "#3B82F6", fontWeight: "700" as const },
               isAwayWinner && styles.winnerResultText,
             ]}
           >

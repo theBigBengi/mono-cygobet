@@ -236,6 +236,25 @@ export function isNoOp(
   return !!meta["reason"];
 }
 
+/** Format hours as "Xd Yh", e.g. 50 → "2d 2h", 3 → "3h" */
+export function formatHoursAsDaysHours(hours: number): string {
+  const d = Math.floor(hours / 24);
+  const h = hours % 24;
+  if (d === 0) return `${h}h`;
+  if (h === 0) return `${d}d`;
+  return `${d}d ${h}h`;
+}
+
+/** Known config keys that should be shown in the Run Config section */
+export const RUN_CONFIG_KEYS = new Set([
+  "graceMinutes",
+  "maxOverdueHours",
+  "dryRun",
+  "maxLiveAgeHours",
+  "daysAhead",
+  "reminderWindowHours",
+]);
+
 /** camelCase → human readable, e.g. "groupsProcessed" → "groups processed" */
 export function camelToHuman(s: string): string {
   const withSpaces = s.replace(/([A-Z])/g, " $1").trim();

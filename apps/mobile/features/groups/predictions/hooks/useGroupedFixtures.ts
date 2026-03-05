@@ -23,7 +23,7 @@ export type FixtureGroup = {
   /** Whether this is a LIVE section */
   isLive?: boolean;
   /** Grouping level: date > league > round */
-  level?: "date" | "league";
+  level?: "date" | "league" | "round";
   fixtures: FixtureItem[];
 };
 
@@ -67,47 +67,29 @@ export function useGroupedFixtures({
     let result: FixtureGroup[] = [];
 
     if (mode === "leagues") {
-      // Leagues mode: hierarchy is Date > Round
+      // Leagues mode: group by round only
       const sortedFixtures = [...fixtures].sort((a, b) => {
         const timeA = new Date(a.kickoffAt ?? 0).getTime();
         const timeB = new Date(b.kickoffAt ?? 0).getTime();
         return timeA - timeB;
       });
 
-      let currentDateKey: string | null = null;
-      let currentRoundKey: string | null = null;
+      let currentRound: string | null = null;
       let currentGroup: FixtureGroup | null = null;
 
       for (const fixture of sortedFixtures) {
-        const dateKey = getDateKey(fixture.kickoffAt);
         const round = fixture.round ?? "";
-        const roundKey = `${dateKey}-${round}`;
 
-        if (dateKey !== currentDateKey) {
-          if (currentGroup) {
-            result.push(currentGroup);
-            currentGroup = null;
-          }
-          currentDateKey = dateKey;
-          result.push({
-            key: `date-${dateKey}`,
-            label: formatDateLabel(fixture.kickoffAt),
-            dateKey: dateKey,
-            dateLabel: formatDateLabel(fixture.kickoffAt),
-            level: "date",
-            fixtures: [],
-          });
-        }
-
-        if (roundKey !== currentRoundKey) {
+        if (round !== currentRound) {
           if (currentGroup) {
             result.push(currentGroup);
           }
-          currentRoundKey = roundKey;
+          currentRound = round;
           currentGroup = {
-            key: `round-${roundKey}`,
-            label: "",
+            key: `round-${round}`,
+            label: round ? `Round ${round}` : "",
             round: round || undefined,
+            level: "round",
             fixtures: [fixture],
           };
         } else {

@@ -240,6 +240,7 @@ export interface GroupsRepository {
     }>;
     totalFixtures: number;
     predictionsCount: number;
+    completedFixturesCount: number;
   }>;
   findGroupFixturesForOverview(groupId: number): Promise<
     Array<{

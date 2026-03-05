@@ -374,7 +374,12 @@
     "addPrediction": "Add prediction",
     "pts": "pts",
     "chooseAvatar": "Choose Avatar",
-    "groupAvatar": "Group Avatar"
+    "groupAvatar": "Group Avatar",
+    "recentResults": "Recent Results",
+    "viewResults": "View All",
+    "seeMore": "See more",
+    "seeLess": "See less",
+    "seeAll": "See all"
   },
   "groupSettings": {
     "general": "General",

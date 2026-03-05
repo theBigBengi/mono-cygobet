@@ -21,7 +21,7 @@ export type RenderItem =
       type: "header";
       key: string;
       label: string;
-      level?: "date" | "league";
+      level?: "date" | "league" | "round";
       isLive?: boolean;
       round?: string | number;
       showTrack: boolean;

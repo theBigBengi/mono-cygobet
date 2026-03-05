@@ -462,6 +462,7 @@ export class SportMonksAdapter extends BaseSportsDataAdapter {
     externalIds: ExternalId[],
     options?: FixtureFetchOptions
   ): Promise<FixtureDTO[]> {
+    const MAX_IDS_PER_REQUEST = 50;
     const startMs = performance.now();
     this.logger.info("fetchFixturesByIds", {
       externalIdsCount: externalIds?.length ?? 0,
@@ -471,25 +472,49 @@ export class SportMonksAdapter extends BaseSportsDataAdapter {
       return [];
     }
 
+    // SportMonks only accepts numeric IDs — filter out sandbox/test IDs
+    const numericIds = externalIds.filter((id) => /^\d+$/.test(String(id)));
+    if (numericIds.length < externalIds.length) {
+      this.logger.warn("fetchFixturesByIds: skipped non-numeric IDs", {
+        total: externalIds.length,
+        numeric: numericIds.length,
+        skipped: externalIds.length - numericIds.length,
+      });
+    }
+    if (!numericIds.length) {
+      this.logger.info("fetchFixturesByIds", { count: 0 });
+      return [];
+    }
+
     const include = [
       ...this.fixtureInclude,
       ...this.buildFixtureInclude(options),
     ];
-    const rows = await this.httpFootball.get<FixtureSportmonks>(
-      `fixtures/multi/${externalIds.join(",")}`,
-      {
-        include,
-        perPage: options?.perPage,
-      }
-    );
+
+    // SportMonks fixtures/multi endpoint has a limit on IDs per request
+    const chunks: ExternalId[][] = [];
+    for (let i = 0; i < numericIds.length; i += MAX_IDS_PER_REQUEST) {
+      chunks.push(numericIds.slice(i, i + MAX_IDS_PER_REQUEST));
+    }
 
     const out: FixtureDTO[] = [];
-    for (const f of rows) {
-      const fixture = buildFixtures(f);
-      if (fixture) out.push(fixture);
+    for (const chunk of chunks) {
+      const rows = await this.httpFootball.get<FixtureSportmonks>(
+        `fixtures/multi/${chunk.join(",")}`,
+        {
+          include,
+          perPage: options?.perPage,
+        }
+      );
+      for (const f of rows) {
+        const fixture = buildFixtures(f);
+        if (fixture) out.push(fixture);
+      }
     }
+
     this.logger.info("fetchFixturesByIds", {
       count: out.length,
+      chunks: chunks.length,
       durationMs: Math.round(performance.now() - startMs),
     });
     return out;

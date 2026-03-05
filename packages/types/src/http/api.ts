@@ -1215,6 +1215,7 @@ export type ApiGroupLobbySummaryResponse = {
     recentFinishedFixtures: ApiFixturesListResponse["data"];
     totalFixtures: number;
     predictionsCount: number;
+    completedFixturesCount: number;
   };
   message: string;
 };

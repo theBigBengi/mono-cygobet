@@ -307,6 +307,7 @@ export async function fetchLobbySummaryFixtures(
   recentFinishedFixtures: GroupFixtureWithPredictions[];
   totalFixtures: number;
   predictionsCount: number;
+  completedFixturesCount: number;
 }> {
   const liveStatesArr = Array.from(LIVE_STATES) as FixtureState[];
   const finishedStatesArr = Array.from(FINISHED_STATES) as FixtureState[];
@@ -334,6 +335,7 @@ export async function fetchLobbySummaryFixtures(
     recentFinishedFixtures,
     totalFixtures,
     predictionsCount,
+    completedFixturesCount,
   ] = await Promise.all([
     // Live fixtures (all of them — typically 0-5)
     prisma.groupFixtures.findMany({
@@ -370,6 +372,10 @@ export async function fetchLobbySummaryFixtures(
     prisma.groupPredictions.count({
       where: { userId, groupFixtures: { groupId } },
     }),
+    // Completed (finished) fixtures count
+    prisma.groupFixtures.count({
+      where: { groupId, fixtures: { state: { in: finishedStatesArr } } },
+    }),
   ]);
 
   return {
@@ -378,6 +384,7 @@ export async function fetchLobbySummaryFixtures(
     recentFinishedFixtures: recentFinishedFixtures as unknown as GroupFixtureWithPredictions[],
     totalFixtures,
     predictionsCount,
+    completedFixturesCount,
   };
 }
 

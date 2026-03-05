@@ -187,7 +187,7 @@ function buildFormState(job: JobForForm): JobFormState {
       job.key === RECOVERY_OVERDUE_FIXTURES_JOB_KEY &&
       typeof oddsMeta["maxOverdueHours"] === "number" &&
       Number.isFinite(oddsMeta["maxOverdueHours"])
-        ? clampInt(oddsMeta["maxOverdueHours"] as number, 1, 168)
+        ? clampInt(oddsMeta["maxOverdueHours"] as number, 1, 8760)
         : 48,
   };
 }
@@ -713,7 +713,7 @@ function SettingsFormBody({
       {job.key === RECOVERY_OVERDUE_FIXTURES_JOB_KEY && (
         <div className="space-y-3 border-t pt-3">
           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recovery settings</div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-3">
             <div className="grid gap-1.5">
               <Label className="text-sm">Grace period (min)</Label>
               <Input
@@ -731,20 +731,46 @@ function SettingsFormBody({
               <p className="text-[11px] text-muted-foreground">Wait before considering stuck (1-120)</p>
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-sm">Max overdue (hours)</Label>
-              <Input
-                type="number"
-                min={1}
-                max={168}
-                value={jobForm.recoveryMaxOverdueHours}
-                onChange={(e) => {
-                  const n = Math.trunc(Number(e.target.value));
-                  setJobForm((prev) =>
-                    prev ? { ...prev, recoveryMaxOverdueHours: Number.isFinite(n) ? Math.max(1, Math.min(168, n)) : 48 } : prev
-                  );
-                }}
-              />
-              <p className="text-[11px] text-muted-foreground">Ignore if overdue longer than this (1-168)</p>
+              <Label className="text-sm">Max overdue</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={365}
+                    value={Math.floor(jobForm.recoveryMaxOverdueHours / 24)}
+                    onChange={(e) => {
+                      const days = Math.trunc(Number(e.target.value));
+                      if (!Number.isFinite(days)) return;
+                      const currentHours = jobForm.recoveryMaxOverdueHours % 24;
+                      const total = Math.max(1, Math.min(8760, Math.max(0, days) * 24 + currentHours));
+                      setJobForm((prev) =>
+                        prev ? { ...prev, recoveryMaxOverdueHours: total } : prev
+                      );
+                    }}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">Days</p>
+                </div>
+                <div>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={23}
+                    value={jobForm.recoveryMaxOverdueHours % 24}
+                    onChange={(e) => {
+                      const hours = Math.trunc(Number(e.target.value));
+                      if (!Number.isFinite(hours)) return;
+                      const currentDays = Math.floor(jobForm.recoveryMaxOverdueHours / 24);
+                      const total = Math.max(1, Math.min(8760, currentDays * 24 + clampInt(hours, 0, 23)));
+                      setJobForm((prev) =>
+                        prev ? { ...prev, recoveryMaxOverdueHours: total } : prev
+                      );
+                    }}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">Hours (0-23)</p>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Ignore if overdue longer than this (max 365 days)</p>
             </div>
           </div>
         </div>

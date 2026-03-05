@@ -177,11 +177,46 @@ export function useGroupChat(groupId: number | null) {
       );
     };
 
-    socket.on("message:new", handleMessageNew);
-    return () => {
-      socket.off("message:new", handleMessageNew);
+    const handleMessageNewWithPreview = (message: ChatMessage) => {
+      handleMessageNew(message);
+
+      // Also update the chat preview cache so the lobby bar shows the latest message
+      queryClient.setQueryData(
+        groupsKeys.chatPreview(),
+        (old: any) => {
+          if (!old?.data) return old;
+          const gid = String(groupId);
+          const current = old.data[gid];
+          const isOwnMessage = message.senderId === user?.id;
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              [gid]: {
+                unreadCount: isOwnMessage ? 0 : (current?.unreadCount ?? 0) + 1,
+                lastMessage: {
+                  id: message.id,
+                  text: message.body,
+                  createdAt: message.createdAt,
+                  sender: {
+                    id: message.senderId ?? 0,
+                    username: message.sender?.username ?? "",
+                    avatar: null,
+                  },
+                  isRead: isOwnMessage,
+                },
+              },
+            },
+          };
+        }
+      );
     };
-  }, [socket, groupId, queryClient]);
+
+    socket.on("message:new", handleMessageNewWithPreview);
+    return () => {
+      socket.off("message:new", handleMessageNewWithPreview);
+    };
+  }, [socket, groupId, queryClient, user?.id]);
 
   // Typing indicators
   useEffect(() => {
@@ -269,6 +304,35 @@ export function useGroupChat(groupId: number | null) {
             ...old,
             pages: [{ data: newData }, ...old.pages.slice(1)],
             pageParams: old.pageParams,
+          };
+        }
+      );
+
+      // Optimistic update for chat preview (lobby bar)
+      queryClient.setQueryData(
+        groupsKeys.chatPreview(),
+        (old: any) => {
+          if (!old?.data) return old;
+          const gid = String(groupId);
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              [gid]: {
+                unreadCount: 0,
+                lastMessage: {
+                  id: optimisticMessage.id,
+                  text: body,
+                  createdAt: optimisticMessage.createdAt,
+                  sender: {
+                    id: user.id,
+                    username: user.username ?? "",
+                    avatar: user.image ?? null,
+                  },
+                  isRead: true,
+                },
+              },
+            },
           };
         }
       );

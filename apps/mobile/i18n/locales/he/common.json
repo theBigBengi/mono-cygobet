@@ -374,7 +374,12 @@
     "addPrediction": "הוסף ניחוש",
     "pts": "נק׳",
     "chooseAvatar": "בחר אווטאר",
-    "groupAvatar": "אווטאר קבוצה"
+    "groupAvatar": "אווטאר קבוצה",
+    "recentResults": "תוצאות אחרונות",
+    "viewResults": "הצג הכל",
+    "seeMore": "הצג עוד",
+    "seeLess": "הצג פחות",
+    "seeAll": "הצג הכל"
   },
   "groupSettings": {
     "general": "כללי",

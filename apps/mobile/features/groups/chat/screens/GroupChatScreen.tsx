@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import {
   View,
-  FlatList,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -16,6 +15,8 @@ import {
   type NativeScrollEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomSheetFlatList, useBottomSheet } from "@gorhom/bottom-sheet";
+import ReanimatedAnimated, { useAnimatedStyle, interpolate } from "react-native-reanimated";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/lib/theme";
@@ -110,6 +111,11 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const currentUserId = user?.id ?? 0;
+  const { animatedIndex } = useBottomSheet();
+
+  const inputAreaStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(animatedIndex.value, [0.5, 1], [0, 1], "clamp"),
+  }));
 
   const { data: groupData } = useGroupQuery(groupId, {
     includeFixtures: true,
@@ -296,10 +302,8 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   }
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={keyboardVerticalOffset}
     >
       {messages.length === 0 && !isLoading ? (
         <View style={styles.emptyContainer}>
@@ -309,7 +313,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
         </View>
       ) : (
         <View style={styles.listWrapper}>
-          <FlatList<ChatListItem>
+          <BottomSheetFlatList<ChatListItem>
             data={chatListItems}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
@@ -356,20 +360,22 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
         </View>
       )}
 
-      <ChatTypingIndicator
-        typingUsers={typingUsers}
-        currentUserId={currentUserId}
-      />
+      <ReanimatedAnimated.View style={inputAreaStyle}>
+        <ChatTypingIndicator
+          typingUsers={typingUsers}
+          currentUserId={currentUserId}
+        />
 
-      <ChatInput
-        onSend={(body, mentions) => sendMessage(body, mentions)}
-        onTypingStart={triggerTypingStart}
-        onTypingStop={triggerTypingStop}
-        readOnly={isEnded}
-        memberOptions={memberOptions}
-        fixtureOptions={fixtureOptions}
-      />
-    </KeyboardAvoidingView>
+        <ChatInput
+          onSend={(body, mentions) => sendMessage(body, mentions)}
+          onTypingStart={triggerTypingStart}
+          onTypingStop={triggerTypingStop}
+          readOnly={isEnded}
+          memberOptions={memberOptions}
+          fixtureOptions={fixtureOptions}
+        />
+      </ReanimatedAnimated.View>
+    </View>
   );
 }
 

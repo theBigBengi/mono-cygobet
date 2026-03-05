@@ -5,7 +5,7 @@
 // - Active status → GroupLobbyActiveScreen
 // - Ended status → GroupLobbyEndedScreen
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSetAtom } from "jotai";
@@ -20,7 +20,7 @@ import { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { Screen, AppText } from "@/components/ui";
+import { Screen, AppText, InfoSheet } from "@/components/ui";
 import { AnimatedStickyHeader } from "@/components/ui/AnimatedStickyHeader";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGroupQuery, useDeleteGroupMutation, groupsKeys } from "@/domains/groups";
@@ -36,6 +36,7 @@ import {
   LobbyWithHeader,
   GroupInfoSheet,
 } from "@/features/groups/group-lobby";
+import { GroupChatScreen } from "@/features/groups/chat";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 /**
@@ -118,9 +119,14 @@ function GroupLobbyContent() {
   const [isPublishing, setIsPublishing] = useState(false);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const infoSheetRef = useRef<BottomSheetModal>(null);
+  const chatSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
   const handleOpenInfo = useCallback(() => {
     infoSheetRef.current?.present();
+  }, []);
+
+  const handleOpenChat = useCallback(() => {
+    chatSheetRef.current?.present();
   }, []);
 
   useEffect(() => {
@@ -246,6 +252,7 @@ function GroupLobbyContent() {
             router.push(`/groups/${group.id}/settings` as any)
           }
           onInfoPress={handleOpenInfo}
+          onChatPress={handleOpenChat}
           onScroll={handleScroll}
         />
       </LobbyWithHeader>
@@ -330,6 +337,9 @@ function GroupLobbyContent() {
         sheetRef={infoSheetRef}
         isLoading={isFetching}
       />
+      <InfoSheet sheetRef={chatSheetRef} snapPoints={["55%", "95%"]} rawContent showHeaderAction>
+        <GroupChatScreen groupId={groupId} />
+      </InfoSheet>
     </View>
   );
 }

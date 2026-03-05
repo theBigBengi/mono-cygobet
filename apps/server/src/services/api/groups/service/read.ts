@@ -386,6 +386,7 @@ export async function getGroupLobbySummary(
       recentFinishedFixtures,
       totalFixtures: summary.totalFixtures,
       predictionsCount: summary.predictionsCount,
+      completedFixturesCount: summary.completedFixturesCount,
     },
     message: "Lobby summary fetched successfully",
   };

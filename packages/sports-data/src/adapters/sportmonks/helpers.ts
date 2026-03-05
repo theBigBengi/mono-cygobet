@@ -312,16 +312,29 @@ export class SMHttp {
               await sleep(delayMs);
               continue;
             }
+            // Strip token from URL for safe logging
+            const safeUrl = url.replace(/api_token=[^&]+/, "api_token=***");
             this.logger.error("SMHttp get failed", {
               code: "UNKNOWN",
               statusCode: res.status,
+              url: safeUrl,
             });
-            throw new SportsDataError("UNKNOWN", "Request failed", res.status);
+            throw new SportsDataError("UNKNOWN", `Provider returned HTTP ${res.status}`, res.status);
           }
           this.circuitBreaker.recordSuccess();
           break;
         } catch (err) {
           if (err instanceof SportsDataError && err.code === "CIRCUIT_OPEN") {
+            throw err;
+          }
+          // Non-retryable HTTP errors (4xx except 429) — throw immediately
+          if (
+            err instanceof SportsDataError &&
+            err.statusCode != null &&
+            err.statusCode >= 400 &&
+            err.statusCode < 500 &&
+            err.statusCode !== 429
+          ) {
             throw err;
           }
           // Only record failure for network errors (not re-thrown HTTP errors

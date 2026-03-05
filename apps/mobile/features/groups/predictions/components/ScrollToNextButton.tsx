@@ -29,7 +29,7 @@ export const ScrollToNextButton = React.memo(function ScrollToNextButton({
         style={[
           styles.scrollToNextBtn,
           {
-            backgroundColor: theme.colors.primary,
+            backgroundColor: "#000000",
             top: HEADER_HEIGHT + insetTop + 12,
           },
           scrollBtnAnimatedStyle,
@@ -52,7 +52,7 @@ export const ScrollToNextButton = React.memo(function ScrollToNextButton({
     <Pressable
       style={[
         styles.scrollToNextBtn,
-        { backgroundColor: theme.colors.primary },
+        { backgroundColor: "#000000" },
         {
           bottom:
             keyboardHeight > 0

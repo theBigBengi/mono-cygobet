@@ -45,10 +45,11 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
           properties: { dryRun: { type: "boolean" } },
         },
         response: {
-          200: { type: "object" },
-          404: { type: "object" },
-          409: { type: "object" },
-          408: { type: "object" },
+          200: { type: "object", additionalProperties: true },
+          404: { type: "object", additionalProperties: true },
+          409: { type: "object", additionalProperties: true },
+          408: { type: "object", additionalProperties: true },
+          500: { type: "object", additionalProperties: true },
         },
       },
     },
@@ -122,14 +123,27 @@ const adminJobsActionsRoutes: FastifyPluginAsync = async (fastify) => {
             message: "Job timed out (lock will be released when job finishes)",
           });
         }
+        const baseMessage = getErrorMessage(err) || "Unknown error";
+        const providerCode =
+          err && typeof err === "object" && "code" in err
+            ? (err as { code?: string }).code
+            : undefined;
+        const providerStatus =
+          err && typeof err === "object" && "statusCode" in err
+            ? (err as { statusCode?: number }).statusCode
+            : undefined;
+
         return reply.status(500).send({
           status: "error",
           data: {
             jobKey: jobId,
             jobRunId: null,
             result: null,
+            providerError: providerCode
+              ? { code: providerCode, statusCode: providerStatus }
+              : undefined,
           },
-          message: getErrorMessage(err) || "Unknown error",
+          message: baseMessage,
         });
       }
     }

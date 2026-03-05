@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { AdminApiError } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -40,11 +41,13 @@ import {
   formatRelativeTime,
   formatDurationMs,
   formatRunSummary,
+  formatHoursAsDaysHours,
   jobNameFromKey,
   getRunReason,
   titleCaseWords,
   truncate,
   camelToHuman,
+  RUN_CONFIG_KEYS,
 } from "./jobs.utils";
 import { JobConfigForm } from "./job-config-form";
 import { HeaderActions } from "@/contexts/header-actions";
@@ -122,12 +125,22 @@ export default function JobDetailPage() {
     mutationFn: () => jobsService.runJob(jobKey!, false),
     onSuccess: () => {
       toast.success("Job triggered");
+    },
+    onError: (e: Error) => {
+      let description = e.message;
+      if (e instanceof AdminApiError && e.body && typeof e.body === "object") {
+        const body = e.body as { data?: { providerError?: { code?: string; statusCode?: number } } };
+        const pe = body.data?.providerError;
+        if (pe) {
+          description = `${e.message} (provider: ${pe.code}, HTTP ${pe.statusCode})`;
+        }
+      }
+      toast.error("Job trigger failed", { description });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["job-runs"] });
       queryClient.invalidateQueries({ queryKey: ["jobs", "db"] });
       queryClient.invalidateQueries({ queryKey: ["jobs", "db", jobKey] });
-    },
-    onError: (e: Error) => {
-      toast.error("Job trigger failed", { description: e.message });
     },
   });
 
@@ -544,6 +557,9 @@ function RunDetailSheetContent({
   }
 
   const meta = (run.meta ?? {}) as Record<string, unknown>;
+  const configEntries = Object.entries(meta).filter(
+    ([key]) => RUN_CONFIG_KEYS.has(key)
+  );
   const standardKeys = ["inserted", "updated", "skipped", "fail"];
   const hasStandard = standardKeys.some((k) => typeof meta[k] === "number");
   const inserted = typeof meta["inserted"] === "number" ? meta["inserted"] : null;
@@ -606,6 +622,36 @@ function RunDetailSheetContent({
         </div>
       </div>
 
+      {/* Run Config */}
+      {configEntries.length > 0 && (
+        <div className="shrink-0 flex flex-wrap gap-2 text-[11px] sm:text-xs">
+          {configEntries.map(([key, value]) => {
+            let display: string;
+            if (typeof value === "boolean") {
+              display = value ? "Yes" : "No";
+            } else if (
+              typeof value === "number" &&
+              (key === "maxOverdueHours" || key === "maxLiveAgeHours" || key === "reminderWindowHours")
+            ) {
+              display = formatHoursAsDaysHours(value);
+            } else if (typeof value === "number" && key === "graceMinutes") {
+              display = `${value}m`;
+            } else {
+              display = String(value ?? "—");
+            }
+            return (
+              <div
+                key={key}
+                className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-400 rounded-md px-2.5 py-1"
+              >
+                <span className="font-semibold">{display}</span>
+                <span className="opacity-70">{camelToHuman(key)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Summary */}
       {(hasStandard || dynamicSummaryEntries.length > 0) && (
         <div className="shrink-0 flex flex-wrap gap-2 text-[11px] sm:text-xs">
@@ -655,7 +701,46 @@ function RunDetailSheetContent({
         </div>
       )}
 
-      {/* Items */}
+      {/* Error (shown first when failed) */}
+      {run.status === "failed" && (
+        <div className="shrink-0 border-t pt-2 sm:pt-3 space-y-1.5 sm:space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold text-destructive">Error</div>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-6 px-2 text-[11px]"
+              onClick={async () => {
+                const text = [run.errorMessage ?? "", run.errorStack ?? ""]
+                  .filter(Boolean)
+                  .join("\n\n");
+                try {
+                  await navigator.clipboard.writeText(text);
+                  toast.success("Copied error");
+                } catch {
+                  toast.error("Failed to copy");
+                }
+              }}
+            >
+              Copy
+            </Button>
+          </div>
+          <pre className="text-xs whitespace-pre-wrap break-words min-w-0 bg-destructive/5 rounded p-2">
+            {run.errorMessage ?? "—"}
+          </pre>
+          {run.errorStack ? (
+            <details className="text-xs">
+              <summary className="cursor-pointer font-medium">Stack trace</summary>
+              <pre className="mt-1.5 whitespace-pre-wrap break-words rounded-md bg-muted p-2 overflow-auto max-h-40">
+                {run.errorStack}
+              </pre>
+            </details>
+          ) : null}
+        </div>
+      )}
+
+      {/* Items (hidden when 0 items and not loading) */}
+      {(itemsLoading || items.length > 0 || (itemsPagination != null && itemsPagination.totalItems > 0)) && (
       <div className="border-t pt-2 sm:pt-3 flex-1 min-h-0 flex flex-col gap-1.5 sm:gap-2">
         <div className="shrink-0 flex items-center gap-1.5 sm:gap-2">
           <div className="relative flex-1 min-w-0">
@@ -848,43 +933,6 @@ function RunDetailSheetContent({
           </div>
         )}
       </div>
-
-      {/* Error */}
-      {run.status === "failed" && (
-        <div className="shrink-0 border-t pt-2 sm:pt-3 space-y-1.5 sm:space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-semibold text-destructive">Error</div>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="h-6 px-2 text-[11px]"
-              onClick={async () => {
-                const text = [run.errorMessage ?? "", run.errorStack ?? ""]
-                  .filter(Boolean)
-                  .join("\n\n");
-                try {
-                  await navigator.clipboard.writeText(text);
-                  toast.success("Copied error");
-                } catch {
-                  toast.error("Failed to copy");
-                }
-              }}
-            >
-              Copy
-            </Button>
-          </div>
-          <pre className="text-xs whitespace-pre-wrap break-words min-w-0 bg-destructive/5 rounded p-2">
-            {run.errorMessage ?? "—"}
-          </pre>
-          {run.errorStack ? (
-            <details className="text-xs">
-              <summary className="cursor-pointer font-medium">Stack trace</summary>
-              <pre className="mt-1.5 whitespace-pre-wrap break-words rounded-md bg-muted p-2 overflow-auto max-h-40">
-                {run.errorStack}
-              </pre>
-            </details>
-          ) : null}
-        </div>
       )}
     </>
   );

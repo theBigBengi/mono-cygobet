@@ -2,13 +2,13 @@
 // Two-layer smart filters: Layer 1 action chips (single-select), Layer 2 structural (teams/rounds).
 
 import React, { useRef, useCallback } from "react";
-import { View, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
-import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { RoundPickerSheet } from "./RoundPickerSheet";
 import { TeamPickerSheet } from "./TeamPickerSheet";
 import { CompetitionPickerSheet } from "./CompetitionPickerSheet";
@@ -102,12 +102,86 @@ export function SmartFilterChips({
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.actionRow}
-        style={styles.actionRowScroll}
-      >
+      {/* Round chips row for leagues mode — shown above action chips */}
+      {roundsFilter && (
+        <View style={styles.roundChipsSection}>
+          <AppText variant="caption" style={[styles.sectionLabel, { color: theme.colors.textPrimary }]}>
+            {t("predictions.roundLabel", { defaultValue: "Round" })}
+          </AppText>
+          <View style={styles.roundChipsRow}>
+            {roundsFilter.allRounds.map((r) => {
+              const isSelected = isRoundFilterActive && roundsFilter.selectedRound === r.round;
+              const isLiveRound = r.status === "live";
+              const isUnpredicted = r.status === "unpredicted";
+
+              let bgColor = theme.colors.textSecondary + "20";
+              let textCol = theme.colors.textPrimary + "90";
+
+              if (isSelected) {
+                if (isLiveRound) {
+                  bgColor = theme.colors.live;
+                  textCol = "#fff";
+                } else {
+                  bgColor = theme.colors.primary;
+                  textCol = "#fff";
+                }
+              }
+
+              return (
+                <Pressable
+                  key={r.round}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onSelectRound(r.round);
+                  }}
+                  style={({ pressed }) => [
+                    styles.roundChip,
+                    {
+                      backgroundColor: bgColor,
+                      transform: [{ scale: pressed ? 0.95 : 1 }],
+                    },
+                  ]}
+                >
+                  {isLiveRound && !isSelected && (
+                    <View style={[styles.dot, { backgroundColor: theme.colors.live }]} />
+                  )}
+                  {isLiveRound && isSelected && (
+                    <View style={[styles.dot, { backgroundColor: "#fff" }]} />
+                  )}
+                  <AppText
+                    variant="caption"
+                    style={[
+                      styles.roundChipText,
+                      { color: textCol },
+                      isSelected && styles.chipTextActive,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {r.round}
+                  </AppText>
+                  {isUnpredicted && !isSelected && (
+                    <View style={[styles.unpredictedDot, { backgroundColor: theme.colors.warning }]} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      {/* Divider between round section and filter section */}
+      {roundsFilter && actionChips.length > 0 && (
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+      )}
+
+      {/* Section label for filters */}
+      {actionChips.length > 0 && (
+        <AppText variant="caption" style={[styles.sectionLabel, { color: theme.colors.textPrimary }]}>
+          {t("predictions.filterLabel", { defaultValue: "Filter" })}
+        </AppText>
+      )}
+
+      <View style={styles.actionRow}>
         {/* Team pill for teams mode */}
         {teamsFilter && (
           <Pressable
@@ -117,13 +191,7 @@ export function SmartFilterChips({
               {
                 backgroundColor: teamPillActive
                   ? theme.colors.primary
-                  : theme.colors.surface,
-                borderColor: teamPillActive
-                  ? theme.colors.primary
-                  : theme.colors.border,
-                borderBottomColor: teamPillActive
-                  ? "rgba(0,0,0,0.2)"
-                  : theme.colors.textSecondary + "40",
+                  : theme.colors.textSecondary + "20",
                 transform: [{ scale: pressed ? 0.95 : 1 }],
               },
             ]}
@@ -132,11 +200,10 @@ export function SmartFilterChips({
               variant="caption"
               style={[
                 styles.chipText,
-                teamPillActive && styles.chipTextActive,
                 {
                   color: teamPillActive
-                    ? theme.colors.primaryText
-                    : theme.colors.textSecondary,
+                    ? "#fff"
+                    : theme.colors.textPrimary + "90",
                 },
               ]}
               numberOfLines={1}
@@ -149,8 +216,8 @@ export function SmartFilterChips({
               size={12}
               color={
                 teamPillActive
-                  ? theme.colors.primaryText
-                  : theme.colors.textSecondary
+                  ? "#fff"
+                  : theme.colors.textPrimary + "90"
               }
               style={styles.pillChevron}
             />
@@ -166,13 +233,7 @@ export function SmartFilterChips({
               {
                 backgroundColor: competitionPillActive
                   ? theme.colors.primary
-                  : theme.colors.surface,
-                borderColor: competitionPillActive
-                  ? theme.colors.primary
-                  : theme.colors.border,
-                borderBottomColor: competitionPillActive
-                  ? "rgba(0,0,0,0.2)"
-                  : theme.colors.textSecondary + "40",
+                  : theme.colors.textSecondary + "20",
                 transform: [{ scale: pressed ? 0.95 : 1 }],
               },
             ]}
@@ -181,11 +242,10 @@ export function SmartFilterChips({
               variant="caption"
               style={[
                 styles.chipText,
-                competitionPillActive && styles.chipTextActive,
                 {
                   color: competitionPillActive
-                    ? theme.colors.primaryText
-                    : theme.colors.textSecondary,
+                    ? "#fff"
+                    : theme.colors.textPrimary + "90",
                 },
               ]}
               numberOfLines={1}
@@ -200,8 +260,8 @@ export function SmartFilterChips({
               size={12}
               color={
                 competitionPillActive
-                  ? theme.colors.primaryText
-                  : theme.colors.textSecondary
+                  ? "#fff"
+                  : theme.colors.textPrimary + "90"
               }
               style={styles.pillChevron}
             />
@@ -220,27 +280,19 @@ export function SmartFilterChips({
           const urgent = isUrgentPredict(chip);
           const warning = predict && chip.urgency === "warning";
 
-          // Determine colors based on state
-          let bgColor = theme.colors.surface;
-          let borderColor = theme.colors.border;
-          let textColor = theme.colors.textSecondary;
-          let bottomBorderColor = theme.colors.textSecondary + "40";
+          // Determine colors — pill style (no border, bg only)
+          let bgColor = theme.colors.textSecondary + "20";
+          let textColor = theme.colors.textPrimary + "90";
           if (isActive) {
             if (live || urgent) {
               bgColor = theme.colors.live;
-              borderColor = theme.colors.live;
               textColor = "#fff";
-              bottomBorderColor = "rgba(0,0,0,0.2)";
             } else if (predict && !urgent) {
               bgColor = theme.colors.warning;
-              borderColor = theme.colors.warning;
               textColor = "#fff";
-              bottomBorderColor = "rgba(0,0,0,0.2)";
             } else {
               bgColor = theme.colors.primary;
-              borderColor = theme.colors.primary;
-              textColor = theme.colors.primaryText;
-              bottomBorderColor = "rgba(0,0,0,0.2)";
+              textColor = "#fff";
             }
           }
 
@@ -252,8 +304,6 @@ export function SmartFilterChips({
                 styles.chip,
                 {
                   backgroundColor: bgColor,
-                  borderColor: borderColor,
-                  borderBottomColor: bottomBorderColor,
                   transform: [{ scale: pressed ? 0.95 : 1 }],
                 },
               ]}
@@ -279,7 +329,6 @@ export function SmartFilterChips({
                 style={[
                   styles.chipText,
                   { color: textColor },
-                  isActive && styles.chipTextActive,
                 ]}
                 numberOfLines={1}
               >
@@ -298,13 +347,7 @@ export function SmartFilterChips({
               {
                 backgroundColor: isRoundFilterActive
                   ? theme.colors.primary
-                  : theme.colors.surface,
-                borderColor: isRoundFilterActive
-                  ? theme.colors.primary
-                  : theme.colors.border,
-                borderBottomColor: isRoundFilterActive
-                  ? "rgba(0,0,0,0.2)"
-                  : theme.colors.textSecondary + "40",
+                  : theme.colors.textSecondary + "20",
                 transform: [{ scale: pressed ? 0.95 : 1 }],
               },
             ]}
@@ -313,11 +356,10 @@ export function SmartFilterChips({
               variant="caption"
               style={[
                 styles.chipText,
-                isRoundFilterActive && styles.chipTextActive,
                 {
                   color: isRoundFilterActive
-                    ? theme.colors.primaryText
-                    : theme.colors.textSecondary,
+                    ? "#fff"
+                    : theme.colors.textPrimary + "90",
                 },
               ]}
               numberOfLines={1}
@@ -331,13 +373,13 @@ export function SmartFilterChips({
               <Ionicons
                 name="chevron-down"
                 size={12}
-                color={theme.colors.primaryText}
+                color="#fff"
                 style={styles.pillChevron}
               />
             )}
           </Pressable>
         )}
-      </ScrollView>
+      </View>
 
       {/* Round picker sheet */}
       {roundsFilter && (
@@ -374,25 +416,19 @@ export function SmartFilterChips({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  actionRowScroll: {
-    flexGrow: 0,
+    flexDirection: "column",
   },
   actionRow: {
     flexDirection: "row",
-    alignItems: "center",
+    flexWrap: "wrap",
     gap: 8,
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
+    borderRadius: 20,
   },
   pillChevron: {
     marginStart: 4,
@@ -401,10 +437,8 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
-    letterSpacing: 0.2,
-    textTransform: "uppercase",
   },
   chipTextActive: {
     fontWeight: "700",
@@ -414,5 +448,41 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     marginRight: 6,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 16,
+  },
+  roundChipsSection: {
+    marginBottom: 0,
+  },
+  sectionLabel: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  roundChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  roundChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minWidth: 36,
+    justifyContent: "center",
+  },
+  roundChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  unpredictedDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    marginLeft: 4,
   },
 });

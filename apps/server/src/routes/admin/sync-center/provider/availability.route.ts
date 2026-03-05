@@ -24,15 +24,19 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
               status: { type: "string", const: "ok" },
               data: {
                 type: "object",
+                additionalProperties: true,
                 properties: {
                   provider: { type: "string" },
                   seasons: { type: "array" },
                   summary: {
                     type: "object",
+                    additionalProperties: true,
                     properties: {
-                      total: { type: "number" },
-                      inDb: { type: "number" },
+                      active: { type: "number" },
+                      upcoming: { type: "number" },
                       new: { type: "number" },
+                      fixtures: { type: "number" },
+                      seasonsWithFixturesAvailable: { type: "number" },
                     },
                   },
                   lastChecked: { type: "string" },

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
@@ -39,7 +39,14 @@ export function PredictAllBanner() {
       ]}
     >
       <View style={styles.content}>
-        <AppText variant="label" color="secondary">
+        <View style={[styles.iconCircle, { borderColor: theme.colors.textPrimary + "40" }]}>
+          <MaterialCommunityIcons
+            name="cards-outline"
+            size={16}
+            color={theme.colors.textPrimary}
+          />
+        </View>
+        <AppText variant="label" color="secondary" style={{ flex: 1 }}>
           {summaryText}
         </AppText>
         <Ionicons
@@ -55,8 +62,8 @@ export function PredictAllBanner() {
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 14,
+    marginBottom: 8,
     borderRadius: 10,
   },
   content: {
@@ -65,5 +72,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 14,
     paddingVertical: 10,
+  },
+  iconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
   },
 });

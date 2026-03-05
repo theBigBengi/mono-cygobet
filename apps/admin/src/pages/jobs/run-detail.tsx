@@ -24,10 +24,12 @@ import { ArrowLeft } from "lucide-react";
 import {
   formatDateTime,
   formatDurationMs,
+  formatHoursAsDaysHours,
   formatRelativeTime,
   jobNameFromKey,
   titleCaseWords,
   camelToHuman,
+  RUN_CONFIG_KEYS,
 } from "./jobs.utils";
 
 export default function RunDetailPage() {
@@ -92,6 +94,9 @@ export default function RunDetailPage() {
   }
 
   const meta = (run.meta ?? {}) as Record<string, unknown>;
+  const configEntries = Object.entries(meta).filter(
+    ([key]) => RUN_CONFIG_KEYS.has(key)
+  );
   const standardKeys = ["inserted", "updated", "skipped", "fail"];
   const hasStandard = standardKeys.some(
     (k) => typeof meta[k] === "number"
@@ -190,6 +195,41 @@ export default function RunDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Run Config */}
+        {configEntries.length > 0 && (
+          <Card>
+            <CardContent className="px-3 py-3 sm:p-6">
+              <div className="hidden sm:block text-base font-semibold mb-3">Config</div>
+              <div className="flex flex-wrap gap-2 text-[11px] sm:text-xs">
+                {configEntries.map(([key, value]) => {
+                  let display: string;
+                  if (typeof value === "boolean") {
+                    display = value ? "Yes" : "No";
+                  } else if (
+                    typeof value === "number" &&
+                    (key === "maxOverdueHours" || key === "maxLiveAgeHours" || key === "reminderWindowHours")
+                  ) {
+                    display = formatHoursAsDaysHours(value);
+                  } else if (typeof value === "number" && key === "graceMinutes") {
+                    display = `${value}m`;
+                  } else {
+                    display = String(value ?? "—");
+                  }
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-400 rounded-md px-2.5 py-1"
+                    >
+                      <span className="font-semibold">{display}</span>
+                      <span className="opacity-70">{camelToHuman(key)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Summary */}
         <Card>
           <CardContent className="px-3 py-3 sm:p-6">
@@ -236,7 +276,50 @@ export default function RunDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Items */}
+        {/* Error (shown first when failed) */}
+        {run.status === "failed" && (
+          <Card className="border-destructive/30">
+            <CardContent className="px-3 py-3 sm:p-6 space-y-2 sm:space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold">Error</div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 px-2 text-xs"
+                  onClick={async () => {
+                    const text = [run.errorMessage ?? "", run.errorStack ?? ""]
+                      .filter(Boolean)
+                      .join("\n\n");
+                    try {
+                      await navigator.clipboard.writeText(text);
+                      toast.success("Copied error");
+                    } catch {
+                      toast.error("Failed to copy");
+                    }
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+              <pre className="text-xs whitespace-pre-wrap break-words min-w-0">
+                {run.errorMessage ?? "—"}
+              </pre>
+              {run.errorStack ? (
+                <details className="text-xs">
+                  <summary className="cursor-pointer font-medium">
+                    Stack trace
+                  </summary>
+                  <pre className="mt-1.5 whitespace-pre-wrap break-words rounded-md bg-muted p-2 overflow-auto max-h-40">
+                    {run.errorStack}
+                  </pre>
+                </details>
+              ) : null}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Items (hidden when 0 items and not loading) */}
+        {(runItemsQuery.isLoading || items.length > 0 || (itemsPagination != null && itemsPagination.totalItems > 0)) && (
         <Card>
           <CardContent className="px-3 py-3 sm:p-6 space-y-2 sm:space-y-3">
             <div className="hidden sm:block text-base font-semibold">Items</div>
@@ -358,47 +441,6 @@ export default function RunDetailPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* Error */}
-        {run.status === "failed" && (
-          <Card className="border-destructive/30">
-            <CardContent className="px-3 py-3 sm:p-6 space-y-2 sm:space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">Error</div>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-7 px-2 text-xs"
-                  onClick={async () => {
-                    const text = [run.errorMessage ?? "", run.errorStack ?? ""]
-                      .filter(Boolean)
-                      .join("\n\n");
-                    try {
-                      await navigator.clipboard.writeText(text);
-                      toast.success("Copied error");
-                    } catch {
-                      toast.error("Failed to copy");
-                    }
-                  }}
-                >
-                  Copy
-                </Button>
-              </div>
-              <pre className="text-xs whitespace-pre-wrap break-words min-w-0">
-                {run.errorMessage ?? "—"}
-              </pre>
-              {run.errorStack ? (
-                <details className="text-xs">
-                  <summary className="cursor-pointer font-medium">
-                    Stack trace
-                  </summary>
-                  <pre className="mt-1.5 whitespace-pre-wrap break-words rounded-md bg-muted p-2 overflow-auto max-h-40">
-                    {run.errorStack}
-                  </pre>
-                </details>
-              ) : null}
-            </CardContent>
-          </Card>
         )}
       </div>
     </div>

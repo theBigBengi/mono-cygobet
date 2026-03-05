@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { AdminApiError } from "@/lib/adminApi";
 import {
   Card,
   CardContent,
@@ -121,7 +122,15 @@ export default function JobsListPage() {
       queryClient.invalidateQueries({ queryKey: ["jobs", "db"] });
     },
     onError: (e: Error) => {
-      toast.error("Job trigger failed", { description: e.message });
+      let description = e.message;
+      if (e instanceof AdminApiError && e.body && typeof e.body === "object") {
+        const body = e.body as { data?: { providerError?: { code?: string; statusCode?: number } } };
+        const pe = body.data?.providerError;
+        if (pe) {
+          description = `${e.message} (provider: ${pe.code}, HTTP ${pe.statusCode})`;
+        }
+      }
+      toast.error("Job trigger failed", { description });
     },
   });
 
