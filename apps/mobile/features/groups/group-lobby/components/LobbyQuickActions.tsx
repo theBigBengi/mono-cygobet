@@ -150,14 +150,15 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 20,
+    marginTop: 10,
     marginBottom: 12,
     paddingHorizontal: 16,
   },
   card: {
     borderRadius: 12,
     borderWidth: 1,
-    padding: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   divider: {
     height: 1,

@@ -77,8 +77,12 @@ export type GroupFixtureCardProps = {
   hideLeagueName?: boolean;
   /** Hide round in card info line (e.g. when grouped by round) */
   hideRound?: boolean;
+  /** Show "Round X" instead of "RX" */
+  fullRoundLabel?: boolean;
   /** Card layout mode: vertical (two rows) or horizontal (single row) */
   cardLayout?: "vertical" | "horizontal";
+  /** When true, show full team name instead of short code */
+  useFullName?: boolean;
 };
 
 function GroupFixtureCardInner({
@@ -109,7 +113,9 @@ function GroupFixtureCardInner({
   onPressCard,
   hideLeagueName,
   hideRound,
+  fullRoundLabel,
   cardLayout,
+  useFullName,
 }: GroupFixtureCardProps) {
   /** Used for card border/radius styling (first/middle/last in group). */
   const positionInGroup = getPositionInGroup(index, totalInGroup);
@@ -207,6 +213,7 @@ function GroupFixtureCardInner({
       showLeagueInfo
       hideLeagueName={hideLeagueName}
       hideRound={hideRound}
+      fullRoundLabel={fullRoundLabel}
       timelineFilled={timelineFilled}
       timelineConnectorFilled={timelineConnectorFilled}
       isFirstInTimeline={isFirstInTimeline}
@@ -214,6 +221,7 @@ function GroupFixtureCardInner({
       isNextToPredict={isNextToPredict}
       isMaxPoints={isMaxPoints}
       cardLayout={cardLayout}
+      useFullName={useFullName}
     />
   );
 }
@@ -255,6 +263,8 @@ function arePropsEqual(
   if (prevProps.isMaxPoints !== nextProps.isMaxPoints) return false;
   if (prevProps.cardLayout !== nextProps.cardLayout) return false;
   if (prevProps.hideRound !== nextProps.hideRound) return false;
+  if (prevProps.fullRoundLabel !== nextProps.fullRoundLabel) return false;
+  if (prevProps.useFullName !== nextProps.useFullName) return false;
 
   // Callbacks and refs are stable (from useCallback/useRef), no need to compare
   return true;

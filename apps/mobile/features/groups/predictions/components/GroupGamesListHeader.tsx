@@ -2,7 +2,6 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
-import { GamesSummaryCard } from "./GamesSummaryCard";
 import { GroupGamesSkeleton } from "./GroupGamesSkeleton";
 
 type Props = {
@@ -19,10 +18,6 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
   isReady,
   emptyState,
   filteredFixturesCount,
-  totalPoints,
-  predictedCount,
-  totalCount,
-  accuracy,
 }: Props) {
   const { theme } = useTheme();
 
@@ -54,14 +49,7 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
       </View>
     );
   }
-  return (
-    <GamesSummaryCard
-      totalPoints={totalPoints}
-      predictedCount={predictedCount}
-      totalCount={totalCount}
-      accuracy={accuracy}
-    />
-  );
+  return null;
 });
 
 const styles = StyleSheet.create({

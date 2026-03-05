@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   separator: {
     fontSize: 11,
     fontWeight: "500",
-    marginHorizontal: 1,
+    marginHorizontal: 0,
   },
   hiddenInput: {
     position: "absolute",

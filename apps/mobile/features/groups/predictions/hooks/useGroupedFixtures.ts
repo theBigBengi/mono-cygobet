@@ -41,6 +41,8 @@ function formatDateLabel(kickoffAt: string | undefined): string {
   return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
 }
 
+export type LeaguesGroupBy = "round" | "date";
+
 interface UseGroupedFixturesParams {
   fixtures: FixtureItem[];
   mode: SelectionMode;
@@ -48,6 +50,8 @@ interface UseGroupedFixturesParams {
   skipGrouping?: boolean;
   /** Team IDs to group by (for teams mode) */
   groupTeamsIds?: number[];
+  /** For leagues mode: group by round or date */
+  leaguesGroupBy?: LeaguesGroupBy;
 }
 
 /**
@@ -61,13 +65,49 @@ export function useGroupedFixtures({
   mode,
   skipGrouping = false,
   groupTeamsIds,
+  leaguesGroupBy = "round",
 }: UseGroupedFixturesParams): FixtureGroup[] {
 
   const groups = useMemo((): FixtureGroup[] => {
     let result: FixtureGroup[] = [];
 
-    if (mode === "leagues") {
-      // Leagues mode: group by round only
+    if (mode === "leagues" && leaguesGroupBy === "date") {
+      // Leagues mode grouped by date
+      const sortedFixtures = [...fixtures].sort((a, b) => {
+        const timeA = new Date(a.kickoffAt ?? 0).getTime();
+        const timeB = new Date(b.kickoffAt ?? 0).getTime();
+        return timeA - timeB;
+      });
+
+      let currentDateKey: string | null = null;
+      let currentGroup: FixtureGroup | null = null;
+
+      for (const fixture of sortedFixtures) {
+        const dateKey = getDateKey(fixture.kickoffAt);
+
+        if (dateKey !== currentDateKey) {
+          if (currentGroup) {
+            result.push(currentGroup);
+          }
+          currentDateKey = dateKey;
+          currentGroup = {
+            key: `date-${dateKey}`,
+            label: formatDateLabel(fixture.kickoffAt),
+            dateKey,
+            dateLabel: formatDateLabel(fixture.kickoffAt),
+            level: "date",
+            fixtures: [fixture],
+          };
+        } else {
+          currentGroup?.fixtures.push(fixture);
+        }
+      }
+
+      if (currentGroup) {
+        result.push(currentGroup);
+      }
+    } else if (mode === "leagues") {
+      // Leagues mode: group by round
       const sortedFixtures = [...fixtures].sort((a, b) => {
         const timeA = new Date(a.kickoffAt ?? 0).getTime();
         const timeB = new Date(b.kickoffAt ?? 0).getTime();
@@ -165,7 +205,7 @@ export function useGroupedFixtures({
     }
 
     return result;
-  }, [fixtures, mode, skipGrouping]);
+  }, [fixtures, mode, skipGrouping, leaguesGroupBy]);
 
   return groups;
 }

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppText, TeamLogo } from "@/components/ui";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
@@ -45,6 +46,8 @@ type Props = {
   showLeagueInfo?: boolean;
   hideLeagueName?: boolean;
   hideRound?: boolean;
+  /** Show "Round X" instead of "RX" */
+  fullRoundLabel?: boolean;
   matchNumber?: string;
   timelineFilled?: boolean;
   timelineConnectorFilled?: boolean;
@@ -53,6 +56,8 @@ type Props = {
   isNextToPredict?: boolean;
   isMaxPoints?: boolean;
   cardLayout?: "vertical" | "horizontal";
+  /** When true, show full team name instead of short code */
+  useFullName?: boolean;
 };
 
 export function MatchPredictionCardVertical({
@@ -74,10 +79,12 @@ export function MatchPredictionCardVertical({
   showLeagueInfo = true,
   hideLeagueName = false,
   hideRound = false,
+  fullRoundLabel = false,
   matchNumber,
   isNextToPredict = false,
   isMaxPoints = false,
   cardLayout = "vertical",
+  useFullName = true,
 }: Props) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -128,8 +135,12 @@ export function MatchPredictionCardVertical({
     currentFocusedField,
   });
 
-  const homeTeamName = translateTeam(fixture.homeTeam?.name, t("common.home"));
-  const awayTeamName = translateTeam(fixture.awayTeam?.name, t("common.away"));
+  const homeTeamName = useFullName
+    ? translateTeam(fixture.homeTeam?.name, t("common.home"))
+    : (fixture.homeTeam?.shortCode ?? translateTeam(fixture.homeTeam?.name, t("common.home")));
+  const awayTeamName = useFullName
+    ? translateTeam(fixture.awayTeam?.name, t("common.away"))
+    : (fixture.awayTeam?.shortCode ?? translateTeam(fixture.awayTeam?.name, t("common.away")));
 
   const isCardFocused = isHomeFocused || isAwayFocused;
 
@@ -147,15 +158,30 @@ export function MatchPredictionCardVertical({
     if (!showLeagueInfo) return null;
     const parts: string[] = [];
     if (!hideLeagueName && fixture.league?.name) parts.push(fixture.league.name);
-    if (!hideRound && fixture.round) parts.push(`R${fixture.round}`);
+    if (!hideRound && fixture.round) parts.push(fullRoundLabel ? `Round ${fixture.round}` : `R${fixture.round}`);
     return parts.length > 0 ? parts.join(" · ") : null;
-  }, [showLeagueInfo, hideLeagueName, hideRound, fixture.league?.name, fixture.round, fixture.kickoffAt]);
+  }, [showLeagueInfo, hideLeagueName, hideRound, fullRoundLabel, fixture.league?.name, fixture.round, fixture.kickoffAt]);
 
   // --- Status data (shared by box + inline renderers) ---
   const statusData = useMemo(() => {
     // Live → show match minute
     if (isLive) {
       return { top: String(fixture.liveMinute ?? 0), bottom: "Live", bgColor: "#3B82F6" + "15", textColor: "#3B82F6", inline: `${fixture.liveMinute ?? 0}' Live` };
+    }
+
+    // Cancelled / Postponed / Abandoned → show status
+    if (isCancelled && fixture.state) {
+      const labelMap: Record<string, string> = {
+        CANCELLED: "CAN",
+        POSTPONED: "PPD",
+        SUSPENDED: "SUS",
+        ABANDONED: "ABD",
+        INTERRUPTED: "INT",
+        WO: "W/O",
+      };
+      const label = labelMap[fixture.state] ?? fixture.state.slice(0, 3).toUpperCase();
+      const c = theme.colors.textSecondary;
+      return { top: label, bottom: undefined, bgColor: c + "15", textColor: c, inline: label };
     }
 
     // All other states → show kickoff time (HH:MM)
@@ -168,28 +194,32 @@ export function MatchPredictionCardVertical({
       const mo = (k.getMonth() + 1).toString().padStart(2, "0");
       const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       const dateStr = `${k.getDate()} ${MONTHS_SHORT[k.getMonth()]}`;
-      return { top: hh, bottom: mm, date: dateStr, bgColor: "transparent", textColor: sc, inline: hideRound ? `${dateStr} ${hh}:${mm}` : `${hh}:${mm}` };
+      return { top: hh, bottom: mm, date: dateStr, bgColor: sc + "15", textColor: sc, inline: hideRound ? `${dateStr} ${hh}:${mm}` : `${hh}:${mm}` };
     }
 
     const sc = theme.colors.textSecondary;
     return { top: "\u2014", bottom: undefined, bgColor: "transparent", textColor: sc, inline: "\u2014" };
-  }, [isLive, fixture, theme, hideRound]);
+  }, [isLive, isCancelled, fixture, theme, hideRound]);
 
-  // --- Right box data (points for finished games) ---
+  // --- Right box data (points for finished games, or cancelled indicator) ---
   const rightBoxData = useMemo(() => {
+    if (isCancelled) {
+      const c = theme.colors.textSecondary;
+      return { top: "—", bottom: undefined, bgColor: c + "12", textColor: c, icon: "cancel" as const };
+    }
     if (!isFinished) return null;
     const fp = fixture.prediction;
     const hasServerPrediction = fp != null && fp.home != null && fp.away != null;
     if (!hasServerPrediction) {
-      return { top: "0", bottom: "pts", bgColor: "#EF4444" + "15", textColor: "#EF4444" };
+      return { top: "0", bottom: "PTS", bgColor: "#EF4444" + "15", textColor: "#EF4444" };
     }
     const pts = fp.points ?? 0;
     const predResult: "max" | true | false =
       isMaxPoints ? "max" : pts > 0 ? true : false;
     const bgColor = predResult === "max" ? "#10B981" + "20" : predResult === true ? "#FFB020" + "20" : "#EF4444" + "15";
     const textColor = predResult === "max" ? "#10B981" : predResult === true ? "#FFB020" : "#EF4444";
-    return { top: String(pts), bottom: "pts", bgColor, textColor };
-  }, [isFinished, fixture.prediction, isMaxPoints]);
+    return { top: String(pts), bottom: "PTS", bgColor, textColor };
+  }, [isFinished, isCancelled, fixture.prediction, isMaxPoints, theme]);
 
   // --- Status box (for vertical layout) ---
   const statusBox = useMemo(() => {
@@ -218,7 +248,7 @@ export function MatchPredictionCardVertical({
 
   if (cardLayout === "horizontal") {
     return (
-      <View ref={cardRef} style={[styles.outerRow, !isConnected && positionInGroup !== "top" && styles.outerRowSpacing]}>
+      <View ref={cardRef} style={styles.outerRow}>
         <View style={styles.cardShadowWrapper}>
           <View
             style={[
@@ -237,17 +267,17 @@ export function MatchPredictionCardVertical({
             ]}
           >
             {/* Info row: time · league | points */}
-            <View style={[styles.hStatusRow, { backgroundColor: "rgba(255,255,0,0.2)" }]}>
-              <Text style={[styles.hStatusText, { color: statusData.textColor, backgroundColor: "rgba(255,255,0,0.3)" }]}>
+            <View style={styles.hStatusRow}>
+              <Text style={[styles.hStatusText, { color: statusData.textColor }]}>
                 {statusData.inline}
               </Text>
               {leagueInfoText && (
-                <AppText style={[styles.leagueText, { color: theme.colors.textSecondary, marginLeft: 6, backgroundColor: "rgba(0,255,255,0.2)" }]}>
+                <AppText style={[styles.leagueText, { color: theme.colors.textSecondary, marginLeft: 6 }]}>
                   {leagueInfoText}
                 </AppText>
               )}
               {rightBoxData && (
-                <Text style={[styles.hStatusText, { color: rightBoxData.textColor, marginLeft: "auto", backgroundColor: "rgba(255,0,255,0.2)" }]}>
+                <Text style={[styles.hStatusText, { color: rightBoxData.textColor, marginLeft: "auto" }]}>
                   {rightBoxData.top} {rightBoxData.bottom}
                 </Text>
               )}
@@ -262,7 +292,7 @@ export function MatchPredictionCardVertical({
             >
               {/* Home half */}
               <Pressable
-                style={[styles.hTeamHalf, { backgroundColor: "rgba(255,0,0,0.1)" }]}
+                style={styles.hTeamHalf}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onPressCard();
@@ -274,12 +304,12 @@ export function MatchPredictionCardVertical({
                   numberOfLines={1}
                   style={[
                     styles.hTeamName,
-                    { color: (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary, backgroundColor: "rgba(255,0,0,0.2)" },
+                    { color: (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary },
                   ]}
                 >
                   {homeTeamName}
                 </AppText>
-                <View style={{ backgroundColor: "rgba(255,165,0,0.2)" }}>
+                <View>
                   <ResultDisplay
                     result={gameResultOrTime}
                     isLive={isLive}
@@ -294,7 +324,7 @@ export function MatchPredictionCardVertical({
 
               {/* Score inputs center */}
               {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
-                <View style={[styles.hScoresCenter, { backgroundColor: "rgba(0,255,0,0.15)" }]}>
+                <View style={styles.hScoresCenter}>
                   <ScoreInputPair
                     homeValue={prediction.home}
                     awayValue={prediction.away}
@@ -319,13 +349,13 @@ export function MatchPredictionCardVertical({
 
               {/* Away half */}
               <Pressable
-                style={[styles.hTeamHalf, { backgroundColor: "rgba(0,0,255,0.1)" }]}
+                style={styles.hTeamHalf}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onPressCard();
                 }}
               >
-                <View style={{ backgroundColor: "rgba(255,165,0,0.2)" }}>
+                <View>
                   <ResultDisplay
                     result={gameResultOrTime}
                     isLive={isLive}
@@ -341,7 +371,7 @@ export function MatchPredictionCardVertical({
                   numberOfLines={1}
                   style={[
                     styles.hTeamName,
-                    { color: (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary, textAlign: "right", backgroundColor: "rgba(0,0,255,0.2)" },
+                    { color: (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary, textAlign: "right" },
                   ]}
                 >
                   {awayTeamName}
@@ -357,7 +387,7 @@ export function MatchPredictionCardVertical({
 
   // ── Vertical layout (default) ──
   return (
-    <View ref={cardRef} style={[styles.outerRow, !isConnected && positionInGroup !== "top" && styles.outerRowSpacing]}>
+    <View ref={cardRef} style={styles.outerRow}>
       <View style={styles.cardShadowWrapper}>
         <View
           style={[
@@ -376,13 +406,13 @@ export function MatchPredictionCardVertical({
           ]}
         >
           {leagueInfoText && !hideRound && (
-            <AppText style={[styles.leagueText, { color: theme.colors.textSecondary, marginLeft: 52, marginBottom: 2, backgroundColor: "rgba(0,255,255,0.2)" }]}>
+            <AppText style={[styles.leagueText, { color: theme.colors.textSecondary, marginLeft: 52, marginBottom: 2 }]}>
               {leagueInfoText}
             </AppText>
           )}
           <View style={styles.cardRow}>
             {/* Status Box — left column */}
-            <View style={[styles.statusCol, { backgroundColor: "rgba(255,255,0,0.2)" }]}>
+            <View style={styles.statusCol}>
               {statusBox}
             </View>
 
@@ -395,7 +425,7 @@ export function MatchPredictionCardVertical({
                 ]}
               >
                 {/* Home Row */}
-                <View style={[styles.teamRow, { backgroundColor: "rgba(255,0,0,0.1)" }]}>
+                <View style={styles.teamRow}>
                   <Pressable
                     style={styles.matchPressable}
                     onPress={() => {
@@ -411,7 +441,7 @@ export function MatchPredictionCardVertical({
                         isUpcoming={!isFinished && !isLive}
                       />
                     </View>
-                    <View style={{ backgroundColor: "rgba(255,165,0,0.2)" }}>
+                    <View style={styles.resultColumn}>
                       <ResultDisplay
                         result={gameResultOrTime}
                         isLive={isLive}
@@ -424,7 +454,7 @@ export function MatchPredictionCardVertical({
                     </View>
                   </Pressable>
                   {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
-                    <View style={[styles.predictionColumn, { backgroundColor: "rgba(0,255,0,0.15)" }]} >
+                    <View style={styles.predictionColumn}>
                       <ScoreInput
                         type="home"
                         value={prediction.home}
@@ -444,7 +474,7 @@ export function MatchPredictionCardVertical({
                 </View>
 
                 {/* Away Row */}
-                <View style={[styles.teamRow, { backgroundColor: "rgba(0,0,255,0.1)" }]}>
+                <View style={styles.teamRow}>
                   <Pressable
                     style={styles.matchPressable}
                     onPress={() => {
@@ -460,7 +490,7 @@ export function MatchPredictionCardVertical({
                         isUpcoming={!isFinished && !isLive}
                       />
                     </View>
-                    <View style={{ backgroundColor: "rgba(255,165,0,0.2)" }}>
+                    <View style={styles.resultColumn}>
                       <ResultDisplay
                         result={gameResultOrTime}
                         isLive={isLive}
@@ -473,7 +503,7 @@ export function MatchPredictionCardVertical({
                     </View>
                   </Pressable>
                   {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
-                    <View style={[styles.predictionColumn, { backgroundColor: "rgba(0,255,0,0.15)" }]} >
+                    <View style={styles.predictionColumn}>
                       <ScoreInput
                         type="away"
                         value={prediction.away}
@@ -504,14 +534,22 @@ export function MatchPredictionCardVertical({
             </View>
 
             {/* Right spacer — mirrors statusCol for symmetry */}
-            <View style={[styles.statusCol, { backgroundColor: "rgba(255,0,255,0.2)" }]}>
+            <View style={styles.statusCol}>
               {rightBoxData ? (
-                <View style={[styles.statusBox, { backgroundColor: rightBoxData.bgColor }]}>
-                  <Text style={[styles.statusDayText, { color: rightBoxData.textColor }]}>{rightBoxData.top}</Text>
-                  <Text style={[styles.statusMonthText, { color: rightBoxData.textColor }]}>{rightBoxData.bottom}</Text>
-                </View>
+                rightBoxData.icon === "cancel" ? (
+                  <View style={[styles.statusBox, { backgroundColor: rightBoxData.bgColor, alignItems: "center", justifyContent: "center" }]}>
+                    <MaterialCommunityIcons name="cancel" size={16} color={rightBoxData.textColor} />
+                  </View>
+                ) : (
+                  <View style={[styles.statusBox, { backgroundColor: rightBoxData.bgColor }]}>
+                    <Text style={[styles.statusDayText, { color: rightBoxData.textColor }]}>{rightBoxData.top}</Text>
+                    {rightBoxData.bottom && <Text style={[styles.statusMonthText, { color: rightBoxData.textColor }]}>{rightBoxData.bottom}</Text>}
+                  </View>
+                )
               ) : (
-                <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12" }]} />
+                <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12", alignItems: "center", justifyContent: "center" }]}>
+                  <MaterialCommunityIcons name="cards-outline" size={20} color={theme.colors.textSecondary + "40"} />
+                </View>
               )}
             </View>
           </View>
@@ -523,7 +561,6 @@ export function MatchPredictionCardVertical({
 
 const styles = StyleSheet.create({
   outerRow: {
-    marginBottom: 10,
   },
   outerRowSpacing: {
     marginBottom: 10,
@@ -583,6 +620,11 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     lineHeight: 11,
   },
+  resultColumn: {
+    width: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   predictionColumn: {
     width: 36,
     alignItems: "center",
@@ -594,7 +636,7 @@ const styles = StyleSheet.create({
   teamRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 0,
   },
   matchPressable: {
     flex: 1,

@@ -6,7 +6,7 @@ import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView, type BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, Fontisto } from "@expo/vector-icons";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
@@ -19,7 +19,7 @@ import { usePredictionNavigation } from "../hooks/usePredictionNavigation";
 import { useGroupPredictions } from "../hooks/useGroupPredictions";
 import { useCardFocusSaving } from "../hooks/useCardFocusSaving";
 import { useSmartFilters } from "../hooks/useSmartFilters";
-import { useGroupedFixtures } from "../hooks/useGroupedFixtures";
+import { useGroupedFixtures, type LeaguesGroupBy } from "../hooks/useGroupedFixtures";
 import { usePredictionsStats } from "../hooks/usePredictionsStats";
 import { useCollapsingHeader } from "../hooks/useCollapsingHeader";
 import { useScrollToNextButton } from "../hooks/useScrollToNextButton";
@@ -61,6 +61,8 @@ export function GroupGamesScreen({
   const mode = selectionMode ?? "games";
 
   const [cardLayout, setCardLayout] = useState<"vertical" | "horizontal">("vertical");
+  const [useFullName, setUseFullName] = useState(true);
+  const [leaguesGroupBy, setLeaguesGroupBy] = useState<LeaguesGroupBy>("round");
   const toggleCardLayout = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCardLayout((prev) => (prev === "vertical" ? "horizontal" : "vertical"));
@@ -111,6 +113,7 @@ export function GroupGamesScreen({
     mode,
     skipGrouping,
     groupTeamsIds,
+    leaguesGroupBy,
   });
 
   const {
@@ -260,46 +263,12 @@ export function GroupGamesScreen({
 
   const filterSheetRef = useRef<BottomSheetModal>(null);
 
-  // Draft state for filter sheet — only committed on Apply
-  const [draftAction, setDraftAction] = useState(selectedAction);
-  const [draftTeamId, setDraftTeamId] = useState<number | null>(
-    structuralFilter?.type === "teams" ? structuralFilter.selectedTeamId : null
-  );
-  const [draftCompetitionId, setDraftCompetitionId] = useState<number | null>(
-    structuralFilter?.type === "teams" ? structuralFilter.selectedCompetitionId : null
-  );
-  const [draftRound, setDraftRound] = useState<string>(
-    structuralFilter?.type === "rounds" ? structuralFilter.selectedRound : ""
-  );
-
   const handleFilterPress = useCallback(() => {
-    // Sync draft state to current real state when opening
-    setDraftAction(selectedAction);
-    if (structuralFilter?.type === "teams") {
-      setDraftTeamId(structuralFilter.selectedTeamId);
-      setDraftCompetitionId(structuralFilter.selectedCompetitionId);
-    }
-    if (structuralFilter?.type === "rounds") {
-      setDraftRound(structuralFilter.selectedRound);
-    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     filterSheetRef.current?.present();
-  }, [selectedAction, structuralFilter]);
+  }, []);
 
-  const handleFilterApply = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    selectAction(draftAction);
-    if (structuralFilter?.type === "teams") {
-      selectTeam(draftTeamId);
-      selectCompetition(draftCompetitionId);
-    }
-    if (structuralFilter?.type === "rounds" && draftRound) {
-      selectRound(draftRound);
-    }
-    filterSheetRef.current?.dismiss();
-  }, [draftAction, draftTeamId, draftCompetitionId, draftRound, selectAction, selectTeam, selectCompetition, selectRound, structuralFilter]);
-
-  const handleFilterCancel = useCallback(() => {
+  const handleFilterDone = useCallback(() => {
     filterSheetRef.current?.dismiss();
   }, []);
 
@@ -416,8 +385,8 @@ export function GroupGamesScreen({
   nextToPredictIdRef.current = nextToPredictId;
 
   const flatListExtraData = useMemo(
-    () => ({ pending, currentFocusedField, highlightedFixtureId, nextToPredictId, cardLayout }),
-    [pending, currentFocusedField, highlightedFixtureId, nextToPredictId, cardLayout]
+    () => ({ pending, currentFocusedField, highlightedFixtureId, nextToPredictId, cardLayout, useFullName }),
+    [pending, currentFocusedField, highlightedFixtureId, nextToPredictId, cardLayout, useFullName]
   );
 
   React.useEffect(() => {
@@ -541,8 +510,10 @@ export function GroupGamesScreen({
           onScrollToCard={scrollToMatchCard}
           onPressCard={handlePressCard}
           hideLeagueName={mode === "leagues"}
-          hideRound={mode === "leagues"}
+          hideRound={mode === "leagues" && leaguesGroupBy === "round"}
+          fullRoundLabel={mode === "leagues" && leaguesGroupBy === "date"}
           cardLayout={cardLayout}
+          useFullName={useFullName}
         />
       );
     },
@@ -551,7 +522,7 @@ export function GroupGamesScreen({
       matchNumbersMap, maxPoints, handleFieldFocus, handleFieldBlur,
       handleCardChange, handleAutoNext, predictionMode, handleSelectOutcome,
       scrollToMatchCard, handlePressCard, getPrediction, isPredictionSaved,
-      cardLayout,
+      cardLayout, useFullName,
     ]
   );
 
@@ -649,13 +620,32 @@ export function GroupGamesScreen({
             title={groupName}
             onFilterPress={hasAnyChips ? handleFilterPress : undefined}
             rightContent={
-              <Pressable onPress={toggleCardLayout} style={styles.layoutToggle}>
-                <Ionicons
-                  name={cardLayout === "vertical" ? "reorder-two-outline" : "list-outline"}
-                  size={20}
-                  color={theme.colors.textPrimary}
-                />
-              </Pressable>
+              <View style={styles.headerButtons}>
+                <Pressable
+                  onPress={() => setUseFullName((v) => !v)}
+                  hitSlop={8}
+                  style={[
+                    styles.nameToggle,
+                    {
+                      borderColor: useFullName ? theme.colors.primary : theme.colors.textSecondary + "30",
+                      backgroundColor: useFullName ? theme.colors.primary + "15" : "transparent",
+                    },
+                  ]}
+                >
+                  <Fontisto
+                    name="text-width"
+                    size={12}
+                    color={useFullName ? theme.colors.primary : theme.colors.textSecondary}
+                  />
+                </Pressable>
+                <Pressable onPress={toggleCardLayout} style={styles.layoutToggle}>
+                  <Ionicons
+                    name={cardLayout === "vertical" ? "reorder-two-outline" : "list-outline"}
+                    size={20}
+                    color={theme.colors.textPrimary}
+                  />
+                </Pressable>
+              </View>
             }
           />
         </Animated.View>
@@ -693,51 +683,67 @@ export function GroupGamesScreen({
           <View style={[styles.filterSheetDivider, { backgroundColor: theme.colors.border }]} />
           <SmartFilterChips
             actionChips={actionChips}
-            selectedAction={draftAction}
-            onSelectAction={setDraftAction}
-            structuralFilter={
-              structuralFilter
-                ? structuralFilter.type === "teams"
-                  ? { ...structuralFilter, selectedTeamId: draftTeamId, selectedCompetitionId: draftCompetitionId }
-                  : structuralFilter.type === "rounds"
-                    ? { ...structuralFilter, selectedRound: draftRound || structuralFilter.selectedRound }
-                    : structuralFilter
-                : null
-            }
-            onSelectTeam={setDraftTeamId}
-            onSelectCompetition={setDraftCompetitionId}
-            onSelectRound={setDraftRound}
+            selectedAction={selectedAction}
+            onSelectAction={selectAction}
+            structuralFilter={structuralFilter}
+            onSelectTeam={selectTeam}
+            onSelectCompetition={selectCompetition}
+            onSelectRound={selectRound}
             onNavigateRound={navigateRound}
           />
 
-          {/* Cancel / Apply buttons */}
-          <View style={styles.filterSheetButtonRow}>
-            <Pressable
-              onPress={handleFilterCancel}
-              style={({ pressed }) => [
-                styles.filterSheetCancelBtn,
-                { borderColor: theme.colors.textSecondary + "60" },
-                pressed && { opacity: 0.6 },
-              ]}
-            >
-              <Text style={[styles.filterSheetBtnText, { color: theme.colors.textPrimary }]}>
-                {t("groups.cancel", { defaultValue: "Cancel" })}
-              </Text>
-            </Pressable>
+          {/* Group by (leagues mode only) */}
+          {mode === "leagues" && (
+            <>
+              <View style={[styles.filterSheetDivider, { backgroundColor: theme.colors.border, marginTop: 16 }]} />
+              <AppText style={[styles.filterSheetSectionLabel, { color: theme.colors.textPrimary }]}>
+                {t("predictions.groupBy", { defaultValue: "Group by" })}
+              </AppText>
+              <View style={styles.filterSheetSortRow}>
+                {(["round", "date"] as const).map((opt) => {
+                  const isSelected = leaguesGroupBy === opt;
+                  return (
+                    <Pressable
+                      key={opt}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setLeaguesGroupBy(opt);
+                      }}
+                      style={({ pressed }) => [
+                        styles.filterSheetSortChip,
+                        {
+                          backgroundColor: isSelected
+                            ? theme.colors.primary
+                            : theme.colors.textSecondary + "20",
+                          transform: [{ scale: pressed ? 0.95 : 1 }],
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.filterSheetSortChipText, { color: isSelected ? "#fff" : theme.colors.textPrimary + "90" }]}>
+                        {opt === "round"
+                          ? t("predictions.byRound", { defaultValue: "Round" })
+                          : t("predictions.byDate", { defaultValue: "Date" })}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          )}
 
-            <Pressable
-              onPress={handleFilterApply}
-              style={({ pressed }) => [
-                styles.filterSheetApplyBtn,
-                { backgroundColor: theme.colors.primary },
-                pressed && { opacity: 0.85 },
-              ]}
-            >
-              <Text style={[styles.filterSheetBtnText, { color: "#fff" }]}>
-                {t("groups.apply", { defaultValue: "Apply" })}
-              </Text>
-            </Pressable>
-          </View>
+          {/* Done button */}
+          <Pressable
+            onPress={handleFilterDone}
+            style={({ pressed }) => [
+              styles.filterSheetDoneBtn,
+              { backgroundColor: theme.colors.primary },
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <Text style={[styles.filterSheetBtnText, { color: "#fff" }]}>
+              {t("groups.done", { defaultValue: "Done" })}
+            </Text>
+          </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
     </View>
@@ -760,25 +766,31 @@ const styles = StyleSheet.create({
     height: 1,
     marginBottom: 16,
   },
-  filterSheetButtonRow: {
+  filterSheetSectionLabel: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  filterSheetSortRow: {
     flexDirection: "row",
-    gap: 12,
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  filterSheetSortChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  filterSheetSortChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  filterSheetDoneBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 24,
     marginTop: 24,
-  },
-  filterSheetCancelBtn: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 24,
-    borderWidth: 1,
-  },
-  filterSheetApplyBtn: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 24,
   },
   filterSheetBtnText: {
     fontSize: 15,
@@ -797,7 +809,6 @@ const styles = StyleSheet.create({
   },
   sectionHeaderContent: {
     flex: 1,
-    paddingLeft: 4,
     justifyContent: "center",
   },
   sectionDateRow: {
@@ -837,6 +848,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  nameToggle: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
   },
   layoutToggle: {
     padding: 8,

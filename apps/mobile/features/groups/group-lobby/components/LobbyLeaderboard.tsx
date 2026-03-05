@@ -276,26 +276,10 @@ function LobbyLeaderboardInner({
           pressed && styles.wrapperPressed,
         ]}
       >
-        {/* Title + View All */}
-        <View style={styles.bottomRow}>
-          <View style={styles.bottomLeft}>
-            <Text style={[styles.bottomTitle, { color: theme.colors.textPrimary }]}>
-              {t("lobby.leaderboard")}
-            </Text>
-          </View>
-          <Pressable
-            onPress={onPress}
-            style={({ pressed: p }) => [
-              styles.bottomButton,
-              { borderColor: theme.colors.border },
-              p && { opacity: 0.6 },
-            ]}
-          >
-            <Text style={[styles.bottomButtonText, { color: theme.colors.textSecondary }]}>
-              {t("lobby.viewAll")}
-            </Text>
-          </Pressable>
-        </View>
+        {/* Title */}
+        <Text style={[styles.bottomTitle, { color: theme.colors.textPrimary }]}>
+          {t("lobby.leaderboard")}
+        </Text>
 
         {/* Horizontal bars */}
         <View style={styles.barsContainer}>
@@ -336,6 +320,22 @@ function LobbyLeaderboardInner({
               </View>
             </Animated.View>
           )}
+        </View>
+
+        {/* View All button */}
+        <View style={styles.viewAllCenter}>
+          <Pressable
+            onPress={onPress}
+            style={({ pressed: p }) => [
+              styles.viewAllBtn,
+              { borderColor: theme.colors.border },
+              p && { opacity: 0.6 },
+            ]}
+          >
+            <Text style={[styles.viewAllBtnText, { color: theme.colors.textPrimary }]}>
+              {t("lobby.viewAll")}
+            </Text>
+          </Pressable>
         </View>
       </View>
       )}
@@ -641,6 +641,20 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 12,
     fontWeight: "500",
+  },
+  viewAllCenter: {
+    alignItems: "center",
+    marginTop: 12,
+  },
+  viewAllBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  viewAllBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
   },
   pressed: {
     opacity: 0.8,

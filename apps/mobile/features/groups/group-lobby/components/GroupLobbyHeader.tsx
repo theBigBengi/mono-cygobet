@@ -154,7 +154,7 @@ function GroupLobbyHeaderInner({
           </View>
         )}
 
-        {/* Avatar — centered */}
+        {/* Avatar + meta chips — centered */}
         {isLoading ? (
           <Animated.View
             style={[
@@ -165,20 +165,26 @@ function GroupLobbyHeaderInner({
             ]}
           />
         ) : (
-          <Pressable
-            style={styles.avatarCenter}
-            onPress={onInfoPress}
-            disabled={!onInfoPress}
-          >
-            <GroupAvatar
-              avatarType={avatarType}
-              avatarValue={avatarValue}
-              initials={initials}
-              size={120}
-              borderRadius={20}
-              flat
-            />
-          </Pressable>
+          <View style={styles.avatarCenter}>
+            <Pressable
+              onPress={onInfoPress}
+              disabled={!onInfoPress}
+            >
+              <GroupAvatar
+                avatarType={avatarType}
+                avatarValue={avatarValue}
+                initials={initials}
+                size={120}
+                borderRadius={20}
+                flat
+              />
+              {onInfoPress && (
+                <View style={[styles.avatarInfoHint, { backgroundColor: theme.colors.background }]}>
+                  <Ionicons name="information-circle-outline" size={22} color={theme.colors.textSecondary} />
+                </View>
+              )}
+            </Pressable>
+          </View>
         )}
 
         {/* Name + creator + share */}
@@ -227,6 +233,15 @@ function GroupLobbyHeaderInner({
                     <Text style={[styles.creatorText, { color: theme.colors.textSecondary }]}>
                       {creatorName}
                     </Text>
+                    <View style={styles.metaChips}>
+                      {memberCount != null && (
+                        <>
+                          <Ionicons name="people" size={11} color={theme.colors.textSecondary} />
+                          <Text style={[styles.metaChipText, { color: theme.colors.textSecondary }]}>{memberCount}</Text>
+                        </>
+                      )}
+                      <Ionicons name={privacy === "private" ? "lock-closed" : "globe"} size={11} color={theme.colors.textSecondary} />
+                    </View>
                   </View>
                 )}
               </View>
@@ -404,6 +419,27 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 18,
     marginBottom: 4,
+  },
+  metaChips: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginLeft: 8,
+  },
+  metaChipText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  avatarInfoHint: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   skeletonAvatar: {
     width: 120,

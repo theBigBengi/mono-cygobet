@@ -3,8 +3,9 @@
 
 import React, { useMemo, useCallback, useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent, Pressable, Text, Modal, TextInput, Platform, Keyboard } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, SlideInDown, SlideOutUp, FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
+import { View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent, Pressable, Text, Modal, TextInput, Platform, Keyboard, Dimensions } from "react-native";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, withRepeat, interpolate, SlideInDown, SlideOutUp, FadeIn, FadeOut, LinearTransition, runOnJS, type SharedValue } from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
@@ -60,7 +61,10 @@ interface GroupLobbyActiveScreenProps {
   onSettingsPress?: () => void;
   onInfoPress?: () => void;
   onScroll?: (scrollY: number) => void;
-  onChatPress?: () => void;
+  onChatExpand?: () => void;
+  onChatGestureStart?: () => void;
+  onChatGestureCancel?: () => void;
+  chatExpansion?: SharedValue<number>;
 }
 
 export function GroupLobbyActiveScreen({
@@ -71,7 +75,10 @@ export function GroupLobbyActiveScreen({
   onSettingsPress,
   onInfoPress,
   onScroll,
-  onChatPress,
+  onChatExpand,
+  onChatGestureStart,
+  onChatGestureCancel,
+  chatExpansion,
 }: GroupLobbyActiveScreenProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -121,9 +128,17 @@ export function GroupLobbyActiveScreen({
   const [sentPreviewMessages, setSentPreviewMessages] = useState<PreviewMsg[]>([]);
 
   const keyboardOffset = useSharedValue(0);
-  const floatingBarStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -keyboardOffset.value }],
-  }));
+  const dragY = useSharedValue(0);
+  const SCREEN_H = Dimensions.get("window").height;
+  const BAR_H = 70 + Math.max(insets.bottom, 16);
+  const floatingBarStyle = useAnimatedStyle(() => {
+    const chatLift = chatExpansion
+      ? interpolate(chatExpansion.value, [0, 1], [0, -(SCREEN_H - BAR_H * 2)])
+      : 0;
+    return {
+      transform: [{ translateY: -keyboardOffset.value + dragY.value + chatLift }],
+    };
+  });
 
   useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
@@ -233,9 +248,40 @@ export function GroupLobbyActiveScreen({
     router.push(`/groups/${group.id}/invite` as any);
   }, [router, group.id]);
 
-  const handleViewChat = useCallback(() => {
-    onChatPress?.();
-  }, [onChatPress]);
+  const handleChatExpand = useCallback(() => {
+    onChatExpand?.();
+  }, [onChatExpand]);
+
+  // Pan gesture to drag floating bar upward — drives chat expansion in real-time
+  const MAX_DRAG = (Dimensions.get("window").height - (70 + Math.max(insets.bottom, 16))) * 0.6;
+  const panGesture = useMemo(() =>
+    Gesture.Pan()
+      .enabled(!chatFocused)
+      .activeOffsetY([-10, 10])
+      .onStart(() => {
+        if (onChatGestureStart) runOnJS(onChatGestureStart)();
+      })
+      .onUpdate((e) => {
+        const progress = Math.min(1, Math.max(0, -e.translationY / MAX_DRAG));
+        if (chatExpansion) chatExpansion.value = progress;
+        // Move bar up slightly with finger
+        dragY.value = Math.min(0, e.translationY) * 0.1;
+      })
+      .onEnd((e) => {
+        const current = chatExpansion?.value ?? 0;
+        if (current > 0.3 && e.velocityY < 200) {
+          // Snap open
+          if (chatExpansion) chatExpansion.value = withTiming(1, { duration: 200 });
+          runOnJS(handleChatExpand)();
+        } else {
+          // Snap closed
+          if (chatExpansion) chatExpansion.value = withTiming(0, { duration: 200 });
+          if (onChatGestureCancel) runOnJS(onChatGestureCancel)();
+        }
+        dragY.value = withTiming(0, { duration: 200 });
+      }),
+    [chatFocused, handleChatExpand, onChatGestureStart, onChatGestureCancel, chatExpansion, MAX_DRAG]
+  );
 
   const handleViewPredictionsOverview = useCallback(() => {
     router.push(`/groups/${group.id}/predictions-overview` as any);
@@ -245,17 +291,30 @@ export function GroupLobbyActiveScreen({
     router.push(`/groups/${group.id}/activity` as any);
   }, [router, group.id]);
 
+  const handlePredictAll = useCallback(() => {
+    // Find first upcoming unpredicted fixture
+    const upcomingUnpredicted = fixtures.find(
+      (f) => f.prediction?.home == null && f.prediction?.away == null && f.kickoffAt && new Date(f.kickoffAt).getTime() > Date.now()
+    );
+    const targetId = upcomingUnpredicted?.id ?? fixtures[0]?.id;
+    if (targetId) {
+      router.push(`/groups/${group.id}/fixtures/${targetId}` as any);
+    } else {
+      handleViewGames();
+    }
+  }, [fixtures, router, group.id, handleViewGames]);
+
   const quickActions = useMemo(
     () => [
       {
         icon: "cards" as const,
         label: t("lobby.predictions"),
-        onPress: () => handleViewGames(),
+        onPress: handlePredictAll,
       },
     ],
     [
       t,
-      handleViewGames,
+      handlePredictAll,
     ]
   );
 
@@ -302,24 +361,7 @@ export function GroupLobbyActiveScreen({
           />
         )}
 
-        <View style={styles.metaRow}>
-          {isLobbySummaryLoading ? (
-            <Animated.View
-              style={[
-                { width: 180, height: 13, borderRadius: 6, backgroundColor: theme.colors.border },
-                metaSkeletonStyle,
-              ]}
-            />
-          ) : (
-            <Text style={[styles.metaText, { color: theme.colors.textSecondary }]}>
-              {[
-                t("lobby.active"),
-                group.memberCount != null ? `${group.memberCount} ${t("groups.membersShort", { defaultValue: "members" })}` : null,
-                group.privacy === "private" ? t("groups.private", { defaultValue: "Private" }) : group.privacy === "public" ? t("groups.public", { defaultValue: "Public" }) : null,
-              ].filter(Boolean).join("  ·  ")}
-            </Text>
-          )}
-        </View>
+        {/* Meta row removed — chips shown on avatar in header */}
 
         <LobbyQuickActions
           actions={quickActions}
@@ -475,6 +517,7 @@ export function GroupLobbyActiveScreen({
       </Screen>
 
       {/* Floating chat bar */}
+      <GestureDetector gesture={panGesture}>
       <Animated.View style={[styles.floatingBottom, { paddingBottom: Math.max(insets.bottom, 16) }, floatingBarStyle]}>
         <View style={[styles.floatingBottomInner, { backgroundColor: theme.colors.cardBackground }]}>
           {/* Preview messages */}
@@ -494,7 +537,7 @@ export function GroupLobbyActiveScreen({
                     exiting={SlideOutUp.duration(200)}
                     layout={LinearTransition.duration(250)}
                   >
-                    <Pressable onPress={handleViewChat} style={[styles.chatPreviewRow, sentPreviewMessages.length === 0 && { paddingRight: 22 }]}>
+                    <Pressable onPress={handleChatExpand} style={[styles.chatPreviewRow, sentPreviewMessages.length === 0 && { paddingRight: 22 }]}>
                       <Text style={[styles.chatPreviewSender, { color: theme.colors.textPrimary }]} numberOfLines={1}>
                         {msg.senderName}
                       </Text>
@@ -551,13 +594,14 @@ export function GroupLobbyActiveScreen({
                 <Ionicons name="send" size={18} color={chatText.trim().length > 0 ? "#fff" : theme.colors.textSecondary} />
               </Pressable>
             ) : (
-              <Pressable onPress={handleViewChat} style={({ pressed }) => [styles.chatActionBtn, pressed && { opacity: 0.7 }]}>
+              <Pressable onPress={handleChatExpand} style={({ pressed }) => [styles.chatActionBtn, pressed && { opacity: 0.7 }]}>
                 <Ionicons name="chevron-up" size={20} color={theme.colors.textSecondary} />
               </Pressable>
             )}
           </Animated.View>
         </View>
       </Animated.View>
+      </GestureDetector>
 
     </View>
   );
@@ -575,9 +619,19 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 4,
   },
+  metaIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
   metaText: {
     fontSize: 13,
-    fontWeight: "400",
+    fontWeight: "500",
   },
   floatingBottom: {
     position: "absolute",

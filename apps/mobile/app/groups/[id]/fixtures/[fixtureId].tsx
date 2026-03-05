@@ -25,10 +25,10 @@ export default function SingleGameRoute() {
     staleTime: 5 * 60 * 1000, // 5 minutes — use cached data from games screen
   });
 
-  if (isLoading) {
+  if (isLoading || !data) {
     return <QueryLoadingView message={t("groups.loadingGroup")} />;
   }
-  if (error || !data) {
+  if (error) {
     return <QueryErrorView message={t("groups.failedLoadGroup")} />;
   }
 

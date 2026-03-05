@@ -62,46 +62,23 @@ function LobbyRecentResultsInner({
   // Don't render if no finished games and not loading
   if (!isLoading && tiles.length === 0) return null;
 
-  const tileBg = theme.colors.textPrimary + "10";
+  const tileBg = "transparent";
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.headerRow}>
         {isLoading ? (
-          <>
-            <Animated.View
-              style={[
-                { width: 120, height: 14, borderRadius: 6, backgroundColor: theme.colors.border },
-                skeletonStyle,
-              ]}
-            />
-            <Animated.View
-              style={[
-                { width: 60, height: 12, borderRadius: 6, backgroundColor: theme.colors.border },
-                skeletonStyle,
-              ]}
-            />
-          </>
+          <Animated.View
+            style={[
+              { width: 120, height: 14, borderRadius: 6, backgroundColor: theme.colors.border },
+              skeletonStyle,
+            ]}
+          />
         ) : (
-          <>
-            <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>
-              {t("lobby.recentResults")}
-            </Text>
-            <Pressable
-              onPress={() => onPress()}
-              style={({ pressed }) => [pressed && { opacity: 0.6 }]}
-            >
-              <Text
-                style={[
-                  styles.headerViewAll,
-                  { color: theme.colors.textSecondary },
-                ]}
-              >
-                {t("lobby.viewResults")}
-              </Text>
-            </Pressable>
-          </>
+          <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>
+            {t("lobby.recentResults")}
+          </Text>
         )}
       </View>
 
@@ -133,61 +110,65 @@ function LobbyRecentResultsInner({
                     pressed && { opacity: 0.7 },
                   ]}
                 >
-                  {/* Prediction + Points */}
-                  <View style={styles.tileTopRow}>
-                    <Text
-                      style={[
-                        styles.tilePrediction,
-                        { color: theme.colors.textSecondary },
-                      ]}
-                    >
+                  {/* Match result */}
+                  <View style={styles.tileMatchSection}>
+                    <View style={styles.tileTeamRow}>
+                      <Text style={[styles.tileTeam, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                        {fixture.homeTeam?.shortCode ?? "???"}
+                      </Text>
+                      <Text style={[styles.tileResultScore, { color: theme.colors.textPrimary }]}>
+                        {fixture.homeScore90 ?? "?"}
+                      </Text>
+                    </View>
+                    <View style={styles.tileTeamRow}>
+                      <Text style={[styles.tileTeam, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                        {fixture.awayTeam?.shortCode ?? "???"}
+                      </Text>
+                      <Text style={[styles.tileResultScore, { color: theme.colors.textPrimary }]}>
+                        {fixture.awayScore90 ?? "?"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Divider */}
+                  <View style={[styles.tileDivider, { backgroundColor: theme.colors.border }]} />
+
+                  {/* Prediction */}
+                  <View style={styles.tilePredictionSection}>
+                    <Text style={[styles.tilePrediction, { color: theme.colors.textSecondary }]}>
                       {fixture.prediction ? `${fixture.prediction.home}-${fixture.prediction.away}` : "—"}
                     </Text>
                     <Text
                       style={[
                         styles.tilePoints,
-                        {
-                          color: hasPoints
-                            ? pointsColor!
-                            : theme.colors.textSecondary,
-                        },
+                        { color: hasPoints ? pointsColor! : theme.colors.textSecondary },
                       ]}
                     >
                       {hasPoints ? `+${points}` : "—"}
                     </Text>
                   </View>
-
-                  {/* Teams + Score */}
-                  <Text
-                    style={[
-                      styles.tileTeam,
-                      { color: theme.colors.textSecondary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {fixture.homeTeam?.shortCode ?? "???"}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.tileScore,
-                      { color: theme.colors.textPrimary },
-                    ]}
-                  >
-                    {fixture.homeScore90 ?? "?"}-{fixture.awayScore90 ?? "?"}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.tileTeam,
-                      { color: theme.colors.textSecondary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {fixture.awayTeam?.shortCode ?? "???"}
-                  </Text>
                 </Pressable>
               );
             })}
       </View>
+
+      {/* View Results button */}
+      {!isLoading && tiles.length > 0 && (
+        <View style={styles.viewAllCenter}>
+          <Pressable
+            onPress={() => onPress()}
+            style={({ pressed }) => [
+              styles.viewAllBtn,
+              { borderColor: theme.colors.border },
+              pressed && { opacity: 0.6 },
+            ]}
+          >
+            <Text style={[styles.viewAllBtnText, { color: theme.colors.textPrimary }]}>
+              {t("lobby.viewResults")}
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -209,8 +190,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
   },
-  headerViewAll: {
-    fontSize: 12,
+  viewAllCenter: {
+    alignItems: "center",
+    marginTop: 12,
+  },
+  viewAllBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  viewAllBtnText: {
+    fontSize: 13,
     fontWeight: "700",
   },
   tilesRow: {
@@ -220,28 +211,37 @@ const styles = StyleSheet.create({
   tile: {
     flex: 1,
     borderRadius: 10,
-    alignItems: "center",
-    paddingVertical: 8,
-    minHeight: 72,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
     overflow: "hidden",
+  },
+  tileMatchSection: {
+    gap: 1,
+  },
+  tileTeamRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   tileTeam: {
     fontSize: 11,
     fontWeight: "700",
-    marginBottom: 2,
+    flex: 1,
   },
-  tileScore: {
-    fontSize: 15,
+  tileResultScore: {
+    fontSize: 13,
     fontWeight: "700",
-    marginBottom: 2,
+    minWidth: 14,
+    textAlign: "center",
   },
-  tileTopRow: {
+  tileDivider: {
+    height: 1,
+    marginVertical: 5,
+  },
+  tilePredictionSection: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    width: "100%",
-    paddingHorizontal: 6,
-    marginBottom: 4,
   },
   tilePrediction: {
     fontSize: 10,

@@ -9,14 +9,13 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  FlatList,
   ListRenderItem,
   Animated,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BottomSheetFlatList, useBottomSheet } from "@gorhom/bottom-sheet";
-import ReanimatedAnimated, { useAnimatedStyle, interpolate } from "react-native-reanimated";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/lib/theme";
@@ -33,7 +32,6 @@ import { ChatDateSeparator } from "../components/ChatDateSeparator";
 import { ChatInput } from "../components/ChatInput";
 import { ChatTypingIndicator } from "../components/ChatTypingIndicator";
 import { useMentionOptions } from "../hooks/useMentionOptions";
-import { HEADER_HEIGHT } from "@/features/groups/predictions/utils/constants";
 import type { FixtureItem } from "@/types/common";
 import type { ChatMessage } from "@/lib/socket";
 
@@ -111,12 +109,6 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const currentUserId = user?.id ?? 0;
-  const { animatedIndex } = useBottomSheet();
-
-  const inputAreaStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(animatedIndex.value, [0.5, 1], [0, 1], "clamp"),
-  }));
-
   const { data: groupData } = useGroupQuery(groupId, {
     includeFixtures: true,
   });
@@ -273,11 +265,6 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
     );
   }, [isFetchingNextPage, t]);
 
-  const keyboardVerticalOffset = useMemo(
-    () => (Platform.OS === "ios" ? insets.top + HEADER_HEIGHT : 0),
-    [insets.top]
-  );
-
   if (!groupId) {
     return (
       <View style={styles.centered}>
@@ -302,8 +289,10 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
   }
 
   return (
-    <View
+    <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={insets.top}
     >
       {messages.length === 0 && !isLoading ? (
         <View style={styles.emptyContainer}>
@@ -313,7 +302,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
         </View>
       ) : (
         <View style={styles.listWrapper}>
-          <BottomSheetFlatList<ChatListItem>
+          <FlatList<ChatListItem>
             data={chatListItems}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
@@ -360,7 +349,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
         </View>
       )}
 
-      <ReanimatedAnimated.View style={inputAreaStyle}>
+      <View>
         <ChatTypingIndicator
           typingUsers={typingUsers}
           currentUserId={currentUserId}
@@ -374,8 +363,8 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
           memberOptions={memberOptions}
           fixtureOptions={fixtureOptions}
         />
-      </ReanimatedAnimated.View>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 

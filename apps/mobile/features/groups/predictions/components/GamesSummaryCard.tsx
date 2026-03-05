@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
 
 type Props = {
@@ -17,60 +18,66 @@ export function GamesSummaryCard({
 }: Props) {
   const { theme } = useTheme();
 
+  const accuracyColor =
+    accuracy >= 60
+      ? theme.colors.success
+      : accuracy >= 30
+        ? theme.colors.warning
+        : theme.colors.textSecondary;
+
+  const progressRatio = totalCount > 0 ? predictedCount / totalCount : 0;
+
   return (
     <View style={styles.wrapper}>
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: theme.colors.border + "40" },
-        ]}
-      >
-        <View style={styles.row}>
-          <View style={styles.stat}>
-            <Text style={[styles.value, { color: theme.colors.textPrimary }]}>
-              {totalPoints}
-            </Text>
-            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>
-              pts
-            </Text>
-          </View>
+      <View style={styles.row}>
+        {/* Points pill */}
+        <View style={[styles.pill, { backgroundColor: theme.colors.primary + "12" }]}>
+          <Text style={[styles.pillValue, { color: theme.colors.primary }]}>
+            {totalPoints}
+          </Text>
+          <Text style={[styles.pillLabel, { color: theme.colors.primary + "90" }]}>
+            PTS
+          </Text>
+        </View>
 
-          <View
-            style={[styles.divider, { backgroundColor: theme.colors.border }]}
-          />
-
-          <View style={styles.stat}>
-            <Text style={[styles.value, { color: theme.colors.textPrimary }]}>
+        {/* Progress pill */}
+        <View style={[styles.pill, styles.progressPill, { backgroundColor: theme.colors.textSecondary + "10" }]}>
+          <View style={styles.progressTop}>
+            <MaterialCommunityIcons
+              name="checkbox-marked-circle-outline"
+              size={13}
+              color={theme.colors.textSecondary}
+              style={styles.progressIcon}
+            />
+            <Text style={[styles.pillValue, { color: theme.colors.textPrimary }]}>
               {predictedCount}
-              <Text style={[styles.total, { color: theme.colors.textSecondary }]}>
+              <Text style={{ color: theme.colors.textSecondary, fontWeight: "600", fontSize: 13 }}>
                 /{totalCount}
               </Text>
             </Text>
-            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>
-              predicted
-            </Text>
           </View>
-
-          <View
-            style={[styles.divider, { backgroundColor: theme.colors.border }]}
-          />
-
-          <View style={styles.stat}>
-            <Text
+          {/* Mini progress bar */}
+          <View style={[styles.progressBarBg, { backgroundColor: theme.colors.textSecondary + "20" }]}>
+            <View
               style={[
-                styles.value,
+                styles.progressBarFill,
                 {
-                  color:
-                    accuracy > 50 ? theme.colors.success : theme.colors.textPrimary,
+                  backgroundColor: progressRatio >= 1 ? theme.colors.success : theme.colors.primary,
+                  width: `${Math.min(progressRatio * 100, 100)}%`,
                 },
               ]}
-            >
-              {accuracy}%
-            </Text>
-            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>
-              accuracy
-            </Text>
+            />
           </View>
+        </View>
+
+        {/* Accuracy pill */}
+        <View style={[styles.pill, { backgroundColor: accuracyColor + "12" }]}>
+          <Text style={[styles.pillValue, { color: accuracyColor }]}>
+            {accuracy}%
+          </Text>
+          <Text style={[styles.pillLabel, { color: accuracyColor + "90" }]}>
+            ACC
+          </Text>
         </View>
       </View>
     </View>
@@ -79,41 +86,51 @@ export function GamesSummaryCard({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  card: {
-    flex: 1,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    marginTop: 12,
+    marginBottom: 12,
   },
   row: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
+    gap: 8,
   },
-  stat: {
-    alignItems: "center",
-    gap: 2,
+  pill: {
     flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 2,
   },
-  value: {
-    fontSize: 18,
+  progressPill: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    gap: 6,
+  },
+  pillValue: {
+    fontSize: 17,
     fontWeight: "800",
   },
-  total: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  label: {
+  pillLabel: {
     fontSize: 9,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
-  divider: {
-    width: 1,
-    height: 28,
+  progressTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  progressIcon: {
+    marginTop: 1,
+  },
+  progressBarBg: {
+    width: "100%",
+    height: 3,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 2,
   },
 });

@@ -358,16 +358,18 @@ export function LobbyPredictionsCTA({
           Upcoming
         </Text>
         <Pressable onPress={() => setUseFullName((v) => !v)} hitSlop={8} style={{
-          marginRight: 3,
+          width: 20,
+          height: 20,
           borderWidth: 1,
           borderColor: useFullName ? theme.colors.primary : theme.colors.textSecondary + "30",
           backgroundColor: useFullName ? theme.colors.primary + "15" : "transparent",
-          borderRadius: 6,
-          padding: 4,
+          borderRadius: 4,
+          alignItems: "center",
+          justifyContent: "center",
         }}>
           <Fontisto
             name="text-width"
-            size={16}
+            size={12}
             color={useFullName ? theme.colors.primary : theme.colors.textSecondary}
           />
         </Pressable>

@@ -138,6 +138,12 @@ const mediumFixtures: FixtureItem[] = [
   mockFixture(207, { homeTeamIdx: 0, awayTeamIdx: 3, leagueId: 3, round: "22", kickoffAt: hours(28) }),
   // Later
   mockFixture(212, { homeTeamIdx: 2, awayTeamIdx: 5, leagueId: 3, round: "23", kickoffAt: hours(72) }),
+  // Postponed
+  mockFixture(213, { homeTeamIdx: 6, awayTeamIdx: 9, leagueId: 1, round: "20", state: "POSTPONED", kickoffAt: yesterday(24) }),
+  // Cancelled
+  mockFixture(214, { homeTeamIdx: 10, awayTeamIdx: 13, leagueId: 2, round: "5", state: "CANCELLED", kickoffAt: yesterday(24), prediction: { home: 1, away: 0 } }),
+  // Abandoned (mid-game)
+  mockFixture(215, { homeTeamIdx: 14, awayTeamIdx: 17, leagueId: 3, round: "22", state: "ABANDONED", kickoffAt: yesterday(6), homeScore90: 1, awayScore90: 0, prediction: { home: 1, away: 0 } }),
 ];
 
 // ── MANY (30 fixtures — stress test, all 3 leagues, many rounds) ──

@@ -5,7 +5,7 @@
 // - Active status → GroupLobbyActiveScreen
 // - Ended status → GroupLobbyEndedScreen
 
-import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSetAtom } from "jotai";
@@ -15,12 +15,22 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Dimensions,
+  Pressable,
 } from "react-native";
-import { useSharedValue } from "react-native-reanimated";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  interpolate,
+  runOnJS,
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { Screen, AppText, InfoSheet } from "@/components/ui";
+import { Screen, AppText } from "@/components/ui";
 import { AnimatedStickyHeader } from "@/components/ui/AnimatedStickyHeader";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGroupQuery, useDeleteGroupMutation, groupsKeys } from "@/domains/groups";
@@ -119,15 +129,62 @@ function GroupLobbyContent() {
   const [isPublishing, setIsPublishing] = useState(false);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const infoSheetRef = useRef<BottomSheetModal>(null);
-  const chatSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
   const handleOpenInfo = useCallback(() => {
     infoSheetRef.current?.present();
   }, []);
 
-  const handleOpenChat = useCallback(() => {
-    chatSheetRef.current?.present();
+  // Expandable chat (Spotify-style: bar grows from bottom to full screen)
+  const SCREEN_H = Dimensions.get("window").height;
+  const BAR_H = 70 + Math.max(insets.bottom, 16);
+  const [chatOpen, setChatOpen] = useState(false);
+  const chatExpansion = useSharedValue(0);
+
+  const handleChatGestureStart = useCallback(() => {
+    setChatOpen(true);
   }, []);
+
+  const handleChatGestureCancel = useCallback(() => {
+    setChatOpen(false);
+  }, []);
+
+  const handleChatExpand = useCallback(() => {
+    setChatOpen(true);
+    // Only animate if not already at 1 (gesture may have already set it)
+    if (chatExpansion.value < 1) {
+      chatExpansion.value = withTiming(1, { duration: 300 });
+    }
+  }, []);
+
+  const handleChatCollapse = useCallback(() => {
+    chatExpansion.value = withTiming(0, { duration: 280 }, (finished) => {
+      if (finished) runOnJS(setChatOpen)(false);
+    });
+  }, []);
+
+  const chatExpandStyle = useAnimatedStyle(() => {
+    // Animate top: starts near bottom (showing only the bar), ends at 0 (full screen)
+    const closedTop = SCREEN_H - BAR_H;
+    return {
+      top: interpolate(chatExpansion.value, [0, 1], [closedTop, 0]),
+      bottom: 0,
+      borderTopLeftRadius: interpolate(chatExpansion.value, [0, 0.4], [14, 0], "clamp"),
+      borderTopRightRadius: interpolate(chatExpansion.value, [0, 0.4], [14, 0], "clamp"),
+      marginHorizontal: interpolate(chatExpansion.value, [0, 0.3], [16, 0], "clamp"),
+      marginBottom: interpolate(chatExpansion.value, [0, 0.3], [Math.max(insets.bottom, 16), 0], "clamp"),
+    };
+  });
+
+  const chatContentOpacity = useAnimatedStyle(() => ({
+    opacity: interpolate(chatExpansion.value, [0.05, 0.35], [0, 1], "clamp"),
+  }));
+
+  const chatBgAlpha = useAnimatedStyle(() => {
+    const alpha = interpolate(chatExpansion.value, [0, 0.1], [0.3, 1], "clamp");
+    const rgb = colorScheme === "dark" ? "30,30,30" : "255,255,255";
+    return { backgroundColor: `rgba(${rgb},${alpha})` };
+  });
+
 
   useEffect(() => {
     return () => {
@@ -252,7 +309,10 @@ function GroupLobbyContent() {
             router.push(`/groups/${group.id}/settings` as any)
           }
           onInfoPress={handleOpenInfo}
-          onChatPress={handleOpenChat}
+          onChatExpand={handleChatExpand}
+          onChatGestureStart={handleChatGestureStart}
+          onChatGestureCancel={handleChatGestureCancel}
+          chatExpansion={chatExpansion}
           onScroll={handleScroll}
         />
       </LobbyWithHeader>
@@ -277,74 +337,99 @@ function GroupLobbyContent() {
   const isActive = group.status === "active";
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.colors.background,
-          // Pull content into status bar area for active groups
-          marginTop: isActive ? -insets.top : 0,
-        }
-      ]}
-    >
-      {content}
+    <View style={styles.wrapper}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.colors.background,
+            marginTop: isActive ? -insets.top : 0,
+          }
+        ]}
+      >
+        {content}
 
-      {/* Sticky header - only for active groups */}
-      {isActive && (
-        <AnimatedStickyHeader
-          scrollY={scrollY}
-          title={group.name}
-          fallbackRoute="/(tabs)/groups"
-          tintColor="transparent"
-          extendsIntoStatusBar
-          // Threshold: header appears when group name scrolls behind it
-          threshold={160}
-          rightActions={[
-            {
-              icon: "settings-outline",
-              onPress: () => router.push(`/groups/${group.id}/settings` as any),
-            },
-          ]}
-        />
-      )}
-
-      {showOverlay && (
-        <View style={styles.overlay} pointerEvents="box-none">
-          <BlurView
-            intensity={80}
-            tint={isDark ? "dark" : "light"}
-            style={[
-              StyleSheet.absoluteFill,
-              Platform.OS === "android" && {
-                backgroundColor: isDark
-                  ? "rgba(0, 0, 0, 0.85)"
-                  : "rgba(255, 255, 255, 0.85)",
+        {isActive && (
+          <AnimatedStickyHeader
+            scrollY={scrollY}
+            title={group.name}
+            fallbackRoute="/(tabs)/groups"
+            tintColor="transparent"
+            extendsIntoStatusBar
+            threshold={160}
+            rightActions={[
+              {
+                icon: "settings-outline",
+                onPress: () => router.push(`/groups/${group.id}/settings` as any),
               },
             ]}
           />
-          <View style={styles.overlayContent}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <AppText variant="body" style={styles.overlayText}>
-              {isPublishing
-                ? t("lobby.publishingGroup")
-                : t("lobby.deletingGroup")}
-            </AppText>
+        )}
+
+        {showOverlay && (
+          <View style={styles.overlay} pointerEvents="box-none">
+            <BlurView
+              intensity={80}
+              tint={isDark ? "dark" : "light"}
+              style={[
+                StyleSheet.absoluteFill,
+                Platform.OS === "android" && {
+                  backgroundColor: isDark
+                    ? "rgba(0, 0, 0, 0.85)"
+                    : "rgba(255, 255, 255, 0.85)",
+                },
+              ]}
+            />
+            <View style={styles.overlayContent}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <AppText variant="body" style={styles.overlayText}>
+                {isPublishing
+                  ? t("lobby.publishingGroup")
+                  : t("lobby.deletingGroup")}
+              </AppText>
+            </View>
           </View>
-        </View>
+        )}
+        <GroupInfoSheet
+          group={group}
+          sheetRef={infoSheetRef}
+          isLoading={isFetching}
+        />
+      </View>
+
+      {/* Expanding chat — grows from bottom over everything */}
+      {chatOpen && (
+        <Animated.View
+          style={[
+            styles.chatExpandable,
+            chatExpandStyle,
+            chatBgAlpha,
+          ]}
+        >
+          <Animated.View style={[{ flex: 1, justifyContent: "flex-end" }, chatContentOpacity]}>
+            <View style={{ backgroundColor: theme.colors.background, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border }}>
+              <View style={{ flexDirection: "row", alignItems: "center", paddingTop: insets.top + 4, paddingBottom: 6, paddingHorizontal: 16 }}>
+                <Pressable onPress={handleChatCollapse} hitSlop={16}>
+                  <Ionicons name="chevron-down" size={28} color={theme.colors.textPrimary} />
+                </Pressable>
+                <View style={{ flex: 1 }} />
+                <View style={{ width: 28 }} />
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <GroupChatScreen groupId={groupId} />
+            </View>
+          </Animated.View>
+        </Animated.View>
       )}
-      <GroupInfoSheet
-        group={group}
-        sheetRef={infoSheetRef}
-        isLoading={isFetching}
-      />
-      <InfoSheet sheetRef={chatSheetRef} snapPoints={["55%", "95%"]} rawContent showHeaderAction>
-        <GroupChatScreen groupId={groupId} />
-      </InfoSheet>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -360,5 +445,12 @@ const styles = StyleSheet.create({
   },
   overlayText: {
     marginTop: 12,
+  },
+  chatExpandable: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    overflow: "hidden",
+    zIndex: 9999,
   },
 });
