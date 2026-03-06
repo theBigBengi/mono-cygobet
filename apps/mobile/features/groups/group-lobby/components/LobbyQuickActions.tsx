@@ -3,7 +3,6 @@
 
 import React, { useEffect } from "react";
 import { View, ScrollView, StyleSheet, Pressable, Text } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -11,7 +10,9 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/lib/theme";
+import { AnimatedGradientCard } from "./AnimatedGradientCard";
 
 export interface QuickAction {
   icon: "cards" | "chat" | "stats" | "activity";
@@ -112,6 +113,7 @@ function LobbyQuickActionsInner({
   return (
     <View style={styles.container}>
       {cardsAction && (
+        <View style={[styles.cardShadow, { backgroundColor: theme.colors.background }]}>
         <Pressable
           onPress={cardsAction.onPress}
           style={({ pressed }) => [
@@ -119,27 +121,33 @@ function LobbyQuickActionsInner({
             pressed && { opacity: 0.8 },
           ]}
         >
-          <LinearGradient
-            colors={[
-              theme.colors.textPrimary + "08",
-              theme.colors.textPrimary + "03",
-            ]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.card, styles.cardsRow]}
-          >
-            {renderAction(cardsAction, 0)}
-            <View style={styles.cardsTextCol}>
-              <Text style={[styles.cardsTitle, { color: theme.colors.textPrimary }]}>
-                Predict All
-              </Text>
-              <Text style={[styles.cardsSubtitle, { color: theme.colors.textSecondary }]}>
-                {totalFixtures - predictionsCount} of {totalFixtures} left
-              </Text>
+          <AnimatedGradientCard style={[styles.card]}>
+            <View style={styles.cardsRow}>
+              {renderAction(cardsAction, 0)}
+              <View style={styles.cardsTextCol}>
+                <Text style={[styles.cardsTitle, { color: theme.colors.textPrimary }]}>
+                  Predict All
+                </Text>
+                <Text style={[styles.cardsSubtitle, { color: theme.colors.textSecondary }]}>
+                  {totalFixtures - predictionsCount} of {totalFixtures} left
+                </Text>
+              </View>
+              <View style={[styles.chevronCircle, { backgroundColor: theme.colors.border + "40" }]}>
+                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
-          </LinearGradient>
+            {/* Progress bar */}
+            <View style={[styles.progressTrack, { backgroundColor: theme.colors.border }]}>
+              <LinearGradient
+                colors={["#6366F140", "#EC489940"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.progressFill, { width: totalFixtures > 0 ? `${(predictionsCount / totalFixtures) * 100}%` : "0%" }]}
+              />
+            </View>
+          </AnimatedGradientCard>
         </Pressable>
+        </View>
       )}
       <View style={styles.row}>
         <View style={styles.leftGroup}>
@@ -158,9 +166,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 16,
   },
+  cardShadow: {
+    borderRadius: 12,
+  },
   cardWrapper: {
     borderRadius: 12,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#9CA3AF30",
   },
   card: {
     borderRadius: 12,
@@ -192,6 +205,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
     marginTop: 1,
+  },
+  chevronCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  progressTrack: {
+    height: 3,
+    borderRadius: 2,
+    marginTop: 10,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 2,
   },
   leftGroup: {
     flexDirection: "row",

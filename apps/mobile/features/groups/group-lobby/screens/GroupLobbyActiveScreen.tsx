@@ -367,12 +367,12 @@ export function GroupLobbyActiveScreen({
           isLoading={isRankingLoading}
         />
 
-        <GroupTimelineBar
+        {/* <GroupTimelineBar
           startDate={group.firstGame?.kickoffAt ?? ""}
           endDate={group.lastGame?.kickoffAt ?? ""}
           progress={timelineProgress}
           isLoading={isRankingLoading}
-        />
+        /> */}
 
         {/* Meta row removed — chips shown on avatar in header */}
 
