@@ -116,6 +116,7 @@ export function useGroupedFixtures({
 
       let currentRound: string | null = null;
       let currentGroup: FixtureGroup | null = null;
+      let roundGroupCounter = 0;
 
       for (const fixture of sortedFixtures) {
         const round = fixture.round ?? "";
@@ -125,8 +126,9 @@ export function useGroupedFixtures({
             result.push(currentGroup);
           }
           currentRound = round;
+          roundGroupCounter++;
           currentGroup = {
-            key: `round-${round}`,
+            key: `round-${round}-${roundGroupCounter}`,
             label: round ? `Round ${round}` : "",
             round: round || undefined,
             level: "round",

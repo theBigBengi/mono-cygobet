@@ -171,8 +171,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   resultText: {
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "600",
     lineHeight: 22,
     textAlignVertical: "center",
   },

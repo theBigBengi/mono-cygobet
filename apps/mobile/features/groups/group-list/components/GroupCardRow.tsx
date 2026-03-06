@@ -40,7 +40,7 @@ function GroupCardRowInner({ group, onPress }: GroupCardRowProps) {
       return group.nextGame.league.name;
     }
     if (group.selectionMode === "teams" && group.groupTeams && group.groupTeams.length > 0) {
-      return group.groupTeams.map((team) => team.shortCode ?? team.name.slice(0, 3).toUpperCase()).join(", ");
+      return group.groupTeams.map((team) => team.shortCode ?? team.name).join(", ");
     }
     if (group.selectionMode === "games" && (group.totalFixtures ?? 0) > 0) {
       return t("groups.freePick");

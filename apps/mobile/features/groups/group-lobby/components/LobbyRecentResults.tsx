@@ -62,8 +62,6 @@ function LobbyRecentResultsInner({
   // Don't render if no finished games and not loading
   if (!isLoading && tiles.length === 0) return null;
 
-  const tileBg = "transparent";
-
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -97,8 +95,8 @@ function LobbyRecentResultsInner({
             ))
           : tiles.map((fixture) => {
               const points = fixture.prediction?.points ?? null;
-              const pointsColor = getPointsColor(points);
               const hasPoints = points != null;
+              const color = hasPoints ? getPointsColor(points)! : POINTS_COLORS.red;
 
               return (
                 <Pressable
@@ -106,7 +104,7 @@ function LobbyRecentResultsInner({
                   onPress={() => onPress(fixture.id)}
                   style={({ pressed }) => [
                     styles.tile,
-                    { backgroundColor: tileBg },
+                    { backgroundColor: color + "10" },
                     pressed && { opacity: 0.7 },
                   ]}
                 >
@@ -114,7 +112,7 @@ function LobbyRecentResultsInner({
                   <View style={styles.tileMatchSection}>
                     <View style={styles.tileTeamRow}>
                       <Text style={[styles.tileTeam, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                        {fixture.homeTeam?.shortCode ?? "???"}
+                        {fixture.homeTeam?.shortCode ?? ""}
                       </Text>
                       <Text style={[styles.tileResultScore, { color: theme.colors.textPrimary }]}>
                         {fixture.homeScore90 ?? "?"}
@@ -122,7 +120,7 @@ function LobbyRecentResultsInner({
                     </View>
                     <View style={styles.tileTeamRow}>
                       <Text style={[styles.tileTeam, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                        {fixture.awayTeam?.shortCode ?? "???"}
+                        {fixture.awayTeam?.shortCode ?? ""}
                       </Text>
                       <Text style={[styles.tileResultScore, { color: theme.colors.textPrimary }]}>
                         {fixture.awayScore90 ?? "?"}
@@ -130,21 +128,19 @@ function LobbyRecentResultsInner({
                     </View>
                   </View>
 
-                  {/* Divider */}
-                  <View style={[styles.tileDivider, { backgroundColor: theme.colors.border }]} />
 
                   {/* Prediction */}
                   <View style={styles.tilePredictionSection}>
-                    <Text style={[styles.tilePrediction, { color: theme.colors.textSecondary }]}>
+                    <Text style={[styles.tilePrediction, { color }]}>
                       {fixture.prediction ? `${fixture.prediction.home}-${fixture.prediction.away}` : "—"}
                     </Text>
                     <Text
                       style={[
                         styles.tilePoints,
-                        { color: hasPoints ? pointsColor! : theme.colors.textSecondary },
+                        { color },
                       ]}
                     >
-                      {hasPoints ? `+${points}` : "—"}
+                      {hasPoints ? `+${points} pts` : "+0 pts"}
                     </Text>
                   </View>
                 </Pressable>
@@ -217,6 +213,7 @@ const styles = StyleSheet.create({
   },
   tileMatchSection: {
     gap: 1,
+    marginBottom: 10,
   },
   tileTeamRow: {
     flexDirection: "row",
@@ -224,19 +221,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   tileTeam: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: "700",
     flex: 1,
   },
   tileResultScore: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "700",
     minWidth: 14,
     textAlign: "center",
-  },
-  tileDivider: {
-    height: 1,
-    marginVertical: 5,
   },
   tilePredictionSection: {
     flexDirection: "row",
@@ -244,11 +237,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   tilePrediction: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: "600",
   },
   tilePoints: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: "700",
   },
 });

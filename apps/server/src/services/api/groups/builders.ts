@@ -12,6 +12,7 @@ import type {
   FixtureWithRelationsAndResult,
   ParsedPrediction,
 } from "./types";
+import { resolveShortCode } from "../../../utils/short-code";
 
 export type GroupStatus =
   | typeof GROUP_STATUS.DRAFT
@@ -222,7 +223,7 @@ export function formatFixtureFromDb(
       ? {
           id: fixture.homeTeam.id,
           name: fixture.homeTeam.name,
-          shortCode: fixture.homeTeam.shortCode ?? null,
+          shortCode: resolveShortCode(fixture.homeTeam.shortCode, fixture.homeTeam.name),
           imagePath: fixture.homeTeam.imagePath ?? null,
           firstKitColor: fixture.homeTeam.firstKitColor ?? null,
           secondKitColor: fixture.homeTeam.secondKitColor ?? null,
@@ -233,7 +234,7 @@ export function formatFixtureFromDb(
       ? {
           id: fixture.awayTeam.id,
           name: fixture.awayTeam.name,
-          shortCode: fixture.awayTeam.shortCode ?? null,
+          shortCode: resolveShortCode(fixture.awayTeam.shortCode, fixture.awayTeam.name),
           imagePath: fixture.awayTeam.imagePath ?? null,
           firstKitColor: fixture.awayTeam.firstKitColor ?? null,
           secondKitColor: fixture.awayTeam.secondKitColor ?? null,

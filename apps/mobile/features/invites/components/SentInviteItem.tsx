@@ -1,11 +1,10 @@
 // features/invites/components/SentInviteItem.tsx
-// Single row showing a sent invite with cancel button.
+// Compact row showing a sent invite with cancel option.
 
 import React from "react";
-import { View, StyleSheet, Image, Text, Alert } from "react-native";
+import { View, StyleSheet, Image, Text, Alert, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import { Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { SentInviteItem as SentInviteItemType } from "@/domains/invites";
 
@@ -55,20 +54,12 @@ export function SentInviteItem({
   };
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: theme.colors.cardBackground,
-          borderColor: theme.colors.border,
-        },
-      ]}
-    >
+    <View style={styles.row}>
       {/* Avatar */}
       <View
         style={[
-          styles.avatarWrap,
-          { backgroundColor: theme.colors.primary + "15" },
+          styles.avatar,
+          { backgroundColor: theme.colors.textPrimary + "10" },
         ]}
       >
         {invite.inviteeImage ? (
@@ -78,7 +69,7 @@ export function SentInviteItem({
             accessibilityIgnoresInvertColors
           />
         ) : (
-          <Text style={[styles.initials, { color: theme.colors.primary }]}>
+          <Text style={[styles.initials, { color: theme.colors.textPrimary }]}>
             {getInitials(invite.inviteeUsername)}
           </Text>
         )}
@@ -86,15 +77,11 @@ export function SentInviteItem({
 
       {/* User info */}
       <View style={styles.content}>
-        <Text style={[styles.username, { color: theme.colors.textPrimary }]}>
+        <Text style={[styles.username, { color: theme.colors.textPrimary }]} numberOfLines={1}>
           @{invite.inviteeUsername ?? "?"}
         </Text>
         <View style={styles.expiresRow}>
-          <Ionicons
-            name="time-outline"
-            size={12}
-            color={theme.colors.textSecondary}
-          />
+          <Ionicons name="time-outline" size={10} color={theme.colors.textSecondary} />
           <Text style={[styles.expiresText, { color: theme.colors.textSecondary }]}>
             {getExpiresText(invite.expiresAt, t)}
           </Text>
@@ -102,62 +89,72 @@ export function SentInviteItem({
       </View>
 
       {/* Cancel button */}
-      <Button
-        label={t("invites.cancelInvite")}
-        variant="secondary"
+      <Pressable
         onPress={handleCancel}
         disabled={isCancelling}
-        style={styles.button}
-      />
+        style={({ pressed }) => [
+          styles.cancelBtn,
+          { borderColor: theme.colors.textSecondary + "30" },
+          pressed && { opacity: 0.6 },
+          isCancelling && { opacity: 0.4 },
+        ]}
+      >
+        <Text style={[styles.cancelText, { color: theme.colors.textSecondary }]}>
+          {t("invites.cancelInvite")}
+        </Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 12,
+    paddingVertical: 8,
+    gap: 10,
   },
-  avatarWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
     overflow: "hidden",
   },
   avatarImage: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
   },
   initials: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
   },
   content: {
-    flexGrow: 1,
-    flexShrink: 1,
-    marginRight: 12,
+    flex: 1,
+    gap: 1,
   },
   username: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
   },
   expiresRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    marginTop: 4,
+    gap: 3,
   },
   expiresText: {
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: "500",
   },
-  button: {
-    minWidth: 80,
+  cancelBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  cancelText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

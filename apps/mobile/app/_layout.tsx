@@ -8,6 +8,10 @@ import {
 } from "@react-navigation/native";
 import { Stack, type ErrorBoundaryProps, usePathname } from "expo-router";
 import "react-native-reanimated";
+import { enableFreeze } from "react-native-screens";
+
+// Freeze off-screen screens to prevent unnecessary re-renders during navigation
+enableFreeze(true);
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect } from "react";
@@ -149,10 +153,7 @@ function AppContent() {
                 name="groups/[id]/invite"
                 options={{ title: t("groups.invite"), headerShown: false }}
               />
-              <Stack.Screen
-                name="groups/[id]/invite-users"
-                options={{ headerShown: false }}
-              />
+
               <Stack.Screen
                 name="groups/[id]/members"
                 options={{ headerShown: false }}

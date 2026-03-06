@@ -1,5 +1,5 @@
 // features/invites/components/UserSearchInput.tsx
-// Search input for username (min 3 chars).
+// Minimal search input for username.
 
 import React from "react";
 import { View, TextInput, StyleSheet } from "react-native";
@@ -25,15 +25,12 @@ export function UserSearchInput({
     <View
       style={[
         styles.container,
-        {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
-        },
+        { backgroundColor: theme.colors.textPrimary + "08" },
       ]}
     >
       <Ionicons
         name="search"
-        size={20}
+        size={18}
         color={theme.colors.textSecondary}
         style={styles.icon}
       />
@@ -41,7 +38,7 @@ export function UserSearchInput({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={theme.colors.textSecondary}
+        placeholderTextColor={theme.colors.textSecondary + "80"}
         style={[styles.input, { color: theme.colors.textPrimary }]}
         autoFocus={autoFocus}
         autoCapitalize="none"
@@ -56,18 +53,17 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 16,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
   },
   icon: {
-    marginRight: 10,
+    marginRight: 8,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     paddingVertical: 0,
   },
 });

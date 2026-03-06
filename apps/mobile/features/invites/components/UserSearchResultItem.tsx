@@ -1,18 +1,19 @@
 // features/invites/components/UserSearchResultItem.tsx
-// Single row: avatar, username, isInSharedGroup, Invite button.
+// Compact row: avatar, username, isInSharedGroup, Invite button.
 
 import React from "react";
-import { View, StyleSheet, Image, Text } from "react-native";
+import { View, StyleSheet, Image, Text, Pressable, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import { Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiUserSearchItem } from "@repo/types";
 
 interface UserSearchResultItemProps {
   user: ApiUserSearchItem;
   onInvite: () => void;
+  onCancelInvite?: () => void;
   isSending?: boolean;
+  isCancelling?: boolean;
   invited?: boolean;
 }
 
@@ -24,148 +25,156 @@ function getInitials(username: string): string {
 export function UserSearchResultItem({
   user,
   onInvite,
+  onCancelInvite,
   isSending,
+  isCancelling,
   invited,
 }: UserSearchResultItemProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: theme.colors.cardBackground,
-          borderColor: theme.colors.border,
-        },
-      ]}
-    >
+    <View style={styles.row}>
       {/* Avatar */}
-      <View
-        style={[
-          styles.avatarWrap,
-          { backgroundColor: theme.colors.primary + "15" },
-        ]}
-      >
-        {user.image ? (
-          <Image
-            source={{ uri: user.image }}
-            style={styles.avatarImage}
-            accessibilityIgnoresInvertColors
-          />
-        ) : (
-          <Text style={[styles.initials, { color: theme.colors.primary }]}>
-            {getInitials(user.username)}
-          </Text>
+      <View style={styles.avatarWrapper}>
+        <View
+          style={[
+            styles.avatar,
+            { backgroundColor: theme.colors.textPrimary + "10" },
+          ]}
+        >
+          {user.image ? (
+            <Image
+              source={{ uri: user.image }}
+              style={styles.avatarImage}
+              accessibilityIgnoresInvertColors
+            />
+          ) : (
+            <Text style={[styles.initials, { color: theme.colors.textPrimary }]}>
+              {getInitials(user.username)}
+            </Text>
+          )}
+        </View>
+        {invited && (
+          <View style={[styles.checkBadge, { backgroundColor: theme.colors.success, borderColor: theme.colors.background }]}>
+            <Ionicons name="checkmark" size={10} color="#fff" />
+          </View>
         )}
       </View>
 
       {/* User info */}
       <View style={styles.content}>
+        <Text style={[styles.username, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+          @{user.username}
+        </Text>
         {user.name ? (
-          <Text style={[styles.displayName, { color: theme.colors.textPrimary }]}>
+          <Text style={[styles.displayName, { color: theme.colors.textSecondary }]} numberOfLines={1}>
             {user.name}
           </Text>
         ) : null}
-        <Text style={[styles.username, { color: user.name ? theme.colors.textSecondary : theme.colors.textPrimary }]}>
-          @{user.username}
-        </Text>
-        {user.isInSharedGroup && (
-          <View style={styles.sharedGroupRow}>
-            <Ionicons
-              name="people-outline"
-              size={12}
-              color={theme.colors.textSecondary}
-            />
-            <Text style={[styles.sharedGroupText, { color: theme.colors.textSecondary }]}>
-              {t("invites.inSharedGroup")}
-            </Text>
-          </View>
-        )}
       </View>
 
-      {/* Invite button */}
+      {/* Invite / Cancel button */}
       {invited ? (
-        <View style={[styles.sentBadge, { backgroundColor: theme.colors.success + "18" }]}>
-          <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
-          <Text style={[styles.sentText, { color: theme.colors.success }]}>
-            {t("invites.inviteSent")}
-          </Text>
-        </View>
+        <Pressable
+          onPress={() => {
+            Alert.alert(
+              t("invites.cancelInvite"),
+              t("invites.cancelInviteConfirm", { username: user.username }),
+              [
+                { text: t("common.cancel"), style: "cancel" },
+                {
+                  text: t("invites.cancelInvite"),
+                  style: "destructive",
+                  onPress: onCancelInvite,
+                },
+              ],
+            );
+          }}
+          disabled={isCancelling}
+          style={({ pressed }) => [
+            styles.roundBtn,
+            { borderColor: theme.colors.textSecondary + "30" },
+            pressed && { opacity: 0.6 },
+            isCancelling && { opacity: 0.4 },
+          ]}
+        >
+          <Ionicons name="remove" size={18} color={theme.colors.textSecondary} />
+        </Pressable>
       ) : (
-        <Button
-          label={t("invites.inviteButton")}
-          variant="primary"
+        <Pressable
           onPress={onInvite}
           disabled={isSending}
-          style={styles.button}
-        />
+          style={({ pressed }) => [
+            styles.roundBtn,
+            { borderColor: theme.colors.textPrimary + "20" },
+            pressed && { opacity: 0.6 },
+            isSending && { opacity: 0.4 },
+          ]}
+        >
+          <Ionicons name="add" size={18} color={theme.colors.textPrimary} />
+        </Pressable>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 12,
+    paddingVertical: 8,
+    gap: 10,
   },
-  avatarWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  avatarWrapper: {
+    position: "relative",
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
     overflow: "hidden",
   },
+  checkBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#fff", // overridden inline with theme
+  },
   avatarImage: {
-    width: 48,
-    height: 48,
+    width: 36,
+    height: 36,
   },
   initials: {
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: "700",
   },
   content: {
-    flexGrow: 1,
-    flexShrink: 1,
-    marginRight: 12,
-  },
-  displayName: {
-    fontSize: 16,
-    fontWeight: "600",
+    flex: 1,
+    gap: 1,
   },
   username: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  sharedGroupRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 4,
-  },
-  sharedGroupText: {
-    fontSize: 12,
-  },
-  button: {
-    minWidth: 90,
-  },
-  sentBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  sentText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  displayName: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  roundBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

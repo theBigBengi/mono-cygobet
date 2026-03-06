@@ -1,11 +1,16 @@
 // features/invites/components/SentInvitesList.tsx
 // List of sent invites with cancel functionality.
 
-import React from "react";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useEffect } from "react";
+import { View, StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useSentInvitesQuery, useCancelInviteMutation } from "@/domains/invites";
 import { SentInviteItem } from "./SentInviteItem";
@@ -19,6 +24,14 @@ export function SentInvitesList({ groupId }: SentInvitesListProps) {
   const { theme } = useTheme();
   const { data, isLoading } = useSentInvitesQuery(groupId);
   const cancelMutation = useCancelInviteMutation(groupId);
+
+  const skeletonOpacity = useSharedValue(0.3);
+  useEffect(() => {
+    if (isLoading) {
+      skeletonOpacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
+    }
+  }, [isLoading, skeletonOpacity]);
+  const skeletonStyle = useAnimatedStyle(() => ({ opacity: skeletonOpacity.value }));
 
   const invites = data?.data ?? [];
 
@@ -35,8 +48,25 @@ export function SentInvitesList({ groupId }: SentInvitesListProps) {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color={theme.colors.primary} />
+      <View style={styles.container}>
+        <Animated.View
+          style={[{ width: 100, height: 12, borderRadius: 6, backgroundColor: theme.colors.border }, skeletonStyle]}
+        />
+        {[0, 1].map((i) => (
+          <View key={i} style={styles.skeletonRow}>
+            <Animated.View
+              style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.border }, skeletonStyle]}
+            />
+            <View style={{ flex: 1, gap: 4 }}>
+              <Animated.View
+                style={[{ width: 80, height: 12, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]}
+              />
+              <Animated.View
+                style={[{ width: 60, height: 10, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]}
+              />
+            </View>
+          </View>
+        ))}
       </View>
     );
   }
@@ -47,9 +77,9 @@ export function SentInvitesList({ groupId }: SentInvitesListProps) {
 
   return (
     <View style={styles.container}>
-      <AppText variant="caption" color="secondary" style={styles.headerTitle}>
+      <Text style={[styles.headerTitle, { color: theme.colors.textSecondary }]}>
         {t("invites.sentInvites")} ({invites.length})
-      </AppText>
+      </Text>
       {invites.map((item) => (
         <SentInviteItem
           key={String(item.id)}
@@ -64,21 +94,17 @@ export function SentInvitesList({ groupId }: SentInvitesListProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 24,
-  },
-  loadingContainer: {
-    paddingVertical: 20,
-    alignItems: "center",
-  },
-  emptyContainer: {
-    alignItems: "center",
-    paddingVertical: 24,
-    gap: 8,
-  },
-  emptyText: {
-    fontSize: 14,
+    marginTop: 20,
   },
   headerTitle: {
-    marginBottom: 12,
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  skeletonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
   },
 });

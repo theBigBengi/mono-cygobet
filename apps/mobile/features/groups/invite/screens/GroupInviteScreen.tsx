@@ -1,37 +1,40 @@
 // features/groups/invite/screens/GroupInviteScreen.tsx
 // Layout: Search + Users (scroll) | Share link (fixed bottom)
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   StyleSheet,
-  Share,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Alert,
+  Pressable,
+  Text,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Screen, AppText, Button } from "@/components/ui";
-import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
-import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
+import { AppText } from "@/components/ui";
 import { useInviteCodeQuery } from "@/domains/groups";
 import {
   useUsersSearchQuery,
   useSuggestedUsersQuery,
   useSendInviteMutation,
+  useSentInvitesQuery,
+  useCancelInviteMutation,
 } from "@/domains/invites";
 import { useTheme } from "@/lib/theme";
 import { UserSearchInput } from "@/features/invites/components/UserSearchInput";
 import { UserSearchResultItem } from "@/features/invites/components/UserSearchResultItem";
-import { SentInvitesList } from "@/features/invites/components/SentInvitesList";
 import type { ApiUserSearchItem } from "@repo/types";
 
-const DEEP_LINK_BASE = "https://mono-cygobet.onrender.com/groups/join";
 const MIN_QUERY_LENGTH = 3;
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -46,19 +49,15 @@ export function GroupInviteScreen({
 }: GroupInviteScreenProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
+
+  const skeletonOpacity = useSharedValue(0.3);
+  useEffect(() => {
+    skeletonOpacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
+  }, [skeletonOpacity]);
+  const skeletonStyle = useAnimatedStyle(() => ({ opacity: skeletonOpacity.value }));
 
   // ── Invite link ─────────────────────────────────────────────
   const { data, isLoading, error, refetch } = useInviteCodeQuery(groupId);
-  const inviteCode = data?.data?.inviteCode ?? "";
-
-  const handleShareLink = () => {
-    if (!inviteCode) return;
-    const link = `${DEEP_LINK_BASE}?code=${encodeURIComponent(inviteCode)}`;
-    const message = `${t("invite.joinMessage")}\n${link}`;
-    Share.share({ message, title: t("invite.groupInvite") }).catch(() => {});
-  };
-
   // ── User search ──────────────────────────────────────────────
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -84,9 +83,25 @@ export function GroupInviteScreen({
   const { data: suggestedData, isLoading: suggestedLoading } =
     useSuggestedUsersQuery({ excludeGroupId: groupId ?? undefined });
   const sendInviteMutation = useSendInviteMutation(groupId ?? 0);
-  const [invitedUserIds, setInvitedUserIds] = useState<Set<number>>(
+  const cancelInviteMutation = useCancelInviteMutation(groupId ?? 0);
+  const { data: sentInvitesData } = useSentInvitesQuery(groupId ?? 0);
+  const [sessionInvitedIds, setSessionInvitedIds] = useState<Set<number>>(
     () => new Set(),
   );
+
+  // Merge: IDs from server (already sent) + IDs from this session
+  const invitedUserIds = useMemo(() => {
+    const ids = new Set(sessionInvitedIds);
+    sentInvitesData?.data?.forEach((inv) => ids.add(inv.inviteeId));
+    return ids;
+  }, [sessionInvitedIds, sentInvitesData]);
+
+  // Map userId -> inviteId for cancellation
+  const userInviteIdMap = useMemo(() => {
+    const map = new Map<number, number>();
+    sentInvitesData?.data?.forEach((inv) => map.set(inv.inviteeId, inv.id));
+    return map;
+  }, [sentInvitesData]);
 
   const handleInvitePress = useCallback(
     (user: ApiUserSearchItem) => {
@@ -98,7 +113,7 @@ export function GroupInviteScreen({
             Haptics.notificationAsync(
               Haptics.NotificationFeedbackType.Success,
             );
-            setInvitedUserIds((prev) => new Set(prev).add(user.id));
+            setSessionInvitedIds((prev) => new Set(prev).add(user.id));
           },
           onError: (err) => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -111,6 +126,28 @@ export function GroupInviteScreen({
       );
     },
     [sendInviteMutation, t],
+  );
+
+  const handleCancelInvite = useCallback(
+    (user: ApiUserSearchItem) => {
+      const inviteId = userInviteIdMap.get(user.id);
+      if (!inviteId) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      cancelInviteMutation.mutate(inviteId, {
+        onSuccess: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setSessionInvitedIds((prev) => {
+            const next = new Set(prev);
+            next.delete(user.id);
+            return next;
+          });
+        },
+        onError: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        },
+      });
+    },
+    [cancelInviteMutation, userInviteIdMap],
   );
 
   // ── Derived state ────────────────────────────────────────────
@@ -126,19 +163,34 @@ export function GroupInviteScreen({
   // ── Full-screen loading / error ──────────────────────────────
   if (isLoading) {
     return (
-      <Screen>
-        <QueryLoadingView message={t("invite.loadingInviteCode")} />
-      </Screen>
+      <View style={[styles.container, { paddingHorizontal: 16, paddingTop: 12 }]}>
+        {/* Search skeleton */}
+        <Animated.View style={[{ height: 40, borderRadius: 10, backgroundColor: theme.colors.border }, skeletonStyle]} />
+        {/* User rows skeleton */}
+        {[0, 1, 2, 3].map((i) => (
+          <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 }}>
+            <Animated.View style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.border }, skeletonStyle]} />
+            <View style={{ flex: 1, gap: 4 }}>
+              <Animated.View style={[{ width: 100, height: 12, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
+              <Animated.View style={[{ width: 70, height: 10, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
+            </View>
+            <Animated.View style={[{ width: 60, height: 28, borderRadius: 14, backgroundColor: theme.colors.border }, skeletonStyle]} />
+          </View>
+        ))}
+      </View>
     );
   }
   if (error || !data) {
     return (
-      <Screen>
-        <QueryErrorView
-          message={t("invite.failedLoadInviteCode")}
-          onRetry={() => refetch()}
-        />
-      </Screen>
+      <View style={[styles.container, styles.statusCenter]}>
+        <Ionicons name="alert-circle-outline" size={24} color={theme.colors.textSecondary} />
+        <AppText variant="body" color="secondary">
+          {t("invite.failedLoadInviteCode")}
+        </AppText>
+        <Pressable onPress={() => refetch()} style={({ pressed }) => [pressed && { opacity: 0.6 }]}>
+          <AppText variant="body" color="primary">{t("common.retry")}</AppText>
+        </Pressable>
+      </View>
     );
   }
 
@@ -147,11 +199,16 @@ export function GroupInviteScreen({
     if (isSearching) {
       if (isSearchBusy) {
         return (
-          <View style={styles.statusCenter}>
-            <ActivityIndicator size="small" color={theme.colors.primary} />
-            <AppText variant="caption" color="secondary">
-              {t("invites.searchingUsers")}
-            </AppText>
+          <View>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 }}>
+                <Animated.View style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.border }, skeletonStyle]} />
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Animated.View style={[{ width: 90, height: 12, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
+                  <Animated.View style={[{ width: 60, height: 10, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
+                </View>
+              </View>
+            ))}
           </View>
         );
       }
@@ -173,21 +230,21 @@ export function GroupInviteScreen({
           </View>
         );
       }
-      return searchResults.map((user) => (
-        <UserSearchResultItem
-          key={String(user.id)}
-          user={user}
-          onInvite={() => handleInvitePress(user)}
-          isSending={sendInviteMutation.isPending}
-          invited={invitedUserIds.has(user.id)}
-        />
-      ));
+      return renderUsersList(searchResults);
     }
 
     if (suggestedLoading) {
       return (
-        <View style={styles.statusCenter}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
+        <View>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 }}>
+              <Animated.View style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.border }, skeletonStyle]} />
+              <View style={{ flex: 1, gap: 4 }}>
+                <Animated.View style={[{ width: 90, height: 12, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
+                <Animated.View style={[{ width: 60, height: 10, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
+              </View>
+            </View>
+          ))}
         </View>
       );
     }
@@ -206,15 +263,53 @@ export function GroupInviteScreen({
         </View>
       );
     }
-    return suggestedUsers.map((user) => (
-      <UserSearchResultItem
-        key={String(user.id)}
-        user={user}
-        onInvite={() => handleInvitePress(user)}
-        isSending={sendInviteMutation.isPending}
-        invited={invitedUserIds.has(user.id)}
-      />
-    ));
+    return (
+      <>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+          {t("invites.suggestions")}
+        </Text>
+        {renderUsersList(suggestedUsers)}
+      </>
+    );
+  };
+
+  const renderUsersList = (users: ApiUserSearchItem[]) => {
+    const uninvited = users.filter((u) => !invitedUserIds.has(u.id));
+    const invited = users.filter((u) => invitedUserIds.has(u.id));
+
+    return (
+      <>
+        {uninvited.map((user) => (
+          <UserSearchResultItem
+            key={String(user.id)}
+            user={user}
+            onInvite={() => handleInvitePress(user)}
+            onCancelInvite={() => handleCancelInvite(user)}
+            isSending={sendInviteMutation.isPending}
+            isCancelling={cancelInviteMutation.isPending}
+            invited={false}
+          />
+        ))}
+        {invited.length > 0 && (
+          <>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+              {t("invites.pendingInvites")}
+            </Text>
+            {invited.map((user) => (
+              <UserSearchResultItem
+                key={String(user.id)}
+                user={user}
+                onInvite={() => handleInvitePress(user)}
+                onCancelInvite={() => handleCancelInvite(user)}
+                isSending={sendInviteMutation.isPending}
+                isCancelling={cancelInviteMutation.isPending}
+                invited
+              />
+            ))}
+          </>
+        )}
+      </>
+    );
   };
 
   // ── Render ───────────────────────────────────────────────────
@@ -253,28 +348,8 @@ export function GroupInviteScreen({
           )}
 
           {renderUsersContent()}
-
-          {/* ─── Sent invites ──────────────────────────── */}
-          {groupId != null && <SentInvitesList groupId={groupId} />}
         </ScrollView>
 
-        {/* ─── Fixed bottom: Share link ────────────────── */}
-        <View
-          style={[
-            styles.bottomBar,
-            {
-              backgroundColor: theme.colors.background,
-              borderTopColor: theme.colors.border,
-              paddingBottom: Math.max(insets.bottom, 16),
-            },
-          ]}
-        >
-          <Button
-            label={t("invite.shareInvite")}
-            variant="primary"
-            onPress={handleShareLink}
-          />
-        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -302,9 +377,10 @@ const styles = StyleSheet.create({
     marginTop: -8,
     marginBottom: 10,
   },
-  bottomBar: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 16,
+    marginBottom: 4,
   },
 });

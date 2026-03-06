@@ -22,6 +22,7 @@ import {
 import { prisma } from "@repo/db";
 import { FIXTURE_SELECT_BASE } from "../../fixtures/selects";
 import { assertGroupMember } from "../permissions";
+import { resolveShortCode } from "../../../../utils/short-code";
 import { repository as repo } from "../repository";
 import { mapGroupFixturesToApiFixtures } from "../helpers/fixture-mapper";
 import { getLogger } from "../../../../logger";
@@ -72,7 +73,7 @@ export async function getMyGroups(userId: number, search?: string): Promise<ApiG
       where: { id: { in: Array.from(allTeamIds) } },
       select: { id: true, name: true, shortCode: true, imagePath: true },
     });
-    teams.forEach((t) => teamInfoMap.set(t.id, { id: t.id, name: t.name, shortCode: t.shortCode, imagePath: t.imagePath }));
+    teams.forEach((t) => teamInfoMap.set(t.id, { id: t.id, name: t.name, shortCode: resolveShortCode(t.shortCode, t.name), imagePath: t.imagePath }));
   }
 
   const rulesByGroupId = new Map(

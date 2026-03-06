@@ -43,7 +43,7 @@ export function ChatInput({
   fixtureOptions,
 }: ChatInputProps) {
   const { t } = useTranslation("common");
-  const { theme } = useTheme();
+  const { theme, colorScheme } = useTheme();
   const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const [mentions, setMentions] = useState<MentionData[]>([]);
@@ -260,12 +260,12 @@ export function ChatInput({
           style={({ pressed }) => [
             styles.atButton,
             {
-              backgroundColor: theme.colors.background,
+              backgroundColor: "transparent",
               opacity: pressed ? 0.7 : 1,
             },
           ]}
         >
-          <AppText variant="body" style={{ fontWeight: "700", color: theme.colors.primary }}>
+          <AppText variant="body" style={{ fontWeight: "700", color: theme.colors.textSecondary }}>
             @
           </AppText>
         </Pressable>
@@ -273,12 +273,12 @@ export function ChatInput({
           style={[
             styles.input,
             {
-              backgroundColor: theme.colors.background,
+              backgroundColor: colorScheme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
               color: theme.colors.textPrimary,
             },
           ]}
           placeholder={t("chat.typePlaceholder")}
-          placeholderTextColor={theme.colors.textSecondary}
+          placeholderTextColor={theme.colors.textSecondary + "80"}
           value={text}
           onChangeText={handleChangeText}
           onSelectionChange={handleSelectionChange}
@@ -293,9 +293,7 @@ export function ChatInput({
           style={({ pressed }) => [
             styles.sendButton,
             {
-              backgroundColor: canSend
-                ? theme.colors.primary
-                : theme.colors.background,
+              backgroundColor: "transparent",
               opacity: pressed && canSend ? 0.7 : 1,
             },
           ]}
@@ -304,7 +302,7 @@ export function ChatInput({
             name="send"
             size={20}
             color={
-              canSend ? theme.colors.primaryText : theme.colors.textSecondary
+              canSend ? theme.colors.primary : theme.colors.textSecondary + "80"
             }
           />
         </Pressable>

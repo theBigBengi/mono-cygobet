@@ -12,6 +12,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import { Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -65,6 +67,7 @@ interface GroupLobbyActiveScreenProps {
   onChatGestureStart?: () => void;
   onChatGestureCancel?: () => void;
   chatExpansion?: SharedValue<number>;
+  onInvitePress?: () => void;
 }
 
 export function GroupLobbyActiveScreen({
@@ -79,9 +82,10 @@ export function GroupLobbyActiveScreen({
   onChatGestureStart,
   onChatGestureCancel,
   chatExpansion,
+  onInvitePress,
 }: GroupLobbyActiveScreenProps) {
   const { t } = useTranslation("common");
-  const { theme } = useTheme();
+  const { theme, colorScheme } = useTheme();
   const router = useRouter();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -123,20 +127,31 @@ export function GroupLobbyActiveScreen({
   const unreadChatCount = chatPreview?.unreadCount ?? 0;
   const lastMessage = chatPreview?.lastMessage ?? null;
 
-  // Optimistic sent messages for preview animation
+  // Optimistic sent message preview (single message, auto-dismisses)
   type PreviewMsg = { key: string; senderName: string; text: string; createdAt: string };
-  const [sentPreviewMessages, setSentPreviewMessages] = useState<PreviewMsg[]>([]);
+  const [sentPreview, setSentPreview] = useState<PreviewMsg | null>(null);
 
   const keyboardOffset = useSharedValue(0);
   const dragY = useSharedValue(0);
+  const chatBarEntrance = useSharedValue(0);
   const SCREEN_H = Dimensions.get("window").height;
-  const BAR_H = 70 + Math.max(insets.bottom, 16);
+  const BAR_H = 62 + Math.max(insets.bottom, 16);
+
+  // Slide chat bar in once lobby summary is loaded
+  useEffect(() => {
+    if (!isLobbySummaryLoading && !isRankingLoading) {
+      chatBarEntrance.value = withTiming(1, { duration: 400 });
+    }
+  }, [isLobbySummaryLoading, isRankingLoading, chatBarEntrance]);
+
   const floatingBarStyle = useAnimatedStyle(() => {
     const chatLift = chatExpansion
       ? interpolate(chatExpansion.value, [0, 1], [0, -(SCREEN_H - BAR_H * 2)])
       : 0;
+    const slideIn = interpolate(chatBarEntrance.value, [0, 1], [BAR_H + 20, 0]);
     return {
-      transform: [{ translateY: -keyboardOffset.value + dragY.value + chatLift }],
+      transform: [{ translateY: -keyboardOffset.value + dragY.value + chatLift + slideIn }],
+      opacity: chatBarEntrance.value,
     };
   });
 
@@ -148,10 +163,16 @@ export function GroupLobbyActiveScreen({
     });
     const hideSub = Keyboard.addListener(hideEvent, () => {
       keyboardOffset.value = withTiming(0, { duration: Platform.OS === "ios" ? 250 : 0 });
-      setSentPreviewMessages([]);
+      setSentPreview(null);
     });
     return () => { showSub.remove(); hideSub.remove(); };
   }, [keyboardOffset, insets.bottom]);
+
+  // Auto-dismiss sent preview after delay
+  const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => { if (dismissTimer.current) clearTimeout(dismissTimer.current); };
+  }, []);
 
   const handleChatSend = useCallback(() => {
     const trimmed = chatText.trim();
@@ -160,22 +181,21 @@ export function GroupLobbyActiveScreen({
     sendMessage(trimmed);
     setChatText("");
 
-    const newMsg: PreviewMsg = {
+    // Clear previous timer
+    if (dismissTimer.current) clearTimeout(dismissTimer.current);
+
+    setSentPreview({
       key: `opt-${Date.now()}`,
       senderName: t("chat.you", { defaultValue: "You" }),
       text: trimmed,
       createdAt: new Date().toISOString(),
-    };
-    setSentPreviewMessages(prev => {
-      if (prev.length === 0 && lastMessage) {
-        return [
-          { key: `last-${lastMessage.id}`, senderName: lastMessage.sender.username, text: lastMessage.text, createdAt: lastMessage.createdAt },
-          newMsg,
-        ];
-      }
-      return [...prev.slice(-1), newMsg];
     });
-  }, [chatText, sendMessage, user, lastMessage]);
+
+    dismissTimer.current = setTimeout(() => {
+      setSentPreview(null);
+      dismissTimer.current = null;
+    }, 4000);
+  }, [chatText, sendMessage, t]);
 
   // Lobby summary — lightweight fixture slices for CTA
   const { data: lobbySummaryData, isLoading: isLobbySummaryLoading } =
@@ -245,8 +265,8 @@ export function GroupLobbyActiveScreen({
   }, [router, group.id]);
 
   const handleViewInvite = useCallback(() => {
-    router.push(`/groups/${group.id}/invite` as any);
-  }, [router, group.id]);
+    onInvitePress?.();
+  }, [onInvitePress]);
 
   const handleChatExpand = useCallback(() => {
     onChatExpand?.();
@@ -332,6 +352,7 @@ export function GroupLobbyActiveScreen({
 
         <GroupLobbyHeader
           name={group.name}
+          description={group.description}
           memberCount={group.memberCount}
           status="active"
           privacy={group.privacy}
@@ -346,20 +367,12 @@ export function GroupLobbyActiveScreen({
           isLoading={isRankingLoading}
         />
 
-        {group.firstGame && group.lastGame ? (
-          <GroupTimelineBar
-            startDate={group.firstGame.kickoffAt}
-            endDate={group.lastGame.kickoffAt}
-            progress={timelineProgress}
-          />
-        ) : (
-          <GroupTimelineBar
-            startDate=""
-            endDate=""
-            progress={0}
-            isLoading
-          />
-        )}
+        <GroupTimelineBar
+          startDate={group.firstGame?.kickoffAt ?? ""}
+          endDate={group.lastGame?.kickoffAt ?? ""}
+          progress={timelineProgress}
+          isLoading={isRankingLoading}
+        />
 
         {/* Meta row removed — chips shown on avatar in header */}
 
@@ -519,49 +532,33 @@ export function GroupLobbyActiveScreen({
       {/* Floating chat bar */}
       <GestureDetector gesture={panGesture}>
       <Animated.View style={[styles.floatingBottom, { paddingBottom: Math.max(insets.bottom, 16) }, floatingBarStyle]}>
-        <View style={[styles.floatingBottomInner, { backgroundColor: theme.colors.cardBackground }]}>
-          {/* Preview messages */}
-          {!(lastMessage && chatPreviewDismissedId === lastMessage.id) && (() => {
-            const msgs = sentPreviewMessages.length > 0
-              ? sentPreviewMessages
-              : lastMessage
-                ? [{ key: `last-${lastMessage.id}`, senderName: lastMessage.sender.id === user?.id ? t("chat.you", { defaultValue: "You" }) : lastMessage.sender.username, text: lastMessage.text, createdAt: lastMessage.createdAt }]
-                : [];
-            if (msgs.length === 0) return null;
-            return (
-              <Animated.View layout={LinearTransition.duration(250)} style={styles.chatPreviewContainer}>
-                {msgs.map((msg) => (
-                  <Animated.View
-                    key={msg.key}
-                    entering={SlideInDown.duration(250)}
-                    exiting={SlideOutUp.duration(200)}
-                    layout={LinearTransition.duration(250)}
-                  >
-                    <Pressable onPress={handleChatExpand} style={[styles.chatPreviewRow, sentPreviewMessages.length === 0 && { paddingRight: 22 }]}>
-                      <Text style={[styles.chatPreviewSender, { color: theme.colors.textPrimary }]} numberOfLines={1}>
-                        {msg.senderName}
-                      </Text>
-                      <Text style={[styles.chatPreviewBody, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                        {msg.text}
-                      </Text>
-                      <Text style={[styles.chatPreviewTime, { color: theme.colors.textSecondary }]}>
-                        {formatChatTime(msg.createdAt)}
-                      </Text>
-                    </Pressable>
-                  </Animated.View>
-                ))}
-                {sentPreviewMessages.length === 0 && (
-                  <Pressable onPress={() => setChatPreviewDismissedId(lastMessage?.id ?? null)} style={styles.chatPreviewClose} hitSlop={8}>
-                    <Ionicons name="close" size={14} color={theme.colors.textSecondary} />
-                  </Pressable>
-                )}
-              </Animated.View>
-            );
-          })()}
+        {/* Sent message preview — floats above the bar */}
+        {sentPreview && (
+          <Animated.View
+            key={sentPreview.key}
+            entering={FadeIn.duration(300)}
+            exiting={FadeOut.duration(300)}
+            style={[styles.chatPreviewFloat, { backgroundColor: theme.colors.cardBackground }]}
+          >
+            <Pressable onPress={handleChatExpand} style={styles.chatPreviewRow}>
+              <Text style={[styles.chatPreviewSender, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                {sentPreview.senderName}
+              </Text>
+              <Text style={[styles.chatPreviewBody, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                {sentPreview.text}
+              </Text>
+            </Pressable>
+          </Animated.View>
+        )}
+        <BlurView
+          intensity={chatFocused ? 50 : 30}
+          tint={colorScheme === "dark" ? "dark" : "light"}
+          style={[styles.floatingBottomInner, { backgroundColor: colorScheme === "dark" ? (chatFocused ? "rgba(30,30,34,0.9)" : "rgba(40,40,44,0.75)") : (chatFocused ? "rgba(230,230,232,0.95)" : "rgba(240,240,242,0.75)") }]}
+        >
           {/* Input row */}
-          <Animated.View layout={LinearTransition.duration(250)} style={styles.chatBarRow}>
+          <View style={styles.chatBarRow}>
             <View>
-              <Ionicons name="chatbubbles-outline" size={20} color={theme.colors.textPrimary} />
+              <Ionicons name="chatbubbles-outline" size={20} color={chatFocused || unreadChatCount > 0 ? theme.colors.textPrimary : theme.colors.textSecondary} style={chatFocused || unreadChatCount > 0 ? undefined : { opacity: 0.5 }} />
               {unreadChatCount > 0 && (
                 <View style={[styles.chatIconBadge, { backgroundColor: theme.colors.primary }]}>
                   <Text style={styles.chatIconBadgeText}>{unreadChatCount > 9 ? "9+" : unreadChatCount}</Text>
@@ -570,9 +567,9 @@ export function GroupLobbyActiveScreen({
             </View>
             <TextInput
               ref={chatInputRef}
-              style={[styles.chatInput, { backgroundColor: theme.colors.background, color: theme.colors.textPrimary }]}
+              style={[styles.chatInput, { backgroundColor: "transparent", color: theme.colors.textPrimary }]}
               placeholder={t("chat.typePlaceholder")}
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={chatFocused ? theme.colors.textSecondary : theme.colors.textSecondary + "80"}
               value={chatText}
               onChangeText={setChatText}
               onFocus={() => setChatFocused(true)}
@@ -585,21 +582,18 @@ export function GroupLobbyActiveScreen({
                 disabled={chatText.trim().length === 0}
                 style={({ pressed }) => [
                   styles.chatActionBtn,
-                  {
-                    backgroundColor: chatText.trim().length > 0 ? theme.colors.primary : theme.colors.background,
-                  },
                   pressed && chatText.trim().length > 0 && { opacity: 0.8 },
                 ]}
               >
-                <Ionicons name="send" size={18} color={chatText.trim().length > 0 ? "#fff" : theme.colors.textSecondary} />
+                <Ionicons name="send" size={18} color={chatText.trim().length > 0 ? theme.colors.primary : theme.colors.textSecondary + "80"} />
               </Pressable>
             ) : (
               <Pressable onPress={handleChatExpand} style={({ pressed }) => [styles.chatActionBtn, pressed && { opacity: 0.7 }]}>
-                <Ionicons name="chevron-up" size={20} color={theme.colors.textSecondary} />
+                <Ionicons name="chevron-expand-sharp" size={20} color={unreadChatCount > 0 ? theme.colors.textPrimary : theme.colors.textSecondary} style={unreadChatCount > 0 ? undefined : { opacity: 0.5 }} />
               </Pressable>
             )}
-          </Animated.View>
-        </View>
+          </View>
+        </BlurView>
       </Animated.View>
       </GestureDetector>
 
@@ -643,6 +637,7 @@ const styles = StyleSheet.create({
   },
   floatingBottomInner: {
     borderRadius: 14,
+    overflow: "hidden",
     paddingHorizontal: 12,
     paddingVertical: 6,
     shadowColor: "#000",
@@ -654,6 +649,17 @@ const styles = StyleSheet.create({
   chatPreviewContainer: {
     marginBottom: 6,
     overflow: "hidden",
+  },
+  chatPreviewFloat: {
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 4,
   },
   chatPreviewLine: {},
   chatPreviewRow: {

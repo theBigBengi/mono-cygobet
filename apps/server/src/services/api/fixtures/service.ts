@@ -7,6 +7,7 @@ import type {
   ApiUpcomingFixturesResponse,
 } from "@repo/types";
 import { toUnixSeconds } from "../../../utils/dates";
+import { resolveShortCode } from "../../../utils/short-code";
 import {
   buildUpcomingFixturesWhere,
   buildFixturesByLeaguesWhere,
@@ -38,7 +39,7 @@ function maybeTeam(
     | undefined
 ): ApiUpcomingFixtureItem["homeTeam"] | undefined {
   if (!include || !team) return undefined;
-  return { id: team.id, name: team.name, shortCode: team.shortCode ?? null, imagePath: team.imagePath ?? null };
+  return { id: team.id, name: team.name, shortCode: resolveShortCode(team.shortCode, team.name), imagePath: team.imagePath ?? null };
 }
 
 export type GetUpcomingFixturesParams = {

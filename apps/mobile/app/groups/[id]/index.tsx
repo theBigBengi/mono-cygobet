@@ -47,6 +47,7 @@ import {
   GroupInfoSheet,
 } from "@/features/groups/group-lobby";
 import { GroupChatScreen } from "@/features/groups/chat";
+import { GroupInviteSheet } from "@/features/groups/invite";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 /**
@@ -129,14 +130,19 @@ function GroupLobbyContent() {
   const [isPublishing, setIsPublishing] = useState(false);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const infoSheetRef = useRef<BottomSheetModal>(null);
+  const inviteSheetRef = useRef<BottomSheetModal>(null);
 
   const handleOpenInfo = useCallback(() => {
     infoSheetRef.current?.present();
   }, []);
 
+  const handleOpenInvite = useCallback(() => {
+    inviteSheetRef.current?.present();
+  }, []);
+
   // Expandable chat (Spotify-style: bar grows from bottom to full screen)
   const SCREEN_H = Dimensions.get("window").height;
-  const BAR_H = 70 + Math.max(insets.bottom, 16);
+  const BAR_H = 62 + Math.max(insets.bottom, 16);
   const [chatOpen, setChatOpen] = useState(false);
   const chatExpansion = useSharedValue(0);
 
@@ -314,6 +320,7 @@ function GroupLobbyContent() {
           onChatGestureCancel={handleChatGestureCancel}
           chatExpansion={chatExpansion}
           onScroll={handleScroll}
+          onInvitePress={handleOpenInvite}
         />
       </LobbyWithHeader>
     );
@@ -395,6 +402,11 @@ function GroupLobbyContent() {
           sheetRef={infoSheetRef}
           isLoading={isFetching}
         />
+        <GroupInviteSheet
+          groupId={groupId}
+          groupName={group.name}
+          sheetRef={inviteSheetRef}
+        />
       </View>
 
       {/* Expanding chat — grows from bottom over everything */}
@@ -406,7 +418,7 @@ function GroupLobbyContent() {
             chatBgAlpha,
           ]}
         >
-          <Animated.View style={[{ flex: 1, justifyContent: "flex-end" }, chatContentOpacity]}>
+          <Animated.View style={[{ flex: 1 }, chatContentOpacity]}>
             <View style={{ backgroundColor: theme.colors.background, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border }}>
               <View style={{ flexDirection: "row", alignItems: "center", paddingTop: insets.top + 4, paddingBottom: 6, paddingHorizontal: 16 }}>
                 <Pressable onPress={handleChatCollapse} hitSlop={16}>
@@ -417,7 +429,7 @@ function GroupLobbyContent() {
               </View>
             </View>
             <View style={{ flex: 1 }}>
-              <GroupChatScreen groupId={groupId} />
+              <GroupChatScreen groupId={groupId} keyboardVerticalOffset={insets.top + 40} />
             </View>
           </Animated.View>
         </Animated.View>

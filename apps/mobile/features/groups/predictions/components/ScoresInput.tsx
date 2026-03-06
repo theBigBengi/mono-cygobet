@@ -83,7 +83,7 @@ const variantStyles: Record<
  * Reusable score input component for home and away scores.
  * Supports different sizes via variant prop.
  */
-export function ScoresInput({
+export const ScoresInput = React.memo(function ScoresInput({
   prediction,
   homeRef,
   awayRef,
@@ -272,7 +272,7 @@ export function ScoresInput({
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   scoreSection: {

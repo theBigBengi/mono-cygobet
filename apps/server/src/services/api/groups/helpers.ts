@@ -8,6 +8,7 @@ import type {
   PredictionRow,
   ParsedPrediction,
 } from "./types";
+import { resolveShortCode } from "../../../utils/short-code";
 import { isNotStarted } from "@repo/utils";
 import { nowUnixSeconds } from "../../../utils/dates";
 
@@ -144,13 +145,13 @@ export function buildOverviewFixtures(
       homeTeam: {
         id: fixtures.homeTeam.id,
         name: fixtures.homeTeam.name,
-        shortCode: fixtures.homeTeam.shortCode ?? null,
+        shortCode: resolveShortCode(fixtures.homeTeam.shortCode, fixtures.homeTeam.name),
         imagePath: fixtures.homeTeam.imagePath,
       },
       awayTeam: {
         id: fixtures.awayTeam.id,
         name: fixtures.awayTeam.name,
-        shortCode: fixtures.awayTeam.shortCode ?? null,
+        shortCode: resolveShortCode(fixtures.awayTeam.shortCode, fixtures.awayTeam.name),
         imagePath: fixtures.awayTeam.imagePath,
       },
       result: fixtures.result,

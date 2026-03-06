@@ -33,17 +33,14 @@ export function GroupGamesHeader({
     >
       {/* Buttons row */}
       <View style={styles.content}>
-        {/* Absolutely centered title — independent of flex items */}
-        {title && (
-          <View style={styles.titleOverlay} pointerEvents="none">
-            <AppText variant="body" style={styles.title} numberOfLines={1}>{title}</AppText>
-          </View>
-        )}
         <Pressable onPress={onBack} style={styles.hudButton}>
           <View style={[styles.hudButtonInner, { backgroundColor: "transparent" }]}>
             <Ionicons name="chevron-back" size={18} color={theme.colors.textPrimary} />
           </View>
         </Pressable>
+        {title && (
+          <AppText variant="body" style={styles.title} numberOfLines={1}>{title}</AppText>
+        )}
         {!backOnly && children && (
           <View style={styles.childrenArea}>{children}</View>
         )}
@@ -92,19 +89,10 @@ const styles = StyleSheet.create({
   childrenArea: {
     flex: 1,
   },
-  titleOverlay: {
-    position: "absolute",
-    left: 60,
-    right: 60,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   title: {
     fontSize: 16,
     fontWeight: "700",
-    textAlign: "center",
+    flex: 1,
   },
   spacer: {
     flex: 1,

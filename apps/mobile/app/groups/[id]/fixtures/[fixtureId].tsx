@@ -1,17 +1,13 @@
 // app/groups/[id]/fixtures/[fixtureId].tsx
 // Dedicated single game (fixture) prediction screen.
+// Minimal route — just extract params and render SingleGameScreen.
+// Data loading is handled inside SingleGameScreen for faster navigation transitions.
 
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { useLocalSearchParams } from "expo-router";
-import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
-import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
-import { useGroupQuery } from "@/domains/groups";
 import { SingleGameScreen } from "@/features/groups/predictions/screens/SingleGameScreen";
-import type { PredictionMode } from "@/features/groups/predictions/types";
 
 export default function SingleGameRoute() {
-  const { t } = useTranslation("common");
   const params = useLocalSearchParams<{ id: string; fixtureId: string }>();
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
@@ -20,27 +16,10 @@ export default function SingleGameRoute() {
       ? Number(params.fixtureId)
       : null;
 
-  const { data, isLoading, error } = useGroupQuery(groupId, {
-    includeFixtures: true,
-    staleTime: 5 * 60 * 1000, // 5 minutes — use cached data from games screen
-  });
-
-  if (isLoading || !data) {
-    return <QueryLoadingView message={t("groups.loadingGroup")} />;
-  }
-  if (error) {
-    return <QueryErrorView message={t("groups.failedLoadGroup")} />;
-  }
-
-  const group = data.data;
-  const predictionMode: PredictionMode =
-    group.predictionMode === "MatchWinner" ? "MatchWinner" : "CorrectScore";
-
   return (
     <SingleGameScreen
       groupId={groupId}
       fixtureId={fixtureId}
-      predictionMode={predictionMode}
     />
   );
 }

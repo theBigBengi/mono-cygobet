@@ -15,7 +15,8 @@ import { useGroupFixture } from "../hooks/useGroupFixture";
 import { useGroupPredictions } from "../hooks/useGroupPredictions";
 import { useVerticalPager } from "../hooks/useVerticalPager";
 import { PeekCard } from "../components/PeekCard";
-import { getCardLayout, CARD_GAP } from "../utils/peekCardLayout";
+import { PredictAllCardSkeleton } from "../components/PredictAllCardSkeleton";
+import { getCardLayout } from "../utils/peekCardLayout";
 import type { PredictionMode } from "../types";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -23,17 +24,89 @@ const SCREEN_HEIGHT = Dimensions.get("window").height;
 export type SingleGameScreenProps = {
   groupId: number | null;
   fixtureId: number | null;
-  predictionMode: PredictionMode;
+  /** Optional — if omitted, derived from group data */
+  predictionMode?: PredictionMode;
 };
 
 /**
- * Dedicated screen for viewing/editing a single game prediction.
- * Vertical pager strip — cards stack vertically, swipe to navigate.
+ * Lightweight shell — mounts instantly so the native push animation plays
+ * without being blocked by heavy hooks. The heavy content mounts after
+ * two animation frames (double-RAF), by which time the transition is underway.
  */
-export function SingleGameScreen({
+export function SingleGameScreen(props: SingleGameScreenProps) {
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
+
+  const HEADER_HEIGHT = insets.top + 36 + 4;
+  const { CARD_HEIGHT } = getCardLayout(SCREEN_HEIGHT);
+
+  useEffect(() => {
+    // Double-RAF: commit the skeleton frame, then schedule heavy render
+    let id1: number;
+    let id2: number;
+    id1 = requestAnimationFrame(() => {
+      id2 = requestAnimationFrame(() => {
+        setIsReady(true);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(id1);
+      cancelAnimationFrame(id2);
+    };
+  }, []);
+
+  return (
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.06)" }]} />
+
+      {isReady ? (
+        <SingleGameContent {...props} />
+      ) : (
+        <PredictAllCardSkeleton
+          cardHeight={CARD_HEIGHT}
+          contentTop={HEADER_HEIGHT}
+        />
+      )}
+
+      {/* Header — always visible, even during transition */}
+      <View
+        style={[styles.screenHeader, { paddingTop: insets.top }]}
+      >
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          style={styles.screenHeaderBack}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={22}
+            color={theme.colors.textPrimary}
+          />
+        </Pressable>
+        <AppText
+          variant="body"
+          style={styles.screenHeaderTitle}
+          numberOfLines={1}
+        >
+          {""}
+        </AppText>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Heavy inner content — only mounted after the push transition starts.
+ * Contains all the expensive hooks and PeekCard rendering.
+ */
+function SingleGameContent({
   groupId,
   fixtureId,
-  predictionMode,
+  predictionMode: predictionModeProp,
 }: SingleGameScreenProps) {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -44,6 +117,10 @@ export function SingleGameScreen({
     groupId,
     fixtureId
   );
+
+  // Derive prediction mode from group data (or use prop if provided)
+  const predictionMode: PredictionMode = predictionModeProp
+    ?? (group?.predictionMode === "MatchWinner" ? "MatchWinner" : "CorrectScore");
 
   const {
     getPrediction,
@@ -131,26 +208,28 @@ export function SingleGameScreen({
     onIndexChange,
   });
 
+  // Data still loading
   if (isLoading) {
     return <QueryLoadingView message={t("groups.loadingGroup")} />;
   }
   if (error) {
     return <QueryErrorView message={t("groups.failedLoadGroup")} />;
   }
-  if (!fixture && fixtureId != null) {
+  // Fixtures loaded but target fixture not found yet — show loading
+  // (can happen when placeholder data is provided without fixtures)
+  if (!fixture && fixtureId != null && allFixtures.length === 0) {
+    return <QueryLoadingView message={t("groups.loadingGroup")} />;
+  }
+  // Fixtures loaded but target fixture doesn't exist — show error
+  if (!fixture && fixtureId != null && allFixtures.length > 0) {
     return <QueryErrorView message={t("groups.failedLoadGroup")} />;
   }
   if (allFixtures.length === 0) {
-    return null;
+    return <QueryLoadingView message={t("groups.loadingGroup")} />;
   }
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      {/* Darkened backdrop behind cards */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.06)" }]} />
-
+    <>
       {isFinishedGame && fixture ? (
         /* Single expanded card for finished games */
         <View style={styles.viewport}>
@@ -206,12 +285,9 @@ export function SingleGameScreen({
         </View>
       )}
 
-      {/* Fixed header — doesn't scroll with cards */}
+      {/* Header with group name — overlays the cards */}
       <View
-        style={[
-          styles.screenHeader,
-          { paddingTop: insets.top },
-        ]}
+        style={[styles.screenHeader, { paddingTop: insets.top }]}
       >
         <Pressable
           onPress={() => router.back()}
@@ -232,7 +308,7 @@ export function SingleGameScreen({
           {group?.name ?? ""}
         </AppText>
       </View>
-    </View>
+    </>
   );
 }
 

@@ -37,6 +37,7 @@ import type { ChatMessage } from "@/lib/socket";
 
 interface GroupChatScreenProps {
   groupId: number | null;
+  keyboardVerticalOffset?: number;
 }
 
 type ChatListItem =
@@ -103,7 +104,7 @@ const ChatItem = React.memo(function ChatItem({
   return <ChatSystemEvent message={message} />;
 });
 
-export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
+export function GroupChatScreen({ groupId, keyboardVerticalOffset: kbOffsetProp }: GroupChatScreenProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -292,7 +293,7 @@ export function GroupChatScreen({ groupId }: GroupChatScreenProps) {
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={insets.top}
+      keyboardVerticalOffset={kbOffsetProp ?? insets.top}
     >
       {messages.length === 0 && !isLoading ? (
         <View style={styles.emptyContainer}>

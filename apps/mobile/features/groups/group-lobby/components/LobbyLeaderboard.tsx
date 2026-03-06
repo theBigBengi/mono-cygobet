@@ -109,58 +109,32 @@ function LobbyLeaderboardInner({
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <View
-          style={[
-            styles.wrapper,
-            { backgroundColor: theme.colors.surface },
-          ]}
-        >
-          {/* Podium section */}
-          <View style={[styles.podiumSection, { borderColor: theme.colors.border }]}>
-            <View style={styles.podiumRow}>
-              {PODIUM_HEIGHTS.map((height, index) => (
-                <View key={index} style={styles.podiumSlot}>
-                  <Animated.View
-                    style={[
-                      styles.skeletonPodiumCard,
-                      {
-                        height,
-                        backgroundColor: theme.colors.border,
-                      },
-                      animatedStyle,
-                    ]}
-                  />
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Divider */}
-
-          {/* Bottom section */}
-          <View style={styles.bottomSection}>
-            <View style={styles.bottomRow}>
-              <View style={styles.bottomLeft}>
+        <View style={styles.wrapper}>
+          {/* Title skeleton */}
+          <Animated.View
+            style={[
+              { width: 100, height: 14, borderRadius: 6, backgroundColor: theme.colors.border },
+              animatedStyle,
+            ]}
+          />
+          {/* Bar rows skeleton */}
+          <View style={{ marginTop: 12, gap: 8 }}>
+            {[200, 150, 100].map((w, i) => (
+              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Animated.View
                   style={[
-                    { width: 100, height: 14, borderRadius: 4, backgroundColor: theme.colors.border },
+                    { width: 22, height: 22, borderRadius: 11, backgroundColor: theme.colors.border },
                     animatedStyle,
                   ]}
                 />
                 <Animated.View
                   style={[
-                    { width: 60, height: 10, borderRadius: 4, backgroundColor: theme.colors.border, marginTop: 4 },
+                    { width: w, height: 36, borderRadius: 8, backgroundColor: theme.colors.border },
                     animatedStyle,
                   ]}
                 />
               </View>
-              <Animated.View
-                style={[
-                  { width: 70, height: 32, borderRadius: 20, backgroundColor: theme.colors.border },
-                  animatedStyle,
-                ]}
-              />
-            </View>
+            ))}
           </View>
         </View>
       </View>

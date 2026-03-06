@@ -114,7 +114,7 @@ function ScoreInputPairInner({
       </View>
 
       {/* Separator */}
-      <AppText style={[styles.separator, { color: sepColor }]}>-</AppText>
+      <AppText style={[styles.separator, { color: sepColor }]}>:</AppText>
 
       {/* Away digit */}
       <View style={styles.digitSlot}>
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   digitSlot: {
-    width: 18,
+    width: 14,
     height: 22,
     justifyContent: "center",
     alignItems: "center",

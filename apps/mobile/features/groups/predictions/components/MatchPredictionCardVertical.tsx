@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, Ionicons, AntDesign } from "@expo/vector-icons";
 import { AppText, TeamLogo } from "@/components/ui";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
@@ -166,10 +166,29 @@ export function MatchPredictionCardVertical({
   const statusData = useMemo(() => {
     // Live → show match minute
     if (isLive) {
-      return { top: String(fixture.liveMinute ?? 0), bottom: "Live", bgColor: "#3B82F6" + "15", textColor: "#3B82F6", inline: `${fixture.liveMinute ?? 0}' Live` };
+      return { top: `${fixture.liveMinute ?? 0}'`, bottom: undefined, bgColor: "#3B82F6" + "15", textColor: "#3B82F6", inline: `${fixture.liveMinute ?? 0}'` };
     }
 
-    // Cancelled / Postponed / Abandoned → show status
+    // Cancelled / Postponed / Abandoned → show date + time like regular games
+    if (isCancelled && fixture.state && fixture.kickoffAt) {
+      const k = new Date(fixture.kickoffAt);
+      const hh = k.getHours().toString().padStart(2, "0");
+      const mm = k.getMinutes().toString().padStart(2, "0");
+      const dd = k.getDate().toString().padStart(2, "0");
+      const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const dateStr = `${dd} ${MONTHS_SHORT[k.getMonth()]}`;
+      const c = theme.colors.textSecondary;
+      const labelMap: Record<string, string> = {
+        CANCELLED: "CAN",
+        POSTPONED: "PPD",
+        SUSPENDED: "SUS",
+        ABANDONED: "ABD",
+        INTERRUPTED: "INT",
+        WO: "W/O",
+      };
+      const label = labelMap[fixture.state] ?? fixture.state.slice(0, 3).toUpperCase();
+      return { top: hh, bottom: mm, date: dateStr, bgColor: "transparent", textColor: c, cancelLabel: label, inline: `${dateStr} · ${hh}:${mm}` };
+    }
     if (isCancelled && fixture.state) {
       const labelMap: Record<string, string> = {
         CANCELLED: "CAN",
@@ -181,7 +200,7 @@ export function MatchPredictionCardVertical({
       };
       const label = labelMap[fixture.state] ?? fixture.state.slice(0, 3).toUpperCase();
       const c = theme.colors.textSecondary;
-      return { top: label, bottom: undefined, bgColor: c + "15", textColor: c, inline: label };
+      return { top: label, bottom: undefined, bgColor: "transparent", textColor: c, inline: label };
     }
 
     // All other states → show kickoff time (HH:MM)
@@ -189,12 +208,12 @@ export function MatchPredictionCardVertical({
       const k = new Date(fixture.kickoffAt);
       const hh = k.getHours().toString().padStart(2, "0");
       const mm = k.getMinutes().toString().padStart(2, "0");
-      const sc = theme.colors.textSecondary;
+      const sc = isFinished ? theme.colors.textSecondary : theme.colors.textPrimary;
       const dd = k.getDate().toString().padStart(2, "0");
       const mo = (k.getMonth() + 1).toString().padStart(2, "0");
       const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      const dateStr = `${k.getDate()} ${MONTHS_SHORT[k.getMonth()]}`;
-      return { top: hh, bottom: mm, date: dateStr, bgColor: sc + "15", textColor: sc, inline: hideRound ? `${dateStr} ${hh}:${mm}` : `${hh}:${mm}` };
+      const dateStr = `${dd} ${MONTHS_SHORT[k.getMonth()]}`;
+      return { top: hh, bottom: mm, date: dateStr, bgColor: "transparent", textColor: sc, inline: hideRound ? `${dateStr} ${hh}:${mm}` : `${hh}:${mm}` };
     }
 
     const sc = theme.colors.textSecondary;
@@ -231,10 +250,11 @@ export function MatchPredictionCardVertical({
       );
     }
     if (statusData.date) {
+      const strikethrough = isCancelled ? { textDecorationLine: "line-through" as const } : undefined;
       return (
         <View style={[styles.statusBox, { backgroundColor: statusData.bgColor }]}>
-          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 10 }]}>{statusData.date}</Text>
-          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 12, fontWeight: "800" }]}>{`${statusData.top}:${statusData.bottom}`}</Text>
+          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 8 }, strikethrough]}>{statusData.date}</Text>
+          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 10 }, strikethrough]}>{`${statusData.top}:${statusData.bottom}`}</Text>
         </View>
       );
     }
@@ -244,7 +264,7 @@ export function MatchPredictionCardVertical({
         <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 10 }]}>{statusData.bottom}</Text>
       </View>
     );
-  }, [statusData]);
+  }, [statusData, isCancelled]);
 
   if (cardLayout === "horizontal") {
     return (
@@ -266,27 +286,49 @@ export function MatchPredictionCardVertical({
               },
             ]}
           >
-            {/* Info row: time · league | points */}
+            {/* Info row: time | points */}
             <View style={styles.hStatusRow}>
-              <Text style={[styles.hStatusText, { color: statusData.textColor }]}>
-                {statusData.inline}
+              <Text style={[styles.hStatusText, { color: (!isLive && !isFinished && !isCancelled) ? theme.colors.textPrimary : statusData.textColor }, isCancelled && { textDecorationLine: "line-through" }]}>
+                {statusData.date ? `${statusData.date} · ${statusData.top}:${statusData.bottom}` : statusData.inline}
               </Text>
-              {leagueInfoText && (
-                <AppText style={[styles.leagueText, { color: theme.colors.textSecondary, marginLeft: 6 }]}>
-                  {leagueInfoText}
-                </AppText>
-              )}
-              {rightBoxData && (
-                <Text style={[styles.hStatusText, { color: rightBoxData.textColor, marginLeft: "auto" }]}>
-                  {rightBoxData.top} {rightBoxData.bottom}
-                </Text>
-              )}
+              <Pressable style={{ marginLeft: "auto" }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPressCard(); }}>
+                {rightBoxData ? (
+                  rightBoxData.icon === "cancel" ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <MaterialCommunityIcons name="cancel" size={12} color={rightBoxData.textColor} />
+                      <Text style={[styles.hStatusText, { color: rightBoxData.textColor }]}>
+                        {(statusData as any).cancelLabel ?? statusData.top}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={[styles.hPointsBadge, { backgroundColor: rightBoxData.bgColor }]}>
+                      <Text style={[styles.hStatusText, { color: rightBoxData.textColor }]}>
+                        {rightBoxData.top} {rightBoxData.bottom}
+                      </Text>
+                    </View>
+                  )
+                ) : isLive ? (
+                  <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.textSecondary + "15", alignItems: "center", justifyContent: "center" }}>
+                    <AntDesign name="question" size={9} color={"#3B82F6"} />
+                  </View>
+                ) : (
+                  hasPrediction ? (
+                    <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.textSecondary + "15", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="checkmark" size={9} color={theme.colors.textSecondary} />
+                    </View>
+                  ) : (
+                    <MaterialCommunityIcons name="cards-outline" size={14} color={theme.colors.textPrimary} />
+                  )
+                )}
+              </Pressable>
             </View>
 
             {/* Horizontal match row */}
             <View
               style={[
                 styles.hRow,
+                styles.hRowBorder,
+                { backgroundColor: theme.colors.textSecondary + "12" },
                 isCancelled && { opacity: 0.6 },
               ]}
             >
@@ -405,11 +447,6 @@ export function MatchPredictionCardVertical({
             },
           ]}
         >
-          {leagueInfoText && !hideRound && (
-            <AppText style={[styles.leagueText, { color: theme.colors.textSecondary, marginLeft: 52, marginBottom: 2 }]}>
-              {leagueInfoText}
-            </AppText>
-          )}
           <View style={styles.cardRow}>
             {/* Status Box — left column */}
             <View style={styles.statusCol}>
@@ -417,7 +454,7 @@ export function MatchPredictionCardVertical({
             </View>
 
             {/* Card content — center */}
-            <View style={styles.cardContent}>
+            <View style={[styles.cardContent, styles.hRowBorder, { backgroundColor: theme.colors.textSecondary + "12" }]}>
               <View
                 style={[
                   styles.matchContent,
@@ -534,11 +571,12 @@ export function MatchPredictionCardVertical({
             </View>
 
             {/* Right spacer — mirrors statusCol for symmetry */}
-            <View style={styles.statusCol}>
+            <Pressable style={styles.statusCol} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPressCard(); }}>
               {rightBoxData ? (
                 rightBoxData.icon === "cancel" ? (
                   <View style={[styles.statusBox, { backgroundColor: rightBoxData.bgColor, alignItems: "center", justifyContent: "center" }]}>
                     <MaterialCommunityIcons name="cancel" size={16} color={rightBoxData.textColor} />
+                    <Text style={[styles.statusMonthText, { color: rightBoxData.textColor, marginTop: 1 }]}>{(statusData as any).cancelLabel ?? statusData.top}</Text>
                   </View>
                 ) : (
                   <View style={[styles.statusBox, { backgroundColor: rightBoxData.bgColor }]}>
@@ -546,12 +584,24 @@ export function MatchPredictionCardVertical({
                     {rightBoxData.bottom && <Text style={[styles.statusMonthText, { color: rightBoxData.textColor }]}>{rightBoxData.bottom}</Text>}
                   </View>
                 )
+              ) : isLive ? (
+                <View style={[styles.statusBox, { backgroundColor: "transparent", alignItems: "center", justifyContent: "center" }]}>
+                  <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: theme.colors.textSecondary + "15", alignItems: "center", justifyContent: "center" }}>
+                    <AntDesign name="question" size={12} color={"#3B82F6"} />
+                  </View>
+                </View>
               ) : (
-                <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12", alignItems: "center", justifyContent: "center" }]}>
-                  <MaterialCommunityIcons name="cards-outline" size={20} color={theme.colors.textSecondary + "40"} />
+                <View style={[styles.statusBox, { backgroundColor: "transparent", alignItems: "center", justifyContent: "center" }]}>
+                  {hasPrediction ? (
+                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: theme.colors.textSecondary + "15", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="checkmark" size={12} color={theme.colors.textSecondary} />
+                    </View>
+                  ) : (
+                    <MaterialCommunityIcons name="cards-outline" size={20} color={theme.colors.textPrimary} />
+                  )}
                 </View>
               )}
-            </View>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -561,6 +611,7 @@ export function MatchPredictionCardVertical({
 
 const styles = StyleSheet.create({
   outerRow: {
+    marginBottom: 8,
   },
   outerRowSpacing: {
     marginBottom: 10,
@@ -652,18 +703,26 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   // ── Horizontal layout styles ──
-  hStatusRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-  },
   hStatusText: {
     fontSize: 10,
     fontWeight: "700" as const,
     lineHeight: 10,
+  },
+  hPointsBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  hStatusRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  hRowBorder: {
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
   },
   hRow: {
     flexDirection: "row" as const,

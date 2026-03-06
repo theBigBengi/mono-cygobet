@@ -3,6 +3,7 @@
 
 import React, { useEffect } from "react";
 import { View, ScrollView, StyleSheet, Pressable, Text } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -61,18 +62,13 @@ function LobbyQuickActionsInner({
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <View style={styles.row}>
-          {[0, 1, 2].map((i) => (
-            <Animated.View
-              key={i}
-              style={[
-                styles.skeletonPill,
-                { backgroundColor: theme.colors.border },
-                animatedStyle,
-              ]}
-            />
-          ))}
-        </View>
+        <Animated.View
+          style={[
+            styles.skeletonCard,
+            { backgroundColor: theme.colors.border },
+            animatedStyle,
+          ]}
+        />
       </View>
     );
   }
@@ -119,22 +115,30 @@ function LobbyQuickActionsInner({
         <Pressable
           onPress={cardsAction.onPress}
           style={({ pressed }) => [
-            styles.card,
-            styles.cardsRow,
-            { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.border },
+            styles.cardWrapper,
             pressed && { opacity: 0.8 },
           ]}
         >
-          {renderAction(cardsAction, 0)}
-          <View style={styles.cardsTextCol}>
-            <Text style={[styles.cardsTitle, { color: theme.colors.textPrimary }]}>
-              Predict All
-            </Text>
-            <Text style={[styles.cardsSubtitle, { color: theme.colors.textSecondary }]}>
-              {totalFixtures - predictionsCount} of {totalFixtures} left
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+          <LinearGradient
+            colors={[
+              theme.colors.textPrimary + "08",
+              theme.colors.textPrimary + "03",
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.card, styles.cardsRow]}
+          >
+            {renderAction(cardsAction, 0)}
+            <View style={styles.cardsTextCol}>
+              <Text style={[styles.cardsTitle, { color: theme.colors.textPrimary }]}>
+                Predict All
+              </Text>
+              <Text style={[styles.cardsSubtitle, { color: theme.colors.textSecondary }]}>
+                {totalFixtures - predictionsCount} of {totalFixtures} left
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+          </LinearGradient>
         </Pressable>
       )}
       <View style={styles.row}>
@@ -154,10 +158,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 16,
   },
+  cardWrapper: {
+    borderRadius: 12,
+    overflow: "hidden",
+  },
   card: {
     borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 12,
   },
   divider: {
@@ -225,5 +232,9 @@ pill: {
     width: 90,
     height: 36,
     borderRadius: 20,
+  },
+  skeletonCard: {
+    height: 52,
+    borderRadius: 12,
   },
 });

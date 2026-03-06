@@ -55,18 +55,6 @@ function getOffsetForIndex(index: number, leftOffset: number): number {
   return Math.max(0, itemCenter - targetPosition);
 }
 
-function getTeamAbbr(teamName: string): string {
-  const trimmed = teamName.trim();
-  if (!trimmed) return "—";
-  const words = trimmed.split(/\s+/).filter(Boolean);
-  if (words.length > 1) {
-    return words
-      .slice(0, 2)
-      .map((w) => w.charAt(0).toUpperCase())
-      .join("");
-  }
-  return trimmed.substring(0, 3).toUpperCase();
-}
 
 export type GameSliderProps = {
   fixtures: FixtureItem[];
@@ -137,10 +125,8 @@ export function GameSlider({
 
   const renderItem = useCallback(
     ({ item: fixture, index }: { item: FixtureItem; index: number }) => {
-      const homeName = translateTeam(fixture.homeTeam?.name, t("common.home"));
-      const awayName = translateTeam(fixture.awayTeam?.name, t("common.away"));
-      const homeAbbr = getTeamAbbr(homeName);
-      const awayAbbr = getTeamAbbr(awayName);
+      const homeAbbr = fixture.homeTeam?.shortCode ?? translateTeam(fixture.homeTeam?.name, t("common.home")).substring(0, 3).toUpperCase();
+      const awayAbbr = fixture.awayTeam?.shortCode ?? translateTeam(fixture.awayTeam?.name, t("common.away")).substring(0, 3).toUpperCase();
       const isActive = index === currentIndex;
 
       return (

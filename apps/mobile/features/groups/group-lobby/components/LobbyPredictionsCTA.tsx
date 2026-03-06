@@ -299,49 +299,38 @@ export function LobbyPredictionsCTA({
   if (isLoading) {
     return (
       <View style={styles.outerWrapper}>
-          <View
-            style={[
-              styles.container,
-              {
-                backgroundColor: theme.colors.cardBackground,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          >
-            <View style={styles.headerRow}>
+        {/* Section title skeleton */}
+        <Animated.View
+          style={[
+            { width: 80, height: 14, borderRadius: 6, backgroundColor: theme.colors.border, marginBottom: 8 },
+            skeletonAnimatedStyle,
+          ]}
+        />
+        {/* Fixture rows skeleton */}
+        {[0, 1, 2, 3, 4].map((i) => (
+          <View key={i} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 5, gap: 8 }}>
+            <Animated.View
+              style={[
+                { width: 42, height: 42, borderRadius: 6, backgroundColor: theme.colors.border },
+                skeletonAnimatedStyle,
+              ]}
+            />
+            <View style={{ flex: 1, gap: 4 }}>
               <Animated.View
                 style={[
-                  styles.skeletonBar,
-                  { backgroundColor: theme.colors.border },
+                  { width: 60, height: 12, borderRadius: 4, backgroundColor: theme.colors.border },
                   skeletonAnimatedStyle,
                 ]}
               />
               <Animated.View
                 style={[
-                  styles.skeletonBarSmall,
-                  { backgroundColor: theme.colors.border },
+                  { width: 50, height: 12, borderRadius: 4, backgroundColor: theme.colors.border },
                   skeletonAnimatedStyle,
                 ]}
               />
             </View>
-            {[0, 1, 2].map((i) => (
-              <Animated.View
-                key={i}
-                style={[
-                  styles.skeletonRow,
-                  { backgroundColor: theme.colors.border },
-                  skeletonAnimatedStyle,
-                ]}
-              />
-            ))}
-            <Animated.View
-              style={[
-                styles.skeletonButton,
-                { backgroundColor: theme.colors.border },
-                skeletonAnimatedStyle,
-              ]}
-            />
           </View>
+        ))}
       </View>
     );
   }

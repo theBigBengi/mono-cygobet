@@ -112,7 +112,7 @@ export type VerticalScoreSliderProps = {
  * Mirrors the HorizontalScoreSlider logic but on the Y axis.
  * Digit 9 at top, 0 at bottom, team logo below 0 (null state).
  */
-export function VerticalScoreSlider({
+export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
   value,
   onValueChange,
   thumbColor,
@@ -272,7 +272,7 @@ export function VerticalScoreSlider({
       </Animated.View>
     </GestureDetector>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

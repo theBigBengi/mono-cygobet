@@ -38,6 +38,8 @@ interface GroupLobbyHeaderProps {
   hideNavButtons?: boolean;
   /** Whether this is an official group */
   isOfficial?: boolean;
+  /** Group description */
+  description?: string | null;
   /** Creator username to display below group name */
   creatorName?: string | null;
   /** Share/invite button press */
@@ -69,6 +71,7 @@ function GroupLobbyHeaderInner({
   onSettingsPress,
   hideNavButtons = false,
   isOfficial = false,
+  description,
   creatorName,
   onSharePress,
   isLoading = false,
@@ -191,17 +194,35 @@ function GroupLobbyHeaderInner({
         <View style={styles.hudTextBelow}>
           {isLoading ? (
             <View style={styles.hudTitleLeft}>
+              {/* Name skeleton */}
               <Animated.View
                 style={[
                   styles.skeletonBar,
-                  { width: 160, height: 14, backgroundColor: theme.colors.border },
+                  { width: 160, height: 18, backgroundColor: theme.colors.border },
                   skeletonStyle,
                 ]}
               />
+              {/* Description skeleton */}
               <Animated.View
                 style={[
                   styles.skeletonBar,
-                  { width: 100, height: 12, marginTop: 8, backgroundColor: theme.colors.border },
+                  { width: 220, height: 12, marginTop: 8, backgroundColor: theme.colors.border },
+                  skeletonStyle,
+                ]}
+              />
+              {/* Creator row skeleton */}
+              <Animated.View
+                style={[
+                  styles.skeletonBar,
+                  { width: 140, height: 12, marginTop: 8, backgroundColor: theme.colors.border },
+                  skeletonStyle,
+                ]}
+              />
+              {/* Meta chips skeleton */}
+              <Animated.View
+                style={[
+                  styles.skeletonBar,
+                  { width: 120, height: 10, marginTop: 8, backgroundColor: theme.colors.border },
                   skeletonStyle,
                 ]}
               />
@@ -223,6 +244,15 @@ function GroupLobbyHeaderInner({
                   </Text>
                 </View>
 
+                {description ? (
+                  <Text
+                    style={[styles.descriptionText, { color: theme.colors.textSecondary }]}
+                    numberOfLines={3}
+                  >
+                    {description}
+                  </Text>
+                ) : null}
+
                 {creatorName && (
                   <View style={styles.creatorRow}>
                     <View style={[styles.creatorAvatar, { backgroundColor: theme.colors.textPrimary + "15" }]}>
@@ -231,19 +261,21 @@ function GroupLobbyHeaderInner({
                       </Text>
                     </View>
                     <Text style={[styles.creatorText, { color: theme.colors.textSecondary }]}>
-                      {creatorName}
+                      Created by <Text style={{ fontWeight: "700" }}>{creatorName}</Text>
                     </Text>
-                    <View style={styles.metaChips}>
-                      {memberCount != null && (
-                        <>
-                          <Ionicons name="people" size={11} color={theme.colors.textSecondary} />
-                          <Text style={[styles.metaChipText, { color: theme.colors.textSecondary }]}>{memberCount}</Text>
-                        </>
-                      )}
-                      <Ionicons name={privacy === "private" ? "lock-closed" : "globe"} size={11} color={theme.colors.textSecondary} />
-                    </View>
                   </View>
                 )}
+                <View style={styles.metaChips}>
+                  <Text style={[styles.metaChipText, { color: theme.colors.textSecondary }]}>{statusLabel}</Text>
+                  <Text style={[styles.metaDot, { color: theme.colors.textSecondary }]}>·</Text>
+                  {memberCount != null && (
+                    <>
+                      <Text style={[styles.metaChipText, { color: theme.colors.textSecondary }]}>{memberCount} {t("groups.membersShort")}</Text>
+                      <Text style={[styles.metaDot, { color: theme.colors.textSecondary }]}>·</Text>
+                    </>
+                  )}
+                  <Ionicons name={privacy === "private" ? "lock-closed" : "globe"} size={11} color={theme.colors.textSecondary} />
+                </View>
               </View>
 
               {onSharePress && (
@@ -381,7 +413,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   creatorText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "500",
   },
   hudNameRow: {
@@ -401,6 +433,11 @@ const styles = StyleSheet.create({
   hudName: {
     fontSize: 22,
     fontWeight: "700",
+  },
+  descriptionText: {
+    fontSize: 13,
+    fontWeight: "400",
+    marginBottom: 2,
   },
   // Original Styles
   card: {
@@ -424,11 +461,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginLeft: 8,
+    marginTop: 2,
   },
   metaChipText: {
     fontSize: 11,
     fontWeight: "600",
+  },
+  metaDot: {
+    fontSize: 11,
   },
   avatarInfoHint: {
     position: "absolute",

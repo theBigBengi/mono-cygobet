@@ -4,6 +4,7 @@
 import type { ApiTeamItem } from "@repo/types";
 import type { Prisma } from "@repo/db";
 import { TEAM_SELECT_BASE, TEAM_SELECT_WITH_COUNTRY } from "./selects";
+import { resolveShortCode } from "../../../utils/short-code";
 
 type TeamBase = Prisma.teamsGetPayload<{ select: typeof TEAM_SELECT_BASE }>;
 type TeamWithCountry = Prisma.teamsGetPayload<{ select: typeof TEAM_SELECT_WITH_COUNTRY }>;
@@ -20,7 +21,7 @@ export function buildTeamItem(
     name: team.name,
     imagePath: team.imagePath ?? null,
     countryId: team.countryId ?? null,
-    shortCode: team.shortCode ?? null,
+    shortCode: resolveShortCode(team.shortCode, team.name),
   };
 
   if (includeCountry && "countries" in team && team.countries) {

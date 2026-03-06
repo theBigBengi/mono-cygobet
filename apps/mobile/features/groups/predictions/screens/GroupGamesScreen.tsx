@@ -6,7 +6,7 @@ import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView, type BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
-import { Ionicons, Fontisto } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
@@ -261,6 +261,24 @@ export function GroupGamesScreen({
     updateFixtureIndexMap(map);
   }, [renderItems, updateFixtureIndexMap]);
 
+  const activeFilterLabel = useMemo(() => {
+    const parts: string[] = [];
+    // Action chip label (All, Live, Predict, Today, Results, etc.)
+    const activeChip = actionChips.find((c) => c.id === selectedAction);
+    if (activeChip) parts.push(activeChip.label);
+    // Structural filters (team, competition, round)
+    if (structuralFilter?.type === "teams") {
+      const selectedTeam = structuralFilter.teams.find((t) => t.id === structuralFilter.selectedTeamId);
+      if (selectedTeam) parts.push(selectedTeam.name);
+      const selectedComp = structuralFilter.competitions.find((c) => c.id === structuralFilter.selectedCompetitionId);
+      if (selectedComp) parts.push(selectedComp.name);
+    }
+    if (structuralFilter?.type === "rounds" && selectedAction === "round") {
+      parts.push(`Round ${structuralFilter.selectedRound}`);
+    }
+    return parts.join(" \u00B7 ");
+  }, [actionChips, selectedAction, structuralFilter]);
+
   const filterSheetRef = useRef<BottomSheetModal>(null);
 
   const handleFilterPress = useCallback(() => {
@@ -410,8 +428,11 @@ export function GroupGamesScreen({
   const handlePressCard = useCallback(
     (fixtureId: number) => {
       if (groupId != null) {
-        saveAllPending();
         router.push(`/groups/${groupId}/fixtures/${fixtureId}`);
+        // Defer save to avoid blocking the navigation transition
+        InteractionManager.runAfterInteractions(() => {
+          saveAllPending();
+        });
       }
     },
     [groupId, router, saveAllPending]
@@ -446,18 +467,6 @@ export function GroupGamesScreen({
                 <View style={[styles.sectionLiveBadge, { backgroundColor: theme.colors.live + "15" }]}>
                   <View style={[styles.sectionLiveDot, { backgroundColor: theme.colors.live }]} />
                   <Text style={[styles.sectionLiveText, { color: theme.colors.live }]}>LIVE</Text>
-                </View>
-              ) : item.level === "date" ? (
-                <View style={styles.sectionDateRow}>
-                  <Text
-                    style={[
-                      styles.sectionDateLabel,
-                      { color: theme.colors.textPrimary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {item.label}
-                  </Text>
                 </View>
               ) : item.level === "round" && item.label ? (
                 <View style={styles.sectionDateRow}>
@@ -536,11 +545,19 @@ export function GroupGamesScreen({
         predictedCount={savedPredictionsCount}
         totalCount={totalPredictionsCount}
         accuracy={summaryStats.accuracy}
+        useFullName={useFullName}
+        onToggleFullName={() => setUseFullName((v) => !v)}
+        cardLayout={cardLayout}
+        onToggleCardLayout={toggleCardLayout}
+        onFilterSortPress={hasAnyChips ? handleFilterPress : undefined}
+        activeFilterLabel={activeFilterLabel}
       />
     ),
     [
       isReady, emptyState, filteredFixtures.length, summaryStats,
       savedPredictionsCount, totalPredictionsCount,
+      useFullName, cardLayout, toggleCardLayout, hasAnyChips, handleFilterPress,
+      activeFilterLabel,
     ]
   );
 
@@ -618,35 +635,6 @@ export function GroupGamesScreen({
             onBack={handleBack}
             backOnly
             title={groupName}
-            onFilterPress={hasAnyChips ? handleFilterPress : undefined}
-            rightContent={
-              <View style={styles.headerButtons}>
-                <Pressable
-                  onPress={() => setUseFullName((v) => !v)}
-                  hitSlop={8}
-                  style={[
-                    styles.nameToggle,
-                    {
-                      borderColor: useFullName ? theme.colors.primary : theme.colors.textSecondary + "30",
-                      backgroundColor: useFullName ? theme.colors.primary + "15" : "transparent",
-                    },
-                  ]}
-                >
-                  <Fontisto
-                    name="text-width"
-                    size={12}
-                    color={useFullName ? theme.colors.primary : theme.colors.textSecondary}
-                  />
-                </Pressable>
-                <Pressable onPress={toggleCardLayout} style={styles.layoutToggle}>
-                  <Ionicons
-                    name={cardLayout === "vertical" ? "reorder-two-outline" : "list-outline"}
-                    size={20}
-                    color={theme.colors.textPrimary}
-                  />
-                </Pressable>
-              </View>
-            }
           />
         </Animated.View>
 
@@ -819,10 +807,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 0.5,
+    textAlign: "center",
   },
   sectionRoundLabel: {
     fontSize: 11,
     fontWeight: "600",
+    textAlign: "center",
   },
   sectionLiveBadge: {
     flexDirection: "row",
@@ -848,21 +838,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
-  },
-  headerButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  nameToggle: {
-    width: 24,
-    height: 24,
-    borderWidth: 1,
-    borderRadius: 4,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  layoutToggle: {
-    padding: 8,
   },
 });

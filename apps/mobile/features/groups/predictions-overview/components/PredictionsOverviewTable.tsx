@@ -13,13 +13,12 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
-import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { useAuth } from "@/lib/auth/useAuth";
 import type { ApiPredictionsOverviewData } from "@repo/types";
 import {
   calculateLivePoints,
-  getTeamAbbr,
   formatDate,
   getWinner,
   hasMatchStarted,
@@ -120,10 +119,10 @@ export function PredictionsOverviewTable({
   const getPointsCellBg = (points: string | null): string | undefined => {
     if (!points) return undefined;
     const n = parseInt(points, 10);
-    if (n >= 3) return "#10B98112";
-    if (n >= 2) return "#F59E0B10";
-    if (n >= 1) return "#E8A30810";
-    return theme.colors.danger + "10";
+    if (n >= 3) return "#10B98108";
+    if (n >= 2) return "#F59E0B08";
+    if (n >= 1) return "#E8A30808";
+    return theme.colors.danger + "08";
   };
 
   const formatPrediction = (
@@ -177,9 +176,9 @@ export function PredictionsOverviewTable({
           {
             minWidth: totalWidth,
             height: HEADER_HEIGHT,
-            backgroundColor: theme.colors.surface,
-            borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
-            borderBottomColor: theme.colors.textSecondary + "40",
+            backgroundColor: theme.colors.background,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: theme.colors.border,
           },
         ]}
       >
@@ -194,9 +193,9 @@ export function PredictionsOverviewTable({
             styles.totalPointsHeader,
             {
               width: TOTAL_COLUMN_WIDTH,
-              borderRightWidth: 1,
+              borderRightWidth: StyleSheet.hairlineWidth,
               borderRightColor: theme.colors.border,
-              backgroundColor: showLivePoints ? theme.colors.primary + "10" : theme.colors.textSecondary + "10",
+              backgroundColor: showLivePoints ? theme.colors.primary + "08" : "transparent",
             },
           ]}
         >
@@ -219,14 +218,11 @@ export function PredictionsOverviewTable({
               styles.gameHeader,
               {
                 width: actualGameColumnWidth,
-                borderRightWidth: 1,
-                borderRightColor: theme.colors.border,
                 backgroundColor: pressed
-                  ? theme.colors.primary + "10"
+                  ? theme.colors.textPrimary + "06"
                   : fixture.liveMinute != null
-                    ? theme.colors.primary + "0A"
+                    ? theme.colors.primary + "06"
                     : "transparent",
-                transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
             onPress={() => {
@@ -278,7 +274,7 @@ export function PredictionsOverviewTable({
                     ]}
                     numberOfLines={1}
                   >
-                    {fixture.homeTeam.shortCode || getTeamAbbr(fixture.homeTeam.name)}
+                    {fixture.homeTeam.shortCode}
                   </AppText>
                 );
               })()}
@@ -307,7 +303,7 @@ export function PredictionsOverviewTable({
                     ]}
                     numberOfLines={1}
                   >
-                    {fixture.awayTeam.shortCode || getTeamAbbr(fixture.awayTeam.name)}
+                    {fixture.awayTeam.shortCode}
                   </AppText>
                 );
               })()}
@@ -363,9 +359,6 @@ export function PredictionsOverviewTable({
     const change = positionChangeMap.get(participant.id) ?? 0;
     const movedUp = showLivePoints && change > 0;
     const movedDown = showLivePoints && change < 0;
-    const rowBg = index % 2 === 0
-      ? theme.colors.background
-      : theme.colors.surface;
     return (
       <View
         key={participant.id}
@@ -373,11 +366,9 @@ export function PredictionsOverviewTable({
           styles.leftColumnCell,
           {
             height: ROW_HEIGHT,
-            borderBottomWidth: isCurrentUser ? 1.5 : 1,
-            borderBottomColor: isCurrentUser ? theme.colors.textSecondary : theme.colors.border,
-            borderTopWidth: isCurrentUser ? 1.5 : 0,
-            borderTopColor: isCurrentUser ? theme.colors.textSecondary : undefined,
-            backgroundColor: rowBg,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: theme.colors.border,
+            backgroundColor: isCurrentUser ? theme.colors.textPrimary + "06" : "transparent",
           },
         ]}
       >
@@ -424,9 +415,6 @@ export function PredictionsOverviewTable({
     index: number;
   }) => {
     const isCurrentUser = participant.id === currentUserId;
-    const rowBg = index % 2 === 0
-      ? theme.colors.background
-      : theme.colors.surface;
     return (
       <View
         style={[
@@ -434,11 +422,9 @@ export function PredictionsOverviewTable({
           {
             minWidth: totalWidth,
             height: ROW_HEIGHT,
-            borderBottomWidth: isCurrentUser ? 1.5 : 1,
-            borderBottomColor: isCurrentUser ? theme.colors.textSecondary : theme.colors.border,
-            borderTopWidth: isCurrentUser ? 1.5 : 0,
-            borderTopColor: isCurrentUser ? theme.colors.textSecondary : undefined,
-            backgroundColor: rowBg,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: theme.colors.border,
+            backgroundColor: isCurrentUser ? theme.colors.textPrimary + "06" : "transparent",
           },
         ]}
       >
@@ -448,9 +434,9 @@ export function PredictionsOverviewTable({
             styles.predictionCell,
             {
               width: TOTAL_COLUMN_WIDTH,
-              borderRightWidth: 1,
+              borderRightWidth: StyleSheet.hairlineWidth,
               borderRightColor: theme.colors.border,
-              backgroundColor: showLivePoints ? theme.colors.primary + "10" : theme.colors.textSecondary + "10",
+              backgroundColor: showLivePoints ? theme.colors.primary + "08" : "transparent",
             },
           ]}
         >
@@ -491,10 +477,8 @@ export function PredictionsOverviewTable({
                 styles.predictionCell,
                 {
                   width: actualGameColumnWidth,
-                  borderRightWidth: 1,
-                  borderRightColor: theme.colors.border,
                   backgroundColor: fixture.liveMinute != null
-                    ? theme.colors.primary + "0A"
+                    ? theme.colors.primary + "06"
                     : fixture.result && fixture.liveMinute == null
                       ? getPointsCellBg(pts)
                       : undefined,
@@ -541,7 +525,7 @@ export function PredictionsOverviewTable({
             styles.leftColumnFixed,
             {
               width: LEFT_COLUMN_WIDTH,
-              borderRightWidth: 1,
+              borderRightWidth: StyleSheet.hairlineWidth,
               borderRightColor: theme.colors.border,
             },
           ]}
@@ -552,9 +536,9 @@ export function PredictionsOverviewTable({
               styles.leftHeader,
               {
                 height: HEADER_HEIGHT,
-                backgroundColor: theme.colors.surface,
-                borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
-                borderBottomColor: theme.colors.textSecondary + "40",
+                backgroundColor: theme.colors.background,
+                borderBottomWidth: StyleSheet.hairlineWidth,
+                borderBottomColor: theme.colors.border,
               },
             ]}
           >
