@@ -27,19 +27,11 @@ import {
 import { groupsKeys } from "@/domains/groups/groups.keys";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
 import type { ApiRankingItem } from "@repo/types";
 
 interface GroupRankingScreenProps {
   groupId: number | null;
-}
-
-function getInitials(name: string): string {
-  if (!name?.trim()) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
 }
 
 const AVATAR_SIZE = 40;

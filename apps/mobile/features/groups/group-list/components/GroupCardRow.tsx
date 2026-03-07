@@ -8,16 +8,8 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
 import type { ApiGroupItem } from "@repo/types";
-
-function getInitials(name: string): string {
-  if (!name?.trim()) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
 
 export interface GroupCardRowProps {
   group: ApiGroupItem;

@@ -15,6 +15,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
 import type { ApiRankingItem } from "@repo/types";
 
 const RANK_COLORS = ["#FFD700", "#8E9AAF", "#C4956A"] as const; // Gold, Cool Silver, Warm Bronze
@@ -26,16 +27,6 @@ export interface LobbyLeaderboardProps {
   isLoading: boolean;
   onPress: () => void;
   memberCount?: number;
-}
-
-/** Get initials from username */
-function getInitials(name: string | null | undefined): string {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
 }
 
 function LobbyLeaderboardInner({

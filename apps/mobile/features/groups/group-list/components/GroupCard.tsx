@@ -31,32 +31,14 @@ import Animated, {
 } from "react-native-reanimated";
 import { AppText, GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
+import { formatRelativeTime } from "@/utils/date";
 import { useCountdown } from "@/features/groups/predictions/hooks";
 import type { ApiGroupItem } from "@repo/types";
 
 function formatLastMessageTime(isoDate: string | undefined): string | null {
   if (!isoDate) return null;
-  const date = new Date(isoDate);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return "now";
-  if (diffMins < 60) return `${diffMins}m`;
-  if (diffHours < 24) return `${diffHours}h`;
-  if (diffDays < 7) return `${diffDays}d`;
-  return `${Math.floor(diffDays / 7)}w`;
-}
-
-function getInitials(name: string): string {
-  if (!name?.trim()) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
+  return formatRelativeTime(isoDate);
 }
 
 export interface GroupCardProps {

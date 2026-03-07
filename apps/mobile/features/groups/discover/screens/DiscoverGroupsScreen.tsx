@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { AppText, Button, Card, GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import {
@@ -26,15 +27,6 @@ import {
 import type { ApiPublicGroupItem } from "@repo/types";
 
 const PER_PAGE = 20;
-
-function getInitials(name: string): string {
-  if (!name?.trim()) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
 
 export function DiscoverGroupsScreen() {
   const { t } = useTranslation("common");

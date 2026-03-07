@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText, Button } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
 import type { ApiInviteItem } from "@repo/types";
 
 interface InviteCardProps {
@@ -15,11 +16,6 @@ interface InviteCardProps {
   onDecline: () => void;
   onPreview?: () => void;
   isResponding?: boolean;
-}
-
-function getInitials(username: string | null): string {
-  if (!username?.trim()) return "?";
-  return username.slice(0, 2).toUpperCase();
 }
 
 function formatExpires(

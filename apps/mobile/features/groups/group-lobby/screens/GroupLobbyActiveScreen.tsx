@@ -41,18 +41,10 @@ import { DebugSingleGameScreen } from "./DebugSingleGameScreen";
 import { DebugGroupCardScreen } from "../../group-list/screens/DebugGroupCardScreen";
 import { DebugSwipeCardScreen } from "./DebugSwipeCardScreen";
 import { DebugGamesScreen } from "../../predictions/screens/DebugGamesScreen";
+import { formatRelativeTime } from "@/utils/date";
 
 function formatChatTime(iso: string): string {
-  const date = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "now";
-  if (diffMin < 60) return `${diffMin}m`;
-  const diffHours = Math.floor(diffMin / 60);
-  if (diffHours < 24) return `${diffHours}h`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d`;
+  return formatRelativeTime(iso);
 }
 
 interface GroupLobbyActiveScreenProps {

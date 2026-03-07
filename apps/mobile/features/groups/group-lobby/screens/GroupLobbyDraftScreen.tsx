@@ -16,15 +16,7 @@ import {
 } from "@/features/settings";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import type { ApiGroupItem } from "@repo/types";
-
-function getInitials(name: string): string {
-  if (!name || !name.trim()) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2);
-  }
-  return name.slice(0, 2).toUpperCase();
-}
+import { getInitials } from "@/utils/string";
 
 const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
 const MIN_SCORE = 1;

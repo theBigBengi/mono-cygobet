@@ -13,6 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Card, AppText, GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
 import type { ApiGroupStatus, ApiGroupPrivacy } from "@repo/types";
 
 interface GroupLobbyHeaderProps {
@@ -50,15 +51,6 @@ interface GroupLobbyHeaderProps {
   onSharePress?: () => void;
   /** Show skeleton loading state */
   isLoading?: boolean;
-}
-
-function getInitials(name: string): string {
-  if (!name || !name.trim()) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2);
-  }
-  return name.slice(0, 2).toUpperCase();
 }
 
 function GroupLobbyHeaderInner({

@@ -32,6 +32,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AppText, Button, GroupAvatar } from "@/components/ui";
 import { InfoSheet } from "@/components/ui/InfoSheet";
 import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   usePublicGroupsQuery,
@@ -43,15 +44,6 @@ import type { ApiPublicGroupItem } from "@repo/types";
 
 const PER_PAGE = 20;
 const AVATAR_SIZE = 56;
-
-function getInitials(name: string): string {
-  if (!name?.trim()) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
 
 export function GroupsSearchScreen() {
   const { t } = useTranslation("common");

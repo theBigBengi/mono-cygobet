@@ -6,6 +6,7 @@ import { View, StyleSheet, Image, Text, Pressable, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
 import type { ApiUserSearchItem } from "@repo/types";
 
 interface UserSearchResultItemProps {
@@ -15,11 +16,6 @@ interface UserSearchResultItemProps {
   isSending?: boolean;
   isCancelling?: boolean;
   invited?: boolean;
-}
-
-function getInitials(username: string): string {
-  if (!username?.trim()) return "?";
-  return username.slice(0, 2).toUpperCase();
 }
 
 export function UserSearchResultItem({

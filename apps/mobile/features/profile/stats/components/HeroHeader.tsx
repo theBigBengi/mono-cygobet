@@ -6,21 +6,13 @@ import { View, StyleSheet, Pressable } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
 
 interface HeroHeaderProps {
   username: string | null;
   image: string | null;
   showEditButton?: boolean;
   onEditPress?: () => void;
-}
-
-function getInitials(username: string | null): string {
-  if (!username || !username.trim()) return "?";
-  const parts = username.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return username.slice(0, 2).toUpperCase();
 }
 
 export function HeroHeader({

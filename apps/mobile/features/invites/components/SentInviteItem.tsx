@@ -6,17 +6,13 @@ import { View, StyleSheet, Image, Text, Alert, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
+import { getInitials } from "@/utils/string";
 import type { SentInviteItem as SentInviteItemType } from "@/domains/invites";
 
 interface SentInviteItemProps {
   invite: SentInviteItemType;
   onCancel: (inviteId: number) => void;
   isCancelling?: boolean;
-}
-
-function getInitials(username: string | null): string {
-  if (!username?.trim()) return "?";
-  return username.slice(0, 2).toUpperCase();
 }
 
 function getExpiresText(expiresAt: string, t: (key: string, opts?: Record<string, unknown>) => string): string {

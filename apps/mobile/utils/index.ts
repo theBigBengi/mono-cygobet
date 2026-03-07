@@ -4,3 +4,4 @@
 export * from "./date";
 export * from "./fixture";
 export * from "./fixtureOdds";
+export * from "./string";
