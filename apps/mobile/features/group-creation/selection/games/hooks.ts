@@ -17,7 +17,7 @@ import {
   addMultipleGroupGames,
   removeMultipleGroupGames,
 } from "./actions";
-import type { FixtureId } from "./types";
+import type { FixtureId, SelectedGameData } from "./types";
 
 /**
  * Check if a specific game is selected
@@ -80,7 +80,7 @@ export function useAreAllGamesSelected(fixtureIds: FixtureId[]): boolean {
  * Get selected group games array, count, and hasAnyGame flag
  */
 export function useSelectedGroupGames(): {
-  games: { fixtureId: number; game: any }[];
+  games: { fixtureId: number; game: SelectedGameData }[];
   count: number;
   hasAnyGame: boolean;
 } {

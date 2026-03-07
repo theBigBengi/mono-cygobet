@@ -56,7 +56,7 @@ export function KORoundModeSelector({
   };
 
   const found = OPTIONS.find((o) => o.mode === value);
-  const selectionLabel = found ? String(t(found.titleKey as any)) : value;
+  const selectionLabel = found ? String(t(found.titleKey)) : value;
 
   return (
     <CollapsibleSection
@@ -83,7 +83,7 @@ export function KORoundModeSelector({
                 ]}
               >
                 <AppText variant="body" style={styles.optionTitle}>
-                  {String(t(titleKey as any))}
+                  {String(t(titleKey))}
                 </AppText>
                 <Ionicons
                   name={isSelected ? "checkmark-circle" : "radio-button-off"}

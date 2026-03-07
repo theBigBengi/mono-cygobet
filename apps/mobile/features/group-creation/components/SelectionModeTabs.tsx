@@ -94,7 +94,7 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
                   },
                 ]}
               >
-                {t(m.labelKey as any)}
+                {String(t(m.labelKey))}
               </Text>
             </Pressable>
           );

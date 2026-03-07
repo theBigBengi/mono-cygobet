@@ -2,14 +2,14 @@
 // Extracted skeleton renderers from CreateGroupFlow.tsx
 
 import React from "react";
-import { View } from "react-native";
-import Animated from "react-native-reanimated";
+import { View, type ViewStyle } from "react-native";
+import Animated, { type AnimatedStyleProp } from "react-native-reanimated";
 
 type SkeletonType = "list" | "grid" | "fixtureList" | "fixtureGrid";
 
 interface CreateSheetSkeletonsProps {
   type: SkeletonType;
-  pulseStyle: any;
+  pulseStyle: AnimatedStyleProp<ViewStyle>;
   skeletonColor: string;
 }
 

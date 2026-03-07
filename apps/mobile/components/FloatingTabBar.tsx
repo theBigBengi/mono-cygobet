@@ -81,7 +81,7 @@ export function FloatingTabBar({
             >
               <View style={styles.iconWrap}>
                 <Ionicons
-                  name={iconName as any}
+                  name={iconName as React.ComponentProps<typeof Ionicons>["name"]}
                   size={24}
                   color={
                     isFocused

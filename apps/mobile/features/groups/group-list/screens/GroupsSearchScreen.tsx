@@ -142,7 +142,7 @@ export function GroupsSearchScreen() {
   }, []);
 
   const renderBackdrop = useCallback(
-    (props: any) => (
+    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
       <BottomSheetBackdrop
         {...props}
         disappearsOnIndex={-1}

@@ -120,7 +120,7 @@ function SheetWrapper({ sheetRef, title, children }: SheetWrapperProps) {
   );
 
   const renderBackdrop = useCallback(
-    (props: any) => (
+    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
       <BottomSheetBackdrop
         {...props}
         disappearsOnIndex={-1}

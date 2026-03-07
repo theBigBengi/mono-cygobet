@@ -298,7 +298,7 @@ export default Sentry.wrap(RootLayout);
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const router = useRouter();
   const t = (key: string): string =>
-    i18n.isInitialized ? String((i18n as any).t(key, { ns: "common" })) : key;
+    i18n.isInitialized ? String(i18n.t(key, { ns: "common" })) : key;
 
   // Handle the error
   useEffect(() => {

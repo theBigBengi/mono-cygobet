@@ -31,8 +31,8 @@ export type SingleGameContentProps = {
   prediction: GroupPrediction;
   isSaved: boolean;
   groupId: number | null;
-  homeRef: React.RefObject<any> | undefined;
-  awayRef: React.RefObject<any> | undefined;
+  homeRef: React.RefObject<import("react-native").TextInput> | undefined;
+  awayRef: React.RefObject<import("react-native").TextInput> | undefined;
   isHomeFocused: boolean;
   isAwayFocused: boolean;
   onFieldFocus: (fixtureId: number, type: "home" | "away") => void;

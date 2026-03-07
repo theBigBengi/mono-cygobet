@@ -229,10 +229,10 @@ function GroupLobbyContent() {
                 fallbackTimerRef.current = null;
               }, 300);
             },
-            onError: (error: any) => {
+            onError: (error: unknown) => {
               Alert.alert(
                 t("errors.error"),
-                error?.message || t("groups.deleteGroupDraftFailed")
+                (error instanceof Error ? error.message : null) || t("groups.deleteGroupDraftFailed")
               );
             },
           });

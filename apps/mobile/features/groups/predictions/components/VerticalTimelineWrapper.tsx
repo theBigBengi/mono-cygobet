@@ -74,7 +74,8 @@ export function VerticalTimelineWrapper({
     }
   };
 
-  const getIcon = (): { name: string; color: string } | null => {
+  type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
+  const getIcon = (): { name: IoniconsName; color: string } | null => {
     switch (type) {
       case "success":
         return { name: "checkmark-sharp", color: theme.colors.primaryText };
@@ -199,7 +200,7 @@ export function VerticalTimelineWrapper({
           >
             {icon && (
               <Ionicons
-                name={icon.name as any}
+                name={icon.name}
                 size={DOT_SIZE - 4}
                 color={icon.color}
               />

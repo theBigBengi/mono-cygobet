@@ -3,7 +3,7 @@ import * as authStorage from "./auth.storage";
 
 type Handlers = {
   setAccessToken: (t: string | null) => void;
-  setUser: (u: any) => void;
+  setUser: (u: import("./auth.types").User | null) => void;
   setStatus: (s: import("./auth.types").AuthStatus) => void;
   accessTokenRef: { current: string | null };
 };

@@ -161,7 +161,8 @@ export function GamesTimeline({
     }
   };
 
-  const getIcon = (type: TimelineGame["type"]): { name: string; color: string } | null => {
+  type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
+  const getIcon = (type: TimelineGame["type"]): { name: IoniconsName; color: string } | null => {
     switch (type) {
       case "success":
         return { name: "checkmark-sharp", color: theme.colors.primaryText };
@@ -307,7 +308,7 @@ export function GamesTimeline({
                       >
                         {icon && (
                           <Ionicons
-                            name={icon.name as any}
+                            name={icon.name}
                             size={size - 4}
                             color={icon.color}
                           />

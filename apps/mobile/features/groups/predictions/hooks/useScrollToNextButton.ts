@@ -6,14 +6,14 @@ import {
   runOnJS,
   type SharedValue,
 } from "react-native-reanimated";
-import { Dimensions } from "react-native";
+import { Dimensions, type View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { HEADER_HEIGHT } from "../utils/constants";
 
 type UseScrollToNextButtonOpts = {
   nextToPredictId: number | null;
   isReady: boolean;
-  matchCardRefs: React.MutableRefObject<Record<string, React.RefObject<any>>>;
+  matchCardRefs: React.MutableRefObject<Record<string, React.RefObject<View>>>;
   scrollY: SharedValue<number>;
   headerOffset: SharedValue<number>;
   insetTop: number;

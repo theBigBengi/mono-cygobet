@@ -144,7 +144,8 @@ export function StickyHeaderScreen({
         showsVerticalScrollIndicator={false}
         onScroll={(event) => {
           // Call both handlers
-          scrollHandler(event as any);
+          // Reanimated scroll handler expects NativeSyntheticEvent but RN's onScroll provides it
+          scrollHandler(event as unknown as Parameters<typeof scrollHandler>[0]);
           handleScroll(event);
         }}
         scrollEventThrottle={16}

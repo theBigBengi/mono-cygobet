@@ -40,7 +40,7 @@ function getEventIcon(eventType: string): IoniconsName {
   }
 }
 
-function getEventColor(eventType: string, colors: any): string {
+function getEventColor(eventType: string, colors: import("@/lib/theme/colors").Colors): string {
   switch (eventType) {
     case "member_joined":
     case "group_published":

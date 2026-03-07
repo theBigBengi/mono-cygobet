@@ -297,7 +297,7 @@ export function MatchPredictionCardVertical({
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                       <MaterialCommunityIcons name="cancel" size={12} color={rightBoxData.textColor} />
                       <Text style={[styles.hStatusText, { color: rightBoxData.textColor }]}>
-                        {(statusData as any).cancelLabel ?? statusData.top}
+                        {("cancelLabel" in statusData ? statusData.cancelLabel : undefined) ?? statusData.top}
                       </Text>
                     </View>
                   ) : (
@@ -576,7 +576,7 @@ export function MatchPredictionCardVertical({
                 rightBoxData.icon === "cancel" ? (
                   <View style={[styles.statusBox, { backgroundColor: rightBoxData.bgColor, alignItems: "center", justifyContent: "center" }]}>
                     <MaterialCommunityIcons name="cancel" size={16} color={rightBoxData.textColor} />
-                    <Text style={[styles.statusMonthText, { color: rightBoxData.textColor, marginTop: 1 }]}>{(statusData as any).cancelLabel ?? statusData.top}</Text>
+                    <Text style={[styles.statusMonthText, { color: rightBoxData.textColor, marginTop: 1 }]}>{("cancelLabel" in statusData ? statusData.cancelLabel : undefined) ?? statusData.top}</Text>
                   </View>
                 ) : (
                   <View style={[styles.statusBox, { backgroundColor: rightBoxData.bgColor }]}>
