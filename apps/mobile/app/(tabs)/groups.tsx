@@ -47,6 +47,7 @@ import { PredictAllBanner } from "@/features/groups/predictions/components/Predi
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GroupsListSkeleton } from "@/features/groups/group-list/components/GroupsListSkeleton";
 import { CreateGroupSheet, createStyles, type CreateTab } from "@/features/group-creation/components";
+import { AvatarPickerSheet } from "@/features/groups/group-lobby/components/AvatarPickerSheet";
 
 /* ─── Groups Screen ─── */
 
@@ -776,52 +777,12 @@ function GroupsContent() {
       </BottomSheetModal>
 
       {/* Avatar picker sheet */}
-      <BottomSheetModal
-        ref={avatarPickerRef}
-        stackBehavior="push"
-        enableDynamicSizing
-        enablePanDownToClose
-        backdropComponent={renderCreateBackdrop}
-        backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
-      >
-        <BottomSheetView style={createStyles.sheetContent}>
-          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.chooseAvatar")}</Text>
-          <View style={createStyles.avatarGrid}>
-            {AVATAR_GRADIENTS.map((colors, index) => {
-              const isSelected = String(index) === createAvatarValue;
-              return (
-                <Pressable
-                  key={index}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setCreateAvatarValue(String(index));
-                    avatarPickerRef.current?.dismiss();
-                  }}
-                  style={{ alignItems: "center", position: "relative" }}
-                >
-                  <LinearGradient
-                    colors={colors as unknown as [string, string]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={[
-                      createStyles.avatarGridItem,
-                      isSelected && { borderColor: theme.colors.primary, borderWidth: 3 },
-                    ]}
-                  >
-                    <Text style={{ fontWeight: "800", fontSize: 20, color: "#fff" }}>GR</Text>
-                  </LinearGradient>
-                  {isSelected && (
-                    <View style={{ position: "absolute", bottom: -4, right: -4, backgroundColor: "#fff", borderRadius: 10, width: 20, height: 20, justifyContent: "center", alignItems: "center" }}>
-                      <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
-                    </View>
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
-        </BottomSheetView>
-      </BottomSheetModal>
+      <AvatarPickerSheet
+        sheetRef={avatarPickerRef}
+        selectedValue={createAvatarValue}
+        onSelect={setCreateAvatarValue}
+        initials="GR"
+      />
     </View>
   );
 }
