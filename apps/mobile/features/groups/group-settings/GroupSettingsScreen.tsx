@@ -113,7 +113,7 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
   };
 
   const handleViewMembers = () => {
-    if (groupId != null) router.push(`/groups/${groupId}/members` as any);
+    if (groupId != null) router.push({ pathname: '/groups/[id]/members', params: { id: String(groupId) } });
   };
 
   const renderBackdrop = useCallback(

@@ -26,7 +26,7 @@ export function PredictAllBanner() {
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push("/groups/predict-all" as any);
+    router.push("/groups/predict-all");
   };
 
   return (

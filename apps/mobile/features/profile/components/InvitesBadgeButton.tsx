@@ -19,7 +19,7 @@ export function InvitesBadgeButton() {
 
   return (
     <Pressable
-      onPress={() => router.push("/invites" as any)}
+      onPress={() => router.push("/invites")}
       style={({ pressed }) => [
         styles.container,
         {

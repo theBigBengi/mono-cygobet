@@ -57,23 +57,23 @@ export function GroupLobbyEndedScreen({
   const duration = useGroupDuration(fixtures);
 
   const handleViewAllGames = () => {
-    router.push(`/groups/${group.id}/games` as any);
+    router.push({ pathname: '/groups/[id]/games', params: { id: String(group.id) } });
   };
 
   const handleViewPredictionsOverview = () => {
-    router.push(`/groups/${group.id}/predictions-overview` as any);
+    router.push({ pathname: '/groups/[id]/predictions-overview', params: { id: String(group.id) } });
   };
 
   const handleViewRanking = () => {
-    router.push(`/groups/${group.id}/ranking` as any);
+    router.push({ pathname: '/groups/[id]/ranking', params: { id: String(group.id) } });
   };
 
   const handleViewChat = () => {
-    router.push(`/groups/${group.id}/chat` as any);
+    router.push({ pathname: '/groups/[id]/chat', params: { id: String(group.id) } });
   };
 
   const handleOpenSettings = () => {
-    router.push(`/groups/${group.id}/settings` as any);
+    router.push({ pathname: '/groups/[id]/settings', params: { id: String(group.id) } });
   };
 
   return (

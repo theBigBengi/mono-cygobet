@@ -210,7 +210,7 @@ export function GroupLobbyDraftScreen({
   );
 
   const handleViewAllGames = () => {
-    router.push(`/groups/${group.id}/games` as any);
+    router.push({ pathname: '/groups/[id]/games', params: { id: String(group.id) } });
   };
 
   const predictionSheetRef =

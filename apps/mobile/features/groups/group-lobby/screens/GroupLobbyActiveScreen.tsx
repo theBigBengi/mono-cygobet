@@ -275,16 +275,16 @@ export function GroupLobbyActiveScreen({
   const handleViewGames = useCallback(
     (fixtureId?: number) => {
       if (fixtureId != null) {
-        router.push(`/groups/${group.id}/games?scrollToFixtureId=${fixtureId}` as any);
+        router.push({ pathname: '/groups/[id]/games', params: { id: String(group.id), scrollToFixtureId: String(fixtureId) } });
       } else {
-        router.push(`/groups/${group.id}/games` as any);
+        router.push({ pathname: '/groups/[id]/games', params: { id: String(group.id) } });
       }
     },
     [router, group.id]
   );
 
   const handleViewRanking = useCallback(() => {
-    router.push(`/groups/${group.id}/ranking` as any);
+    router.push({ pathname: '/groups/[id]/ranking', params: { id: String(group.id) } });
   }, [router, group.id]);
 
   const handleViewInvite = useCallback(() => {
@@ -330,11 +330,11 @@ export function GroupLobbyActiveScreen({
   );
 
   const handleViewPredictionsOverview = useCallback(() => {
-    router.push(`/groups/${group.id}/predictions-overview` as any);
+    router.push({ pathname: '/groups/[id]/predictions-overview', params: { id: String(group.id) } });
   }, [router, group.id]);
 
   const handleViewActivity = useCallback(() => {
-    router.push(`/groups/${group.id}/activity` as any);
+    router.push({ pathname: '/groups/[id]/activity', params: { id: String(group.id) } });
   }, [router, group.id]);
 
   const handlePredictAll = useCallback(() => {
@@ -344,7 +344,7 @@ export function GroupLobbyActiveScreen({
     );
     const targetId = upcomingUnpredicted?.id ?? fixtures[0]?.id;
     if (targetId) {
-      router.push(`/groups/${group.id}/fixtures/${targetId}` as any);
+      router.push({ pathname: '/groups/[id]/fixtures/[fixtureId]', params: { id: String(group.id), fixtureId: String(targetId) } });
     } else {
       handleViewGames();
     }

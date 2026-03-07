@@ -109,6 +109,7 @@ function ScoreInputPairInner({
               onHomeFocus();
             }}
             onBlur={onBlur}
+            accessibilityLabel="Home team score"
           />
         )}
       </View>
@@ -138,6 +139,7 @@ function ScoreInputPairInner({
               onAwayFocus();
             }}
             onBlur={onBlur}
+            accessibilityLabel="Away team score"
           />
         )}
       </View>

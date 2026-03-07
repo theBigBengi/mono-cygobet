@@ -96,7 +96,7 @@ export function MatchPredictionCardVertical({
     if (onPressCardProp) {
       onPressCardProp();
     } else {
-      router.push(`/fixtures/${fixture.id}` as any);
+      router.push({ pathname: '/fixtures/[id]', params: { id: String(fixture.id) } });
     }
   }, [onPressCardProp, router, fixture.id]);
 

@@ -38,7 +38,7 @@ export function DangerZoneSection({
           onPress: () => {
             deleteGroupMutation.mutate(undefined, {
               onSuccess: () => {
-                router.replace("/(tabs)/groups" as any);
+                router.replace("/(tabs)/groups");
               },
               onError: (error) => {
                 Alert.alert(
