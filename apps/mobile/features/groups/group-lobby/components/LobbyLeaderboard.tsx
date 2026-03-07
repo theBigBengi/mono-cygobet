@@ -251,20 +251,15 @@ function LobbyLeaderboardInner({
           pressed && styles.wrapperPressed,
         ]}
       >
-        {/* Title + navigate button */}
+        {/* Title + nav */}
         <View style={styles.titleRow}>
           <Text style={[styles.bottomTitle, { color: theme.colors.textPrimary }]}>
             {t("lobby.leaderboard")}
           </Text>
-          <Pressable
-            onPress={onPress}
-            style={({ pressed: p }) => [
-              styles.navCircle,
-              { borderColor: theme.colors.border },
-              p && { opacity: 0.6 },
-            ]}
-          >
-            <Ionicons name="arrow-forward" size={16} color={theme.colors.textPrimary} />
+          <Pressable onPress={onPress} style={({ pressed: p }) => [p && { opacity: 0.6 }]}>
+            <Text style={[styles.seeAllText, { color: theme.colors.textSecondary }]}>
+              {t("lobby.viewAll")}
+            </Text>
           </Pressable>
         </View>
 
@@ -308,6 +303,7 @@ function LobbyLeaderboardInner({
             </Animated.View>
           )}
         </View>
+
       </View>
       )}
     </Pressable>
@@ -319,7 +315,7 @@ export const LobbyLeaderboard = React.memo(LobbyLeaderboardInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   wrapper: {
   },
@@ -328,13 +324,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  navCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   wrapperPressed: {
     opacity: 0.7,

@@ -255,7 +255,7 @@ export const LobbyActivityBanner = React.memo(LobbyActivityBannerInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   wrapper: {
     borderRadius: 16,

@@ -4,6 +4,7 @@
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -74,9 +75,14 @@ function LobbyRecentResultsInner({
             ]}
           />
         ) : (
-          <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>
-            {t("lobby.recentResults")}
-          </Text>
+          <>
+            <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>
+              {t("lobby.recentResults")}
+            </Text>
+            <Pressable onPress={() => onPress()} style={({ pressed }) => [pressed && { opacity: 0.6 }]}>
+              <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
+            </Pressable>
+          </>
         )}
       </View>
 
@@ -141,23 +147,6 @@ function LobbyRecentResultsInner({
             })}
       </View>
 
-      {/* View Results button */}
-      {!isLoading && tiles.length > 0 && (
-        <View style={styles.viewAllCenter}>
-          <Pressable
-            onPress={() => onPress()}
-            style={({ pressed }) => [
-              styles.viewAllBtn,
-              { borderColor: theme.colors.border },
-              pressed && { opacity: 0.6 },
-            ]}
-          >
-            <Text style={[styles.viewAllBtnText, { color: theme.colors.textPrimary }]}>
-              {t("lobby.viewResults")}
-            </Text>
-          </Pressable>
-        </View>
-      )}
     </View>
   );
 }
@@ -167,17 +156,21 @@ export const LobbyRecentResults = React.memo(LobbyRecentResultsInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   headerRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 12,
   },
   headerTitle: {
     fontSize: 15,
     fontWeight: "700",
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   viewAllCenter: {
     alignItems: "center",

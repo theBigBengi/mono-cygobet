@@ -109,24 +109,6 @@ export function GroupLobbyActiveScreen({
     }, [queryClient, group.id])
   );
 
-  const handleScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const y = event.nativeEvent.contentOffset.y;
-      onScroll?.(y);
-      if (!chatFocused) {
-        const dy = y - lastScrollY.current;
-        if (dy > 5 && !chatBarHidden.current) {
-          chatBarHidden.current = true;
-          chatBarVisible.value = withTiming(0, { duration: 400 });
-        } else if (dy < -5 && chatBarHidden.current) {
-          chatBarHidden.current = false;
-          chatBarVisible.value = withTiming(1, { duration: 250 });
-        }
-      }
-      lastScrollY.current = y;
-    },
-    [onScroll, chatFocused, chatBarVisible]
-  );
   const { data: rankingData, isLoading: isRankingLoading } =
     useGroupRankingQuery(group.id);
   const { data: chatPreviewData } = useGroupChatPreviewQuery();
@@ -152,6 +134,26 @@ export function GroupLobbyActiveScreen({
   const chatBarVisible = useSharedValue(1);
   const chatBarHidden = useRef(false);
   const lastScrollY = useRef(0);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = event.nativeEvent.contentOffset.y;
+      onScroll?.(y);
+      if (!chatFocused) {
+        const dy = y - lastScrollY.current;
+        if (dy > 5 && !chatBarHidden.current) {
+          chatBarHidden.current = true;
+          chatBarVisible.value = withTiming(0, { duration: 400 });
+        } else if (dy < -5 && chatBarHidden.current) {
+          chatBarHidden.current = false;
+          chatBarVisible.value = withTiming(1, { duration: 250 });
+        }
+      }
+      lastScrollY.current = y;
+    },
+    [onScroll, chatFocused, chatBarVisible]
+  );
+
   const dragY = useSharedValue(0);
   const chatBarEntrance = useSharedValue(0);
   const SCREEN_H = Dimensions.get("window").height;

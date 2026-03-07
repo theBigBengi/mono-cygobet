@@ -17,7 +17,7 @@ import {
   isLive as isLiveState,
 } from "@repo/utils";
 
-import { MaterialIcons, Ionicons, Fontisto } from "@expo/vector-icons";
+import { Ionicons, Fontisto } from "@expo/vector-icons";
 import { TeamLogo } from "@/components/ui";
 import type { FixtureItem } from "@/types/common";
 
@@ -346,22 +346,6 @@ export function LobbyPredictionsCTA({
         <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
           Upcoming
         </Text>
-        <Pressable onPress={() => setUseFullName((v) => !v)} hitSlop={8} style={{
-          width: 20,
-          height: 20,
-          borderWidth: 1,
-          borderColor: useFullName ? theme.colors.primary : theme.colors.textSecondary + "30",
-          backgroundColor: useFullName ? theme.colors.primary + "15" : "transparent",
-          borderRadius: 4,
-          alignItems: "center",
-          justifyContent: "center",
-        }}>
-          <Fontisto
-            name="text-width"
-            size={12}
-            color={useFullName ? theme.colors.primary : theme.colors.textSecondary}
-          />
-        </Pressable>
       </View>
       <View
         style={[
@@ -395,21 +379,6 @@ export function LobbyPredictionsCTA({
 
       </View>
 
-      {/* View All */}
-      <View style={styles.footerSummaryRow}>
-        <Pressable
-          onPress={() => onPress()}
-          style={({ pressed }) => [
-            styles.viewAllButton,
-            { borderColor: theme.colors.border },
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={[styles.viewAllText, { color: theme.colors.textPrimary }]}>
-            {t("lobby.viewGames", { defaultValue: "View Games" })}
-          </Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -417,7 +386,7 @@ export function LobbyPredictionsCTA({
 const styles = StyleSheet.create({
   outerWrapper: {
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -428,6 +397,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: "700",
+  },
+  viewAllCenter: {
+    alignItems: "center",
+    marginTop: 10,
+  },
+  viewAllBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  viewAllBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
   container: {
   },

@@ -156,7 +156,7 @@ export function GroupChatScreen({ groupId, keyboardVerticalOffset: kbOffsetProp 
   const isScrolledRef = useRef(false);
 
   const handleViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: { item: ChatListItem }[] }) => {
+    ({ viewableItems }: { viewableItems: { item: ChatListItem; index: number | null }[] }) => {
       // ── mark-as-read logic ──
       const currentMessages = messagesRef.current;
       const newest = currentMessages[0];

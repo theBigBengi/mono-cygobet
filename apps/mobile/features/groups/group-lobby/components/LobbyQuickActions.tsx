@@ -144,7 +144,7 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 const styles = StyleSheet.create({
   container: {
     marginTop: 4,
-    marginBottom: 8,
+    marginBottom: 20,
     paddingHorizontal: 0,
   },
   cardWrapper: {
