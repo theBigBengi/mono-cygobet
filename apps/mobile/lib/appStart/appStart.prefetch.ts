@@ -27,47 +27,29 @@ export async function prefetchInitialData(
   setError: (error: AppStartError | null) => void
 ): Promise<void> {
   const { status, user } = auth;
-  if (__DEV__) console.log(
-    "AppStart: prefetchInitialData - status:",
-    status,
-    "user:",
-    user ? "exists" : "null"
-  );
 
   if (status === "unauthenticated") {
     // Unauthenticated: no prefetch needed, just mark ready for login screen
-    if (__DEV__) console.log("AppStart: unauthenticated, skipping prefetch");
     setStatus("ready");
-    if (__DEV__) console.log("AppStart: ready (unauthenticated - will show login)");
     return;
   }
 
   if (status === "authenticated") {
     // Authenticated: user should be present
     if (!user) {
-      // Defensive: user missing despite authenticated state - try to mark ready but log
-      if (__DEV__) console.log(
-        "AppStart: authenticated but user is null (unexpected), marking ready"
-      );
+      // Defensive: user missing despite authenticated state - mark ready
       setStatus("ready");
-      if (__DEV__) console.log("AppStart: ready (authenticated but user not present)");
       return;
     }
 
     if (user.onboardingRequired) {
       // Onboarding required: skip prefetch, mark ready for onboarding flow
-      if (__DEV__) console.log("AppStart: onboarding required, skipping prefetch");
       setStatus("ready");
-      if (__DEV__) console.log("AppStart: ready (onboarding required)");
       return;
     }
 
     // Onboarding complete: mark ready immediately, prefetch in background
-    if (__DEV__) console.log(
-      "AppStart: marking ready immediately, starting background prefetch"
-    );
     setStatus("ready");
-    if (__DEV__) console.log("AppStart: ready (authenticated onboarded)");
 
     // Prefetch in background (fire-and-forget)
     prefetchInBackground(queryClient);
@@ -75,34 +57,23 @@ export async function prefetchInitialData(
   }
 
   if (status === "onboarding") {
-    if (__DEV__) console.log(
-      "AppStart: onboarding state, skipping prefetch and marking ready"
-    );
     setStatus("ready");
     return;
   }
 
   if (status === "degraded") {
     // Degraded: network issues but session may exist. Mark ready and optionally prefetch limited data.
-    if (__DEV__) console.log(
-      "AppStart: degraded state, marking ready without background prefetch"
-    );
     setStatus("ready");
     return;
   }
 
   if (status === "idle" || status === "restoring") {
     // Status is still restoring - bootstrap might be retrying or network issue
-    // Do not turn this into error automatically, stay in booting state
-    if (__DEV__) console.log(
-      "AppStart: status still restoring/idle, staying in booting state"
-    );
     // Don't change status - keep it as "booting" so the effect can retry
     return;
   }
 
   // Unknown status - should not happen
-  if (__DEV__) console.log("AppStart: unknown status:", status);
   setStatus("error");
   setError({
     message: "Unexpected auth state. Please retry.",
@@ -116,8 +87,6 @@ export async function prefetchInitialData(
  * Errors are logged but don't stop the app.
  */
 function prefetchInBackground(queryClient: QueryClient): void {
-  if (__DEV__) console.log("AppStart: background prefetch started");
-
   // Prefetch all data in parallel
   Promise.all([
     // Prefetch fixtures (for fixtures mode)
@@ -175,11 +144,7 @@ function prefetchInBackground(queryClient: QueryClient): void {
         if (__DEV__) console.log("AppStart: background prefetch unread counts error", error);
       }),
   ])
-    .then(() => {
-      if (__DEV__) console.log("AppStart: background prefetch completed");
-    })
-    .catch((error) => {
+    .catch(() => {
       // This should not happen as each promise has its own catch
-      if (__DEV__) console.log("AppStart: unexpected background prefetch error", error);
     });
 }

@@ -24,7 +24,6 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomSheetModal,
-  BottomSheetView,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import { useRouter } from "expo-router";

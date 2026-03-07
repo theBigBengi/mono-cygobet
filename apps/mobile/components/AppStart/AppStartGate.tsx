@@ -31,11 +31,6 @@ export function AppStartGate({ children }: AppStartGateProps) {
   const auth = useAuth();
   const bootstrapRanRef = useRef(false);
 
-  // Debug: log status changes
-  useEffect(() => {
-    if (__DEV__) console.log("AppStartGate: status changed to", status, "error:", error);
-  }, [status, error]);
-
   // Effect 1: Run bootstrap once on mount
   useEffect(() => {
     if (bootstrapRanRef.current) return;
@@ -54,23 +49,16 @@ export function AppStartGate({ children }: AppStartGateProps) {
 
     // Wait for auth status to stabilize: idle/restoring are in-flight states
     if (auth.status === "idle" || auth.status === "restoring") {
-      if (__DEV__) console.log(
-        "AppStartGate: auth.status is still restoring/idle, waiting..."
-      );
       return;
     }
 
     // If authenticated but user missing - try loading user (defensive)
     if (auth.status === "authenticated" && !auth.user) {
-      if (__DEV__) console.log(
-        "AppStartGate: auth status is authenticated but user missing, loading user"
-      );
       auth.loadUser();
       return; // Wait for user to load before prefetch
     }
 
     // Auth state has stabilized (restored to unauthenticated/authenticated/onboarding/degraded), now prefetch
-    if (__DEV__) console.log("AppStartGate: auth state stabilized, starting prefetch");
     prefetchInitialData(queryClient, auth, setStatus, setError);
   }, [status, auth.status, auth.user, auth, setStatus, setError]);
 

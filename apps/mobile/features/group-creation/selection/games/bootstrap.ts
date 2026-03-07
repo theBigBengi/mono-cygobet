@@ -44,8 +44,6 @@ export async function bootstrapGroupGames(): Promise<void> {
 
   // Start bootstrap
   bootstrapPromise = (async () => {
-    if (__DEV__) console.log("[GroupGames] bootstrapGroupGames executed");
-
     try {
       const nowTs = getNowTs();
 

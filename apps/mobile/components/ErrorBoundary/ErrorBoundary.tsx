@@ -30,11 +30,6 @@ export function ErrorBoundary({ children, feature, fallback }: Props) {
         scope.setExtra("componentStack", info.componentStack);
         Sentry.captureException(error);
       });
-
-      if (__DEV__) {
-        // Use console.log instead of console.error to avoid red screen in dev
-        console.log(`[${feature}] Error:`, error.message);
-      }
     },
     [feature]
   );
