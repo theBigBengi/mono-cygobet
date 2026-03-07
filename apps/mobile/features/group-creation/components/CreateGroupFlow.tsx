@@ -39,6 +39,12 @@ import { useUpcomingFixturesQuery } from "@/domains/fixtures";
 import { useLeaguesQuery } from "@/domains/leagues";
 import { useTeamsQuery } from "@/domains/teams";
 
+import { CreateSheetFixtures } from "./CreateSheetFixtures";
+import { CreateSheetLeagues } from "./CreateSheetLeagues";
+import { CreateSheetTeams } from "./CreateSheetTeams";
+import { CreateSheetDetailsStep } from "./CreateSheetDetailsStep";
+import { CreateSheetAdvancedStep } from "./CreateSheetAdvancedStep";
+
 /* ─── Create Group Sheet ─── */
 
 export type CreateTab = "fixtures" | "leagues" | "teams";
@@ -351,77 +357,6 @@ export function CreateGroupSheet({
   const skelPulse = useAnimatedStyle(() => ({ opacity: skelOpacity.value }));
   const skelColor = theme.colors.border;
 
-  const renderListSkeleton = () => (
-    <Animated.View style={skelPulse}>
-      {Array.from({ length: 6 }, (_, i) => (
-        <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10 }}>
-          <View style={{ width: 32, height: 32, borderRadius: 4, backgroundColor: skelColor }} />
-          <View style={{ flex: 1, gap: 6 }}>
-            <View style={{ width: "60%", height: 14, borderRadius: 6, backgroundColor: skelColor }} />
-            <View style={{ width: "35%", height: 10, borderRadius: 4, backgroundColor: skelColor }} />
-          </View>
-          <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: skelColor }} />
-        </View>
-      ))}
-    </Animated.View>
-  );
-
-  const renderGridSkeleton = () => (
-    <Animated.View style={[skelPulse, { flexDirection: "row", flexWrap: "wrap", gap: 10 }]}>
-      {Array.from({ length: 6 }, (_, i) => (
-        <View key={i} style={{ width: "48%", padding: 12, borderRadius: 10, backgroundColor: skelColor + "30", gap: 8 }}>
-          <View style={{ width: 36, height: 36, borderRadius: 4, backgroundColor: skelColor }} />
-          <View style={{ width: "70%", height: 12, borderRadius: 5, backgroundColor: skelColor }} />
-          <View style={{ width: "45%", height: 10, borderRadius: 4, backgroundColor: skelColor }} />
-        </View>
-      ))}
-    </Animated.View>
-  );
-
-  const renderFixtureListSkeleton = () => (
-    <Animated.View style={skelPulse}>
-      {Array.from({ length: 5 }, (_, i) => (
-        <View key={i} style={{ marginBottom: 10, gap: 4 }}>
-          <View style={{ width: "45%", height: 10, borderRadius: 4, backgroundColor: skelColor, marginBottom: 4 }} />
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <View style={{ flex: 1, gap: 5 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <View style={{ width: 20, height: 20, borderRadius: 4, backgroundColor: skelColor }} />
-                <View style={{ width: "50%", height: 13, borderRadius: 5, backgroundColor: skelColor }} />
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <View style={{ width: 20, height: 20, borderRadius: 4, backgroundColor: skelColor }} />
-                <View style={{ width: "45%", height: 13, borderRadius: 5, backgroundColor: skelColor }} />
-              </View>
-            </View>
-            <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: skelColor }} />
-          </View>
-        </View>
-      ))}
-    </Animated.View>
-  );
-
-  const renderFixtureGridSkeleton = () => (
-    <Animated.View style={[skelPulse, { flexDirection: "row", flexWrap: "wrap", gap: 10 }]}>
-      {Array.from({ length: 6 }, (_, i) => (
-        <View key={i} style={{ width: "48%", padding: 10, borderRadius: 10, backgroundColor: skelColor + "30", gap: 6 }}>
-          <View style={{ width: 28, height: 9, borderRadius: 3, backgroundColor: skelColor }} />
-          <View style={{ width: "50%", height: 9, borderRadius: 3, backgroundColor: skelColor }} />
-          <View style={{ gap: 4, marginTop: 4 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-              <View style={{ width: 20, height: 20, borderRadius: 4, backgroundColor: skelColor }} />
-              <View style={{ width: "55%", height: 11, borderRadius: 4, backgroundColor: skelColor }} />
-            </View>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-              <View style={{ width: 20, height: 20, borderRadius: 4, backgroundColor: skelColor }} />
-              <View style={{ width: "50%", height: 11, borderRadius: 4, backgroundColor: skelColor }} />
-            </View>
-          </View>
-        </View>
-      ))}
-    </Animated.View>
-  );
-
   // Fixtures sorted by kickoff time
   const fixturesByTime = useMemo(
     () => [...fixtures].sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt)),
@@ -639,574 +574,87 @@ export function CreateGroupSheet({
             </Pressable>
           </View>
 
-          {activeTab === "fixtures" && (() => {
-            if (fixturesQuery.isFetching) {
-              return viewMode === "grid" ? renderFixtureGridSkeleton() : renderFixtureListSkeleton();
-            }
-
-            if (fixtures.length === 0) {
-              return (
-                <View style={createStyles.loadingWrap}>
-                  <Text style={[createStyles.emptyText, { color: theme.colors.textSecondary }]}>
-                    {t("groupCreation.noGamesFound")}
-                  </Text>
-                </View>
-              );
-            }
-
-            type FixtureRow = (typeof fixtures)[0];
-            const fmtTime = (f: FixtureRow) => format(new Date(f.kickoffAt), "HH:mm");
-            const roundLbl = (f: FixtureRow) => f.round ? `R${f.round.replace(/^Round\s*/i, "")}` : "";
-
-            // Grid card renderer
-            const renderGridCard = (f: FixtureRow, footerText: string) => {
-              const gameKey = String(f.id);
-              const isSelected = selectedGames.has(gameKey);
-              return (
-                <Pressable
-                  key={gameKey}
-                  onPress={() => toggleGame(gameKey)}
-                  style={[
-                    createStyles.gameGridCard,
-                    { backgroundColor: theme.colors.textSecondary + "10" },
-                  ]}
-                >
-                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[createStyles.gameGridTime, { color: theme.colors.textSecondary }]}>{fmtTime(f)}</Text>
-                      {footerText ? <Text style={[createStyles.gameGridMeta, { color: theme.colors.textSecondary }]} numberOfLines={1}>{footerText}</Text> : null}
-                    </View>
-                    <View
-                      style={[
-                        createStyles.gameGridAddBtn,
-                        {
-                          borderColor: isSelected ? theme.colors.primary : theme.colors.textSecondary + "60",
-                          backgroundColor: isSelected ? theme.colors.primary : "transparent",
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={isSelected ? "checkmark" : "add"}
-                        size={14}
-                        color={isSelected ? "#fff" : theme.colors.textSecondary}
-                      />
-                    </View>
-                  </View>
-                  <View style={createStyles.gameGridTeams}>
-                    <View style={createStyles.gameGridTeamRow}>
-                      <TeamLogo imagePath={f.homeTeam?.imagePath} teamName={f.homeTeam?.name ?? "?"} size={20} />
-                      <Text style={[createStyles.gameGridTeamName, { color: theme.colors.textPrimary }]} numberOfLines={1}>{f.homeTeam?.name ?? "TBD"}</Text>
-                    </View>
-                    <View style={createStyles.gameGridTeamRow}>
-                      <TeamLogo imagePath={f.awayTeam?.imagePath} teamName={f.awayTeam?.name ?? "?"} size={20} />
-                      <Text style={[createStyles.gameGridTeamName, { color: theme.colors.textPrimary }]} numberOfLines={1}>{f.awayTeam?.name ?? "TBD"}</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            };
-
-            // --- GRID VIEW ---
-            if (viewMode === "grid") {
-              if (currentSortOption === "time") {
-                return (
-                  <View style={createStyles.gameGrid}>
-                    {fixturesByTime.map((f) =>
-                      renderGridCard(f, f.league?.name ?? "")
-                    )}
-                  </View>
-                );
-              }
-              // Grouped by league
-              return (
-                <>
-                  {fixturesByLeague.map((section) => (
-                    <View key={section.league.id} style={createStyles.leagueSection}>
-                      <Text style={[createStyles.leagueHeader, { color: theme.colors.textPrimary }]}>
-                        {section.league.name}
-                      </Text>
-                      <View style={createStyles.gameGrid}>
-                        {section.fixtures.map((f) =>
-                          renderGridCard(f, "")
-                        )}
-                      </View>
-                    </View>
-                  ))}
-                </>
-              );
-            }
-
-            // --- LIST VIEW ---
-            const renderGameRow = (f: FixtureRow, footer: string) => {
-              const gameKey = String(f.id);
-              const isSelected = selectedGames.has(gameKey);
-              return (
-                <Pressable
-                  key={gameKey}
-                  onPress={() => toggleGame(gameKey)}
-                  style={createStyles.gameCard}
-                >
-                  {footer ? <Text style={[createStyles.gameFooterText, { color: theme.colors.textSecondary, marginBottom: 4 }]}>{footer}</Text> : null}
-                  <View style={createStyles.gameBody}>
-                    <View style={createStyles.gameTeams}>
-                      <View style={createStyles.gameTeamRow}>
-                        <TeamLogo imagePath={f.homeTeam?.imagePath} teamName={f.homeTeam?.name ?? "?"} size={20} />
-                        <Text style={[createStyles.gameTeamName, { color: theme.colors.textPrimary }]} numberOfLines={1}>{f.homeTeam?.name ?? "TBD"}</Text>
-                      </View>
-                      <View style={createStyles.gameTeamRow}>
-                        <TeamLogo imagePath={f.awayTeam?.imagePath} teamName={f.awayTeam?.name ?? "?"} size={20} />
-                        <Text style={[createStyles.gameTeamName, { color: theme.colors.textPrimary }]} numberOfLines={1}>{f.awayTeam?.name ?? "TBD"}</Text>
-                      </View>
-                    </View>
-                    <View
-                      style={[
-                        createStyles.gameAddBtn,
-                        {
-                          borderColor: isSelected ? theme.colors.primary : theme.colors.textSecondary + "60",
-                          backgroundColor: isSelected ? theme.colors.primary : "transparent",
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={isSelected ? "checkmark" : "add"}
-                        size={14}
-                        color={isSelected ? "#fff" : theme.colors.textSecondary}
-                      />
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            };
-
-            if (currentSortOption === "time") {
-              return (
-                <>
-                  {fixturesByTime.map((f) =>
-                    renderGameRow(f, `${f.league?.name ?? ""} · ${fmtTime(f)}`)
-                  )}
-                </>
-              );
-            }
-
-            // Grouped by league
-            return (
-              <>
-              {fixturesByLeague.map((section) => (
-                <View key={section.league.id} style={createStyles.leagueSection}>
-                  <Text style={[createStyles.leagueHeader, { color: theme.colors.textPrimary }]}>
-                    {section.league.name}
-                  </Text>
-                  {section.fixtures.map((f) =>
-                    renderGameRow(f, fmtTime(f))
-                  )}
-                </View>
-              ))}
-              </>
-            );
-          })()}
-          {activeTab === "leagues" && (() => {
-            if (leaguesQuery.isFetching) {
-              return viewMode === "grid" ? renderGridSkeleton() : renderListSkeleton();
-            }
-
-            if (leagues.length === 0) {
-              return (
-                <View style={createStyles.loadingWrap}>
-                  <Text style={[createStyles.emptyText, { color: theme.colors.textSecondary }]}>
-                    {t("groupCreation.noLeaguesFound")}
-                  </Text>
-                </View>
-              );
-            }
-
-            if (viewMode === "list") {
-              return (
-                <>
-                {leagues.map((league) => {
-                  const key = String(league.id);
-                  const isSelected = selectedLeagues.has(key);
-                  return (
-                    <Pressable
-                      key={key}
-                      onPress={() => toggleLeague(key)}
-                      style={({ pressed }) => [
-                        createStyles.listRow,
-                        { opacity: pressed ? 0.7 : 1 },
-                      ]}
-                    >
-                      <TeamLogo imagePath={league.imagePath} teamName={league.name} size={32} />
-                      <View style={createStyles.listRowInfo}>
-                        <Text style={[createStyles.listRowName, { color: theme.colors.textPrimary }]} numberOfLines={1}>{league.name}</Text>
-                        <Text style={[createStyles.listRowSub, { color: theme.colors.textSecondary }]}>{league.country?.name ?? ""}</Text>
-                      </View>
-                      <View
-                        style={[
-                          createStyles.gameAddBtn,
-                          {
-                            borderColor: isSelected ? theme.colors.primary : theme.colors.textSecondary + "60",
-                            backgroundColor: isSelected ? theme.colors.primary : "transparent",
-                          },
-                        ]}
-                      >
-                        <Ionicons name={isSelected ? "checkmark" : "add"} size={18} color={isSelected ? "#fff" : theme.colors.textSecondary} />
-                      </View>
-                    </Pressable>
-                  );
-                })}
-                </>
-              );
-            }
-
-            return (
-              <View style={createStyles.leagueGrid}>
-                {leagues.map((league) => {
-                  const key = String(league.id);
-                  const isSelected = selectedLeagues.has(key);
-                  return (
-                    <Pressable
-                      key={key}
-                      onPress={() => toggleLeague(key)}
-                      style={({ pressed }) => [
-                        createStyles.leagueGridItem,
-                        {
-                          backgroundColor: theme.colors.textSecondary + "10",
-                          opacity: pressed ? 0.7 : 1,
-                        },
-                      ]}
-                    >
-                      <TeamLogo imagePath={league.imagePath} teamName={league.name} size={36} />
-                      <Text style={[createStyles.leagueGridName, { color: theme.colors.textPrimary }]} numberOfLines={1}>{league.name}</Text>
-                      <Text style={[createStyles.leagueGridCountry, { color: theme.colors.textSecondary }]}>{league.country?.name ?? ""}</Text>
-                      <View
-                        style={[
-                          createStyles.leagueGridAddBtn,
-                          {
-                            borderColor: isSelected ? theme.colors.primary : theme.colors.textSecondary + "60",
-                            backgroundColor: isSelected ? theme.colors.primary : "transparent",
-                          },
-                        ]}
-                      >
-                        <Ionicons name={isSelected ? "checkmark" : "add"} size={14} color={isSelected ? "#fff" : theme.colors.textSecondary} />
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            );
-          })()}
-          {activeTab === "teams" && (() => {
-            if (teamsQuery.isFetching) {
-              return viewMode === "grid" ? renderGridSkeleton() : renderListSkeleton();
-            }
-
-            if (teams.length === 0) {
-              return (
-                <View style={createStyles.loadingWrap}>
-                  <Text style={[createStyles.emptyText, { color: theme.colors.textSecondary }]}>
-                    {t("groupCreation.noTeamsFound")}
-                  </Text>
-                </View>
-              );
-            }
-
-            if (viewMode === "list") {
-              return (
-                <>
-                {teams.map((team) => {
-                  const key = String(team.id);
-                  const isSelected = selectedTeams.has(key);
-                  return (
-                    <Pressable
-                      key={key}
-                      onPress={() => toggleTeam(key)}
-                      style={({ pressed }) => [
-                        createStyles.listRow,
-                        { opacity: pressed ? 0.7 : 1 },
-                      ]}
-                    >
-                      <TeamLogo imagePath={team.imagePath} teamName={team.name} size={32} />
-                      <View style={createStyles.listRowInfo}>
-                        <Text style={[createStyles.listRowName, { color: theme.colors.textPrimary }]} numberOfLines={1}>{team.name}</Text>
-                        <Text style={[createStyles.listRowSub, { color: theme.colors.textSecondary }]}>{team.country?.name ?? ""}</Text>
-                      </View>
-                      <View
-                        style={[
-                          createStyles.gameAddBtn,
-                          {
-                            borderColor: isSelected ? theme.colors.primary : theme.colors.textSecondary + "60",
-                            backgroundColor: isSelected ? theme.colors.primary : "transparent",
-                          },
-                        ]}
-                      >
-                        <Ionicons name={isSelected ? "checkmark" : "add"} size={18} color={isSelected ? "#fff" : theme.colors.textSecondary} />
-                      </View>
-                    </Pressable>
-                  );
-                })}
-                </>
-              );
-            }
-
-            return (
-              <View style={createStyles.leagueGrid}>
-                {teams.map((team) => {
-                  const key = String(team.id);
-                  const isSelected = selectedTeams.has(key);
-                  return (
-                    <Pressable
-                      key={key}
-                      onPress={() => toggleTeam(key)}
-                      style={({ pressed }) => [
-                        createStyles.leagueGridItem,
-                        {
-                          backgroundColor: theme.colors.textSecondary + "10",
-                          opacity: pressed ? 0.7 : 1,
-                        },
-                      ]}
-                    >
-                      <TeamLogo imagePath={team.imagePath} teamName={team.name} size={36} />
-                      <Text style={[createStyles.leagueGridName, { color: theme.colors.textPrimary }]} numberOfLines={1}>{team.name}</Text>
-                      <Text style={[createStyles.leagueGridCountry, { color: theme.colors.textSecondary }]}>{team.country?.name ?? ""}</Text>
-                      <View
-                        style={[
-                          createStyles.leagueGridAddBtn,
-                          {
-                            borderColor: isSelected ? theme.colors.primary : theme.colors.textSecondary + "60",
-                            backgroundColor: isSelected ? theme.colors.primary : "transparent",
-                          },
-                        ]}
-                      >
-                        <Ionicons name={isSelected ? "checkmark" : "add"} size={14} color={isSelected ? "#fff" : theme.colors.textSecondary} />
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            );
-          })()}
+          {activeTab === "fixtures" && (
+            <CreateSheetFixtures
+              fixturesQuery={fixturesQuery}
+              fixtures={fixtures}
+              fixturesByTime={fixturesByTime}
+              fixturesByLeague={fixturesByLeague}
+              selectedGames={selectedGames}
+              toggleGame={toggleGame}
+              viewMode={viewMode}
+              currentSortOption={currentSortOption}
+              theme={theme}
+              pulseStyle={skelPulse}
+              skeletonColor={skelColor}
+            />
+          )}
+          {activeTab === "leagues" && (
+            <CreateSheetLeagues
+              leaguesQuery={leaguesQuery}
+              leagues={leagues}
+              selectedLeagues={selectedLeagues}
+              toggleLeague={toggleLeague}
+              viewMode={viewMode}
+              theme={theme}
+              pulseStyle={skelPulse}
+              skeletonColor={skelColor}
+            />
+          )}
+          {activeTab === "teams" && (
+            <CreateSheetTeams
+              teamsQuery={teamsQuery}
+              teams={teams}
+              selectedTeams={selectedTeams}
+              toggleTeam={toggleTeam}
+              viewMode={viewMode}
+              theme={theme}
+              pulseStyle={skelPulse}
+              skeletonColor={skelColor}
+            />
+          )}
         </ScrollView>
         </View>
         )}
         {step === 1 && (
-          <Animated.View style={step1AnimStyle}>
-          {/* Step 1: Group Details */}
-          <View style={{ flex: 1, paddingHorizontal: 20 }}>
-            <View style={{ flex: 3 }} />
-            <Pressable onPress={onOpenAvatarPicker} style={createStyles.avatarPicker}>
-              <GroupAvatar
-                avatarType="gradient"
-                avatarValue={avatarValue}
-                initials={groupName.trim() ? groupName.trim().substring(0, 2) : "Gr"}
-                size={96}
-                borderRadius={26}
-                flat
-              />
-              <View style={[createStyles.avatarEditBadge, { backgroundColor: theme.colors.background }]}>
-                <Ionicons name="color-palette-outline" size={14} color={theme.colors.textSecondary} />
-              </View>
-            </Pressable>
-            <View style={createStyles.fieldGroup}>
-              <TextInput
-                style={[
-                  createStyles.fieldInput,
-                  {
-                    color: theme.colors.textPrimary,
-                    backgroundColor: theme.colors.textPrimary + "08",
-                  },
-                ]}
-                placeholder={t("groupCreation.groupNamePlaceholder")}
-                placeholderTextColor={theme.colors.textSecondary + "60"}
-                value={groupName}
-                onChangeText={setGroupName}
-                ref={groupNameInputRef}
-                maxLength={40}
-                selectTextOnFocus
-              />
-              <TextInput
-                style={[
-                  createStyles.descInput,
-                  { color: theme.colors.textPrimary, backgroundColor: theme.colors.textPrimary + "08" },
-                ]}
-                placeholder={t("lobby.descriptionPlaceholder")}
-                placeholderTextColor={theme.colors.textSecondary + "50"}
-                value={groupDescription}
-                onChangeText={setGroupDescription}
-                ref={descInputRef}
-                maxLength={200}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-            {/* Create button */}
-            <Pressable
-              onPress={handleCreateAndPublish}
-              disabled={isCreating || groupName.trim().length === 0}
-              style={({ pressed }) => [
-                createStyles.continueBottomBtn,
-                {
-                  borderColor: groupName.trim().length > 0 && !isCreating
-                    ? theme.colors.primary + "40"
-                    : theme.colors.textSecondary + "20",
-                  marginTop: 24,
-                  marginBottom: 0,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-            >
-              {isCreating ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-              ) : (
-                <>
-                  <AppText variant="caption" style={{ color: groupName.trim().length > 0 ? theme.colors.primary : theme.colors.textSecondary + "60", fontWeight: "600", fontSize: 13 }}>
-                    {t("groupCreation.createGroup")}
-                  </AppText>
-                  <Ionicons name="arrow-forward" size={14} color={groupName.trim().length > 0 ? theme.colors.primary : theme.colors.textSecondary + "60"} />
-                </>
-              )}
-            </Pressable>
-            <View style={{ flex: 5 }} />
-          </View>
-          </Animated.View>
+          <CreateSheetDetailsStep
+            onOpenAvatarPicker={onOpenAvatarPicker}
+            avatarValue={avatarValue}
+            groupName={groupName}
+            setGroupName={setGroupName}
+            groupDescription={groupDescription}
+            setGroupDescription={setGroupDescription}
+            handleCreateAndPublish={handleCreateAndPublish}
+            isCreating={isCreating}
+            theme={theme}
+            groupNameInputRef={groupNameInputRef}
+            descInputRef={descInputRef}
+            step1AnimStyle={step1AnimStyle}
+          />
         )}
         {step === 2 && (
-          <View style={{ flex: 1 }}>
-          {/* Step 2: Advanced */}
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={createStyles.advancedContent}>
-            {/* Info */}
-            <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary }]}>
-              {t("lobby.info")}
-            </Text>
-            <View style={createStyles.advRow}>
-              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.groupDuration")}</Text>
-              <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>
-                {durationLabel}
-              </Text>
-            </View>
-            <View style={createStyles.advRow}>
-              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.games")}</Text>
-              <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{preview?.data?.fixtureCount ?? 0} {(preview?.data?.fixtureCount ?? 0) === 1 ? "game" : "games"}</Text>
-            </View>
-
-            {/* Predictions */}
-            <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
-              {t("lobby.predictionRules")}
-            </Text>
-            <Pressable
-              onPress={() => onOpenAdvSheet("prediction")}
-              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.predictionMode")}</Text>
-              <View style={createStyles.advRowRight}>
-                <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{predictionMode === "CorrectScore" ? t("lobby.exactResult") : t("lobby.matchWinner")}</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
-              </View>
-            </Pressable>
-            <Pressable
-              onPress={() => onOpenAdvSheet("scoring")}
-              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.scoring")}</Text>
-              <View style={createStyles.advRowRight}>
-                <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{onTheNosePoints} · {differencePoints} · {outcomePoints}</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
-              </View>
-            </Pressable>
-            <Pressable
-              onPress={() => onOpenAdvSheet("ko")}
-              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.koRoundMode")}</Text>
-              <View style={createStyles.advRowRight}>
-                <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{koRoundMode === "FullTime" ? t("lobby.90min") : koRoundMode === "ExtraTime" ? t("lobby.extraTime") : t("lobby.penalties")}</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
-              </View>
-            </Pressable>
-
-            {/* <Pressable
-              onPress={() => onOpenAdvSheet("members")}
-              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.maxMembers")}</Text>
-              <View style={createStyles.advRowRight}>
-                <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{maxMembers}</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
-              </View>
-            </Pressable> */}
-            <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
-              {t("groupSettings.notifications")}
-            </Text>
-            <Pressable
-              onPress={() => onOpenAdvSheet("nudgeWindow")}
-              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.nudge")}</Text>
-              <View style={createStyles.advRowRight}>
-                <Text style={[createStyles.advRowValue, { color: theme.colors.textSecondary }]}>{nudgeEnabled ? `${nudgeWindowMinutes} min` : "Off"}</Text>
-                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
-              </View>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setDraftPrivacy((prev) => prev === "private" ? "public" : "private");
-              }}
-              style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.private")}</Text>
-                <Text style={[createStyles.advRowSub, { color: theme.colors.textSecondary }]}>{draftPrivacy === "private" ? t("lobby.privateDescription") : t("lobby.publicDescription")}</Text>
-              </View>
-              <View style={[createStyles.advToggle, { backgroundColor: draftPrivacy === "private" ? theme.colors.primary : theme.colors.textSecondary + "30" }]}>
-                <View style={[createStyles.advToggleKnob, { alignSelf: draftPrivacy === "private" ? "flex-end" : "flex-start" }]} />
-              </View>
-            </Pressable>
-            {draftPrivacy === "private" && (
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onInviteAccessChange(inviteAccess === "all" ? "admin_only" : "all");
-                }}
-                style={({ pressed }) => [createStyles.advRow, { opacity: pressed ? 0.6 : 1 }]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[createStyles.advRowLabel, { color: theme.colors.textPrimary }]}>{t("lobby.inviteSharing")}</Text>
-                  <Text style={[createStyles.advRowSub, { color: theme.colors.textSecondary }]}>{inviteAccess === "all" ? t("lobby.allMembersCanShare") : t("lobby.onlyAdminsCanShare")}</Text>
-                </View>
-                <View style={[createStyles.advToggle, { backgroundColor: inviteAccess === "all" ? theme.colors.primary : theme.colors.textSecondary + "30" }]}>
-                  <View style={[createStyles.advToggleKnob, { alignSelf: inviteAccess === "all" ? "flex-end" : "flex-start" }]} />
-                </View>
-              </Pressable>
-            )}
-          </ScrollView>
-          <View style={{ paddingHorizontal: 16, paddingVertical: 8, paddingBottom: Math.max(insets.bottom, 16) }}>
-            <Pressable
-              onPress={handleCreateAndPublish}
-              disabled={isCreating || groupName.trim().length === 0}
-              style={({ pressed }) => [
-                createStyles.continueBottomBtn,
-                {
-                  borderColor: groupName.trim().length > 0 && !isCreating
-                    ? theme.colors.primary + "40"
-                    : theme.colors.textSecondary + "20",
-                  marginBottom: 0,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-            >
-              {isCreating ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-              ) : (
-                <>
-                  <AppText variant="caption" style={{ color: groupName.trim().length > 0 ? theme.colors.primary : theme.colors.textSecondary + "60", fontWeight: "600", fontSize: 13 }}>
-                    {t("groupCreation.createGroup")}
-                  </AppText>
-                  <Ionicons name="arrow-forward" size={14} color={groupName.trim().length > 0 ? theme.colors.primary : theme.colors.textSecondary + "60"} />
-                </>
-              )}
-            </Pressable>
-          </View>
-          </View>
+          <CreateSheetAdvancedStep
+            onOpenAdvSheet={onOpenAdvSheet}
+            predictionMode={predictionMode}
+            onTheNosePoints={onTheNosePoints}
+            differencePoints={differencePoints}
+            outcomePoints={outcomePoints}
+            koRoundMode={koRoundMode}
+            maxMembers={maxMembers}
+            nudgeEnabled={nudgeEnabled}
+            nudgeWindowMinutes={nudgeWindowMinutes}
+            inviteAccess={inviteAccess}
+            onInviteAccessChange={onInviteAccessChange}
+            draftPrivacy={draftPrivacy}
+            setDraftPrivacy={setDraftPrivacy}
+            durationLabel={durationLabel}
+            preview={preview}
+            handleCreateAndPublish={handleCreateAndPublish}
+            isCreating={isCreating}
+            groupName={groupName}
+            theme={theme}
+            bottomInset={insets.bottom}
+          />
         )}
 
         {/* Bottom: continue + tabs — only on step 0 */}
