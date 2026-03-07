@@ -217,6 +217,10 @@ function AppContent() {
                 name="change-password"
                 options={{ headerShown: false }}
               />
+              <Stack.Screen
+                name="settings/league-order"
+                options={{ headerShown: false }}
+              />
             </Stack.Protected>
 
             {/* Username selection - accessible when authenticated but missing username */}

@@ -33,6 +33,7 @@ export { DraftLobbySkeleton } from "./components/DraftLobbySkeleton";
 export { DeleteGroupButton } from "./components/DeleteGroupButton";
 export { LobbyWithHeader } from "./components/LobbyWithHeader";
 export { GroupInfoSheet } from "./components/GroupInfoSheet";
+export { GroupEditSheet } from "./components/GroupEditSheet";
 
 // Hooks
 export { useGroupLobbyState } from "./hooks/useGroupLobbyState";

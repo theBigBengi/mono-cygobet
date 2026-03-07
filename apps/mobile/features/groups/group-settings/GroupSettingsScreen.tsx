@@ -1,40 +1,34 @@
 // features/groups/group-settings/GroupSettingsScreen.tsx
-// Screen for group settings with proper design.
+// Screen for group settings — flat design matching app style.
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { AppText, GroupAvatar } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
-import { useQueryClient } from "@tanstack/react-query";
-import { useGroupQuery, useUpdateGroupMutation, groupsKeys } from "@/domains/groups";
 import {
-  EditNameSheet,
-  EditDescriptionSheet,
+  View,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Text,
+} from "react-native";
+import { useRouter } from "expo-router";
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { useTheme } from "@/lib/theme";
+import { useGroupQuery, useUpdateGroupMutation } from "@/domains/groups";
+import {
   EditRulesSheet,
   DangerZoneSection,
 } from "./components";
-import { AvatarPickerSheet } from "../group-lobby/components/AvatarPickerSheet";
 import { useAuth } from "@/lib/auth/useAuth";
-import {
-  SettingsSection,
-  SettingsRow,
-  SettingsRowBottomSheet,
-} from "@/features/settings";
 import type { ApiInviteAccess, ApiGroupPrivacy } from "@repo/types";
 
 const NUDGE_WINDOW_OPTIONS = [30, 60, 120, 180] as const;
-
-function getInitials(name: string): string {
-  if (!name?.trim()) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
 
 interface GroupSettingsScreenProps {
   groupId: number | null;
@@ -45,17 +39,14 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
   const router = useRouter();
   const { theme } = useTheme();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const { data: groupData } = useGroupQuery(groupId);
   const group = groupData?.data;
   const isCreator = group?.creatorId === user?.id;
 
   // Bottom sheet refs
-  const editNameSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
-  const editDescSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const privacySheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const rulesSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
-  const avatarPickerRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
+  const nudgeSheetRef = useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
 
   // Check if rules are locked
   const hasFirstGameStarted = group?.firstGame != null && group?.firstGame?.state !== "NS";
@@ -68,71 +59,71 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
   const updateGroupMutation = useUpdateGroupMutation(groupId);
 
   useEffect(() => {
-    if (group?.inviteAccess !== undefined) {
-      setInviteAccess(group.inviteAccess);
-    }
+    if (group?.inviteAccess !== undefined) setInviteAccess(group.inviteAccess);
   }, [group?.inviteAccess]);
 
   useEffect(() => {
-    if (group?.privacy !== undefined) {
-      setPrivacy(group.privacy);
-    }
+    if (group?.privacy !== undefined) setPrivacy(group.privacy);
   }, [group?.privacy]);
 
   useEffect(() => {
-    if (group?.nudgeEnabled !== undefined) {
-      setNudgeEnabled(group.nudgeEnabled);
-    }
-    if (group?.nudgeWindowMinutes !== undefined) {
-      setNudgeWindowMinutes(group.nudgeWindowMinutes);
-    }
+    if (group?.nudgeEnabled !== undefined) setNudgeEnabled(group.nudgeEnabled);
+    if (group?.nudgeWindowMinutes !== undefined) setNudgeWindowMinutes(group.nudgeWindowMinutes);
   }, [group?.nudgeEnabled, group?.nudgeWindowMinutes]);
 
   const showInviteToggle = isCreator && group?.privacy === "private";
   const showNudgeSection = isCreator;
   const switchOn = inviteAccess === "all";
 
-  const handleInviteAccessChange = (value: boolean) => {
-    const newValue: ApiInviteAccess = value ? "all" : "admin_only";
+  // Draft state for nudge sheet
+  const [draftNudgeEnabled, setDraftNudgeEnabled] = useState(nudgeEnabled);
+  const [draftNudgeMinutes, setDraftNudgeMinutes] = useState(nudgeWindowMinutes);
+
+  const handleOpenNudgeSheet = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDraftNudgeEnabled(nudgeEnabled);
+    setDraftNudgeMinutes(nudgeWindowMinutes);
+    nudgeSheetRef.current?.present();
+  }, [nudgeEnabled, nudgeWindowMinutes]);
+
+  const handleNudgeDone = useCallback(() => {
+    setNudgeEnabled(draftNudgeEnabled);
+    setNudgeWindowMinutes(draftNudgeMinutes);
+    updateGroupMutation.mutate({
+      nudgeEnabled: draftNudgeEnabled,
+      nudgeWindowMinutes: draftNudgeMinutes,
+    });
+    nudgeSheetRef.current?.dismiss();
+  }, [draftNudgeEnabled, draftNudgeMinutes, updateGroupMutation]);
+
+  const nudgeUnchanged =
+    draftNudgeEnabled === nudgeEnabled && draftNudgeMinutes === nudgeWindowMinutes;
+
+  const handleInviteAccessChange = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newValue: ApiInviteAccess = switchOn ? "admin_only" : "all";
     setInviteAccess(newValue);
     updateGroupMutation.mutate({ inviteAccess: newValue });
   };
 
-  const handleNudgeEnabledChange = (value: boolean) => {
-    setNudgeEnabled(value);
-    updateGroupMutation.mutate({ nudgeEnabled: value, nudgeWindowMinutes });
-  };
-
   const handlePrivacyChange = (value: ApiGroupPrivacy) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPrivacy(value);
     updateGroupMutation.mutate({ privacy: value });
   };
 
-  const handleNudgeWindowChange = (minutes: number) => {
-    setNudgeWindowMinutes(minutes);
-    updateGroupMutation.mutate({ nudgeEnabled, nudgeWindowMinutes: minutes });
-  };
-
   const handleViewMembers = () => {
-    if (groupId != null) {
-      router.push(`/groups/${groupId}/members` as any);
-    }
+    if (groupId != null) router.push(`/groups/${groupId}/members` as any);
   };
 
-  const handleAvatarChange = (value: string) => {
-    updateGroupMutation.mutate(
-      { avatarType: "gradient", avatarValue: value },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
-        },
-      }
-    );
-  };
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
+    ),
+    []
+  );
 
-  if (!group) {
-    return null;
-  }
+  if (!group) return null;
 
   return (
     <>
@@ -142,181 +133,271 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         {/* General Section */}
-        <SettingsSection
-          title={t("groupSettings.general" as Parameters<typeof t>[0])}
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+          {t("groupSettings.general" as Parameters<typeof t>[0])}
+        </Text>
+
+        <Pressable
+          onPress={handleViewMembers}
+          style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <SettingsRow
-            type="navigation"
-            icon="people-outline"
-            label={t("lobby.members")}
-            subtitle={t("lobby.viewGroupMembers")}
-            onPress={handleViewMembers}
-            isLast={!isCreator && !showInviteToggle}
-          />
-          {isCreator && (
-            <>
-              <SettingsRow
-                type="navigation"
-                icon="create-outline"
-                label={t("groupSettings.editName" as Parameters<typeof t>[0])}
-                onPress={() => editNameSheetRef.current?.present()}
-                isLast={false}
-              />
-              <SettingsRow
-                type="navigation"
-                icon="document-text-outline"
-                label={t(
-                  "groupSettings.editDescription" as Parameters<typeof t>[0]
-                )}
-                onPress={() => editDescSheetRef.current?.present()}
-                isLast={false}
-              />
-              <SettingsRow
-                type="navigation"
-                icon="color-palette-outline"
-                label={t("lobby.groupAvatar")}
-                onPress={() => avatarPickerRef.current?.present()}
-                isLast={false}
-              />
-              <SettingsRowBottomSheet.Row
-                sheetRef={privacySheetRef}
-                icon="lock-closed-outline"
-                label={t(
-                  "groupSettings.changePrivacy" as Parameters<typeof t>[0]
-                )}
-                valueDisplay={privacy === "private" ? t("lobby.private") : t("pool.public")}
-                isLast={!showInviteToggle}
-              />
-            </>
-          )}
-          {showInviteToggle && (
-            <SettingsRow
-              type="toggle"
-              icon="link-outline"
-              label={t("lobby.inviteSharing")}
-              subtitle={
-                switchOn
-                  ? t("lobby.allMembersCanShare")
-                  : t("lobby.onlyAdminsCanShare")
-              }
-              value={switchOn}
-              onValueChange={handleInviteAccessChange}
-              disabled={updateGroupMutation.isPending}
-              isLast
-            />
-          )}
-        </SettingsSection>
+          <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
+            {t("lobby.members")}
+          </Text>
+          <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
+        </Pressable>
 
         {isCreator && (
-          <SettingsSection
-            title={t("groupSettings.editRules" as Parameters<typeof t>[0])}
+          <>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                privacySheetRef.current?.present();
+              }}
+              style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
+                {t("groupSettings.changePrivacy" as Parameters<typeof t>[0])}
+              </Text>
+              <View style={styles.rowRight}>
+                <Text style={[styles.rowValue, { color: theme.colors.textSecondary }]}>
+                  {privacy === "private" ? t("lobby.private") : t("pool.public")}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
+              </View>
+            </Pressable>
+          </>
+        )}
+
+        {showInviteToggle && (
+          <Pressable
+            onPress={handleInviteAccessChange}
+            disabled={updateGroupMutation.isPending}
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}
           >
-            <SettingsRowBottomSheet.Row
-              sheetRef={rulesSheetRef}
-              icon="trophy-outline"
-              label={t("groupSettings.scoringPoints" as Parameters<typeof t>[0])}
-              valueDisplay={`${group.onTheNosePoints ?? 3} / ${group.correctDifferencePoints ?? 2} / ${group.outcomePoints ?? 1}`}
-              subtitle={
-                hasFirstGameStarted
-                  ? t("groupSettings.rulesLocked" as Parameters<typeof t>[0])
-                  : undefined
-              }
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
+                {t("lobby.inviteSharing")}
+              </Text>
+              <Text style={[styles.rowSub, { color: theme.colors.textSecondary }]}>
+                {switchOn ? t("lobby.allMembersCanShare") : t("lobby.onlyAdminsCanShare")}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.toggle,
+                { backgroundColor: switchOn ? theme.colors.primary : theme.colors.textSecondary + "30" },
+              ]}
+            >
+              <View style={[styles.toggleKnob, { alignSelf: switchOn ? "flex-end" : "flex-start" }]} />
+            </View>
+          </Pressable>
+        )}
+
+        {/* Edit Rules Section - Creator only */}
+        {isCreator && (
+          <>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
+              {t("groupSettings.editRules" as Parameters<typeof t>[0])}
+            </Text>
+
+            <Pressable
+              onPress={() => !hasFirstGameStarted && rulesSheetRef.current?.present()}
               disabled={hasFirstGameStarted}
-              isLast
-            />
-          </SettingsSection>
+              style={({ pressed }) => [
+                styles.row,
+                { opacity: hasFirstGameStarted ? 0.5 : pressed ? 0.6 : 1 },
+              ]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
+                  {t("groupSettings.scoringPoints" as Parameters<typeof t>[0])}
+                </Text>
+                {hasFirstGameStarted && (
+                  <Text style={[styles.rowSub, { color: theme.colors.textSecondary }]}>
+                    {t("groupSettings.rulesLocked" as Parameters<typeof t>[0])}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.rowRight}>
+                <Text style={[styles.rowValue, { color: theme.colors.textSecondary }]}>
+                  {group.onTheNosePoints ?? 3} / {group.correctDifferencePoints ?? 2} / {group.outcomePoints ?? 1}
+                </Text>
+                {!hasFirstGameStarted && (
+                  <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
+                )}
+              </View>
+            </Pressable>
+          </>
         )}
 
         {/* Notifications Section - Creator only */}
         {showNudgeSection && (
-          <SettingsSection
-            title={t("groupSettings.notifications" as Parameters<typeof t>[0])}
-          >
-            <SettingsRow
-              type="toggle"
-              icon="notifications-outline"
-              label={t("lobby.nudge")}
-              subtitle={t("lobby.nudgeDescription")}
-              value={nudgeEnabled}
-              onValueChange={handleNudgeEnabledChange}
-              disabled={updateGroupMutation.isPending}
-              isLast={!nudgeEnabled}
-            />
-            {nudgeEnabled && (
-              <View style={styles.nudgeWindowContainer}>
-                <View
-                  style={[
-                    styles.nudgeWindowRow,
-                    { paddingHorizontal: theme.spacing.md },
-                  ]}
-                >
-                  <AppText variant="body" style={styles.nudgeLabel}>
-                    {t("lobby.minutesBeforeKickoff")}
-                  </AppText>
-                </View>
-                <View
-                  style={[
-                    styles.nudgeWindowChips,
-                    { paddingHorizontal: theme.spacing.md },
-                  ]}
-                >
-                  {NUDGE_WINDOW_OPTIONS.map((min) => (
-                    <Pressable
-                      key={min}
-                      onPress={() => handleNudgeWindowChange(min)}
-                      style={[
-                        styles.nudgeWindowChip,
-                        {
-                          backgroundColor:
-                            nudgeWindowMinutes === min
-                              ? theme.colors.primary
-                              : theme.colors.surface,
-                          borderColor: theme.colors.border,
-                        },
-                      ]}
-                    >
-                      <AppText
-                        variant="body"
-                        style={{
-                          color:
-                            nudgeWindowMinutes === min
-                              ? theme.colors.primaryText
-                              : theme.colors.textPrimary,
-                        }}
-                      >
-                        {min}
-                      </AppText>
-                    </Pressable>
-                  ))}
-                </View>
+          <>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
+              {t("groupSettings.notifications" as Parameters<typeof t>[0])}
+            </Text>
+
+            <Pressable
+              onPress={handleOpenNudgeSheet}
+              style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
+                {t("lobby.nudge")}
+              </Text>
+              <View style={styles.rowRight}>
+                <Text style={[styles.rowValue, { color: theme.colors.textSecondary }]}>
+                  {nudgeEnabled ? `${nudgeWindowMinutes} min` : "Off"}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
               </View>
-            )}
-          </SettingsSection>
+            </Pressable>
+          </>
         )}
+
+        {/* Danger Zone */}
         <DangerZoneSection groupId={groupId} isCreator={!!isCreator} />
       </ScrollView>
 
-      {/* Bottom Sheets */}
-      <EditNameSheet
-        sheetRef={editNameSheetRef}
-        group={group}
-        updateGroupMutation={updateGroupMutation}
-      />
-      <EditDescriptionSheet
-        sheetRef={editDescSheetRef}
-        group={group}
-        updateGroupMutation={updateGroupMutation}
-      />
-      <SettingsRowBottomSheet.Sheet
-        sheetRef={privacySheetRef}
-        title={t("groupSettings.changePrivacy" as Parameters<typeof t>[0])}
-        options={[
-          { value: "private" as const, label: t("lobby.private") },
-          { value: "public" as const, label: t("pool.public") },
-        ]}
-        value={privacy}
-        onValueChange={handlePrivacyChange}
-      />
+      {/* Privacy Picker */}
+      <BottomSheetModal
+        ref={privacySheetRef}
+        enableDynamicSizing
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: theme.colors.background,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+      >
+        <BottomSheetView style={styles.sheetContent}>
+          <Text
+            style={[
+              styles.sheetTitle,
+              { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" },
+            ]}
+          >
+            {t("groupSettings.changePrivacy" as Parameters<typeof t>[0])}
+          </Text>
+          {([
+            { value: "private" as const, label: t("lobby.private") },
+            { value: "public" as const, label: t("pool.public") },
+          ]).map((opt) => (
+            <Pressable
+              key={opt.value}
+              onPress={() => handlePrivacyChange(opt.value)}
+              style={({ pressed }) => [styles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[styles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>
+                {opt.label}
+              </Text>
+              <Ionicons
+                name={opt.value === privacy ? "radio-button-on" : "radio-button-off"}
+                size={18}
+                color={opt.value === privacy ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </Pressable>
+          ))}
+          <Pressable
+            onPress={() => privacySheetRef.current?.dismiss()}
+            style={({ pressed }) => [
+              styles.sheetDoneBtn,
+              { backgroundColor: theme.colors.primary, opacity: pressed ? 0.8 : 1 },
+            ]}
+          >
+            <Text style={styles.sheetDoneBtnText}>{t("done")}</Text>
+          </Pressable>
+        </BottomSheetView>
+      </BottomSheetModal>
+
+      {/* Nudge Sheet */}
+      <BottomSheetModal
+        ref={nudgeSheetRef}
+        enableDynamicSizing
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: theme.colors.background,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+      >
+        <BottomSheetView style={styles.sheetContent}>
+          <View style={{ borderBottomWidth: 1, borderBottomColor: theme.colors.textPrimary + "10", paddingBottom: 12, marginBottom: 8 }}>
+            <Text style={{ fontSize: 15, fontWeight: "600", textAlign: "center", color: theme.colors.textPrimary }}>
+              {t("lobby.nudge")}
+            </Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: 4 }}>
+              {t("lobby.nudgeDescription")}
+            </Text>
+          </View>
+
+          {/* Toggle */}
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setDraftNudgeEnabled((prev) => !prev);
+            }}
+            style={styles.sheetOption}
+          >
+            <Text style={[styles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>
+              {t("lobby.nudge")}
+            </Text>
+            <View
+              style={[
+                styles.toggle,
+                { backgroundColor: draftNudgeEnabled ? theme.colors.primary : theme.colors.textSecondary + "30" },
+              ]}
+            >
+              <View style={[styles.toggleKnob, { alignSelf: draftNudgeEnabled ? "flex-end" : "flex-start" }]} />
+            </View>
+          </Pressable>
+
+          {/* Minutes options */}
+          <View style={{ opacity: draftNudgeEnabled ? 1 : 0.35 }} pointerEvents={draftNudgeEnabled ? "auto" : "none"}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: "500", marginBottom: 4, marginTop: 8 }}>
+              {t("lobby.minutesBeforeKickoff")}
+            </Text>
+            {NUDGE_WINDOW_OPTIONS.map((min) => (
+              <Pressable
+                key={min}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setDraftNudgeMinutes(min);
+                }}
+                style={({ pressed }) => [styles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <Text style={[styles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>
+                  {min} min
+                </Text>
+                <Ionicons
+                  name={min === draftNudgeMinutes ? "radio-button-on" : "radio-button-off"}
+                  size={18}
+                  color={min === draftNudgeMinutes ? theme.colors.primary : theme.colors.textSecondary}
+                />
+              </Pressable>
+            ))}
+          </View>
+
+          <Pressable
+            onPress={handleNudgeDone}
+            disabled={nudgeUnchanged}
+            style={({ pressed }) => [
+              styles.sheetDoneBtn,
+              {
+                backgroundColor: theme.colors.primary,
+                opacity: nudgeUnchanged ? 0.4 : pressed ? 0.8 : 1,
+              },
+            ]}
+          >
+            <Text style={styles.sheetDoneBtnText}>{t("done")}</Text>
+          </Pressable>
+        </BottomSheetView>
+      </BottomSheetModal>
+
       {!hasFirstGameStarted && (
         <EditRulesSheet
           sheetRef={rulesSheetRef}
@@ -324,12 +405,6 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
           updateGroupMutation={updateGroupMutation}
         />
       )}
-      <AvatarPickerSheet
-        sheetRef={avatarPickerRef}
-        selectedValue={group.avatarValue ?? "0"}
-        onSelect={handleAvatarChange}
-        initials={getInitials(group.name)}
-      />
     </>
   );
 }
@@ -339,29 +414,80 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingTop: 8,
     paddingBottom: 40,
   },
-  nudgeWindowContainer: {
-    paddingVertical: 12,
-  },
-  nudgeWindowRow: {
-    marginBottom: 8,
-  },
-  nudgeLabel: {
+  sectionTitle: {
+    fontSize: 12,
     fontWeight: "500",
+    marginBottom: 4,
   },
-  nudgeWindowChips: {
+  row: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    paddingBottom: 8,
-  },
-  nudgeWindowChip: {
-    paddingHorizontal: 20,
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 10,
+  },
+  rowLabel: {
+    fontSize: 15,
+  },
+  rowValue: {
+    fontSize: 14,
+  },
+  rowSub: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  rowRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  toggle: {
+    width: 34,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    paddingHorizontal: 2,
+  },
+  toggleKnob: {
+    width: 16,
+    height: 16,
     borderRadius: 8,
-    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  sheetContent: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
+  },
+  sheetTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    textAlign: "center",
+    paddingBottom: 12,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+  },
+  sheetOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+  },
+  sheetOptionLabel: {
+    fontSize: 14,
+  },
+  sheetDoneBtn: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  sheetDoneBtnText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

@@ -3,8 +3,8 @@
 
 import React, { useMemo, useCallback, useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent, Pressable, Text, Modal, TextInput, Platform, Keyboard, Dimensions } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, withRepeat, interpolate, SlideInDown, SlideOutUp, FadeIn, FadeOut, LinearTransition, runOnJS, type SharedValue } from "react-native-reanimated";
+import { View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent, Pressable, Text, Modal, TextInput, Platform, Keyboard, Dimensions, FlatList } from "react-native";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, withRepeat, interpolate, SlideInDown, SlideOutDown, SlideOutUp, FadeIn, FadeOut, LinearTransition, runOnJS, type SharedValue } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -62,12 +62,14 @@ interface GroupLobbyActiveScreenProps {
   isLoading?: boolean;
   onSettingsPress?: () => void;
   onInfoPress?: () => void;
+  onAvatarPress?: () => void;
   onScroll?: (scrollY: number) => void;
   onChatExpand?: () => void;
   onChatGestureStart?: () => void;
   onChatGestureCancel?: () => void;
   chatExpansion?: SharedValue<number>;
   onInvitePress?: () => void;
+  onChatFocusChange?: (focused: boolean) => void;
 }
 
 export function GroupLobbyActiveScreen({
@@ -77,12 +79,14 @@ export function GroupLobbyActiveScreen({
   isLoading,
   onSettingsPress,
   onInfoPress,
+  onAvatarPress,
   onScroll,
   onChatExpand,
   onChatGestureStart,
   onChatGestureCancel,
   chatExpansion,
   onInvitePress,
+  onChatFocusChange,
 }: GroupLobbyActiveScreenProps) {
   const { t } = useTranslation("common");
   const { theme, colorScheme } = useTheme();
@@ -111,9 +115,11 @@ export function GroupLobbyActiveScreen({
       onScroll?.(y);
       if (!chatFocused) {
         const dy = y - lastScrollY.current;
-        if (dy > 5 && chatBarVisible.value !== 0) {
+        if (dy > 5 && !chatBarHidden.current) {
+          chatBarHidden.current = true;
           chatBarVisible.value = withTiming(0, { duration: 400 });
-        } else if (dy < -5 && chatBarVisible.value !== 1) {
+        } else if (dy < -5 && chatBarHidden.current) {
+          chatBarHidden.current = false;
           chatBarVisible.value = withTiming(1, { duration: 250 });
         }
       }
@@ -129,11 +135,12 @@ export function GroupLobbyActiveScreen({
   const unreadActivityCount = unreadActivityData?.data?.[String(group.id)] ?? 0;
 
   // Floating chat bar
-  const { sendMessage } = useGroupChat(group.id);
+  const { sendMessage, messages: chatMessages } = useGroupChat(group.id);
   const [chatText, setChatText] = useState("");
   const [chatFocused, setChatFocused] = useState(false);
   const [chatPreviewDismissedId, setChatPreviewDismissedId] = useState<number | null>(null);
   const chatInputRef = useRef<TextInput>(null);
+  const chatFocusKey = useRef(0);
   const unreadChatCount = chatPreview?.unreadCount ?? 0;
   const lastMessage = chatPreview?.lastMessage ?? null;
 
@@ -143,18 +150,12 @@ export function GroupLobbyActiveScreen({
 
   const keyboardOffset = useSharedValue(0);
   const chatBarVisible = useSharedValue(1);
+  const chatBarHidden = useRef(false);
   const lastScrollY = useRef(0);
   const dragY = useSharedValue(0);
   const chatBarEntrance = useSharedValue(0);
   const SCREEN_H = Dimensions.get("window").height;
   const BAR_H = 62 + Math.max(insets.bottom, 16);
-
-  // Slide chat bar in once lobby summary is loaded
-  useEffect(() => {
-    if (!isLobbySummaryLoading && !isRankingLoading) {
-      chatBarEntrance.value = withTiming(1, { duration: 400 });
-    }
-  }, [isLobbySummaryLoading, isRankingLoading, chatBarEntrance]);
 
   const floatingBarStyle = useAnimatedStyle(() => {
     const chatLift = chatExpansion
@@ -171,14 +172,22 @@ export function GroupLobbyActiveScreen({
   useEffect(() => {
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const didShowSub = Keyboard.addListener("keyboardDidShow", () => {
+      onChatFocusChange?.(true);
+    });
     const showSub = Keyboard.addListener(showEvent, (e) => {
       keyboardOffset.value = withTiming(e.endCoordinates.height - insets.bottom + 8, { duration: Platform.OS === "ios" ? 250 : 0 });
     });
     const hideSub = Keyboard.addListener(hideEvent, () => {
       keyboardOffset.value = withTiming(0, { duration: Platform.OS === "ios" ? 250 : 0 });
+      // Sequenced exit: chat out first, then overlay
+      setChatFocused(false);
       setSentPreview(null);
+      setTimeout(() => {
+        onChatFocusChange?.(false);
+      }, 250);
     });
-    return () => { showSub.remove(); hideSub.remove(); };
+    return () => { showSub.remove(); hideSub.remove(); didShowSub.remove(); };
   }, [keyboardOffset, insets.bottom]);
 
   // Auto-dismiss sent preview after delay
@@ -224,6 +233,13 @@ export function GroupLobbyActiveScreen({
       ...lobbySummary.recentFinishedFixtures,
     ];
   }, [lobbySummary]);
+
+  // Slide chat bar in once lobby summary is loaded
+  useEffect(() => {
+    if (!isLobbySummaryLoading && !isRankingLoading) {
+      chatBarEntrance.value = withTiming(1, { duration: 400 });
+    }
+  }, [isLobbySummaryLoading, isRankingLoading, chatBarEntrance]);
 
   const totalFixtures = lobbySummary?.totalFixtures ?? group.totalFixtures ?? 0;
   const predictionsCount = lobbySummary?.predictionsCount ?? group.predictionsCount ?? 0;
@@ -302,7 +318,10 @@ export function GroupLobbyActiveScreen({
       })
       .onEnd((e) => {
         const current = chatExpansion?.value ?? 0;
-        if (current > 0.3 && e.velocityY < 200) {
+        const movingDown = e.velocityY > 300;
+        const movingUp = e.velocityY < -300;
+        const shouldOpen = movingUp || (!movingDown && current > 0.3);
+        if (shouldOpen) {
           // Snap open
           if (chatExpansion) chatExpansion.value = withTiming(1, { duration: 200 });
           runOnJS(handleChatExpand)();
@@ -377,17 +396,19 @@ export function GroupLobbyActiveScreen({
           compact
           hideNavButtons
           onInfoPress={onInfoPress}
+          onAvatarPress={onAvatarPress}
+          isEditMode={isCreator}
           isLoading={isRankingLoading}
         />
 
-        {/* <GroupTimelineBar
+        {/* Meta row removed — chips shown on avatar in header */}
+
+        <GroupTimelineBar
           startDate={group.firstGame?.kickoffAt ?? ""}
           endDate={group.lastGame?.kickoffAt ?? ""}
           progress={timelineProgress}
           isLoading={isRankingLoading}
-        /> */}
-
-        {/* Meta row removed — chips shown on avatar in header */}
+        />
 
         <LobbyQuickActions
           actions={quickActions}
@@ -563,6 +584,58 @@ export function GroupLobbyActiveScreen({
             </Pressable>
           </Animated.View>
         )}
+        {/* Mini chat panel — visible when keyboard is open */}
+        {chatFocused && (
+          <Animated.View
+            key={`mini-chat-${chatFocusKey.current}`}
+            entering={FadeIn.duration(350).delay(100)}
+            exiting={FadeOut.duration(150)}
+            style={[styles.miniChatPanel, { backgroundColor: colorScheme === "dark" ? "#1E1E22" : "#FFFFFF", borderColor: theme.colors.border }]}
+          >
+            <View style={styles.miniChatHeader}>
+              <Text style={[styles.miniChatTitle, { color: theme.colors.textPrimary }]}>
+                {t("chat.title", { defaultValue: "Chat" })}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setChatFocused(false);
+                  onChatFocusChange?.(false);
+                  Keyboard.dismiss();
+                  setTimeout(() => {
+                    handleChatExpand();
+                  }, 350);
+                }}
+                hitSlop={8}
+                style={({ pressed }) => [styles.miniChatExpandBtn, pressed && { opacity: 0.6 }]}
+              >
+                <Ionicons name="expand-outline" size={18} color={theme.colors.textSecondary} />
+              </Pressable>
+            </View>
+            <FlatList
+              data={chatMessages.filter((m) => m.type === "user_message").slice(0, 8)}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({ item }) => {
+                const isMe = item.senderId === user?.id;
+                return (
+                  <View style={[styles.miniMsg, isMe && styles.miniMsgMe]}>
+                    {!isMe && (
+                      <Text style={[styles.miniMsgSender, { color: theme.colors.primary }]}>
+                        {item.sender?.username ?? ""}
+                      </Text>
+                    )}
+                    <Text style={[styles.miniMsgBody, { color: theme.colors.textPrimary }, isMe && { color: "#fff" }]} numberOfLines={2}>
+                      {item.body}
+                    </Text>
+                  </View>
+                );
+              }}
+              inverted
+              style={styles.miniChatList}
+              contentContainerStyle={styles.miniChatContent}
+              showsVerticalScrollIndicator={false}
+            />
+          </Animated.View>
+        )}
         <BlurView
           intensity={chatFocused ? 50 : 30}
           tint={colorScheme === "dark" ? "dark" : "light"}
@@ -585,8 +658,8 @@ export function GroupLobbyActiveScreen({
               placeholderTextColor={chatFocused ? theme.colors.textSecondary : theme.colors.textSecondary + "80"}
               value={chatText}
               onChangeText={setChatText}
-              onFocus={() => setChatFocused(true)}
-              onBlur={() => setChatFocused(false)}
+              onFocus={() => { chatFocusKey.current++; setChatFocused(true); }}
+              onBlur={() => { setChatFocused(false); }}
               maxLength={2000}
             />
             {chatFocused ? (
@@ -652,6 +725,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 8,
+    zIndex: 100,
   },
   floatingBottomInner: {
     borderRadius: 14,
@@ -744,5 +818,66 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 11,
     fontWeight: "700",
+  },
+  miniChatPanel: {
+    height: 300,
+    borderRadius: 14,
+    marginBottom: 6,
+    overflow: "hidden",
+  },
+  miniChatBlur: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
+  },
+  miniChatHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(0,0,0,0.06)",
+  },
+  miniChatTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  miniChatExpandBtn: {
+    padding: 4,
+  },
+  miniChatList: {
+    flex: 1,
+  },
+  miniChatContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  miniMsg: {
+    alignSelf: "flex-start",
+    maxWidth: "80%",
+    backgroundColor: "rgba(0,0,0,0.05)",
+    borderRadius: 12,
+    borderTopLeftRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  miniMsgMe: {
+    alignSelf: "flex-end",
+    backgroundColor: "#007AFF",
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 4,
+  },
+  miniMsgSender: {
+    fontSize: 11,
+    fontWeight: "700",
+    marginBottom: 1,
+  },
+  miniMsgBody: {
+    fontSize: 13,
+    lineHeight: 17,
   },
 });

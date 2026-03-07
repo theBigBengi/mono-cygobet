@@ -2,10 +2,10 @@
 // Danger zone: Leave Group (members), Delete Group (creator).
 
 import React from "react";
-import { Alert } from "react-native";
+import { Alert, Pressable, StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
-import { SettingsSection, SettingsRow } from "@/features/settings";
+import { useTheme } from "@/lib/theme";
 import {
   useDeleteGroupMutation,
   useLeaveGroupMutation,
@@ -21,6 +21,7 @@ export function DangerZoneSection({
   isCreator,
 }: DangerZoneSectionProps) {
   const { t } = useTranslation("common");
+  const { theme } = useTheme();
   const router = useRouter();
   const deleteGroupMutation = useDeleteGroupMutation(groupId);
   const leaveGroupMutation = useLeaveGroupMutation(groupId);
@@ -86,43 +87,52 @@ export function DangerZoneSection({
   const showLeave = !isCreator && groupId != null;
   const showDelete = isCreator && groupId != null;
 
-  if (!showLeave && !showDelete) {
-    return null;
-  }
-
-  const rows: React.ReactNode[] = [];
-  if (showLeave) {
-    rows.push(
-      <SettingsRow
-        key="leave"
-        type="navigation"
-        icon="exit-outline"
-        label={t("groupSettings.leaveGroup")}
-        subtitle={t("groupSettings.leaveGroupDescription")}
-        onPress={handleLeaveGroup}
-        isLast={!showDelete}
-      />
-    );
-  }
-  if (showDelete) {
-    rows.push(
-      <SettingsRow
-        key="delete"
-        type="navigation"
-        icon="trash-outline"
-        label={t("groupSettings.deleteGroup")}
-        subtitle={t("groupSettings.deleteGroupDescription")}
-        onPress={handleDeleteGroup}
-        isLast
-      />
-    );
-  }
+  if (!showLeave && !showDelete) return null;
 
   return (
-    <SettingsSection
-      title={t("groupSettings.dangerZone" as Parameters<typeof t>[0])}
-    >
-      {rows}
-    </SettingsSection>
+    <>
+      <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
+        {t("groupSettings.dangerZone" as Parameters<typeof t>[0])}
+      </Text>
+
+      {showLeave && (
+        <Pressable
+          onPress={handleLeaveGroup}
+          style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Text style={[styles.rowLabel, { color: theme.colors.danger }]}>
+            {t("groupSettings.leaveGroup")}
+          </Text>
+        </Pressable>
+      )}
+
+      {showDelete && (
+        <Pressable
+          onPress={handleDeleteGroup}
+          style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Text style={[styles.rowLabel, { color: theme.colors.danger }]}>
+            {t("groupSettings.deleteGroup")}
+          </Text>
+        </Pressable>
+      )}
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+  },
+  rowLabel: {
+    fontSize: 15,
+  },
+});

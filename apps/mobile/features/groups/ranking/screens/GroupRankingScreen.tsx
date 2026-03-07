@@ -56,6 +56,7 @@ const RankingRow = React.memo(function RankingRow({
   nudgeEnabled,
   onNudgePress,
   isNudgePending,
+  ranking,
 }: {
   item: ApiRankingItem;
   isCurrentUser: boolean;
@@ -63,6 +64,7 @@ const RankingRow = React.memo(function RankingRow({
   nudgeEnabled: boolean;
   onNudgePress: (targetUserId: number, fixtureId: number) => void;
   isNudgePending: boolean;
+  ranking: ApiRankingItem[];
 }) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -110,205 +112,83 @@ const RankingRow = React.memo(function RankingRow({
   const rankChange = item.rankChange ?? 0;
 
   return (
-    <View style={styles.rowContainer}>
-      {/* Rank Badge - Outside Card */}
-      <View
-        style={[
-          styles.rankBadge,
-          {
-            backgroundColor: isTopThree
-              ? podiumColor
-              : theme.colors.surface,
-          },
-        ]}
-      >
-        <Text
-          style={[
-            styles.rankText,
-            {
-              color: isTopThree
-                ? item.rank === 1
-                  ? "#1a1a1a"
-                  : "#fff"
-                : theme.colors.textPrimary,
-            },
-          ]}
-        >
-          {item.rank}
-        </Text>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.rowContainer,
+        pressed && styles.cardPressed,
+      ]}
+    >
+      {/* Rank */}
+      <View style={[styles.rankBadge, { backgroundColor: theme.colors.textPrimary }]}>
+        <Text style={styles.rankText}>{item.rank}</Text>
         {rankChange !== 0 && (
           <View
             style={[
               styles.rankChangeIndicator,
-              {
-                backgroundColor: rankChange > 0 ? "#10B981" : "#EF4444",
-              },
+              { backgroundColor: rankChange > 0 ? "#10B981" : "#EF4444" },
             ]}
           >
             <Ionicons
               name={rankChange > 0 ? "arrow-up" : "arrow-down"}
-              size={8}
+              size={7}
               color="#fff"
             />
           </View>
         )}
       </View>
 
-      <Pressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={styles.cardPressable}
-      >
-        <View
-          style={[
-            styles.cardShadowWrapper,
-            {
-              shadowColor: isTopThree ? podiumColor : "#000",
-              shadowOpacity: isPressed ? 0 : isTopThree ? 0.3 : 0.12,
-            },
-            isPressed && styles.cardPressed,
-          ]}
-        >
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: theme.colors.cardBackground,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          >
-            {/* Main Row */}
-            <View style={styles.mainRow}>
-              {/* Avatar */}
-              <View
-                style={[
-                  styles.avatar,
-                  {
-                    backgroundColor: theme.colors.primary,
-                    shadowColor: "#000",
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.initials,
-                    { color: theme.colors.primaryText },
-                  ]}
-                >
-                  {initials}
-                </Text>
-              </View>
-
-              {/* Name & Stats */}
-              <View style={styles.info}>
-                <Text
-                  style={[styles.username, { color: theme.colors.textPrimary }]}
-                  numberOfLines={1}
-                >
-                  {displayName}
-                </Text>
-                <View style={styles.statsRow}>
-                  <View style={styles.statItem}>
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={12}
-                      color="#10B981"
-                    />
-                    <Text
-                      style={[
-                        styles.statText,
-                        { color: theme.colors.textSecondary },
-                      ]}
-                    >
-                      {item.correctScoreCount} {t("ranking.exact")}
-                    </Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Ionicons
-                      name="swap-horizontal"
-                      size={12}
-                      color="#F59E0B"
-                    />
-                    <Text
-                      style={[
-                        styles.statText,
-                        { color: theme.colors.textSecondary },
-                      ]}
-                    >
-                      {item.correctDifferenceCount ?? 0} {t("ranking.diff")}
-                    </Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Ionicons
-                      name="document-text"
-                      size={12}
-                      color={theme.colors.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.statText,
-                        { color: theme.colors.textSecondary },
-                      ]}
-                    >
-                      {item.predictionCount} {t("ranking.predictions")}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Points */}
-              <View style={styles.pointsContainer}>
-                <Text
-                  style={[
-                    styles.pointsValue,
-                    {
-                      color: isTopThree ? podiumColor : theme.colors.primary,
-                    },
-                  ]}
-                >
-                  {item.totalPoints}
-                </Text>
-                <Text
-                  style={[
-                    styles.pointsLabel,
-                    { color: theme.colors.textSecondary },
-                  ]}
-                >
-                  {t("ranking.pts")}
-                </Text>
-              </View>
-
-              {/* Nudge Button */}
-              {showNudgeButton && (
-                <Pressable
-                  onPress={handleNudgePress}
-                  disabled={!canNudge || isNudgePending}
-                  hitSlop={8}
-                  style={[
-                    styles.nudgeButton,
-                    {
-                      backgroundColor: canNudge
-                        ? theme.colors.primary + "15"
-                        : theme.colors.surface,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={canNudge ? "notifications" : "notifications-off"}
-                    size={18}
-                    color={
-                      canNudge ? theme.colors.primary : theme.colors.textSecondary
-                    }
-                  />
-                </Pressable>
-              )}
+      <View style={[styles.barContent, isCurrentUser && { backgroundColor: theme.colors.textPrimary + "06" }]}>
+        <View style={styles.barOverlay}>
+          <View style={styles.barLeft}>
+            <Text
+              style={[
+                styles.username,
+                { color: theme.colors.textPrimary },
+                isCurrentUser && { fontWeight: "800" },
+              ]}
+              numberOfLines={1}
+            >
+              {isCurrentUser ? t("lobby.you") : displayName}
+            </Text>
+            <View style={styles.statsRow}>
+              <Text style={[styles.statText, { color: theme.colors.textSecondary }]}>
+                {item.correctScoreCount} {t("ranking.exact")}
+              </Text>
+              <Text style={[styles.statText, { color: theme.colors.textSecondary }]}>·</Text>
+              <Text style={[styles.statText, { color: theme.colors.textSecondary }]}>
+                {item.correctDifferenceCount ?? 0} {t("ranking.diff")}
+              </Text>
+              <Text style={[styles.statText, { color: theme.colors.textSecondary }]}>·</Text>
+              <Text style={[styles.statText, { color: theme.colors.textSecondary }]}>
+                {item.predictionCount} {t("ranking.predictions")}
+              </Text>
             </View>
           </View>
+          <Text style={[styles.pointsValue, { color: theme.colors.textPrimary }]}>
+            {item.totalPoints}
+            <Text style={[styles.pointsLabel, { color: theme.colors.textSecondary }]}> pts</Text>
+          </Text>
+          {showNudgeButton && (
+            <Pressable
+              onPress={handleNudgePress}
+              disabled={!canNudge || isNudgePending}
+              hitSlop={8}
+              style={[
+                styles.nudgeButton,
+                { backgroundColor: canNudge ? theme.colors.primary + "10" : "transparent" },
+              ]}
+            >
+              <Ionicons
+                name={canNudge ? "notifications" : "notifications-off"}
+                size={16}
+                color={canNudge ? theme.colors.primary : theme.colors.textSecondary + "60"}
+              />
+            </Pressable>
+          )}
         </View>
-      </Pressable>
-    </View>
+      </View>
+    </Pressable>
   );
 });
 
@@ -412,6 +292,7 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
             nudgeEnabled={groupData?.data?.nudgeEnabled === true}
             onNudgePress={handleNudgePress}
             isNudgePending={nudgeMutation.isPending}
+            ranking={items}
           />
         )}
         contentContainerStyle={[
@@ -453,110 +334,77 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    marginBottom: 10,
-    gap: 10,
-  },
-  cardPressable: {
-    flex: 1,
-  },
-  cardShadowWrapper: {
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 4,
+    marginBottom: 6,
+    gap: 8,
   },
   cardPressed: {
-    shadowOpacity: 0,
-    elevation: 0,
-    transform: [{ scale: 0.98 }],
-  },
-  card: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-    overflow: "hidden",
-  },
-  mainRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+    opacity: 0.7,
   },
   rankBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: "center",
     alignItems: "center",
   },
   rankText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#fff",
   },
   rankChangeIndicator: {
     position: "absolute",
     top: -3,
     right: -3,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
+  barContent: {
+    flex: 1,
+    backgroundColor: "transparent",
     borderRadius: 10,
-    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "rgba(150,150,150,0.15)",
+  },
+  barOverlay: {
+    flexDirection: "row",
     alignItems: "center",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 8,
   },
-  initials: {
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  info: {
+  barLeft: {
     flex: 1,
   },
   username: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "600",
-    marginBottom: 2,
   },
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-  },
-  statItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
+    gap: 4,
+    marginTop: 1,
   },
   statText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "500",
   },
-  pointsContainer: {
-    alignItems: "center",
-  },
   pointsValue: {
-    fontSize: 20,
+    fontSize: 14,
     fontWeight: "800",
   },
   pointsLabel: {
-    fontSize: 9,
-    fontWeight: "600",
-    textTransform: "uppercase",
+    fontSize: 10,
+    fontWeight: "500",
   },
   nudgeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },

@@ -236,14 +236,15 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
   },
   iconButton: {
     zIndex: 10,
   },
   iconCircle: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -263,7 +264,8 @@ const styles = StyleSheet.create({
   },
   rightActions: {
     flexDirection: "row",
-    gap: 8,
+    alignItems: "center",
+    gap: 2,
   },
   pressed: {
     opacity: 0.6,

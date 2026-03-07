@@ -92,49 +92,27 @@ function GroupTimelineBarInner({
   const startFormatted = format(new Date(startDate), "dd.MM.");
   const endFormatted = format(new Date(endDate), "dd.MM.");
 
-  // Clamp progress between 0 and 1
   const clampedProgress = Math.max(0, Math.min(1, progress));
-  const isCompleted = progress >= 1;
 
   return (
     <View style={styles.container}>
-      <View style={styles.barContainer}>
-        {/* Track with dot inside */}
-        <View style={[styles.track, { backgroundColor: theme.colors.border }]}>
-          {/* Filled portion */}
-          <View
-            style={[
-              styles.fill,
-              {
-                width: `${clampedProgress * 100}%`,
-                backgroundColor: theme.colors.textPrimary,
-              },
-            ]}
-          />
-          {/* Current position indicator - only show if started and not completed */}
-          {clampedProgress > 0 && !isCompleted && (
-            <View
-              style={[
-                styles.currentDot,
-                {
-                  backgroundColor: theme.colors.textPrimary,
-                  left: `${clampedProgress * 100}%`,
-                },
-              ]}
-            />
-          )}
-        </View>
+      <AppText variant="caption" color="secondary" style={styles.dateLabel}>
+        {startFormatted}
+      </AppText>
+      <View style={[styles.track, { backgroundColor: theme.colors.border }]}>
+        <View
+          style={[
+            styles.fill,
+            {
+              width: `${clampedProgress * 100}%`,
+              backgroundColor: theme.colors.textSecondary,
+            },
+          ]}
+        />
       </View>
-
-      {/* Date labels */}
-      <View style={styles.labelsContainer}>
-        <AppText variant="caption" color="secondary" style={styles.dateLabel}>
-          {startFormatted}
-        </AppText>
-        <AppText variant="caption" color="secondary" style={styles.dateLabel}>
-          {endFormatted}
-        </AppText>
-      </View>
+      <AppText variant="caption" color="secondary" style={styles.dateLabel}>
+        {endFormatted}
+      </AppText>
     </View>
   );
 }
@@ -143,54 +121,20 @@ export const GroupTimelineBar = React.memo(GroupTimelineBarInner);
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 12,
-  },
-  barContainer: {
     flexDirection: "row",
     alignItems: "center",
-    height: 28,
-  },
-  flagContainer: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: "center",
-    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    gap: 8,
   },
   track: {
     flex: 1,
-    height: 4,
-    borderRadius: 2,
-    marginHorizontal: 4,
-    position: "relative",
-    justifyContent: "center",
+    height: 2,
+    borderRadius: 1,
   },
   fill: {
     height: "100%",
-    borderRadius: 2,
-  },
-  currentDot: {
-    position: "absolute",
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginLeft: -6,
-    top: -4,
-  },
-  trophyContainer: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  labelsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: -4,
-    paddingEnd: 0,
+    borderRadius: 1,
   },
   dateLabel: {
     fontSize: 10,

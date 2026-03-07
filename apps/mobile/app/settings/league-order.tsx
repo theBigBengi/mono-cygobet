@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   SectionList,
+  Text,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -16,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
-import { AppText, Button, TeamLogo } from "@/components/ui";
+import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
   useLeaguePreferences,
@@ -183,37 +184,30 @@ export default function LeagueOrderScreen() {
         const isLast = index === selectedLeagues.length - 1;
 
         return (
-          <View
-            style={[
-              styles.selectedRow,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          >
-            <View
+          <View style={styles.row}>
+            <Text
               style={[
-                styles.orderBadge,
-                { backgroundColor: theme.colors.primary },
+                styles.orderNumber,
+                { color: theme.colors.primary },
               ]}
             >
-              <AppText
-                variant="caption"
-                style={{ color: "#fff", fontWeight: "700" }}
-              >
-                {index + 1}
-              </AppText>
-            </View>
-            <TeamLogo imagePath={item.imagePath} teamName={item.name} size={32} />
+              {index + 1}
+            </Text>
+            <TeamLogo imagePath={item.imagePath} teamName={item.name} size={28} />
             <View style={styles.leagueInfo}>
-              <AppText variant="body" numberOfLines={1} style={{ fontWeight: "500" }}>
+              <Text
+                style={[styles.leagueName, { color: theme.colors.textPrimary }]}
+                numberOfLines={1}
+              >
                 {item.name}
-              </AppText>
+              </Text>
               {item.countryName && (
-                <AppText variant="caption" color="secondary" numberOfLines={1}>
+                <Text
+                  style={[styles.leagueCountry, { color: theme.colors.textSecondary }]}
+                  numberOfLines={1}
+                >
                   {item.countryName}
-                </AppText>
+                </Text>
               )}
             </View>
             <View style={styles.actions}>
@@ -222,16 +216,13 @@ export default function LeagueOrderScreen() {
                 disabled={isFirst}
                 hitSlop={8}
                 style={({ pressed }) => [
-                  styles.actionButton,
-                  { backgroundColor: theme.colors.background },
-                  pressed && { opacity: 0.7 },
-                  isFirst && { opacity: 0.3 },
+                  { opacity: isFirst ? 0.25 : pressed ? 0.6 : 1 },
                 ]}
               >
                 <Ionicons
                   name="chevron-up"
                   size={18}
-                  color={theme.colors.textPrimary}
+                  color={theme.colors.textSecondary}
                 />
               </Pressable>
               <Pressable
@@ -239,28 +230,23 @@ export default function LeagueOrderScreen() {
                 disabled={isLast}
                 hitSlop={8}
                 style={({ pressed }) => [
-                  styles.actionButton,
-                  { backgroundColor: theme.colors.background },
-                  pressed && { opacity: 0.7 },
-                  isLast && { opacity: 0.3 },
+                  { opacity: isLast ? 0.25 : pressed ? 0.6 : 1 },
                 ]}
               >
                 <Ionicons
                   name="chevron-down"
                   size={18}
-                  color={theme.colors.textPrimary}
+                  color={theme.colors.textSecondary}
                 />
               </Pressable>
               <Pressable
                 onPress={() => handleRemove(item.id)}
                 hitSlop={8}
                 style={({ pressed }) => [
-                  styles.actionButton,
-                  { backgroundColor: theme.colors.danger + "15" },
-                  pressed && { opacity: 0.7 },
+                  { opacity: pressed ? 0.6 : 1 },
                 ]}
               >
-                <Ionicons name="trash-outline" size={16} color={theme.colors.danger} />
+                <Ionicons name="close" size={18} color={theme.colors.danger} />
               </Pressable>
             </View>
           </View>
@@ -272,33 +258,28 @@ export default function LeagueOrderScreen() {
         <Pressable
           onPress={() => handleAdd(item)}
           style={({ pressed }) => [
-            styles.availableRow,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
-            },
-            pressed && { opacity: 0.7 },
+            styles.row,
+            { opacity: pressed ? 0.6 : 1 },
           ]}
         >
-          <TeamLogo imagePath={item.imagePath} teamName={item.name} size={32} />
+          <TeamLogo imagePath={item.imagePath} teamName={item.name} size={28} />
           <View style={styles.leagueInfo}>
-            <AppText variant="body" numberOfLines={1}>
+            <Text
+              style={[styles.leagueName, { color: theme.colors.textPrimary }]}
+              numberOfLines={1}
+            >
               {item.name}
-            </AppText>
+            </Text>
             {item.countryName && (
-              <AppText variant="caption" color="secondary" numberOfLines={1}>
+              <Text
+                style={[styles.leagueCountry, { color: theme.colors.textSecondary }]}
+                numberOfLines={1}
+              >
                 {item.countryName}
-              </AppText>
+              </Text>
             )}
           </View>
-          <View
-            style={[
-              styles.addButton,
-              { borderColor: theme.colors.primary },
-            ]}
-          >
-            <Ionicons name="add" size={20} color={theme.colors.primary} />
-          </View>
+          <Ionicons name="add" size={20} color={theme.colors.primary} />
         </Pressable>
       );
     },
@@ -313,14 +294,18 @@ export default function LeagueOrderScreen() {
           { backgroundColor: theme.colors.background },
         ]}
       >
-        <AppText variant="caption" color="secondary" style={{ fontWeight: "600" }}>
-          {section.title.toUpperCase()}
-        </AppText>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+          {section.title}
+        </Text>
         {section.type === "selected" && selectedLeagues.length > 0 && (
-          <Pressable onPress={handleReset} hitSlop={8}>
-            <AppText variant="caption" color="secondary">
+          <Pressable
+            onPress={handleReset}
+            hitSlop={8}
+            style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Text style={{ fontSize: 12, color: theme.colors.textSecondary }}>
               {t("settings.leagueOrderScreen.resetToDefault")}
-            </AppText>
+            </Text>
           </Pressable>
         )}
       </View>
@@ -328,18 +313,39 @@ export default function LeagueOrderScreen() {
     [theme, selectedLeagues.length, handleReset, t]
   );
 
+  const renderHeader = (showSave: boolean) => (
+    <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <Pressable
+        onPress={() => router.back()}
+        style={styles.backButton}
+        hitSlop={8}
+      >
+        <Ionicons name="chevron-back" size={24} color={theme.colors.textPrimary} />
+      </Pressable>
+      <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>
+        {t("settings.leagueOrder")}
+      </Text>
+      {showSave ? (
+        <Pressable
+          onPress={handleSave}
+          disabled={updateMutation.isPending}
+          hitSlop={8}
+          style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Text style={{ fontSize: 14, fontWeight: "600", color: theme.colors.primary }}>
+            {updateMutation.isPending ? t("common.loading") : t("common.save")}
+          </Text>
+        </Pressable>
+      ) : (
+        <View style={styles.headerSpacer} />
+      )}
+    </View>
+  );
+
   if (isLoading) {
     return (
       <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color={theme.colors.textPrimary} />
-          </Pressable>
-          <AppText variant="subtitle" style={{ fontWeight: "600" }}>
-            {t("settings.leagueOrder")}
-          </AppText>
-          <View style={styles.headerSpacer} />
-        </View>
+        {renderHeader(false)}
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
@@ -349,42 +355,7 @@ export default function LeagueOrderScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={28} color={theme.colors.textPrimary} />
-        </Pressable>
-        <AppText variant="subtitle" style={{ fontWeight: "600" }}>
-          {t("settings.leagueOrder")}
-        </AppText>
-        {hasChanges ? (
-          <Pressable
-            onPress={handleSave}
-            disabled={updateMutation.isPending}
-            hitSlop={8}
-          >
-            <AppText
-              variant="body"
-              style={{
-                color: theme.colors.primary,
-                fontWeight: "600",
-              }}
-            >
-              {updateMutation.isPending
-                ? t("common.loading")
-                : t("common.save")}
-            </AppText>
-          </Pressable>
-        ) : (
-          <View style={styles.headerSpacer} />
-        )}
-      </View>
-
-      {/* Content */}
+      {renderHeader(hasChanges)}
       <SectionList
         sections={sections}
         keyExtractor={(item) => String(item.id)}
@@ -403,13 +374,9 @@ export default function LeagueOrderScreen() {
               size={48}
               color={theme.colors.textSecondary}
             />
-            <AppText
-              variant="body"
-              color="secondary"
-              style={styles.emptyText}
-            >
+            <Text style={{ fontSize: 14, color: theme.colors.textSecondary, textAlign: "center" }}>
               {t("settings.leagueOrderScreen.noLeaguesConfigured")}
-            </AppText>
+            </Text>
           </View>
         }
       />
@@ -425,18 +392,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     alignItems: "center",
     justifyContent: "center",
   },
+  headerTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
   headerSpacer: {
-    width: 40,
+    width: 32,
   },
   loadingContainer: {
     flex: 1,
@@ -444,61 +414,45 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingTop: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
   },
-  selectedRow: {
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderWidth: 1,
-    borderRadius: 12,
-    marginBottom: 8,
+    paddingVertical: 10,
     gap: 12,
   },
-  orderBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  availableRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderWidth: 1,
-    borderRadius: 12,
-    marginBottom: 8,
-    gap: 12,
+  orderNumber: {
+    fontSize: 13,
+    fontWeight: "700",
+    width: 18,
+    textAlign: "center",
   },
   leagueInfo: {
     flex: 1,
   },
+  leagueName: {
+    fontSize: 15,
+  },
+  leagueCountry: {
+    fontSize: 11,
+    marginTop: 2,
+  },
   actions: {
     flexDirection: "row",
-    gap: 6,
-  },
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
     alignItems: "center",
-    justifyContent: "center",
-  },
-  addButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
+    gap: 12,
   },
   emptyContainer: {
     flex: 1,
@@ -506,8 +460,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 60,
     gap: 12,
-  },
-  emptyText: {
-    textAlign: "center",
   },
 });

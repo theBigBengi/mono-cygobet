@@ -395,11 +395,8 @@ export function LobbyPredictionsCTA({
 
       </View>
 
-      {/* Summary + View All */}
+      {/* View All */}
       <View style={styles.footerSummaryRow}>
-        <Text style={[styles.summaryText, { color: theme.colors.textSecondary }]}>
-          +{totalFixtures - completedFixturesCount - liveCount - nextGames.length} {t("lobby.summaryMoreGames", { defaultValue: "more games" })}  ·  {totalFixtures - predictionsCount} {t("lobby.summaryNeedPrediction", { defaultValue: "need prediction" })}
-        </Text>
         <Pressable
           onPress={() => onPress()}
           style={({ pressed }) => [
@@ -585,9 +582,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   footerSummaryRow: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     marginTop: 8,
   },
   viewAllButton: {

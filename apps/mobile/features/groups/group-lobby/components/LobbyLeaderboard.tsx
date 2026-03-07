@@ -12,6 +12,7 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import type { ApiRankingItem } from "@repo/types";
@@ -250,10 +251,22 @@ function LobbyLeaderboardInner({
           pressed && styles.wrapperPressed,
         ]}
       >
-        {/* Title */}
-        <Text style={[styles.bottomTitle, { color: theme.colors.textPrimary }]}>
-          {t("lobby.leaderboard")}
-        </Text>
+        {/* Title + navigate button */}
+        <View style={styles.titleRow}>
+          <Text style={[styles.bottomTitle, { color: theme.colors.textPrimary }]}>
+            {t("lobby.leaderboard")}
+          </Text>
+          <Pressable
+            onPress={onPress}
+            style={({ pressed: p }) => [
+              styles.navCircle,
+              { borderColor: theme.colors.border },
+              p && { opacity: 0.6 },
+            ]}
+          >
+            <Ionicons name="arrow-forward" size={16} color={theme.colors.textPrimary} />
+          </Pressable>
+        </View>
 
         {/* Horizontal bars */}
         <View style={styles.barsContainer}>
@@ -295,22 +308,6 @@ function LobbyLeaderboardInner({
             </Animated.View>
           )}
         </View>
-
-        {/* View All button */}
-        <View style={styles.viewAllCenter}>
-          <Pressable
-            onPress={onPress}
-            style={({ pressed: p }) => [
-              styles.viewAllBtn,
-              { borderColor: theme.colors.border },
-              p && { opacity: 0.6 },
-            ]}
-          >
-            <Text style={[styles.viewAllBtnText, { color: theme.colors.textPrimary }]}>
-              {t("lobby.viewAll")}
-            </Text>
-          </Pressable>
-        </View>
       </View>
       )}
     </Pressable>
@@ -325,6 +322,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   wrapper: {
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  navCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   wrapperPressed: {
     opacity: 0.7,

@@ -17,6 +17,7 @@ import {
   Platform,
   Dimensions,
   Pressable,
+  Keyboard,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -25,6 +26,8 @@ import Animated, {
   withTiming,
   interpolate,
   runOnJS,
+  FadeIn,
+  FadeOut,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,7 +36,7 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, AppText } from "@/components/ui";
 import { AnimatedStickyHeader } from "@/components/ui/AnimatedStickyHeader";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGroupQuery, useDeleteGroupMutation, groupsKeys } from "@/domains/groups";
+import { useGroupQuery, useDeleteGroupMutation, useUpdateGroupMutation, groupsKeys } from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
@@ -45,6 +48,7 @@ import {
   GroupLobbyEndedScreen,
   LobbyWithHeader,
   GroupInfoSheet,
+  GroupEditSheet,
 } from "@/features/groups/group-lobby";
 import { GroupChatScreen } from "@/features/groups/chat";
 import { GroupInviteSheet } from "@/features/groups/invite";
@@ -74,6 +78,12 @@ function GroupLobbyContent() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const setOverlay = useSetAtom(globalBlockingOverlayAtom);
+  const [chatFocused, setChatFocused] = useState(false);
+  const chatFocusKey = useRef(0);
+  const handleChatFocusChange = useCallback((focused: boolean) => {
+    if (focused) chatFocusKey.current++;
+    setChatFocused(focused);
+  }, []);
   const setActiveGroup = useSetAtom(activeGroupIdAtom);
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;
@@ -130,10 +140,16 @@ function GroupLobbyContent() {
   const [isPublishing, setIsPublishing] = useState(false);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const infoSheetRef = useRef<BottomSheetModal>(null);
+  const editSheetRef = useRef<BottomSheetModal>(null);
   const inviteSheetRef = useRef<BottomSheetModal>(null);
+  const updateGroupMutation = useUpdateGroupMutation(groupId ?? 0);
 
   const handleOpenInfo = useCallback(() => {
     infoSheetRef.current?.present();
+  }, []);
+
+  const handleOpenEdit = useCallback(() => {
+    editSheetRef.current?.present();
   }, []);
 
   const handleOpenInvite = useCallback(() => {
@@ -315,12 +331,14 @@ function GroupLobbyContent() {
             router.push(`/groups/${group.id}/settings` as any)
           }
           onInfoPress={handleOpenInfo}
+          onAvatarPress={isCreator ? handleOpenEdit : undefined}
           onChatExpand={handleChatExpand}
           onChatGestureStart={handleChatGestureStart}
           onChatGestureCancel={handleChatGestureCancel}
           chatExpansion={chatExpansion}
           onScroll={handleScroll}
           onInvitePress={handleOpenInvite}
+          onChatFocusChange={handleChatFocusChange}
         />
       </LobbyWithHeader>
     );
@@ -366,11 +384,31 @@ function GroupLobbyContent() {
             threshold={160}
             rightActions={[
               {
-                icon: "settings-outline",
+                icon: "information-circle-outline",
+                onPress: handleOpenInfo,
+                size: 22,
+              },
+              {
+                icon: "ellipsis-horizontal",
                 onPress: () => router.push(`/groups/${group.id}/settings` as any),
+                size: 22,
               },
             ]}
           />
+        )}
+
+        {/* Chat backdrop overlay — rendered after sticky header so it covers everything */}
+        {chatFocused && (
+          <Animated.View
+            key={`chat-backdrop-${chatFocusKey.current}`}
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(200)}
+            style={styles.chatBackdrop}
+          >
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => {
+              Keyboard.dismiss();
+            }} />
+          </Animated.View>
         )}
 
         {showOverlay && (
@@ -402,6 +440,16 @@ function GroupLobbyContent() {
           sheetRef={infoSheetRef}
           isLoading={isFetching}
         />
+        {isCreator && (
+          <GroupEditSheet
+            sheetRef={editSheetRef}
+            group={group}
+            updateGroupMutation={updateGroupMutation}
+            onAvatarChange={() =>
+              queryClient.invalidateQueries({ queryKey: groupsKeys.lists() })
+            }
+          />
+        )}
         <GroupInviteSheet
           groupId={groupId}
           groupName={group.name}
@@ -457,6 +505,11 @@ const styles = StyleSheet.create({
   },
   overlayText: {
     marginTop: 12,
+  },
+  chatBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    zIndex: 50,
   },
   chatExpandable: {
     position: "absolute",

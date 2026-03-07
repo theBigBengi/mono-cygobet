@@ -113,44 +113,22 @@ function LobbyQuickActionsInner({
   return (
     <View style={styles.container}>
       {cardsAction && (
-        <View style={[styles.cardShadow, { backgroundColor: theme.colors.background }]}>
         <Pressable
           onPress={cardsAction.onPress}
           style={({ pressed }) => [
             styles.cardWrapper,
-            pressed && { opacity: 0.8 },
+            { backgroundColor: theme.colors.textPrimary + "08" },
+            pressed && { opacity: 0.7 },
           ]}
         >
-          <View style={[styles.card]}>
-              <View style={styles.cardsRow}>
-                <View style={[styles.cardsIconBg, { backgroundColor: "#9CA3AF15" }]}>
-                  <View style={[styles.cardsIconCircle, { borderColor: theme.colors.border }]}>
-                    <MaterialCommunityIcons name="cards-outline" size={22} color={theme.colors.textSecondary} />
-                  </View>
-                </View>
-                <View style={styles.cardsTextCol}>
-                  <Text style={[styles.cardsTitle, { color: theme.colors.textPrimary }]}>
-                    Predict All
-                  </Text>
-                  <Text style={[styles.cardsSubtitle, { color: theme.colors.textSecondary }]}>
-                    {totalFixtures - predictionsCount} of {totalFixtures} left
-                  </Text>
-                </View>
-                <View style={[styles.chevronCircle, { backgroundColor: theme.colors.border + "40" }]}>
-                  <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
-                </View>
-              </View>
-              <View style={[styles.progressTrack, { backgroundColor: theme.colors.border }]}>
-                <LinearGradient
-                  colors={["#9CA3AF", "#000000"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[styles.progressFill, { width: totalFixtures > 0 ? `${(predictionsCount / totalFixtures) * 100}%` : "0%" }]}
-                />
-              </View>
+          <View style={styles.cardsRow}>
+            <MaterialCommunityIcons name="cards-outline" size={18} color={theme.colors.textPrimary} />
+            <Text style={[styles.cardsSubtitle, { color: theme.colors.textPrimary }]}>
+              {totalFixtures - predictionsCount} of {totalFixtures} left
+            </Text>
+            <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
           </View>
         </Pressable>
-        </View>
       )}
       <View style={styles.row}>
         <View style={styles.leftGroup}>
@@ -165,23 +143,15 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 10,
-    marginBottom: 12,
-    paddingHorizontal: 16,
-  },
-  cardShadow: {
-    borderRadius: 12,
+    marginTop: 4,
+    marginBottom: 8,
+    paddingHorizontal: 0,
   },
   cardWrapper: {
-    borderRadius: 12,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#9CA3AF40",
-  },
-  card: {
-    borderRadius: 12,
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginHorizontal: 16,
   },
   divider: {
     height: 1,
@@ -195,41 +165,12 @@ const styles = StyleSheet.create({
   cardsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-  },
-  cardsTextCol: {
-    flex: 1,
-  },
-  cardsTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+    gap: 8,
   },
   cardsSubtitle: {
+    flex: 1,
     fontSize: 13,
     fontWeight: "500",
-    marginTop: 1,
-  },
-  cardsIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardsIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chevronCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
   },
   progressTrack: {
     height: 3,

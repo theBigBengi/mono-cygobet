@@ -104,7 +104,6 @@ function LobbyRecentResultsInner({
                   onPress={() => onPress(fixture.id)}
                   style={({ pressed }) => [
                     styles.tile,
-                    { backgroundColor: color + "10" },
                     pressed && { opacity: 0.7 },
                   ]}
                 >
@@ -128,19 +127,13 @@ function LobbyRecentResultsInner({
                     </View>
                   </View>
 
-
-                  {/* Prediction */}
-                  <View style={styles.tilePredictionSection}>
+                  {/* Prediction + Points */}
+                  <View style={[styles.tilePredictionSection, { backgroundColor: color + "15" }]}>
                     <Text style={[styles.tilePrediction, { color }]}>
                       {fixture.prediction ? `${fixture.prediction.home}-${fixture.prediction.away}` : "—"}
                     </Text>
-                    <Text
-                      style={[
-                        styles.tilePoints,
-                        { color },
-                      ]}
-                    >
-                      {hasPoints ? `+${points} pts` : "+0 pts"}
+                    <Text style={[styles.tilePoints, { color }]}>
+                      {hasPoints ? `+${points}` : "+0"}
                     </Text>
                   </View>
                 </Pressable>
@@ -235,6 +228,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 3,
   },
   tilePrediction: {
     fontSize: 12,

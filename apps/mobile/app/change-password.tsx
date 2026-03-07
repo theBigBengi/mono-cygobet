@@ -10,11 +10,13 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Text,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import { AppText, Button, PasswordInput } from "@/components/ui";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { PasswordInput } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useChangePasswordMutation } from "@/lib/auth/auth.mutations";
 
@@ -22,11 +24,18 @@ export default function ChangePasswordScreen() {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const mutation = useChangePasswordMutation();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const canSubmit =
+    currentPassword.length > 0 &&
+    newPassword.length > 0 &&
+    confirmPassword.length > 0 &&
+    !mutation.isPending;
 
   const handleSubmit = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -65,21 +74,23 @@ export default function ChangePasswordScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons
-            name="arrow-back"
+            name="chevron-back"
             size={24}
             color={theme.colors.textPrimary}
           />
         </Pressable>
-        <AppText variant="subtitle" style={styles.headerTitle}>
+        <Text
+          style={[styles.headerTitle, { color: theme.colors.textPrimary }]}
+        >
           {t("changePassword.title")}
-        </AppText>
+        </Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -91,99 +102,98 @@ export default function ChangePasswordScreen() {
       >
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: insets.bottom + 40 },
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.inputContainer}>
-            <AppText
-              variant="caption"
-              color="secondary"
-              style={styles.inputLabel}
+            <Text
+              style={[styles.inputLabel, { color: theme.colors.textSecondary }]}
             >
               {t("changePassword.currentPassword")}
-            </AppText>
+            </Text>
             <PasswordInput
               style={[
                 styles.input,
                 {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
+                  borderBottomColor: theme.colors.textSecondary + "20",
                   color: theme.colors.textPrimary,
                 },
               ]}
               value={currentPassword}
               onChangeText={setCurrentPassword}
               placeholder={t("changePassword.currentPasswordPlaceholder")}
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={theme.colors.textSecondary + "60"}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <AppText
-              variant="caption"
-              color="secondary"
-              style={styles.inputLabel}
+            <Text
+              style={[styles.inputLabel, { color: theme.colors.textSecondary }]}
             >
               {t("changePassword.newPassword")}
-            </AppText>
+            </Text>
             <PasswordInput
               style={[
                 styles.input,
                 {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
+                  borderBottomColor: theme.colors.textSecondary + "20",
                   color: theme.colors.textPrimary,
                 },
               ]}
               value={newPassword}
               onChangeText={setNewPassword}
               placeholder={t("changePassword.newPasswordPlaceholder")}
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={theme.colors.textSecondary + "60"}
             />
-            <AppText
-              variant="caption"
-              color="secondary"
-              style={styles.inputHint}
+            <Text
+              style={[styles.inputHint, { color: theme.colors.textSecondary }]}
             >
               {t("changePassword.passwordHint")}
-            </AppText>
+            </Text>
           </View>
 
           <View style={styles.inputContainer}>
-            <AppText
-              variant="caption"
-              color="secondary"
-              style={styles.inputLabel}
+            <Text
+              style={[styles.inputLabel, { color: theme.colors.textSecondary }]}
             >
               {t("changePassword.confirmPassword")}
-            </AppText>
+            </Text>
             <PasswordInput
               style={[
                 styles.input,
                 {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
+                  borderBottomColor: theme.colors.textSecondary + "20",
                   color: theme.colors.textPrimary,
                 },
               ]}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder={t("changePassword.confirmPasswordPlaceholder")}
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={theme.colors.textSecondary + "60"}
             />
           </View>
 
-          <Button
-            label={
-              mutation.isPending
-                ? t("common.loading")
-                : t("changePassword.submit")
-            }
+          <Pressable
             onPress={handleSubmit}
-            disabled={mutation.isPending}
-            style={styles.submitButton}
-          />
+            disabled={!canSubmit}
+            style={({ pressed }) => [
+              styles.submitButton,
+              {
+                backgroundColor: theme.colors.primary,
+                opacity: !canSubmit ? 0.4 : pressed ? 0.8 : 1,
+              },
+            ]}
+          >
+            <Text style={styles.submitButtonText}>
+              {mutation.isPending
+                ? t("common.loading")
+                : t("changePassword.submit")}
+            </Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -198,9 +208,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
   },
   backButton: {
     width: 32,
@@ -209,6 +218,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerTitle: {
+    fontSize: 15,
     fontWeight: "600",
   },
   headerSpacer: {
@@ -221,27 +231,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 24,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   inputLabel: {
-    marginBottom: 6,
-    marginStart: 4,
+    fontSize: 12,
+    fontWeight: "500",
+    marginBottom: 8,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 14,
-    fontSize: 16,
+    borderBottomWidth: 1,
+    paddingVertical: 10,
+    fontSize: 15,
   },
   inputHint: {
+    fontSize: 11,
     marginTop: 6,
-    marginStart: 4,
   },
   submitButton: {
-    marginTop: 8,
+    marginTop: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

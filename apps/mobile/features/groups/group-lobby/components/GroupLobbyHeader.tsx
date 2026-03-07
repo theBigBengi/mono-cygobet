@@ -28,8 +28,12 @@ interface GroupLobbyHeaderProps {
   avatarType?: string | null;
   /** Avatar value (gradient index, emoji, image url) */
   avatarValue?: string | null;
-  /** When provided, shows info icon; onPress opens group info sheet */
+  /** When provided, shows info icon in header right; onPress opens group info sheet */
   onInfoPress?: () => void;
+  /** When provided, avatar tap opens this instead of onInfoPress */
+  onAvatarPress?: () => void;
+  /** When true, shows edit icon instead of info icon on avatar badge */
+  isEditMode?: boolean;
   /** When provided, shows back button */
   onBack?: () => void;
   /** When provided, shows settings icon */
@@ -67,6 +71,8 @@ function GroupLobbyHeaderInner({
   avatarType,
   avatarValue,
   onInfoPress,
+  onAvatarPress,
+  isEditMode = false,
   onBack,
   onSettingsPress,
   hideNavButtons = false,
@@ -170,8 +176,8 @@ function GroupLobbyHeaderInner({
         ) : (
           <View style={styles.avatarCenter}>
             <Pressable
-              onPress={onInfoPress}
-              disabled={!onInfoPress}
+              onPress={onAvatarPress ?? onInfoPress}
+              disabled={!onAvatarPress && !onInfoPress}
             >
               <GroupAvatar
                 avatarType={avatarType}
@@ -181,9 +187,13 @@ function GroupLobbyHeaderInner({
                 borderRadius={20}
                 flat
               />
-              {onInfoPress && (
+              {(onAvatarPress || onInfoPress) && (
                 <View style={[styles.avatarInfoHint, { backgroundColor: theme.colors.background }]}>
-                  <Ionicons name="information-circle-outline" size={22} color={theme.colors.textSecondary} />
+                  <Ionicons
+                    name={isEditMode ? "color-palette-outline" : "information-circle-outline"}
+                    size={isEditMode ? 16 : 22}
+                    color={theme.colors.textSecondary}
+                  />
                 </View>
               )}
             </Pressable>
