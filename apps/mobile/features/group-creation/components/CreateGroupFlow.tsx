@@ -42,12 +42,6 @@ import { CreateSheetSelectionStep } from "./CreateSheetSelectionStep";
 import { CreateSheetDetailsStep } from "./CreateSheetDetailsStep";
 import { CreateSheetAdvancedStep } from "./CreateSheetAdvancedStep";
 
-import { CreateSheetFixtures } from "./CreateSheetFixtures";
-import { CreateSheetLeagues } from "./CreateSheetLeagues";
-import { CreateSheetTeams } from "./CreateSheetTeams";
-import { CreateSheetDetailsStep } from "./CreateSheetDetailsStep";
-import { CreateSheetAdvancedStep } from "./CreateSheetAdvancedStep";
-
 /* ─── Create Group Sheet ─── */
 
 export type CreateTab = "fixtures" | "leagues" | "teams";
