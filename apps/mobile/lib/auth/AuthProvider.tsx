@@ -285,7 +285,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setStatus("authenticated");
     } catch (err) {
       if (__DEV__) console.error("LoadUser: /auth/me failed:", err);
-      console.error("LoadUser error details:", {
+      if (__DEV__) console.error("LoadUser error details:", {
         isApiError: err instanceof ApiError,
         status: err instanceof ApiError ? err.status : "unknown",
         code: err instanceof ApiError ? err.code : "unknown",
@@ -396,7 +396,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Map returned minimal user shape into domain user (server /auth/register
         // returns id,email,username,name,image but not role/onboarding flags).
-        const userData = {
+        const userData: User = {
           id: response.user.id,
           email: response.user.email,
           username: response.user.username,
@@ -405,7 +405,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           role: "user", // default role for newly registered users
           onboardingRequired:
             !response.user.username || response.user.username.trim().length === 0,
-        } as any;
+          hasPassword: true, // assume password-based registration
+        };
 
         setUser(userData);
         analytics.identify(userData.id, response.accessToken);

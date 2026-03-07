@@ -1,12 +1,11 @@
 // components/ErrorBoundary/ErrorBoundary.tsx
-// Feature-level error boundary wrapper with Sentry integration.
+// Feature-level error boundary wrapper with error reporting.
 
 import React, { useCallback } from "react";
 import {
   ErrorBoundary as ReactErrorBoundary,
   FallbackProps,
 } from "react-error-boundary";
-import * as Sentry from "@sentry/react-native";
 import { handleError } from "@/lib/errors";
 import { FeatureErrorFallback } from "./FeatureErrorFallback";
 
@@ -23,12 +22,6 @@ export function ErrorBoundary({ children, feature, fallback }: Props) {
         source: "featureErrorBoundary",
         feature,
         componentStack: info.componentStack,
-      });
-
-      Sentry.withScope((scope) => {
-        scope.setTag("feature", feature);
-        scope.setExtra("componentStack", info.componentStack);
-        Sentry.captureException(error);
       });
     },
     [feature]

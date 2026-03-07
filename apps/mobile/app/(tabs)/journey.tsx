@@ -11,7 +11,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
-import * as Haptics from "expo-haptics";
+import { triggerImpact } from "@/lib/haptics";
+import { ImpactFeedbackStyle } from "expo-haptics";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const NODE_SIZE = 56;
@@ -47,7 +48,7 @@ export default function JourneyScreen() {
 
   const handleNodePress = useCallback((nodeId: number, isLocked: boolean) => {
     if (isLocked) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerImpact(ImpactFeedbackStyle.Medium);
 
     if (activeNodeId === nodeId) {
       setActiveNodeId(null);
@@ -87,7 +88,7 @@ export default function JourneyScreen() {
   }, []);
 
   const handleStart = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerImpact(ImpactFeedbackStyle.Medium);
     dismissPopover();
     // TODO: navigate to lesson
   };

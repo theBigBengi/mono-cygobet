@@ -116,10 +116,11 @@ export function GamesTimeline({
     if (!isControlled && !isInitialized && containerWidth > 0) {
       setInternalSelectedIndex(defaultIndex);
       // Small delay to ensure ScrollView is ready
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         scrollToIndex(defaultIndex, false);
       }, 50);
       setIsInitialized(true);
+      return () => clearTimeout(timer);
     }
   }, [containerWidth, defaultIndex, isInitialized, scrollToIndex, isControlled]);
 

@@ -66,7 +66,7 @@ function GroupJoinContent() {
           >
             <View style={[styles.formInner, { padding: theme.spacing.md }]}>
               <AppText variant="body" color="secondary" style={styles.hint}>
-                Enter the invite code you received
+                {t("groups.inviteCodeHint")}
               </AppText>
               <TextInput
                 value={enteredCode}

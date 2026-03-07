@@ -19,6 +19,9 @@ const FEED_PAGE_SIZE = 30;
  * Infinite query for a group's activity feed with cursor-based pagination.
  */
 export function useGroupActivityQuery(groupId: number | null) {
+  const { status, user } = useAuth();
+  const enabled = isReadyForProtected(status, user) && groupId != null;
+
   return useInfiniteQuery({
     queryKey: groupsKeys.activity(groupId!),
     queryFn: async ({ pageParam }) => {
@@ -34,7 +37,7 @@ export function useGroupActivityQuery(groupId: number | null) {
       const lastItem = items[items.length - 1];
       return lastItem?.createdAt ?? undefined;
     },
-    enabled: groupId != null,
+    enabled,
   });
 }
 
