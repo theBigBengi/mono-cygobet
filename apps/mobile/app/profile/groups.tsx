@@ -46,7 +46,7 @@ export default function AllGroupsScreen() {
   }, [groups, filter]);
 
   const handleGroupPress = (groupId: number) => {
-    router.push(`/groups/${groupId}` as any);
+    router.push({ pathname: '/groups/[id]', params: { id: String(groupId) } });
   };
 
   if (statsQuery.isLoading) {

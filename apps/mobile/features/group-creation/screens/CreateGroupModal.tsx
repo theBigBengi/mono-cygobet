@@ -127,7 +127,7 @@ export function CreateGroupModal() {
       if (mode === "leagues") clearLeagues();
       if (mode === "teams") clearTeams();
       setModalVisible(false);
-      router.replace(`/groups/${result.data.id}` as any);
+      router.replace({ pathname: '/groups/[id]', params: { id: String(result.data.id) } });
     } catch {
       setOverlay(false);
     }
@@ -159,7 +159,7 @@ export function CreateGroupModal() {
         nudgeWindowMinutes: 60,
       });
       setModalVisible(false);
-      router.replace(`/groups/${result.data.id}` as any);
+      router.replace({ pathname: '/groups/[id]', params: { id: String(result.data.id) } });
     } catch {
       setOverlay(false);
     }

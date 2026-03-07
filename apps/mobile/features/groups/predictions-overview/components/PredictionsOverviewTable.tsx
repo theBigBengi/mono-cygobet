@@ -8,6 +8,7 @@ import {
   Dimensions,
   Pressable,
   Animated,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -571,6 +572,10 @@ export function PredictionsOverviewTable({
                 data={sortedParticipants}
                 renderItem={renderRow}
                 keyExtractor={(item) => item.id.toString()}
+                removeClippedSubviews={Platform.OS === "android"}
+                maxToRenderPerBatch={10}
+                initialNumToRender={10}
+                windowSize={5}
                 showsVerticalScrollIndicator={false}
                 scrollEventThrottle={16}
                 onScroll={Animated.event(

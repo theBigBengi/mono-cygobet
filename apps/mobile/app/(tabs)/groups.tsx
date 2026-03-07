@@ -107,11 +107,11 @@ function GroupsContent() {
   }, []);
 
   const handleOpenInvites = useCallback(() => {
-    router.push("/invites" as any);
+    router.push("/invites");
   }, [router]);
 
   const handleOpenSearch = useCallback(() => {
-    router.push("/groups/search" as any);
+    router.push("/groups/search");
   }, [router]);
 
   const handleRefresh = useCallback(async () => {
@@ -124,7 +124,7 @@ function GroupsContent() {
   }, [refetch, refetchUnread]);
 
   const handleCreateGroup = () => {
-    router.push("/(tabs)/home" as any);
+    router.push("/(tabs)/home");
   };
 
   const handleJoinWithCode = useCallback(() => {
@@ -136,7 +136,7 @@ function GroupsContent() {
   }, [router]);
 
   const handleGroupPress = useCallback((groupId: number) => {
-    router.push(`/groups/${groupId}` as any);
+    router.push({ pathname: '/groups/[id]', params: { id: String(groupId) } });
   }, [router]);
 
   const groups = data?.data || [];
@@ -202,6 +202,8 @@ function GroupsContent() {
                   styles.infoButton,
                   pressed && { opacity: 0.5 },
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Search groups"
               >
                 <Ionicons
                   name="search-outline"
@@ -216,6 +218,8 @@ function GroupsContent() {
                   styles.infoButton,
                   pressed && { opacity: 0.5 },
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Invitations"
               >
                 <Ionicons
                   name={pendingInviteCount > 0 ? "mail" : "mail-outline"}
@@ -237,6 +241,8 @@ function GroupsContent() {
                   styles.infoButton,
                   pressed && { opacity: 0.5 },
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Create group"
               >
                 <Ionicons
                   name="add-outline"

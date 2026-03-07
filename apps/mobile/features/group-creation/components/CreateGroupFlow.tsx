@@ -257,7 +257,7 @@ export function CreateGroupFlow({
       setSelectedTeams(new Set());
       setGroupName("");
       setGroupDescription("");
-      router.push(`/groups/${groupId}` as any);
+      router.push({ pathname: '/groups/[id]', params: { id: String(groupId) } });
     } catch {
       // stay on screen so user can retry
     } finally {

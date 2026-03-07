@@ -144,6 +144,8 @@ function SettingsContent() {
             styles.row,
             { opacity: pressed ? 0.6 : 1 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={t("settings.profile")}
         >
           <View style={{ flex: 1 }}>
             <Text
@@ -173,6 +175,8 @@ function SettingsContent() {
               styles.row,
               { opacity: pressed ? 0.6 : 1 },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel={t("settings.changePassword")}
           >
             <Text
               style={[styles.rowLabel, { color: theme.colors.textPrimary }]}
@@ -203,6 +207,8 @@ function SettingsContent() {
             styles.row,
             { opacity: pressed ? 0.6 : 1 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={t("settings.theme")}
         >
           <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
             {t("settings.theme")}
@@ -263,6 +269,8 @@ function SettingsContent() {
             styles.row,
             { opacity: pressed ? 0.6 : 1 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={t("settings.leagueOrder")}
         >
           <View style={{ flex: 1 }}>
             <Text
@@ -293,6 +301,8 @@ function SettingsContent() {
               styles.row,
               { opacity: pressed ? 0.6 : 1 },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel={t("settings.haptics")}
           >
             <View style={{ flex: 1 }}>
               <Text
@@ -342,6 +352,8 @@ function SettingsContent() {
             styles.row,
             { opacity: pressed ? 0.6 : 1 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={t("settings.clearCache")}
         >
           <View style={{ flex: 1 }}>
             <Text
@@ -387,6 +399,8 @@ function SettingsContent() {
             styles.row,
             { opacity: pressed ? 0.6 : 1 },
           ]}
+          accessibilityRole="link"
+          accessibilityLabel={t("settings.termsOfService")}
         >
           <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
             {t("settings.termsOfService")}
@@ -404,6 +418,8 @@ function SettingsContent() {
             styles.row,
             { opacity: pressed ? 0.6 : 1 },
           ]}
+          accessibilityRole="link"
+          accessibilityLabel={t("settings.privacyPolicy")}
         >
           <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
             {t("settings.privacyPolicy")}
@@ -422,6 +438,8 @@ function SettingsContent() {
             styles.row,
             { opacity: pressed ? 0.6 : 1, marginTop: 8 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={t("profile.logout")}
         >
           <Text style={[styles.rowLabel, { color: theme.colors.danger }]}>
             {t("profile.logout")}

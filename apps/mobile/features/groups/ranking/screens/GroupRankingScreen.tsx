@@ -35,6 +35,7 @@ interface GroupRankingScreenProps {
 }
 
 const AVATAR_SIZE = 40;
+const ROW_HEIGHT = 40;
 const PODIUM_COLORS = {
   1: "#FFD700", // Gold
   2: "#C0C0C0", // Silver
@@ -276,6 +277,11 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
         ref={flatListRef}
         data={items}
         keyExtractor={(item) => String(item.userId)}
+        removeClippedSubviews={Platform.OS === "android"}
+        maxToRenderPerBatch={10}
+        initialNumToRender={10}
+        windowSize={5}
+        getItemLayout={(_data, index) => ({ length: ROW_HEIGHT, offset: ROW_HEIGHT * index, index })}
         renderItem={({ item }) => (
           <RankingRow
             item={item}

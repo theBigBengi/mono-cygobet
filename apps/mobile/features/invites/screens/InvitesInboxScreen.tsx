@@ -8,6 +8,7 @@ import {
   FlatList,
   RefreshControl,
   ListRenderItem,
+  Platform,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
@@ -168,6 +169,10 @@ export function InvitesInboxScreen() {
         data={invites}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
+        removeClippedSubviews={Platform.OS === "android"}
+        maxToRenderPerBatch={10}
+        initialNumToRender={10}
+        windowSize={5}
         contentContainerStyle={[
           styles.container,
           { paddingHorizontal: theme.spacing.lg },

@@ -122,6 +122,8 @@ function GroupLobbyHeaderInner({
               styles.backButton,
               pressed && styles.navButtonPressed,
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
             <View style={[styles.iconCircle, { backgroundColor: theme.colors.background + "90" }]}>
               <Ionicons name="chevron-back" size={22} color={theme.colors.textPrimary} />
@@ -136,6 +138,8 @@ function GroupLobbyHeaderInner({
               <Pressable
                 onPress={onInfoPress}
                 style={({ pressed }) => [pressed && styles.navButtonPressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Group info"
               >
                 <View style={[styles.iconCircle, { backgroundColor: theme.colors.background + "90" }]}>
                   <Ionicons name="information-circle-outline" size={22} color={theme.colors.textPrimary} />
@@ -146,6 +150,8 @@ function GroupLobbyHeaderInner({
               <Pressable
                 onPress={onSettingsPress}
                 style={({ pressed }) => [pressed && styles.navButtonPressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Group settings"
               >
                 <View style={[styles.iconCircle, { backgroundColor: theme.colors.background + "90" }]}>
                   <Ionicons name="settings-outline" size={20} color={theme.colors.textPrimary} />

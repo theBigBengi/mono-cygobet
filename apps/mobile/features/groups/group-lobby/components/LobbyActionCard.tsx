@@ -65,6 +65,8 @@ export function LobbyActionCard({
         onPress={onPress}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         style={({ pressed }) => [styles.row, { opacity: pressed ? 0.8 : 1 }]}
+        accessibilityRole="button"
+        accessibilityLabel={title}
       >
         {renderIcon()}
         <View style={styles.textBlock}>

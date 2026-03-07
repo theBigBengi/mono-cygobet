@@ -100,6 +100,7 @@ export default function SignInScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               editable={!isLoading}
+              accessibilityLabel={t("auth.emailOrUsername")}
             />
 
             <PasswordInput
@@ -115,12 +116,15 @@ export default function SignInScreen() {
               placeholderTextColor={theme.colors.textSecondary}
               onChangeText={handlePasswordChange}
               editable={!isLoading}
+              accessibilityLabel={t("auth.password")}
             />
 
             <Pressable
               onPress={() => router.push("/forgot-password")}
               disabled={isLoading}
               style={styles.forgotPassword}
+              accessibilityRole="link"
+              accessibilityLabel={t("auth.forgotPassword")}
             >
               <AppText
                 variant="caption"
@@ -144,6 +148,9 @@ export default function SignInScreen() {
               ]}
               onPress={handleLogin}
               disabled={isLoading}
+              accessibilityRole="button"
+              accessibilityLabel={t("auth.login")}
+              accessibilityState={{ disabled: isLoading }}
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" />

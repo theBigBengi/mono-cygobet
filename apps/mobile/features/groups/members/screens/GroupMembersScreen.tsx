@@ -134,6 +134,10 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
       <FlatList
         data={items}
         keyExtractor={(item) => String(item.userId)}
+        removeClippedSubviews={Platform.OS === "android"}
+        maxToRenderPerBatch={10}
+        initialNumToRender={10}
+        windowSize={5}
         renderItem={({ item, index }) => (
           <MemberRow
             item={item}

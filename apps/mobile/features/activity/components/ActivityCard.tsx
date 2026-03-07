@@ -38,15 +38,15 @@ export function ActivityCard({ item }: ActivityCardProps) {
     if (item.eventType === "fixture_live" || item.eventType === "fixture_ft") {
       const fixtureId = meta.fixtureId as number | undefined;
       if (fixtureId != null) {
-        router.push(`/fixtures/${fixtureId}` as any);
+        router.push({ pathname: '/fixtures/[id]', params: { id: String(fixtureId) } });
         return;
       }
     }
     if (item.groupId == null) return;
     if (item.eventType === "prediction_reminder") {
-      router.push(`/groups/${item.groupId}/games` as any);
+      router.push({ pathname: '/groups/[id]/games', params: { id: String(item.groupId) } });
     } else {
-      router.push(`/groups/${item.groupId}` as any);
+      router.push({ pathname: '/groups/[id]', params: { id: String(item.groupId) } });
     }
   };
 
@@ -91,6 +91,8 @@ export function ActivityCard({ item }: ActivityCardProps) {
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}
+      accessibilityRole="button"
+      accessibilityLabel={`${t(titleKey as never)}: ${subtitle}`}
     >
       <Card
         style={[

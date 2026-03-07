@@ -125,7 +125,7 @@ function GroupLobbyContent() {
   useEffect(() => {
     if (error || (!isLoading && !data)) {
       // Navigate to groups tab when group is not found
-      router.replace("/(tabs)/groups" as any);
+      router.replace("/(tabs)/groups");
     }
   }, [error, data, isLoading, router]);
 
@@ -225,7 +225,7 @@ function GroupLobbyContent() {
             onSuccess: () => {
               router.back();
               fallbackTimerRef.current = setTimeout(() => {
-                router.replace("/(tabs)/groups" as any);
+                router.replace("/(tabs)/groups");
                 fallbackTimerRef.current = null;
               }, 300);
             },
@@ -294,7 +294,7 @@ function GroupLobbyContent() {
           isCreator={isCreator}
           isLoading={isFetching}
           onSettingsPress={() =>
-            router.push(`/groups/${group.id}/settings` as any)
+            router.push({ pathname: '/groups/[id]/settings', params: { id: String(group.id) } })
           }
         />
       </LobbyWithHeader>
@@ -328,7 +328,7 @@ function GroupLobbyContent() {
           isCreator={isCreator}
           isLoading={isFetching}
           onSettingsPress={() =>
-            router.push(`/groups/${group.id}/settings` as any)
+            router.push({ pathname: '/groups/[id]/settings', params: { id: String(group.id) } })
           }
           onInfoPress={handleOpenInfo}
           onAvatarPress={isCreator ? handleOpenEdit : undefined}
@@ -390,7 +390,7 @@ function GroupLobbyContent() {
               },
               {
                 icon: "ellipsis-horizontal",
-                onPress: () => router.push(`/groups/${group.id}/settings` as any),
+                onPress: () => router.push({ pathname: '/groups/[id]/settings', params: { id: String(group.id) } }),
                 size: 22,
               },
             ]}

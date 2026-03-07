@@ -61,7 +61,7 @@ export function useLeaveGroupMutation(groupId: number | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groupsKeys.lists() });
-      router.replace("/(tabs)/groups" as any);
+      router.replace("/(tabs)/groups");
       analytics.track("group_left", { groupId });
     },
   });

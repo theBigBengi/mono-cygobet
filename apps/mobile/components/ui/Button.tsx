@@ -134,6 +134,9 @@ export function Button({
           typeof style === "function" ? style(pressableState) : style;
         return [baseStyle, customStyle].filter(Boolean);
       }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={handlePress}
       {...pressableProps}

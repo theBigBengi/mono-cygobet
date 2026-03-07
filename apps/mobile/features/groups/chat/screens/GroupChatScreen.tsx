@@ -308,6 +308,10 @@ export function GroupChatScreen({ groupId, keyboardVerticalOffset: kbOffsetProp 
             renderItem={renderItem}
             keyExtractor={keyExtractor}
             inverted
+            removeClippedSubviews={false}
+            maxToRenderPerBatch={10}
+            initialNumToRender={10}
+            windowSize={5}
             onEndReached={() => {
               if (hasNextPage && !isFetchingNextPage) {
                 fetchNextPage();

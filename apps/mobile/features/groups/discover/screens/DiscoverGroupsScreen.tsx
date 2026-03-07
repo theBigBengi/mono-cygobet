@@ -146,6 +146,10 @@ export function DiscoverGroupsScreen() {
               onJoinSuccess={() => router.replace(`/groups/${item.id}`)}
             />
           )}
+          removeClippedSubviews={Platform.OS === "android"}
+          maxToRenderPerBatch={10}
+          initialNumToRender={10}
+          windowSize={5}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[
             styles.listContent,

@@ -476,6 +476,8 @@ const NextGameRow = React.memo(function NextGameRowInner({
             styles.predictButton,
             { borderColor: textPrimary + "40", opacity: pressed ? 0.5 : 1 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel="Predict game"
         >
           <FontAwesome6 name="pen-to-square" size={18} color={textPrimary} />
           <PulsingPredictText color={textPrimary} isActive={isInRange} />
@@ -609,7 +611,7 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
       <View style={styles.card}>
         {/* Top Row: Avatar + Info + More button */}
         <View style={styles.topRow}>
-          <Pressable onPress={handlePress} style={styles.topRowLeft}>
+          <Pressable onPress={handlePress} style={styles.topRowLeft} accessibilityRole="button" accessibilityLabel={group.name}>
             <GroupAvatar
               avatarType={group.avatarType}
               avatarValue={group.avatarValue}

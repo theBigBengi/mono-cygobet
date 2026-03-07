@@ -20,7 +20,7 @@ export function FeatureErrorFallback({
 
   const handleGoHome = () => {
     resetErrorBoundary();
-    router.replace("/(tabs)/groups" as any);
+    router.replace("/(tabs)/groups");
   };
 
   return (

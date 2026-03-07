@@ -77,6 +77,10 @@ function ActivityContent() {
         data={items}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => <ActivityCard item={item} />}
+        removeClippedSubviews={Platform.OS === "android"}
+        maxToRenderPerBatch={10}
+        initialNumToRender={10}
+        windowSize={5}
         contentContainerStyle={[
           styles.listContent,
           items.length === 0 && styles.emptyList,

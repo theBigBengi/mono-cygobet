@@ -56,6 +56,8 @@ function GroupCardRowInner({ group, onPress }: GroupCardRowProps) {
             : "transparent",
         },
       ]}
+      accessibilityRole="button"
+      accessibilityLabel={group.name}
     >
       <GroupAvatar
         avatarType={group.avatarType}

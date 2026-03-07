@@ -219,6 +219,10 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
             data={displayUsers}
             keyExtractor={(item) => String(item.id)}
             renderItem={renderItem}
+            removeClippedSubviews={Platform.OS === "android"}
+            maxToRenderPerBatch={10}
+            initialNumToRender={10}
+            windowSize={5}
             ListHeaderComponent={listHeader}
             contentContainerStyle={[
               styles.listContent,
