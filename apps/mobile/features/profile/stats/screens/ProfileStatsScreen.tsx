@@ -182,7 +182,7 @@ export function ProfileStatsScreen({ userId }: ProfileStatsScreenProps) {
           <Button
             label={t("profile.compareWithOthers")}
             variant="primary"
-            onPress={() => router.push("/profile/head-to-head" as any)}
+            onPress={() => router.push("/profile/head-to-head")}
             style={styles.compareButtonInner}
           />
         </View>

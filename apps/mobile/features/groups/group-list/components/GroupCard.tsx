@@ -675,7 +675,7 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
               lastMessageAt={group.lastMessageAt}
               onPredictPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push(`/groups/${group.id}/fixtures/${group.nextGame!.id}` as any);
+                router.push({ pathname: '/groups/[id]/fixtures/[fixtureId]', params: { id: String(group.id), fixtureId: String(group.nextGame!.id) } });
               }}
               onMorePress={handleMorePress}
           />
