@@ -8,6 +8,7 @@ import type {
   ApiRespondToInviteResponse,
 } from "@repo/types";
 import { prisma } from "@repo/db";
+import { sendPushToUsers } from "../../push/push.service";
 import {
   BadRequestError,
   NotFoundError,
@@ -125,6 +126,13 @@ export async function sendInvite(
       expiresAt: invite.expiresAt.toISOString(),
     });
   }
+
+  // Send push notification to invitee (fire-and-forget)
+  sendPushToUsers([inviteeId], {
+    title: "Group Invite",
+    body: `${inviter?.username || "Someone"} invited you to ${group.name}`,
+    data: { type: "invite", groupId },
+  });
 
   log.info(
     { inviteId: invite.id, groupId, inviterId, inviteeId },

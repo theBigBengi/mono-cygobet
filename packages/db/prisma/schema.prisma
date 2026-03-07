@@ -81,6 +81,7 @@ model users {
   groupActivityLog        groupActivityLog[]
   passwordResetTokens     passwordResetTokens[]
   earnedBadges            userEarnedBadges[]
+  pushTokens              pushTokens[]
 
   // groups groups[]
 
@@ -141,6 +142,18 @@ model verificationToken {
 
   @@id([identifier, token])
   @@map("verification_token")
+}
+
+model pushTokens {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  token     String   @unique
+  platform  String   @db.VarChar(10) // ios, android
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_tokens")
 }
 
 enum userRole {

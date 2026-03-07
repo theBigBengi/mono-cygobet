@@ -22,6 +22,7 @@ import { AppState, AppStateStatus, Platform } from "react-native";
 import type { AuthState, AuthStatus, User } from "./auth.types";
 import type { RefreshResult } from "./refresh.types";
 import { queryClient } from "../query/queryClient";
+import { unregisterPushToken, getCurrentPushToken } from "../push";
 
 // Public shape of the auth context exposed via useAuth().
 export interface AuthContextValue extends AuthState {
@@ -335,6 +336,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = useCallback(async () => {
     try {
       const refreshToken = await authStorage.getRefreshToken();
+
+      // Best-effort: unregister push token before logout
+      const pushToken = getCurrentPushToken();
+      if (pushToken) {
+        try {
+          await unregisterPushToken(pushToken);
+        } catch {
+          // Ignore errors - best effort
+        }
+      }
+
       if (refreshToken) {
         // Best-effort logout call
         try {

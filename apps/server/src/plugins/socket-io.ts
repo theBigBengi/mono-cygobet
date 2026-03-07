@@ -6,6 +6,7 @@ import { createAdapter } from "@socket.io/redis-adapter";
 import { verifyAccessToken } from "../auth/user-tokens";
 import { assertGroupMember } from "../services/api/groups/permissions";
 import { sendMessage, markAsRead } from "../services/api/groups/service/chat";
+import { sendPushToGroupMembers } from "../services/push/push.service";
 import { adminSessionDb } from "../auth/admin-session";
 import { ADMIN_SESSION_COOKIE_NAME } from "../constants/admin-auth.constants";
 import { ADMIN_ROLE } from "../constants/roles.constants";
@@ -157,6 +158,15 @@ export default fp(async function socketIOPlugin(fastify) {
             image: socket.data.user.image,
           },
           tempId: data.tempId,
+        });
+
+        // Send push notification to offline group members (fire-and-forget)
+        sendPushToGroupMembers(data.groupId, [userId], {
+          title: socket.data.user.username || "New message",
+          body: message.body.length > 100
+            ? message.body.slice(0, 100) + "..."
+            : message.body,
+          data: { type: "chat", groupId: data.groupId },
         });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Failed";

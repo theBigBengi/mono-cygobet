@@ -10,6 +10,16 @@ set -euo pipefail
 # Reads PRODUCTION_DATABASE_URL and DATABASE_URL from root .env
 # Uses pg_dump (data-only) so schema stays managed by Prisma.
 
+# ─── Ensure pg tools are in PATH (Homebrew keg-only installs) ─
+# Pick the highest installed version so pg_dump matches the server.
+PG_BIN=""
+for pg_dir in /opt/homebrew/opt/postgresql@*/bin /usr/local/opt/postgresql@*/bin; do
+  [ -d "$pg_dir" ] && PG_BIN="$pg_dir"
+done
+if [ -n "$PG_BIN" ]; then
+  export PATH="$PG_BIN:$PATH"
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 DUMP_FILE="$SCRIPT_DIR/.dump.pgdata"
@@ -71,7 +81,7 @@ pg_dump "$PRODUCTION_DATABASE_URL" \
   --no-owner \
   --no-privileges \
   --format=custom \
-  "${DUMP_TABLE_FLAGS[@]}" \
+  ${DUMP_TABLE_FLAGS[@]+"${DUMP_TABLE_FLAGS[@]}"} \
   -f "$DUMP_FILE"
 
 # ─── Truncate target tables in dev ──────────────────────────

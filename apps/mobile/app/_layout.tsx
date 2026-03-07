@@ -27,6 +27,7 @@ import {
   ChatNotificationListeners,
 } from "@/lib/socket";
 import { ChatNotificationToast } from "@/components/ChatNotificationToast";
+import { PushNotificationSetup } from "@/lib/push";
 import {
   useAuth,
   isAuthenticated,
@@ -271,6 +272,7 @@ function RootLayout() {
                     <InviteSocketListeners />
                     <ChatNotificationListeners />
                     <ChatNotificationToast />
+                    <PushNotificationSetup />
                     <AppContent />
                   </SocketProvider>
                 </BottomSheetModalProvider>
