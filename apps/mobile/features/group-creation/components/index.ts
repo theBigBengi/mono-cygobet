@@ -11,4 +11,4 @@ export { CreateGroupModal } from "../screens/CreateGroupModal";
 export { LeagueListItem } from "./LeagueListItem";
 export { TeamListItem } from "./TeamListItem";
 export { SelectionSummaryCard, type SummaryItem } from "./SelectionSummaryCard";
-export { CreateGroupSheet, createStyles, type CreateTab } from "./CreateGroupFlow";
+export { CreateGroupFlow, createStyles, type CreateTab } from "./CreateGroupFlow";

@@ -4,7 +4,7 @@
 // - Empty state when no groups exist.
 // - Navigates to group details on press.
 
-import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import {
   View,
   StyleSheet,
@@ -12,17 +12,11 @@ import {
   RefreshControl,
   Platform,
   FlatList,
-  Text,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  BottomSheetModal,
-  BottomSheetBackdrop,
-  BottomSheetView,
-  type BottomSheetBackdropProps,
-} from "@gorhom/bottom-sheet";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -46,8 +40,7 @@ import type { ApiGroupItem } from "@repo/types";
 import { PredictAllBanner } from "@/features/groups/predictions/components/PredictAllBanner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GroupsListSkeleton } from "@/features/groups/group-list/components/GroupsListSkeleton";
-import { CreateGroupSheet, createStyles, type CreateTab } from "@/features/group-creation/components";
-import { AvatarPickerSheet } from "@/features/groups/group-lobby/components/AvatarPickerSheet";
+import { CreateGroupFlow } from "@/features/group-creation/components";
 
 /* ─── Groups Screen ─── */
 
@@ -80,38 +73,7 @@ function GroupsContent() {
   const headerHeightRef = useRef(0);
   const infoSheetRef = useRef<BottomSheetModal>(null);
   const createSheetRef = useRef<BottomSheetModal>(null);
-  const createSortSheetRef = useRef<BottomSheetModal>(null);
   const filterSortSheetRef = useRef<BottomSheetModal>(null);
-  const advPredictionRef = useRef<BottomSheetModal>(null);
-  const advScoringRef = useRef<BottomSheetModal>(null);
-  const advKoRef = useRef<BottomSheetModal>(null);
-  const advMembersRef = useRef<BottomSheetModal>(null);
-  const advNudgeWindowRef = useRef<BottomSheetModal>(null);
-  const avatarPickerRef = useRef<BottomSheetModal>(null);
-  const [createAvatarValue, setCreateAvatarValue] = useState("0");
-  const [createNudgeWindowMinutes, setCreateNudgeWindowMinutes] = useState(60);
-  const [createInviteAccess, setCreateInviteAccess] = useState<"all" | "admin_only">("all");
-  const [createOnTheNosePoints, setCreateOnTheNosePoints] = useState(3);
-  const [createDifferencePoints, setCreateDifferencePoints] = useState(2);
-  const [createOutcomePoints, setCreateOutcomePoints] = useState(1);
-  const [createPredictionMode, setCreatePredictionMode] = useState<"CorrectScore" | "ThreeWay">("CorrectScore");
-  const [createKoRoundMode, setCreateKoRoundMode] = useState<"FullTime" | "ExtraTime" | "Penalties">("FullTime");
-  const [createMaxMembers, setCreateMaxMembers] = useState(50);
-  const [createNudgeEnabled, setCreateNudgeEnabled] = useState(true);
-  const initialNudgeEnabled = useRef(true);
-  const initialPredictionMode = useRef(createPredictionMode);
-  const initialKoRoundMode = useRef(createKoRoundMode);
-  const initialMaxMembers = useRef(createMaxMembers);
-  const initialNudgeWindow = useRef(createNudgeWindowMinutes);
-  const initialOnTheNose = useRef(createOnTheNosePoints);
-  const initialDifference = useRef(createDifferencePoints);
-  const initialOutcome = useRef(createOutcomePoints);
-  const [createTabSortOptions, setCreateTabSortOptions] = useState<Record<CreateTab, string>>({
-    fixtures: "time",
-    leagues: "time",
-    teams: "time",
-  });
-  const createSortActiveTabRef = useRef<CreateTab>("fixtures");
 
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -138,44 +100,6 @@ function GroupsContent() {
 
   const handleOpenFilterSort = useCallback(() => {
     filterSortSheetRef.current?.present();
-  }, []);
-
-  const CREATE_SORT_OPTIONS = useMemo(() => [
-    { key: "time", labelKey: "groupCreation.sortByTime" },
-    { key: "league", labelKey: "groupCreation.sortByLeague" },
-  ], []);
-
-  const handleOpenCreateSort = useCallback((tab: CreateTab) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    createSortActiveTabRef.current = tab;
-    createSortSheetRef.current?.present();
-  }, []);
-
-  const handleOpenAdvSheet = useCallback((sheet: "prediction" | "scoring" | "ko" | "members" | "nudgeWindow") => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (sheet === "prediction") initialPredictionMode.current = createPredictionMode;
-    if (sheet === "ko") initialKoRoundMode.current = createKoRoundMode;
-    if (sheet === "members") initialMaxMembers.current = createMaxMembers;
-    if (sheet === "nudgeWindow") { initialNudgeWindow.current = createNudgeWindowMinutes; initialNudgeEnabled.current = createNudgeEnabled; }
-    if (sheet === "scoring") {
-      initialOnTheNose.current = createOnTheNosePoints;
-      initialDifference.current = createDifferencePoints;
-      initialOutcome.current = createOutcomePoints;
-    }
-    const refs = { prediction: advPredictionRef, scoring: advScoringRef, ko: advKoRef, members: advMembersRef, nudgeWindow: advNudgeWindowRef };
-    refs[sheet].current?.present();
-  }, [createPredictionMode, createKoRoundMode, createMaxMembers, createNudgeWindowMinutes, createNudgeEnabled, createOnTheNosePoints, createDifferencePoints, createOutcomePoints]);
-
-  const handleOpenAvatarPicker = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    avatarPickerRef.current?.present();
-  }, []);
-
-  const handleSelectCreateSort = useCallback((key: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const tab = createSortActiveTabRef.current;
-    setCreateTabSortOptions((prev) => ({ ...prev, [tab]: key }));
-    createSortSheetRef.current?.dismiss();
   }, []);
 
   const handleToggleViewMode = useCallback(() => {
@@ -214,18 +138,6 @@ function GroupsContent() {
   const handleGroupPress = useCallback((groupId: number) => {
     router.push(`/groups/${groupId}` as any);
   }, [router]);
-
-  const renderCreateBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        pressBehavior="close"
-      />
-    ),
-    [],
-  );
 
   const groups = data?.data || [];
   const { selectedFilter, setSelectedFilter, selectedSort, setSelectedSort, filteredGroups, counts } =
@@ -332,22 +244,6 @@ function GroupsContent() {
                   color={theme.colors.textPrimary}
                 />
               </Pressable>
-              {/* TODO: restore info button in future iteration
-              <Pressable
-                onPress={handleOpenInfo}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={({ pressed }) => [
-                  styles.infoButton,
-                  pressed && { opacity: 0.5 },
-                ]}
-              >
-                <Ionicons
-                  name="information-circle-outline"
-                  size={22}
-                  color={theme.colors.textSecondary}
-                />
-              </Pressable>
-              */}
             </View>
           </View>
         </View>
@@ -541,87 +437,13 @@ function GroupsContent() {
           }
         />
       </Screen>
+
       <GroupsInfoSheet sheetRef={infoSheetRef} />
 
-      <CreateGroupSheet
+      <CreateGroupFlow
         sheetRef={createSheetRef}
-        topInset={insets.top}
-        backdropComponent={renderCreateBackdrop}
-        tabSortOptions={createTabSortOptions}
-        onOpenSort={handleOpenCreateSort}
-        onOpenAdvSheet={handleOpenAdvSheet}
-        onOpenAvatarPicker={handleOpenAvatarPicker}
-        avatarValue={createAvatarValue}
-        nudgeEnabled={createNudgeEnabled}
-        nudgeWindowMinutes={createNudgeWindowMinutes}
-        inviteAccess={createInviteAccess}
-        onNudgeWindowChange={setCreateNudgeWindowMinutes}
-        onInviteAccessChange={setCreateInviteAccess}
-        onTheNosePoints={createOnTheNosePoints}
-        differencePoints={createDifferencePoints}
-        outcomePoints={createOutcomePoints}
-        predictionMode={createPredictionMode}
-        koRoundMode={createKoRoundMode}
-        maxMembers={createMaxMembers}
         groupCount={groups.length}
       />
-
-      {/* Create sort sheet — sibling of CreateGroupSheet */}
-      <BottomSheetModal
-        ref={createSortSheetRef}
-        stackBehavior="push"
-        enableDynamicSizing
-        enablePanDownToClose
-        backdropComponent={renderCreateBackdrop}
-        backgroundStyle={{
-          backgroundColor: theme.colors.background,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-        }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
-      >
-        <BottomSheetView style={createStyles.sortSheet}>
-          <Text style={[createStyles.sortSheetTitle, { color: theme.colors.textSecondary }]}>
-            {t("groupCreation.sortBy")}
-          </Text>
-          {CREATE_SORT_OPTIONS.map((option) => {
-            const isActive = createTabSortOptions[createSortActiveTabRef.current] === option.key;
-            return (
-              <Pressable
-                key={option.key}
-                onPress={() => handleSelectCreateSort(option.key)}
-                style={({ pressed }) => [
-                  createStyles.sortSheetItem,
-                  { opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <Text
-                  style={[
-                    createStyles.sortSheetItemText,
-                    { color: isActive ? theme.colors.primary : theme.colors.textPrimary },
-                  ]}
-                >
-                  {t(option.labelKey)}
-                </Text>
-                {isActive && (
-                  <Ionicons name="checkmark" size={22} color={theme.colors.primary} />
-                )}
-              </Pressable>
-            );
-          })}
-          <Pressable
-            onPress={() => createSortSheetRef.current?.dismiss()}
-            style={({ pressed }) => [
-              createStyles.sortSheetCancel,
-              { opacity: pressed ? 0.6 : 1 },
-            ]}
-          >
-            <Text style={[createStyles.sortSheetCancelText, { color: theme.colors.textSecondary }]}>
-              {t("groupCreation.cancel")}
-            </Text>
-          </Pressable>
-        </BottomSheetView>
-      </BottomSheetModal>
 
       <FilterSortSheet
         sheetRef={filterSortSheetRef}
@@ -630,158 +452,6 @@ function GroupsContent() {
         onFilterChange={setSelectedFilter}
         onSortChange={setSelectedSort}
         counts={counts}
-      />
-
-      {/* Advanced settings sheets */}
-      <BottomSheetModal ref={advPredictionRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
-        <BottomSheetView style={createStyles.sheetContent}>
-          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.predictionMode")}</Text>
-          {([
-            { value: "CorrectScore" as const, label: t("lobby.exactResult") },
-            { value: "ThreeWay" as const, label: t("lobby.matchWinner") },
-          ]).map((opt) => (
-            <Pressable key={opt.value} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreatePredictionMode(opt.value); }} style={({ pressed }) => [createStyles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}>
-              <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{opt.label}</Text>
-              <Ionicons name={opt.value === createPredictionMode ? "radio-button-on" : "radio-button-off"} size={18} color={opt.value === createPredictionMode ? theme.colors.primary : theme.colors.textSecondary} />
-            </Pressable>
-          ))}
-          <Pressable
-            onPress={() => advPredictionRef.current?.dismiss()}
-            disabled={createPredictionMode === initialPredictionMode.current}
-            style={({ pressed }) => [createStyles.sheetDoneBtn, { backgroundColor: theme.colors.primary, opacity: createPredictionMode === initialPredictionMode.current ? 0.4 : pressed ? 0.8 : 1 }]}
-          >
-            <Text style={createStyles.sheetDoneBtnText}>{t("done")}</Text>
-          </Pressable>
-        </BottomSheetView>
-      </BottomSheetModal>
-
-      <BottomSheetModal ref={advScoringRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
-        <BottomSheetView style={createStyles.sheetContent}>
-          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.scoring")}</Text>
-          {[
-            { label: t("lobby.onTheNose"), value: createOnTheNosePoints, set: setCreateOnTheNosePoints },
-            { label: t("lobby.goalPointDifference"), value: createDifferencePoints, set: setCreateDifferencePoints },
-            { label: t("lobby.outcome"), value: createOutcomePoints, set: setCreateOutcomePoints },
-          ].map((opt) => (
-            <View key={opt.label} style={[createStyles.sheetOption]}>
-              <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{opt.label}</Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <Pressable
-                  onPress={() => { if (opt.value > 0) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); opt.set(opt.value - 1); } }}
-                  hitSlop={8}
-                  style={{ opacity: opt.value > 0 ? 1 : 0.3 }}
-                >
-                  <Ionicons name="remove-circle-outline" size={24} color={theme.colors.textPrimary} />
-                </Pressable>
-                <Text style={{ color: theme.colors.textPrimary, fontWeight: "700", fontSize: 16, minWidth: 20, textAlign: "center" }}>{opt.value}</Text>
-                <Pressable
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); opt.set(opt.value + 1); }}
-                  hitSlop={8}
-                >
-                  <Ionicons name="add-circle-outline" size={24} color={theme.colors.textPrimary} />
-                </Pressable>
-              </View>
-            </View>
-          ))}
-          <Pressable
-            onPress={() => advScoringRef.current?.dismiss()}
-            disabled={createOnTheNosePoints === initialOnTheNose.current && createDifferencePoints === initialDifference.current && createOutcomePoints === initialOutcome.current}
-            style={({ pressed }) => {
-              const unchanged = createOnTheNosePoints === initialOnTheNose.current && createDifferencePoints === initialDifference.current && createOutcomePoints === initialOutcome.current;
-              return [createStyles.sheetDoneBtn, { backgroundColor: theme.colors.primary, opacity: unchanged ? 0.4 : pressed ? 0.8 : 1 }];
-            }}
-          >
-            <Text style={createStyles.sheetDoneBtnText}>{t("done")}</Text>
-          </Pressable>
-        </BottomSheetView>
-      </BottomSheetModal>
-
-      <BottomSheetModal ref={advKoRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
-        <BottomSheetView style={createStyles.sheetContent}>
-          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.koRoundMode")}</Text>
-          {([
-            { value: "FullTime" as const, label: t("lobby.90min") },
-            { value: "ExtraTime" as const, label: t("lobby.extraTime") },
-            { value: "Penalties" as const, label: t("lobby.penalties") },
-          ]).map((opt) => (
-            <Pressable key={opt.value} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreateKoRoundMode(opt.value); }} style={({ pressed }) => [createStyles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}>
-              <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{opt.label}</Text>
-              <Ionicons name={opt.value === createKoRoundMode ? "radio-button-on" : "radio-button-off"} size={18} color={opt.value === createKoRoundMode ? theme.colors.primary : theme.colors.textSecondary} />
-            </Pressable>
-          ))}
-          <Pressable
-            onPress={() => advKoRef.current?.dismiss()}
-            disabled={createKoRoundMode === initialKoRoundMode.current}
-            style={({ pressed }) => [createStyles.sheetDoneBtn, { backgroundColor: theme.colors.primary, opacity: createKoRoundMode === initialKoRoundMode.current ? 0.4 : pressed ? 0.8 : 1 }]}
-          >
-            <Text style={createStyles.sheetDoneBtnText}>{t("done")}</Text>
-          </Pressable>
-        </BottomSheetView>
-      </BottomSheetModal>
-
-      <BottomSheetModal ref={advMembersRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
-        <BottomSheetView style={createStyles.sheetContent}>
-          <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.maxMembers")}</Text>
-          {[10, 20, 30, 50, 100].map((num) => (
-            <Pressable key={num} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreateMaxMembers(num); }} style={({ pressed }) => [createStyles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}>
-              <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{num}</Text>
-              <Ionicons name={num === createMaxMembers ? "radio-button-on" : "radio-button-off"} size={18} color={num === createMaxMembers ? theme.colors.primary : theme.colors.textSecondary} />
-            </Pressable>
-          ))}
-          <Pressable
-            onPress={() => advMembersRef.current?.dismiss()}
-            disabled={createMaxMembers === initialMaxMembers.current}
-            style={({ pressed }) => [createStyles.sheetDoneBtn, { backgroundColor: theme.colors.primary, opacity: createMaxMembers === initialMaxMembers.current ? 0.4 : pressed ? 0.8 : 1 }]}
-          >
-            <Text style={createStyles.sheetDoneBtnText}>{t("done")}</Text>
-          </Pressable>
-        </BottomSheetView>
-      </BottomSheetModal>
-
-      {/* Nudge sheet */}
-      <BottomSheetModal ref={advNudgeWindowRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderCreateBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
-        <BottomSheetView style={createStyles.sheetContent}>
-          <View style={{ borderBottomWidth: 1, borderBottomColor: theme.colors.textPrimary + "10", paddingBottom: 12, marginBottom: 8 }}>
-            <Text style={{ fontSize: 15, fontWeight: "600", textAlign: "center", color: theme.colors.textPrimary }}>{t("lobby.nudge")}</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: 4 }}>{t("lobby.nudgeDescription")}</Text>
-          </View>
-          <Pressable
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreateNudgeEnabled((prev) => !prev); }}
-            style={createStyles.sheetOption}
-          >
-            <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{t("lobby.nudge")}</Text>
-            <View style={[createStyles.advToggle, { backgroundColor: createNudgeEnabled ? theme.colors.primary : theme.colors.textSecondary + "30" }]}>
-              <View style={[createStyles.advToggleKnob, { alignSelf: createNudgeEnabled ? "flex-end" : "flex-start" }]} />
-            </View>
-          </Pressable>
-          <View style={{ opacity: createNudgeEnabled ? 1 : 0.35 }} pointerEvents={createNudgeEnabled ? "auto" : "none"}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: "500", marginBottom: 4, marginTop: 8 }}>{t("lobby.minutesBeforeKickoff")}</Text>
-            {[30, 60, 120, 180].map((min) => (
-              <Pressable key={min} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreateNudgeWindowMinutes(min); }} style={({ pressed }) => [createStyles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}>
-                <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{min} min</Text>
-                <Ionicons name={min === createNudgeWindowMinutes ? "radio-button-on" : "radio-button-off"} size={18} color={min === createNudgeWindowMinutes ? theme.colors.primary : theme.colors.textSecondary} />
-              </Pressable>
-            ))}
-          </View>
-          <Pressable
-            onPress={() => advNudgeWindowRef.current?.dismiss()}
-            disabled={createNudgeEnabled === initialNudgeEnabled.current && createNudgeWindowMinutes === initialNudgeWindow.current}
-            style={({ pressed }) => {
-              const unchanged = createNudgeEnabled === initialNudgeEnabled.current && createNudgeWindowMinutes === initialNudgeWindow.current;
-              return [createStyles.sheetDoneBtn, { backgroundColor: theme.colors.primary, opacity: unchanged ? 0.4 : pressed ? 0.8 : 1 }];
-            }}
-          >
-            <Text style={createStyles.sheetDoneBtnText}>{t("done")}</Text>
-          </Pressable>
-        </BottomSheetView>
-      </BottomSheetModal>
-
-      {/* Avatar picker sheet */}
-      <AvatarPickerSheet
-        sheetRef={avatarPickerRef}
-        selectedValue={createAvatarValue}
-        onSelect={setCreateAvatarValue}
-        initials="GR"
       />
     </View>
   );
@@ -831,28 +501,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 14,
   },
-  searchPlaceholder: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 10,
-    marginTop: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  searchPlaceholderText: {
-    fontSize: 15,
-  },
   list: {
     flex: 1,
-  },
-  tabsStickyDropShadow: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
   },
   emptyFilter: {
     paddingVertical: 48,
@@ -892,9 +542,5 @@ const styles = StyleSheet.create({
   },
   secondaryActionSeparator: {
     opacity: 0.6,
-  },
-  createSheetContent: {
-    flex: 1,
-    padding: 20,
   },
 });
