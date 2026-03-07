@@ -100,7 +100,8 @@ export function ProgressDots({
     }
   };
 
-  const getIcon = (type: DotType): { name: string; color: string } | null => {
+  type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
+  const getIcon = (type: DotType): { name: IoniconsName; color: string } | null => {
     switch (type) {
       case "success":
         return { name: "checkmark", color: "#fff" };
@@ -180,7 +181,7 @@ export function ProgressDots({
               >
                 {icon && (
                   <Ionicons
-                    name={icon.name as any}
+                    name={icon.name}
                     size={size - 6}
                     color={icon.color}
                   />

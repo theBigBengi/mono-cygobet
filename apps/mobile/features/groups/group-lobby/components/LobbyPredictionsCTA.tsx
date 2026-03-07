@@ -45,7 +45,7 @@ function FixtureRow({
 }: {
   fixture: FixtureItem;
   onPress: (fixtureId?: number) => void;
-  theme: any;
+  theme: import("@/lib/theme/theme.types").Theme;
   vsLabel: string;
   urgencyColor?: string;
   gameNumber?: number;

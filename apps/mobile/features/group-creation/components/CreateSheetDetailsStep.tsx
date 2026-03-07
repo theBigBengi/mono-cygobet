@@ -2,12 +2,13 @@
 // Extracted step 1 (group details form) from CreateGroupFlow.tsx
 
 import React from "react";
-import { View, Pressable, TextInput, ActivityIndicator } from "react-native";
-import Animated from "react-native-reanimated";
+import { View, Pressable, TextInput, ActivityIndicator, type ViewStyle } from "react-native";
+import Animated, { type AnimatedStyleProp } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { AppText, GroupAvatar } from "@/components/ui";
 import { createStyles } from "./createGroupFlow.styles";
+import type { Theme } from "@/lib/theme/theme.types";
 
 interface CreateSheetDetailsStepProps {
   onOpenAvatarPicker: () => void;
@@ -18,10 +19,10 @@ interface CreateSheetDetailsStepProps {
   setGroupDescription: (val: string) => void;
   handleCreateAndPublish: () => void;
   isCreating: boolean;
-  theme: any;
+  theme: Theme;
   groupNameInputRef: React.RefObject<TextInput>;
   descInputRef: React.RefObject<TextInput>;
-  step1AnimStyle: any;
+  step1AnimStyle: AnimatedStyleProp<ViewStyle>;
 }
 
 export function CreateSheetDetailsStep({

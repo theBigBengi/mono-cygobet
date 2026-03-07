@@ -12,7 +12,7 @@ import {
   View,
   Text,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
@@ -71,7 +71,7 @@ const RankingRow = React.memo(function RankingRow({
   const onPress = () => {
     if (groupId == null) return;
     router.push(
-      `/groups/${groupId}/member/${item.userId}?username=${encodeURIComponent(displayName)}&rank=${item.rank}&totalPoints=${item.totalPoints}&correctScoreCount=${item.correctScoreCount}&predictionCount=${item.predictionCount}` as any
+      `/groups/${groupId}/member/${item.userId}?username=${encodeURIComponent(displayName)}&rank=${item.rank}&totalPoints=${item.totalPoints}&correctScoreCount=${item.correctScoreCount}&predictionCount=${item.predictionCount}` as Href
     );
   };
 

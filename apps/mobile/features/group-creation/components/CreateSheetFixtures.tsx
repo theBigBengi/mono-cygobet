@@ -2,25 +2,33 @@
 // Extracted fixtures tab content from CreateGroupFlow.tsx
 
 import React from "react";
-import { View, Pressable, Text } from "react-native";
+import { View, Pressable, Text, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { TeamLogo } from "@/components/ui";
 import { createStyles } from "./createGroupFlow.styles";
 import { CreateSheetSkeletons } from "./CreateSheetSkeletons";
+import type { FixtureItem } from "@/types/common";
+import type { Theme } from "@/lib/theme/theme.types";
+import type { AnimatedStyleProp } from "react-native-reanimated";
+
+interface FixturesByLeagueSection {
+  league: { id: number; name: string; imagePath: string | null };
+  fixtures: FixtureItem[];
+}
 
 interface CreateSheetFixturesProps {
   fixturesQuery: { isFetching: boolean };
-  fixtures: any[];
-  fixturesByTime: any[];
-  fixturesByLeague: { league: { id: number; name: string; imagePath: string | null }; fixtures: any[] }[];
+  fixtures: FixtureItem[];
+  fixturesByTime: FixtureItem[];
+  fixturesByLeague: FixturesByLeagueSection[];
   selectedGames: Set<string>;
   toggleGame: (key: string) => void;
   viewMode: "list" | "grid";
   currentSortOption: string;
-  theme: any;
-  pulseStyle: any;
+  theme: Theme;
+  pulseStyle: AnimatedStyleProp<ViewStyle>;
   skeletonColor: string;
 }
 

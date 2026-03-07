@@ -13,7 +13,6 @@ import { enableFreeze } from "react-native-screens";
 // Freeze off-screen screens to prevent unnecessary re-renders during navigation
 enableFreeze(true);
 import { QueryClientProvider } from "@tanstack/react-query";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
 
@@ -41,8 +40,7 @@ import { AppStartGate } from "@/components/AppStart/AppStartGate";
 import { DegradedBanner } from "@/components/DegradedBanner";
 import { initializeGlobalErrorHandlers } from "@/lib/errors/globalErrorHandlers";
 import { handleError, getUserFriendlyMessage } from "@/lib/errors";
-import { View, Text, StyleSheet, Pressable } from "react-native";
-// Note: SafeAreaView import kept for ErrorBoundary, but root layout now uses View for transparency
+import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
@@ -50,7 +48,6 @@ import i18n from "i18next";
 import * as SplashScreen from "expo-splash-screen";
 import * as Sentry from "@sentry/react-native";
 import * as NavigationBar from "expo-navigation-bar";
-import { Platform } from "react-native";
 import { analytics } from "@/lib/analytics";
 
 SplashScreen.preventAutoHideAsync();
@@ -206,14 +203,18 @@ function AppContent() {
                 name="invites/index"
                 options={{ headerShown: false }}
               />
-              <Stack.Screen
-                name="tooltip-demo"
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="modal"
-                options={{ presentation: "modal", headerShown: true }}
-              />
+              {__DEV__ && (
+                <Stack.Screen
+                  name="tooltip-demo"
+                  options={{ headerShown: false }}
+                />
+              )}
+              {__DEV__ && (
+                <Stack.Screen
+                  name="modal"
+                  options={{ presentation: "modal", headerShown: true }}
+                />
+              )}
               <Stack.Screen
                 name="change-password"
                 options={{ headerShown: false }}
@@ -297,7 +298,7 @@ export default Sentry.wrap(RootLayout);
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const router = useRouter();
   const t = (key: string): string =>
-    i18n.isInitialized ? String((i18n as any).t(key, { ns: "common" })) : key;
+    i18n.isInitialized ? String(i18n.t(key, { ns: "common" })) : key;
 
   // Handle the error
   useEffect(() => {
@@ -311,13 +312,13 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     if (retry) {
       retry();
     } else {
-      // Fallback: navigate to home
-      router.replace("/(tabs)/home");
+      // Fallback: navigate to root (handles auth-based redirect)
+      router.replace("/");
     }
   };
 
   const handleGoHome = () => {
-    router.replace("/(tabs)/home");
+    router.replace("/");
   };
 
   const userMessage = getUserFriendlyMessage(error);

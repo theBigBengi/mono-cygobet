@@ -11,7 +11,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { Screen, Card, AppText, Row } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
@@ -45,7 +45,7 @@ const MemberRow = React.memo(function MemberRow({
   const onPress = () => {
     if (groupId != null && item.userId) {
       router.push(
-        `/groups/${groupId}/member/${item.userId}?username=${encodeURIComponent(displayName)}` as any
+        `/groups/${groupId}/member/${item.userId}?username=${encodeURIComponent(displayName)}` as Href
       );
     }
   };

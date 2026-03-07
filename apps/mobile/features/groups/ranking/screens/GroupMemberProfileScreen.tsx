@@ -4,7 +4,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { Screen, Card, AppText, Row, Stack, Divider, Button } from "@/components/ui";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
@@ -115,7 +115,7 @@ export function GroupMemberProfileScreen({
                   variant="primary"
                   onPress={() =>
                     router.push(
-                      `/profile/head-to-head?opponentId=${userId}` as any
+                      `/profile/head-to-head?opponentId=${userId}` as Href
                     )
                   }
                 />

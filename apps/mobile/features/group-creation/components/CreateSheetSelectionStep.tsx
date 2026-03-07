@@ -2,11 +2,10 @@
 // Step 0 of the create group wizard: date/search bar, sort row, fixtures/leagues/teams content, bottom tabs.
 
 import React from "react";
-import { View, ScrollView, Pressable, Text, TextInput } from "react-native";
-import Animated from "react-native-reanimated";
+import { View, ScrollView, Pressable, Text, TextInput, type ViewStyle } from "react-native";
+import type { AnimatedStyleProp } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { isSameDay, isToday, format } from "date-fns";
 import { createStyles } from "./createGroupFlow.styles";
@@ -14,6 +13,14 @@ import { CreateSheetFixtures } from "./CreateSheetFixtures";
 import { CreateSheetLeagues } from "./CreateSheetLeagues";
 import { CreateSheetTeams } from "./CreateSheetTeams";
 import type { CreateTab } from "./CreateGroupFlow";
+import type { FixtureItem } from "@/types/common";
+import type { ApiLeagueItem, ApiTeamItem } from "@repo/types";
+import type { Theme } from "@/lib/theme/theme.types";
+
+interface FixturesByLeagueSection {
+  league: { id: number; name: string; imagePath: string | null };
+  fixtures: FixtureItem[];
+}
 
 const CREATE_TABS: { key: CreateTab; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: "fixtures", labelKey: "groupCreation.freeSelection", icon: "grid-outline" },
@@ -38,31 +45,31 @@ interface CreateSheetSelectionStepProps {
   onOpenSort: (tab: CreateTab) => void;
   onToggleViewMode: () => void;
   // Fixtures
-  fixturesQuery: any;
-  fixtures: any[];
-  fixturesByTime: any[];
-  fixturesByLeague: any[];
+  fixturesQuery: { isFetching: boolean };
+  fixtures: FixtureItem[];
+  fixturesByTime: FixtureItem[];
+  fixturesByLeague: FixturesByLeagueSection[];
   selectedGames: Set<string>;
   toggleGame: (key: string) => void;
   // Leagues
-  leaguesQuery: any;
-  leagues: any[];
+  leaguesQuery: { isFetching: boolean };
+  leagues: ApiLeagueItem[];
   selectedLeagues: Set<string>;
   toggleLeague: (key: string) => void;
   // Teams
-  teamsQuery: any;
-  teams: any[];
+  teamsQuery: { isFetching: boolean };
+  teams: ApiTeamItem[];
   selectedTeams: Set<string>;
   toggleTeam: (key: string) => void;
   // Skeleton
-  pulseStyle: any;
+  pulseStyle: AnimatedStyleProp<ViewStyle>;
   skeletonColor: string;
   // Continue
   hasSelection: boolean;
   selectionCount: number;
   onContinue: () => void;
   // Theme & insets
-  theme: any;
+  theme: Theme;
   bottomInset: number;
 }
 

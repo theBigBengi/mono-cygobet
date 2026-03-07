@@ -42,7 +42,7 @@ export function AvatarPickerSheet({
   }, [onSelect, localValue, sheetRef]);
 
   const renderBackdrop = useCallback(
-    (props: any) => (
+    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
       <BottomSheetBackdrop
         {...props}
         disappearsOnIndex={-1}

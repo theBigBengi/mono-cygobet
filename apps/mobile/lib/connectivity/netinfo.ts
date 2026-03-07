@@ -6,7 +6,18 @@ type ConnectivityCallback = (online: boolean) => void;
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 
-let netInfoModule: any = null;
+/** Minimal shape of the @react-native-community/netinfo module we use at runtime. */
+interface NetInfoState {
+  isConnected: boolean | null;
+  isInternetReachable: boolean | null;
+}
+
+interface NetInfoModule {
+  addEventListener: (cb: (state: NetInfoState) => void) => (() => void) | { remove: () => void };
+  fetch: () => Promise<NetInfoState>;
+}
+
+let netInfoModule: NetInfoModule | null = null;
 let currentOnlineState: boolean | null = null;
 let netInfoUnsupported = false;
 
@@ -46,7 +57,7 @@ function initNetInfo() {
       return;
     }
 
-    netInfoModule = NetInfo;
+    netInfoModule = NetInfo as NetInfoModule;
 
     // Subscribe immediately so we get the current state synchronously-ish.
     // NetInfo's addEventListener typically invokes the listener with current
@@ -55,7 +66,7 @@ function initNetInfo() {
     // Validate native support: attempt to subscribe and immediately unsubscribe.
     // If the native interface is missing this will typically throw synchronously.
     try {
-      const sub = netInfoModule.addEventListener((state: any) => {
+      const sub = netInfoModule.addEventListener((state) => {
         const online = !!(state.isConnected ?? state.isInternetReachable ?? true);
         currentOnlineState = online;
       });
@@ -84,10 +95,10 @@ function initNetInfo() {
     if (typeof netInfoModule.fetch === "function") {
       netInfoModule
         .fetch()
-        .then((state: any) => {
+        .then((state) => {
           currentOnlineState = !!(state.isConnected ?? state.isInternetReachable ?? true);
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
           // If fetch fails asynchronously it's indicative of missing native parts.
           console.error("NetInfo.fetch failed:", err);
           netInfoModule = null;
@@ -141,7 +152,7 @@ export function subscribe(cb: ConnectivityCallback) {
   }
 
   if (netInfoModule && typeof netInfoModule.addEventListener === "function") {
-    const unsubscribe = netInfoModule.addEventListener((state: any) => {
+    const unsubscribe = netInfoModule.addEventListener((state) => {
       const online = !!(state.isConnected ?? state.isInternetReachable ?? true);
       // Keep internal seed in sync
       currentOnlineState = online;

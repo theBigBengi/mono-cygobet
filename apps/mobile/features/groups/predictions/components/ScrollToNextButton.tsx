@@ -1,6 +1,6 @@
 import React from "react";
-import { View, StyleSheet, Pressable, Platform } from "react-native";
-import Animated from "react-native-reanimated";
+import { View, StyleSheet, Pressable, Platform, type ViewStyle } from "react-native";
+import Animated, { type AnimatedStyleProp } from "react-native-reanimated";
 import { useTheme } from "@/lib/theme";
 import { HEADER_HEIGHT } from "../utils/constants";
 
@@ -10,7 +10,7 @@ type Props = {
   insetTop: number;
   insetBottom: number;
   keyboardHeight: number;
-  scrollBtnAnimatedStyle?: any;
+  scrollBtnAnimatedStyle?: AnimatedStyleProp<ViewStyle>;
 };
 
 export const ScrollToNextButton = React.memo(function ScrollToNextButton({

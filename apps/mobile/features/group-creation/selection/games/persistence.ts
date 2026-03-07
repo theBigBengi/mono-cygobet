@@ -70,7 +70,7 @@ export async function loadGroupGamesFromStorage(): Promise<GroupGamesStorageEnve
         continue;
       }
 
-      const data = gameData as any;
+      const data = gameData as Record<string, unknown>;
 
       // Validate id is a number
       if (typeof data.id !== "number" || data.id <= 0) {
@@ -78,7 +78,7 @@ export async function loadGroupGamesFromStorage(): Promise<GroupGamesStorageEnve
       }
 
       // Validated entry - store as-is (full fixture data)
-      validatedGames[fixtureIdStr] = data as SelectedGameData;
+      validatedGames[fixtureIdStr] = data as unknown as SelectedGameData;
     }
 
     return {

@@ -18,7 +18,7 @@ import {
 } from "./groups-chat.api";
 import { groupsKeys } from "./groups.keys";
 import type { ApiError } from "@/lib/http/apiError";
-import type { LastMessageInfo } from "@repo/types";
+import type { LastMessageInfo, GroupChatPreviewResponse } from "@repo/types";
 
 let messageCounter = 0;
 
@@ -183,7 +183,7 @@ export function useGroupChat(groupId: number | null) {
       // Also update the chat preview cache so the lobby bar shows the latest message
       queryClient.setQueryData(
         groupsKeys.chatPreview(),
-        (old: any) => {
+        (old: GroupChatPreviewResponse | undefined) => {
           if (!old?.data) return old;
           const gid = String(groupId);
           const current = old.data[gid];
@@ -311,7 +311,7 @@ export function useGroupChat(groupId: number | null) {
       // Optimistic update for chat preview (lobby bar)
       queryClient.setQueryData(
         groupsKeys.chatPreview(),
-        (old: any) => {
+        (old: GroupChatPreviewResponse | undefined) => {
           if (!old?.data) return old;
           const gid = String(groupId);
           return {

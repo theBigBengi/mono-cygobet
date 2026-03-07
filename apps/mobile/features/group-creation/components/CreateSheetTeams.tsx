@@ -2,21 +2,24 @@
 // Extracted teams tab content from CreateGroupFlow.tsx
 
 import React from "react";
-import { View, Pressable, Text } from "react-native";
+import { View, Pressable, Text, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { TeamLogo } from "@/components/ui";
 import { createStyles } from "./createGroupFlow.styles";
 import { CreateSheetSkeletons } from "./CreateSheetSkeletons";
+import type { ApiTeamItem } from "@repo/types";
+import type { Theme } from "@/lib/theme/theme.types";
+import type { AnimatedStyleProp } from "react-native-reanimated";
 
 interface CreateSheetTeamsProps {
   teamsQuery: { isFetching: boolean };
-  teams: any[];
+  teams: ApiTeamItem[];
   selectedTeams: Set<string>;
   toggleTeam: (key: string) => void;
   viewMode: "list" | "grid";
-  theme: any;
-  pulseStyle: any;
+  theme: Theme;
+  pulseStyle: AnimatedStyleProp<ViewStyle>;
   skeletonColor: string;
 }
 

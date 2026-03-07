@@ -43,12 +43,6 @@ export async function fetchGroupRanking(
 }
 
 /**
- * Send a nudge to a group member for a fixture (remind them to predict).
- * - Requires authentication.
- * - Verifies that the user is a group member.
- * - Returns 201 on success, 409 if already nudged.
- */
-/**
  * Leave a group.
  * - Requires authentication.
  * - User must be a member (not creator).
@@ -62,6 +56,12 @@ export async function leaveGroup(
   );
 }
 
+/**
+ * Send a nudge to a group member for a fixture (remind them to predict).
+ * - Requires authentication.
+ * - Verifies that the user is a group member.
+ * - Returns 201 on success, 409 if already nudged.
+ */
 export async function sendNudge(
   groupId: number,
   body: ApiNudgeBody

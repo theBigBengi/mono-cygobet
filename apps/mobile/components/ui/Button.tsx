@@ -29,7 +29,7 @@ export function Button({
 }: ButtonProps) {
   const { theme } = useTheme();
 
-  const handlePress = (e: any) => {
+  const handlePress = (e: import("react-native").GestureResponderEvent) => {
     if (!disabled) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }

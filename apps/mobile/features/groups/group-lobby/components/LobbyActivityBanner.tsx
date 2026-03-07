@@ -46,7 +46,7 @@ function getEventIcon(eventType: string): IoniconsName {
   }
 }
 
-function ActivityRow({ item, colors }: { item: ApiGroupActivityItem; colors: any }) {
+function ActivityRow({ item, colors }: { item: ApiGroupActivityItem; colors: import("@/lib/theme/colors").Colors }) {
   const iconName = getEventIcon(item.eventType);
 
   return (

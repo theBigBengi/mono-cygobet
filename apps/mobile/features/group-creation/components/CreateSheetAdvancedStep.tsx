@@ -8,6 +8,8 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { createStyles } from "./createGroupFlow.styles";
+import type { Theme } from "@/lib/theme/theme.types";
+import type { ApiGroupPreviewResponse } from "@repo/types";
 
 interface CreateSheetAdvancedStepProps {
   onOpenAdvSheet: (sheet: "prediction" | "scoring" | "ko" | "members" | "nudgeWindow") => void;
@@ -24,11 +26,11 @@ interface CreateSheetAdvancedStepProps {
   draftPrivacy: "private" | "public";
   setDraftPrivacy: React.Dispatch<React.SetStateAction<"private" | "public">>;
   durationLabel: string;
-  preview: any;
+  preview: ApiGroupPreviewResponse | undefined;
   handleCreateAndPublish: () => void;
   isCreating: boolean;
   groupName: string;
-  theme: any;
+  theme: Theme;
   bottomInset: number;
 }
 
