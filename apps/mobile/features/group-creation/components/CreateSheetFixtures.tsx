@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { TeamLogo } from "@/components/ui";
-import { createStyles } from "./CreateGroupFlow";
+import { createStyles } from "./createGroupFlow.styles";
 import { CreateSheetSkeletons } from "./CreateSheetSkeletons";
 
 interface CreateSheetFixturesProps {

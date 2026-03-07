@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
-import { createStyles } from "./CreateGroupFlow";
+import { createStyles } from "./createGroupFlow.styles";
 
 interface CreateSheetAdvancedStepProps {
   onOpenAdvSheet: (sheet: "prediction" | "scoring" | "ko" | "members" | "nudgeWindow") => void;

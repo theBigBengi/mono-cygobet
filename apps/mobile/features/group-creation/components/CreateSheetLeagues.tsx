@@ -6,7 +6,7 @@ import { View, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { TeamLogo } from "@/components/ui";
-import { createStyles } from "./CreateGroupFlow";
+import { createStyles } from "./createGroupFlow.styles";
 import { CreateSheetSkeletons } from "./CreateSheetSkeletons";
 
 interface CreateSheetLeaguesProps {

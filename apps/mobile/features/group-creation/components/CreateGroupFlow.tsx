@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Text,
   TextInput,
   ActivityIndicator,
   Keyboard,
@@ -30,14 +29,18 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
-import { AppText, TeamLogo, GroupAvatar } from "@/components/ui";
+import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useCreateGroupMutation, useGroupPreviewQuery } from "@/domains/groups";
 import { publishGroup, updateGroup } from "@/domains/groups/groups-core.api";
-import { addDays, format, isToday, isSameDay, startOfDay, endOfDay } from "date-fns";
+import { addDays, format, isSameDay, startOfDay, endOfDay } from "date-fns";
 import { useUpcomingFixturesQuery } from "@/domains/fixtures";
 import { useLeaguesQuery } from "@/domains/leagues";
 import { useTeamsQuery } from "@/domains/teams";
+import { createStyles } from "./createGroupFlow.styles";
+import { CreateSheetSelectionStep } from "./CreateSheetSelectionStep";
+import { CreateSheetDetailsStep } from "./CreateSheetDetailsStep";
+import { CreateSheetAdvancedStep } from "./CreateSheetAdvancedStep";
 
 import { CreateSheetFixtures } from "./CreateSheetFixtures";
 import { CreateSheetLeagues } from "./CreateSheetLeagues";
@@ -48,12 +51,6 @@ import { CreateSheetAdvancedStep } from "./CreateSheetAdvancedStep";
 /* ─── Create Group Sheet ─── */
 
 export type CreateTab = "fixtures" | "leagues" | "teams";
-
-const CREATE_TABS: { key: CreateTab; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: "fixtures", labelKey: "groupCreation.freeSelection", icon: "grid-outline" },
-  { key: "leagues", labelKey: "groupCreation.leagues", icon: "trophy-outline" },
-  { key: "teams", labelKey: "groupCreation.teams", icon: "shirt-outline" },
-];
 
 export function CreateGroupSheet({
   sheetRef,
@@ -112,7 +109,6 @@ export function CreateGroupSheet({
   const [groupDescription, setGroupDescription] = useState("");
   const groupNameInputRef = useRef<TextInput>(null);
   const descInputRef = useRef<TextInput>(null);
-  const step1ScrollRef = useRef<ScrollView>(null);
   const prevStepRef = useRef(0);
   const router = useRouter();
   const createGroupMutation = useCreateGroupMutation();
@@ -468,153 +464,45 @@ export function CreateGroupSheet({
         </View>
 
         {/* Step 0: Selection UI */}
-        {/* Date slider — fixtures only */}
-        {step === 0 && activeTab === "fixtures" && (
-          <View style={[createStyles.dateSliderWrap, { backgroundColor: theme.colors.background, shadowColor: theme.colors.background }]}>
-            <ScrollView
-              ref={scrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={createStyles.dateRow}
-            >
-              {dates.map((date) => {
-                const isSelected = isSameDay(date, selectedDate);
-                const label = isToday(date)
-                  ? t("dates.today")
-                  : `${format(date, "EEE")} ${format(date, "d/M")}`;
-
-                return (
-                  <Pressable
-                    key={date.toISOString()}
-                    onPress={() => handleDatePress(date)}
-                    style={[
-                      createStyles.dateItem,
-                      {
-                        backgroundColor: isSelected
-                          ? theme.colors.primary + "14"
-                          : theme.colors.textSecondary + "15",
-                        borderColor: isSelected
-                          ? theme.colors.primary + "30"
-                          : theme.colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        createStyles.dateText,
-                        {
-                          color: isSelected
-                            ? theme.colors.primary
-                            : theme.colors.textSecondary,
-                        },
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Search bar — leagues & teams */}
-        {step === 0 && (activeTab === "leagues" || activeTab === "teams") && (
-          <View style={[createStyles.dateSliderWrap, { backgroundColor: theme.colors.background, shadowColor: theme.colors.background }]}>
-            <View style={createStyles.searchRow}>
-              <Ionicons name="search" size={16} color={theme.colors.textSecondary} />
-              <TextInput
-                style={[createStyles.searchInput, { color: theme.colors.textPrimary }]}
-                placeholder={activeTab === "leagues" ? t("groupCreation.searchLeaguesPlaceholder") : t("groupCreation.searchTeamsPlaceholder")}
-                placeholderTextColor={theme.colors.textSecondary + "80"}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-              {searchQuery.length > 0 && (
-                <Pressable
-                  onPress={() => setSearchQuery("")}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
-                </Pressable>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Content area */}
         {step === 0 && (
-        <View style={{ flex: 1 }}>
-        <ScrollView style={createStyles.content} contentContainerStyle={createStyles.contentInner}>
-          {/* Sort row — scrolls with content */}
-          <View style={[createStyles.sortRow, { borderBottomColor: theme.colors.border }]}>
-            <Pressable
-              onPress={() => onOpenSort(activeTab)}
-              style={({ pressed }) => [
-                createStyles.sortBtn,
-                { opacity: pressed ? 0.6 : 1 },
-              ]}
-            >
-              <Ionicons name="swap-vertical" size={13} color={theme.colors.textSecondary} />
-              <Text style={[createStyles.sortLabel, { color: theme.colors.textSecondary }]}>
-                {currentSortOption === "time" ? t("groupCreation.sortByTime") : t("groupCreation.sortByLeague")}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setTabViewModeAndPersist((prev) => ({ ...prev, [activeTab]: prev[activeTab] === "list" ? "grid" : "list" }));
-              }}
-              style={({ pressed }) => [
-                createStyles.viewModeBtn,
-                { opacity: pressed ? 0.6 : 1 },
-              ]}
-            >
-              <Ionicons name={viewMode === "list" ? "grid-outline" : "list"} size={14} color={theme.colors.textSecondary} />
-            </Pressable>
-          </View>
-
-          {activeTab === "fixtures" && (
-            <CreateSheetFixtures
-              fixturesQuery={fixturesQuery}
-              fixtures={fixtures}
-              fixturesByTime={fixturesByTime}
-              fixturesByLeague={fixturesByLeague}
-              selectedGames={selectedGames}
-              toggleGame={toggleGame}
-              viewMode={viewMode}
-              currentSortOption={currentSortOption}
-              theme={theme}
-              pulseStyle={skelPulse}
-              skeletonColor={skelColor}
-            />
-          )}
-          {activeTab === "leagues" && (
-            <CreateSheetLeagues
-              leaguesQuery={leaguesQuery}
-              leagues={leagues}
-              selectedLeagues={selectedLeagues}
-              toggleLeague={toggleLeague}
-              viewMode={viewMode}
-              theme={theme}
-              pulseStyle={skelPulse}
-              skeletonColor={skelColor}
-            />
-          )}
-          {activeTab === "teams" && (
-            <CreateSheetTeams
-              teamsQuery={teamsQuery}
-              teams={teams}
-              selectedTeams={selectedTeams}
-              toggleTeam={toggleTeam}
-              viewMode={viewMode}
-              theme={theme}
-              pulseStyle={skelPulse}
-              skeletonColor={skelColor}
-            />
-          )}
-        </ScrollView>
-        </View>
+          <CreateSheetSelectionStep
+            activeTab={activeTab}
+            onTabPress={handleTabPress}
+            dates={dates}
+            selectedDate={selectedDate}
+            onDatePress={handleDatePress}
+            scrollRef={scrollRef}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            currentSortOption={currentSortOption}
+            viewMode={viewMode}
+            onOpenSort={onOpenSort}
+            onToggleViewMode={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setTabViewModeAndPersist((prev) => ({ ...prev, [activeTab]: prev[activeTab] === "list" ? "grid" : "list" }));
+            }}
+            fixturesQuery={fixturesQuery}
+            fixtures={fixtures}
+            fixturesByTime={fixturesByTime}
+            fixturesByLeague={fixturesByLeague}
+            selectedGames={selectedGames}
+            toggleGame={toggleGame}
+            leaguesQuery={leaguesQuery}
+            leagues={leagues}
+            selectedLeagues={selectedLeagues}
+            toggleLeague={toggleLeague}
+            teamsQuery={teamsQuery}
+            teams={teams}
+            selectedTeams={selectedTeams}
+            toggleTeam={toggleTeam}
+            pulseStyle={skelPulse}
+            skeletonColor={skelColor}
+            hasSelection={hasSelection}
+            selectionCount={selectionCount}
+            onContinue={handleContinue}
+            theme={theme}
+            bottomInset={insets.bottom}
+          />
         )}
         {step === 1 && (
           <CreateSheetDetailsStep
@@ -657,74 +545,6 @@ export function CreateGroupSheet({
           />
         )}
 
-        {/* Bottom: continue + tabs — only on step 0 */}
-        {step === 0 && (
-          <View
-            style={[
-              createStyles.tabBar,
-              {
-                backgroundColor: theme.colors.background,
-                paddingBottom: Math.max(insets.bottom, 12),
-                shadowColor: theme.colors.background,
-                shadowOffset: { width: 0, height: -6 },
-                shadowOpacity: 1,
-                shadowRadius: 6,
-                elevation: 10,
-              },
-            ]}
-          >
-            <Pressable
-              onPress={handleContinue}
-              disabled={!hasSelection}
-              style={({ pressed }) => [
-                createStyles.continueBottomBtn,
-                {
-                  borderColor: hasSelection ? theme.colors.primary + "40" : theme.colors.textSecondary + "20",
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-            >
-              <AppText variant="caption" style={{ color: hasSelection ? theme.colors.primary : theme.colors.textSecondary + "60", fontWeight: "600", fontSize: 13 }}>
-                {hasSelection ? `${t("common.continue")} (${selectionCount})` : t("common.continue")}
-              </AppText>
-              <Ionicons name="arrow-forward" size={14} color={hasSelection ? theme.colors.primary : theme.colors.textSecondary + "60"} />
-            </Pressable>
-            <View style={createStyles.tabRow}>
-              {CREATE_TABS.map((tab) => {
-                const isActive = activeTab === tab.key;
-                return (
-                  <Pressable
-                    key={tab.key}
-                    onPress={() => handleTabPress(tab.key)}
-                    style={({ pressed }) => [
-                      createStyles.tab,
-                      {
-                        backgroundColor: theme.colors.textSecondary + "15",
-                        transform: [{ scale: pressed ? 0.95 : 1 }],
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name={tab.icon}
-                      size={24}
-                      color={isActive ? theme.colors.primary : theme.colors.textSecondary}
-                    />
-                    <AppText
-                      variant="caption"
-                      style={[
-                        createStyles.tabLabel,
-                        { color: isActive ? theme.colors.primary : theme.colors.textSecondary },
-                      ]}
-                    >
-                      {t(tab.labelKey)}
-                    </AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
         {/* Creating overlay */}
         {isCreating && (
           <Animated.View
@@ -742,555 +562,6 @@ export function CreateGroupSheet({
   );
 }
 
-export const createStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  creatingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loadingWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  headerCenter: {
-    flex: 1,
-    marginRight: 12,
-  },
-  headerBackText: {
-    padding: 4,
-  },
-  wizardContent: {
-    paddingHorizontal: 20,
-    paddingTop: 28,
-  },
-  wizardTitle: {
-    fontWeight: "700",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  avatarPicker: {
-    alignSelf: "center",
-    marginBottom: 20,
-    position: "relative",
-  },
-  avatarEditBadge: {
-    position: "absolute",
-    bottom: -4,
-    right: -4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  fieldGroup: {
-    gap: 8,
-  },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  fieldInput: {
-    fontSize: 18,
-    fontWeight: "500",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    textAlign: "left",
-  },
-  descInput: {
-    fontSize: 14,
-    marginTop: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    minHeight: 100,
-    textAlign: "left",
-  },
-  fieldCharCount: {
-    fontSize: 11,
-    fontWeight: "500",
-    textAlign: "right",
-  },
-  stickyBottom: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    paddingVertical: 6,
-    paddingHorizontal: 20,
-  },
-  createBtn: {
-    borderRadius: 20,
-    paddingVertical: 12,
-    alignSelf: "stretch",
-    alignItems: "center",
-  },
-  createBtnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  advancedContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 40,
-  },
-  advSectionTitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    marginBottom: 4,
-  },
-  advRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-  },
-  advRowLabel: {
-    fontSize: 15,
-  },
-  advRowValue: {
-    fontSize: 14,
-  },
-  advRowSub: {
-    fontSize: 11,
-    marginTop: 2,
-  },
-  advToggle: {
-    width: 34,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    paddingHorizontal: 2,
-  },
-  nudgeChipsContainer: {
-    paddingVertical: 8,
-    paddingLeft: 12,
-  },
-  nudgeChipsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  nudgeChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  advToggleKnob: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    alignSelf: "flex-end",
-  },
-  advRowRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  sheetContent: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 32,
-  },
-  sheetTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    textAlign: "center",
-    paddingBottom: 12,
-    marginBottom: 8,
-    borderBottomWidth: 1,
-  },
-  sheetOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-  },
-  sheetOptionLabel: {
-    fontSize: 14,
-  },
-  sheetDoneBtn: {
-    marginTop: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  sheetDoneBtnText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
-    textTransform: "capitalize",
-  },
-  avatarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 16,
-    paddingBottom: 20,
-  },
-  avatarGridItem: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.2)",
-  },
-  headerTitle: {
-    fontWeight: "700",
-    fontSize: 20,
-    textAlign: "center",
-  },
-  headerDesc: {
-    fontSize: 13,
-    marginTop: 2,
-    textAlign: "center",
-  },
-  continueBottomBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginBottom: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  continueBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 5,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    flexShrink: 0,
-  },
-  continueBtnText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 12,
-    flexShrink: 0,
-  },
-  content: {
-    flex: 1,
-  },
-  contentInner: {
-    paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 160,
-  },
-  leagueGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  leagueGridItem: {
-    width: "48%",
-    alignItems: "flex-start",
-    padding: 12,
-    borderRadius: 10,
-    gap: 6,
-  },
-  leagueGridDot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  leagueGridName: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  leagueGridCountry: {
-    fontSize: 10,
-    fontWeight: "500",
-    marginTop: -2,
-  },
-  gameGridAddBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 8,
-  },
-  leagueGridAddBtn: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  leagueGridBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-  },
-  leagueGridBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  listRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 8,
-  },
-  listRowDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  listRowInfo: {
-    flex: 1,
-    gap: 1,
-  },
-  listRowName: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  listRowSub: {
-    fontSize: 11,
-    fontWeight: "500",
-  },
-  gameGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  gameGridCard: {
-    width: "48%",
-    padding: 10,
-    borderRadius: 10,
-    gap: 6,
-  },
-  gameGridTeams: {
-    gap: 3,
-    marginTop: 4,
-  },
-  gameGridTeamRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    overflow: "hidden",
-  },
-  gameGridDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-  },
-  gameGridTeamName: {
-    fontSize: 11,
-    fontWeight: "600",
-    flex: 1,
-  },
-  gameGridFooter: {
-    gap: 3,
-  },
-  gameGridMeta: {
-    fontSize: 10,
-    fontWeight: "500",
-  },
-  gameGridTime: {
-    fontSize: 10,
-    fontWeight: "500",
-  },
-  leagueSection: {
-    marginBottom: 6,
-  },
-  leagueHeader: {
-    fontSize: 13,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  gameCard: {
-    marginBottom: 10,
-  },
-  gameBody: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  gameTeams: {
-    flex: 1,
-    gap: 4,
-  },
-  gameTeamRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  gameTeamDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  gameTeamName: {
-    fontSize: 14,
-    fontWeight: "500",
-    flex: 1,
-  },
-  gameAddBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 8,
-  },
-  gameFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 2,
-    paddingLeft: 28,
-  },
-  gameFooterText: {
-    fontSize: 10,
-    fontWeight: "500",
-  },
-  gameFooterDot: {
-    fontSize: 10,
-  },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginHorizontal: 12,
-    marginVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    backgroundColor: "rgba(0,0,0,0.04)",
-    height: 34,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    padding: 0,
-  },
-  dateSliderWrap: {
-    height: 46,
-    zIndex: 1,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  dateRow: {
-    paddingHorizontal: 12,
-    alignItems: "center",
-    paddingVertical: 10,
-    gap: 6,
-  },
-  dateItem: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  dateText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  tabBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  tabRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  tab: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  tabLabel: {
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  sortRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-  },
-  sortBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  sortLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  viewModeBtn: {
-    padding: 4,
-  },
-  sortSheet: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 34,
-  },
-  sortSheetTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 20,
-  },
-  sortSheetItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 16,
-  },
-  sortSheetItemText: {
-    fontSize: 17,
-    fontWeight: "500",
-  },
-  sortSheetCancel: {
-    alignItems: "center",
-    marginTop: 16,
-    paddingVertical: 12,
-  },
-  sortSheetCancelText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-});
+
+// Re-export styles for backward compatibility
+export { createStyles } from "./createGroupFlow.styles";

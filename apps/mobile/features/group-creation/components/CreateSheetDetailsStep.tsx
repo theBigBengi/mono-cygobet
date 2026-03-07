@@ -7,7 +7,7 @@ import Animated from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { AppText, GroupAvatar } from "@/components/ui";
-import { createStyles } from "./CreateGroupFlow";
+import { createStyles } from "./createGroupFlow.styles";
 
 interface CreateSheetDetailsStepProps {
   onOpenAvatarPicker: () => void;
