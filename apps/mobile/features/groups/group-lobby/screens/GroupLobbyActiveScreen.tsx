@@ -107,9 +107,19 @@ export function GroupLobbyActiveScreen({
 
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      onScroll?.(event.nativeEvent.contentOffset.y);
+      const y = event.nativeEvent.contentOffset.y;
+      onScroll?.(y);
+      if (!chatFocused) {
+        const dy = y - lastScrollY.current;
+        if (dy > 5 && chatBarVisible.value !== 0) {
+          chatBarVisible.value = withTiming(0, { duration: 400 });
+        } else if (dy < -5 && chatBarVisible.value !== 1) {
+          chatBarVisible.value = withTiming(1, { duration: 250 });
+        }
+      }
+      lastScrollY.current = y;
     },
-    [onScroll]
+    [onScroll, chatFocused, chatBarVisible]
   );
   const { data: rankingData, isLoading: isRankingLoading } =
     useGroupRankingQuery(group.id);
@@ -132,6 +142,8 @@ export function GroupLobbyActiveScreen({
   const [sentPreview, setSentPreview] = useState<PreviewMsg | null>(null);
 
   const keyboardOffset = useSharedValue(0);
+  const chatBarVisible = useSharedValue(1);
+  const lastScrollY = useRef(0);
   const dragY = useSharedValue(0);
   const chatBarEntrance = useSharedValue(0);
   const SCREEN_H = Dimensions.get("window").height;
@@ -149,9 +161,10 @@ export function GroupLobbyActiveScreen({
       ? interpolate(chatExpansion.value, [0, 1], [0, -(SCREEN_H - BAR_H * 2)])
       : 0;
     const slideIn = interpolate(chatBarEntrance.value, [0, 1], [BAR_H + 20, 0]);
+    const scrollHide = interpolate(chatBarVisible.value, [0, 1], [BAR_H + 40, 0]);
     return {
-      transform: [{ translateY: -keyboardOffset.value + dragY.value + chatLift + slideIn }],
-      opacity: chatBarEntrance.value,
+      transform: [{ translateY: -keyboardOffset.value + dragY.value + chatLift + slideIn + scrollHide }],
+      opacity: chatBarEntrance.value * chatBarVisible.value,
     };
   });
 
@@ -159,7 +172,7 @@ export function GroupLobbyActiveScreen({
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
     const showSub = Keyboard.addListener(showEvent, (e) => {
-      keyboardOffset.value = withTiming(e.endCoordinates.height - insets.bottom, { duration: Platform.OS === "ios" ? 250 : 0 });
+      keyboardOffset.value = withTiming(e.endCoordinates.height - insets.bottom + 8, { duration: Platform.OS === "ios" ? 250 : 0 });
     });
     const hideSub = Keyboard.addListener(hideEvent, () => {
       keyboardOffset.value = withTiming(0, { duration: Platform.OS === "ios" ? 250 : 0 });
@@ -553,7 +566,7 @@ export function GroupLobbyActiveScreen({
         <BlurView
           intensity={chatFocused ? 50 : 30}
           tint={colorScheme === "dark" ? "dark" : "light"}
-          style={[styles.floatingBottomInner, { backgroundColor: colorScheme === "dark" ? (chatFocused ? "rgba(30,30,34,0.9)" : "rgba(40,40,44,0.75)") : (chatFocused ? "rgba(230,230,232,0.95)" : "rgba(240,240,242,0.75)") }]}
+          style={[styles.floatingBottomInner, { backgroundColor: colorScheme === "dark" ? (chatFocused ? "rgba(30,30,34,0.9)" : "rgba(40,40,44,0.75)") : (chatFocused ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.85)") }]}
         >
           {/* Input row */}
           <View style={styles.chatBarRow}>
@@ -634,17 +647,17 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 16,
     paddingTop: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 8,
   },
   floatingBottomInner: {
     borderRadius: 14,
     overflow: "hidden",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 8,
   },
   chatPreviewContainer: {
     marginBottom: 6,

@@ -161,6 +161,21 @@ export const PeekCard = React.memo(function PeekCard({
       <View
         style={[styles.cardInner, { paddingTop: contentTop }]}
       >
+        {!isFinishedGame && isInteractive && (
+          <Pressable
+            onPress={toggleExpand}
+            style={[styles.expandCollapseButton, { top: contentTop + 12 }]}
+            hitSlop={12}
+          >
+            <Animated.View style={contentFadeOut} pointerEvents="none">
+              <Ionicons name="expand-outline" size={20} color={theme.colors.textSecondary} />
+            </Animated.View>
+            <Animated.View style={[styles.expandCollapseOverlay, contentFadeIn]} pointerEvents="none">
+              <Ionicons name="contract-outline" size={20} color={theme.colors.textSecondary} />
+            </Animated.View>
+          </Pressable>
+        )}
+
         {isNearby ? (
           <>
             <Animated.View style={[styles.cardContentRow, contentFadeOut]}>
@@ -214,11 +229,6 @@ export const PeekCard = React.memo(function PeekCard({
                   <AppText variant="caption" color="secondary">
                     {index + 1}/{totalCards}
                   </AppText>
-                  {!isFinishedGame && isInteractive && (
-                    <Pressable onPress={toggleExpand} style={styles.expandButton} hitSlop={12}>
-                      <Ionicons name="expand-outline" size={20} color={theme.colors.textSecondary} />
-                    </Pressable>
-                  )}
                 </View>
               </View>
 
@@ -243,9 +253,6 @@ export const PeekCard = React.memo(function PeekCard({
               >
                 {fixture.homeTeam?.name ?? "Home"}  vs  {fixture.awayTeam?.name ?? "Away"}
               </AppText>
-              <Pressable onPress={toggleExpand} style={styles.collapseButton} hitSlop={12}>
-                <Ionicons name="contract-outline" size={24} color={theme.colors.textSecondary} />
-              </Pressable>
             </Animated.View>
           </>
         ) : (
@@ -315,12 +322,20 @@ const styles = StyleSheet.create({
     marginTop: -260,
     // backgroundColor: "rgba(255,140,0,0.4)", // DEBUG ORANGE — score input area
   },
-  expandButton: {
-    marginTop: 8,
-  },
-  collapseButton: {
+  expandCollapseButton: {
     position: "absolute",
-    bottom: 32,
+    right: 16,
+    zIndex: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  expandCollapseOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
   },
   expandedContent: {
     ...StyleSheet.absoluteFillObject,
