@@ -4,7 +4,7 @@
 // - Supports primary, secondary, danger variants
 // - 3D border effect and shadow
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Pressable, PressableProps, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
@@ -36,50 +36,45 @@ export function Button({
     onPress?.(e);
   };
 
-  const isGhost = variant === "ghost";
+  const colors = useMemo(() => {
+    const isGhost = variant === "ghost";
+    let bg: string, border: string, bottomBorder: string, shadow: string, text: string;
 
-  // Determine background color based on variant and disabled state
-  const getBackgroundColor = () => {
-    if (disabled) return theme.colors.surface;
-    if (isGhost) return "transparent";
-    if (variant === "primary") return theme.colors.primary;
-    if (variant === "secondary") return theme.colors.surface;
-    return theme.colors.danger;
-  };
+    if (disabled) {
+      bg = theme.colors.surface;
+      border = theme.colors.border;
+      bottomBorder = theme.colors.textSecondary + "40";
+      shadow = "transparent";
+      text = theme.colors.textSecondary;
+    } else if (isGhost) {
+      bg = "transparent";
+      border = "transparent";
+      bottomBorder = "transparent";
+      shadow = "transparent";
+      text = theme.colors.textSecondary;
+    } else if (variant === "primary") {
+      bg = theme.colors.primary;
+      border = "transparent";
+      bottomBorder = theme.colors.textPrimary + "40";
+      shadow = theme.colors.primary;
+      text = theme.colors.primaryText;
+    } else if (variant === "danger") {
+      bg = theme.colors.danger;
+      border = "transparent";
+      bottomBorder = theme.colors.textPrimary + "40";
+      shadow = theme.colors.danger;
+      text = theme.colors.primaryText;
+    } else {
+      // secondary
+      bg = theme.colors.surface;
+      border = theme.colors.border;
+      bottomBorder = theme.colors.textSecondary + "50";
+      shadow = theme.colors.textPrimary;
+      text = theme.colors.textPrimary;
+    }
 
-  // Determine border color based on variant
-  const getBorderColor = () => {
-    if (disabled) return theme.colors.border;
-    if (isGhost) return "transparent";
-    if (variant === "primary") return "transparent";
-    if (variant === "secondary") return theme.colors.border;
-    return "transparent";
-  };
-
-  // Determine bottom border color (darker for 3D effect)
-  const getBottomBorderColor = () => {
-    if (disabled) return theme.colors.textSecondary + "40";
-    if (isGhost) return "transparent";
-    if (variant === "primary") return theme.colors.textPrimary + "40";
-    if (variant === "secondary") return theme.colors.textSecondary + "50";
-    return theme.colors.textPrimary + "40";
-  };
-
-  // Determine shadow color
-  const getShadowColor = () => {
-    if (disabled || isGhost) return "transparent";
-    if (variant === "primary") return theme.colors.primary;
-    if (variant === "danger") return theme.colors.danger;
-    return theme.colors.textPrimary;
-  };
-
-  // Determine text color based on variant and disabled state
-  const getTextColor = () => {
-    if (disabled) return theme.colors.textSecondary;
-    if (isGhost) return theme.colors.textSecondary;
-    if (variant === "primary" || variant === "danger") return theme.colors.primaryText;
-    return theme.colors.textPrimary;
-  };
+    return { bg, border, bottomBorder, shadow, text };
+  }, [theme, variant, disabled]);
 
   return (
     <Pressable
@@ -92,12 +87,12 @@ export function Button({
           alignItems: "center" as const,
           justifyContent: "center" as const,
           minHeight: 48,
-          backgroundColor: getBackgroundColor(),
+          backgroundColor: colors.bg,
           borderWidth: 1,
           borderBottomWidth: pressed ? 1 : 3,
-          borderColor: getBorderColor(),
-          borderBottomColor: getBottomBorderColor(),
-          shadowColor: getShadowColor(),
+          borderColor: colors.border,
+          borderBottomColor: colors.bottomBorder,
+          shadowColor: colors.shadow,
           shadowOffset: { width: 0, height: pressed ? 1 : 3 },
           shadowOpacity: disabled ? 0 : pressed ? 0.1 : 0.25,
           shadowRadius: pressed ? 2 : 4,
@@ -119,13 +114,11 @@ export function Button({
     >
       <AppText
         variant="body"
-        style={[
-          {
-            fontWeight: "700",
-            color: getTextColor(),
-            letterSpacing: 0.3,
-          },
-        ]}
+        style={{
+          fontWeight: "700",
+          color: colors.text,
+          letterSpacing: 0.3,
+        }}
       >
         {label}
       </AppText>

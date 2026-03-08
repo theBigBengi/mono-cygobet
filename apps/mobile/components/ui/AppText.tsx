@@ -3,7 +3,7 @@
 // - Maps to theme typography variants
 // - Maps to theme colors
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Text, TextProps } from "react-native";
 import { useTheme } from "@/lib/theme";
 
@@ -37,21 +37,21 @@ export function AppText({
   ...props
 }: AppTextProps) {
   const { theme } = useTheme();
-  const variantStyle = theme.typography[variant];
-  const colorMap: Record<TextColor, string> = {
-    primary: theme.colors.textPrimary,
-    secondary: theme.colors.textSecondary,
-    danger: theme.colors.danger,
-    onPrimary: theme.colors.primaryText,
-    success: theme.colors.success,
-    warning: theme.colors.warning,
-  };
-  const colorValue = colorMap[color];
 
-  const baseStyle = {
-    ...variantStyle,
-    color: colorValue,
-  };
+  const baseStyle = useMemo(() => {
+    const colorMap: Record<TextColor, string> = {
+      primary: theme.colors.textPrimary,
+      secondary: theme.colors.textSecondary,
+      danger: theme.colors.danger,
+      onPrimary: theme.colors.primaryText,
+      success: theme.colors.success,
+      warning: theme.colors.warning,
+    };
+    return {
+      ...theme.typography[variant],
+      color: colorMap[color],
+    };
+  }, [theme, variant, color]);
 
   return <Text style={[baseStyle, style]} {...props} />;
 }

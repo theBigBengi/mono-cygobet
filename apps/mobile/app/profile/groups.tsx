@@ -1,7 +1,7 @@
 // app/profile/groups.tsx
 // Full list of user's groups with filter tabs.
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { View, StyleSheet, FlatList, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -83,7 +83,7 @@ function AllGroupsContent() {
     { key: "ended", label: t("profile.filterEnded") },
   ];
 
-  const renderItem = ({ item }: { item: ApiUserGroupStat }) => (
+  const renderItem = useCallback(({ item }: { item: ApiUserGroupStat }) => (
     <GroupCompactCard
       groupId={item.groupId}
       groupName={item.groupName}
@@ -92,7 +92,7 @@ function AllGroupsContent() {
       status={item.groupStatus === "active" ? "active" : "ended"}
       onPress={() => handleGroupPress(item.groupId)}
     />
-  );
+  ), [handleGroupPress]);
 
   return (
     <Screen contentContainerStyle={[styles.screenContent, { padding: 0 }]}>

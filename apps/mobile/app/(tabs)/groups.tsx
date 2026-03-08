@@ -66,7 +66,6 @@ function GroupsContent() {
   const { data: invitesData } = useMyInvitesQuery({ status: "pending" });
   const pendingInviteCount = invitesData?.data?.invites?.length ?? 0;
   const [refreshing, setRefreshing] = useState(false);
-  const [isTabsSticky, setIsTabsSticky] = useState(false);
   const [viewMode, setViewMode] = useState<GroupViewMode>("card");
 
   const isTabsStickyRef = useRef(false);
@@ -82,7 +81,6 @@ function GroupsContent() {
         e.nativeEvent.contentOffset.y >= headerHeightRef.current;
       if (sticky !== isTabsStickyRef.current) {
         isTabsStickyRef.current = sticky;
-        setIsTabsSticky(sticky);
       }
     },
     [],
@@ -291,7 +289,7 @@ function GroupsContent() {
         isHudLoading={isHudLoading}
       />
     );
-  }, [theme, handleOpenCreate, handleOpenInfo, handleOpenInvites, handleOpenSearch, handleOpenFilterSort, handleToggleViewMode, viewMode, pendingInviteCount, isTabsSticky, selectedFilter, selectedSort, handleGroupPress, unreadCounts, unreadActivityCounts, isHudLoading]);
+  }, [theme, handleOpenCreate, handleOpenInfo, handleOpenInvites, handleOpenSearch, handleOpenFilterSort, handleToggleViewMode, viewMode, pendingInviteCount, selectedFilter, selectedSort, handleGroupPress, unreadCounts, unreadActivityCounts, isHudLoading]);
 
   // Loading state — skeleton
   if (isLoading) {
