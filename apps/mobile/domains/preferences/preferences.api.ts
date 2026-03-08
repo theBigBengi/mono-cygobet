@@ -25,7 +25,7 @@ export async function updateLeaguePreferences(
     "/api/users/preferences/league-order",
     {
       method: "PUT",
-      body: JSON.stringify({ leagueOrder }),
+      body: { leagueOrder },
     }
   );
 }
