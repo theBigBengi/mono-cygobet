@@ -38,9 +38,10 @@ import { StatusBar } from "expo-status-bar";
 import { jotaiStore } from "@/lib/state/jotaiStore";
 import { AppStartGate } from "@/components/AppStart/AppStartGate";
 import { DegradedBanner } from "@/components/DegradedBanner";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { initializeGlobalErrorHandlers } from "@/lib/errors/globalErrorHandlers";
 import { handleError, getUserFriendlyMessage } from "@/lib/errors";
-import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
+import { View, Text, StyleSheet, Pressable, Platform, Appearance } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
@@ -104,6 +105,7 @@ function AppContent() {
     <NavigationThemeProvider value={navigationTheme}>
       <View style={{ flex: 1 }}>
         <AppStartGate>
+          <OfflineBanner />
           <DegradedBanner />
           <Stack
             screenOptions={{
@@ -297,6 +299,7 @@ export default Sentry.wrap(RootLayout);
  */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const router = useRouter();
+  const isDark = Appearance.getColorScheme() === "dark";
   const t = (key: string): string =>
     i18n.isInitialized ? String(i18n.t(key, { ns: "common" })) : key;
 
@@ -323,14 +326,17 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 
   const userMessage = getUserFriendlyMessage(error);
 
-  // Use inline styles to avoid dependency on ThemeProvider
+  const colors = isDark ? darkColors : lightColors;
+
   return (
-    <View style={errorBoundaryStyles.container}>
+    <View style={[errorBoundaryStyles.container, { backgroundColor: colors.bg }]}>
       <View style={errorBoundaryStyles.content}>
-        <Text style={errorBoundaryStyles.title}>
+        <Text style={[errorBoundaryStyles.title, { color: colors.text }]}>
           {t("errors.somethingWentWrongTitle") || "Something went wrong"}
         </Text>
-        <Text style={errorBoundaryStyles.message}>{userMessage}</Text>
+        <Text style={[errorBoundaryStyles.message, { color: colors.textSecondary }]}>
+          {userMessage}
+        </Text>
 
         <Pressable style={errorBoundaryStyles.button} onPress={handleRetry}>
           <Text style={errorBoundaryStyles.buttonText}>
@@ -341,14 +347,14 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         <Pressable
           style={[
             errorBoundaryStyles.button,
-            errorBoundaryStyles.buttonSecondary,
+            { backgroundColor: colors.secondaryBg, borderWidth: 1, borderColor: colors.secondaryBorder },
           ]}
           onPress={handleGoHome}
         >
           <Text
             style={[
               errorBoundaryStyles.buttonText,
-              errorBoundaryStyles.buttonTextSecondary,
+              { color: colors.text },
             ]}
           >
             {t("errors.goToHome") || "Go to Home"}
