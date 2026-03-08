@@ -26,6 +26,7 @@ let messageCounter = 0;
 
 const MESSAGES_PAGE_SIZE = 30;
 const TYPING_INDICATOR_TIMEOUT_MS = 5000;
+const OPTIMISTIC_MESSAGE_TIMEOUT_MS = 10_000;
 
 /**
  * Fetch messages for a group with cursor-based pagination.
@@ -118,6 +119,10 @@ export function useGroupChat(groupId: number | null) {
   const typingTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(
     new Map()
   );
+  // Track pending optimistic messages for rollback on timeout
+  const pendingMessagesRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map()
+  );
 
   // Flatten pages into a single messages array (newest first)
   const messages: ChatMessage[] =
@@ -154,6 +159,13 @@ export function useGroupChat(groupId: number | null) {
           let newData = [...existingData];
 
           if (hasTempId) {
+            // Clear the rollback timeout — server confirmed delivery
+            const pendingTimer = pendingMessagesRef.current.get(message.tempId!);
+            if (pendingTimer) {
+              clearTimeout(pendingTimer);
+              pendingMessagesRef.current.delete(message.tempId!);
+            }
+
             const idx = newData.findIndex((m) => m.tempId === message.tempId);
             if (idx >= 0) {
               const { tempId: _, ...rest } = message;
@@ -221,6 +233,9 @@ export function useGroupChat(groupId: number | null) {
     socket.on("message:new", handleMessageNewWithPreview);
     return () => {
       socket.off("message:new", handleMessageNewWithPreview);
+      // Clear all pending optimistic message timeouts
+      pendingMessagesRef.current.forEach((timer) => clearTimeout(timer));
+      pendingMessagesRef.current.clear();
     };
   }, [socket, groupId, queryClient, user?.id]);
 
@@ -349,6 +364,34 @@ export function useGroupChat(groupId: number | null) {
         mentions,
         tempId,
       });
+
+      // Rollback optimistic message if server never confirms
+      const rollbackTimer = setTimeout(() => {
+        pendingMessagesRef.current.delete(tempId);
+        const msgKey = groupsKeys.messages(groupId);
+        queryClient.setQueryData(
+          msgKey,
+          (
+            old:
+              | { pages: { data: ChatMessage[] }[]; pageParams: unknown[] }
+              | undefined
+          ) => {
+            if (!old) return old;
+            const firstPage = old.pages[0];
+            if (!firstPage) return old;
+            const filtered = firstPage.data.filter(
+              (m) => m.tempId !== tempId
+            );
+            if (filtered.length === firstPage.data.length) return old;
+            return {
+              ...old,
+              pages: [{ data: filtered }, ...old.pages.slice(1)],
+              pageParams: old.pageParams,
+            };
+          }
+        );
+      }, OPTIMISTIC_MESSAGE_TIMEOUT_MS);
+      pendingMessagesRef.current.set(tempId, rollbackTimer);
 
       analytics.track("message_sent", { groupId });
     },
