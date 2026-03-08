@@ -56,6 +56,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // apiClient reads from this via getAccessTokenCallback.
   const accessTokenRef = React.useRef<string | null>(null);
 
+  // Ref to track latest status without re-creating listeners on every change.
+  const statusRef = React.useRef<AuthStatus>(status);
+  statusRef.current = status;
+
   /**
    * Refresh access token using stored refresh token.
    *
@@ -614,11 +618,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const prev = lastAppStateRef.current;
       lastAppStateRef.current = next;
       if (prev !== "active" && next === "active") {
-        // App resumed
+        // App resumed — read latest values from refs to avoid stale closures
         (async () => {
           try {
-            if (status === "authenticated") {
-              const expiry = getTokenExpiry(accessToken);
+            if (statusRef.current === "authenticated") {
+              const expiry = getTokenExpiry(accessTokenRef.current);
               const now = Date.now();
               // small skew of 10s
               if (!expiry || expiry <= now + 10_000) {
@@ -645,9 +649,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       mounted = false;
       try {
         if (sub && typeof sub.remove === "function") sub.remove();
-      } catch {};
+      } catch {}
     };
-  }, [status, accessToken, refreshAccessToken]);
+  }, [refreshAccessToken]);
 
   /**
    * Connectivity subscription: when connection returns while in degraded, attempt recovery.
@@ -668,7 +672,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             return;
           }
 
-          if (status === "degraded") {
+          if (statusRef.current === "degraded") {
             const refreshResult = await refreshAccessToken();
             if (!mounted) return;
             const handled = await handleRefreshResult(refreshResult, {
@@ -726,7 +730,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         unsub();
       } catch {}
     };
-  }, [status, refreshAccessToken]);
+  }, [refreshAccessToken]);
 
   // Bootstrap on initial mount - DISABLED: AppStart orchestrator handles this
   // useEffect(() => {
