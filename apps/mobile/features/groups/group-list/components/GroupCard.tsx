@@ -16,16 +16,9 @@ import { CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons, MaterialCommunityIcons, FontAwesome6, Feather } from "@expo/vector-icons";
-import { Dimensions } from "react-native";
 import Animated, {
-  FadeIn,
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedRef,
-  useFrameCallback,
-  interpolate,
-  Extrapolation,
-  measure,
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
@@ -293,41 +286,6 @@ function HudSkeleton({ borderColor }: { borderColor: string }) {
   );
 }
 
-// ─── Pulsing Predict Text ─────────────────────────────────────────────
-
-const SCREEN_HEIGHT = Dimensions.get("window").height;
-const PULSE_START = SCREEN_HEIGHT * 0.20;
-const PULSE_END = SCREEN_HEIGHT * 0.50;
-
-function PulsingPredictText({ color, isActive }: { color: string; isActive: Animated.SharedValue<number> }) {
-  const opacity = useSharedValue(1);
-
-  useEffect(() => {
-    opacity.value = withRepeat(
-      withTiming(0.4, { duration: 700 }),
-      -1,
-      true
-    );
-  }, []);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: isActive.value === 1 ? opacity.value : 1,
-  }));
-
-  return (
-    <Animated.Text
-      style={[
-        styles.predictButtonText,
-        { color },
-        style,
-      ]}
-    >
-      Predict game
-    </Animated.Text>
-  );
-}
-
-
 // ─── NextGameRow Sub-component ────────────────────────────────────────
 
 interface NextGameRowProps {
@@ -378,20 +336,6 @@ const NextGameRow = React.memo(function NextGameRowInner({
   const { t } = useTranslation("common");
   const countdown = useCountdown(nextGame.kickoffAt ?? null);
   const hasPrediction = !!nextGame.prediction;
-
-  const animatedRef = useAnimatedRef<Animated.View>();
-  const isInRange = useSharedValue(0);
-
-  useFrameCallback(() => {
-    const measurement = measure(animatedRef);
-    if (measurement) {
-      isInRange.value = measurement.pageY >= PULSE_START && measurement.pageY <= PULSE_END ? 1 : 0;
-    }
-  });
-
-  const rowStyle = useAnimatedStyle(() => ({
-    opacity: withTiming(isInRange.value === 1 ? 1 : 0.4, { duration: 200 }),
-  }));
 
   return (
     <View
@@ -446,7 +390,7 @@ const NextGameRow = React.memo(function NextGameRowInner({
           </View>
         ))}
       </ScrollView>
-      <Animated.View ref={animatedRef} style={[styles.nextGameMainRow, rowStyle]}>
+      <View style={styles.nextGameMainRow}>
         <View style={styles.inlineHud}>
           {userRank != null && (
             <View style={[styles.rankSquare, { borderColor: textPrimary }]}>
@@ -483,10 +427,10 @@ const NextGameRow = React.memo(function NextGameRowInner({
           accessibilityLabel="Predict game"
         >
           <FontAwesome6 name="pen-to-square" size={18} color={textPrimary} />
-          <PulsingPredictText color={textPrimary} isActive={isInRange} />
+          <Text style={[styles.predictButtonText, { color: textPrimary }]}>Predict game</Text>
         </Pressable>
       )}
-      </Animated.View>
+      </View>
     </View>
   );
 });
