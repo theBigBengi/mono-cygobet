@@ -2,6 +2,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -104,10 +105,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, []);
 
-  const value: SocketContextValue = {
-    socket: socketRef.current,
-    isConnected,
-  };
+  const value = useMemo<SocketContextValue>(
+    () => ({ socket: socketRef.current, isConnected }),
+    [isConnected, socketRef.current],
+  );
 
   return (
     <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
