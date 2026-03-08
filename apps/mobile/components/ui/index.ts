@@ -1,7 +1,7 @@
 // components/ui/index.ts
 // Export all UI components.
 
-export { Screen } from "./Screen";
+export { Screen, TAB_BAR_HEIGHT } from "./Screen";
 export { AppText } from "./AppText";
 export { Button } from "./Button";
 export { Card } from "./Card";

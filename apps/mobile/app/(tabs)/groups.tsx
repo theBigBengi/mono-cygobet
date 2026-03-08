@@ -21,7 +21,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
-import { Screen, AppText, Button } from "@/components/ui";
+import { Screen, AppText, Button, TAB_BAR_HEIGHT } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMyGroupsQuery, useUnreadCountsQuery, useUnreadActivityCountsQuery, groupsKeys, fetchGroupById } from "@/domains/groups";
@@ -384,7 +384,7 @@ function GroupsContent() {
     );
   }
 
-  const tabBarHeight = 60 + insets.bottom;
+  const tabBarHeight = TAB_BAR_HEIGHT + insets.bottom;
   const tabBarMarginBottom = theme.spacing.sm;
   const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
 

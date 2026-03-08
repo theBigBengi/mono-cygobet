@@ -18,9 +18,9 @@ import {
 } from "react-native-safe-area-context";
 import { useTheme } from "@/lib/theme";
 
-// Tab bar height constant (imported directly to avoid circular dependency)
-// This matches the height defined in app-shell/tabs/tabs.constants.ts
-const TAB_BAR_HEIGHT = 56;
+// Tab bar content height (paddingTop 16 + icon 28 + gap 2 + label ~12 ≈ 58, rounded to 60).
+// Exported so tab screens can calculate bottom padding consistently.
+export const TAB_BAR_HEIGHT = 60;
 
 type SafeAreaEdge = "top" | "bottom" | "left" | "right";
 
@@ -82,9 +82,9 @@ export function Screen({
 
   // Calculate bottom padding to account for floating tab bar (when tabs are visible)
   // This ensures content doesn't get hidden behind the tabs
-  // Tab bar height: 60px + safe area bottom inset
+  // Tab bar height + safe area bottom inset
   // Plus marginBottom: spacing.sm (8px) for the floating effect
-  const tabBarHeight = 60 + insets.bottom;
+  const tabBarHeight = TAB_BAR_HEIGHT + insets.bottom;
   const tabBarMarginBottom = theme.spacing.sm; // 8px margin for floating effect
   const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
   const defaultBottomPadding = scroll ? totalTabBarSpace : 0;

@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Screen, AppText } from "@/components/ui";
+import { Screen, AppText, TAB_BAR_HEIGHT } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useActivityFeedQuery } from "@/domains/activity";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
@@ -41,7 +41,7 @@ function ActivityContent() {
   } = useActivityFeedQuery();
 
   // Calculate tab bar space to ensure content isn't hidden
-  const tabBarHeight = 60 + insets.bottom;
+  const tabBarHeight = TAB_BAR_HEIGHT + insets.bottom;
   const tabBarMarginBottom = theme.spacing.sm;
   const totalTabBarSpace = tabBarHeight + tabBarMarginBottom;
 
