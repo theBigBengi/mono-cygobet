@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   barPointsContainer: {
-    marginLeft: "auto",
+    marginStart: "auto",
   },
   barNameOverlay: {
     position: "absolute",
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   barPoints: {
     fontSize: 14,
     fontWeight: "800",
-    marginLeft: 8,
+    marginStart: 8,
   },
   memberCountRow: {
     alignItems: "center",
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "uppercase",
     flexShrink: 0,
-    marginLeft: "auto",
+    marginStart: "auto",
   },
   viewAllButton: {
     flexDirection: "row",

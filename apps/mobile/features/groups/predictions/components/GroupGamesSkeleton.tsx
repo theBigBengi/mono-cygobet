@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
 
   /* ── Section headers (matches GroupGamesScreen sectionHeaderContent) ── */
   sectionHeaderContent: {
-    paddingLeft: 4,
+    paddingStart: 4,
   },
   dateRow: {
     flexDirection: "row",

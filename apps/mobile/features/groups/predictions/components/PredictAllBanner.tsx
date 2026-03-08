@@ -80,6 +80,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 8,
+    marginEnd: 8,
   },
 });

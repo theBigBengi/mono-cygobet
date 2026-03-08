@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   iconWrap: {
-    marginRight: 12,
+    marginEnd: 12,
     marginTop: 2,
   },
   icon: {

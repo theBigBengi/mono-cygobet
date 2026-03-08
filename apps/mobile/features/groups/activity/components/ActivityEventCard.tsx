@@ -117,6 +117,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   time: {
-    marginLeft: 4,
+    marginStart: 4,
   },
 });

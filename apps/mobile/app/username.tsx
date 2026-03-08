@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   availabilityText: {
-    marginLeft: 6,
+    marginStart: 6,
   },
   hint: {
     marginBottom: 24,

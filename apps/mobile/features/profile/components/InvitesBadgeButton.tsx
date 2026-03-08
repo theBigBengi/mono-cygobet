@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   label: {
-    marginLeft: 10,
+    marginStart: 10,
     fontWeight: "600",
     flex: 1,
   },

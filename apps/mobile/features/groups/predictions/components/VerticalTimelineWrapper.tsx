@@ -216,8 +216,8 @@ export function VerticalTimelineWrapper({
           isHighlighted && {
             backgroundColor: theme.colors.primary + "15",
             borderRadius: 8,
-            marginRight: -8,
-            paddingRight: 8,
+            marginEnd: -8,
+            paddingEnd: 8,
           },
         ]}
       >
@@ -237,8 +237,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     justifyContent: "center",
     overflow: "visible",
-    paddingLeft: 2,
-    paddingRight: 6,
+    paddingStart: 2,
+    paddingEnd: 6,
   },
   lineAbsolute: {
     position: "absolute",

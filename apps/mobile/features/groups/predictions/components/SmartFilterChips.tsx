@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     marginStart: 4,
   },
   chipIcon: {
-    marginRight: 4,
+    marginEnd: 4,
   },
   chipText: {
     fontSize: 13,
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    marginRight: 6,
+    marginEnd: 6,
   },
   divider: {
     height: 1,
@@ -483,6 +483,6 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
-    marginLeft: 4,
+    marginStart: 4,
   },
 });

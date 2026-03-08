@@ -626,8 +626,8 @@ const styles = StyleSheet.create({
   leftColumnCell: {
     flexDirection: "row",
     alignItems: "center",
-    paddingLeft: 0,
-    paddingRight: 8,
+    paddingStart: 0,
+    paddingEnd: 8,
     gap: 4,
   },
   changeArrowPlaceholder: {

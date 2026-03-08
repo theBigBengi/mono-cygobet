@@ -50,7 +50,7 @@ function RankingShareButton({ groupId }: { groupId: number | null }) {
 const styles = StyleSheet.create({
   button: {
     padding: 8,
-    marginRight: 4,
+    marginEnd: 4,
   },
 });
 

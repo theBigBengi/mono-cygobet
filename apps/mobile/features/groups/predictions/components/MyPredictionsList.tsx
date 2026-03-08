@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   },
   groupName: {
     flex: 1,
-    marginRight: 12,
+    marginEnd: 12,
   },
   score: {
     fontSize: 16,

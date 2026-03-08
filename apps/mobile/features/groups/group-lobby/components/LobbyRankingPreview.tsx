@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   icon: {
-    marginRight: 0,
+    marginEnd: 0,
   },
   title: {
     fontWeight: "600",

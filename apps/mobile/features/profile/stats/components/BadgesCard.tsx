@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   badgeIconWrap: {
-    marginRight: 12,
+    marginEnd: 12,
     marginTop: 2,
   },
   badgeContent: {

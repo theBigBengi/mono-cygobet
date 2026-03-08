@@ -346,6 +346,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
     fontWeight: "700",
-    marginRight: 36,
+    marginEnd: 36,
   },
 });

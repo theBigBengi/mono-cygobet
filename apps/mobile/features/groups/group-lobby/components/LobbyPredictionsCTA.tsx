@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   gameNumber: {
     fontSize: 11,
     fontWeight: "600",
-    marginRight: 10,
+    marginEnd: 10,
     textAlign: "left",
   },
   logoCol: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   },
   teamsCol: {
     gap: 2,
-    marginLeft: 4,
+    marginStart: 4,
   },
   teamNameStacked: {
     fontSize: 13,
@@ -445,16 +445,16 @@ const styles = StyleSheet.create({
   },
   homeTeamName: {
     textAlign: "right",
-    marginRight: 8,
+    marginEnd: 8,
   },
   awayTeamName: {
     textAlign: "left",
-    marginLeft: 8,
+    marginStart: 8,
   },
   vsCol: {
     alignItems: "center",
     justifyContent: "center",
-    marginRight: -4,
+    marginEnd: -4,
   },
   vsText: {
     fontSize: 15,
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
-    marginLeft: 6,
+    marginStart: 6,
   },
   predictionBox: {
     width: 24,
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 4,
+    marginStart: 4,
   },
   pressed: {
     opacity: 0.8,

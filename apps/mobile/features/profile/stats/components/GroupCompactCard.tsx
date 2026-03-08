@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   name: {
     flex: 1,
     fontWeight: "600",
-    marginRight: 8,
+    marginEnd: 8,
   },
   statusBadge: {
     paddingHorizontal: 8,

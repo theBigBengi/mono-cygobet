@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   hudTitleLeft: {
     flex: 1,
-    marginRight: 12,
+    marginEnd: 12,
   },
   shareButton: {
     width: 46,
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-    marginLeft: 12,
+    marginStart: 12,
   },
   name: {
     fontWeight: "700",

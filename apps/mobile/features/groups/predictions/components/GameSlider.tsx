@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   item: {
     width: SLIDER_ITEM_WIDTH,
-    marginRight: SLIDER_ITEM_MARGIN,
+    marginEnd: SLIDER_ITEM_MARGIN,
     borderRadius: 12,
     paddingHorizontal: 4,
     paddingVertical: 4,

@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconWrapper: {
-    marginRight: 8,
+    marginEnd: 8,
   },
   viewAllText: {
     marginStart: 8,

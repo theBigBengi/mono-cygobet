@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginEnd: 12,
   },
   headerText: {
     flex: 1,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginLeft: "auto",
+    marginStart: "auto",
   },
   pill: {
     paddingHorizontal: 8,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 10,
+    marginEnd: 10,
     overflow: "hidden",
   },
   avatarImage: {
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   messageIcon: {
-    marginRight: 8,
+    marginEnd: 8,
     marginTop: 2,
   },
   messageText: {

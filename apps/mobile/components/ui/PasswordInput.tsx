@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 0,
     padding: 0,
-    paddingRight: 32,
+    paddingEnd: 32,
     fontSize: 16,
   },
   iconWrap: {

@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
-    paddingLeft: 44,
-    paddingRight: 36,
+    paddingStart: 44,
+    paddingEnd: 36,
     gap: 10,
   },
   leagueText: {

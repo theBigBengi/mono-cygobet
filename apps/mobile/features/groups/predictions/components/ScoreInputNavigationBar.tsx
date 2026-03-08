@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "flex-start",
     justifyContent: "center",
-    marginLeft: 4,
+    marginStart: 4,
   },
   teamName: {
     fontSize: 13,

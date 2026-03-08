@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   icon: {
-    marginRight: 0,
+    marginEnd: 0,
   },
   textBlock: {
     flex: 1,
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   timestamp: {
-    marginLeft: 4,
+    marginStart: 4,
   },
   badge: {
     minWidth: 20,
@@ -231,6 +231,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   chevron: {
-    marginLeft: 0,
+    marginStart: 0,
   },
 });

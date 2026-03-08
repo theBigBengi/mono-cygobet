@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 12,
     fontWeight: "500",
-    paddingRight: "10%",
+    paddingEnd: "10%",
   },
   nextGameRow: {
     marginTop: 14,
@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
   nextGameLabel: {
     fontSize: 13,
     fontWeight: "700",
-    paddingRight: "10%",
+    paddingEnd: "10%",
   },
   nextGameCardsScroll: {
     marginTop: 6,
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
   },
   nextGameCardDateTime: {
     alignItems: "center",
-    marginLeft: 8,
+    marginStart: 8,
     gap: 2,
   },
   nextGameCardDate: {
@@ -861,7 +861,7 @@ const styles = StyleSheet.create({
   predictButtonText: {
     fontSize: 12,
     fontWeight: "500",
-    marginLeft: 2,
+    marginStart: 2,
   },
   predictionBoxes: {
     flexDirection: "row",
@@ -905,7 +905,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   rankChangeIndicator: {
-    marginLeft: -2,
+    marginStart: -2,
   },
   hudValue: {
     fontSize: 12,

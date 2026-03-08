@@ -186,7 +186,7 @@ export function PredictAllScreen() {
                 return (
                   <View
                     key={group.id}
-                    style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, marginRight: PAGE_GAP }}
+                    style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, marginEnd: PAGE_GAP }}
                   />
                 );
               }
@@ -280,7 +280,7 @@ function PageWrapper({
         {
           width: SCREEN_WIDTH,
           height: SCREEN_HEIGHT,
-          marginRight: PAGE_GAP,
+          marginEnd: PAGE_GAP,
           overflow: "hidden",
           borderRadius: 0,
         },

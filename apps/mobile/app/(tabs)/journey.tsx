@@ -161,7 +161,7 @@ export default function JourneyScreen() {
                       {
                         left: SCREEN_WIDTH / 2 + xOffset,
                         width: Math.abs(nextXOffset - xOffset) + 4,
-                        marginLeft:
+                        marginStart:
                           Math.min(xOffset, nextXOffset) -
                           xOffset +
                           NODE_SIZE / 2 -
