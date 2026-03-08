@@ -68,5 +68,11 @@ export function getApiBaseUrl(): string {
     );
   }
 
+  if (!__DEV__ && !baseUrl.startsWith("https://")) {
+    throw new Error(
+      "EXPO_PUBLIC_API_BASE_URL must use https:// in production."
+    );
+  }
+
   return baseUrl;
 }
