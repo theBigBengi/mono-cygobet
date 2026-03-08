@@ -38,6 +38,7 @@ export function useGroupRankingQuery(groupId: number | null) {
     queryKey: groupsKeys.ranking(groupId ?? 0),
     queryFn: () => fetchGroupRanking(groupId as number),
     enabled,
+    staleTime: 30_000,
     meta: { scope: "user" },
   });
 }
@@ -111,6 +112,7 @@ export function useGroupMembersQuery(groupId: number | null) {
     queryKey: groupsKeys.members(groupId ?? 0),
     queryFn: () => fetchGroupMembers(groupId as number),
     enabled,
+    staleTime: 60_000,
     meta: { scope: "user" },
   });
 }

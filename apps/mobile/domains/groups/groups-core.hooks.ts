@@ -51,6 +51,7 @@ export function useMyGroupsQuery(search?: string) {
     queryKey: groupsKeys.list(search),
     queryFn: () => fetchMyGroups(search),
     enabled,
+    staleTime: 30_000,
     placeholderData: search ? keepPreviousData : undefined,
     meta: { scope: "user" },
   });
@@ -97,7 +98,7 @@ export function useGroupQuery(
         include: options?.includeFixtures ? "fixtures" : undefined,
       }),
     enabled,
-    ...(options?.staleTime != null && { staleTime: options.staleTime }),
+    staleTime: options?.staleTime ?? 30_000,
     placeholderData: () => {
       const listData = queryClient.getQueryData<ApiGroupsResponse>(
         groupsKeys.list()
@@ -129,6 +130,7 @@ export function useGroupGamesFiltersQuery(groupId: number | null) {
     queryKey: groupsKeys.gamesFilters(groupId ?? 0),
     queryFn: () => fetchGroupGamesFilters(groupId as number),
     enabled,
+    staleTime: 5 * 60_000,
     meta: { scope: "user" },
   });
 }
@@ -235,6 +237,7 @@ export function useGroupFixturesQuery(groupId: number | null) {
     queryKey: groupsKeys.fixtures(groupId ?? 0),
     queryFn: () => fetchGroupFixtures(groupId as number),
     enabled,
+    staleTime: 30_000,
     meta: { scope: "user" },
   });
 }
@@ -358,6 +361,7 @@ export function useGroupPreviewQuery(body: ApiGroupPreviewBody) {
     queryKey: groupsKeys.preview(body),
     queryFn: () => fetchGroupPreview(body),
     enabled,
+    staleTime: 60_000,
     meta: { scope: "user" },
   });
 }

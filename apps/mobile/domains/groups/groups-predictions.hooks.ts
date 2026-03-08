@@ -122,6 +122,7 @@ export function usePredictionsOverviewQuery(groupId: number | null) {
     queryKey: groupsKeys.predictionsOverview(groupId ?? 0),
     queryFn: () => fetchPredictionsOverview(groupId as number),
     enabled,
+    staleTime: 30_000,
     meta: { scope: "user" },
   });
 }

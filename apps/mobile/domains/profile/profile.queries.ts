@@ -33,6 +33,7 @@ export function useProfileQuery() {
     queryKey: profileKeys.me(),
     queryFn: fetchProfile,
     enabled,
+    staleTime: 2 * 60_000,
     meta: { scope: "user" },
   });
 }
@@ -55,6 +56,7 @@ export function useUserStatsQuery(userId: number | null) {
     queryKey: profileKeys.stats(userId ?? 0),
     queryFn: () => fetchUserStats(userId!),
     enabled,
+    staleTime: 60_000,
     meta: { scope: "user" },
   });
 }
@@ -83,6 +85,7 @@ export function useHeadToHeadQuery(
     queryKey: profileKeys.headToHead(userId ?? 0, opponentId ?? 0),
     queryFn: () => fetchHeadToHead(userId!, opponentId!),
     enabled,
+    staleTime: 60_000,
     meta: { scope: "user" },
   });
 }
@@ -104,6 +107,7 @@ export function useH2HOpponentsQuery(userId: number | null) {
     queryKey: profileKeys.h2hOpponents(userId ?? 0),
     queryFn: () => fetchH2HOpponents(userId!),
     enabled,
+    staleTime: 2 * 60_000,
     meta: { scope: "user" },
   });
 }

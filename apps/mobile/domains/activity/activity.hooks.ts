@@ -30,6 +30,7 @@ export function useActivityFeedQuery() {
       return lastItem?.createdAt ?? undefined;
     },
     enabled,
+    staleTime: 30_000,
     meta: { scope: "user" } as const,
   });
 }
