@@ -135,7 +135,7 @@ function GroupLobbyContent() {
   const infoSheetRef = useRef<BottomSheetModal>(null);
   const editSheetRef = useRef<BottomSheetModal>(null);
   const inviteSheetRef = useRef<BottomSheetModal>(null);
-  const updateGroupMutation = useUpdateGroupMutation(groupId ?? 0);
+  const updateGroupMutation = useUpdateGroupMutation(groupId);
 
   const handleOpenInfo = useCallback(() => {
     infoSheetRef.current?.present();
