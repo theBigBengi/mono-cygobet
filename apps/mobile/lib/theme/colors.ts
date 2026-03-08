@@ -38,6 +38,8 @@ export type Colors = {
   success: string;
   /** אזהרה — partial match, attention */
   warning: string;
+  /** טקסט על רקע warning */
+  warningText: string;
   /** LIVE indicator — כחול, סטטוס משחק חי */
   live: string;
 
@@ -83,6 +85,7 @@ export const lightColors: Colors = {
   dangerText: "#FFFFFF",
   success: "#34C759",
   warning: "#FF9500",
+  warningText: "#663C00",
   live: "#3B82F6", // כחול — סטטוס LIVE
 
   // Ranking
@@ -121,6 +124,7 @@ export const darkColors: Colors = {
   dangerText: "#FFFFFF",
   success: "#30D158",
   warning: "#FF9F0A",
+  warningText: "#FFD60A",
   live: "#60A5FA", // כחול בהיר יותר ל-dark mode
 
   // Ranking

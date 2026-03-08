@@ -9,6 +9,9 @@ import type { RefreshResult } from "../auth/refresh.types";
 
 const isWeb = Platform.OS === "web";
 
+/** Default request timeout in milliseconds (15 seconds). */
+const DEFAULT_TIMEOUT_MS = 15_000;
+
 // Options accepted by apiFetch / apiFetchWithAuthRetry.
 // Screens must never construct this directly – only feature API modules.
 type ApiFetchOptions = {
@@ -94,10 +97,15 @@ export async function apiFetch<T>(
     requestHeaders.Authorization = `Bearer ${accessToken}`;
   }
 
+  // Abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
   const requestOptions: RequestInit = {
     method,
     headers: requestHeaders,
     credentials: isWeb ? "include" : "same-origin",
+    signal: controller.signal,
   };
 
   // Avoid sending "undefined" as a body – only send if explicitly provided.
@@ -110,19 +118,45 @@ export async function apiFetch<T>(
     // NOTE: fetch itself can throw for network failures, CORS, etc.
     response = await fetch(url, requestOptions);
   } catch (error) {
-    // Network errors (server not running, CORS, etc.)
+    clearTimeout(timeoutId);
+
+    const errName = error instanceof Error ? error.name : "";
+    const errMsg = error instanceof Error ? error.message.toLowerCase() : "";
+
+    // Timeout (AbortError) — DOMException on web, plain Error in RN
+    if (errName === "AbortError") {
+      throw new ApiError(
+        0,
+        "TIMEOUT",
+        "Request timed out. Please check your connection and try again.",
+        { url }
+      );
+    }
+
+    // Network errors — message varies by platform:
+    //   Android: "Network request failed"
+    //   iOS:     "The Internet connection appears to be offline" / "A server with the specified hostname could not be found"
+    //   Web:     "Failed to fetch" / "Load failed"
     if (
-      error instanceof TypeError &&
-      error.message === "Network request failed"
+      error instanceof TypeError ||
+      errMsg.includes("network request failed") ||
+      errMsg.includes("failed to fetch") ||
+      errMsg.includes("load failed") ||
+      errMsg.includes("internet connection") ||
+      errMsg.includes("hostname could not be found") ||
+      errMsg.includes("not connected to the internet") ||
+      errMsg.includes("the network connection was lost")
     ) {
       throw new ApiError(
         0,
         "NETWORK_ERROR",
-        "Unable to connect to server. Make sure the server is running and accessible.",
-        { originalError: error.message, url }
+        "Unable to connect to server. Please check your connection.",
+        { originalError: errMsg, url }
       );
     }
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   // Handle 204 No Content explicitly – React Query callers expect a value.
