@@ -794,6 +794,12 @@ export type ApiPredictionsOverviewData = {
   fixtures: ApiPredictionsOverviewFixture[];
   predictions: Record<string, string | null>; // `${userId}_${fixtureId}` -> "home:away" | null
   predictionPoints: Record<string, string | null>; // `${userId}_${fixtureId}` -> points string or null
+  /** Group scoring configuration for live point calculation */
+  scoringConfig: {
+    onTheNosePoints: number;
+    correctDifferencePoints: number;
+    outcomePoints: number;
+  };
 };
 
 /**

@@ -484,7 +484,7 @@ export const predictionsOverviewResponseSchema = {
     status: { type: "string", enum: ["success"] },
     data: {
       type: "object",
-      required: ["participants", "fixtures", "predictions", "predictionPoints"],
+      required: ["participants", "fixtures", "predictions", "predictionPoints", "scoringConfig"],
       properties: {
         participants: {
           type: "array",
@@ -504,6 +504,15 @@ export const predictionsOverviewResponseSchema = {
           type: "object",
           additionalProperties: {
             type: ["string", "null"],
+          },
+        },
+        scoringConfig: {
+          type: "object",
+          required: ["onTheNosePoints", "correctDifferencePoints", "outcomePoints"],
+          properties: {
+            onTheNosePoints: { type: "number" },
+            correctDifferencePoints: { type: "number" },
+            outcomePoints: { type: "number" },
           },
         },
       },

@@ -55,7 +55,7 @@ export function PredictionsOverviewTable({
     outputRange: [0, -1],
   });
 
-  const { participants, fixtures, predictions, predictionPoints } = data;
+  const { participants, fixtures, predictions, predictionPoints, scoringConfig } = data;
   const currentUserId = user?.id ?? null;
 
   const liveFixtures = fixtures.filter((f) => f.liveMinute != null);
@@ -78,7 +78,7 @@ export function PredictionsOverviewTable({
       let bonus = 0;
       for (const f of liveFixtures) {
         const pred = predictions[`${p.id}_${f.id}`] ?? null;
-        const pts = calculateLivePoints(pred, f.homeScore90, f.awayScore90);
+        const pts = calculateLivePoints(pred, f.homeScore90, f.awayScore90, scoringConfig);
         bonus += pts ? parseInt(pts, 10) : 0;
       }
       map.set(p.id, bonus);
@@ -462,7 +462,7 @@ export function PredictionsOverviewTable({
           const isLive = fixture.liveMinute != null;
           const matchFinished = fixture.result != null && !isLive;
           const rawPts = isLive
-            ? calculateLivePoints(prediction, fixture.homeScore90, fixture.awayScore90)
+            ? calculateLivePoints(prediction, fixture.homeScore90, fixture.awayScore90, scoringConfig)
             : getPoints(participant.id, fixture.id);
           // For finished matches with no prediction, show 0 points
           const pts = rawPts == null && matchFinished && !prediction ? "0" : rawPts;
@@ -513,7 +513,7 @@ export function PredictionsOverviewTable({
         })}
       </View>
     );
-  }, [theme, fixtures, currentUserId, totalWidth, actualGameColumnWidth, showLivePoints, liveBonusMap, getPrediction, getPoints, formatPrediction, getPointsCellBg, getPointsColor, calculateLivePoints]);
+  }, [theme, fixtures, currentUserId, totalWidth, actualGameColumnWidth, showLivePoints, liveBonusMap, getPrediction, getPoints, formatPrediction, getPointsCellBg, getPointsColor, scoringConfig]);
 
   return (
     <View

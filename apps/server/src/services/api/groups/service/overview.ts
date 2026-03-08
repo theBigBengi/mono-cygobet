@@ -27,10 +27,11 @@ export async function getPredictionsOverview(
   await assertGroupMember(groupId, userId);
 
   // Fetch data in parallel for better performance
-  const [membersWithUsers, groupFixtures, predictions] = await Promise.all([
+  const [membersWithUsers, groupFixtures, predictions, groupRules] = await Promise.all([
     repo.findGroupMembersWithUsers(groupId),
     repo.findGroupFixturesForOverview(groupId),
     repo.findPredictionsForOverview(groupId),
+    repo.findGroupRules(groupId),
   ]);
 
   // Build participants and fixtures using pure functions
@@ -101,6 +102,11 @@ export async function getPredictionsOverview(
       fixtures,
       predictions: predictionsMap,
       predictionPoints: predictionPointsMap,
+      scoringConfig: {
+        onTheNosePoints: groupRules?.onTheNosePoints ?? 3,
+        correctDifferencePoints: groupRules?.correctDifferencePoints ?? 2,
+        outcomePoints: groupRules?.outcomePoints ?? 1,
+      },
     },
     message: "Predictions overview fetched successfully",
   };

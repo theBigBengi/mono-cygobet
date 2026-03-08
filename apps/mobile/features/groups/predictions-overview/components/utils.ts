@@ -1,9 +1,16 @@
 import { isNotStarted } from "@repo/utils";
 
+export interface ScoringConfig {
+  onTheNosePoints: number;
+  correctDifferencePoints: number;
+  outcomePoints: number;
+}
+
 export const calculateLivePoints = (
   prediction: string | null,
   homeScore: number | null,
-  awayScore: number | null
+  awayScore: number | null,
+  scoring: ScoringConfig = { onTheNosePoints: 3, correctDifferencePoints: 2, outcomePoints: 1 },
 ): string | null => {
   if (homeScore == null || awayScore == null) return null;
   if (!prediction) return "0";
@@ -14,13 +21,13 @@ export const calculateLivePoints = (
   if (isNaN(predHome) || isNaN(predAway)) return null;
 
   // Exact score
-  if (predHome === homeScore && predAway === awayScore) return "3";
+  if (predHome === homeScore && predAway === awayScore) return String(scoring.onTheNosePoints);
   // Correct goal difference
-  if (predHome - predAway === homeScore - awayScore) return "2";
+  if (predHome - predAway === homeScore - awayScore) return String(scoring.correctDifferencePoints);
   // Correct outcome
   const predOutcome = Math.sign(predHome - predAway);
   const actualOutcome = Math.sign(homeScore - awayScore);
-  if (predOutcome === actualOutcome) return "1";
+  if (predOutcome === actualOutcome) return String(scoring.outcomePoints);
   return "0";
 };
 

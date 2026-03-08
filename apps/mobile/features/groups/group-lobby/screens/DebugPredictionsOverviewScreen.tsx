@@ -206,6 +206,11 @@ const MOCK_DATA: ApiPredictionsOverviewData = {
     "20_101": null, "20_102": null, "20_103": "1-1", "20_104": "0-0",
     "20_105": null, "20_106": null, "20_107": null, "20_108": null,
   },
+  scoringConfig: {
+    onTheNosePoints: 3,
+    correctDifferencePoints: 2,
+    outcomePoints: 1,
+  },
   predictionPoints: {
     // Fixture 101: result 2-1
     "1_101": "3", "2_101": "1", "3_101": "2", "4_101": "2", "5_101": "0",

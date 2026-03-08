@@ -87,6 +87,11 @@ export type PredictionsOverviewData = {
   fixtures: Array<PredictionsOverviewFixture>;
   predictions: Record<string, string | null>;
   predictionPoints: Record<string, string | null>;
+  scoringConfig: {
+    onTheNosePoints: number;
+    correctDifferencePoints: number;
+    outcomePoints: number;
+  };
 };
 
 /**
