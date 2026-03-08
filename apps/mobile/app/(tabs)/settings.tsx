@@ -227,13 +227,14 @@ function SettingsContent() {
           </View>
         </Pressable>
 
-        {/* Language picker — hidden for now
         <Pressable
           onPress={handleOpenLanguageSheet}
           style={({ pressed }) => [
             styles.row,
             { opacity: pressed ? 0.6 : 1 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={t("profile.language")}
         >
           <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
             {t("profile.language")}
@@ -251,7 +252,6 @@ function SettingsContent() {
             />
           </View>
         </Pressable>
-        */}
 
         {/* Preferences Section */}
         <Text
