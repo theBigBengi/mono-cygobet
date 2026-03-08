@@ -24,7 +24,7 @@ let netInfoUnsupported = false;
 // Initialize NetInfo on native platforms. We require dynamically so web builds
 // that don't include the native dependency won't fail at bundle time.
 function initNetInfo() {
-  if (netInfoModule !== null) return;
+  if (netInfoModule !== null || netInfoUnsupported) return;
   // If running in Expo Go (managed client) the native NetInfo interface is often
   // unavailable. Detect Expo Go and avoid requiring the native module entirely.
   try {

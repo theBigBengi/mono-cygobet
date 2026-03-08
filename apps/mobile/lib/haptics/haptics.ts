@@ -3,7 +3,7 @@
 
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
-import { getHapticsEnabled } from "@/lib/settings";
+import { getHapticsEnabled } from "@/lib/settings/settings.storage";
 
 let cachedHapticsEnabled: boolean | null = null;
 
