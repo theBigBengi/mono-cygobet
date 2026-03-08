@@ -80,10 +80,10 @@ export async function apiFetch<T>(
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
 
-  // Always request JSON back; send JSON bodies by default.
+  // Always request JSON back; only set Content-Type when there's a body.
   const requestHeaders: Record<string, string> = {
     Accept: "application/json",
-    "Content-Type": "application/json",
+    ...(body !== undefined && { "Content-Type": "application/json" }),
     ...headers,
   };
 
