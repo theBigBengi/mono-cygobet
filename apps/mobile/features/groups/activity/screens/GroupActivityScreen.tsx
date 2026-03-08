@@ -35,13 +35,13 @@ export function GroupActivityScreen({ groupId }: GroupActivityScreenProps) {
     [data]
   );
 
-  // Mark as read when first page loads (latest item = highest ID)
+  // Mark as read whenever the latest item changes (new activity arrives or first load)
+  const latestItemId = items.length > 0 ? items[0].id : null;
   useEffect(() => {
-    if (items.length > 0) {
-      const latestId = items[0].id;
-      markAsRead(latestId);
+    if (latestItemId != null) {
+      markAsRead(latestItemId);
     }
-  }, [items.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [latestItemId, markAsRead]);
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
