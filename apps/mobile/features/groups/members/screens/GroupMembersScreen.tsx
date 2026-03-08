@@ -1,7 +1,7 @@
 // features/groups/members/screens/GroupMembersScreen.tsx
 // Screen component for group members list.
 
-import React from "react";
+import React, { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FlatList,
@@ -129,6 +129,18 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
 
   const items = data.data;
 
+  const renderMemberItem = useCallback(
+    ({ item, index }: { item: (typeof items)[0]; index: number }) => (
+      <MemberRow
+        item={item}
+        isCurrentUser={user?.id != null && item.userId === user.id}
+        index={index}
+        groupId={groupId}
+      />
+    ),
+    [user?.id, groupId],
+  );
+
   return (
     <View  >
       <FlatList
@@ -138,14 +150,7 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
         maxToRenderPerBatch={10}
         initialNumToRender={10}
         windowSize={5}
-        renderItem={({ item, index }) => (
-          <MemberRow
-            item={item}
-            isCurrentUser={user?.id != null && item.userId === user.id}
-            index={index}
-            groupId={groupId}
-          />
-        )}
+        renderItem={renderMemberItem}
         contentContainerStyle={[
           styles.listContent,
           { paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.md, paddingBottom: theme.spacing.md },

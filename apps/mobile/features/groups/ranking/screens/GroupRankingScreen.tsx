@@ -1,7 +1,7 @@
 // features/groups/ranking/screens/GroupRankingScreen.tsx
 // Screen component for group ranking with game-like styling.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FlatList,
@@ -258,6 +258,21 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
     );
   }
 
+  const renderRankingItem = useCallback(
+    ({ item }: { item: (typeof items)[0] }) => (
+      <RankingRow
+        item={item}
+        isCurrentUser={user?.id != null && item.userId === user.id}
+        groupId={groupId}
+        nudgeEnabled={groupData?.data?.nudgeEnabled === true}
+        onNudgePress={handleNudgePress}
+        isNudgePending={nudgeMutation.isPending}
+        ranking={items}
+      />
+    ),
+    [user?.id, groupId, groupData?.data?.nudgeEnabled, handleNudgePress, nudgeMutation.isPending, items],
+  );
+
   if (items.length === 0) {
     return (
       <View style={styles.container}>
@@ -279,17 +294,7 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
         initialNumToRender={10}
         windowSize={5}
         getItemLayout={(_data, index) => ({ length: ROW_HEIGHT, offset: ROW_HEIGHT * index, index })}
-        renderItem={({ item }) => (
-          <RankingRow
-            item={item}
-            isCurrentUser={user?.id != null && item.userId === user.id}
-            groupId={groupId}
-            nudgeEnabled={groupData?.data?.nudgeEnabled === true}
-            onNudgePress={handleNudgePress}
-            isNudgePending={nudgeMutation.isPending}
-            ranking={items}
-          />
-        )}
+        renderItem={renderRankingItem}
         contentContainerStyle={[
           styles.listContent,
           { paddingTop: theme.spacing.md, paddingBottom: theme.spacing.md },

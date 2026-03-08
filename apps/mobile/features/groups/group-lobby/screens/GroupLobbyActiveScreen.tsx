@@ -342,6 +342,25 @@ export function GroupLobbyActiveScreen({
     router.push({ pathname: '/groups/[id]/activity', params: { id: String(group.id) } });
   }, [router, group.id]);
 
+  const renderMiniChatItem = useCallback(
+    ({ item }: { item: (typeof chatMessages)[0] }) => {
+      const isMe = item.senderId === user?.id;
+      return (
+        <View style={[styles.miniMsg, { backgroundColor: colorScheme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)" }, isMe && [styles.miniMsgMe, { backgroundColor: theme.colors.primary }]]}>
+          {!isMe && (
+            <Text style={[styles.miniMsgSender, { color: theme.colors.primary }]}>
+              {item.sender?.username ?? ""}
+            </Text>
+          )}
+          <Text style={[styles.miniMsgBody, { color: theme.colors.textPrimary }, isMe && { color: theme.colors.textInverse }]} numberOfLines={2}>
+            {item.body}
+          </Text>
+        </View>
+      );
+    },
+    [user?.id, colorScheme, theme],
+  );
+
   const handlePredictAll = useCallback(() => {
     // Find first upcoming unpredicted fixture
     const upcomingUnpredicted = fixtures.find(
@@ -621,21 +640,7 @@ export function GroupLobbyActiveScreen({
             <FlatList
               data={chatMessages.filter((m) => m.type === "user_message").slice(0, 8)}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => {
-                const isMe = item.senderId === user?.id;
-                return (
-                  <View style={[styles.miniMsg, { backgroundColor: colorScheme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)" }, isMe && [styles.miniMsgMe, { backgroundColor: theme.colors.primary }]]}>
-                    {!isMe && (
-                      <Text style={[styles.miniMsgSender, { color: theme.colors.primary }]}>
-                        {item.sender?.username ?? ""}
-                      </Text>
-                    )}
-                    <Text style={[styles.miniMsgBody, { color: theme.colors.textPrimary }, isMe && { color: theme.colors.textInverse }]} numberOfLines={2}>
-                      {item.body}
-                    </Text>
-                  </View>
-                );
-              }}
+              renderItem={renderMiniChatItem}
               inverted
               style={styles.miniChatList}
               contentContainerStyle={styles.miniChatContent}

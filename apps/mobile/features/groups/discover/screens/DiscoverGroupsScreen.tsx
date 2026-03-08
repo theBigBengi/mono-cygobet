@@ -78,6 +78,16 @@ export function DiscoverGroupsScreen() {
     }
   }, [data?.pagination]);
 
+  const renderGroupItem = useCallback(
+    ({ item }: { item: (typeof accumulated)[0] }) => (
+      <PublicGroupRow
+        group={item}
+        onJoinSuccess={() => router.replace(`/groups/${item.id}`)}
+      />
+    ),
+    [router],
+  );
+
   const hasMore =
     data?.pagination != null &&
     data.pagination.page < data.pagination.totalPages;
@@ -140,12 +150,7 @@ export function DiscoverGroupsScreen() {
         <FlatList
           data={accumulated}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => (
-            <PublicGroupRow
-              group={item}
-              onJoinSuccess={() => router.replace(`/groups/${item.id}`)}
-            />
-          )}
+          renderItem={renderGroupItem}
           removeClippedSubviews={Platform.OS === "android"}
           maxToRenderPerBatch={10}
           initialNumToRender={10}

@@ -1,7 +1,7 @@
 // features/groups/chat/components/MentionPicker.tsx
 // Dropdown picker for @mentions — members and fixtures with section headers, icons, empty state, close button.
 
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { View, SectionList, Pressable, StyleSheet } from "react-native";
 import { Image } from "expo-image";
@@ -109,6 +109,39 @@ export function MentionPicker({
   const hasQuery = query.length >= 0;
   const showEmpty = hasQuery && sections.length === 0;
 
+  const renderSectionHeader = useCallback(
+    ({ section: { title } }: { section: { title: string } }) => (
+      <View
+        style={[
+          styles.sectionHeader,
+          { backgroundColor: theme.colors.surface },
+        ]}
+      >
+        <AppText
+          variant="caption"
+          style={[
+            styles.sectionTitle,
+            { color: theme.colors.textSecondary },
+          ]}
+        >
+          {title}
+        </AppText>
+      </View>
+    ),
+    [theme],
+  );
+
+  const renderMentionItem = useCallback(
+    ({ item }: { item: MentionOption }) => (
+      <OptionRow
+        item={item}
+        onPress={() => onSelect(item)}
+        theme={theme}
+      />
+    ),
+    [onSelect, theme],
+  );
+
   return (
     <View
       style={[
@@ -150,31 +183,8 @@ export function MentionPicker({
           keyExtractor={(item) => `${item.type}-${item.id}`}
           keyboardShouldPersistTaps="always"
           stickySectionHeadersEnabled={false}
-          renderSectionHeader={({ section: { title } }) => (
-            <View
-              style={[
-                styles.sectionHeader,
-                { backgroundColor: theme.colors.surface },
-              ]}
-            >
-              <AppText
-                variant="caption"
-                style={[
-                  styles.sectionTitle,
-                  { color: theme.colors.textSecondary },
-                ]}
-              >
-                {title}
-              </AppText>
-            </View>
-          )}
-          renderItem={({ item }) => (
-            <OptionRow
-              item={item}
-              onPress={() => onSelect(item)}
-              theme={theme}
-            />
-          )}
+          renderSectionHeader={renderSectionHeader}
+          renderItem={renderMentionItem}
         />
       )}
     </View>

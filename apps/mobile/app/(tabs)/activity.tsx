@@ -49,6 +49,11 @@ function ActivityContent() {
     await refetch();
   }, [refetch]);
 
+  const renderActivityItem = useCallback(
+    ({ item }: { item: ApiActivityFeedItem }) => <ActivityCard item={item} />,
+    [],
+  );
+
   const items: ApiActivityFeedItem[] =
     data?.pages.flatMap((p) => p.data.items) ?? [];
 
@@ -76,7 +81,7 @@ function ActivityContent() {
       <FlatList
         data={items}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => <ActivityCard item={item} />}
+        renderItem={renderActivityItem}
         removeClippedSubviews={Platform.OS === "android"}
         maxToRenderPerBatch={10}
         initialNumToRender={10}

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from "react";
+import React, { useCallback, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   View,
@@ -408,7 +408,7 @@ export function PredictionsOverviewTable({
   };
 
   // Render participant row - ONLY match cells (left column is outside)
-  const renderRow = ({
+  const renderRow = useCallback(({
     item: participant,
     index,
   }: {
@@ -513,7 +513,7 @@ export function PredictionsOverviewTable({
         })}
       </View>
     );
-  };
+  }, [theme, fixtures, currentUserId, totalWidth, actualGameColumnWidth, showLivePoints, liveBonusMap, getPrediction, getPoints, formatPrediction, getPointsCellBg, getPointsColor, calculateLivePoints]);
 
   return (
     <View
