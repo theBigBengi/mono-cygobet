@@ -38,9 +38,25 @@
 
 ---
 
+### 5. Rules of Hooks violation ב-GamesTimeline
+**קובץ:** `components/ui/GamesTimeline.tsx` (שורה 91)
+
+Early return `if (gamesCount === 0) return null` מתרחש אחרי `useState`/`useRef`/`useCallback` hooks אבל לפני `useEffect` hooks בשורות 115 ו-128. אם `games` עובר מלא-ריק לריק ובחזרה, React יראה מספר שונה של hooks ויקרוס.
+
+**תיקון:** להעביר את ה-early return לפני כל ה-hooks, או לטפל במצב הריק בתוך ה-return של הקומפוננטה.
+
+### 6. כפתור Retry כפול ב-AppStartGate
+**קובץ:** `components/AppStart/AppStartGate.tsx` (שורות 84-89)
+
+`QueryErrorView` כבר מציג כפתור retry דרך `onRetry` prop, ואז `extraActions` מוסיף עוד כפתור retry. התוצאה: **שני** כפתורי retry על מסך השגיאה.
+
+**תיקון:** להסיר את כפתור ה-retry מ-`extraActions`.
+
+---
+
 ## גבוה (High)
 
-### 5. Race condition ב-`useUsernameAvailability`
+### 7. Race condition ב-`useUsernameAvailability`
 **קובץ:** `lib/auth/useUsernameAvailability.ts` (שורות 35-42)
 
 אם המשתמש מקליד "abc" ואז מהר "abcd", שתי קריאות API יוצאות. אם התשובה ל-"abcd" מגיעה לפני "abc", הסטטוס הסופי ישקף "abc" (לא עדכני).
@@ -236,8 +252,8 @@ const statsQuery = useUserStatsQuery(user?.id ?? 0);
 
 | חומרה | כמות |
 |--------|------|
-| קריטי | 4 |
+| קריטי | 6 |
 | גבוה | 7 |
 | בינוני | 11 |
 | נמוך | 12 |
-| **סה"כ** | **34** |
+| **סה"כ** | **36** |
