@@ -2,7 +2,8 @@
 // Shared card for lobby actions (Ranking, Chat, Invite, Predictions Overview).
 
 import React from "react";
-import { View, StyleSheet, Pressable, Image } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -103,8 +104,9 @@ export function LobbyActionCard({
             <View style={styles.messagePreview}>
               {lastMessage.senderAvatar ? (
                 <Image
-                  source={{ uri: lastMessage.senderAvatar }}
+                  source={lastMessage.senderAvatar}
                   style={styles.avatar}
+                  cachePolicy="disk"
                 />
               ) : (
                 <View

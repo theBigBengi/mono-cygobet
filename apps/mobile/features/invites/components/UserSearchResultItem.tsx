@@ -2,7 +2,8 @@
 // Compact row: avatar, username, isInSharedGroup, Invite button.
 
 import React from "react";
-import { View, StyleSheet, Image, Text, Pressable, Alert } from "react-native";
+import { View, StyleSheet, Text, Pressable, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
@@ -41,9 +42,9 @@ export function UserSearchResultItem({
         >
           {user.image ? (
             <Image
-              source={{ uri: user.image }}
+              source={user.image}
               style={styles.avatarImage}
-              accessibilityIgnoresInvertColors
+              cachePolicy="disk"
             />
           ) : (
             <Text style={[styles.initials, { color: theme.colors.textPrimary }]}>

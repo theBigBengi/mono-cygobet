@@ -4,7 +4,8 @@
 // - Supports custom size.
 
 import React from "react";
-import { View, Image, ImageStyle, ViewStyle, StyleSheet } from "react-native";
+import { View, ImageStyle, ViewStyle, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "./AppText";
 
@@ -37,7 +38,7 @@ interface TeamLogoProps {
 
 /**
  * TeamLogo component - displays team logo or placeholder.
- * 
+ *
  * @example
  * <TeamLogo imagePath={team.imagePath} teamName="Arsenal" size={56} />
  */
@@ -54,7 +55,7 @@ export function TeamLogo({
   if (imagePath) {
     return (
       <Image
-        source={{ uri: imagePath }}
+        source={imagePath}
         style={[
           {
             width: size,
@@ -62,7 +63,8 @@ export function TeamLogo({
           },
           style,
         ]}
-        resizeMode="contain"
+        contentFit="contain"
+        cachePolicy="disk"
       />
     );
   }

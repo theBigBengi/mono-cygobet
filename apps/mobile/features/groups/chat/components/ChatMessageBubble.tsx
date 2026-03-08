@@ -2,7 +2,8 @@
 // Message bubble for user messages — yours on right (primary bg), others on left (surface bg). Mentions highlighted.
 
 import React from "react";
-import { View, StyleSheet, Text, Image } from "react-native";
+import { View, StyleSheet, Text } from "react-native";
+import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import { useTheme } from "@/lib/theme";
@@ -118,9 +119,9 @@ export function ChatMessageBubble({
       {!isCurrentUser &&
         (message.sender?.image ? (
           <Image
-            source={{ uri: message.sender.image }}
+            source={message.sender.image}
             style={styles.avatar}
-            accessibilityIgnoresInvertColors
+            cachePolicy="disk"
           />
         ) : (
           <View

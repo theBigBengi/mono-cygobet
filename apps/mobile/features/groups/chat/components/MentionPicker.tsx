@@ -3,7 +3,8 @@
 
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { View, SectionList, Pressable, StyleSheet, Image } from "react-native";
+import { View, SectionList, Pressable, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
@@ -46,9 +47,9 @@ function OptionRow({
     >
       {item.image ? (
         <Image
-          source={{ uri: item.image }}
+          source={item.image}
           style={styles.optionAvatar}
-          accessibilityIgnoresInvertColors
+          cachePolicy="disk"
         />
       ) : (
         <View

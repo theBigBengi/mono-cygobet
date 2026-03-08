@@ -2,7 +2,8 @@
 // Single invite in inbox: group name, inviter, message, expires, Accept/Decline.
 
 import React from "react";
-import { View, StyleSheet, Image, Pressable } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText, Button } from "@/components/ui";
@@ -154,9 +155,9 @@ export function InviteCard({
           >
             {invite.inviter.image ? (
               <Image
-                source={{ uri: invite.inviter.image }}
+                source={invite.inviter.image}
                 style={styles.avatarImage}
-                accessibilityIgnoresInvertColors
+                cachePolicy="disk"
               />
             ) : (
               <AppText

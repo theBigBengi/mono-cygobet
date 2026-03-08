@@ -2,7 +2,8 @@
 // Displays badges earned from official groups.
 
 import React from "react";
-import { View, Image, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -24,8 +25,9 @@ function EarnedBadgeRow({ badge }: { badge: ApiEarnedBadge }) {
       <View style={styles.iconWrap}>
         {badge.icon.startsWith("http") ? (
           <Image
-            source={{ uri: badge.icon }}
+            source={badge.icon}
             style={styles.iconImage}
+            cachePolicy="disk"
           />
         ) : (
           <AppText style={styles.icon}>{badge.icon}</AppText>

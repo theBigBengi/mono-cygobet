@@ -2,7 +2,8 @@
 // Bottom sheet with scrollable list of competitions/leagues for filtering.
 
 import React, { useCallback, useMemo } from "react";
-import { View, StyleSheet, Pressable, Image } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import { Image } from "expo-image";
 import {
   BottomSheetModal,
   BottomSheetScrollView,
@@ -164,9 +165,10 @@ export function CompetitionPickerSheet({
             >
               {competition.imagePath ? (
                 <Image
-                  source={{ uri: competition.imagePath }}
+                  source={competition.imagePath}
                   style={styles.competitionLogo}
-                  resizeMode="contain"
+                  contentFit="contain"
+                  cachePolicy="disk"
                 />
               ) : (
                 <View

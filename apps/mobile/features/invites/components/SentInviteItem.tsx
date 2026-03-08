@@ -2,7 +2,8 @@
 // Compact row showing a sent invite with cancel option.
 
 import React from "react";
-import { View, StyleSheet, Image, Text, Alert, Pressable } from "react-native";
+import { View, StyleSheet, Text, Alert, Pressable } from "react-native";
+import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
@@ -60,9 +61,9 @@ export function SentInviteItem({
       >
         {invite.inviteeImage ? (
           <Image
-            source={{ uri: invite.inviteeImage }}
+            source={invite.inviteeImage}
             style={styles.avatarImage}
-            accessibilityIgnoresInvertColors
+            cachePolicy="disk"
           />
         ) : (
           <Text style={[styles.initials, { color: theme.colors.textPrimary }]}>
