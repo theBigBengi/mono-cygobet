@@ -64,6 +64,9 @@ export class UserAuthService {
       email: string;
       username: string | null;
       name: string | null;
+      role: string;
+      hasPassword: boolean;
+      onboardingRequired: boolean;
     };
     accessToken: string;
     refreshToken: string;
@@ -129,6 +132,8 @@ export class UserAuthService {
       // Ensure profile exists (onboarding_done defaults to false)
       await ensureUserProfile(tx, user.id);
 
+      const onboardingRequired = await isOnboardingRequired(tx, user.id);
+
       const { rawToken: refreshToken } = await createUserRefreshSession(
         tx,
         user.id,
@@ -143,6 +148,9 @@ export class UserAuthService {
           email: user.email,
           username: user.username,
           name: user.name,
+          role: user.role,
+          hasPassword: true,
+          onboardingRequired,
         },
         accessToken,
         refreshToken,
@@ -163,6 +171,9 @@ export class UserAuthService {
       email: string;
       username: string | null;
       name: string | null;
+      role: string;
+      hasPassword: boolean;
+      onboardingRequired: boolean;
     };
     accessToken: string;
     refreshToken: string;
@@ -212,6 +223,8 @@ export class UserAuthService {
       // Ensure profile exists for any user logging in (idempotent)
       await ensureUserProfile(tx, user.id);
 
+      const onboardingRequired = await isOnboardingRequired(tx, user.id);
+
       await tx.users.update({
         where: { id: user.id },
         data: { lastLoginAt: now },
@@ -226,6 +239,9 @@ export class UserAuthService {
           email: user.email,
           username: user.username,
           name: user.name,
+          role: user.role,
+          hasPassword: true,
+          onboardingRequired,
         },
         accessToken,
         refreshToken,
@@ -247,6 +263,9 @@ export class UserAuthService {
       username: string | null;
       name: string | null;
       image: string | null;
+      role: string;
+      hasPassword: boolean;
+      onboardingRequired: boolean;
     };
     accessToken: string;
     refreshToken: string;
@@ -313,6 +332,7 @@ export class UserAuthService {
             name: true,
             image: true,
             role: true,
+            password: true,
             emailVerifiedAt: true,
           },
         });
@@ -367,6 +387,7 @@ export class UserAuthService {
               name: true,
               image: true,
               role: true,
+              password: true,
             },
           });
 
@@ -391,6 +412,8 @@ export class UserAuthService {
         select: { id: true },
       });
 
+      const onboardingRequired = await isOnboardingRequired(tx, user.id);
+
       // Create refresh session
       const { rawToken: refreshToken } = await createUserRefreshSession(
         tx,
@@ -407,6 +430,9 @@ export class UserAuthService {
           username: user.username,
           name: user.name,
           image: user.image,
+          role: user.role,
+          hasPassword: !!user.password,
+          onboardingRequired,
         },
         accessToken,
         refreshToken,

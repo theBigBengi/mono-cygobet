@@ -395,18 +395,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setAccessToken(response.accessToken);
         accessTokenRef.current = response.accessToken;
 
-        // Map returned minimal user shape into domain user (server /auth/register
-        // returns id,email,username,name,image but not role/onboarding flags).
         const userData: User = {
           id: response.user.id,
           email: response.user.email,
           username: response.user.username,
           name: response.user.name,
           image: response.user.image,
-          role: "user", // default role for newly registered users
-          onboardingRequired:
-            !response.user.username || response.user.username.trim().length === 0,
-          hasPassword: true, // assume password-based registration
+          role: response.user.role,
+          onboardingRequired: response.user.onboardingRequired,
+          hasPassword: response.user.hasPassword,
         };
 
         setUser(userData);

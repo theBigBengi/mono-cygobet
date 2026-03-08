@@ -7,6 +7,9 @@ export interface UserRegisterResponse {
     username: string | null;
     name: string | null;
     image?: string | null;
+    role: string;
+    hasPassword: boolean;
+    onboardingRequired: boolean;
   };
   accessToken: string;
   refreshToken: string;
@@ -19,6 +22,9 @@ export interface UserLoginResponse {
     username: string | null;
     name: string | null;
     image?: string | null;
+    role: string;
+    hasPassword: boolean;
+    onboardingRequired: boolean;
   };
   accessToken: string;
   refreshToken: string;
@@ -31,6 +37,9 @@ export interface UserGoogleResponse {
     username: string | null;
     name: string | null;
     image: string | null;
+    role: string;
+    hasPassword: boolean;
+    onboardingRequired: boolean;
   };
   accessToken: string;
   refreshToken: string;

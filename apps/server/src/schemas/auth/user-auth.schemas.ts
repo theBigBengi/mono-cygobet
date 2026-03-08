@@ -62,7 +62,7 @@ export const userAuthResponseSchema = {
   properties: {
     user: {
       type: "object",
-      required: ["id", "email", "username", "name"],
+      required: ["id", "email", "username", "name", "role", "hasPassword", "onboardingRequired"],
       additionalProperties: false,
       properties: {
         id: { type: "integer" },
@@ -70,6 +70,9 @@ export const userAuthResponseSchema = {
         username: { anyOf: [{ type: "string" }, { type: "null" }] },
         name: { anyOf: [{ type: "string" }, { type: "null" }] },
         image: { anyOf: [{ type: "string" }, { type: "null" }] },
+        role: { type: "string" },
+        hasPassword: { type: "boolean" },
+        onboardingRequired: { type: "boolean" },
       },
     },
     accessToken: { type: "string" },
