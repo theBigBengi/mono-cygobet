@@ -18,6 +18,15 @@ export function FeatureErrorFallback({
   const { theme } = useTheme();
   const router = useRouter();
 
+  const handleGoBack = () => {
+    resetErrorBoundary();
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(tabs)/groups");
+    }
+  };
+
   const handleGoHome = () => {
     resetErrorBoundary();
     router.replace("/(tabs)/groups");
@@ -56,9 +65,15 @@ export function FeatureErrorFallback({
           style={styles.button}
         />
         <Button
+          label={t("errors.goBack")}
+          onPress={handleGoBack}
+          variant="secondary"
+          style={styles.button}
+        />
+        <Button
           label={t("errors.goToHome")}
           onPress={handleGoHome}
-          variant="secondary"
+          variant="ghost"
           style={styles.button}
         />
       </View>

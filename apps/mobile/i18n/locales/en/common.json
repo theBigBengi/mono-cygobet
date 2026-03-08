@@ -673,6 +673,7 @@
     "unexpected": "An unexpected error occurred. Please try again.",
     "somethingWentWrongTitle": "Something went wrong",
     "tryAgain": "Try Again",
+    "goBack": "Go Back",
     "goToHome": "Go to Home",
     "pageNotFound": "Page Not Found",
     "pageNotFoundDescription": "The page you're looking for doesn't exist."

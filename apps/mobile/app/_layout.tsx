@@ -315,7 +315,6 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     if (retry) {
       retry();
     } else {
-      // Fallback: navigate to root (handles auth-based redirect)
       router.replace("/");
     }
   };
@@ -325,12 +324,13 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   };
 
   const userMessage = getUserFriendlyMessage(error);
-
   const colors = isDark ? darkColors : lightColors;
 
   return (
-    <View style={[errorBoundaryStyles.container, { backgroundColor: colors.bg }]}>
+    <View style={[errorBoundaryStyles.container, { backgroundColor: colors.bg, paddingTop: 60 }]}>
       <View style={errorBoundaryStyles.content}>
+        <Text style={[errorBoundaryStyles.icon]}>⚠️</Text>
+
         <Text style={[errorBoundaryStyles.title, { color: colors.text }]}>
           {t("errors.somethingWentWrongTitle") || "Something went wrong"}
         </Text>
@@ -338,7 +338,18 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
           {userMessage}
         </Text>
 
-        <Pressable style={errorBoundaryStyles.button} onPress={handleRetry}>
+        {__DEV__ && (
+          <Text style={[errorBoundaryStyles.devError, { color: colors.textSecondary }]}>
+            {error.message}
+          </Text>
+        )}
+
+        <Pressable
+          style={errorBoundaryStyles.button}
+          onPress={handleRetry}
+          accessibilityRole="button"
+          accessibilityLabel={t("errors.tryAgain") || "Try Again"}
+        >
           <Text style={errorBoundaryStyles.buttonText}>
             {t("errors.tryAgain") || "Try Again"}
           </Text>
@@ -350,6 +361,8 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
             { backgroundColor: colors.secondaryBg, borderWidth: 1, borderColor: colors.secondaryBorder },
           ]}
           onPress={handleGoHome}
+          accessibilityRole="button"
+          accessibilityLabel={t("errors.goToHome") || "Go to Home"}
         >
           <Text
             style={[
@@ -394,6 +407,10 @@ const errorBoundaryStyles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
   },
+  icon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
   title: {
     fontSize: 24,
     fontWeight: "600",
@@ -405,6 +422,12 @@ const errorBoundaryStyles = StyleSheet.create({
     marginBottom: 32,
     textAlign: "center",
     lineHeight: 24,
+  },
+  devError: {
+    fontSize: 12,
+    marginBottom: 24,
+    textAlign: "center",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   button: {
     backgroundColor: "#007AFF",

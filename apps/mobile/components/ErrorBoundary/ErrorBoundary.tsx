@@ -6,6 +6,7 @@ import {
   ErrorBoundary as ReactErrorBoundary,
   FallbackProps,
 } from "react-error-boundary";
+import { useQueryClient } from "@tanstack/react-query";
 import { handleError } from "@/lib/errors";
 import { FeatureErrorFallback } from "./FeatureErrorFallback";
 
@@ -16,6 +17,8 @@ interface Props {
 }
 
 export function ErrorBoundary({ children, feature, fallback }: Props) {
+  const queryClient = useQueryClient();
+
   const handleErrorCallback = useCallback(
     (error: Error, info: React.ErrorInfo) => {
       handleError(error, {
@@ -27,15 +30,18 @@ export function ErrorBoundary({ children, feature, fallback }: Props) {
     [feature]
   );
 
+  const handleReset = useCallback(() => {
+    // Remove failed queries so the feature re-fetches fresh data
+    queryClient.removeQueries({ predicate: (q) => q.state.status === "error" });
+  }, [queryClient]);
+
   const FallbackComponent = fallback ?? FeatureErrorFallback;
 
   return (
     <ReactErrorBoundary
       FallbackComponent={FallbackComponent}
       onError={handleErrorCallback}
-      onReset={() => {
-        // Reset any state that might have caused the error
-      }}
+      onReset={handleReset}
     >
       {children}
     </ReactErrorBoundary>
