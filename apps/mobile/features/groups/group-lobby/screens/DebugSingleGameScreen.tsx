@@ -402,7 +402,7 @@ export function DebugSingleGameScreen() {
                 <Text
                   style={[
                     styles.tabText,
-                    { color: activeMode === m.key ? "#fff" : theme.colors.textPrimary },
+                    { color: activeMode === m.key ? theme.colors.textInverse : theme.colors.textPrimary },
                   ]}
                 >
                   {m.label}
@@ -443,7 +443,7 @@ export function DebugSingleGameScreen() {
                     <View key={digit} style={styles.v2Digit}>
                       {isActive ? (
                         <View style={[styles.v2Thumb, { backgroundColor: thumbColor }]}>
-                          <Text style={styles.v2ThumbText}>{digit}</Text>
+                          <Text style={[styles.v2ThumbText, { color: theme.colors.textInverse }]}>{digit}</Text>
                         </View>
                       ) : (
                         <Text style={[styles.v2DigitText, { color: theme.colors.textSecondary }]}>{digit}</Text>
@@ -609,8 +609,8 @@ export function DebugSingleGameScreen() {
                   return (
                     <View key={digit} style={styles.v2Digit}>
                       {isActive ? (
-                        <View style={[styles.v2Thumb, { backgroundColor: "#3B82F6" }]}>
-                          <Text style={styles.v2ThumbText}>{digit}</Text>
+                        <View style={[styles.v2Thumb, { backgroundColor: theme.colors.live }]}>
+                          <Text style={[styles.v2ThumbText, { color: theme.colors.textInverse }]}>{digit}</Text>
                         </View>
                       ) : (
                         <Text style={[styles.v2DigitText, { color: theme.colors.textSecondary }]}>{digit}</Text>
@@ -720,7 +720,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   v2ThumbText: {
-    color: "#fff",
     fontSize: 20,
     fontWeight: "800",
   },

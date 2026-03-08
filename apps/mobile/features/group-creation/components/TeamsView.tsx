@@ -130,7 +130,7 @@ export function TeamsView({ tabs }: TeamsViewProps) {
           style={[
             styles.searchContainer,
             { backgroundColor: theme.colors.background },
-            isSearchSticky && styles.stickyDropShadow,
+            isSearchSticky && [styles.stickyDropShadow, { borderBottomColor: theme.colors.textPrimary + "1F" }],
           ]}
         >
           <View
@@ -234,6 +234,5 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
     borderBottomWidth: Platform.OS === "android" ? StyleSheet.hairlineWidth : 0,
-    borderBottomColor: "rgba(0,0,0,0.12)",
   },
 });

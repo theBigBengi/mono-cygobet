@@ -526,7 +526,7 @@ function SettingsContent() {
               },
             ]}
           >
-            <Text style={styles.sheetDoneBtnText}>{t("done")}</Text>
+            <Text style={[styles.sheetDoneBtnText, { color: theme.colors.textInverse }]}>{t("done")}</Text>
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
@@ -610,7 +610,7 @@ function SettingsContent() {
               },
             ]}
           >
-            <Text style={styles.sheetDoneBtnText}>{t("done")}</Text>
+            <Text style={[styles.sheetDoneBtnText, { color: theme.colors.textInverse }]}>{t("done")}</Text>
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
@@ -693,7 +693,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sheetDoneBtnText: {
-    color: "#fff",
     fontSize: 15,
     fontWeight: "600",
   },

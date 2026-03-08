@@ -98,7 +98,7 @@ function LobbyQuickActionsInner({
               { backgroundColor: theme.colors.danger },
             ]}
           >
-            <Text style={styles.badgeText}>
+            <Text style={[styles.badgeText, { color: theme.colors.textInverse }]}>
               {action.badge! > 99 ? "99+" : action.badge}
             </Text>
           </View>
@@ -213,7 +213,6 @@ pill: {
     paddingHorizontal: 5,
   },
   badgeText: {
-    color: "#fff",
     fontWeight: "700",
     fontSize: 10,
   },

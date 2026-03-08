@@ -634,7 +634,7 @@ export function CreateGroupFlow({
             disabled={predictionMode === initialPredictionMode.current}
             style={({ pressed }) => [createStyles.sheetDoneBtn, { backgroundColor: theme.colors.primary, opacity: predictionMode === initialPredictionMode.current ? 0.4 : pressed ? 0.8 : 1 }]}
           >
-            <Text style={createStyles.sheetDoneBtnText}>{t("done")}</Text>
+            <Text style={[createStyles.sheetDoneBtnText, { color: theme.colors.textInverse }]}>{t("done")}</Text>
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
@@ -676,7 +676,7 @@ export function CreateGroupFlow({
               return [createStyles.sheetDoneBtn, { backgroundColor: theme.colors.primary, opacity: unchanged ? 0.4 : pressed ? 0.8 : 1 }];
             }}
           >
-            <Text style={createStyles.sheetDoneBtnText}>{t("done")}</Text>
+            <Text style={[createStyles.sheetDoneBtnText, { color: theme.colors.textInverse }]}>{t("done")}</Text>
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
@@ -700,7 +700,7 @@ export function CreateGroupFlow({
             disabled={koRoundMode === initialKoRoundMode.current}
             style={({ pressed }) => [createStyles.sheetDoneBtn, { backgroundColor: theme.colors.primary, opacity: koRoundMode === initialKoRoundMode.current ? 0.4 : pressed ? 0.8 : 1 }]}
           >
-            <Text style={createStyles.sheetDoneBtnText}>{t("done")}</Text>
+            <Text style={[createStyles.sheetDoneBtnText, { color: theme.colors.textInverse }]}>{t("done")}</Text>
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
@@ -720,7 +720,7 @@ export function CreateGroupFlow({
             disabled={maxMembers === initialMaxMembers.current}
             style={({ pressed }) => [createStyles.sheetDoneBtn, { backgroundColor: theme.colors.primary, opacity: maxMembers === initialMaxMembers.current ? 0.4 : pressed ? 0.8 : 1 }]}
           >
-            <Text style={createStyles.sheetDoneBtnText}>{t("done")}</Text>
+            <Text style={[createStyles.sheetDoneBtnText, { color: theme.colors.textInverse }]}>{t("done")}</Text>
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
@@ -758,7 +758,7 @@ export function CreateGroupFlow({
               return [createStyles.sheetDoneBtn, { backgroundColor: theme.colors.primary, opacity: unchanged ? 0.4 : pressed ? 0.8 : 1 }];
             }}
           >
-            <Text style={createStyles.sheetDoneBtnText}>{t("done")}</Text>
+            <Text style={[createStyles.sheetDoneBtnText, { color: theme.colors.textInverse }]}>{t("done")}</Text>
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>

@@ -71,19 +71,19 @@ export function Button({
     }
     if (variant === "primary") {
       // Dark overlay for 3D effect
-      return "rgba(0,0,0,0.25)";
+      return theme.colors.textPrimary + "40";
     }
     if (variant === "secondary") {
       return theme.colors.textSecondary + "50";
     }
     // danger
-    return "rgba(0,0,0,0.25)";
+    return theme.colors.textPrimary + "40";
   };
 
   // Determine shadow color
   const getShadowColor = () => {
     if (disabled) {
-      return "#000";
+      return theme.colors.textPrimary;
     }
     if (variant === "primary") {
       return theme.colors.primary;
@@ -91,7 +91,7 @@ export function Button({
     if (variant === "danger") {
       return theme.colors.danger;
     }
-    return "#000";
+    return theme.colors.textPrimary;
   };
 
   // Determine text color based on variant and disabled state

@@ -789,7 +789,7 @@ const PublicGroupRow = React.memo(function PublicGroupRow({
                       : "transparent",
                     borderBottomColor: joinMutation.isPending
                       ? theme.colors.textSecondary + "40"
-                      : "rgba(0,0,0,0.25)",
+                      : theme.colors.textPrimary + "40",
                     borderBottomWidth: pressed ? 1 : CARD_BORDER_BOTTOM_WIDTH,
                     transform: [{ scale: pressed ? 0.95 : 1 }],
                     opacity: joinMutation.isPending ? 0.6 : 1,

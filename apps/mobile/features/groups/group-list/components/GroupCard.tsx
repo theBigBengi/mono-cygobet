@@ -64,9 +64,10 @@ const RankingHudCell = React.memo(function RankingHudCellInner({
   userRank,
   textSecondary,
 }: RankingHudCellProps) {
+  const { theme } = useTheme();
   const isLit = rankChange !== 0;
   const isUp = rankChange > 0;
-  const rankColor = isUp ? "#10B981" : "#EF4444";
+  const rankColor = isUp ? theme.colors.success : theme.colors.danger;
   return (
     <View style={styles.hudCell}>
       <Ionicons
@@ -110,6 +111,7 @@ const PredictionsHudCell = React.memo(function PredictionsHudCellInner({
   urgencyColor,
   textSecondary,
 }: PredictionsHudCellProps) {
+  const { theme } = useTheme();
   const missingCount = totalFixtures - predictionsCount;
   const isComplete = totalFixtures > 0 && missingCount === 0;
   const hasUrgency = !isComplete && urgencyColor;
@@ -130,7 +132,7 @@ const PredictionsHudCell = React.memo(function PredictionsHudCellInner({
           hasUrgency
             ? litColor!
             : isComplete
-              ? "#10B981"
+              ? theme.colors.success
               : textSecondary + "50"
         }
       />
@@ -163,9 +165,10 @@ const GamesHudCell = React.memo(function GamesHudCellInner({
   completedGames,
   textSecondary,
 }: GamesHudCellProps) {
+  const { theme } = useTheme();
   const isLit = liveCount > 0;
   const allCompleted = totalFixtures > 0 && completedGames === totalFixtures;
-  const liveColor = "#EC4899";
+  const liveColor = theme.colors.live;
   return (
     <View
       style={[
@@ -188,7 +191,7 @@ const GamesHudCell = React.memo(function GamesHudCellInner({
           isLit
             ? liveColor
             : allCompleted
-              ? "#10B981"
+              ? theme.colors.success
               : textSecondary + "50"
         }
       />
@@ -537,9 +540,9 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
   // Colors for each urgency level
   const URGENCY_COLORS = {
     none: null,
-    week: "#EAB308",    // Yellow
-    tomorrow: "#F97316", // Orange
-    today: "#EF4444",    // Red
+    week: theme.colors.warning,
+    tomorrow: theme.colors.accent,
+    today: theme.colors.danger,
   };
 
   const urgencyColor = URGENCY_COLORS[urgencyLevel];
@@ -578,7 +581,7 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
   const getStatusColor = () => {
     if (isDraft) return theme.colors.warning;
     if (isEnded) return theme.colors.textSecondary;
-    if (liveCount > 0) return "#EF4444"; // Live red
+    if (liveCount > 0) return theme.colors.danger; // Live red
     return theme.colors.primary; // Primary for active (like lobby)
   };
 
@@ -844,7 +847,7 @@ const styles = StyleSheet.create({
   liveBadge: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#3B82F6",
+    // color set via inline style (theme.colors.live)
   },
   rankSquare: {
     width: 20,

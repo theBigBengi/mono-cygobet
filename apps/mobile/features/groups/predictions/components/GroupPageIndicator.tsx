@@ -52,7 +52,7 @@ export function GroupPageIndicator({
       <AppText
         variant="label"
         numberOfLines={1}
-        style={[styles.groupName, { color: "#000", fontWeight: "700" }]}
+        style={[styles.groupName, { color: theme.colors.textPrimary, fontWeight: "700" }]}
       >
         {groupNames[currentIndex] ?? ""}
       </AppText>

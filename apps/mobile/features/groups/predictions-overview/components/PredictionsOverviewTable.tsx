@@ -111,18 +111,18 @@ export function PredictionsOverviewTable({
   const getPointsColor = (points: string | null): string => {
     if (!points) return theme.colors.textSecondary;
     const n = parseInt(points, 10);
-    if (n >= 3) return "#10B981";
-    if (n >= 2) return "#F59E0B";
-    if (n >= 1) return "#E8A308";
+    if (n >= 3) return theme.colors.success;
+    if (n >= 2) return theme.colors.warning;
+    if (n >= 1) return theme.colors.warning;
     return theme.colors.danger;
   };
 
   const getPointsCellBg = (points: string | null): string | undefined => {
     if (!points) return undefined;
     const n = parseInt(points, 10);
-    if (n >= 3) return "#10B98108";
-    if (n >= 2) return "#F59E0B08";
-    if (n >= 1) return "#E8A30808";
+    if (n >= 3) return theme.colors.success + "08";
+    if (n >= 2) return theme.colors.warning + "08";
+    if (n >= 1) return theme.colors.warning + "08";
     return theme.colors.danger + "08";
   };
 
@@ -397,7 +397,7 @@ export function PredictionsOverviewTable({
           {participant.username || t("common.unknown")}
         </AppText>
         {movedUp ? (
-          <Ionicons name="caret-up" size={10} color="#10B981" />
+          <Ionicons name="caret-up" size={10} color={theme.colors.success} />
         ) : movedDown ? (
           <Ionicons name="caret-down" size={10} color={theme.colors.danger} />
         ) : showLivePoints ? (

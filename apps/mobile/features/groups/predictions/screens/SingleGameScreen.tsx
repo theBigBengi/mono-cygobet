@@ -61,7 +61,7 @@ export function SingleGameScreen(props: SingleGameScreenProps) {
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.06)" }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.textPrimary + "0F" }]} />
 
       {isReady ? (
         <SingleGameContent {...props} />

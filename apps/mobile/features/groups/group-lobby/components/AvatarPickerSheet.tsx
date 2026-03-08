@@ -81,6 +81,10 @@ export function AvatarPickerSheet({
                   end={{ x: 1, y: 1 }}
                   style={[
                     styles.item,
+                    {
+                      borderColor: theme.colors.textInverse + "33",
+                      borderBottomColor: theme.colors.textPrimary + "26",
+                    },
                     isSelected && {
                       borderColor: theme.colors.primary,
                       borderWidth: 3,
@@ -89,10 +93,10 @@ export function AvatarPickerSheet({
                     },
                   ]}
                 >
-                  <Text style={styles.itemInitials}>{initials}</Text>
+                  <Text style={[styles.itemInitials, { color: theme.colors.textInverse }]}>{initials}</Text>
                 </LinearGradient>
                 {isSelected && (
-                  <View style={styles.checkBadge}>
+                  <View style={[styles.checkBadge, { backgroundColor: theme.colors.textInverse }]}>
                     <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
                   </View>
                 )}
@@ -138,20 +142,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.2)",
     borderBottomWidth: 4,
-    borderBottomColor: "rgba(0,0,0,0.15)",
   },
   itemInitials: {
     fontWeight: "800",
     fontSize: 20,
-    color: "#fff",
   },
   checkBadge: {
     position: "absolute",
     bottom: -4,
     right: -4,
-    backgroundColor: "#fff",
     borderRadius: 10,
     width: 20,
     height: 20,

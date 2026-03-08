@@ -213,12 +213,12 @@ export function GroupGamesDraftScreen({
             <Ionicons
               name="close-circle-outline"
               size={15}
-              color={removedCount > 0 ? "#EF4444" : theme.colors.textSecondary}
+              color={removedCount > 0 ? theme.colors.danger : theme.colors.textSecondary}
             />
             <AppText
               style={[
                 styles.statValue,
-                { color: removedCount > 0 ? "#EF4444" : theme.colors.text },
+                { color: removedCount > 0 ? theme.colors.danger : theme.colors.text },
               ]}
             >
               {removedCount}

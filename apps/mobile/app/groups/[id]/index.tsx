@@ -403,7 +403,7 @@ function GroupLobbyContent() {
             key={`chat-backdrop-${chatFocusKey.current}`}
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(200)}
-            style={styles.chatBackdrop}
+            style={[styles.chatBackdrop, { backgroundColor: theme.colors.overlay }]}
           >
             <Pressable style={StyleSheet.absoluteFill} onPress={() => {
               Keyboard.dismiss();
@@ -419,9 +419,7 @@ function GroupLobbyContent() {
               style={[
                 StyleSheet.absoluteFill,
                 Platform.OS === "android" && {
-                  backgroundColor: isDark
-                    ? "rgba(0, 0, 0, 0.85)"
-                    : "rgba(255, 255, 255, 0.85)",
+                  backgroundColor: theme.colors.background + "D9",
                 },
               ]}
             />
@@ -508,7 +506,7 @@ const styles = StyleSheet.create({
   },
   chatBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "transparent",
     zIndex: 50,
   },
   chatExpandable: {

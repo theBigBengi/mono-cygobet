@@ -440,7 +440,7 @@ export function GroupLobbyActiveScreen({
           onPress={handleViewActivity}
         />
 
-        {/* DEBUG — remove after done */}
+        {/* DEBUG buttons — debug-only UI, hardcoded colors intentional */}
         <View style={{ flexDirection: "row", gap: 8, marginHorizontal: 16, marginTop: 12 }}>
           <Pressable
             onPress={() => setShowDebugCTA(true)}
@@ -586,7 +586,7 @@ export function GroupLobbyActiveScreen({
             exiting={FadeOut.duration(150)}
             style={[styles.miniChatPanel, { backgroundColor: colorScheme === "dark" ? "#1E1E22" : "#FFFFFF", borderColor: theme.colors.border }]}
           >
-            <View style={styles.miniChatHeader}>
+            <View style={[styles.miniChatHeader, { borderBottomColor: theme.colors.border }]}>
               <Text style={[styles.miniChatTitle, { color: theme.colors.textPrimary }]}>
                 {t("chat.title", { defaultValue: "Chat" })}
               </Text>
@@ -611,13 +611,13 @@ export function GroupLobbyActiveScreen({
               renderItem={({ item }) => {
                 const isMe = item.senderId === user?.id;
                 return (
-                  <View style={[styles.miniMsg, isMe && styles.miniMsgMe]}>
+                  <View style={[styles.miniMsg, { backgroundColor: colorScheme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)" }, isMe && [styles.miniMsgMe, { backgroundColor: theme.colors.primary }]]}>
                     {!isMe && (
                       <Text style={[styles.miniMsgSender, { color: theme.colors.primary }]}>
                         {item.sender?.username ?? ""}
                       </Text>
                     )}
-                    <Text style={[styles.miniMsgBody, { color: theme.colors.textPrimary }, isMe && { color: "#fff" }]} numberOfLines={2}>
+                    <Text style={[styles.miniMsgBody, { color: theme.colors.textPrimary }, isMe && { color: theme.colors.textInverse }]} numberOfLines={2}>
                       {item.body}
                     </Text>
                   </View>
@@ -641,7 +641,7 @@ export function GroupLobbyActiveScreen({
               <Ionicons name="chatbubbles-outline" size={20} color={chatFocused || unreadChatCount > 0 ? theme.colors.textPrimary : theme.colors.textSecondary} style={chatFocused || unreadChatCount > 0 ? undefined : { opacity: 0.5 }} />
               {unreadChatCount > 0 && (
                 <View style={[styles.chatIconBadge, { backgroundColor: theme.colors.primary }]}>
-                  <Text style={styles.chatIconBadgeText}>{unreadChatCount > 9 ? "9+" : unreadChatCount}</Text>
+                  <Text style={[styles.chatIconBadgeText, { color: theme.colors.textInverse }]}>{unreadChatCount > 9 ? "9+" : unreadChatCount}</Text>
                 </View>
               )}
             </View>
@@ -796,7 +796,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   chatIconBadgeText: {
-    color: "#fff",
+    // color set dynamically via theme.colors.textInverse
     fontSize: 9,
     fontWeight: "700",
   },
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   chatBadgeText: {
-    color: "#fff",
+    // color set dynamically via theme.colors.textInverse
     fontSize: 11,
     fontWeight: "700",
   },
@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(0,0,0,0.06)",
+    // borderBottomColor set dynamically via theme.colors.border
   },
   miniChatTitle: {
     fontSize: 14,
@@ -853,7 +853,7 @@ const styles = StyleSheet.create({
   miniMsg: {
     alignSelf: "flex-start",
     maxWidth: "80%",
-    backgroundColor: "rgba(0,0,0,0.05)",
+    // backgroundColor set dynamically via theme-aware logic
     borderRadius: 12,
     borderTopLeftRadius: 4,
     paddingHorizontal: 10,
@@ -861,7 +861,7 @@ const styles = StyleSheet.create({
   },
   miniMsgMe: {
     alignSelf: "flex-end",
-    backgroundColor: "#007AFF",
+    // backgroundColor set dynamically via theme.colors.primary
     borderTopLeftRadius: 12,
     borderTopRightRadius: 4,
   },

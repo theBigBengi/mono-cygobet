@@ -164,7 +164,7 @@ export function PredictAllScreen() {
       <View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: "rgba(0,0,0,0.06)" },
+          { backgroundColor: theme.colors.textPrimary + "0F" },
         ]}
       />
 

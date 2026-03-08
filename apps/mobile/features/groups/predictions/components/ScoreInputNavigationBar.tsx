@@ -50,20 +50,20 @@ export function ScoreInputNavigationBar({
   };
 
   const bottomOffset = Platform.OS === "android" ? 60 : 10;
-  const bgColor = isDark ? "rgba(30, 30, 30, 0.98)" : "rgba(255, 255, 255, 0.98)";
+  const bgColor = isDark ? theme.colors.surface + "FA" : theme.colors.surface + "FA";
 
   return (
     <View
-      style={[styles.container, { bottom: keyboardHeight + bottomOffset }]}
+      style={[styles.container, { bottom: keyboardHeight + bottomOffset, shadowColor: theme.colors.textPrimary }]}
       pointerEvents="box-none"
     >
-      <View style={[styles.content, { backgroundColor: bgColor, borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)" }]}>
+      <View style={[styles.content, { backgroundColor: bgColor, borderColor: isDark ? theme.colors.textInverse + "1A" : theme.colors.textPrimary + "14" }]}>
         {/* Left section: Navigation arrows */}
         <View style={styles.leftSection}>
           <Pressable
             style={[
               styles.navButton,
-              { backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" },
+              { backgroundColor: isDark ? theme.colors.textInverse + "1A" : theme.colors.textPrimary + "0D" },
               !canGoPrevious && styles.buttonDisabled,
             ]}
             onPress={canGoPrevious ? onPrevious : undefined}
@@ -79,7 +79,7 @@ export function ScoreInputNavigationBar({
           <Pressable
             style={[
               styles.navButton,
-              { backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" },
+              { backgroundColor: isDark ? theme.colors.textInverse + "1A" : theme.colors.textPrimary + "0D" },
               !canGoNext && styles.buttonDisabled,
             ]}
             onPress={canGoNext ? onNext : undefined}
@@ -112,9 +112,9 @@ export function ScoreInputNavigationBar({
           onPress={handleDone}
         >
           {isSaving ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={theme.colors.textInverse} />
           ) : (
-            <Ionicons name="checkmark" size={24} color="#FFFFFF" />
+            <Ionicons name="checkmark" size={24} color={theme.colors.textInverse} />
           )}
         </Pressable>
       </View>
@@ -128,7 +128,6 @@ const styles = StyleSheet.create({
     left: 8,
     right: 8,
     zIndex: 1000,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,

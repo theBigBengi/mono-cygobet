@@ -199,7 +199,7 @@ export function CreateGroupModal() {
       <View
         style={[
           styles.modalRoot,
-          Platform.OS === "android" && styles.androidScrim,
+          Platform.OS === "android" && { backgroundColor: theme.colors.textPrimary + "4D" },
         ]}
       >
         <View
@@ -292,7 +292,7 @@ export function CreateGroupModal() {
 
         {/* Show local overlay only if global overlay is not active */}
         {isCreating && !isOverlayActive && (
-          <View style={styles.loadingOverlay}>
+          <View style={[styles.loadingOverlay, { backgroundColor: theme.colors.textPrimary + "80" }]}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
             <AppText variant="body" color="secondary" style={styles.loadingTxt}>
               {t("groupCreation.creating")}
@@ -357,7 +357,7 @@ export function CreateGroupModal() {
             style={[
               StyleSheet.absoluteFill,
               Platform.OS === "android" && {
-                backgroundColor: colorScheme === "dark" ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 255, 255, 0.85)",
+                backgroundColor: theme.colors.background + "D9",
               },
             ]}
           />
@@ -384,9 +384,7 @@ const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
   },
-  androidScrim: {
-    backgroundColor: "rgba(0,0,0,0.3)",
-  },
+  androidScrim: {},
   container: {
     flex: 1,
     overflow: "hidden",
@@ -426,7 +424,6 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 2000,

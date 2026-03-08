@@ -19,7 +19,6 @@ import { OutcomePicker } from "./OutcomePicker";
 import { TeamRow } from "./TeamRow";
 import { ResultDisplay } from "./ResultDisplay";
 
-const CRITICAL_COLOR = "#EF4444";
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 type InputRefs = {
@@ -166,7 +165,7 @@ export function MatchPredictionCardVertical({
   const statusData = useMemo(() => {
     // Live → show match minute
     if (isLive) {
-      return { top: `${fixture.liveMinute ?? 0}'`, bottom: undefined, bgColor: "#3B82F6" + "15", textColor: "#3B82F6", inline: `${fixture.liveMinute ?? 0}'` };
+      return { top: `${fixture.liveMinute ?? 0}'`, bottom: undefined, bgColor: theme.colors.live + "15", textColor: theme.colors.live, inline: `${fixture.liveMinute ?? 0}'` };
     }
 
     // Cancelled / Postponed / Abandoned → show date + time like regular games
@@ -230,13 +229,13 @@ export function MatchPredictionCardVertical({
     const fp = fixture.prediction;
     const hasServerPrediction = fp != null && fp.home != null && fp.away != null;
     if (!hasServerPrediction) {
-      return { top: "0", bottom: "PTS", bgColor: "#EF4444" + "15", textColor: "#EF4444" };
+      return { top: "0", bottom: "PTS", bgColor: theme.colors.danger + "15", textColor: theme.colors.danger };
     }
     const pts = fp.points ?? 0;
     const predResult: "max" | true | false =
       isMaxPoints ? "max" : pts > 0 ? true : false;
-    const bgColor = predResult === "max" ? "#10B981" + "20" : predResult === true ? "#FFB020" + "20" : "#EF4444" + "15";
-    const textColor = predResult === "max" ? "#10B981" : predResult === true ? "#FFB020" : "#EF4444";
+    const bgColor = predResult === "max" ? theme.colors.success + "20" : predResult === true ? theme.colors.warning + "20" : theme.colors.danger + "15";
+    const textColor = predResult === "max" ? theme.colors.success : predResult === true ? theme.colors.warning : theme.colors.danger;
     return { top: String(pts), bottom: "PTS", bgColor, textColor };
   }, [isFinished, isCancelled, fixture.prediction, isMaxPoints, theme]);
 
@@ -309,7 +308,7 @@ export function MatchPredictionCardVertical({
                   )
                 ) : isLive ? (
                   <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.textSecondary + "15", alignItems: "center", justifyContent: "center" }}>
-                    <AntDesign name="question" size={9} color={"#3B82F6"} />
+                    <AntDesign name="question" size={9} color={theme.colors.live} />
                   </View>
                 ) : (
                   hasPrediction ? (
@@ -587,7 +586,7 @@ export function MatchPredictionCardVertical({
               ) : isLive ? (
                 <View style={[styles.statusBox, { backgroundColor: "transparent", alignItems: "center", justifyContent: "center" }]}>
                   <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: theme.colors.textSecondary + "15", alignItems: "center", justifyContent: "center" }}>
-                    <AntDesign name="question" size={12} color={"#3B82F6"} />
+                    <AntDesign name="question" size={12} color={theme.colors.live} />
                   </View>
                 </View>
               ) : (

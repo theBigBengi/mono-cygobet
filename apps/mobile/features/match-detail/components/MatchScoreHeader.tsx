@@ -71,7 +71,7 @@ export function MatchScoreHeader({ data }: MatchScoreHeaderProps) {
             <View
               style={[styles.stateBadge, { backgroundColor: stateBadgeColor }]}
             >
-              <AppText variant="caption" style={styles.stateText}>
+              <AppText variant="caption" style={[styles.stateText, { color: theme.colors.textInverse }]}>
                 {data.state}
               </AppText>
             </View>
@@ -146,7 +146,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   stateText: {
-    color: "#fff",
     fontWeight: "600",
     fontSize: 11,
   },

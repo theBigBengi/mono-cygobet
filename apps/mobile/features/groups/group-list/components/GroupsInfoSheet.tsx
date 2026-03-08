@@ -13,16 +13,16 @@ interface GroupsInfoSheetProps {
   sheetRef: React.RefObject<React.ComponentRef<typeof BottomSheetModal>>;
 }
 
-const GREEN = "#10B981";
-const RED = "#EF4444";
-const YELLOW = "#EAB308";
-const ORANGE = "#F97316";
-const PINK = "#EC4899";
-const DIMMED = "#9CA3AF";
-
 export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+
+  const GREEN = theme.colors.success;
+  const RED = theme.colors.danger;
+  const YELLOW = theme.colors.warning;
+  const ORANGE = theme.colors.accent;
+  const PINK = theme.colors.live;
+  const DIMMED = theme.colors.textSecondary;
 
   return (
     <InfoSheet sheetRef={sheetRef} snapPoints={["90%"]}>
@@ -31,7 +31,7 @@ export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
       </AppText>
 
       {/* === RANKING === */}
-      <View style={styles.section}>
+      <View style={[styles.section, { borderBottomColor: theme.colors.border }]}>
         <View style={styles.header}>
           <Ionicons name="trophy-outline" size={20} color={DIMMED} />
           <AppText variant="subtitle">{t("groups.info.ranking")}</AppText>
@@ -65,7 +65,7 @@ export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
       </View>
 
       {/* === PREDICTIONS === */}
-      <View style={styles.section}>
+      <View style={[styles.section, { borderBottomColor: theme.colors.border }]}>
         <View style={styles.header}>
           <Ionicons name="create-outline" size={20} color={DIMMED} />
           <AppText variant="subtitle">{t("groups.info.predictions")}</AppText>
@@ -104,7 +104,7 @@ export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
       </View>
 
       {/* === LIVE === */}
-      <View style={styles.section}>
+      <View style={[styles.section, { borderBottomColor: theme.colors.border }]}>
         <View style={styles.header}>
           <Ionicons name="football-outline" size={20} color={DIMMED} />
           <AppText variant="subtitle">{t("groups.info.live")}</AppText>
@@ -128,7 +128,7 @@ export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
       </View>
 
       {/* === CHAT === */}
-      <View style={styles.section}>
+      <View style={[styles.section, { borderBottomColor: theme.colors.border }]}>
         <View style={styles.header}>
           <Ionicons name="chatbubble-outline" size={20} color={DIMMED} />
           <AppText variant="subtitle">{t("groups.info.chat")}</AppText>
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingBottom: 24,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E5E7EB",
+    // borderBottomColor set via inline style (theme.colors.border)
   },
   header: {
     flexDirection: "row",

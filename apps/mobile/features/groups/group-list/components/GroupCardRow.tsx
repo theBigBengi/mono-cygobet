@@ -90,7 +90,7 @@ function GroupCardRowInner({ group, onPress }: GroupCardRowProps) {
       {/* Right indicators */}
       <View style={styles.indicators}>
         {liveCount > 0 && (
-          <View style={styles.liveDot} />
+          <View style={[styles.liveDot, { backgroundColor: theme.colors.danger }]} />
         )}
         {isDraft && (
           <Ionicons name="construct-outline" size={14} color={theme.colors.warning} />
@@ -139,6 +139,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#EF4444",
+    // backgroundColor set via inline style (theme.colors.danger)
   },
 });

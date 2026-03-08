@@ -104,7 +104,6 @@ export const createStyles = StyleSheet.create({
     alignItems: "center",
   },
   createBtnText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },
@@ -197,7 +196,6 @@ export const createStyles = StyleSheet.create({
     alignItems: "center",
   },
   sheetDoneBtnText: {
-    color: "#fff",
     fontSize: 15,
     fontWeight: "600",
     textTransform: "capitalize",
@@ -250,7 +248,6 @@ export const createStyles = StyleSheet.create({
     flexShrink: 0,
   },
   continueBtnText: {
-    color: "#fff",
     fontWeight: "700",
     fontSize: 12,
     flexShrink: 0,

@@ -16,13 +16,6 @@ interface PerformanceCardProps {
   miss: number;
 }
 
-const COLORS = {
-  exact: "#22C55E",
-  difference: "#EAB308",
-  outcome: "#F97316",
-  miss: "#EF4444",
-};
-
 export function PerformanceCard({
   form,
   exact,
@@ -33,6 +26,13 @@ export function PerformanceCard({
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const total = exact + difference + outcome + miss;
+
+  const COLORS = {
+    exact: theme.colors.success,
+    difference: theme.colors.warning,
+    outcome: theme.colors.accent,
+    miss: theme.colors.danger,
+  };
 
   const formDisplay: ApiFormItem[] = [...form];
   while (formDisplay.length < 10) {
@@ -65,7 +65,7 @@ export function PerformanceCard({
         ))}
       </View>
 
-      <View style={styles.barContainer}>
+      <View style={[styles.barContainer, { backgroundColor: theme.colors.border }]}>
         {total > 0 ? (
           <View style={styles.barRow}>
             {exact > 0 && (
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     overflow: "hidden",
-    backgroundColor: "#E5E5E5",
+    // backgroundColor set via inline style (theme.colors.border)
     marginBottom: 12,
   },
   barRow: {

@@ -142,7 +142,7 @@ export default function JourneyScreen() {
                 : theme.colors.border;
             const textColor = isLocked
               ? theme.colors.textDisabled
-              : "#FFFFFF";
+              : theme.colors.textInverse;
 
             const showConnector = index < nodesBottomUp.length - 1;
             const nextReversedIndex = NODES.length - 2 - index;
@@ -190,7 +190,7 @@ export default function JourneyScreen() {
                       borderColor: isCurrent
                         ? theme.colors.primary + "40"
                         : "transparent",
-                      shadowColor: isCurrent ? theme.colors.primary : "#000",
+                      shadowColor: isCurrent ? theme.colors.primary : theme.colors.textPrimary,
                       shadowOpacity: isCurrent ? 0.4 : 0.1,
                       shadowRadius: isCurrent ? 12 : 4,
                       shadowOffset: { width: 0, height: isCurrent ? 4 : 2 },
@@ -265,13 +265,13 @@ export default function JourneyScreen() {
               <View
                 style={[
                   styles.popover,
-                  { backgroundColor: popoverBg },
+                  { backgroundColor: popoverBg, shadowColor: theme.colors.textPrimary },
                 ]}
               >
-                <AppText style={styles.popoverTitle}>
+                <AppText style={[styles.popoverTitle, { color: theme.colors.textInverse }]}>
                   Pair letters and sounds
                 </AppText>
-                <AppText style={styles.popoverSubtitle}>
+                <AppText style={[styles.popoverSubtitle, { color: theme.colors.textInverse + "BF" }]}>
                   {activeNode.completed
                     ? `Completed · ${activeNode.points} XP`
                     : "Lesson 3 of 5"}
@@ -281,6 +281,7 @@ export default function JourneyScreen() {
                   onPress={handleStart}
                   style={({ pressed }) => [
                     styles.startButton,
+                    { backgroundColor: theme.colors.textInverse },
                     pressed && { opacity: 0.85 },
                   ]}
                 >
@@ -362,26 +363,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 16,
-    shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 10,
   },
   popoverTitle: {
-    color: "#fff",
     fontSize: 17,
     fontWeight: "700",
     marginBottom: 2,
   },
   popoverSubtitle: {
-    color: "rgba(255,255,255,0.75)",
     fontSize: 13,
     fontWeight: "500",
     marginBottom: 14,
   },
   startButton: {
-    backgroundColor: "#fff",
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: "center",

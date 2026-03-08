@@ -36,11 +36,7 @@ interface GroupRankingScreenProps {
 
 const AVATAR_SIZE = 40;
 const ROW_HEIGHT = 40;
-const PODIUM_COLORS = {
-  1: "#FFD700", // Gold
-  2: "#C0C0C0", // Silver
-  3: "#CD7F32", // Bronze
-};
+// PODIUM_COLORS moved to dynamic usage via theme.colors.gold/silver/bronze
 
 const RankingRow = React.memo(function RankingRow({
   item,
@@ -98,8 +94,9 @@ const RankingRow = React.memo(function RankingRow({
   };
 
   const isTopThree = item.rank <= 3;
+  const podiumColors = { 1: theme.colors.gold, 2: theme.colors.silver, 3: theme.colors.bronze };
   const podiumColor = isTopThree
-    ? PODIUM_COLORS[item.rank as 1 | 2 | 3]
+    ? podiumColors[item.rank as 1 | 2 | 3]
     : theme.colors.surface;
 
   const rankChange = item.rankChange ?? 0;
@@ -114,24 +111,24 @@ const RankingRow = React.memo(function RankingRow({
     >
       {/* Rank */}
       <View style={[styles.rankBadge, { backgroundColor: theme.colors.textPrimary }]}>
-        <Text style={styles.rankText}>{item.rank}</Text>
+        <Text style={[styles.rankText, { color: theme.colors.textInverse }]}>{item.rank}</Text>
         {rankChange !== 0 && (
           <View
             style={[
               styles.rankChangeIndicator,
-              { backgroundColor: rankChange > 0 ? "#10B981" : "#EF4444" },
+              { backgroundColor: rankChange > 0 ? theme.colors.success : theme.colors.danger },
             ]}
           >
             <Ionicons
               name={rankChange > 0 ? "arrow-up" : "arrow-down"}
               size={7}
-              color="#fff"
+              color={theme.colors.textInverse}
             />
           </View>
         )}
       </View>
 
-      <View style={[styles.barContent, isCurrentUser && { backgroundColor: theme.colors.textPrimary + "06" }]}>
+      <View style={[styles.barContent, { borderColor: theme.colors.border }, isCurrentUser && { backgroundColor: theme.colors.textPrimary + "06" }]}>
         <View style={styles.barOverlay}>
           <View style={styles.barLeft}>
             <Text
@@ -348,7 +345,7 @@ const styles = StyleSheet.create({
   rankText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#fff",
+    // color set dynamically via theme.colors.textInverse
   },
   rankChangeIndicator: {
     position: "absolute",
@@ -367,7 +364,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: "rgba(150,150,150,0.15)",
+    // borderColor set dynamically via theme.colors.border
   },
   barOverlay: {
     flexDirection: "row",

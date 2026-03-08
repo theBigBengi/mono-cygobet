@@ -23,14 +23,14 @@ export function StreakIndicator({ streak, onInfoPress }: StreakIndicatorProps) {
       <View style={styles.header}>
         <AppText variant="subtitle">{t("gamification.streak")}</AppText>
         <View style={styles.headerRight}>
-          {isHot && <Ionicons name="flame" size={20} color="#F97316" />}
+          {isHot && <Ionicons name="flame" size={20} color={theme.colors.accent} />}
           {onInfoPress && <InfoButton onPress={onInfoPress} />}
         </View>
       </View>
 
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
-          <AppText style={[styles.statValue, isHot && { color: "#F97316" }]}>
+          <AppText style={[styles.statValue, isHot && { color: theme.colors.accent }]}>
             {streak.current}
           </AppText>
           <AppText variant="caption" color="secondary">
@@ -56,7 +56,7 @@ export function StreakIndicator({ streak, onInfoPress }: StreakIndicatorProps) {
               style={[
                 styles.resultDot,
                 {
-                  backgroundColor: result === "hit" ? "#22C55E" : "#EF4444",
+                  backgroundColor: result === "hit" ? theme.colors.success : theme.colors.danger,
                 },
               ]}
             />

@@ -307,7 +307,7 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
               { backgroundColor: theme.colors.primary, opacity: pressed ? 0.8 : 1 },
             ]}
           >
-            <Text style={styles.sheetDoneBtnText}>{t("done")}</Text>
+            <Text style={[styles.sheetDoneBtnText, { color: theme.colors.textInverse }]}>{t("done")}</Text>
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
@@ -393,7 +393,7 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
               },
             ]}
           >
-            <Text style={styles.sheetDoneBtnText}>{t("done")}</Text>
+            <Text style={[styles.sheetDoneBtnText, { color: theme.colors.textInverse }]}>{t("done")}</Text>
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
@@ -486,7 +486,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sheetDoneBtnText: {
-    color: "#fff",
     fontSize: 15,
     fontWeight: "600",
   },

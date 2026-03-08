@@ -10,17 +10,17 @@ interface PowerScoreCardProps {
   onInfoPress?: () => void;
 }
 
-function getScoreColor(score: number): string {
-  if (score >= 80) return "#22C55E";
-  if (score >= 60) return "#EAB308";
-  if (score >= 40) return "#F97316";
-  return "#EF4444";
+function getScoreColor(score: number, colors: { success: string; warning: string; accent: string; danger: string }): string {
+  if (score >= 80) return colors.success;
+  if (score >= 60) return colors.warning;
+  if (score >= 40) return colors.accent;
+  return colors.danger;
 }
 
 export function PowerScoreCard({ score, onInfoPress }: PowerScoreCardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
-  const color = getScoreColor(score);
+  const color = getScoreColor(score, { success: theme.colors.success, warning: theme.colors.warning, accent: theme.colors.accent, danger: theme.colors.danger });
 
   return (
     <Card>

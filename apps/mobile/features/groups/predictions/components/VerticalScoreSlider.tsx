@@ -250,6 +250,7 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
             thumbStyle,
             {
               backgroundColor: thumbColor,
+              shadowColor: theme.colors.textPrimary,
               left: side === "left" ? STRIP_WIDTH - THUMB_WIDTH : side === "right" ? 0 : (STRIP_WIDTH - THUMB_WIDTH) / 2,
               // Rounded on the side that pops towards card center
               ...(side === "left"
@@ -262,9 +263,9 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
           pointerEvents="none"
         >
           {isLogo ? (
-            <Text style={[styles.thumbValue, { color: textColor }]}>—</Text>
+            <Text style={[styles.thumbValue, { color: textColor, textShadowColor: theme.colors.textPrimary + "33" }]}>—</Text>
           ) : (
-            <Text style={[styles.thumbValue, { color: textColor }]}>
+            <Text style={[styles.thumbValue, { color: textColor, textShadowColor: theme.colors.textPrimary + "33" }]}>
               {displayValue}
             </Text>
           )}
@@ -307,7 +308,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     left: (STRIP_WIDTH - THUMB_WIDTH) / 2,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -316,7 +316,6 @@ const styles = StyleSheet.create({
   thumbValue: {
     fontSize: 20,
     fontWeight: "800",
-    textShadowColor: "rgba(0,0,0,0.2)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },

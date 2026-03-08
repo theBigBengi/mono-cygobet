@@ -51,7 +51,7 @@ export function TeamListItem({ team }: TeamListItemProps) {
           },
         ]}
       >
-        <View style={styles.logoContainer}>
+        <View style={[styles.logoContainer, { backgroundColor: theme.colors.textPrimary + "08" }]}>
           <TeamLogo
             imagePath={team.imagePath}
             teamName={team.name}
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.03)",
+    // backgroundColor set inline with theme
     justifyContent: "center",
     alignItems: "center",
   },

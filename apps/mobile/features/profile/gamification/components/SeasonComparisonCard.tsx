@@ -50,9 +50,9 @@ function ComparisonRow({
               size={12}
               color={
                 isPositive
-                  ? "#22C55E"
+                  ? theme.colors.success
                   : isNegative
-                    ? "#EF4444"
+                    ? theme.colors.danger
                     : theme.colors.textSecondary
               }
             />
@@ -60,9 +60,9 @@ function ComparisonRow({
               variant="caption"
               style={{
                 color: isPositive
-                  ? "#22C55E"
+                  ? theme.colors.success
                   : isNegative
-                    ? "#EF4444"
+                    ? theme.colors.danger
                     : theme.colors.textSecondary,
               }}
             >

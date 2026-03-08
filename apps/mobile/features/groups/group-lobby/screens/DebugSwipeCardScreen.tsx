@@ -15,15 +15,17 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/lib/theme";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SWIPE_THRESHOLD = SCREEN_HEIGHT * 0.65;
 const CARD_GAP = 12;
 const PEEK = 60;
-const CARDS = ["#EF4444", "#3B82F6", "#10B981"];
 
 export function DebugSwipeCardScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const CARDS = [theme.colors.danger, theme.colors.live, theme.colors.success];
   const [currentIndex, setCurrentIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
 
@@ -108,7 +110,7 @@ export function DebugSwipeCardScreen() {
     });
 
   return (
-    <GestureHandlerRootView style={styles.screen}>
+    <GestureHandlerRootView style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       <Animated.View style={[styles.viewport, viewportStyle]}>
         <GestureDetector gesture={panGesture}>
           <Animated.View style={stripStyle}>
@@ -125,7 +127,7 @@ export function DebugSwipeCardScreen() {
                     cardAnimStyle(i),
                   ]}
                 >
-                  <Text style={styles.cardLabel}>{i + 1}</Text>
+                  <Text style={[styles.cardLabel, { color: theme.colors.textInverse }]}>{i + 1}</Text>
                 </Animated.View>
               </Pressable>
             ))}
@@ -139,7 +141,6 @@ export function DebugSwipeCardScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#1a1a1a",
   },
   viewport: {
     position: "absolute",
@@ -155,7 +156,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cardLabel: {
-    color: "#fff",
     fontSize: 32,
     fontWeight: "800",
     opacity: 0.5,

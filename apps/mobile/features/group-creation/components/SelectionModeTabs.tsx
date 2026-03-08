@@ -64,7 +64,7 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
                   borderBottomColor: isSelected
                     ? theme.colors.primary + "80"
                     : theme.colors.textSecondary + "40",
-                  shadowColor: isSelected ? theme.colors.primary : "#000",
+                  shadowColor: isSelected ? theme.colors.primary : theme.colors.textPrimary,
                   shadowOpacity: isPressed ? 0 : isSelected ? 0.3 : 0.15,
                   transform: [{ scale: isPressed ? 0.96 : 1 }],
                 },
@@ -75,7 +75,7 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
                   styles.iconContainer,
                   {
                     backgroundColor: isSelected
-                      ? "rgba(255,255,255,0.25)"
+                      ? theme.colors.textInverse + "40"
                       : theme.colors.textSecondary + "15",
                   },
                 ]}
@@ -83,14 +83,14 @@ export function SelectionModeTabs({ value, onChange }: SelectionModeTabsProps) {
                 <Ionicons
                   name={m.icon}
                   size={12}
-                  color={isSelected ? "#fff" : theme.colors.textSecondary}
+                  color={isSelected ? theme.colors.textInverse : theme.colors.textSecondary}
                 />
               </View>
               <Text
                 style={[
                   styles.tabText,
                   {
-                    color: isSelected ? "#fff" : theme.colors.textSecondary,
+                    color: isSelected ? theme.colors.textInverse : theme.colors.textSecondary,
                   },
                 ]}
               >

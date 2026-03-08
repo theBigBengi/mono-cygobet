@@ -120,10 +120,10 @@ export function SmartFilterChips({
               if (isSelected) {
                 if (isLiveRound) {
                   bgColor = theme.colors.live;
-                  textCol = "#fff";
+                  textCol = theme.colors.textInverse;
                 } else {
                   bgColor = theme.colors.primary;
-                  textCol = "#fff";
+                  textCol = theme.colors.textInverse;
                 }
               }
 
@@ -146,7 +146,7 @@ export function SmartFilterChips({
                     <View style={[styles.dot, { backgroundColor: theme.colors.live }]} />
                   )}
                   {isLiveRound && isSelected && (
-                    <View style={[styles.dot, { backgroundColor: "#fff" }]} />
+                    <View style={[styles.dot, { backgroundColor: theme.colors.textInverse }]} />
                   )}
                   <AppText
                     variant="caption"
@@ -202,7 +202,7 @@ export function SmartFilterChips({
                 styles.chipText,
                 {
                   color: teamPillActive
-                    ? "#fff"
+                    ? theme.colors.textInverse
                     : theme.colors.textPrimary + "90",
                 },
               ]}
@@ -216,7 +216,7 @@ export function SmartFilterChips({
               size={12}
               color={
                 teamPillActive
-                  ? "#fff"
+                  ? theme.colors.textInverse
                   : theme.colors.textPrimary + "90"
               }
               style={styles.pillChevron}
@@ -244,7 +244,7 @@ export function SmartFilterChips({
                 styles.chipText,
                 {
                   color: competitionPillActive
-                    ? "#fff"
+                    ? theme.colors.textInverse
                     : theme.colors.textPrimary + "90",
                 },
               ]}
@@ -260,7 +260,7 @@ export function SmartFilterChips({
               size={12}
               color={
                 competitionPillActive
-                  ? "#fff"
+                  ? theme.colors.textInverse
                   : theme.colors.textPrimary + "90"
               }
               style={styles.pillChevron}
@@ -286,13 +286,13 @@ export function SmartFilterChips({
           if (isActive) {
             if (live || urgent) {
               bgColor = theme.colors.live;
-              textColor = "#fff";
+              textColor = theme.colors.textInverse;
             } else if (predict && !urgent) {
               bgColor = theme.colors.warning;
-              textColor = "#fff";
+              textColor = theme.colors.textInverse;
             } else {
               bgColor = theme.colors.primary;
-              textColor = "#fff";
+              textColor = theme.colors.textInverse;
             }
           }
 
@@ -312,7 +312,7 @@ export function SmartFilterChips({
                 <View
                   style={[
                     styles.dot,
-                    { backgroundColor: isActive ? "#fff" : theme.colors.live },
+                    { backgroundColor: isActive ? theme.colors.textInverse : theme.colors.live },
                   ]}
                 />
               )}
@@ -320,7 +320,7 @@ export function SmartFilterChips({
                 <MaterialIcons
                   name="warning"
                   size={12}
-                  color="#fff"
+                  color={theme.colors.textInverse}
                   style={styles.chipIcon}
                 />
               )}
@@ -358,7 +358,7 @@ export function SmartFilterChips({
                 styles.chipText,
                 {
                   color: isRoundFilterActive
-                    ? "#fff"
+                    ? theme.colors.textInverse
                     : theme.colors.textPrimary + "90",
                 },
               ]}
@@ -373,7 +373,7 @@ export function SmartFilterChips({
               <Ionicons
                 name="chevron-down"
                 size={12}
-                color="#fff"
+                color={theme.colors.textInverse}
                 style={styles.pillChevron}
               />
             )}

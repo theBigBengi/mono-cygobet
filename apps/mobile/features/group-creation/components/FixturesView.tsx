@@ -102,13 +102,13 @@ function LeagueAddRemoveButton({ fixtures }: { fixtures: FixtureItem[] }) {
       <MaterialIcons
         name={allSelected ? "remove" : "add"}
         size={14}
-        color={allSelected ? "#fff" : theme.colors.textSecondary}
+        color={allSelected ? theme.colors.textInverse : theme.colors.textSecondary}
       />
       <AppText
         variant="caption"
         style={[
           styles.addAllText,
-          { color: allSelected ? "#fff" : theme.colors.textSecondary },
+          { color: allSelected ? theme.colors.textInverse : theme.colors.textSecondary },
         ]}
       >
         {allSelected
@@ -230,7 +230,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
         <View
           style={[
             { backgroundColor: theme.colors.background },
-            isDateSliderSticky && Platform.OS === "ios" && styles.stickyDropShadow,
+            isDateSliderSticky && Platform.OS === "ios" && [styles.stickyDropShadow, { borderBottomColor: theme.colors.textPrimary + "1F" }],
           ]}
         >
           <DateSlider
@@ -319,6 +319,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
             styles.stickyOverlay,
             { backgroundColor: theme.colors.background },
             styles.stickyDropShadow,
+            { borderBottomColor: theme.colors.textPrimary + "1F" },
           ]}
         >
           <DateSlider
@@ -342,7 +343,7 @@ export function FixturesView({ tabs, queryParams }: FixturesViewProps) {
             borderBottomWidth: pressed ? 1 : 3,
             borderBottomColor: pressed
               ? theme.colors.border
-              : "rgba(0,0,0,0.15)",
+              : theme.colors.textPrimary + "26",
             shadowOffset: { width: 0, height: pressed ? 1 : 3 },
             shadowOpacity: pressed ? 0.08 : 0.15,
             shadowRadius: pressed ? 2 : 4,
@@ -454,7 +455,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
     borderBottomWidth: Platform.OS === "android" ? StyleSheet.hairlineWidth : 0,
-    borderBottomColor: "rgba(0,0,0,0.12)",
   },
   filterFab: {
     position: "absolute",

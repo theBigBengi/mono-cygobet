@@ -18,7 +18,8 @@ import { useTheme } from "@/lib/theme";
 import { getInitials } from "@/utils/string";
 import type { ApiRankingItem } from "@repo/types";
 
-const RANK_COLORS = ["#FFD700", "#8E9AAF", "#C4956A"] as const; // Gold, Cool Silver, Warm Bronze
+// Podium colors are now provided by theme.colors.gold/silver/bronze
+const RANK_COLORS = ["#FFD700", "#8E9AAF", "#C4956A"] as const; // Legacy fallback
 const PODIUM_HEIGHTS = [36, 36, 36] as const; // unused — kept for skeleton
 
 export interface LobbyLeaderboardProps {
@@ -193,7 +194,7 @@ function LobbyLeaderboardInner({
     return (
       <View key={item.userId} style={styles.barRow}>
         <View style={[styles.barRankCircle, { backgroundColor: theme.colors.textPrimary }]}>
-          <Text style={styles.barRankText}>{item.rank}</Text>
+          <Text style={[styles.barRankText, { color: theme.colors.textInverse }]}>{item.rank}</Text>
         </View>
         <View style={styles.barContent}>
           <Animated.View
@@ -341,7 +342,6 @@ const styles = StyleSheet.create({
   barRankText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#fff",
   },
   barContent: {
     flex: 1,
@@ -518,7 +518,6 @@ const styles = StyleSheet.create({
   rankBadgeText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#fff",
   },
   avatar: {
     width: 36,

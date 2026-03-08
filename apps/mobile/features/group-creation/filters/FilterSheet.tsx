@@ -260,7 +260,7 @@ export function FilterSheet({
                   },
                 ]}
               >
-                <View style={styles.logo}>
+                <View style={[styles.logo, { backgroundColor: theme.colors.textPrimary + "08" }]}>
                   <TeamLogo imagePath={item.imagePath} teamName={item.name} size={32} />
                 </View>
                 <View style={styles.nameWrap}>
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(0,0,0,0.03)",
+    // backgroundColor set inline with theme
     justifyContent: "center",
     alignItems: "center",
   },

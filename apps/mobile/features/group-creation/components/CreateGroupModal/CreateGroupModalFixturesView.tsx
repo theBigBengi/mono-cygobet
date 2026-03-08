@@ -110,7 +110,7 @@ export function CreateGroupModalFixturesView() {
       {groupedGames.map((group) => (
         <View key={group.key} style={styles.leagueSection}>
           <View style={styles.leagueHeader}>
-            <View style={styles.leagueLogoContainer}>
+            <View style={[styles.leagueLogoContainer, { backgroundColor: theme.colors.textPrimary + "08" }]}>
               <TeamLogo
                 imagePath={group.leagueImagePath}
                 teamName={group.leagueName}
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 6,
-    backgroundColor: "rgba(0,0,0,0.03)",
+    // backgroundColor set inline with theme
     justifyContent: "center",
     alignItems: "center",
   },

@@ -100,7 +100,7 @@ export function ChatMessageBubble({
       borderColor: theme.colors.border,
       borderBottomWidth: isCurrentUser ? 0 : 2,
       borderBottomColor: isCurrentUser ? undefined : theme.colors.textSecondary + "30",
-      shadowColor: "#000",
+      shadowColor: theme.colors.textPrimary,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: isCurrentUser ? 0.2 : 0.05,
       shadowRadius: 2,
@@ -159,7 +159,7 @@ export function ChatMessageBubble({
                 key={i}
                 style={{
                   fontWeight: "700",
-                  color: isCurrentUser ? "#fff" : theme.colors.primary,
+                  color: isCurrentUser ? theme.colors.textInverse : theme.colors.primary,
                 }}
               >
                 {segment.text}
@@ -175,7 +175,7 @@ export function ChatMessageBubble({
             styles.time,
             {
               color: isCurrentUser
-                ? "rgba(255,255,255,0.8)"
+                ? theme.colors.textInverse + "CC"
                 : theme.colors.textSecondary,
               textAlign: isCurrentUser ? "right" : "left",
             },

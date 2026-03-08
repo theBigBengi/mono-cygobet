@@ -20,6 +20,8 @@ export type Colors = {
   textSecondary: string;
   /** טקסט disabled / placeholder */
   textDisabled: string;
+  /** טקסט הפוך — לשימוש על רקע כהה ב-light ועל רקע בהיר ב-dark */
+  textInverse: string;
 
   // --- Brand ---
   /** צבע ראשי — actions, links, selections */
@@ -36,8 +38,20 @@ export type Colors = {
   success: string;
   /** אזהרה — partial match, attention */
   warning: string;
-  /** LIVE indicator */
+  /** LIVE indicator — כחול, סטטוס משחק חי */
   live: string;
+
+  // --- Ranking ---
+  /** מקום ראשון */
+  gold: string;
+  /** מקום שני */
+  silver: string;
+  /** מקום שלישי */
+  bronze: string;
+
+  // --- Accent ---
+  /** streak / flame / highlight מיוחד */
+  accent: string;
 
   // --- UI ---
   /** קווי הפרדה */
@@ -58,6 +72,7 @@ export const lightColors: Colors = {
   textPrimary: "#1A1A1A", // כמעט שחור, ניטרלי מלא
   textSecondary: "#888888", // אפור ניטרלי מאוזן
   textDisabled: "#CCCCCC", // אפור בהיר, ברור שזה disabled
+  textInverse: "#FFFFFF", // לבן — על רקעים כהים
 
   // Brand
   primary: "#007AFF",
@@ -68,7 +83,15 @@ export const lightColors: Colors = {
   dangerText: "#FFFFFF",
   success: "#34C759",
   warning: "#FF9500",
-  live: "#FF3B30",
+  live: "#3B82F6", // כחול — סטטוס LIVE
+
+  // Ranking
+  gold: "#FFD700",
+  silver: "#C0C0C0",
+  bronze: "#CD7F32",
+
+  // Accent
+  accent: "#F97316", // כתום — streak, flame
 
   // UI
   border: "#EBEBEB", // קו הפרדה ניטרלי עדין
@@ -87,6 +110,7 @@ export const darkColors: Colors = {
   textPrimary: "#F0F0F5",
   textSecondary: "#9CA3AF",
   textDisabled: "#4B5563",
+  textInverse: "#1A1A1A", // כהה — על רקעים בהירים
 
   // Brand
   primary: "#0A84FF",
@@ -97,7 +121,15 @@ export const darkColors: Colors = {
   dangerText: "#FFFFFF",
   success: "#30D158",
   warning: "#FF9F0A",
-  live: "#FF453A",
+  live: "#60A5FA", // כחול בהיר יותר ל-dark mode
+
+  // Ranking
+  gold: "#FFD700",
+  silver: "#D1D5DB",
+  bronze: "#D4956A",
+
+  // Accent
+  accent: "#FB923C", // כתום בהיר יותר ל-dark mode
 
   // UI
   border: "#2E2E36",

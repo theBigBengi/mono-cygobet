@@ -196,9 +196,9 @@ export function GroupEditSheet({
             ]}
           >
             {updateGroupMutation.isPending ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={theme.colors.textInverse} />
             ) : (
-              <Text style={styles.saveBtnText}>{t("editProfile.save")}</Text>
+              <Text style={[styles.saveBtnText, { color: theme.colors.textInverse }]}>{t("editProfile.save")}</Text>
             )}
           </Pressable>
         </BottomSheetView>
@@ -263,7 +263,6 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   saveBtnText: {
-    color: "#fff",
     fontSize: 15,
     fontWeight: "600",
   },

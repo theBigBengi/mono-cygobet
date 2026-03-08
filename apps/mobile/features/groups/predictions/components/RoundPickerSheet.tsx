@@ -150,7 +150,7 @@ export function RoundPickerSheet({
                 size={20}
                 color={
                   r.status === "live"
-                    ? "#EF4444"
+                    ? theme.colors.danger
                     : r.status === "unpredicted"
                       ? theme.colors.primary
                       : theme.colors.textSecondary

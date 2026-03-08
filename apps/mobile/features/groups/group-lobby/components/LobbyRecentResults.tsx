@@ -14,17 +14,11 @@ import Animated, {
 import { useTheme } from "@/lib/theme";
 import type { FixtureItem } from "../types";
 
-const POINTS_COLORS = {
-  green: "#22C55E",
-  orange: "#F59E0B",
-  red: "#EF4444",
-} as const;
-
-function getPointsColor(points: number | null | undefined): string | null {
+function getPointsColor(points: number | null | undefined, colors: { success: string; warning: string; danger: string }): string | null {
   if (points == null) return null;
-  if (points >= 3) return POINTS_COLORS.green;
-  if (points >= 1) return POINTS_COLORS.orange;
-  return POINTS_COLORS.red;
+  if (points >= 3) return colors.success;
+  if (points >= 1) return colors.warning;
+  return colors.danger;
 }
 
 export interface LobbyRecentResultsProps {
@@ -102,7 +96,7 @@ function LobbyRecentResultsInner({
           : tiles.map((fixture) => {
               const points = fixture.prediction?.points ?? null;
               const hasPoints = points != null;
-              const color = hasPoints ? getPointsColor(points)! : POINTS_COLORS.red;
+              const color = hasPoints ? getPointsColor(points, { success: theme.colors.success, warning: theme.colors.warning, danger: theme.colors.danger })! : theme.colors.danger;
 
               return (
                 <Pressable

@@ -185,7 +185,7 @@ export function ScoreSlider({ side, value, onValueChange }: ScoreSliderProps) {
     top: tabY.value + (ROW_HEIGHT - TAB_HEIGHT) / 2,
   }));
 
-  const tabColor = side === "home" ? "#22C55E" : "#3B82F6";
+  const tabColor = side === "home" ? theme.colors.success : theme.colors.live;
   const primaryColor = theme.colors.primary;
   const secondaryColor = theme.colors.textSecondary;
 
@@ -222,7 +222,7 @@ export function ScoreSlider({ side, value, onValueChange }: ScoreSliderProps) {
               side === "home" ? styles.tabLeft : styles.tabRight,
             ]}
           >
-            <Text style={styles.tabValue}>{displayValue}</Text>
+            <Text style={[styles.tabValue, { color: theme.colors.textInverse, textShadowColor: theme.colors.overlay }]}>{displayValue}</Text>
           </Animated.View>
         </GestureDetector>
       </View>
@@ -280,10 +280,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   tabValue: {
-    color: "white",
     fontSize: 18,
     fontWeight: "800",
-    textShadowColor: "rgba(0,0,0,0.2)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },

@@ -93,7 +93,7 @@ export function CreateGroupModalLeaguesView() {
           ]}
         >
           <View style={styles.row}>
-            <View style={styles.logoContainer}>
+            <View style={[styles.logoContainer, { backgroundColor: theme.colors.textPrimary + "08" }]}>
               <TeamLogo
                 imagePath={l.imagePath}
                 teamName={l.name}
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.03)",
+    // backgroundColor set inline with theme
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,

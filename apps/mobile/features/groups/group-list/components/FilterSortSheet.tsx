@@ -149,7 +149,7 @@ export function FilterSortSheet({
                   style={[
                     styles.chipText,
                     {
-                      color: isSelected ? "#fff" : theme.colors.textPrimary + "90",
+                      color: isSelected ? theme.colors.textInverse : theme.colors.textPrimary + "90",
                     },
                   ]}
                 >
@@ -225,7 +225,7 @@ export function FilterSortSheet({
               pressed && { opacity: 0.85 },
             ]}
           >
-            <Text style={[styles.buttonText, { color: "#fff" }]}>
+            <Text style={[styles.buttonText, { color: theme.colors.textInverse }]}>
               {t("groups.apply")}
             </Text>
           </Pressable>

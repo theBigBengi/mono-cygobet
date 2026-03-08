@@ -30,7 +30,9 @@ function GroupAvatarInner({
       width: size,
       height: size,
       borderRadius,
-      shadowColor: "#000",
+      shadowColor: theme.colors.textPrimary,
+      borderColor: theme.colors.textInverse + "33",
+      borderBottomColor: theme.colors.textPrimary + "26",
     },
     flat && {
       borderWidth: 0,
@@ -53,7 +55,7 @@ function GroupAvatarInner({
         end={{ x: 1, y: 1 }}
         style={containerStyle}
       >
-        <Text style={[styles.initials, { fontSize, color: "#fff" }]}>
+        <Text style={[styles.initials, { fontSize, color: theme.colors.textInverse }]}>
           {initials}
         </Text>
       </LinearGradient>
@@ -82,9 +84,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
     borderBottomWidth: 4,
-    borderBottomColor: "rgba(0,0,0,0.15)",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 10,

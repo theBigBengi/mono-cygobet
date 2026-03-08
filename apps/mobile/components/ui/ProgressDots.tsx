@@ -104,11 +104,11 @@ export function ProgressDots({
   const getIcon = (type: DotType): { name: IoniconsName; color: string } | null => {
     switch (type) {
       case "success":
-        return { name: "checkmark", color: "#fff" };
+        return { name: "checkmark", color: theme.colors.textInverse };
       case "missed":
-        return { name: "close", color: "#fff" };
+        return { name: "close", color: theme.colors.textInverse };
       case "waiting":
-        return { name: "checkmark", color: "#fff" };
+        return { name: "checkmark", color: theme.colors.textInverse };
       case "upcoming":
         return null;
     }

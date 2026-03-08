@@ -113,7 +113,7 @@ export function GameSelectionCard({
         <View style={styles.teamsContainer}>
           {/* Home Team */}
           <View style={styles.teamRow}>
-            <View style={styles.logoContainer}>
+            <View style={[styles.logoContainer, { backgroundColor: theme.colors.textPrimary + "08" }]}>
               <TeamLogo
                 imagePath={fixture.homeTeam?.imagePath}
                 teamName={homeTeamName}
@@ -133,7 +133,7 @@ export function GameSelectionCard({
 
           {/* Away Team */}
           <View style={styles.teamRow}>
-            <View style={styles.logoContainer}>
+            <View style={[styles.logoContainer, { backgroundColor: theme.colors.textPrimary + "08" }]}>
               <TeamLogo
                 imagePath={fixture.awayTeam?.imagePath}
                 teamName={awayTeamName}
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(0,0,0,0.03)",
+    // backgroundColor set inline with theme
     justifyContent: "center",
     alignItems: "center",
   },

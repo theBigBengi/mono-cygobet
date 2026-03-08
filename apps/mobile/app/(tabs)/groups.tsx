@@ -227,8 +227,8 @@ function GroupsContent() {
                   color={theme.colors.textPrimary}
                 />
                 {pendingInviteCount > 0 && (
-                  <View style={styles.inviteBadge}>
-                    <AppText style={styles.inviteBadgeText}>
+                  <View style={[styles.inviteBadge, { backgroundColor: theme.colors.danger }]}>
+                    <AppText style={[styles.inviteBadgeText, { color: theme.colors.textInverse }]}>
                       {pendingInviteCount > 9 ? "9+" : String(pendingInviteCount)}
                     </AppText>
                   </View>
@@ -493,7 +493,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -2,
     right: -4,
-    backgroundColor: "#EF4444",
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -502,7 +501,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   inviteBadgeText: {
-    color: "#FFFFFF",
     fontSize: 10,
     fontWeight: "700",
     lineHeight: 14,

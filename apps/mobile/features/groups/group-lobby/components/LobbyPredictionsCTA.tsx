@@ -31,8 +31,7 @@ export interface LobbyPredictionsCTAProps {
   completedFixturesCount?: number;
 }
 
-const LIVE_COLOR = "#EF4444";
-const CRITICAL_COLOR = "#EF4444";
+// LIVE_COLOR and CRITICAL_COLOR removed — use theme.colors.danger instead
 
 function FixtureRow({
   fixture,
@@ -85,20 +84,20 @@ function FixtureRow({
       {/* Status (time / live / points / FT) — fixed left column */}
       <View style={styles.statusCol}>
         {isLive ? (
-          <View style={[styles.statusBox, { backgroundColor: "#3B82F6" + "15" }]}>
-            <Text style={[styles.statusDayText, { color: "#3B82F6" }]}>{fixture.liveMinute ?? 0}</Text>
-            <Text style={[styles.statusMonthText, { color: "#3B82F6" }]}>Live</Text>
+          <View style={[styles.statusBox, { backgroundColor: theme.colors.live + "15" }]}>
+            <Text style={[styles.statusDayText, { color: theme.colors.live }]}>{fixture.liveMinute ?? 0}</Text>
+            <Text style={[styles.statusMonthText, { color: theme.colors.live }]}>Live</Text>
           </View>
         ) : isFinished && fixture.prediction?.points != null ? (
           <View style={[styles.pointsBadge, {
-            backgroundColor: predictionResult === "max" ? "#10B981" + "20"
-              : predictionResult === true ? "#FFB020" + "20"
-              : "#EF4444" + "15",
+            backgroundColor: predictionResult === "max" ? theme.colors.success + "20"
+              : predictionResult === true ? theme.colors.warning + "20"
+              : theme.colors.danger + "15",
           }]}>
             <Text style={[styles.pointsBadgeText, {
-              color: predictionResult === "max" ? "#10B981"
-                : predictionResult === true ? "#FFB020"
-                : "#EF4444",
+              color: predictionResult === "max" ? theme.colors.success
+                : predictionResult === true ? theme.colors.warning
+                : theme.colors.danger,
             }]}>
               {fixture.prediction.points} pts
             </Text>
@@ -117,7 +116,7 @@ function FixtureRow({
             const isToday = k.getDate() === n.getDate() && k.getMonth() === n.getMonth() && k.getFullYear() === n.getFullYear();
             const isTomorrow = k.getDate() === tmr.getDate() && k.getMonth() === tmr.getMonth() && k.getFullYear() === tmr.getFullYear();
             if (isToday) {
-              const urgentColor = !hasPrediction ? CRITICAL_COLOR : theme.colors.textSecondary;
+              const urgentColor = !hasPrediction ? theme.colors.danger : theme.colors.textSecondary;
               const diff = k.getTime() - n.getTime();
               if (diff <= 0) {
                 const hh = k.getHours().toString().padStart(2, "0");
@@ -170,7 +169,7 @@ function FixtureRow({
               );
             }
           }
-          const statusColor = statusUrgent ? CRITICAL_COLOR : theme.colors.textSecondary;
+          const statusColor = statusUrgent ? theme.colors.danger : theme.colors.textSecondary;
           return (
             <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12" }]}>
               <Text style={[styles.statusText, { color: statusColor }]}>
@@ -204,10 +203,10 @@ function FixtureRow({
 
       {(isLive || isFinished) && (
         <View style={styles.vsCol}>
-          <Text style={[styles.vsText, { color: isLive ? "#3B82F6" : theme.colors.textPrimary }]}>
+          <Text style={[styles.vsText, { color: isLive ? theme.colors.live : theme.colors.textPrimary }]}>
             {fixture.homeScore90 ?? 0}
           </Text>
-          <Text style={[styles.vsText, { color: isLive ? "#3B82F6" : theme.colors.textPrimary }]}>
+          <Text style={[styles.vsText, { color: isLive ? theme.colors.live : theme.colors.textPrimary }]}>
             {fixture.awayScore90 ?? 0}
           </Text>
         </View>
@@ -217,17 +216,17 @@ function FixtureRow({
         {hasPrediction ? (
           <>
             <Text style={[styles.predictionCompactText, {
-              color: predictionResult === "max" ? "#10B981" + "90"
-                : predictionResult === true ? "#FFB020" + "90"
-                : predictionResult === false ? "#EF4444" + "90"
+              color: predictionResult === "max" ? theme.colors.success + "90"
+                : predictionResult === true ? theme.colors.warning + "90"
+                : predictionResult === false ? theme.colors.danger + "90"
                 : theme.colors.textPrimary + "80",
             }]}>
               {fixture.prediction!.home}
             </Text>
             <Text style={[styles.predictionCompactText, {
-              color: predictionResult === "max" ? "#10B981" + "90"
-                : predictionResult === true ? "#FFB020" + "90"
-                : predictionResult === false ? "#EF4444" + "90"
+              color: predictionResult === "max" ? theme.colors.success + "90"
+                : predictionResult === true ? theme.colors.warning + "90"
+                : predictionResult === false ? theme.colors.danger + "90"
                 : theme.colors.textPrimary + "80",
             }]}>
               {fixture.prediction!.away}
@@ -362,7 +361,7 @@ export function LobbyPredictionsCTA({
             return k.getDate() === n.getDate() && k.getMonth() === n.getMonth() && k.getFullYear() === n.getFullYear();
           })() : false;
           const hasPred = f.prediction?.home != null && f.prediction?.away != null;
-          const urgent = isToday && !hasPred ? CRITICAL_COLOR : undefined;
+          const urgent = isToday && !hasPred ? theme.colors.danger : undefined;
           return (
             <FixtureRow
               key={f.id}
@@ -511,12 +510,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#3B82F6",
+    // backgroundColor set dynamically via theme.colors.live
   },
   liveMinuteText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#3B82F6",
+    // color set dynamically via theme.colors.live
   },
   predictionCompact: {
     width: 42,

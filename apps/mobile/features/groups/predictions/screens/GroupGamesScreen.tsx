@@ -707,7 +707,7 @@ export function GroupGamesScreen({
                         },
                       ]}
                     >
-                      <Text style={[styles.filterSheetSortChipText, { color: isSelected ? "#fff" : theme.colors.textPrimary + "90" }]}>
+                      <Text style={[styles.filterSheetSortChipText, { color: isSelected ? theme.colors.textInverse : theme.colors.textPrimary + "90" }]}>
                         {opt === "round"
                           ? t("predictions.byRound", { defaultValue: "Round" })
                           : t("predictions.byDate", { defaultValue: "Date" })}
@@ -728,7 +728,7 @@ export function GroupGamesScreen({
               pressed && { opacity: 0.85 },
             ]}
           >
-            <Text style={[styles.filterSheetBtnText, { color: "#fff" }]}>
+            <Text style={[styles.filterSheetBtnText, { color: theme.colors.textInverse }]}>
               {t("groups.done", { defaultValue: "Done" })}
             </Text>
           </Pressable>

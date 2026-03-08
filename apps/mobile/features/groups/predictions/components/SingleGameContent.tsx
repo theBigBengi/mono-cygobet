@@ -352,12 +352,12 @@ export const SingleGameContent = React.memo(function SingleGameContent({
     zIndex: expandAnim.value > 0.01 ? 100 : 0,
   }));
 
-  const homeThumbColor = fixture.homeTeam?.firstKitColor ?? "#22C55E";
+  const homeThumbColor = fixture.homeTeam?.firstKitColor ?? theme.colors.success;
   const awayThumbColor = getAwaySliderColor(
     fixture.homeTeam?.firstKitColor,
     fixture.awayTeam?.secondKitColor,
     fixture.awayTeam?.thirdKitColor,
-    "#3B82F6"
+    theme.colors.live
   );
 
   return (
