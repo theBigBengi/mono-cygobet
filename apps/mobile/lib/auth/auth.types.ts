@@ -59,6 +59,5 @@ export type AuthStatus =
 export interface AuthState {
   status: AuthStatus;
   user: User | null;
-  accessToken: string | null;
   error: string | null;
 }

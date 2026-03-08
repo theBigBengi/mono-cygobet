@@ -26,6 +26,7 @@ import { unregisterPushToken, getCurrentPushToken } from "../push";
 
 // Public shape of the auth context exposed via useAuth().
 export interface AuthContextValue extends AuthState {
+  getAccessToken: () => string | null;
   bootstrap: () => Promise<void>;
   loadUser: () => Promise<void>;
   login: (emailOrUsername: string, password: string) => Promise<void>;
@@ -726,11 +727,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   //   bootstrap();
   // }, [bootstrap]);
 
+  const getAccessToken = useCallback(() => accessTokenRef.current, []);
+
   const value: AuthContextValue = {
     status,
     user,
-    accessToken,
     error,
+    getAccessToken,
     bootstrap,
     loadUser,
     login,
