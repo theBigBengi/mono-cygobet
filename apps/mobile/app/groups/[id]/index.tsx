@@ -32,6 +32,8 @@ import { AnimatedStickyHeader } from "@/components/ui/AnimatedStickyHeader";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGroupQuery, useUpdateGroupMutation, groupsKeys } from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
+import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
+import { ApiError } from "@/lib/http/apiError";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 import { globalBlockingOverlayAtom } from "@/lib/state/globalOverlay.atom";
@@ -114,13 +116,14 @@ function GroupLobbyContent() {
     return () => clearTimeout(fallback);
   }, [setOverlay]);
 
-  // Navigate back to groups screen if group not found
+  // Navigate back to groups screen only if group is genuinely not found (404/403)
+  const isNotFoundError =
+    error instanceof ApiError && (error.status === 404 || error.status === 403);
   useEffect(() => {
-    if (error || (!isLoading && !data)) {
-      // Navigate to groups tab when group is not found
+    if (isNotFoundError || (!isLoading && !error && !data)) {
       router.replace("/(tabs)/groups");
     }
-  }, [error, data, isLoading, router]);
+  }, [isNotFoundError, data, isLoading, error, router]);
 
   const handleRefresh = React.useCallback(async () => {
     if (groupId) {
@@ -203,9 +206,19 @@ function GroupLobbyContent() {
     return <QueryLoadingView message={t("groups.loadingPool")} />;
   }
 
-  // Error state - show loading while navigating back
-  if (error || !data) {
+  // 404/403 — navigating back (effect above handles redirect)
+  if (isNotFoundError || (!error && !data)) {
     return <QueryLoadingView message={t("groups.redirecting")} />;
+  }
+
+  // Recoverable error (network, 500, etc.) — show retry
+  if (error) {
+    return (
+      <QueryErrorView
+        message={error.message ?? t("common.errorOccurred")}
+        onRetry={() => refetchGroup()}
+      />
+    );
   }
 
   const group = data.data;
