@@ -5,6 +5,7 @@ import { handleError } from "./errorHandler";
 
 let isInitialized = false;
 let originalErrorHandler: ((error: Error, isFatal?: boolean) => void) | null = null;
+let originalConsoleError: ((...args: unknown[]) => void) | null = null;
 
 /**
  * Initialize global error handlers
@@ -61,7 +62,7 @@ export function initializeGlobalErrorHandlers() {
   if (typeof global !== "undefined") {
     // For development, we can add a warning
     if (__DEV__) {
-      const originalConsoleError = console.error;
+      originalConsoleError = console.error;
       console.error = (...args: unknown[]) => {
         // Check if it's an unhandled promise rejection warning
         const message = args[0]?.toString() || "";
@@ -90,6 +91,11 @@ export function cleanupGlobalErrorHandlers() {
   if (originalErrorHandler && ErrorUtils?.setGlobalHandler) {
     ErrorUtils.setGlobalHandler(originalErrorHandler);
     originalErrorHandler = null;
+  }
+
+  if (originalConsoleError) {
+    console.error = originalConsoleError;
+    originalConsoleError = null;
   }
 
   isInitialized = false;
