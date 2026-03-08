@@ -11,9 +11,9 @@ import { useSetAtom } from "jotai";
 import {
   View,
   StyleSheet,
-  Dimensions,
   Pressable,
   Keyboard,
+  useWindowDimensions,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -150,7 +150,7 @@ function GroupLobbyContent() {
   }, []);
 
   // Expandable chat (Spotify-style: bar grows from bottom to full screen)
-  const SCREEN_H = Dimensions.get("window").height;
+  const { height: SCREEN_H } = useWindowDimensions();
   const BAR_H = 62 + Math.max(insets.bottom, 16);
   const [chatOpen, setChatOpen] = useState(false);
   const chatExpansion = useSharedValue(0);

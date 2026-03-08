@@ -3,9 +3,9 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Dimensions,
   StatusBar,
   Pressable,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -15,16 +15,11 @@ import { triggerImpact } from "@/lib/haptics";
 import { ImpactFeedbackStyle } from "expo-haptics";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const NODE_SIZE = 56;
 const VERTICAL_GAP = 28;
-const PATH_AMPLITUDE = SCREEN_WIDTH * 0.28;
-
-const POPOVER_WIDTH = SCREEN_WIDTH - 32;
 const POPOVER_MARGIN = 16;
 const ARROW_SIZE = 10;
 const POPOVER_EST_HEIGHT = 150;
-const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 // Mock data: 20 nodes going upward
 const NODES = Array.from({ length: 20 }, (_, i) => ({
@@ -46,6 +41,9 @@ function JourneyContent() {
   const { theme } = useTheme();
   const { t } = useTranslation("common");
   const insets = useSafeAreaInsets();
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
+  const PATH_AMPLITUDE = SCREEN_WIDTH * 0.28;
+  const POPOVER_WIDTH = SCREEN_WIDTH - 32;
   const [activeNodeId, setActiveNodeId] = useState<number | null>(null);
   const [popoverPos, setPopoverPos] = useState<{ cx: number; bottom: number } | null>(null);
   const nodeRefs = useRef<Record<number, View | null>>({});
