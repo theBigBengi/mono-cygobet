@@ -1,4 +1,5 @@
 // app/reset-password.tsx
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useState } from "react";
 import {
   View,
@@ -18,6 +19,14 @@ import { useResetPasswordMutation } from "@/lib/auth/auth.mutations";
 import { getAuthErrorMessage } from "@/lib/errors/getAuthErrorMessage";
 
 export default function ResetPasswordScreen() {
+  return (
+    <ErrorBoundary feature="reset-password">
+      <ScreenContent />
+    </ErrorBoundary>
+  );
+}
+
+function ScreenContent() {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const router = useRouter();

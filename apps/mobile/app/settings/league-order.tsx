@@ -19,6 +19,7 @@ import * as Haptics from "expo-haptics";
 
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   useLeaguePreferences,
   useUpdateLeaguePreferences,
@@ -35,6 +36,14 @@ type LeagueItem = {
 };
 
 export default function LeagueOrderScreen() {
+  return (
+    <ErrorBoundary feature="league-order">
+      <LeagueOrderContent />
+    </ErrorBoundary>
+  );
+}
+
+function LeagueOrderContent() {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const router = useRouter();

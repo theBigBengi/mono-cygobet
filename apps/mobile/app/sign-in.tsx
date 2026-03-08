@@ -1,6 +1,7 @@
 // app/sign-in.tsx
 // Sign-in screen - always accessible, redirects to home after successful login
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useRef, useState } from "react";
 import {
   View,
@@ -22,6 +23,14 @@ import { AppText, PasswordInput } from "@/components/ui";
 import { getAuthErrorMessage } from "@/lib/errors/getAuthErrorMessage";
 
 export default function SignInScreen() {
+  return (
+    <ErrorBoundary feature="sign-in">
+      <ScreenContent />
+    </ErrorBoundary>
+  );
+}
+
+function ScreenContent() {
   const { t } = useTranslation("common");
   const emailOrUsernameRef = useRef("");
   const passwordRef = useRef("");

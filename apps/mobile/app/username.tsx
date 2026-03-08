@@ -1,6 +1,7 @@
 // app/username.tsx
 // Username selection screen - required for users without username
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useState } from "react";
 import {
   View,
@@ -24,6 +25,14 @@ import { useUsernameAvailability } from "@/lib/auth/useUsernameAvailability";
 import * as authApi from "@/lib/auth/auth.api";
 
 export default function UsernameScreen() {
+  return (
+    <ErrorBoundary feature="username">
+      <ScreenContent />
+    </ErrorBoundary>
+  );
+}
+
+function ScreenContent() {
   const { t } = useTranslation("common");
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);

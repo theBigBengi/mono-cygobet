@@ -6,8 +6,17 @@
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
 import { SingleGameScreen } from "@/features/groups/predictions/screens/SingleGameScreen";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function SingleGameRoute() {
+  return (
+    <ErrorBoundary feature="fixture-detail">
+      <SingleGameContent />
+    </ErrorBoundary>
+  );
+}
+
+function SingleGameContent() {
   const params = useLocalSearchParams<{ id: string; fixtureId: string }>();
   const groupId =
     params.id && !isNaN(Number(params.id)) ? Number(params.id) : null;

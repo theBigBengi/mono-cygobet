@@ -84,9 +84,6 @@ export function AppStartGate({ children }: AppStartGateProps) {
       <QueryErrorView
         message={error.message}
         onRetry={handleRetry}
-        extraActions={
-          <Button label={t("common.retry")} onPress={handleRetry} />
-        }
       />
     );
   }

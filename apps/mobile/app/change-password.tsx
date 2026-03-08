@@ -1,6 +1,7 @@
 // app/change-password.tsx
 // Change password screen (email/password users only).
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import React, { useState } from "react";
 import {
   View,
@@ -21,6 +22,14 @@ import { useTheme } from "@/lib/theme";
 import { useChangePasswordMutation } from "@/lib/auth/auth.mutations";
 
 export default function ChangePasswordScreen() {
+  return (
+    <ErrorBoundary feature="change-password">
+      <ScreenContent />
+    </ErrorBoundary>
+  );
+}
+
+function ScreenContent() {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const router = useRouter();

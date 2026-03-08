@@ -612,6 +612,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const lastAppStateRef = React.useRef<AppStateStatus | null>(null);
   useEffect(() => {
+    let mounted = true;
     const handleAppStateChange = (next: AppStateStatus) => {
       const prev = lastAppStateRef.current;
       lastAppStateRef.current = next;
@@ -623,8 +624,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
               const expiry = getTokenExpiry(accessToken);
               const now = Date.now();
               // small skew of 10s
-                if (!expiry || expiry <= now + 10_000) {
+              if (!expiry || expiry <= now + 10_000) {
                 const result = await refreshAccessToken();
+                if (!mounted) return;
                 await handleRefreshResult(result, {
                   setAccessToken,
                   setUser,
@@ -643,9 +645,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     lastAppStateRef.current = AppState.currentState;
     const sub = AppState.addEventListener ? AppState.addEventListener("change", handleAppStateChange) : null;
     return () => {
+      mounted = false;
       try {
         if (sub && typeof sub.remove === "function") sub.remove();
-      } catch {}
+      } catch {};
     };
   }, [status, accessToken, refreshAccessToken]);
 
@@ -653,12 +656,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Connectivity subscription: when connection returns while in degraded, attempt recovery.
    */
   useEffect(() => {
+    let mounted = true;
     let wasOnline = netinfo.isOnlineSync();
     const unsub = netinfo.subscribe(async (online) => {
       // Only act on offline -> online transitions
-        if (!wasOnline && online) {
+      if (!wasOnline && online) {
         try {
           const refreshToken = await authStorage.getRefreshToken();
+          if (!mounted) return;
           // Web: refresh token is in cookie; proceed without stored token
           if (!refreshToken && Platform.OS !== "web") {
             // nothing to recover
@@ -668,6 +673,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
           if (status === "degraded") {
             const refreshResult = await refreshAccessToken();
+            if (!mounted) return;
             const handled = await handleRefreshResult(refreshResult, {
               setAccessToken,
               setUser,
@@ -689,6 +695,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               setAccessToken(refreshResult.accessToken);
               accessTokenRef.current = refreshResult.accessToken;
               const userData = await authApi.me();
+              if (!mounted) return;
               setUser(userData);
               setError(null);
               if (userData.onboardingRequired) {
@@ -697,6 +704,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 setStatus("authenticated");
               }
             } catch (meErr) {
+              if (!mounted) return;
               if (meErr instanceof ApiError && meErr.status === 401 && meErr.code !== "NO_ACCESS_TOKEN") {
                 await authStorage.clearRefreshToken();
                 setAccessToken(null);
@@ -716,6 +724,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
 
     return () => {
+      mounted = false;
       try {
         unsub();
       } catch {}

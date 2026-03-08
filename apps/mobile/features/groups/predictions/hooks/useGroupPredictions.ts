@@ -32,6 +32,7 @@ export function useGroupPredictions({
 
   const saveMutation = useSaveGroupPredictionsBatchMutation(groupId);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoNextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveAllPendingRef = useRef<() => Promise<void>>(() =>
     Promise.resolve()
   );
@@ -152,7 +153,11 @@ export function useGroupPredictions({
       scheduleSave();
 
       if (numValue !== null && onAutoNext) {
-        setTimeout(() => onAutoNext(fixtureId, type), 50);
+        if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
+        autoNextTimerRef.current = setTimeout(() => {
+          autoNextTimerRef.current = null;
+          onAutoNext(fixtureId, type);
+        }, 50);
       }
     },
     [getPrediction, setPendingPrediction, scheduleSave]
@@ -337,6 +342,10 @@ export function useGroupPredictions({
 
   useEffect(() => {
     return () => {
+      if (autoNextTimerRef.current) {
+        clearTimeout(autoNextTimerRef.current);
+        autoNextTimerRef.current = null;
+      }
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;

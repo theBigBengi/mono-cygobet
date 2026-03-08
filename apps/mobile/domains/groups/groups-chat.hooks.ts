@@ -20,6 +20,8 @@ import { groupsKeys } from "./groups.keys";
 import type { ApiError } from "@/lib/http/apiError";
 import type { LastMessageInfo, GroupChatPreviewResponse } from "@repo/types";
 
+// Atomic-enough counter for tempId uniqueness. JS is single-threaded so
+// pre-increment + Date.now() guarantees unique IDs even under rapid sends.
 let messageCounter = 0;
 
 const MESSAGES_PAGE_SIZE = 30;

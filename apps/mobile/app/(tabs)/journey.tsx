@@ -13,6 +13,7 @@ import { useTheme } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import { triggerImpact } from "@/lib/haptics";
 import { ImpactFeedbackStyle } from "expo-haptics";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const NODE_SIZE = 56;
@@ -34,6 +35,14 @@ const NODES = Array.from({ length: 20 }, (_, i) => ({
 }));
 
 export default function JourneyScreen() {
+  return (
+    <ErrorBoundary feature="journey">
+      <JourneyContent />
+    </ErrorBoundary>
+  );
+}
+
+function JourneyContent() {
   const { theme } = useTheme();
   const { t } = useTranslation("common");
   const insets = useSafeAreaInsets();

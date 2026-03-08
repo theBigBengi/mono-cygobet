@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useLocalSearchParams } from "expo-router";
 import { ScreenWithHeader } from "@/components/ui";
 import { GroupMemberProfileScreen } from "@/features/groups/ranking";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function parseNum(value: string | string[] | undefined): number | null {
   const s = Array.isArray(value) ? value[0] : value;
@@ -20,6 +21,14 @@ function parseStr(value: string | string[] | undefined): string {
 }
 
 export default function GroupMemberProfileRoute() {
+  return (
+    <ErrorBoundary feature="member-profile">
+      <GroupMemberProfileContent />
+    </ErrorBoundary>
+  );
+}
+
+function GroupMemberProfileContent() {
   const { t } = useTranslation("common");
   const params = useLocalSearchParams<{
     id: string;

@@ -13,11 +13,20 @@ import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { GroupCompactCard } from "@/features/profile";
 import { MaterialIcons } from "@expo/vector-icons";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { ApiUserGroupStat } from "@repo/types";
 
 type FilterType = "all" | "active" | "ended";
 
 export default function AllGroupsScreen() {
+  return (
+    <ErrorBoundary feature="profile-groups">
+      <AllGroupsContent />
+    </ErrorBoundary>
+  );
+}
+
+function AllGroupsContent() {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const router = useRouter();

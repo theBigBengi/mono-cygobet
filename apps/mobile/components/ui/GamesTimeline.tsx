@@ -88,7 +88,6 @@ export function GamesTimeline({
   const selectedIndex = isControlled ? controlledSelectedIndex : internalSelectedIndex;
 
   const gamesCount = games.length;
-  if (gamesCount === 0) return null;
 
   // Total dots including trophy if shown
   const total = showTrophyEnd ? gamesCount + 1 : gamesCount;
@@ -98,14 +97,11 @@ export function GamesTimeline({
 
   // Find first future game index for initial selection
   const firstFutureIndex = games.findIndex(g => g.type === "waiting" || g.type === "upcoming");
-  const defaultIndex = initialSelectedIndex ?? (firstFutureIndex >= 0 ? firstFutureIndex : total - 1);
+  const defaultIndex = initialSelectedIndex ?? (firstFutureIndex >= 0 ? firstFutureIndex : Math.max(total - 1, 0));
 
   const scrollToIndex = useCallback((index: number, animated = true) => {
     if (!scrollViewRef.current || containerWidth === 0) return;
 
-    // Since we have paddingHorizontal = containerWidth/2 - dotWidth/2,
-    // the first dot is already centered. To center dot at index,
-    // we just scroll to index * dotWidth.
     const scrollX = index * dotWidth;
 
     scrollViewRef.current.scrollTo({ x: scrollX, animated });
@@ -113,16 +109,15 @@ export function GamesTimeline({
 
   // Set initial selection after layout (only for uncontrolled mode)
   useEffect(() => {
-    if (!isControlled && !isInitialized && containerWidth > 0) {
+    if (!isControlled && !isInitialized && containerWidth > 0 && gamesCount > 0) {
       setInternalSelectedIndex(defaultIndex);
-      // Small delay to ensure ScrollView is ready
       const timer = setTimeout(() => {
         scrollToIndex(defaultIndex, false);
       }, 50);
       setIsInitialized(true);
       return () => clearTimeout(timer);
     }
-  }, [containerWidth, defaultIndex, isInitialized, scrollToIndex, isControlled]);
+  }, [containerWidth, defaultIndex, isInitialized, scrollToIndex, isControlled, gamesCount]);
 
   // Scroll when controlled index changes
   useEffect(() => {
@@ -130,6 +125,9 @@ export function GamesTimeline({
       scrollToIndex(controlledSelectedIndex, true);
     }
   }, [isControlled, controlledSelectedIndex, containerWidth, scrollToIndex]);
+
+  // Early return AFTER all hooks
+  if (gamesCount === 0) return null;
 
   const handleDotPress = (index: number) => {
     if (!isControlled) {

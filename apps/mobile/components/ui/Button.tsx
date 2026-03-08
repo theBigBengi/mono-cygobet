@@ -10,7 +10,7 @@ import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "./AppText";
 
-type ButtonVariant = "primary" | "secondary" | "danger";
+type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 
 interface ButtonProps extends Omit<PressableProps, "style"> {
   label: string;
@@ -36,72 +36,48 @@ export function Button({
     onPress?.(e);
   };
 
+  const isGhost = variant === "ghost";
+
   // Determine background color based on variant and disabled state
   const getBackgroundColor = () => {
-    if (disabled) {
-      return theme.colors.surface;
-    }
-    if (variant === "primary") {
-      return theme.colors.primary;
-    }
-    if (variant === "secondary") {
-      return theme.colors.surface;
-    }
+    if (disabled) return theme.colors.surface;
+    if (isGhost) return "transparent";
+    if (variant === "primary") return theme.colors.primary;
+    if (variant === "secondary") return theme.colors.surface;
     return theme.colors.danger;
   };
 
   // Determine border color based on variant
   const getBorderColor = () => {
-    if (disabled) {
-      return theme.colors.border;
-    }
-    if (variant === "primary") {
-      return "transparent";
-    }
-    if (variant === "secondary") {
-      return theme.colors.border;
-    }
+    if (disabled) return theme.colors.border;
+    if (isGhost) return "transparent";
+    if (variant === "primary") return "transparent";
+    if (variant === "secondary") return theme.colors.border;
     return "transparent";
   };
 
   // Determine bottom border color (darker for 3D effect)
   const getBottomBorderColor = () => {
-    if (disabled) {
-      return theme.colors.textSecondary + "40";
-    }
-    if (variant === "primary") {
-      // Dark overlay for 3D effect
-      return theme.colors.textPrimary + "40";
-    }
-    if (variant === "secondary") {
-      return theme.colors.textSecondary + "50";
-    }
-    // danger
+    if (disabled) return theme.colors.textSecondary + "40";
+    if (isGhost) return "transparent";
+    if (variant === "primary") return theme.colors.textPrimary + "40";
+    if (variant === "secondary") return theme.colors.textSecondary + "50";
     return theme.colors.textPrimary + "40";
   };
 
   // Determine shadow color
   const getShadowColor = () => {
-    if (disabled) {
-      return theme.colors.textPrimary;
-    }
-    if (variant === "primary") {
-      return theme.colors.primary;
-    }
-    if (variant === "danger") {
-      return theme.colors.danger;
-    }
+    if (disabled || isGhost) return "transparent";
+    if (variant === "primary") return theme.colors.primary;
+    if (variant === "danger") return theme.colors.danger;
     return theme.colors.textPrimary;
   };
 
   // Determine text color based on variant and disabled state
   const getTextColor = () => {
-    if (disabled) {
-      return theme.colors.textSecondary;
-    }
-    if (variant === "primary" || variant === "danger") {
-      return theme.colors.primaryText;
-    }
+    if (disabled) return theme.colors.textSecondary;
+    if (isGhost) return theme.colors.textSecondary;
+    if (variant === "primary" || variant === "danger") return theme.colors.primaryText;
     return theme.colors.textPrimary;
   };
 

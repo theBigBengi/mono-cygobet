@@ -155,7 +155,7 @@ export function StickyHeaderScreen({
       </Animated.ScrollView>
 
       {/* Sticky header - positioned absolutely at top */}
-      <View style={[styles.stickyHeader, { paddingTop: 0 }]}>
+      <View style={[styles.stickyHeader, { paddingTop: insets.top }]}>
         {/* Background layer - fades in on scroll */}
         <Animated.View
           style={[
@@ -254,7 +254,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 52,
     zIndex: 50,
   },
   stickyHeaderBg: {

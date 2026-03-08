@@ -85,13 +85,14 @@ export function GameSlider({
     if (isReady) return;
     if (fixtures.length === 0) return;
 
+    let innerTimer: ReturnType<typeof setTimeout> | null = null;
     const timer = setTimeout(() => {
       flatListRef.current?.scrollToOffset({
         offset: getOffsetForIndex(currentIndex, leftOffset),
         animated: false,
       });
 
-      setTimeout(() => {
+      innerTimer = setTimeout(() => {
         setIsReady(true);
         Animated.timing(opacity, {
           toValue: 1,
@@ -101,7 +102,10 @@ export function GameSlider({
       }, 50);
     }, 50);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (innerTimer) clearTimeout(innerTimer);
+    };
   }, [fixtures.length, isReady, leftOffset]);
 
   // Animated scroll when index changes (after initial ready)

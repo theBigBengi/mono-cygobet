@@ -34,6 +34,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { status, getAccessToken } = useAuth();
   const socketRef = useRef<TypedSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  // Track socket instance in state so context consumers get reactive updates.
+  // Refs are not tracked by React — using socketRef.current in useMemo deps is unsafe.
+  const [socketState, setSocketState] = useState<TypedSocket | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -43,6 +46,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
+        setSocketState(null);
         setIsConnected(false);
       }
       return;
@@ -81,10 +85,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     socketRef.current = socket;
+    setSocketState(socket);
 
     return () => {
       socket.disconnect();
       socketRef.current = null;
+      setSocketState(null);
       setIsConnected(false);
     };
   }, [status, getAccessToken]);
@@ -106,8 +112,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<SocketContextValue>(
-    () => ({ socket: socketRef.current, isConnected }),
-    [isConnected, socketRef.current],
+    () => ({ socket: socketState, isConnected }),
+    [socketState, isConnected],
   );
 
   return (

@@ -1,6 +1,7 @@
 // app/sign-up.tsx
 // Sign-up screen - always accessible, redirects to home after successful registration
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useState } from "react";
 import {
   View,
@@ -25,6 +26,14 @@ import * as authApi from "@/lib/auth/auth.api";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignUpScreen() {
+  return (
+    <ErrorBoundary feature="sign-up">
+      <ScreenContent />
+    </ErrorBoundary>
+  );
+}
+
+function ScreenContent() {
   const { t } = useTranslation("common");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
