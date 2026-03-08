@@ -17,7 +17,7 @@ import {
   isLive as isLiveState,
 } from "@repo/utils";
 
-import { Ionicons, Fontisto } from "@expo/vector-icons";
+import { Ionicons, Fontisto, FontAwesome6 } from "@expo/vector-icons";
 import { TeamLogo } from "@/components/ui";
 import type { FixtureItem } from "@/types/common";
 
@@ -86,7 +86,7 @@ function FixtureRow({
         {isLive ? (
           <View style={[styles.statusBox, { backgroundColor: theme.colors.live + "15" }]}>
             <Text style={[styles.statusDayText, { color: theme.colors.live }]}>{fixture.liveMinute ?? 0}</Text>
-            <Text style={[styles.statusMonthText, { color: theme.colors.live }]}>Live</Text>
+            <Text style={[styles.statusMonthText, { color: theme.colors.live + "70" }]}>Live</Text>
           </View>
         ) : isFinished && fixture.prediction?.points != null ? (
           <View style={[styles.pointsBadge, {
@@ -116,7 +116,7 @@ function FixtureRow({
             const isToday = k.getDate() === n.getDate() && k.getMonth() === n.getMonth() && k.getFullYear() === n.getFullYear();
             const isTomorrow = k.getDate() === tmr.getDate() && k.getMonth() === tmr.getMonth() && k.getFullYear() === tmr.getFullYear();
             if (isToday) {
-              const urgentColor = !hasPrediction ? theme.colors.danger : theme.colors.textSecondary;
+              const urgentColor = !hasPrediction ? theme.colors.danger : theme.colors.textPrimary;
               const diff = k.getTime() - n.getTime();
               if (diff <= 0) {
                 const hh = k.getHours().toString().padStart(2, "0");
@@ -124,7 +124,7 @@ function FixtureRow({
                 return (
                   <View style={[styles.statusBox, { backgroundColor: urgentColor + "12" }]}>
                     <Text style={[styles.statusDayText, { color: urgentColor }]}>{hh}</Text>
-                    <Text style={[styles.statusMonthText, { color: urgentColor }]}>{mm}</Text>
+                    <Text style={[styles.statusMonthText, { color: urgentColor + "70" }]}>{mm}</Text>
                   </View>
                 );
               } else {
@@ -135,36 +135,34 @@ function FixtureRow({
                   return (
                     <View style={[styles.statusBox, { backgroundColor: urgentColor + "12" }]}>
                       <Text style={[styles.statusDayText, { color: urgentColor }]}>{m}</Text>
-                      <Text style={[styles.statusMonthText, { color: urgentColor }]}>min</Text>
+                      <Text style={[styles.statusMonthText, { color: urgentColor + "70" }]}>min</Text>
                     </View>
                   );
                 } else {
                   return (
                     <View style={[styles.statusBox, { backgroundColor: urgentColor + "12" }]}>
                       <Text style={[styles.statusDayText, { color: urgentColor }]}>{h}h</Text>
-                      <Text style={[styles.statusMonthText, { color: urgentColor }]}>{m}m</Text>
+                      <Text style={[styles.statusMonthText, { color: urgentColor + "70" }]}>{m}m</Text>
                     </View>
                   );
                 }
               }
             } else if (isTomorrow) {
               const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-              const sc = theme.colors.textPrimary + "CC";
+              const dc = theme.colors.textPrimary;
               return (
                 <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12" }]}>
-                  <Text style={[styles.statusMonthText, { color: sc }]}>{MONTHS[k.getMonth()]}</Text>
-                  <Text style={[styles.statusDayText, { color: sc }]}>{k.getDate()}</Text>
+                  <Text style={[styles.statusMonthText, { color: dc + "70" }]}>{MONTHS[k.getMonth()]}</Text>
+                  <Text style={[styles.statusDayText, { color: dc }]}>{k.getDate()}</Text>
                 </View>
               );
             } else {
               const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-              const statusMonth = MONTHS[k.getMonth()];
-              const statusDay = k.getDate();
-              const sc = theme.colors.textPrimary + "CC";
+              const dc = theme.colors.textPrimary;
               return (
                 <View style={[styles.statusBox, { backgroundColor: theme.colors.textSecondary + "12" }]}>
-                  <Text style={[styles.statusMonthText, { color: sc }]}>{statusMonth}</Text>
-                  <Text style={[styles.statusDayText, { color: sc }]}>{statusDay}</Text>
+                  <Text style={[styles.statusMonthText, { color: dc + "70" }]}>{MONTHS[k.getMonth()]}</Text>
+                  <Text style={[styles.statusDayText, { color: dc }]}>{k.getDate()}</Text>
                 </View>
               );
             }
@@ -216,36 +214,33 @@ function FixtureRow({
         {hasPrediction ? (
           <>
             <Text style={[styles.predictionCompactText, {
-              color: predictionResult === "max" ? theme.colors.success + "90"
-                : predictionResult === true ? theme.colors.warning + "90"
-                : predictionResult === false ? theme.colors.danger + "90"
-                : theme.colors.textPrimary + "80",
+              color: predictionResult === "max" ? theme.colors.success
+                : predictionResult === true ? theme.colors.warning
+                : predictionResult === false ? theme.colors.danger
+                : theme.colors.textPrimary,
             }]}>
               {fixture.prediction!.home}
             </Text>
             <Text style={[styles.predictionCompactText, {
-              color: predictionResult === "max" ? theme.colors.success + "90"
-                : predictionResult === true ? theme.colors.warning + "90"
-                : predictionResult === false ? theme.colors.danger + "90"
-                : theme.colors.textPrimary + "80",
+              color: predictionResult === "max" ? theme.colors.success
+                : predictionResult === true ? theme.colors.warning
+                : predictionResult === false ? theme.colors.danger
+                : theme.colors.textPrimary,
             }]}>
               {fixture.prediction!.away}
             </Text>
           </>
-        ) : (
-          <Text style={[styles.predictionCompactText, {
-            color: theme.colors.textPrimary,
-          }]}>
-            {"\u2013"}
-          </Text>
-        )}
+        ) : null}
       </View>
 
       <View style={[styles.checkCircle, hasPrediction
-        ? { backgroundColor: theme.colors.textSecondary + "15" }
-        : { borderWidth: 1, borderColor: theme.colors.textSecondary + "40" }
+        ? { backgroundColor: "#34C75920" }
+        : { borderWidth: 1.5, borderColor: theme.colors.textSecondary + "90" }
       ]}>
-        <Ionicons name={hasPrediction ? "checkmark" : "add"} size={hasPrediction ? 12 : 14} color={hasPrediction ? theme.colors.textSecondary : theme.colors.textPrimary} />
+        {hasPrediction
+          ? <Ionicons name="checkmark" size={12} color="#34C759" />
+          : <FontAwesome6 name="plus" size={11} color={theme.colors.textSecondary + "90"} />
+        }
       </View>
 
     </Pressable>
@@ -516,8 +511,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   predictionCompactText: {
-    fontSize: 15,
-    fontWeight: "800",
+    fontSize: 13,
+    fontWeight: "600",
     lineHeight: 18,
   },
   predictionBoxes: {

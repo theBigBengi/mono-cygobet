@@ -157,8 +157,12 @@ export function useGroupChat(groupId: number | null) {
               const { tempId: _, ...rest } = message;
               newData[idx] = { ...rest, tempId: undefined };
             } else {
-              const { tempId: _, ...rest } = message;
-              newData = [{ ...rest, tempId: undefined }, ...newData];
+              // Another useGroupChat instance may have already processed this message
+              const existsById = newData.some((m) => m.id === message.id);
+              if (!existsById) {
+                const { tempId: _, ...rest } = message;
+                newData = [{ ...rest, tempId: undefined }, ...newData];
+              }
             }
           } else {
             // Check if message already exists (avoid duplicates)

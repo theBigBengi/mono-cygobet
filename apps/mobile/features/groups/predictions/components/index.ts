@@ -12,7 +12,6 @@ export { GameSlider } from "./GameSlider";
 export { GroupFixtureCard } from "./GroupFixtureCard";
 export { GroupGamesHeader } from "./GroupGamesHeader";
 export { GroupGamesLastSavedFooter } from "./GroupGamesLastSavedFooter";
-export { MatchDraftCard } from "./MatchDraftCard";
 export { MatchPredictionCardVertical } from "./MatchPredictionCardVertical";
 export { SingleGameMatchCard } from "./SingleGameMatchCard";
 export { SingleGameContent } from "./SingleGameContent";

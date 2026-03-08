@@ -7,7 +7,6 @@ import type { ApiGroupItem } from "@repo/types";
 export type GroupFilterType =
   | "all"
   | "active"
-  | "drafts"
   | "ended";
 
 export type GroupSortType =
@@ -18,7 +17,6 @@ export type GroupSortType =
 
 const FILTER_PRIORITY: Exclude<GroupFilterType, "all">[] = [
   "active",
-  "drafts",
   "ended",
 ];
 
@@ -31,7 +29,6 @@ interface GroupFilterResult {
   counts: {
     all: number;
     active: number;
-    drafts: number;
     ended: number;
   };
 }
@@ -44,8 +41,7 @@ function needsAttention(group: ApiGroupItem): boolean {
 
 function categorizeGroup(
   group: ApiGroupItem
-): "active" | "drafts" | "ended" {
-  if (group.status === "draft") return "drafts";
+): "active" | "ended" {
   if (group.status === "ended") return "ended";
   return "active";
 }
@@ -57,7 +53,6 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
   const { filteredGroups, counts } = useMemo(() => {
     const categorized = {
       active: [] as ApiGroupItem[],
-      drafts: [] as ApiGroupItem[],
       ended: [] as ApiGroupItem[],
     };
 
@@ -115,13 +110,11 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
     };
 
     categorized.active.sort(sortFn);
-    categorized.drafts.sort(sortFn);
     categorized.ended.sort(sortFn);
 
     const counts = {
       all: groups.length,
       active: categorized.active.length,
-      drafts: categorized.drafts.length,
       ended: categorized.ended.length,
     };
 
@@ -129,7 +122,6 @@ export function useGroupFilter(groups: ApiGroupItem[]): GroupFilterResult {
     if (selectedFilter === "all") {
       filtered = [
         ...categorized.active,
-        ...categorized.drafts,
         ...categorized.ended,
       ];
     } else {

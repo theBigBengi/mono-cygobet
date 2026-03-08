@@ -14,7 +14,6 @@ export type GroupViewMode = "card" | "row";
 const FILTER_LABEL_KEYS: Record<GroupFilterType, string> = {
   all: "groups.filterAll",
   active: "groups.filterActive",
-  drafts: "groups.filterDrafts",
   ended: "groups.filterEnded",
 };
 

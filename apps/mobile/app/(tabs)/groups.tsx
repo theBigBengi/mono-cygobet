@@ -124,7 +124,7 @@ function GroupsContent() {
   }, [refetch, refetchUnread]);
 
   const handleCreateGroup = () => {
-    router.push("/(tabs)/home");
+    handleOpenCreate();
   };
 
   const handleJoinWithCode = useCallback(() => {

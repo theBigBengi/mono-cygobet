@@ -190,6 +190,7 @@ export function GroupGamesScreen({
   const summaryStats = useMemo(() => {
     let totalPoints = 0;
     let settledWithPoints = 0;
+    let maxPointsCount = 0;
     let totalSettled = 0;
 
     filteredFixtures.forEach((f) => {
@@ -199,6 +200,9 @@ export function GroupGamesScreen({
       }
       if (f.prediction?.settled) {
         totalSettled++;
+        if (f.prediction?.points != null && f.prediction.points >= 3) {
+          maxPointsCount++;
+        }
       }
     });
 
@@ -206,7 +210,11 @@ export function GroupGamesScreen({
       totalSettled > 0
         ? Math.round((settledWithPoints / totalSettled) * 100)
         : 0;
-    return { totalPoints, accuracy };
+    const maxAccuracy =
+      totalSettled > 0
+        ? Math.round((maxPointsCount / totalSettled) * 100)
+        : 0;
+    return { totalPoints, accuracy, maxAccuracy, totalSettled };
   }, [filteredFixtures]);
 
   const nextToPredictId = useMemo(() => {
@@ -251,15 +259,28 @@ export function GroupGamesScreen({
     scrollToMatchCard,
   } = usePredictionNavigation(fixtureGroups);
 
-  React.useEffect(() => {
+  const fixtureIndexMap = useMemo(() => {
     const map = new Map<number, number>();
     renderItems.forEach((item, i) => {
       if (item.type === "card") {
         map.set(item.fixture.id, i);
       }
     });
-    updateFixtureIndexMap(map);
-  }, [renderItems, updateFixtureIndexMap]);
+    return map;
+  }, [renderItems]);
+
+  React.useEffect(() => {
+    updateFixtureIndexMap(fixtureIndexMap);
+  }, [fixtureIndexMap, updateFixtureIndexMap]);
+
+  // Render enough items so scrollToIndex never fails for the target fixture
+  const initialNumToRender = useMemo(() => {
+    if (scrollToFixtureId == null) return 10;
+    const targetIndex = fixtureIndexMap.get(scrollToFixtureId);
+    if (targetIndex == null) return 10;
+    // Render up to the target + a buffer so it's in the render window
+    return targetIndex + 5;
+  }, [scrollToFixtureId, fixtureIndexMap]);
 
   const activeFilterLabel = useMemo(() => {
     const parts: string[] = [];
@@ -363,6 +384,8 @@ export function GroupGamesScreen({
   React.useEffect(() => {
     if (currentFocusedField) {
       headerOffset.value = withTiming(-totalHeaderH, { duration: 200 });
+    } else {
+      headerOffset.value = withTiming(0, { duration: 200 });
     }
   }, [currentFocusedField, headerOffset, totalHeaderH]);
 
@@ -416,6 +439,10 @@ export function GroupGamesScreen({
     setTimeout(() => {
       scrollToMatchCard(scrollToFixtureId);
     }, 100);
+    setTimeout(() => {
+      setHighlightedFixtureId(scrollToFixtureId);
+      setTimeout(() => setHighlightedFixtureId(null), 2000);
+    }, 600);
   }, [scrollToFixtureId, isReady, scrollToMatchCard]);
 
   const handleDone = useCallback(() => {
@@ -545,6 +572,7 @@ export function GroupGamesScreen({
         predictedCount={savedPredictionsCount}
         totalCount={totalPredictionsCount}
         accuracy={summaryStats.accuracy}
+        maxAccuracy={summaryStats.maxAccuracy}
         useFullName={useFullName}
         onToggleFullName={() => setUseFullName((v) => !v)}
         cardLayout={cardLayout}
@@ -598,20 +626,13 @@ export function GroupGamesScreen({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           windowSize={7}
-          initialNumToRender={10}
+          initialNumToRender={initialNumToRender}
           maxToRenderPerBatch={6}
           onScrollToIndexFailed={(info) => {
             flatListRef.current?.scrollToOffset({
               offset: info.averageItemLength * info.index,
               animated: true,
             });
-            setTimeout(() => {
-              flatListRef.current?.scrollToIndex({
-                index: info.index,
-                animated: true,
-                viewOffset: SCROLL_OFFSET,
-              });
-            }, 200);
           }}
         />
 
@@ -638,7 +659,7 @@ export function GroupGamesScreen({
           />
         </Animated.View>
 
-        {scrollBtnDir && (
+        {scrollBtnDir && !currentFocusedField && (
           <ScrollToNextButton
             direction={scrollBtnDir}
             onPress={handleScrollToNext}

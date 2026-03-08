@@ -18,7 +18,6 @@ import type { GroupFilterType, GroupSortType } from "../hooks/useGroupFilter";
 
 const FILTERS: { key: GroupFilterType; labelKey: string }[] = [
   { key: "active", labelKey: "groups.filterActive" },
-  { key: "drafts", labelKey: "groups.filterDrafts" },
   { key: "ended", labelKey: "groups.filterEnded" },
 ];
 
@@ -35,7 +34,7 @@ interface FilterSortSheetProps {
   selectedSort: GroupSortType;
   onFilterChange: (filter: GroupFilterType) => void;
   onSortChange: (sort: GroupSortType) => void;
-  counts: { all: number; active: number; drafts: number; ended: number };
+  counts: { all: number; active: number; ended: number };
 }
 
 export function FilterSortSheet({

@@ -3,7 +3,7 @@
 
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { View, StyleSheet, Pressable, Text } from "react-native";
+import { View, StyleSheet, Pressable, Text, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -25,12 +25,14 @@ export interface LobbyRecentResultsProps {
   fixtures: FixtureItem[];
   onPress: (fixtureId?: number) => void;
   isLoading: boolean;
+  completedFixturesCount: number;
 }
 
 function LobbyRecentResultsInner({
   fixtures,
   onPress,
   isLoading,
+  completedFixturesCount,
 }: LobbyRecentResultsProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -81,7 +83,7 @@ function LobbyRecentResultsInner({
       </View>
 
       {/* Tiles */}
-      <View style={styles.tilesRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tilesRow}>
         {isLoading
           ? Array.from({ length: 5 }).map((_, i) => (
               <Animated.View
@@ -93,10 +95,11 @@ function LobbyRecentResultsInner({
                 ]}
               />
             ))
-          : tiles.map((fixture) => {
+          : tiles.map((fixture, index) => {
               const points = fixture.prediction?.points ?? null;
               const hasPoints = points != null;
               const color = hasPoints ? getPointsColor(points, { success: theme.colors.success, warning: theme.colors.warning, danger: theme.colors.danger })! : theme.colors.danger;
+              const gameNumber = completedFixturesCount - index;
 
               return (
                 <Pressable
@@ -104,9 +107,14 @@ function LobbyRecentResultsInner({
                   onPress={() => onPress(fixture.id)}
                   style={({ pressed }) => [
                     styles.tile,
+                    { backgroundColor: theme.colors.cardBackground },
                     pressed && { opacity: 0.7 },
                   ]}
                 >
+                  {/* Game number */}
+                  <Text style={[styles.tileGameNumber, { color: theme.colors.textSecondary }]}>
+                    #{gameNumber}
+                  </Text>
                   {/* Match result */}
                   <View style={styles.tileMatchSection}>
                     <View style={styles.tileTeamRow}>
@@ -128,7 +136,7 @@ function LobbyRecentResultsInner({
                   </View>
 
                   {/* Prediction + Points */}
-                  <View style={[styles.tilePredictionSection, { backgroundColor: color + "15" }]}>
+                  <View style={styles.tilePredictionSection}>
                     <Text style={[styles.tilePrediction, { color }]}>
                       {fixture.prediction ? `${fixture.prediction.home}-${fixture.prediction.away}` : "—"}
                     </Text>
@@ -139,7 +147,7 @@ function LobbyRecentResultsInner({
                 </Pressable>
               );
             })}
-      </View>
+      </ScrollView>
 
     </View>
   );
@@ -149,7 +157,6 @@ export const LobbyRecentResults = React.memo(LobbyRecentResultsInner);
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
     marginBottom: 20,
   },
   headerRow: {
@@ -157,6 +164,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 12,
+    paddingHorizontal: 16,
   },
   headerTitle: {
     fontSize: 15,
@@ -183,17 +191,27 @@ const styles = StyleSheet.create({
   tilesRow: {
     flexDirection: "row",
     gap: 8,
+    paddingHorizontal: 16,
   },
   tile: {
-    flex: 1,
-    borderRadius: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
+    width: 125,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
     overflow: "hidden",
   },
+  tileGameNumber: {
+    fontSize: 11,
+    fontWeight: "600",
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
   tileMatchSection: {
-    gap: 1,
-    marginBottom: 10,
+    gap: 3,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
   },
   tileTeamRow: {
     flexDirection: "row",
@@ -201,30 +219,29 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   tileTeam: {
-    fontSize: 9,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "600",
     flex: 1,
   },
   tileResultScore: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "700",
-    minWidth: 14,
+    minWidth: 16,
     textAlign: "center",
   },
   tilePredictionSection: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 6,
-    paddingHorizontal: 4,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   tilePrediction: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
   },
   tilePoints: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
   },
 });

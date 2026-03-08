@@ -1,12 +1,13 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useEffect } from "react";
 import { View, StyleSheet, TextInput, Pressable, Text, Platform } from "react-native";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { formatKickoffTime } from "@/utils/fixture";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
-import { MaterialCommunityIcons, Ionicons, AntDesign } from "@expo/vector-icons";
+import { MaterialCommunityIcons, Ionicons, AntDesign, FontAwesome6 } from "@expo/vector-icons";
 import { AppText, TeamLogo } from "@/components/ui";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
@@ -143,6 +144,15 @@ export function MatchPredictionCardVertical({
 
   const isCardFocused = isHomeFocused || isAwayFocused;
 
+  const handlePressCenter = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (isEditable) {
+      homeRef.current?.focus();
+    } else {
+      onPressCard();
+    }
+  }, [isEditable, onPressCard]);
+
   const fixturePoints = fixture.prediction?.points ?? 0;
   const hasPoints = fixturePoints > 0;
   const hasPrediction = prediction.home !== null && prediction.away !== null;
@@ -165,7 +175,7 @@ export function MatchPredictionCardVertical({
   const statusData = useMemo(() => {
     // Live → show match minute
     if (isLive) {
-      return { top: `${fixture.liveMinute ?? 0}'`, bottom: undefined, bgColor: theme.colors.live + "15", textColor: theme.colors.live, inline: `${fixture.liveMinute ?? 0}'` };
+      return { top: `${fixture.liveMinute ?? 0}'`, bottom: undefined, bgColor: "transparent", textColor: theme.colors.live, inline: `${fixture.liveMinute ?? 0}'` };
     }
 
     // Cancelled / Postponed / Abandoned → show date + time like regular games
@@ -175,7 +185,9 @@ export function MatchPredictionCardVertical({
       const mm = k.getMinutes().toString().padStart(2, "0");
       const dd = k.getDate().toString().padStart(2, "0");
       const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const mo = (k.getMonth() + 1).toString().padStart(2, "0");
       const dateStr = `${dd} ${MONTHS_SHORT[k.getMonth()]}`;
+      const numericDate = `${dd}.${mo}`;
       const c = theme.colors.textSecondary;
       const labelMap: Record<string, string> = {
         CANCELLED: "CAN",
@@ -186,7 +198,7 @@ export function MatchPredictionCardVertical({
         WO: "W/O",
       };
       const label = labelMap[fixture.state] ?? fixture.state.slice(0, 3).toUpperCase();
-      return { top: hh, bottom: mm, date: dateStr, bgColor: "transparent", textColor: c, cancelLabel: label, inline: `${dateStr} · ${hh}:${mm}` };
+      return { top: hh, bottom: mm, date: dateStr, numericDate, bgColor: "transparent", textColor: c, cancelLabel: label, inline: `${dateStr} · ${hh}:${mm}` };
     }
     if (isCancelled && fixture.state) {
       const labelMap: Record<string, string> = {
@@ -212,7 +224,8 @@ export function MatchPredictionCardVertical({
       const mo = (k.getMonth() + 1).toString().padStart(2, "0");
       const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       const dateStr = `${dd} ${MONTHS_SHORT[k.getMonth()]}`;
-      return { top: hh, bottom: mm, date: dateStr, bgColor: "transparent", textColor: sc, inline: hideRound ? `${dateStr} ${hh}:${mm}` : `${hh}:${mm}` };
+      const numericDate = `${dd}.${mo}`;
+      return { top: hh, bottom: mm, date: dateStr, numericDate, bgColor: "transparent", textColor: sc, inline: hideRound ? `${dateStr} ${hh}:${mm}` : `${hh}:${mm}` };
     }
 
     const sc = theme.colors.textSecondary;
@@ -252,8 +265,8 @@ export function MatchPredictionCardVertical({
       const strikethrough = isCancelled ? { textDecorationLine: "line-through" as const } : undefined;
       return (
         <View style={[styles.statusBox, { backgroundColor: statusData.bgColor }]}>
-          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 8 }, strikethrough]}>{statusData.date}</Text>
-          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 10 }, strikethrough]}>{`${statusData.top}:${statusData.bottom}`}</Text>
+          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 10, fontWeight: "500" }, strikethrough]}>{`${statusData.top}:${statusData.bottom}`}</Text>
+          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 10, fontWeight: "500" }, strikethrough]}>{statusData.numericDate}</Text>
         </View>
       );
     }
@@ -265,162 +278,156 @@ export function MatchPredictionCardVertical({
     );
   }, [statusData, isCancelled]);
 
+  const highlightOpacity = useSharedValue(0);
+  useEffect(() => {
+    if (isHighlighted) {
+      highlightOpacity.value = withTiming(1, { duration: 300 });
+    } else {
+      highlightOpacity.value = withTiming(0, { duration: 500 });
+    }
+  }, [isHighlighted]);
+  const highlightAnimStyle = useAnimatedStyle(() => ({
+    opacity: highlightOpacity.value,
+  }));
+
   if (cardLayout === "horizontal") {
     return (
       <View ref={cardRef} style={styles.outerRow}>
-        <View style={styles.cardShadowWrapper}>
+        <View style={styles.cardRow}>
+          {/* Time — left column */}
+          <View style={{ width: 30, alignItems: "center", justifyContent: "center" }}>
+            <Text style={[styles.hStatusText, { fontSize: 9, color: isLive ? theme.colors.live : (!isFinished && !isCancelled) ? theme.colors.textPrimary : statusData.textColor, fontWeight: "500", textAlign: "center" }, isCancelled && { textDecorationLine: "line-through" }]}>
+              {statusData.date ? `${statusData.top}:${statusData.bottom}\n${statusData.numericDate}` : statusData.inline}
+            </Text>
+          </View>
+
+          {/* Card — center */}
           <View
             style={[
-              styles.matchCard,
-              cardRadiusStyle,
-              isConnected && styles.cardConnected,
-              hasThickBottom && styles.cardWithBottomBorder,
-              {
-                backgroundColor: "transparent",
-                borderColor: "transparent",
-                borderBottomColor: "transparent",
-                ...(Platform.OS === "android" && positionInGroup !== "single"
-                  ? { elevation: 0 }
-                  : {}),
-              },
+              styles.hRow,
+              { flex: 1, backgroundColor: theme.colors.textSecondary + "12", borderRadius: 8, paddingHorizontal: 8 },
+              isCancelled && { opacity: 0.6 },
             ]}
           >
-            {/* Info row: time | points */}
-            <View style={styles.hStatusRow}>
-              <Text style={[styles.hStatusText, { color: (!isLive && !isFinished && !isCancelled) ? theme.colors.textPrimary : statusData.textColor }, isCancelled && { textDecorationLine: "line-through" }]}>
-                {statusData.date ? `${statusData.date} · ${statusData.top}:${statusData.bottom}` : statusData.inline}
-              </Text>
-              <Pressable style={{ marginLeft: "auto" }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPressCard(); }}>
-                {rightBoxData ? (
-                  rightBoxData.icon === "cancel" ? (
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <MaterialCommunityIcons name="cancel" size={12} color={rightBoxData.textColor} />
-                      <Text style={[styles.hStatusText, { color: rightBoxData.textColor }]}>
-                        {("cancelLabel" in statusData ? statusData.cancelLabel : undefined) ?? statusData.top}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={[styles.hPointsBadge, { backgroundColor: rightBoxData.bgColor }]}>
-                      <Text style={[styles.hStatusText, { color: rightBoxData.textColor }]}>
-                        {rightBoxData.top} {rightBoxData.bottom}
-                      </Text>
-                    </View>
-                  )
-                ) : isLive ? (
-                  <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.textSecondary + "15", alignItems: "center", justifyContent: "center" }}>
-                    <AntDesign name="question" size={9} color={theme.colors.live} />
+            <Animated.View style={[styles.highlightOverlay, { backgroundColor: theme.colors.primary + "15" }, highlightAnimStyle]} pointerEvents="none" />
+
+            {/* Home half */}
+            <Pressable
+              style={styles.hTeamHalf}
+              onPress={handlePressCenter}
+            >
+              <TeamLogo imagePath={fixture.homeTeam?.imagePath} teamName={homeTeamName} size={18} rounded={false} />
+              <AppText
+                variant="body"
+                numberOfLines={2}
+                style={[
+                  styles.hTeamName,
+                  { color: isHomeFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary },
+                ]}
+              >
+                {homeTeamName}
+              </AppText>
+              <View style={{ width: 18, alignItems: "flex-end" }}>
+                <ResultDisplay
+                  result={gameResultOrTime}
+                  isLive={isLive}
+                  isFinished={isFinished}
+                  isCancelled={isCancelled}
+                  isHomeWinner={isHomeWinner}
+                  isAwayWinner={isAwayWinner}
+                  type="home"
+                />
+              </View>
+            </Pressable>
+
+            {/* Score inputs center */}
+            {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
+              <View style={styles.hScoresCenter}>
+                <ScoreInputPair
+                  homeValue={prediction.home}
+                  awayValue={prediction.away}
+                  isHomeFocused={isHomeFocused}
+                  isAwayFocused={isAwayFocused}
+                  isEditable={isEditable}
+                  isFinished={isFinished}
+                  isLive={isLive}
+                  homeRef={homeRef}
+                  awayRef={awayRef}
+                  onHomeChange={handleHomeChange}
+                  onAwayChange={handleAwayChange}
+                  onHomeFocus={handleHomeFocus}
+                  onAwayFocus={handleAwayFocus}
+                  onBlur={onBlur}
+                  onHomeAutoNext={onAutoNext ? handleHomeAutoNext : undefined}
+                  onAwayAutoNext={onAutoNext ? handleAwayAutoNext : undefined}
+                  isCorrect={predictionSuccess}
+                />
+              </View>
+            )}
+
+            {/* Away half */}
+            <Pressable
+              style={styles.hTeamHalf}
+              onPress={handlePressCenter}
+            >
+              <View style={{ width: 18 }}>
+                <ResultDisplay
+                  result={gameResultOrTime}
+                  isLive={isLive}
+                  isFinished={isFinished}
+                  isCancelled={isCancelled}
+                  isHomeWinner={isHomeWinner}
+                  isAwayWinner={isAwayWinner}
+                  type="away"
+                />
+              </View>
+              <AppText
+                variant="body"
+                numberOfLines={2}
+                style={[
+                  styles.hTeamName,
+                  { color: isAwayFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary, textAlign: "right" },
+                ]}
+              >
+                {awayTeamName}
+              </AppText>
+              <TeamLogo imagePath={fixture.awayTeam?.imagePath} teamName={awayTeamName} size={18} rounded={false} />
+            </Pressable>
+          </View>
+
+          {/* Points/status — right column */}
+          <Pressable style={{ width: 30, alignItems: "center", justifyContent: "center" }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPressCard(); }}>
+            {rightBoxData ? (
+              rightBoxData.icon === "cancel" ? (
+                <View style={{ backgroundColor: rightBoxData.bgColor, borderRadius: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
+                  <MaterialCommunityIcons name="cancel" size={14} color={rightBoxData.textColor} />
+                  <Text style={{ fontSize: 7, fontWeight: "700", color: rightBoxData.textColor, marginTop: 1 }}>{("cancelLabel" in statusData ? statusData.cancelLabel : undefined) ?? statusData.top}</Text>
+                </View>
+              ) : (
+                <View style={{ backgroundColor: rightBoxData.bgColor, borderRadius: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 13, fontWeight: "800", color: rightBoxData.textColor }}>{rightBoxData.top}</Text>
+                  {rightBoxData.bottom && <Text style={{ fontSize: 7, fontWeight: "700", color: rightBoxData.textColor }}>{rightBoxData.bottom}</Text>}
+                </View>
+              )
+            ) : isLive ? (
+              <View style={{ backgroundColor: theme.colors.primary + "20", borderRadius: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ fontSize: 13, fontWeight: "800", color: theme.colors.primary }}>?</Text>
+                <Text style={{ fontSize: 7, fontWeight: "700", color: theme.colors.primary }}>PTS</Text>
+              </View>
+            ) : (
+              <View style={{ alignItems: "center", justifyContent: "center" }}>
+                {hasPrediction ? (
+                  <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: "#34C75920", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="checkmark" size={11} color="#34C759" />
                   </View>
                 ) : (
-                  hasPrediction ? (
-                    <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: theme.colors.textSecondary + "15", alignItems: "center", justifyContent: "center" }}>
-                      <Ionicons name="checkmark" size={9} color={theme.colors.textSecondary} />
-                    </View>
-                  ) : (
-                    <MaterialCommunityIcons name="cards-outline" size={14} color={theme.colors.textPrimary} />
-                  )
+                  <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: theme.colors.textSecondary + "90", alignItems: "center", justifyContent: "center" }}>
+                    <FontAwesome6 name="plus" size={9} color={theme.colors.textSecondary + "90"} />
+                  </View>
                 )}
-              </Pressable>
-            </View>
-
-            {/* Horizontal match row */}
-            <View
-              style={[
-                styles.hRow,
-                styles.hRowBorder,
-                { backgroundColor: theme.colors.textSecondary + "12" },
-                isCancelled && { opacity: 0.6 },
-              ]}
-            >
-              {/* Home half */}
-              <Pressable
-                style={styles.hTeamHalf}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onPressCard();
-                }}
-              >
-                <TeamLogo imagePath={fixture.homeTeam?.imagePath} teamName={homeTeamName} size={18} rounded={false} />
-                <AppText
-                  variant="body"
-                  numberOfLines={1}
-                  style={[
-                    styles.hTeamName,
-                    { color: (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary },
-                  ]}
-                >
-                  {homeTeamName}
-                </AppText>
-                <View>
-                  <ResultDisplay
-                    result={gameResultOrTime}
-                    isLive={isLive}
-                    isFinished={isFinished}
-                    isCancelled={isCancelled}
-                    isHomeWinner={isHomeWinner}
-                    isAwayWinner={isAwayWinner}
-                    type="home"
-                  />
-                </View>
-              </Pressable>
-
-              {/* Score inputs center */}
-              {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
-                <View style={styles.hScoresCenter}>
-                  <ScoreInputPair
-                    homeValue={prediction.home}
-                    awayValue={prediction.away}
-                    isHomeFocused={isHomeFocused}
-                    isAwayFocused={isAwayFocused}
-                    isEditable={isEditable}
-                    isFinished={isFinished}
-                    isLive={isLive}
-                    homeRef={homeRef}
-                    awayRef={awayRef}
-                    onHomeChange={handleHomeChange}
-                    onAwayChange={handleAwayChange}
-                    onHomeFocus={handleHomeFocus}
-                    onAwayFocus={handleAwayFocus}
-                    onBlur={onBlur}
-                    onHomeAutoNext={onAutoNext ? handleHomeAutoNext : undefined}
-                    onAwayAutoNext={onAutoNext ? handleAwayAutoNext : undefined}
-                    isCorrect={predictionSuccess}
-                  />
-                </View>
-              )}
-
-              {/* Away half */}
-              <Pressable
-                style={styles.hTeamHalf}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onPressCard();
-                }}
-              >
-                <View>
-                  <ResultDisplay
-                    result={gameResultOrTime}
-                    isLive={isLive}
-                    isFinished={isFinished}
-                    isCancelled={isCancelled}
-                    isHomeWinner={isHomeWinner}
-                    isAwayWinner={isAwayWinner}
-                    type="away"
-                  />
-                </View>
-                <AppText
-                  variant="body"
-                  numberOfLines={1}
-                  style={[
-                    styles.hTeamName,
-                    { color: (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary, textAlign: "right" },
-                  ]}
-                >
-                  {awayTeamName}
-                </AppText>
-                <TeamLogo imagePath={fixture.awayTeam?.imagePath} teamName={awayTeamName} size={18} rounded={false} />
-              </Pressable>
-            </View>
-          </View>
+              </View>
+            )}
+          </Pressable>
         </View>
       </View>
     );
@@ -454,6 +461,7 @@ export function MatchPredictionCardVertical({
 
             {/* Card content — center */}
             <View style={[styles.cardContent, styles.hRowBorder, { backgroundColor: theme.colors.textSecondary + "12" }]}>
+              <Animated.View style={[styles.highlightOverlay, { backgroundColor: theme.colors.primary + "15" }, highlightAnimStyle]} pointerEvents="none" />
               <View
                 style={[
                   styles.matchContent,
@@ -464,10 +472,7 @@ export function MatchPredictionCardVertical({
                 <View style={styles.teamRow}>
                   <Pressable
                     style={styles.matchPressable}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      onPressCard();
-                    }}
+                    onPress={handlePressCenter}
                   >
                     <View style={styles.teamPressable}>
                       <TeamRow
@@ -475,6 +480,7 @@ export function MatchPredictionCardVertical({
                         teamName={homeTeamName}
                         isWinner={isHomeWinner}
                         isUpcoming={!isFinished && !isLive}
+                        isFocused={isHomeFocused}
                       />
                     </View>
                     <View style={styles.resultColumn}>
@@ -513,10 +519,7 @@ export function MatchPredictionCardVertical({
                 <View style={styles.teamRow}>
                   <Pressable
                     style={styles.matchPressable}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      onPressCard();
-                    }}
+                    onPress={handlePressCenter}
                   >
                     <View style={styles.teamPressable}>
                       <TeamRow
@@ -524,6 +527,7 @@ export function MatchPredictionCardVertical({
                         teamName={awayTeamName}
                         isWinner={isAwayWinner}
                         isUpcoming={!isFinished && !isLive}
+                        isFocused={isAwayFocused}
                       />
                     </View>
                     <View style={styles.resultColumn}>
@@ -584,19 +588,20 @@ export function MatchPredictionCardVertical({
                   </View>
                 )
               ) : isLive ? (
-                <View style={[styles.statusBox, { backgroundColor: "transparent", alignItems: "center", justifyContent: "center" }]}>
-                  <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: theme.colors.textSecondary + "15", alignItems: "center", justifyContent: "center" }}>
-                    <AntDesign name="question" size={12} color={theme.colors.live} />
-                  </View>
+                <View style={[styles.statusBox, { backgroundColor: theme.colors.primary + "20" }]}>
+                  <Text style={[styles.statusDayText, { color: theme.colors.primary }]}>?</Text>
+                  <Text style={[styles.statusMonthText, { color: theme.colors.primary }]}>PTS</Text>
                 </View>
               ) : (
                 <View style={[styles.statusBox, { backgroundColor: "transparent", alignItems: "center", justifyContent: "center" }]}>
                   {hasPrediction ? (
-                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: theme.colors.textSecondary + "15", alignItems: "center", justifyContent: "center" }}>
-                      <Ionicons name="checkmark" size={12} color={theme.colors.textSecondary} />
+                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#34C75920", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="checkmark" size={12} color="#34C759" />
                     </View>
                   ) : (
-                    <MaterialCommunityIcons name="cards-outline" size={20} color={theme.colors.textPrimary} />
+                    <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: theme.colors.textSecondary + "90", alignItems: "center", justifyContent: "center" }}>
+                      <FontAwesome6 name="plus" size={11} color={theme.colors.textSecondary + "90"} />
+                    </View>
                   )}
                 </View>
               )}
@@ -617,6 +622,11 @@ const styles = StyleSheet.create({
   },
   cardShadowWrapper: {
     flex: 1,
+  },
+  highlightOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 8,
+    zIndex: 1,
   },
   matchCard: {
     borderWidth: 0,
@@ -655,10 +665,11 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   cardContent: {
     flex: 1,
+    overflow: "hidden",
   },
   leagueInfoRow: {
     flexDirection: "row",
@@ -725,9 +736,11 @@ const styles = StyleSheet.create({
   },
   hRow: {
     flexDirection: "row" as const,
-    alignItems: "stretch" as const,
+    alignItems: "center" as const,
     writingDirection: "ltr" as const,
     gap: 6,
+    height: 50,
+    overflow: "hidden" as const,
   },
   hTeamHalf: {
     flex: 1,
@@ -740,6 +753,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: "500" as const,
+    lineHeight: 15,
     minWidth: 0,
   },
   hScoresCenter: {

@@ -23,11 +23,9 @@ function GroupCardRowInner({ group, onPress }: GroupCardRowProps) {
   const { theme } = useTheme();
 
   const initials = getInitials(group.name);
-  const isDraft = group.status === "draft";
   const liveCount = group.liveGamesCount ?? 0;
 
   const subtitle = useMemo(() => {
-    if (isDraft) return t("groups.filterDrafts");
     if (group.selectionMode === "leagues" && group.nextGame?.league) {
       return group.nextGame.league.name;
     }

@@ -34,9 +34,18 @@ export async function sendMessage(
     ? ({ mentions } as unknown as Prisma.InputJsonValue)
     : undefined;
 
-  return prisma.groupMessages.create({
+  const message = await prisma.groupMessages.create({
     data: { groupId, senderId, type: "user_message", body: trimmed, meta },
   });
+
+  // Auto-mark as read up to the sent message so prior messages don't show as unread
+  await prisma.groupMessageReads.upsert({
+    where: { groupId_userId: { groupId, userId: senderId } },
+    update: { lastReadMessageId: message.id },
+    create: { groupId, userId: senderId, lastReadMessageId: message.id },
+  });
+
+  return message;
 }
 
 export async function createSystemMessage(
@@ -129,6 +138,7 @@ export async function getUnreadCounts(
     WHERE gm.group_id IN (${Prisma.join(groupIds)})
       AND gm.id > COALESCE(gmr.last_read_message_id, 0)
       AND gm.type = 'user_message'
+      AND (gm.sender_id IS NULL OR gm.sender_id != ${userId})
     GROUP BY gm.group_id
   `;
 

@@ -1,12 +1,12 @@
 // features/groups/group-list/hooks/useGroupSections.ts
-// Hook to sort groups into sections for SectionList: active, drafts, ended.
+// Hook to sort groups into sections for SectionList: active, ended.
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { ApiGroupItem } from "@repo/types";
 
 export type GroupSection = {
-  key: "active" | "drafts" | "ended";
+  key: "active" | "ended";
   title: string;
   data: ApiGroupItem[];
   collapsible?: boolean;
@@ -24,15 +24,12 @@ export function useGroupSections(groups: ApiGroupItem[]): {
   const { t } = useTranslation("common");
   return useMemo(() => {
     const active: ApiGroupItem[] = [];
-    const drafts: ApiGroupItem[] = [];
     const ended: ApiGroupItem[] = [];
 
     for (const g of groups) {
-      if (g.status === "draft") {
-        drafts.push(g);
-      } else if (g.status === "ended") {
+      if (g.status === "ended") {
         ended.push(g);
-      } else if (g.status === "active") {
+      } else {
         active.push(g);
       }
     }
@@ -72,13 +69,6 @@ export function useGroupSections(groups: ApiGroupItem[]): {
         key: "active",
         title: t("groups.active"),
         data: active,
-      });
-    }
-    if (drafts.length > 0) {
-      sections.push({
-        key: "drafts",
-        title: t("groups.drafts"),
-        data: drafts,
       });
     }
     if (ended.length > 0) {

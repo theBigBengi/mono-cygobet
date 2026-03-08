@@ -65,7 +65,7 @@ export const lightColors: Colors = {
   // Surfaces — רקע אפור ניטרלי קל, כרטיסים לבנים
   background: "#FFFFFF", // לבן — אחיד עם surface
   surface: "#FFFFFF", // לבן — sections/containers
-  cardBackground: "#FFFFFF", // לבן — כרטיסים בולטים על הרקע
+  cardBackground: "#F2F2F3", // אפור ניטרלי עדין — כרטיסים בולטים על הרקע
   surfaceElevated: "#FFFFFF", // לבן — modals
 
   // Text — ניטרלי, בלי גוון כחול
@@ -100,14 +100,14 @@ export const lightColors: Colors = {
 };
 
 export const darkColors: Colors = {
-  // Surfaces — dark עם היררכיה עדינה
-  background: "#101014",
-  surface: "#1A1A20",
-  cardBackground: "#222228",
-  surfaceElevated: "#2A2A32",
+  // Surfaces — dark בסגנון ספוטיפיי
+  background: "#121212",
+  surface: "#181818",
+  cardBackground: "#2C2C2C",
+  surfaceElevated: "#282828",
 
   // Text
-  textPrimary: "#F0F0F5",
+  textPrimary: "#F8F8FF",
   textSecondary: "#9CA3AF",
   textDisabled: "#4B5563",
   textInverse: "#1A1A1A", // כהה — על רקעים בהירים

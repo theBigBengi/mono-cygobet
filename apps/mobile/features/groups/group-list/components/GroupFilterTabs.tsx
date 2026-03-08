@@ -10,7 +10,6 @@ import { useTheme } from "@/lib/theme";
 export type GroupFilterType =
   | "all"
   | "active"
-  | "drafts"
   | "ended";
 
 interface GroupFilterTabsProps {
@@ -19,14 +18,12 @@ interface GroupFilterTabsProps {
   counts: {
     all: number;
     active: number;
-    drafts: number;
     ended: number;
   };
 }
 
 const FILTERS: { key: GroupFilterType; labelKey: string }[] = [
   { key: "active", labelKey: "groups.filterActive" },
-  { key: "drafts", labelKey: "groups.filterDrafts" },
   { key: "ended", labelKey: "groups.filterEnded" },
 ];
 

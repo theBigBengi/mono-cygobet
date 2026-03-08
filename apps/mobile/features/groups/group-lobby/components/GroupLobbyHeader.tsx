@@ -291,11 +291,11 @@ function GroupLobbyHeaderInner({
                   onPress={onSharePress}
                   style={({ pressed }) => [
                     styles.shareButton,
-                    { borderColor: theme.colors.textPrimary },
+                    { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
                     pressed && { opacity: 0.6 },
                   ]}
                 >
-                  <FontAwesome6 name="share" size={16} color={theme.colors.textPrimary} />
+                  <FontAwesome6 name="share" size={18} color={theme.colors.textInverse} />
                 </Pressable>
               )}
             </View>
@@ -394,9 +394,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   shareButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",

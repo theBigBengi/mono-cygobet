@@ -10,11 +10,12 @@ export function getCurrentPushToken() {
   return currentPushToken;
 }
 
-// Configure how notifications are shown when the app is in the foreground
+// Suppress system notification banners when app is in the foreground.
+// In-app toast (ChatNotificationToast) handles foreground notifications via socket.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
+    shouldShowAlert: false,
+    shouldPlaySound: false,
     shouldSetBadge: false,
   }),
 });

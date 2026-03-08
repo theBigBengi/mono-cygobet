@@ -1,7 +1,6 @@
 // app/groups/[id]/index.tsx
 // Group lobby screen.
 // Routes to appropriate screen based on group status.
-// - Draft status → GroupLobbyDraftScreen
 // - Active status → GroupLobbyActiveScreen
 // - Ended status → GroupLobbyEndedScreen
 
@@ -12,9 +11,6 @@ import { useSetAtom } from "jotai";
 import {
   View,
   StyleSheet,
-  Alert,
-  ActivityIndicator,
-  Platform,
   Dimensions,
   Pressable,
   Keyboard,
@@ -22,7 +18,6 @@ import {
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
   interpolate,
   runOnJS,
@@ -31,19 +26,17 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, AppText } from "@/components/ui";
 import { AnimatedStickyHeader } from "@/components/ui/AnimatedStickyHeader";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGroupQuery, useDeleteGroupMutation, useUpdateGroupMutation, groupsKeys } from "@/domains/groups";
+import { useGroupQuery, useUpdateGroupMutation, groupsKeys } from "@/domains/groups";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useTheme } from "@/lib/theme";
 import { globalBlockingOverlayAtom } from "@/lib/state/globalOverlay.atom";
 import { activeGroupIdAtom } from "@/lib/state/activeGroup.atom";
 import {
-  GroupLobbyDraftScreen,
   GroupLobbyActiveScreen,
   GroupLobbyEndedScreen,
   LobbyWithHeader,
@@ -136,9 +129,6 @@ function GroupLobbyContent() {
     await refetchGroup();
   }, [refetchGroup, groupId, queryClient]);
 
-  const deleteGroupMutation = useDeleteGroupMutation(groupId ?? 0);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const infoSheetRef = useRef<BottomSheetModal>(null);
   const editSheetRef = useRef<BottomSheetModal>(null);
   const inviteSheetRef = useRef<BottomSheetModal>(null);
@@ -208,64 +198,6 @@ function GroupLobbyContent() {
   });
 
 
-  useEffect(() => {
-    return () => {
-      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
-    };
-  }, []);
-
-  const handleDeleteGroup = React.useCallback(() => {
-    Alert.alert(t("groups.deleteGroupDraft"), t("groups.deleteGroupConfirm"), [
-      { text: t("groups.cancel"), style: "cancel" },
-      {
-        text: t("groups.delete"),
-        style: "destructive",
-        onPress: () => {
-          deleteGroupMutation.mutate(undefined, {
-            onSuccess: () => {
-              router.back();
-              fallbackTimerRef.current = setTimeout(() => {
-                router.replace("/(tabs)/groups");
-                fallbackTimerRef.current = null;
-              }, 300);
-            },
-            onError: (error: unknown) => {
-              Alert.alert(
-                t("errors.error"),
-                (error instanceof Error ? error.message : null) || t("groups.deleteGroupDraftFailed")
-              );
-            },
-          });
-        },
-      },
-    ]);
-  }, [deleteGroupMutation, router]);
-
-  // Dismiss publish overlay once active screen has rendered
-  useEffect(() => {
-    if (!isPublishing) return;
-    if (data?.data?.status === "active") {
-      const timer = setTimeout(() => setIsPublishing(false), 800);
-      return () => clearTimeout(timer);
-    }
-  }, [isPublishing, data?.data?.status]);
-
-  // Fallback: force dismiss after 8s (safety net)
-  useEffect(() => {
-    if (!isPublishing) return;
-    const fallback = setTimeout(() => setIsPublishing(false), 8000);
-    return () => clearTimeout(fallback);
-  }, [isPublishing]);
-
-  const handlePublishStart = useCallback(() => {
-    setIsPublishing(true);
-  }, []);
-
-  const handlePublishError = useCallback(() => {
-    setIsPublishing(false);
-    Alert.alert(t("errors.error"), t("groups.publishFailed"));
-  }, [t]);
-
   // Loading state
   if (isLoading) {
     return <QueryLoadingView message={t("groups.loadingPool")} />;
@@ -300,22 +232,9 @@ function GroupLobbyContent() {
       </LobbyWithHeader>
     );
   } else if (group.status === "draft") {
-    content = (
-      <LobbyWithHeader
-        status={group.status}
-        onDeleteGroup={isCreator ? handleDeleteGroup : undefined}
-        isDeleting={deleteGroupMutation.isPending}
-      >
-        <GroupLobbyDraftScreen
-          group={group}
-          onRefresh={handleRefresh}
-          isCreator={isCreator}
-          onPublishStart={handlePublishStart}
-          onPublishError={handlePublishError}
-          isLoading={isFetching}
-        />
-      </LobbyWithHeader>
-    );
+    // Draft screen is no longer used — if status is "draft" it means
+    // publish is still in-flight. Show loading until it becomes "active".
+    content = <QueryLoadingView message={t("groups.loadingPool")} />;
   } else if (group.status === "active") {
     content = (
       <LobbyWithHeader
@@ -353,10 +272,6 @@ function GroupLobbyContent() {
       </LobbyWithHeader>
     );
   }
-
-  const isDark = colorScheme === "dark";
-  const showOverlay = isPublishing || deleteGroupMutation.isPending;
-
 
   // For active groups, extend content into status bar area
   const isActive = group.status === "active";
@@ -411,28 +326,6 @@ function GroupLobbyContent() {
           </Animated.View>
         )}
 
-        {showOverlay && (
-          <View style={styles.overlay} pointerEvents="box-none">
-            <BlurView
-              intensity={80}
-              tint={isDark ? "dark" : "light"}
-              style={[
-                StyleSheet.absoluteFill,
-                Platform.OS === "android" && {
-                  backgroundColor: theme.colors.background + "D9",
-                },
-              ]}
-            />
-            <View style={styles.overlayContent}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-              <AppText variant="body" style={styles.overlayText}>
-                {isPublishing
-                  ? t("lobby.publishingGroup")
-                  : t("lobby.deletingGroup")}
-              </AppText>
-            </View>
-          </View>
-        )}
         <GroupInfoSheet
           group={group}
           sheetRef={infoSheetRef}
@@ -490,19 +383,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 10000,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  overlayContent: {
-    alignItems: "center",
-    gap: 16,
-  },
-  overlayText: {
-    marginTop: 12,
   },
   chatBackdrop: {
     ...StyleSheet.absoluteFillObject,

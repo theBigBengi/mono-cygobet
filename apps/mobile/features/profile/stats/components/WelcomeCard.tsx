@@ -31,7 +31,7 @@ export function WelcomeCard() {
         <Button
           label={t("profile.joinGroup")}
           variant="primary"
-          onPress={() => router.push("/(tabs)/home")}
+          onPress={() => router.push("/(tabs)/groups")}
           style={styles.button}
         />
         <Pressable onPress={() => router.push("/groups/discover")} hitSlop={10}>

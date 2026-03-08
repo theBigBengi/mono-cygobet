@@ -10,7 +10,7 @@ export default function NotFound() {
   const router = useRouter();
 
   const handleGoHome = () => {
-    router.replace("/(tabs)/home");
+    router.replace("/(tabs)/groups");
   };
 
   return (

@@ -30,10 +30,8 @@ export function ScoreInputNavigationBar({
   onDone,
   isSaving,
   teamName,
-  teamLogo,
 }: ScoreInputNavigationBarProps) {
-  const { theme, colorScheme } = useTheme();
-  const isDark = colorScheme === "dark";
+  const { theme } = useTheme();
 
   // Don't show if keyboard is not visible
   if (keyboardHeight === 0) {
@@ -50,20 +48,19 @@ export function ScoreInputNavigationBar({
   };
 
   const bottomOffset = Platform.OS === "android" ? 60 : 10;
-  const bgColor = isDark ? theme.colors.surface + "FA" : theme.colors.surface + "FA";
 
   return (
     <View
-      style={[styles.container, { bottom: keyboardHeight + bottomOffset, shadowColor: theme.colors.textPrimary }]}
+      style={[styles.container, { bottom: keyboardHeight + bottomOffset }]}
       pointerEvents="box-none"
     >
-      <View style={[styles.content, { backgroundColor: bgColor, borderColor: isDark ? theme.colors.textInverse + "1A" : theme.colors.textPrimary + "14" }]}>
+      <View style={[styles.content, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
         {/* Left section: Navigation arrows */}
         <View style={styles.leftSection}>
           <Pressable
             style={[
               styles.navButton,
-              { backgroundColor: isDark ? theme.colors.textInverse + "1A" : theme.colors.textPrimary + "0D" },
+              { backgroundColor: theme.colors.textSecondary + "12" },
               !canGoPrevious && styles.buttonDisabled,
             ]}
             onPress={canGoPrevious ? onPrevious : undefined}
@@ -71,7 +68,7 @@ export function ScoreInputNavigationBar({
           >
             <Ionicons
               name="chevron-up"
-              size={24}
+              size={20}
               color={canGoPrevious ? theme.colors.textPrimary : theme.colors.textSecondary}
             />
           </Pressable>
@@ -79,7 +76,7 @@ export function ScoreInputNavigationBar({
           <Pressable
             style={[
               styles.navButton,
-              { backgroundColor: isDark ? theme.colors.textInverse + "1A" : theme.colors.textPrimary + "0D" },
+              { backgroundColor: theme.colors.textSecondary + "12" },
               !canGoNext && styles.buttonDisabled,
             ]}
             onPress={canGoNext ? onNext : undefined}
@@ -87,7 +84,7 @@ export function ScoreInputNavigationBar({
           >
             <Ionicons
               name="chevron-down"
-              size={24}
+              size={20}
               color={canGoNext ? theme.colors.textPrimary : theme.colors.textSecondary}
             />
           </Pressable>
@@ -98,7 +95,7 @@ export function ScoreInputNavigationBar({
           {teamName && (
             <AppText
               variant="body"
-              style={styles.teamName}
+              style={[styles.teamName, { color: theme.colors.textPrimary }]}
               numberOfLines={1}
             >
               {teamName}
@@ -114,7 +111,7 @@ export function ScoreInputNavigationBar({
           {isSaving ? (
             <ActivityIndicator size="small" color={theme.colors.textInverse} />
           ) : (
-            <Ionicons name="checkmark" size={24} color={theme.colors.textInverse} />
+            <Ionicons name="checkmark" size={20} color={theme.colors.textInverse} />
           )}
         </Pressable>
       </View>
@@ -125,13 +122,9 @@ export function ScoreInputNavigationBar({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    left: 8,
-    right: 8,
+    left: 12,
+    right: 12,
     zIndex: 1000,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
   },
   content: {
     flexDirection: "row",
@@ -139,9 +132,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 6,
     paddingHorizontal: 6,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
-    gap: 8,
+    gap: 6,
   },
   leftSection: {
     flexDirection: "row",
@@ -152,27 +145,27 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "flex-start",
     justifyContent: "center",
-    marginLeft: 8,
+    marginLeft: 4,
   },
   teamName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
   },
   navButton: {
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
-    width: 48,
-    height: 48,
+    borderRadius: 10,
+    width: 36,
+    height: 36,
   },
   doneButton: {
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
-    width: 48,
-    height: 48,
+    borderRadius: 10,
+    width: 36,
+    height: 36,
   },
   buttonDisabled: {
-    opacity: 0.4,
+    opacity: 0.35,
   },
 });

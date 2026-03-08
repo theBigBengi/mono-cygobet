@@ -1,14 +1,8 @@
 // app/(tabs)/home.tsx
-// Home tab - Group creation flow (fixture selection, league/team browsing).
+// Hidden tab — kept for Expo Router but redirects to groups.
 
-import React from "react";
-import { CreateGroupScreen } from "@/features/group-creation";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Redirect } from "expo-router";
 
 export default function HomeScreen() {
-  return (
-    <ErrorBoundary feature="create-group">
-      <CreateGroupScreen />
-    </ErrorBoundary>
-  );
+  return <Redirect href="/(tabs)/groups" />;
 }

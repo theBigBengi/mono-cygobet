@@ -66,7 +66,7 @@ export interface AnimatedStickyHeaderProps {
 export function AnimatedStickyHeader({
   scrollY,
   title,
-  fallbackRoute = "/(tabs)/home",
+  fallbackRoute = "/(tabs)/groups",
   tintColor,
   rightActions = [],
   threshold = DEFAULT_THRESHOLD,

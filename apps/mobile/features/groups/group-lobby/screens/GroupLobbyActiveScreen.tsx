@@ -33,6 +33,7 @@ import { LobbyPredictionsCTA } from "../components/LobbyPredictionsCTA";
 import { LobbyQuickActions } from "../components/LobbyQuickActions";
 import { LobbyLeaderboard } from "../components/LobbyLeaderboard";
 import { LobbyActivityBanner } from "../components/LobbyActivityBanner";
+import { LobbyAboutSection } from "../components/LobbyAboutSection";
 import { LobbyRecentResults } from "../components/LobbyRecentResults";
 import { DebugCTAScreen } from "./DebugCTAScreen";
 import { DebugLeaderboardScreen } from "./DebugLeaderboardScreen";
@@ -197,20 +198,22 @@ export function GroupLobbyActiveScreen({
     sendMessage(trimmed);
     setChatText("");
 
-    // Clear previous timer
-    if (dismissTimer.current) clearTimeout(dismissTimer.current);
+    // Only show the preview bubble when the mini chat panel is not visible
+    if (!chatFocused) {
+      if (dismissTimer.current) clearTimeout(dismissTimer.current);
 
-    setSentPreview({
-      key: `opt-${Date.now()}`,
-      senderName: t("chat.you", { defaultValue: "You" }),
-      text: trimmed,
-      createdAt: new Date().toISOString(),
-    });
+      setSentPreview({
+        key: `opt-${Date.now()}`,
+        senderName: t("chat.you", { defaultValue: "You" }),
+        text: trimmed,
+        createdAt: new Date().toISOString(),
+      });
 
-    dismissTimer.current = setTimeout(() => {
-      setSentPreview(null);
-      dismissTimer.current = null;
-    }, 4000);
+      dismissTimer.current = setTimeout(() => {
+        setSentPreview(null);
+        dismissTimer.current = null;
+      }, 4000);
+    }
   }, [chatText, sendMessage, t]);
 
   // Lobby summary — lightweight fixture slices for CTA
@@ -432,6 +435,7 @@ export function GroupLobbyActiveScreen({
           fixtures={lobbySummary?.recentFinishedFixtures ?? []}
           onPress={handleViewPredictionsOverview}
           isLoading={isLobbySummaryLoading}
+          completedFixturesCount={lobbySummary?.completedFixturesCount ?? 0}
         />
 
         <LobbyActivityBanner
@@ -439,6 +443,8 @@ export function GroupLobbyActiveScreen({
           unreadCount={unreadActivityCount}
           onPress={handleViewActivity}
         />
+
+        <LobbyAboutSection group={group} />
 
         {/* DEBUG buttons — debug-only UI, hardcoded colors intentional */}
         <View style={{ flexDirection: "row", gap: 8, marginHorizontal: 16, marginTop: 12 }}>

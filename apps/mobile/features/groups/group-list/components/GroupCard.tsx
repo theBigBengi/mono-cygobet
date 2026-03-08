@@ -502,7 +502,6 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
 
   const initials = getInitials(group.name);
   const liveCount = group.liveGamesCount ?? 0;
-  const isDraft = group.status === "draft";
   const isEnded = group.status === "ended";
 
   // Status bar data
@@ -579,7 +578,6 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
 
   // Status color - same as lobby
   const getStatusColor = () => {
-    if (isDraft) return theme.colors.warning;
     if (isEnded) return theme.colors.textSecondary;
     if (liveCount > 0) return theme.colors.danger; // Live red
     return theme.colors.primary; // Primary for active (like lobby)
@@ -659,7 +657,7 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
         </View>
 
         {/* Next Game Row (for active groups) */}
-        {!isDraft && !isEnded && group.nextGame && (
+        {!isEnded && group.nextGame && (
           <NextGameRow
             nextGame={group.nextGame}
             selectionMode={group.selectionMode}
@@ -684,31 +682,6 @@ function GroupCardInner({ group, onPress, unreadCount = 0, unreadActivityCount =
           />
         )}
 
-        {/* Draft hint */}
-        {isDraft && (
-          <Pressable onPress={handlePress}>
-            <View
-              style={[
-                styles.draftHint,
-                cardStyles.draftHint,
-              ]}
-            >
-              <Ionicons
-                name="construct-outline"
-                size={16}
-                color={theme.colors.warning}
-              />
-              <Text
-                style={[
-                  styles.draftHintText,
-                  { color: theme.colors.warning },
-                ]}
-              >
-                {t("groups.tapToFinish")}
-              </Text>
-            </View>
-          </Pressable>
-        )}
       </View>
 
       {/* Bottom sheet drawer */}

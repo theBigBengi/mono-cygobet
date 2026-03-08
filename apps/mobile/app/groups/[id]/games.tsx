@@ -11,7 +11,6 @@ import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useGroupQuery } from "@/domains/groups";
 import { useTheme } from "@/lib/theme";
 import { GroupGamesScreen } from "@/features/groups/predictions/screens/GroupGamesScreen";
-import { GroupGamesDraftScreen } from "@/features/groups/predictions/screens/GroupGamesDraftScreen";
 import { GroupGamesSkeleton } from "@/features/groups/predictions/components/GroupGamesSkeleton";
 import type { PredictionMode } from "@/features/groups/predictions/types";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -61,17 +60,6 @@ function GroupGamesContent() {
   // Error state
   if (error || !data || !group) {
     return <QueryErrorView message={t("groups.failedLoadGroup")} />;
-  }
-
-  // Route to appropriate screen based on status
-  if (group.status === "draft") {
-    return (
-      <GroupGamesDraftScreen
-        groupId={groupId}
-        fixtures={fixtures}
-        selectionMode={group.selectionMode}
-      />
-    );
   }
 
   // For active and other statuses, use the regular screen with predictions

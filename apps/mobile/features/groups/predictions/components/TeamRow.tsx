@@ -9,12 +9,13 @@ type TeamRowProps = {
   teamName: string;
   isWinner: boolean;
   isUpcoming?: boolean;
+  isFocused?: boolean;
 };
 
 /**
  * Displays team logo and name in a row
  */
-function TeamRowInner({ team, teamName, isWinner, isUpcoming }: TeamRowProps) {
+function TeamRowInner({ team, teamName, isWinner, isUpcoming, isFocused }: TeamRowProps) {
   const { theme } = useTheme();
   return (
     <View style={styles.teamRow}>
@@ -24,7 +25,7 @@ function TeamRowInner({ team, teamName, isWinner, isUpcoming }: TeamRowProps) {
           variant="body"
           style={[
             styles.teamName,
-            { color: isUpcoming ? theme.colors.textPrimary : theme.colors.textSecondary },
+            { color: isFocused ? theme.colors.primary : isUpcoming ? theme.colors.textPrimary : theme.colors.textSecondary },
           ]}
           numberOfLines={1}
         >

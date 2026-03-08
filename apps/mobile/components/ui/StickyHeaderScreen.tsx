@@ -60,7 +60,7 @@ export interface StickyHeaderScreenProps {
 export function StickyHeaderScreen({
   children,
   title,
-  fallbackRoute = "/(tabs)/home",
+  fallbackRoute = "/(tabs)/groups",
   tintColor,
   rightActions = [],
   onRefresh,

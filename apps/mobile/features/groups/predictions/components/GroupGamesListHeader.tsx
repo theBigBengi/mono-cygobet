@@ -14,6 +14,7 @@ type Props = {
   predictedCount: number;
   totalCount: number;
   accuracy: number;
+  maxAccuracy?: number;
   useFullName?: boolean;
   onToggleFullName?: () => void;
   cardLayout?: "vertical" | "horizontal";
@@ -26,6 +27,10 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
   isReady,
   emptyState,
   filteredFixturesCount,
+  totalCount,
+  predictedCount,
+  accuracy,
+  maxAccuracy = 0,
   useFullName = true,
   onToggleFullName,
   cardLayout = "vertical",
@@ -63,8 +68,35 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
       </View>
     );
   }
+  const progress = totalCount > 0 ? predictedCount / totalCount : 0;
+
   return (
     <View>
+      {/* Stats banner */}
+      <View style={[styles.banner, { backgroundColor: theme.colors.textSecondary + "08" }]}>
+        <View style={styles.bannerStats}>
+          <View style={styles.bannerStat}>
+            <Text style={[styles.bannerValue, { color: theme.colors.textPrimary }]}>{totalCount}</Text>
+            <Text style={[styles.bannerLabel, { color: theme.colors.textSecondary }]}>Games</Text>
+          </View>
+          <View style={styles.bannerStat}>
+            <Text style={[styles.bannerValue, { color: theme.colors.textPrimary }]}>{predictedCount}</Text>
+            <Text style={[styles.bannerLabel, { color: theme.colors.textSecondary }]}>Predicted</Text>
+          </View>
+          <View style={styles.bannerStat}>
+            <Text style={[styles.bannerValue, { color: theme.colors.textPrimary }]}>{accuracy}%</Text>
+            <Text style={[styles.bannerLabel, { color: theme.colors.textSecondary }]}>Hit rate</Text>
+          </View>
+          <View style={styles.bannerStat}>
+            <Text style={[styles.bannerValue, { color: theme.colors.textPrimary }]}>{maxAccuracy}%</Text>
+            <Text style={[styles.bannerLabel, { color: theme.colors.textSecondary }]}>Max pts</Text>
+          </View>
+        </View>
+        <View style={[styles.progressTrack, { backgroundColor: theme.colors.textSecondary + "15" }]}>
+          <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%`, backgroundColor: theme.colors.primary }]} />
+        </View>
+      </View>
+
       <View style={styles.topRow}>
         <View style={styles.leftIcons}>
           <Pressable onPress={onToggleFullName} style={styles.toggleBtn}>
@@ -82,8 +114,8 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
             )}
           </Pressable>
         </View>
-        <View style={[styles.iconCircle, { borderColor: theme.colors.border }]}>
-          <MaterialCommunityIcons name="cards-outline" size={28} color={theme.colors.textSecondary} />
+        <View style={[styles.iconCircle, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
+          <MaterialCommunityIcons name="cards-outline" size={28} color={theme.colors.textInverse} />
         </View>
       </View>
       {onFilterSortPress && (
@@ -130,9 +162,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -158,5 +190,36 @@ const styles = StyleSheet.create({
   },
   emptyStateSuggestion: {
     fontWeight: "600",
+  },
+  banner: {
+    paddingHorizontal: 4,
+    paddingVertical: 14,
+  },
+  bannerStats: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  bannerStat: {
+    alignItems: "center",
+    flex: 1,
+  },
+  bannerValue: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  bannerLabel: {
+    fontSize: 11,
+    fontWeight: "500",
+    marginTop: 2,
+  },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: 4,
+    borderRadius: 2,
   },
 });
