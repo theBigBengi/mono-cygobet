@@ -33,7 +33,7 @@ function AllGroupsContent() {
   const { user } = useAuth();
   const [filter, setFilter] = useState<FilterType>("all");
 
-  const statsQuery = useUserStatsQuery(user?.id ?? 0);
+  const statsQuery = useUserStatsQuery(user?.id ?? null);
 
   const groups = statsQuery.data?.data?.groups ?? [];
 
