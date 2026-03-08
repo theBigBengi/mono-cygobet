@@ -37,7 +37,7 @@ function ScreenContent() {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const availabilityStatus = useUsernameAvailability(username);
-  const { loadUser } = useAuth();
+  const { loadUser, logout } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
 
@@ -120,6 +120,11 @@ function ScreenContent() {
               autoCapitalize="none"
               autoCorrect={false}
               editable={!isLoading}
+              accessibilityLabel={t("auth.username")}
+              returnKeyType="done"
+              onSubmitEditing={canSubmit ? handleComplete : undefined}
+              textContentType="username"
+              autoComplete="username"
             />
 
             {/* Availability indicator */}
@@ -191,6 +196,9 @@ function ScreenContent() {
               ]}
               onPress={handleComplete}
               disabled={!canSubmit}
+              accessibilityRole="button"
+              accessibilityLabel={t("auth.complete")}
+              accessibilityState={{ disabled: !canSubmit }}
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
@@ -203,6 +211,21 @@ function ScreenContent() {
                   {t("auth.complete")}
                 </AppText>
               )}
+            </Pressable>
+
+            <Pressable
+              onPress={() => logout()}
+              disabled={isLoading}
+              style={styles.logoutLink}
+              accessibilityRole="button"
+              accessibilityLabel={t("accessibility.logout")}
+            >
+              <AppText
+                variant="caption"
+                color="secondary"
+              >
+                {t("accessibility.logout")}
+              </AppText>
             </Pressable>
           </View>
         </ScrollView>
@@ -263,5 +286,10 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontWeight: "600",
+  },
+  logoutLink: {
+    alignSelf: "center",
+    marginTop: 16,
+    padding: 8,
   },
 });

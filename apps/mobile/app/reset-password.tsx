@@ -1,6 +1,6 @@
 // app/reset-password.tsx
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   View,
   Pressable,
@@ -32,6 +32,7 @@ function ScreenContent() {
   const router = useRouter();
   const { token } = useLocalSearchParams<{ token?: string }>();
 
+  const confirmPasswordRef = useRef<import("react-native").TextInput>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -167,9 +168,15 @@ function ScreenContent() {
               value={newPassword}
               onChangeText={handleNewPasswordChange}
               editable={!mutation.isPending}
+              accessibilityLabel={t("resetPassword.newPassword")}
+              returnKeyType="next"
+              onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+              textContentType="newPassword"
+              autoComplete="new-password"
             />
 
             <PasswordInput
+              ref={confirmPasswordRef}
               style={[
                 styles.input,
                 {
@@ -183,6 +190,11 @@ function ScreenContent() {
               value={confirmPassword}
               onChangeText={handleConfirmPasswordChange}
               editable={!mutation.isPending}
+              accessibilityLabel={t("resetPassword.confirmPassword")}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+              textContentType="newPassword"
+              autoComplete="new-password"
             />
 
             <AppText variant="caption" color="secondary" style={styles.hint}>

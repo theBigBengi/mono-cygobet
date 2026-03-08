@@ -65,6 +65,7 @@ export function TeamLogo({
         ]}
         contentFit="contain"
         cachePolicy="disk"
+        accessibilityLabel={`${teamName} logo`}
       />
     );
   }

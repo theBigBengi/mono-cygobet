@@ -2,7 +2,7 @@
 // Sign-up screen - always accessible, redirects to home after successful registration
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   View,
   TextInput,
@@ -35,6 +35,7 @@ export default function SignUpScreen() {
 
 function ScreenContent() {
   const { t } = useTranslation("common");
+  const passwordInputRef = useRef<TextInput>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -130,9 +131,15 @@ function ScreenContent() {
               autoCorrect={false}
               keyboardType="email-address"
               editable={!isLoading}
+              accessibilityLabel={t("auth.email")}
+              returnKeyType="next"
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
+              textContentType="emailAddress"
+              autoComplete="email"
             />
 
             <PasswordInput
+              ref={passwordInputRef}
               style={[
                 styles.input,
                 {
@@ -146,6 +153,11 @@ function ScreenContent() {
               value={password}
               onChangeText={handlePasswordChange}
               editable={!isLoading}
+              accessibilityLabel={t("auth.password")}
+              returnKeyType="done"
+              onSubmitEditing={handleRegister}
+              textContentType="newPassword"
+              autoComplete="new-password"
             />
             <AppText
               variant="caption"

@@ -2,7 +2,7 @@
 // Sign-in screen - always accessible, redirects to home after successful login
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import {
   View,
   TextInput,
@@ -34,6 +34,7 @@ function ScreenContent() {
   const { t } = useTranslation("common");
   const emailOrUsernameRef = useRef("");
   const passwordRef = useRef("");
+  const passwordInputRef = useRef<import("react-native").TextInput>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -110,9 +111,14 @@ function ScreenContent() {
               autoCorrect={false}
               editable={!isLoading}
               accessibilityLabel={t("auth.emailOrUsername")}
+              returnKeyType="next"
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
+              textContentType="username"
+              autoComplete="username"
             />
 
             <PasswordInput
+              ref={passwordInputRef}
               style={[
                 styles.input,
                 {
@@ -126,6 +132,10 @@ function ScreenContent() {
               onChangeText={handlePasswordChange}
               editable={!isLoading}
               accessibilityLabel={t("auth.password")}
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
+              textContentType="password"
+              autoComplete="password"
             />
 
             <Pressable

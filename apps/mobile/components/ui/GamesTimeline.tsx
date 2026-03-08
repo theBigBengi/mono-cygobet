@@ -5,6 +5,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, ScrollView, Pressable, LayoutChangeEvent } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/lib/theme";
 import { AppText } from "./AppText";
 
@@ -77,6 +78,7 @@ export function GamesTimeline({
   customBottomLabel,
   showTrophyEnd = false,
 }: GamesTimelineProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -290,6 +292,8 @@ export function GamesTimeline({
                       key={game.id}
                       onPress={() => handleDotPress(index)}
                       style={[styles.dotWrapper, { width: dotWidth }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("accessibility.gameNumber", { index: index + 1, total, home: getShortName(game.homeTeam), away: getShortName(game.awayTeam) })}
                     >
                       <View
                         style={[

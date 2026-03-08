@@ -201,7 +201,7 @@ function GroupsContent() {
                   pressed && { opacity: 0.5 },
                 ]}
                 accessibilityRole="button"
-                accessibilityLabel="Search groups"
+                accessibilityLabel={t("accessibility.searchGroups")}
               >
                 <Ionicons
                   name="search-outline"
@@ -217,7 +217,7 @@ function GroupsContent() {
                   pressed && { opacity: 0.5 },
                 ]}
                 accessibilityRole="button"
-                accessibilityLabel="Invitations"
+                accessibilityLabel={t("accessibility.invitations")}
               >
                 <Ionicons
                   name={pendingInviteCount > 0 ? "mail" : "mail-outline"}
@@ -240,7 +240,7 @@ function GroupsContent() {
                   pressed && { opacity: 0.5 },
                 ]}
                 accessibilityRole="button"
-                accessibilityLabel="Create group"
+                accessibilityLabel={t("accessibility.createGroup")}
               >
                 <Ionicons
                   name="add-outline"

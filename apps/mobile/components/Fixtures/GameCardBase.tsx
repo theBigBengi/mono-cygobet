@@ -98,7 +98,12 @@ export function GameCardBase({
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+        accessibilityRole="button"
+        accessibilityLabel={`${homeTeamName} vs ${awayTeamName}`}
+      >
         {card}
       </Pressable>
     );

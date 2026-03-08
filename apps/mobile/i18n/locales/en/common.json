@@ -953,5 +953,17 @@
       "CorrectScore": "Exact Score",
       "MatchWinner": "1/X/2"
     }
+  },
+  "accessibility": {
+    "goBack": "Go back",
+    "searchGroups": "Search groups",
+    "invitations": "Invitations",
+    "createGroup": "Create group",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "gameNumber": "Game {{index}} of {{total}}, {{home}} vs {{away}}",
+    "teamLogo": "{{team}} logo",
+    "closeChat": "Close chat",
+    "logout": "Log out"
   }
 }

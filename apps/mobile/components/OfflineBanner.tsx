@@ -13,7 +13,7 @@ export function OfflineBanner() {
   if (isOnline) return null;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.danger + "18", borderBottomColor: theme.colors.danger + "30" }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.danger + "18", borderBottomColor: theme.colors.danger + "30" }]} accessibilityRole="alert">
       <Ionicons name="cloud-offline" size={16} color={theme.colors.danger} />
       <Text style={[styles.text, { color: theme.colors.danger }]}>{t("errors.noInternet")}</Text>
     </View>

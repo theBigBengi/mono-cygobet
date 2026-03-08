@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Pressable,
   Keyboard,
+  BackHandler,
   useWindowDimensions,
 } from "react-native";
 import Animated, {
@@ -176,6 +177,16 @@ function GroupLobbyContent() {
       if (finished) runOnJS(setChatOpen)(false);
     });
   }, []);
+
+  // Android back button: collapse chat instead of leaving the screen
+  useEffect(() => {
+    if (!chatOpen) return;
+    const handler = BackHandler.addEventListener("hardwareBackPress", () => {
+      handleChatCollapse();
+      return true;
+    });
+    return () => handler.remove();
+  }, [chatOpen, handleChatCollapse]);
 
   const chatExpandStyle = useAnimatedStyle(() => {
     // Animate top: starts near bottom (showing only the bar), ends at 0 (full screen)
@@ -373,7 +384,7 @@ function GroupLobbyContent() {
           <Animated.View style={[{ flex: 1 }, chatContentOpacity]}>
             <View style={{ backgroundColor: theme.colors.background, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border }}>
               <View style={{ flexDirection: "row", alignItems: "center", paddingTop: insets.top + 4, paddingBottom: 6, paddingHorizontal: 16 }}>
-                <Pressable onPress={handleChatCollapse} hitSlop={16}>
+                <Pressable onPress={handleChatCollapse} hitSlop={16} accessibilityRole="button" accessibilityLabel={t("accessibility.closeChat")}>
                   <Ionicons name="chevron-down" size={28} color={theme.colors.textPrimary} />
                 </Pressable>
                 <View style={{ flex: 1 }} />

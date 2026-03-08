@@ -129,6 +129,11 @@ function ScreenContent() {
                   autoCorrect={false}
                   keyboardType="email-address"
                   editable={!mutation.isPending}
+                  accessibilityLabel={t("forgotPassword.emailPlaceholder")}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSubmit}
+                  textContentType="emailAddress"
+                  autoComplete="email"
                 />
 
                 {formError && (

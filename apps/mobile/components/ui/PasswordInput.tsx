@@ -10,6 +10,7 @@ import {
   type TextInputProps,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/lib/theme";
 
 interface PasswordInputProps extends Omit<TextInputProps, "secureTextEntry"> {
@@ -21,7 +22,7 @@ interface PasswordInputProps extends Omit<TextInputProps, "secureTextEntry"> {
   style?: TextInputProps["style"];
 }
 
-export function PasswordInput({
+export const PasswordInput = React.forwardRef<TextInput, PasswordInputProps>(function PasswordInput({
   value,
   onChangeText,
   placeholder,
@@ -29,7 +30,8 @@ export function PasswordInput({
   editable = true,
   style,
   ...rest
-}: PasswordInputProps) {
+}, ref) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [visible, setVisible] = useState(false);
 
@@ -38,6 +40,7 @@ export function PasswordInput({
   return (
     <View style={[styles.container, style]}>
       <TextInput
+        ref={ref}
         style={[
           styles.input,
           {
@@ -57,7 +60,13 @@ export function PasswordInput({
         autoCorrect={false}
         {...rest}
       />
-      <Pressable onPress={toggle} style={styles.iconWrap} hitSlop={8}>
+      <Pressable
+        onPress={toggle}
+        style={styles.iconWrap}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={visible ? t("accessibility.hidePassword") : t("accessibility.showPassword")}
+      >
         <Ionicons
           name={visible ? "eye-off-outline" : "eye-outline"}
           size={22}
@@ -66,7 +75,7 @@ export function PasswordInput({
       </Pressable>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

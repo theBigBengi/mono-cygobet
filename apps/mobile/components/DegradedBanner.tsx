@@ -23,7 +23,7 @@ export function DegradedBanner() {
   if (auth.status !== "degraded") return null;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.warning, borderBottomColor: theme.colors.warning }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.warning, borderBottomColor: theme.colors.warning }]} accessibilityRole="alert">
       <Text style={[styles.text, { color: theme.colors.warningText }]}>
         {t("common.limitedConnectivity")}
       </Text>

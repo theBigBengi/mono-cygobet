@@ -253,6 +253,7 @@ function JourneyContent() {
               style={[
                 styles.popoverContainer,
                 {
+                  width: POPOVER_WIDTH,
                   top: popoverPos.bottom + 8,
                   left: popoverLeft,
                 },
@@ -349,7 +350,6 @@ const styles = StyleSheet.create({
   },
   popoverContainer: {
     position: "absolute",
-    width: POPOVER_WIDTH,
     zIndex: 100,
   },
   arrow: {

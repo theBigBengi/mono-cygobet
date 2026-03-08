@@ -4,6 +4,7 @@
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Pressable, Animated, Easing } from "react-native";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "./AppText";
@@ -32,6 +33,7 @@ export function AppHeader({
   leftContent,
   rightContent,
 }: AppHeaderProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -71,6 +73,8 @@ export function AppHeader({
             styles.backButton,
             { opacity: pressed ? 0.5 : 1 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={t("accessibility.goBack")}
         >
           <Ionicons
             name="chevron-back"

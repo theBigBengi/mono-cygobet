@@ -2,7 +2,7 @@
 // Change password screen (email/password users only).
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -36,6 +36,8 @@ function ScreenContent() {
   const insets = useSafeAreaInsets();
   const mutation = useChangePasswordMutation();
 
+  const newPasswordRef = useRef<import("react-native").TextInput>(null);
+  const confirmPasswordRef = useRef<import("react-native").TextInput>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -88,6 +90,8 @@ function ScreenContent() {
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel={t("accessibility.goBack")}
         >
           <Ionicons
             name="chevron-back"
@@ -136,6 +140,11 @@ function ScreenContent() {
               onChangeText={setCurrentPassword}
               placeholder={t("changePassword.currentPasswordPlaceholder")}
               placeholderTextColor={theme.colors.textSecondary + "60"}
+              accessibilityLabel={t("changePassword.currentPassword")}
+              returnKeyType="next"
+              onSubmitEditing={() => newPasswordRef.current?.focus()}
+              textContentType="password"
+              autoComplete="current-password"
             />
           </View>
 
@@ -146,6 +155,7 @@ function ScreenContent() {
               {t("changePassword.newPassword")}
             </Text>
             <PasswordInput
+              ref={newPasswordRef}
               style={[
                 styles.input,
                 {
@@ -157,6 +167,11 @@ function ScreenContent() {
               onChangeText={setNewPassword}
               placeholder={t("changePassword.newPasswordPlaceholder")}
               placeholderTextColor={theme.colors.textSecondary + "60"}
+              accessibilityLabel={t("changePassword.newPassword")}
+              returnKeyType="next"
+              onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+              textContentType="newPassword"
+              autoComplete="new-password"
             />
             <Text
               style={[styles.inputHint, { color: theme.colors.textSecondary }]}
@@ -172,6 +187,7 @@ function ScreenContent() {
               {t("changePassword.confirmPassword")}
             </Text>
             <PasswordInput
+              ref={confirmPasswordRef}
               style={[
                 styles.input,
                 {
@@ -183,6 +199,11 @@ function ScreenContent() {
               onChangeText={setConfirmPassword}
               placeholder={t("changePassword.confirmPasswordPlaceholder")}
               placeholderTextColor={theme.colors.textSecondary + "60"}
+              accessibilityLabel={t("changePassword.confirmPassword")}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+              textContentType="newPassword"
+              autoComplete="new-password"
             />
           </View>
 

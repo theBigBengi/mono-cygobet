@@ -950,5 +950,17 @@
       "CorrectScore": "תוצאה מדויקת",
       "MatchWinner": "1/X/2"
     }
+  },
+  "accessibility": {
+    "goBack": "חזרה",
+    "searchGroups": "חיפוש קבוצות",
+    "invitations": "הזמנות",
+    "createGroup": "יצירת קבוצה",
+    "showPassword": "הצג סיסמה",
+    "hidePassword": "הסתר סיסמה",
+    "gameNumber": "משחק {{index}} מתוך {{total}}, {{home}} נגד {{away}}",
+    "teamLogo": "לוגו {{team}}",
+    "closeChat": "סגור צ׳אט",
+    "logout": "התנתקות"
   }
 }
