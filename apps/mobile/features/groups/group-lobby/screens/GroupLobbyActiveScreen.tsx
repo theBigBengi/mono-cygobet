@@ -35,14 +35,16 @@ import { LobbyLeaderboard } from "../components/LobbyLeaderboard";
 import { LobbyActivityBanner } from "../components/LobbyActivityBanner";
 import { LobbyAboutSection } from "../components/LobbyAboutSection";
 import { LobbyRecentResults } from "../components/LobbyRecentResults";
-import { DebugCTAScreen } from "./DebugCTAScreen";
-import { DebugLeaderboardScreen } from "./DebugLeaderboardScreen";
-import { DebugPredictionsOverviewScreen } from "./DebugPredictionsOverviewScreen";
-import { DebugSingleGameScreen } from "./DebugSingleGameScreen";
-import { DebugGroupCardScreen } from "../../group-list/screens/DebugGroupCardScreen";
-import { DebugSwipeCardScreen } from "./DebugSwipeCardScreen";
-import { DebugGamesScreen } from "../../predictions/screens/DebugGamesScreen";
 import { formatRelativeTime } from "@/utils/date";
+
+// Debug screens — only loaded in development
+const DebugCTAScreen = __DEV__ ? require("./DebugCTAScreen").DebugCTAScreen : null;
+const DebugLeaderboardScreen = __DEV__ ? require("./DebugLeaderboardScreen").DebugLeaderboardScreen : null;
+const DebugPredictionsOverviewScreen = __DEV__ ? require("./DebugPredictionsOverviewScreen").DebugPredictionsOverviewScreen : null;
+const DebugSingleGameScreen = __DEV__ ? require("./DebugSingleGameScreen").DebugSingleGameScreen : null;
+const DebugGroupCardScreen = __DEV__ ? require("../../group-list/screens/DebugGroupCardScreen").DebugGroupCardScreen : null;
+const DebugSwipeCardScreen = __DEV__ ? require("./DebugSwipeCardScreen").DebugSwipeCardScreen : null;
+const DebugGamesScreen = __DEV__ ? require("../../predictions/screens/DebugGamesScreen").DebugGamesScreen : null;
 
 function formatChatTime(iso: string): string {
   return formatRelativeTime(iso);
@@ -446,121 +448,126 @@ export function GroupLobbyActiveScreen({
 
         <LobbyAboutSection group={group} />
 
-        {/* DEBUG buttons — debug-only UI, hardcoded colors intentional */}
-        <View style={{ flexDirection: "row", gap: 8, marginHorizontal: 16, marginTop: 12 }}>
-          <Pressable
-            onPress={() => setShowDebugCTA(true)}
-            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center" }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG CTA</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setShowDebugLeaderboard(true)}
-            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#8B5CF6", alignItems: "center" }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG LEADERBOARD</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setShowDebugOverview(true)}
-            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#10B981", alignItems: "center" }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG TABLE</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setShowDebugSingleGame(true)}
-            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#F59E0B", alignItems: "center" }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG GAME</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setShowDebugGroupCard(true)}
-            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#3B82F6", alignItems: "center" }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG CARD</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setShowDebugSwipeCard(true)}
-            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#EC4899", alignItems: "center" }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>SWIPE CARD</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setShowDebugGames(true)}
-            style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#14B8A6", alignItems: "center" }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>GAMES</Text>
-          </Pressable>
-        </View>
+        {__DEV__ && (
+          <>
+            {/* DEBUG buttons */}
+            <View style={{ flexDirection: "row", gap: 8, marginHorizontal: 16, marginTop: 12 }}>
+              <Pressable
+                onPress={() => setShowDebugCTA(true)}
+                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG CTA</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setShowDebugLeaderboard(true)}
+                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#8B5CF6", alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG LEADERBOARD</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setShowDebugOverview(true)}
+                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#10B981", alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG TABLE</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setShowDebugSingleGame(true)}
+                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#F59E0B", alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG GAME</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setShowDebugGroupCard(true)}
+                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#3B82F6", alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG CARD</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setShowDebugSwipeCard(true)}
+                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#EC4899", alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>SWIPE CARD</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setShowDebugGames(true)}
+                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#14B8A6", alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>GAMES</Text>
+              </Pressable>
+            </View>
 
-        <Modal visible={showDebugCTA} animationType="slide" presentationStyle="fullScreen">
-          <DebugCTAScreen />
-          <Pressable
-            onPress={() => setShowDebugCTA(false)}
-            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
-          </Pressable>
-        </Modal>
+            <Modal visible={showDebugCTA} animationType="slide" presentationStyle="fullScreen">
+              <DebugCTAScreen />
+              <Pressable
+                onPress={() => setShowDebugCTA(false)}
+                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+              </Pressable>
+            </Modal>
 
-        <Modal visible={showDebugLeaderboard} animationType="slide" presentationStyle="fullScreen">
-          <DebugLeaderboardScreen />
-          <Pressable
-            onPress={() => setShowDebugLeaderboard(false)}
-            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
-          </Pressable>
-        </Modal>
+            <Modal visible={showDebugLeaderboard} animationType="slide" presentationStyle="fullScreen">
+              <DebugLeaderboardScreen />
+              <Pressable
+                onPress={() => setShowDebugLeaderboard(false)}
+                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+              </Pressable>
+            </Modal>
 
-        <Modal visible={showDebugOverview} animationType="slide" presentationStyle="fullScreen">
-          <DebugPredictionsOverviewScreen />
-          <Pressable
-            onPress={() => setShowDebugOverview(false)}
-            style={{ position: "absolute", bottom: 40, alignSelf: "center", paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
-          </Pressable>
-        </Modal>
+            <Modal visible={showDebugOverview} animationType="slide" presentationStyle="fullScreen">
+              <DebugPredictionsOverviewScreen />
+              <Pressable
+                onPress={() => setShowDebugOverview(false)}
+                style={{ position: "absolute", bottom: 40, alignSelf: "center", paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+              </Pressable>
+            </Modal>
 
-        <Modal visible={showDebugSingleGame} animationType="slide" presentationStyle="fullScreen">
-          <DebugSingleGameScreen />
-          <Pressable
-            onPress={() => setShowDebugSingleGame(false)}
-            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
-          </Pressable>
-        </Modal>
+            <Modal visible={showDebugSingleGame} animationType="slide" presentationStyle="fullScreen">
+              <DebugSingleGameScreen />
+              <Pressable
+                onPress={() => setShowDebugSingleGame(false)}
+                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+              </Pressable>
+            </Modal>
 
-        <Modal visible={showDebugGroupCard} animationType="slide" presentationStyle="fullScreen">
-          <DebugGroupCardScreen />
-          <Pressable
-            onPress={() => setShowDebugGroupCard(false)}
-            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
-          </Pressable>
-        </Modal>
+            <Modal visible={showDebugGroupCard} animationType="slide" presentationStyle="fullScreen">
+              <DebugGroupCardScreen />
+              <Pressable
+                onPress={() => setShowDebugGroupCard(false)}
+                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+              </Pressable>
+            </Modal>
 
-        <Modal visible={showDebugSwipeCard} animationType="slide" presentationStyle="fullScreen">
-          <DebugSwipeCardScreen />
-          <Pressable
-            onPress={() => setShowDebugSwipeCard(false)}
-            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
-          </Pressable>
-        </Modal>
+            <Modal visible={showDebugSwipeCard} animationType="slide" presentationStyle="fullScreen">
+              <DebugSwipeCardScreen />
+              <Pressable
+                onPress={() => setShowDebugSwipeCard(false)}
+                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+              </Pressable>
+            </Modal>
 
-        <Modal visible={showDebugGames} animationType="slide" presentationStyle="fullScreen">
-          <DebugGamesScreen />
-          <Pressable
-            onPress={() => setShowDebugGames(false)}
-            style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
-          </Pressable>
-        </Modal>
+            <Modal visible={showDebugGames} animationType="slide" presentationStyle="fullScreen">
+              <DebugGamesScreen />
+              <Pressable
+                onPress={() => setShowDebugGames(false)}
+                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
+              </Pressable>
+            </Modal>
+          </>
+        )}
+
       </Screen>
 
       {/* Floating chat bar */}
