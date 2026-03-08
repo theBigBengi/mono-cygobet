@@ -27,7 +27,7 @@ function AboutRow({
   return (
     <View style={styles.row}>
       <View style={[styles.rowIcon, { backgroundColor: colors.textPrimary }]}>
-        <Ionicons name={icon} size={13} color="#FFFFFF" />
+        <Ionicons name={icon} size={13} color={colors.textInverse} />
       </View>
       <View style={styles.rowTextCol}>
         <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>

@@ -165,7 +165,7 @@ export function CreateSheetSelectionStep({
       {/* Search bar — leagues & teams */}
       {(activeTab === "leagues" || activeTab === "teams") && (
         <View style={[createStyles.dateSliderWrap, { backgroundColor: theme.colors.background, shadowColor: theme.colors.background }]}>
-          <View style={createStyles.searchRow}>
+          <View style={[createStyles.searchRow, { backgroundColor: theme.colors.textSecondary + "15" }]}>
             <Ionicons name="search" size={16} color={theme.colors.textSecondary} />
             <TextInput
               style={[createStyles.searchInput, { color: theme.colors.textPrimary }]}

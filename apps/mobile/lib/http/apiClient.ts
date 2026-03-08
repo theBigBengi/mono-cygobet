@@ -226,10 +226,12 @@ export async function apiFetchWithAuthRetry<T>(
           accessToken: refreshResult.accessToken,
         });
       } catch (retryError) {
-        // Retry failed (could be 401 again or different error)
-        // Logout and throw the retry error (not the original 401)
-        if (logoutCallback) {
-          await logoutCallback();
+        // Only logout on a second 401 (token truly invalid).
+        // Network errors or other failures should NOT force logout.
+        if (retryError instanceof ApiError && retryError.status === 401) {
+          if (logoutCallback) {
+            await logoutCallback();
+          }
         }
         throw retryError;
       }

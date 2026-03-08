@@ -52,7 +52,7 @@ function ActivityRow({ item, colors }: { item: ApiGroupActivityItem; colors: imp
   return (
     <View style={styles.row}>
       <View style={[styles.rowIcon, { backgroundColor: colors.textPrimary }]}>
-        <Ionicons name={iconName} size={13} color="#FFFFFF" />
+        <Ionicons name={iconName} size={13} color={colors.textInverse} />
       </View>
       <View style={styles.rowTextCol}>
         <Text style={[styles.rowBody, { color: colors.textPrimary }]} numberOfLines={1}>

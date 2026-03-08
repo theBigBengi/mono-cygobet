@@ -448,7 +448,6 @@ export const createStyles = StyleSheet.create({
     marginVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 10,
-    backgroundColor: "rgba(0,0,0,0.04)",
     height: 34,
   },
   searchInput: {

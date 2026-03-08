@@ -34,6 +34,7 @@ import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useCreateGroupMutation, useGroupPreviewQuery } from "@/domains/groups";
+import { useLeaguePreferences } from "@/domains/preferences";
 import { publishGroup, updateGroup } from "@/domains/groups/groups-core.api";
 import { addDays, format, isSameDay, startOfDay, endOfDay } from "date-fns";
 import { useUpcomingFixturesQuery } from "@/domains/fixtures";
@@ -292,8 +293,15 @@ export function CreateGroupFlow({
   }, []);
 
   // ── Data hooks ──
+  const fixturesFrom = useMemo(() => {
+    if (isSameDay(selectedDate, new Date())) {
+      return new Date().toISOString();
+    }
+    return startOfDay(selectedDate).toISOString();
+  }, [selectedDate]);
+
   const fixturesQuery = useUpcomingFixturesQuery({
-    from: startOfDay(selectedDate).toISOString(),
+    from: fixturesFrom,
     to: endOfDay(selectedDate).toISOString(),
     include: "league,teams,country",
   });
@@ -342,6 +350,9 @@ export function CreateGroupFlow({
     [fixtures],
   );
 
+  const { data: leaguePrefs } = useLeaguePreferences();
+  const leagueOrder = leaguePrefs?.data?.leagueOrder ?? undefined;
+
   const fixturesByLeague = useMemo(() => {
     const groups = new Map<number, { league: { id: number; name: string; imagePath: string | null }; fixtures: typeof fixtures }>();
     for (const f of fixtures) {
@@ -356,8 +367,28 @@ export function CreateGroupFlow({
     for (const group of groups.values()) {
       group.fixtures.sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt));
     }
-    return Array.from(groups.values());
-  }, [fixtures]);
+
+    const result = Array.from(groups.values());
+
+    // Sort by user's preferred league order, then by earliest kickoff
+    const orderMap = leagueOrder?.length
+      ? new Map(leagueOrder.map((id, idx) => [id, idx]))
+      : null;
+
+    return result.sort((a, b) => {
+      if (orderMap) {
+        const aOrder = orderMap.get(a.league.id);
+        const bOrder = orderMap.get(b.league.id);
+        if (aOrder !== undefined && bOrder !== undefined) {
+          if (aOrder !== bOrder) return aOrder - bOrder;
+        } else if (aOrder !== undefined) return -1;
+        else if (bOrder !== undefined) return 1;
+      }
+      const timeA = a.fixtures[0]?.kickoffAt ?? "";
+      const timeB = b.fixtures[0]?.kickoffAt ?? "";
+      return timeA.localeCompare(timeB);
+    });
+  }, [fixtures, leagueOrder]);
 
   // ── Handlers for child sheets ──
   const renderBackdrop = useCallback(

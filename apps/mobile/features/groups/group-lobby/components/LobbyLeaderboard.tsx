@@ -145,10 +145,7 @@ function LobbyLeaderboardInner({
     return (
       <View style={styles.container}>
         <View
-          style={[
-            styles.wrapper,
-            { backgroundColor: theme.colors.surface },
-          ]}
+          style={styles.wrapper}
         >
           {/* Bottom section */}
           <View style={styles.bottomSection}>
