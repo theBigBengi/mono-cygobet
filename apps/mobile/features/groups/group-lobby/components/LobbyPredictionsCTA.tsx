@@ -346,14 +346,7 @@ export function LobbyPredictionsCTA({
           Upcoming
         </Text>
       </View>
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.cardBackground,
-          },
-        ]}
-      >
+      <View style={styles.container}>
         {nextGames.map((f, i) => {
           const isToday = f.kickoffAt ? (() => {
             const k = new Date(f.kickoffAt);
