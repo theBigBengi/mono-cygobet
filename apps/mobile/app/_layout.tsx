@@ -365,11 +365,26 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   );
 }
 
-// Self-contained styles that don't depend on theme
+// Color sets for ErrorBoundary — reads system scheme via Appearance API
+// since ThemeProvider may not be initialized when ErrorBoundary renders.
+const lightColors = {
+  bg: "#ffffff",
+  text: "#000000",
+  textSecondary: "#666666",
+  secondaryBg: "#F2F2F7",
+  secondaryBorder: "#C7C7CC",
+};
+const darkColors = {
+  bg: "#1C1C1E",
+  text: "#F2F2F7",
+  textSecondary: "#AEAEB2",
+  secondaryBg: "#2C2C2E",
+  secondaryBorder: "#3A3A3C",
+};
+
 const errorBoundaryStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
@@ -382,13 +397,11 @@ const errorBoundaryStyles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "600",
-    color: "#000000",
     marginBottom: 16,
     textAlign: "center",
   },
   message: {
     fontSize: 16,
-    color: "#666666",
     marginBottom: 32,
     textAlign: "center",
     lineHeight: 24,
@@ -402,17 +415,9 @@ const errorBoundaryStyles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  buttonSecondary: {
-    backgroundColor: "#F2F2F7",
-    borderWidth: 1,
-    borderColor: "#C7C7CC",
-  },
   buttonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
-  },
-  buttonTextSecondary: {
-    color: "#000000",
   },
 });
