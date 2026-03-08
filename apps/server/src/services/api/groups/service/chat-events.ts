@@ -278,6 +278,43 @@ export async function emitGroupInfoChangedEvent(
   }
 }
 
+export async function emitFixturesSyncedEvent(
+  groupId: number,
+  fixtureIds: number[],
+  io?: TypedIOServer
+): Promise<void> {
+  try {
+    const fixtures = await prisma.fixtures.findMany({
+      where: { id: { in: fixtureIds } },
+      select: {
+        id: true,
+        startTs: true,
+        homeTeam: { select: { name: true } },
+        awayTeam: { select: { name: true } },
+        league: { select: { name: true } },
+      },
+    });
+
+    for (const f of fixtures) {
+      const home = f.homeTeam?.name || "TBD";
+      const away = f.awayTeam?.name || "TBD";
+      const league = f.league?.name || null;
+
+      await logActivity(
+        groupId,
+        "fixtures_synced",
+        `${home} vs ${away}`,
+        {
+          meta: { fixtureId: f.id, home, away, league, startTs: f.startTs },
+          io,
+        }
+      );
+    }
+  } catch (err) {
+    log.warn({ groupId, err }, "Failed to emit fixtures_synced event");
+  }
+}
+
 export async function emitGroupPublishedEvent(
   groupId: number,
   actorId: number,

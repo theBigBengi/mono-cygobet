@@ -11,6 +11,7 @@ import {
   buildFixturesByTeamsWhere,
 } from "../../fixtures/queries";
 import { attachFixturesToGroupInternal } from "../repository/fixtures";
+import { emitFixturesSyncedEvent } from "./chat-events";
 import { GROUP_STATUS, SELECTION_MODE } from "../constants";
 
 export type SyncNewFixturesResult = {
@@ -48,6 +49,7 @@ export async function syncNewFixturesToActiveGroups(opts?: {
 
   let totalFixturesAttached = 0;
   const now = Math.floor(Date.now() / 1000);
+  const groupsWithNewFixtures: { groupId: number; fixtureIds: number[] }[] = [];
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const rules of groupRules) {
@@ -90,11 +92,17 @@ export async function syncNewFixturesToActiveGroups(opts?: {
       if (newFixtureIds.length > 0 && !dryRun) {
         await attachFixturesToGroupInternal(tx, rules.groupId, newFixtureIds);
         totalFixturesAttached += newFixtureIds.length;
+        groupsWithNewFixtures.push({ groupId: rules.groupId, fixtureIds: newFixtureIds });
       } else if (newFixtureIds.length > 0 && dryRun) {
         totalFixturesAttached += newFixtureIds.length;
       }
     }
   });
+
+  // Emit activity events after transaction commits (fire-and-forget)
+  for (const { groupId, fixtureIds } of groupsWithNewFixtures) {
+    emitFixturesSyncedEvent(groupId, fixtureIds).catch(() => {});
+  }
 
   return {
     groupsProcessed: groupRules.length,

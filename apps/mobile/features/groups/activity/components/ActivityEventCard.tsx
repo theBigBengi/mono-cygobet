@@ -24,6 +24,7 @@ function getEventIcon(eventType: string): IoniconsName {
     case "rules_changed":
       return "settings";
     case "games_added":
+    case "fixtures_synced":
       return "add-circle";
     case "games_removed":
       return "remove-circle";
@@ -51,6 +52,7 @@ function getEventColor(eventType: string, colors: import("@/lib/theme/colors").C
     case "fixture_live":
       return colors.warning ?? "#f59e0b";
     case "fixture_ft":
+    case "fixtures_synced":
       return colors.primary;
     default:
       return colors.textSecondary;
