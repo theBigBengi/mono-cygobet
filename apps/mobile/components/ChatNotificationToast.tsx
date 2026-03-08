@@ -118,7 +118,12 @@ export function ChatNotificationToast() {
     dismiss();
     if (n.type === "invite") {
       router.push("/invites");
-    } else {
+    } else if (
+      typeof n.groupId === "number" &&
+      Number.isFinite(n.groupId) &&
+      Number.isInteger(n.groupId) &&
+      n.groupId > 0
+    ) {
       router.push(`/groups/${n.groupId}/chat`);
     }
   }, [dismiss, router]);
