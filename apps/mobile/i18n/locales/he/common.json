@@ -381,7 +381,9 @@
     "seeMore": "הצג עוד",
     "seeLess": "הצג פחות",
     "seeAll": "הצג הכל",
-    "about": "אודות"
+    "about": "אודות",
+    "predictionsLeft": "{{count}} מתוך {{total}} נותרו",
+    "allPredicted": "כל המשחקים נוחשו"
   },
   "groupSettings": {
     "general": "כללי",

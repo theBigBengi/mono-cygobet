@@ -94,19 +94,11 @@ function LobbyRecentResultsInner({
           ))}
         </ScrollView>
       ) : tiles.length === 0 ? (
-        <Pressable
-          onPress={() => onPress()}
-          style={({ pressed }) => [
-            styles.emptyCard,
-            { backgroundColor: theme.colors.cardBackground },
-            pressed && { opacity: 0.7 },
-          ]}
-        >
+        <View style={styles.emptyCard}>
           <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
             {t("lobby.noRecentResults")}
           </Text>
-          <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
-        </Pressable>
+        </View>
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tilesRow}>
           {tiles.map((fixture, index) => {
@@ -203,13 +195,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   emptyCard: {
-    marginHorizontal: 16,
-    borderRadius: 10,
-    paddingVertical: 20,
     paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
   },
   emptyText: {
     fontSize: 13,

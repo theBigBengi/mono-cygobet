@@ -3,6 +3,7 @@
 
 import React, { useEffect } from "react";
 import { Animated as RNAnimated, View, ScrollView, StyleSheet, Pressable, Text } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -47,6 +48,7 @@ function LobbyQuickActionsInner({
   predictionsCount = 0,
   totalFixtures = 0,
 }: LobbyQuickActionsProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const opacity = useSharedValue(0.3);
 
@@ -117,14 +119,16 @@ function LobbyQuickActionsInner({
           onPress={cardsAction.onPress}
           style={({ pressed }) => [
             styles.cardWrapper,
-            { backgroundColor: theme.colors.textPrimary + "08" },
+            { backgroundColor: theme.colors.cardBackground },
             pressed && { opacity: 0.7 },
           ]}
         >
           <View style={styles.cardsRow}>
             <MaterialCommunityIcons name="cards-outline" size={18} color={theme.colors.textPrimary} />
             <Text style={[styles.cardsSubtitle, { color: theme.colors.textPrimary }]}>
-              {totalFixtures - predictionsCount} of {totalFixtures} left
+              {predictionsCount >= totalFixtures
+                ? t("lobby.allPredicted")
+                : t("lobby.predictionsLeft", { count: totalFixtures - predictionsCount, total: totalFixtures })}
             </Text>
             <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
           </View>
@@ -143,24 +147,20 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 4,
-    marginBottom: 20,
-    paddingHorizontal: 0,
+    paddingHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 6,
   },
   cardWrapper: {
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderRadius: 10,
-    marginHorizontal: 16,
-  },
-  divider: {
-    height: 1,
-    marginVertical: 10,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginTop: 10,
   },
   cardsRow: {
     flexDirection: "row",
@@ -171,16 +171,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: "500",
-  },
-  progressTrack: {
-    height: 3,
-    borderRadius: 2,
-    marginTop: 10,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 2,
   },
   leftGroup: {
     flexDirection: "row",
@@ -222,7 +212,7 @@ pill: {
     borderRadius: 20,
   },
   skeletonCard: {
-    height: 52,
-    borderRadius: 12,
+    height: 42,
+    borderRadius: 10,
   },
 });
