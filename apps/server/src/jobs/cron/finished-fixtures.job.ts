@@ -108,7 +108,7 @@ export async function runFinishedFixturesJob(
         };
       }
 
-      let fetched: Awaited<ReturnType<typeof adapter.fetchFixturesByIds>> = [];
+      let rawFetched: Awaited<ReturnType<typeof adapter.fetchFixturesByIds>> = [];
       for (const group of chunk(ids, 50)) {
         if (opts.signal?.aborted) {
           log.warn("finished-fixtures fetch aborted by signal");
@@ -119,7 +119,25 @@ export async function runFinishedFixturesJob(
           states: [FixtureState.FT],
           perPage: 50,
         });
-        if (part?.length) fetched = fetched.concat(part);
+        if (part?.length) rawFetched = rawFetched.concat(part);
+      }
+
+      // Client-side filter: only keep fixtures actually in a FINISHED state.
+      // fetchFixturesByIds does not enforce the states filter in all providers,
+      // so non-FT fixtures may slip through and overwrite DB state incorrectly.
+      const fetched = rawFetched.filter((f) => FINISHED_STATES.has(f.state));
+
+      if (rawFetched.length > fetched.length) {
+        log.info(
+          {
+            rawCount: rawFetched.length,
+            filteredCount: fetched.length,
+            droppedStates: rawFetched
+              .filter((f) => !FINISHED_STATES.has(f.state))
+              .map((f) => ({ externalId: f.externalId, state: f.state })),
+          },
+          "Dropped non-finished fixtures from provider response"
+        );
       }
 
       if (!fetched.length) {
