@@ -120,10 +120,10 @@ export function GroupEditSheet({
         backdropComponent={renderBackdrop}
         backgroundStyle={{
           backgroundColor: theme.colors.background,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
         }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.border, width: 36 }}
       >
         <BottomSheetView style={styles.content}>
           {/* Avatar */}
@@ -138,50 +138,60 @@ export function GroupEditSheet({
               avatarType="gradient"
               avatarValue={avatarValue}
               initials={initials}
-              size={96}
-              borderRadius={26}
+              size={80}
+              borderRadius={20}
               flat
             />
-            <View style={[styles.avatarEditBadge, { backgroundColor: theme.colors.background }]}>
-              <Ionicons name="color-palette-outline" size={14} color={theme.colors.textSecondary} />
+            <View style={[styles.avatarEditBadge, { backgroundColor: theme.colors.surface, borderColor: theme.colors.background }]}>
+              <Ionicons name="color-palette-outline" size={12} color={theme.colors.textSecondary} />
             </View>
           </Pressable>
 
           {/* Name */}
-          <BottomSheetTextInput
-            style={[
-              styles.nameInput,
-              {
-                color: theme.colors.textPrimary,
-                backgroundColor: theme.colors.textPrimary + "08",
-              },
-            ]}
-            placeholder={t("groupCreation.groupNamePlaceholder")}
-            placeholderTextColor={theme.colors.textSecondary + "60"}
-            value={name}
-            onChangeText={setName}
-            maxLength={40}
-            selectTextOnFocus
-          />
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>
+              {t("groupCreation.groupNamePlaceholder")}
+            </Text>
+            <BottomSheetTextInput
+              style={[
+                styles.nameInput,
+                {
+                  color: theme.colors.textPrimary,
+                  borderBottomColor: theme.colors.border,
+                },
+              ]}
+              placeholder={t("groupCreation.groupNamePlaceholder")}
+              placeholderTextColor={theme.colors.textSecondary + "40"}
+              value={name}
+              onChangeText={setName}
+              maxLength={40}
+              selectTextOnFocus
+            />
+          </View>
 
           {/* Description */}
-          <BottomSheetTextInput
-            style={[
-              styles.descInput,
-              {
-                color: theme.colors.textPrimary,
-                backgroundColor: theme.colors.textPrimary + "08",
-              },
-            ]}
-            placeholder={t("lobby.descriptionPlaceholder")}
-            placeholderTextColor={theme.colors.textSecondary + "50"}
-            value={description}
-            onChangeText={setDescription}
-            maxLength={200}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-          />
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>
+              {t("lobby.descriptionPlaceholder")}
+            </Text>
+            <BottomSheetTextInput
+              style={[
+                styles.descInput,
+                {
+                  color: theme.colors.textPrimary,
+                  borderBottomColor: theme.colors.border,
+                },
+              ]}
+              placeholder={t("lobby.descriptionPlaceholder")}
+              placeholderTextColor={theme.colors.textSecondary + "40"}
+              value={description}
+              onChangeText={setDescription}
+              maxLength={200}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+          </View>
 
           {/* Save Button */}
           <Pressable
@@ -191,7 +201,7 @@ export function GroupEditSheet({
               styles.saveBtn,
               {
                 backgroundColor: theme.colors.primary,
-                opacity: !canSave ? 0.4 : pressed ? 0.8 : 1,
+                opacity: !canSave ? 0.4 : pressed ? 0.85 : 1,
               },
             ]}
           >
@@ -216,51 +226,51 @@ export function GroupEditSheet({
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 32,
-    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 36,
   },
   avatarPicker: {
     alignSelf: "center",
-    marginBottom: 20,
+    marginBottom: 28,
     position: "relative",
   },
   avatarEditBadge: {
     position: "absolute",
-    bottom: -4,
-    right: -4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
   },
-  nameInput: {
-    fontSize: 18,
+  fieldGroup: {
+    marginBottom: 20,
+  },
+  fieldLabel: {
+    fontSize: 12,
     fontWeight: "500",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    textAlign: "left",
-    width: "100%",
+    marginBottom: 6,
+  },
+  nameInput: {
+    fontSize: 16,
+    fontWeight: "500",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
   },
   descInput: {
     fontSize: 14,
-    marginTop: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    minHeight: 80,
-    textAlign: "left",
-    width: "100%",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    minHeight: 60,
   },
   saveBtn: {
-    marginTop: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
+    marginTop: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: "center",
-    width: "100%",
   },
   saveBtnText: {
     fontSize: 15,

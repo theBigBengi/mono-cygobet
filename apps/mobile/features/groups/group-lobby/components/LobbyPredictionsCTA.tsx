@@ -25,6 +25,7 @@ export interface LobbyPredictionsCTAProps {
   predictionsCount: number;
   totalFixtures: number;
   onPress: (fixtureId?: number) => void;
+  onPredictPress: (fixtureId: number) => void;
   fixtures?: FixtureItem[];
   isLoading?: boolean;
   /** Number of completed fixtures in the group — used to compute game numbers */
@@ -36,6 +37,7 @@ export interface LobbyPredictionsCTAProps {
 function FixtureRow({
   fixture,
   onPress,
+  onPredictPress,
   theme,
   vsLabel,
   urgencyColor,
@@ -44,6 +46,7 @@ function FixtureRow({
 }: {
   fixture: FixtureItem;
   onPress: (fixtureId?: number) => void;
+  onPredictPress: (fixtureId: number) => void;
   theme: import("@/lib/theme/theme.types").Theme;
   vsLabel: string;
   urgencyColor?: string;
@@ -233,15 +236,22 @@ function FixtureRow({
         ) : null}
       </View>
 
-      <View style={[styles.checkCircle, hasPrediction
-        ? { backgroundColor: "#34C75920" }
-        : { borderWidth: 1.5, borderColor: theme.colors.textSecondary + "90" }
-      ]}>
+      <Pressable
+        onPress={(e) => {
+          e.stopPropagation();
+          onPredictPress(fixture.id);
+        }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        style={[styles.checkCircle, hasPrediction
+          ? { backgroundColor: "#34C75920" }
+          : { borderWidth: 1.5, borderColor: theme.colors.textSecondary + "90" }
+        ]}
+      >
         {hasPrediction
           ? <Ionicons name="checkmark" size={12} color="#34C759" />
           : <FontAwesome6 name="plus" size={11} color={theme.colors.textSecondary + "90"} />
         }
-      </View>
+      </Pressable>
 
     </Pressable>
   );
@@ -251,6 +261,7 @@ export function LobbyPredictionsCTA({
   predictionsCount,
   totalFixtures,
   onPress,
+  onPredictPress,
   fixtures = [],
   isLoading = false,
   completedFixturesCount = 0,
@@ -355,6 +366,7 @@ export function LobbyPredictionsCTA({
               key={f.id}
               fixture={f}
               onPress={onPress}
+              onPredictPress={onPredictPress}
               theme={theme}
               vsLabel={vsLabel}
               urgencyColor={urgent}

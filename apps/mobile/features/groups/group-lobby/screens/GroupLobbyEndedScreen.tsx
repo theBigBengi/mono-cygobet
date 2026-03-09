@@ -3,9 +3,8 @@
 // Shows group ended banner, ranking, fixtures with final scores, and predictions overview.
 // Read-only; no invite section or prediction editing.
 
-import React, { useRef } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen, Card, AppText } from "@/components/ui";
@@ -13,8 +12,8 @@ import { useGoBack } from "@/hooks/useGoBack";
 import { useGroupRankingQuery, useUnreadCountsQuery } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
 import { GroupLobbyHeader } from "../components/GroupLobbyHeader";
-import { GroupInfoSheet } from "../components/GroupInfoSheet";
 import { GroupLobbyFixturesSection } from "../components/GroupLobbyFixturesSection";
+import { LobbyAboutSection } from "../components/LobbyAboutSection";
 import { useGroupDuration } from "../hooks/useGroupDuration";
 import type { FixtureItem } from "../types";
 import { formatDate } from "@/utils/date";
@@ -45,8 +44,6 @@ export function GroupLobbyEndedScreen({
   const { t } = useTranslation("common");
   const router = useRouter();
   const goBack = useGoBack("/(tabs)/groups");
-  const infoSheetRef =
-    useRef<React.ComponentRef<typeof BottomSheetModal>>(null);
   const { data: rankingData } = useGroupRankingQuery(group.id);
   const { data: unreadData } = useUnreadCountsQuery();
   const chatUnreadCount = unreadData?.data?.[String(group.id)] ?? 0;
@@ -94,7 +91,6 @@ export function GroupLobbyEndedScreen({
           isOfficial={group.isOfficial}
           compact
           onBack={goBack}
-          onInfoPress={() => infoSheetRef.current?.present()}
           onSettingsPress={onSettingsPress}
         />
 
@@ -159,6 +155,9 @@ export function GroupLobbyEndedScreen({
           onPress={handleViewPredictionsOverview}
         />
 
+        {/* About Section */}
+        <LobbyAboutSection group={group} />
+
         {/* Settings Section - LAST BANNER */}
         <LobbyActionCard
           icon="settings-outline"
@@ -167,11 +166,6 @@ export function GroupLobbyEndedScreen({
           onPress={handleOpenSettings}
         />
       </Screen>
-      <GroupInfoSheet
-        group={group}
-        sheetRef={infoSheetRef}
-        isLoading={isLoading}
-      />
     </View>
   );
 }

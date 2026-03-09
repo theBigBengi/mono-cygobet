@@ -29,9 +29,9 @@ import {
   BottomSheetTextInput,
 } from "@gorhom/bottom-sheet";
 import { useQueryClient } from "@tanstack/react-query";
-import { AppText, Button, GroupAvatar } from "@/components/ui";
+import { AppText, GroupAvatar } from "@/components/ui";
 import { InfoSheet } from "@/components/ui/InfoSheet";
-import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { getInitials } from "@/utils/string";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
@@ -43,7 +43,7 @@ import { groupsKeys } from "@/domains/groups/groups.keys";
 import type { ApiPublicGroupItem } from "@repo/types";
 
 const PER_PAGE = 20;
-const AVATAR_SIZE = 56;
+const AVATAR_SIZE = 48;
 
 export function GroupsSearchScreen() {
   const { t } = useTranslation("common");
@@ -157,11 +157,10 @@ export function GroupsSearchScreen() {
     ({ item }: { item: ApiPublicGroupItem }) => (
       <PublicGroupRow
         group={item}
-        onJoinSuccess={() => router.replace(`/groups/${item.id}`)}
         onPreview={() => handlePreview(item)}
       />
     ),
-    [router, handlePreview],
+    [handlePreview],
   );
 
   const keyExtractor = useCallback(
@@ -174,38 +173,26 @@ export function GroupsSearchScreen() {
       <View
         style={[styles.root, { backgroundColor: theme.colors.background }]}
       >
-        {/* Header: back + title + key icon */}
+        {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <View style={styles.headerLeft}>
-            <Pressable
-              onPress={() => router.back()}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && { opacity: 0.5 },
-              ]}
-            >
-              <Ionicons
-                name="chevron-back"
-                size={28}
-                color={theme.colors.textPrimary}
-              />
-            </Pressable>
-            <AppText variant="subtitle" style={styles.headerTitle} numberOfLines={1}>
-              {t("groups.discover")}
-            </AppText>
-          </View>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={12}
+            style={({ pressed }) => [pressed && { opacity: 0.5 }]}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={theme.colors.textPrimary}
+            />
+          </Pressable>
+          <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>
+            {t("groups.discover")}
+          </Text>
           <Pressable
             onPress={() => joinSheetRef.current?.present()}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={({ pressed }) => [
-              styles.headerKeyButton,
-              {
-                backgroundColor: theme.colors.textSecondary + "12",
-                borderRadius: 10,
-              },
-              pressed && { opacity: 0.5 },
-            ]}
+            hitSlop={12}
+            style={({ pressed }) => [pressed && { opacity: 0.5 }]}
           >
             <Ionicons
               name="key-outline"
@@ -216,22 +203,19 @@ export function GroupsSearchScreen() {
         </View>
 
         {/* Search field */}
-        <View style={[styles.searchRow, { paddingHorizontal: 16 }]}>
+        <View style={styles.searchRow}>
           <View
             style={[
               styles.searchInputContainer,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
-              },
+              { backgroundColor: theme.colors.surface },
             ]}
           >
-            <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
+            <Ionicons name="search" size={16} color={theme.colors.textSecondary} />
             <TextInput
               value={searchInput}
               onChangeText={setSearchInput}
               placeholder={t("discover.searchPlaceholder")}
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={theme.colors.textSecondary + "80"}
               returnKeyType="search"
               autoCorrect={false}
               style={[styles.searchInput, { color: theme.colors.textPrimary }]}
@@ -242,9 +226,9 @@ export function GroupsSearchScreen() {
             {searchInput.length > 0 && !isSearching && (
               <Pressable
                 onPress={() => setSearchInput("")}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                hitSlop={8}
               >
-                <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
+                <Ionicons name="close-circle" size={16} color={theme.colors.textSecondary} />
               </Pressable>
             )}
           </View>
@@ -253,38 +237,12 @@ export function GroupsSearchScreen() {
         {/* Public groups list */}
         {isLoading && page === 1 ? (
           <View style={styles.skeletonContainer}>
-            {[0, 1, 2, 3].map((i) => (
-              <View key={i} style={cardStyles.container}>
-                <View
-                  style={[
-                    cardStyles.shadowWrapper,
-                    { shadowOpacity: 0 },
-                  ]}
-                >
-                  <View
-                    style={[
-                      cardStyles.card,
-                      {
-                        backgroundColor: theme.colors.cardBackground,
-                        borderColor: theme.colors.border,
-                        borderBottomColor: theme.colors.textSecondary + "40",
-                        opacity: 1 - i * 0.2,
-                      },
-                    ]}
-                  >
-                    <View style={cardStyles.topRow}>
-                      <View style={{ width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: 14, backgroundColor: theme.colors.border }} />
-                      <View style={cardStyles.info}>
-                        <View style={{ width: 100 + i * 20, height: 14, borderRadius: 4, backgroundColor: theme.colors.border, marginBottom: 6 }} />
-                        <View style={{ width: 80, height: 10, borderRadius: 3, backgroundColor: theme.colors.border }} />
-                      </View>
-                      <View style={[cardStyles.joinButton, { backgroundColor: theme.colors.border, borderColor: "transparent" }]} />
-                    </View>
-                    <View style={[cardStyles.bottomRow, { borderTopColor: theme.colors.border }]}>
-                      <View style={{ width: 70, height: 10, borderRadius: 3, backgroundColor: theme.colors.border }} />
-                      <View style={[cardStyles.publicBadge, { backgroundColor: theme.colors.border + "30" }]} />
-                    </View>
-                  </View>
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <View key={i} style={[cardStyles.card, { opacity: 1 - i * 0.15 }]}>
+                <View style={{ width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: 12, backgroundColor: theme.colors.border }} />
+                <View style={cardStyles.info}>
+                  <View style={{ width: 90 + i * 16, height: 12, borderRadius: 4, backgroundColor: theme.colors.border, marginBottom: 6 }} />
+                  <View style={{ width: 70, height: 10, borderRadius: 3, backgroundColor: theme.colors.border }} />
                 </View>
               </View>
             ))}
@@ -340,15 +298,16 @@ export function GroupsSearchScreen() {
               hasMore ? (
                 <View style={styles.footer}>
                   {isFetching ? (
-                    <AppText variant="caption" color="secondary">
-                      {t("common.loading")}
-                    </AppText>
+                    <ActivityIndicator size="small" color={theme.colors.textSecondary} />
                   ) : (
-                    <Button
-                      label={t("discover.loadMore")}
-                      variant="secondary"
+                    <Pressable
                       onPress={loadMore}
-                    />
+                      style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                    >
+                      <AppText variant="caption" color="secondary" style={styles.loadMoreText}>
+                        {t("discover.loadMore")}
+                      </AppText>
+                    </Pressable>
                   )}
                 </View>
               ) : null
@@ -363,34 +322,47 @@ export function GroupsSearchScreen() {
         enableDynamicSizing
         enablePanDownToClose
         backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor: theme.colors.background }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+        backgroundStyle={{
+          backgroundColor: theme.colors.background,
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+        }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.border, width: 36 }}
       >
         <BottomSheetView style={styles.joinSheetContent}>
-          <AppText variant="title" style={styles.joinSheetTitle}>
+          <Text style={[styles.joinSheetTitle, { color: theme.colors.textPrimary }]}>
             {t("groups.joinWithCode")}
-          </AppText>
+          </Text>
           <BottomSheetTextInput
             value={inviteCode}
             onChangeText={setInviteCode}
             placeholder={t("groups.inviteCode")}
-            placeholderTextColor={theme.colors.textSecondary}
+            placeholderTextColor={theme.colors.textSecondary + "60"}
             autoCapitalize="none"
             autoCorrect={false}
             style={[
               styles.joinSheetInput,
               {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
+                borderBottomColor: theme.colors.border,
                 color: theme.colors.textPrimary,
               },
             ]}
           />
-          <Button
-            label={joinByCodeMutation.isPending ? t("groups.joining") : t("groups.joinGroup")}
+          <Pressable
             onPress={handleJoinWithCode}
             disabled={!inviteCode.trim() || joinByCodeMutation.isPending}
-          />
+            style={({ pressed }) => [
+              styles.joinSheetButton,
+              {
+                backgroundColor: theme.colors.primary,
+                opacity: !inviteCode.trim() || joinByCodeMutation.isPending ? 0.4 : pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text style={styles.joinSheetButtonText}>
+              {joinByCodeMutation.isPending ? t("groups.joining") : t("groups.joinGroup")}
+            </Text>
+          </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
 
@@ -445,23 +417,22 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
     <InfoSheet sheetRef={sheetRef} enableDynamicSizing>
       {group && (
         <View style={previewStyles.content}>
-          {/* Header: avatar + name + badge + description */}
+          {/* Header: avatar + name */}
           <View style={previewStyles.headerUnit}>
-            <View style={[previewStyles.avatarRing, { borderColor: theme.colors.border }]}>
-              <GroupAvatar
-                avatarType="gradient"
-                avatarValue={String(group.id % 8)}
-                initials={getInitials(group.name)}
-                size={96}
-                borderRadius={26}
-              />
-            </View>
+            <GroupAvatar
+              avatarType="gradient"
+              avatarValue={String(group.id % 8)}
+              initials={getInitials(group.name)}
+              size={72}
+              borderRadius={18}
+              flat
+            />
             <View style={previewStyles.nameBlock}>
-              <AppText variant="title" style={previewStyles.title} numberOfLines={2}>
+              <Text style={[previewStyles.title, { color: theme.colors.textPrimary }]} numberOfLines={2}>
                 {group.name}
-              </AppText>
+              </Text>
               {group.isOfficial && (
-                <View style={[previewStyles.officialChip, { backgroundColor: "#D4A017" + "18" }]}>
+                <View style={previewStyles.officialChip}>
                   <Ionicons name="shield-checkmark" size={12} color="#D4A017" />
                   <Text style={previewStyles.officialText}>
                     {t("discover.officialGroup")}
@@ -471,64 +442,30 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
             </View>
           </View>
 
-          {/* Stats list */}
-          <View
-            style={[
-              previewStyles.stats,
-              {
-                backgroundColor: theme.colors.cardBackground,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          >
-            {group.description ? (
-              <>
-                <View style={previewStyles.descriptionRow}>
-                  <AppText
-                    variant="body"
-                    color="secondary"
-                    style={previewStyles.descriptionText}
-                    numberOfLines={3}
-                  >
-                    {group.description}
-                  </AppText>
-                </View>
-                <View
-                  style={[
-                    previewStyles.statDivider,
-                    { backgroundColor: theme.colors.border },
-                  ]}
-                />
-              </>
-            ) : null}
+          {/* Description */}
+          {group.description ? (
+            <Text style={[previewStyles.descriptionText, { color: theme.colors.textSecondary }]} numberOfLines={3}>
+              {group.description}
+            </Text>
+          ) : null}
+
+          {/* Stats */}
+          <View style={previewStyles.stats}>
             <PreviewStatRow
-              icon="people-outline"
               label={t("groupInfo.members")}
               value={memberLabel}
               theme={theme}
             />
-            <View
-              style={[
-                previewStyles.statDivider,
-                { backgroundColor: theme.colors.border },
-              ]}
-            />
+            <View style={[previewStyles.statDivider, { backgroundColor: theme.colors.border }]} />
             <PreviewStatRow
-              icon="football-outline"
               label={t("lobby.games")}
               value={t("discover.gamesCount", { count: group.totalFixtures })}
               theme={theme}
             />
             {group.predictionMode != null && (
               <>
-                <View
-                  style={[
-                    previewStyles.statDivider,
-                    { backgroundColor: theme.colors.border },
-                  ]}
-                />
+                <View style={[previewStyles.statDivider, { backgroundColor: theme.colors.border }]} />
                 <PreviewStatRow
-                  icon="game-controller-outline"
                   label={t("groupInfo.predictionMode")}
                   value={predictionLabel}
                   theme={theme}
@@ -537,14 +474,8 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
             )}
             {group.creatorUsername != null && (
               <>
-                <View
-                  style={[
-                    previewStyles.statDivider,
-                    { backgroundColor: theme.colors.border },
-                  ]}
-                />
+                <View style={[previewStyles.statDivider, { backgroundColor: theme.colors.border }]} />
                 <PreviewStatRow
-                  icon="person-outline"
                   label={t("discover.creator")}
                   value={`@${group.creatorUsername}`}
                   theme={theme}
@@ -553,14 +484,8 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
             )}
             {group.badge != null && (
               <>
-                <View
-                  style={[
-                    previewStyles.statDivider,
-                    { backgroundColor: theme.colors.border },
-                  ]}
-                />
+                <View style={[previewStyles.statDivider, { backgroundColor: theme.colors.border }]} />
                 <PreviewStatRow
-                  icon="ribbon-outline"
                   label={group.badge.name}
                   value={group.badge.icon}
                   theme={theme}
@@ -570,12 +495,23 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
           </View>
 
           {/* Join button */}
-          <Button
-            label={joinMutation.isPending ? t("groups.joining") : t("discover.join")}
+          <Pressable
             onPress={handleJoin}
             disabled={joinMutation.isPending}
-            icon="enter-outline"
-          />
+            style={({ pressed }) => [
+              previewStyles.joinButton,
+              {
+                backgroundColor: theme.colors.primary,
+                opacity: joinMutation.isPending ? 0.5 : pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            {joinMutation.isPending ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={previewStyles.joinButtonText}>{t("discover.join")}</Text>
+            )}
+          </Pressable>
         </View>
       )}
     </InfoSheet>
@@ -583,92 +519,87 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
 }
 
 function PreviewStatRow({
-  icon,
   label,
   value,
   theme,
 }: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
   label: string;
   value: string;
   theme: ReturnType<typeof useTheme>["theme"];
 }) {
   return (
     <View style={previewStyles.statRow}>
-      <Ionicons name={icon} size={18} color={theme.colors.textSecondary} />
-      <AppText variant="body" color="secondary" style={previewStyles.statLabel}>
+      <Text style={[previewStyles.statLabel, { color: theme.colors.textSecondary }]}>
         {label}
-      </AppText>
-      <AppText variant="body" style={previewStyles.statValue}>
+      </Text>
+      <Text style={[previewStyles.statValue, { color: theme.colors.textPrimary }]}>
         {value}
-      </AppText>
+      </Text>
     </View>
   );
 }
 
 const previewStyles = StyleSheet.create({
   content: {
-    gap: 20,
+    gap: 16,
   },
   headerUnit: {
     alignItems: "center",
-    gap: 10,
-  },
-  avatarRing: {
-    padding: 3,
-    borderWidth: 2,
-    borderRadius: 30,
+    gap: 12,
   },
   nameBlock: {
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: "700",
     textAlign: "center",
-    letterSpacing: -0.3,
   },
   officialChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
   },
   officialText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#D4A017",
   },
-  descriptionRow: {
-    paddingVertical: 10,
-  },
   descriptionText: {
-    flex: 1,
     lineHeight: 20,
     fontSize: 13,
+    textAlign: "center",
   },
   stats: {
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
+    paddingVertical: 4,
   },
   statRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 10,
-    gap: 10,
   },
   statLabel: {
-    flex: 1,
+    fontSize: 14,
+    fontWeight: "400",
   },
   statValue: {
+    fontSize: 14,
     fontWeight: "600",
   },
   statDivider: {
     height: StyleSheet.hairlineWidth,
+  },
+  joinButton: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  joinButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
 
@@ -676,171 +607,63 @@ const previewStyles = StyleSheet.create({
 
 interface PublicGroupRowProps {
   group: ApiPublicGroupItem;
-  onJoinSuccess: () => void;
   onPreview: () => void;
 }
 
 const PublicGroupRow = React.memo(function PublicGroupRow({
   group,
-  onJoinSuccess,
   onPreview,
 }: PublicGroupRowProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
-  const joinMutation = useJoinPublicGroupMutation(group.id);
-  const [isPressed, setIsPressed] = useState(false);
-
-  const handleJoin = () => {
-    joinMutation.mutate(undefined, {
-      onSuccess: () => {
-        onJoinSuccess();
-      },
-    });
-  };
 
   const initials = getInitials(group.name);
   const avatarValue = String(group.id % 8);
 
-  const memberLabel =
-    group.maxMembers != null
-      ? t("discover.membersWithMax", {
-          count: group.memberCount,
-          max: group.maxMembers,
-        })
-      : t("discover.membersCount", { count: group.memberCount });
+  const subtitle = [
+    t("discover.membersCount", { count: group.memberCount }),
+    t("discover.gamesCount", { count: group.totalFixtures }),
+  ].join(" · ");
 
   return (
     <View style={cardStyles.container}>
       <Pressable
         onPress={onPreview}
-        onPressIn={() => setIsPressed(true)}
-        onPressOut={() => setIsPressed(false)}
+        style={({ pressed }) => [
+          cardStyles.card,
+          pressed && { opacity: 0.7 },
+        ]}
       >
-        <View
-          style={[
-            cardStyles.shadowWrapper,
-            {
-              shadowOpacity: isPressed ? 0 : 0.12,
-            },
-            isPressed && cardStyles.pressed,
-          ]}
-        >
-          <View
-            style={[
-              cardStyles.card,
-              {
-                backgroundColor: theme.colors.cardBackground,
-                borderColor: theme.colors.border,
-                borderBottomColor: theme.colors.textSecondary + "40",
-              },
-            ]}
-          >
-            {/* Top Row: Avatar + Info + Join */}
-            <View style={cardStyles.topRow}>
-              <GroupAvatar
-                avatarType="gradient"
-                avatarValue={avatarValue}
-                initials={initials}
-                size={AVATAR_SIZE}
-                borderRadius={14}
-              />
+        <GroupAvatar
+          avatarType="gradient"
+          avatarValue={avatarValue}
+          initials={initials}
+          size={AVATAR_SIZE}
+          borderRadius={12}
+          flat
+        />
 
-              <View style={cardStyles.info}>
-                <View style={cardStyles.nameRow}>
-                  <Text
-                    style={[cardStyles.name, { color: theme.colors.textPrimary }]}
-                    numberOfLines={1}
-                  >
-                    {group.name}
-                  </Text>
-                  {group.isOfficial && (
-                    <View style={cardStyles.officialBadge}>
-                      <Ionicons name="shield-checkmark" size={12} color="#D4A017" />
-                    </View>
-                  )}
-                </View>
-                <Text
-                  style={[cardStyles.subtitle, { color: theme.colors.textSecondary }]}
-                  numberOfLines={1}
-                >
-                  {memberLabel} · {t("discover.gamesCount", { count: group.totalFixtures })}
-                </Text>
-                {group.badge && (
-                  <Text style={[cardStyles.badgeText, { color: theme.colors.textSecondary }]}>
-                    {group.badge.icon} {group.badge.name}
-                  </Text>
-                )}
-              </View>
-
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleJoin();
-                }}
-                disabled={joinMutation.isPending}
-                style={({ pressed }) => [
-                  cardStyles.joinButton,
-                  {
-                    backgroundColor: joinMutation.isPending
-                      ? theme.colors.surface
-                      : theme.colors.primary,
-                    borderColor: joinMutation.isPending
-                      ? theme.colors.border
-                      : "transparent",
-                    borderBottomColor: joinMutation.isPending
-                      ? theme.colors.textSecondary + "40"
-                      : theme.colors.textPrimary + "40",
-                    borderBottomWidth: pressed ? 1 : CARD_BORDER_BOTTOM_WIDTH,
-                    transform: [{ scale: pressed ? 0.95 : 1 }],
-                    opacity: joinMutation.isPending ? 0.6 : 1,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    cardStyles.joinButtonText,
-                    {
-                      color: joinMutation.isPending
-                        ? theme.colors.textSecondary
-                        : theme.colors.primaryText,
-                    },
-                  ]}
-                >
-                  {joinMutation.isPending ? t("groups.joining") : t("discover.join")}
-                </Text>
-              </Pressable>
-            </View>
-
-            {/* Bottom info row */}
-            <View style={[cardStyles.bottomRow, { borderTopColor: theme.colors.border }]}>
-              {group.creatorUsername != null && !group.isOfficial ? (
-                <View style={cardStyles.creatorRow}>
-                  <Ionicons name="person-outline" size={13} color={theme.colors.textSecondary} />
-                  <Text style={[cardStyles.bottomText, { color: theme.colors.textSecondary }]}>
-                    {t("discover.createdBy", { username: group.creatorUsername })}
-                  </Text>
-                </View>
-              ) : group.isOfficial ? (
-                <View style={cardStyles.creatorRow}>
-                  <Ionicons name="shield-checkmark" size={13} color="#D4A017" />
-                  <Text style={[cardStyles.bottomText, { color: "#D4A017", fontWeight: "600" }]}>
-                    {t("discover.officialGroup")}
-                  </Text>
-                </View>
-              ) : (
-                <View />
-              )}
-              <View
-                style={[
-                  cardStyles.publicBadge,
-                  { backgroundColor: theme.colors.textSecondary + "15" },
-                ]}
-              >
-                <Ionicons name="globe-outline" size={12} color={theme.colors.textSecondary} />
-              </View>
-            </View>
+        <View style={cardStyles.info}>
+          <View style={cardStyles.nameRow}>
+            <Text
+              style={[cardStyles.name, { color: theme.colors.textPrimary }]}
+              numberOfLines={1}
+            >
+              {group.name}
+            </Text>
+            {group.isOfficial && (
+              <Ionicons name="shield-checkmark" size={13} color="#D4A017" />
+            )}
           </View>
+          <Text
+            style={[cardStyles.subtitle, { color: theme.colors.textSecondary }]}
+            numberOfLines={1}
+          >
+            {subtitle}
+          </Text>
         </View>
+
+        <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
       </Pressable>
     </View>
   );
@@ -849,33 +672,12 @@ const PublicGroupRow = React.memo(function PublicGroupRow({
 const cardStyles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  shadowWrapper: {
-    borderRadius: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  pressed: {
-    shadowOpacity: 0,
-    elevation: 0,
-    transform: [{ scale: 0.98 }, { translateY: 2 }],
   },
   card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
-    paddingTop: 14,
-    paddingHorizontal: 14,
-    paddingBottom: 0,
-    overflow: "hidden",
-  },
-  topRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: 12,
+    paddingVertical: 12,
   },
   info: {
     flex: 1,
@@ -883,69 +685,16 @@ const cardStyles = StyleSheet.create({
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 5,
   },
   name: {
-    fontSize: 16,
-    fontWeight: "700",
-    flex: 1,
-    marginBottom: 2,
-  },
-  officialBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#D4A01720",
-    alignItems: "center",
-    justifyContent: "center",
+    fontSize: 15,
+    fontWeight: "600",
     marginBottom: 2,
   },
   subtitle: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "500",
-    marginTop: 2,
-  },
-  joinButton: {
-    height: 32,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  joinButtonText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  bottomRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 12,
-    marginHorizontal: -14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-  },
-  creatorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  bottomText: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  publicBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
+    fontSize: 13,
+    fontWeight: "400",
   },
 });
 
@@ -957,32 +706,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingBottom: 8,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    flex: 1,
-  },
   headerTitle: {
+    fontSize: 15,
     fontWeight: "600",
-    flex: 1,
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerKeyButton: {
-    padding: 8,
   },
   searchRow: {
+    paddingHorizontal: 16,
     paddingBottom: 12,
   },
   searchInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
     gap: 8,
@@ -990,10 +727,11 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingVertical: 10,
-    fontSize: 15,
+    fontSize: 14,
   },
   skeletonContainer: {
     flex: 1,
+    paddingHorizontal: 16,
     paddingTop: 4,
   },
   listContent: {
@@ -1006,9 +744,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyIconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
@@ -1023,22 +761,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
   },
+  loadMoreText: {
+    fontWeight: "600",
+  },
   // Join with code sheet
   joinSheetContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    gap: 12,
+    paddingHorizontal: 24,
+    paddingBottom: 36,
+    gap: 16,
   },
   joinSheetTitle: {
     textAlign: "center",
-    fontWeight: "700",
-    fontSize: 18,
+    fontWeight: "600",
+    fontSize: 15,
   },
   joinSheetInput: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderBottomWidth: 1,
+    paddingVertical: 10,
     fontSize: 16,
+  },
+  joinSheetButton: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  joinSheetButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

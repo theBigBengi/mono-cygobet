@@ -56,7 +56,6 @@ interface GroupLobbyActiveScreenProps {
   isCreator: boolean;
   isLoading?: boolean;
   onSettingsPress?: () => void;
-  onInfoPress?: () => void;
   onAvatarPress?: () => void;
   onScroll?: (scrollY: number) => void;
   onChatExpand?: () => void;
@@ -73,7 +72,6 @@ export function GroupLobbyActiveScreen({
   isCreator,
   isLoading,
   onSettingsPress,
-  onInfoPress,
   onAvatarPress,
   onScroll,
   onChatExpand,
@@ -288,6 +286,13 @@ export function GroupLobbyActiveScreen({
     [router, group.id]
   );
 
+  const handlePredictGame = useCallback(
+    (fixtureId: number) => {
+      router.push({ pathname: '/groups/[id]/fixtures/[fixtureId]', params: { id: String(group.id), fixtureId: String(fixtureId) } });
+    },
+    [router, group.id]
+  );
+
   const handleViewRanking = useCallback(() => {
     router.push({ pathname: '/groups/[id]/ranking', params: { id: String(group.id) } });
   }, [router, group.id]);
@@ -413,9 +418,7 @@ export function GroupLobbyActiveScreen({
           onSharePress={group.inviteAccess !== "admin_only" || isCreator ? handleViewInvite : undefined}
           compact
           hideNavButtons
-          onInfoPress={onInfoPress}
           onAvatarPress={onAvatarPress}
-          isEditMode={isCreator}
           isLoading={isRankingLoading}
         />
 
@@ -439,6 +442,7 @@ export function GroupLobbyActiveScreen({
           predictionsCount={predictionsCount}
           totalFixtures={totalFixtures}
           onPress={handleViewGames}
+          onPredictPress={handlePredictGame}
           fixtures={fixtures}
           isLoading={!fixturesLoaded}
           completedFixturesCount={lobbySummary?.completedFixturesCount ?? group.completedFixturesCount ?? 0}

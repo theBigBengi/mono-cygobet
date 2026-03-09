@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Pressable, Text } from "react-native";
-import { MaterialCommunityIcons, Fontisto, Foundation, Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, Foundation, Ionicons } from "@expo/vector-icons";
+import { TextModeIcon } from "./TextModeIcon";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
@@ -41,7 +42,7 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
   const { theme } = useTheme();
 
   if (!isReady) {
-    return <GroupGamesSkeleton />;
+    return <GroupGamesSkeleton cardLayout={cardLayout} />;
   }
   if (emptyState && filteredFixturesCount === 0) {
     return (
@@ -100,10 +101,10 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
       <View style={styles.topRow}>
         <View style={styles.leftIcons}>
           <Pressable onPress={onToggleFullName} style={styles.toggleBtn}>
-            <Fontisto
-              name="text-width"
-              size={18}
-              color={useFullName ? theme.colors.primary : theme.colors.textSecondary}
+            <TextModeIcon
+              expanded={useFullName}
+              size={20}
+              color={theme.colors.textSecondary}
             />
           </Pressable>
           <Pressable onPress={onToggleCardLayout} style={styles.toggleBtn}>

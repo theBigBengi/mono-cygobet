@@ -8,9 +8,9 @@ import {
 } from "@gorhom/bottom-sheet";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { AVATAR_GRADIENTS } from "@/lib/constants/avatarGradients";
-import { AppText, Button } from "@/components/ui";
+import { AppText } from "@/components/ui";
 
 interface AvatarPickerSheetProps {
   sheetRef: React.RefObject<React.ComponentRef<typeof BottomSheetModal>>;
@@ -59,11 +59,15 @@ export function AvatarPickerSheet({
       enableDynamicSizing
       enablePanDownToClose
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: theme.colors.background }}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+      backgroundStyle={{
+        backgroundColor: theme.colors.background,
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+      }}
+      handleIndicatorStyle={{ backgroundColor: theme.colors.border, width: 36 }}
     >
       <BottomSheetView style={styles.content}>
-        <AppText variant="title" style={styles.title}>
+        <AppText variant="body" style={[styles.title, { color: theme.colors.textPrimary }]}>
           {t("lobby.chooseAvatar")}
         </AppText>
         <View style={styles.grid}>
@@ -81,34 +85,35 @@ export function AvatarPickerSheet({
                   end={{ x: 1, y: 1 }}
                   style={[
                     styles.item,
-                    {
-                      borderColor: theme.colors.textInverse + "33",
-                      borderBottomColor: theme.colors.textPrimary + "26",
-                    },
                     isSelected && {
                       borderColor: theme.colors.primary,
-                      borderWidth: 3,
-                      borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
-                      borderBottomColor: theme.colors.primary,
+                      borderWidth: 2.5,
                     },
                   ]}
                 >
-                  <Text style={[styles.itemInitials, { color: theme.colors.textInverse }]}>{initials}</Text>
+                  <Text style={[styles.itemInitials, { color: "#fff" }]}>{initials}</Text>
                 </LinearGradient>
                 {isSelected && (
-                  <View style={[styles.checkBadge, { backgroundColor: theme.colors.textInverse }]}>
-                    <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+                  <View style={[styles.checkBadge, { backgroundColor: theme.colors.primary }]}>
+                    <Ionicons name="checkmark" size={12} color="#fff" />
                   </View>
                 )}
               </Pressable>
             );
           })}
         </View>
-        <Button
-          label={t("common.save")}
+        <Pressable
           onPress={handleConfirm}
-          style={styles.confirmButton}
-        />
+          style={({ pressed }) => [
+            styles.confirmButton,
+            {
+              backgroundColor: theme.colors.primary,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <Text style={styles.confirmButtonText}>{t("common.save")}</Text>
+        </Pressable>
       </BottomSheetView>
     </BottomSheetModal>
   );
@@ -116,23 +121,22 @@ export function AvatarPickerSheet({
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 24,
+    paddingBottom: 36,
   },
   title: {
     textAlign: "center",
     marginBottom: 20,
-    fontWeight: "700",
-    fontSize: 18,
+    fontWeight: "600",
+    fontSize: 15,
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 16,
+    gap: 12,
   },
   itemContainer: {
-    alignItems: "center",
     position: "relative",
   },
   item: {
@@ -141,24 +145,30 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
-    borderBottomWidth: 4,
   },
   itemInitials: {
-    fontWeight: "800",
-    fontSize: 20,
+    fontWeight: "700",
+    fontSize: 18,
   },
   checkBadge: {
     position: "absolute",
-    bottom: -4,
-    right: -4,
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    bottom: -3,
+    right: -3,
+    borderRadius: 9,
+    width: 18,
+    height: 18,
     justifyContent: "center",
     alignItems: "center",
   },
   confirmButton: {
     marginTop: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

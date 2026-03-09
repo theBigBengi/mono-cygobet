@@ -27,7 +27,6 @@ export { GroupLobbyPrivacySection } from "./components/GroupLobbyPrivacySection"
 export { GroupLobbyInviteAccessSection } from "./components/GroupLobbyInviteAccessSection";
 export { GroupLobbyMetaSection } from "./components/GroupLobbyMetaSection";
 export { LobbyWithHeader } from "./components/LobbyWithHeader";
-export { GroupInfoSheet } from "./components/GroupInfoSheet";
 export { GroupEditSheet } from "./components/GroupEditSheet";
 
 // Hooks

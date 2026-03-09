@@ -9,287 +9,220 @@ import Animated, {
 import { useTheme } from "@/lib/theme";
 
 /**
- * Skeleton layout that mirrors the real GroupGamesScreen:
- * SummaryCard → [DateHeader → Card, Card] → [DateHeader → Card, Card, Card]
- *
- * Dimensions match actual components:
- * - GamesSummaryCard: borderRadius 10, borderWidth 1, stat gap 2
- * - MatchPredictionCardVertical: borderRadius 10, borderWidth 1, paddingH 12, paddingV 10
- *   - LeagueInfoRow: paddingH 12, paddingV 6
- *   - TeamRow: logo 30x30, name height 36, gap 8
- *   - ScoreInput: 36x36 in predictionColumn width 52
- * - Section headers: paddingLeft 4, date line height 1.5
+ * Skeleton layout that mirrors the real GroupGamesScreen.
+ * Dimensions match MatchPredictionCardVertical exactly.
  */
 
-const SKELETON_ITEMS: Array<{ type: "date" | "card" }> = [
-  { type: "card" },
-  { type: "card" },
-  { type: "date" },
-  { type: "card" },
-  { type: "card" },
-  { type: "card" },
-];
+const SKELETON_CARDS = [0, 1, 2, 3, 4];
 
-export function GroupGamesSkeleton() {
+export function GroupGamesSkeleton({ cardLayout = "vertical" }: { cardLayout?: "vertical" | "horizontal" }) {
   const { theme } = useTheme();
-  const skeletonColor = theme.colors.border;
+  const c = theme.colors.border;
+  const bg = theme.colors.textSecondary + "12";
 
-  // Subtle pulse animation
   const opacity = useSharedValue(0.5);
   React.useEffect(() => {
     opacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
   }, [opacity]);
-  const pulseStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const pulse = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
-  let cardIndex = 0;
+  if (cardLayout === "horizontal") {
+    return (
+      <Animated.View style={pulse}>
+        {SKELETON_CARDS.map((ci) => (
+          <View key={ci} style={s.hOuter}>
+            {/* Left: time col — matches width:30 */}
+            <View style={s.hLeftCol}>
+              <View style={[s.bar, { width: 24, height: 9, backgroundColor: c }]} />
+              <View style={[s.bar, { width: 20, height: 9, backgroundColor: c, marginTop: 2 }]} />
+            </View>
 
+            {/* Center: hRow — matches flex:1, height:50, borderRadius:8, paddingHorizontal:8, gap:6 */}
+            <View style={[s.hRow, { backgroundColor: bg }]}>
+              {/* Home: logo 18 + name flex + result 18 */}
+              <View style={[s.hLogo, { backgroundColor: c }]} />
+              <View style={[s.bar, { width: 36 + (ci % 3) * 14, height: 11, backgroundColor: c }]} />
+              <View style={{ flex: 1 }} />
+              {/* ScoreInputPair: digitSlot(14x22) + sep + digitSlot(14x22) ≈ 32x22 */}
+              <View style={[s.bar, { width: 14, height: 18, borderRadius: 4, backgroundColor: c }]} />
+              <View style={[s.bar, { width: 4, height: 4, borderRadius: 2, backgroundColor: c }]} />
+              <View style={[s.bar, { width: 14, height: 18, borderRadius: 4, backgroundColor: c }]} />
+              <View style={{ flex: 1 }} />
+              <View style={[s.bar, { width: 32 + (ci % 3) * 16, height: 11, backgroundColor: c }]} />
+              <View style={[s.hLogo, { backgroundColor: c }]} />
+            </View>
+
+            {/* Right: status col — matches width:30 */}
+            <View style={s.hRightCol}>
+              <View style={[{ width: 18, height: 18, borderRadius: 9, backgroundColor: c }]} />
+            </View>
+          </View>
+        ))}
+      </Animated.View>
+    );
+  }
+
+  // ── Vertical ──
   return (
-    <Animated.View style={pulseStyle}>
-      {/* ── Summary card skeleton ── */}
-      <View style={styles.summaryWrapper}>
-        <View
-          style={[
-            styles.summaryCard,
-            {
-              backgroundColor: theme.colors.cardBackground,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
-          <View style={styles.summaryRow}>
-            {[0, 1, 2].map((j) => (
-              <React.Fragment key={j}>
-                {j > 0 && (
-                  <View style={[styles.summaryDivider, { backgroundColor: theme.colors.border }]} />
-                )}
-                <View style={styles.summaryStat}>
-                  <View style={[styles.summaryIcon, { backgroundColor: skeletonColor }]} />
-                  <View style={[styles.summaryValue, { backgroundColor: skeletonColor }]} />
-                  <View style={[styles.summaryLabel, { backgroundColor: skeletonColor }]} />
+    <Animated.View style={pulse}>
+      {SKELETON_CARDS.map((ci) => (
+        <View key={ci} style={s.vOuter}>
+          {/* Left: statusCol w:42 → statusBox 42x42 br:6 */}
+          <View style={[s.vStatusBox, { backgroundColor: c + "30" }]}>
+            <View style={[s.bar, { width: 20, height: 15, backgroundColor: c }]} />
+            <View style={[s.bar, { width: 16, height: 9, backgroundColor: c }]} />
+          </View>
+
+          {/* Center: cardContent flex:1, borderRadius:8, pv:6, ph:8 */}
+          <View style={[s.vCard, { backgroundColor: bg }]}>
+            {/* Home: teamRow(row, gap:0) → matchPressable(flex:1, row, gap:8) [teamPressable(flex:1) + resultColumn(w:36)] + predictionColumn(w:36) */}
+            <View style={s.vTeamRow}>
+              <View style={s.vMatchPressable}>
+                <View style={s.vTeamPressable}>
+                  <View style={[s.vLogo, { backgroundColor: c }]} />
+                  <View style={[s.bar, { flex: 1, height: 12, maxWidth: 80 + (ci % 3) * 25, backgroundColor: c }]} />
                 </View>
-              </React.Fragment>
-            ))}
+                <View style={s.vResultCol} />
+              </View>
+              <View style={s.vScoreCol}>
+                <View style={[s.vScore, { backgroundColor: c }]} />
+              </View>
+            </View>
+            {/* Away */}
+            <View style={s.vTeamRow}>
+              <View style={s.vMatchPressable}>
+                <View style={s.vTeamPressable}>
+                  <View style={[s.vLogo, { backgroundColor: c }]} />
+                  <View style={[s.bar, { flex: 1, height: 12, maxWidth: 70 + (ci % 3) * 20, backgroundColor: c }]} />
+                </View>
+                <View style={s.vResultCol} />
+              </View>
+              <View style={s.vScoreCol}>
+                <View style={[s.vScore, { backgroundColor: c }]} />
+              </View>
+            </View>
+          </View>
+
+          {/* Right: statusCol w:42 — check/plus circle */}
+          <View style={s.vRightCol}>
+            <View style={[{ width: 20, height: 20, borderRadius: 10, backgroundColor: c }]} />
           </View>
         </View>
-      </View>
-
-      {/* ── Items: date headers + fixture cards ── */}
-      {SKELETON_ITEMS.map((item, i) => {
-        if (item.type === "date") {
-          return (
-            <View key={`date-${i}`} style={styles.sectionHeaderContent}>
-              <View style={styles.dateRow}>
-                <View style={[styles.dateLine, { backgroundColor: skeletonColor }]} />
-                <View style={[styles.dateLabelPlaceholder, { backgroundColor: skeletonColor }]} />
-                <View style={[styles.dateLine, { backgroundColor: skeletonColor }]} />
-              </View>
-            </View>
-          );
-        }
-
-        // Card
-        const ci = cardIndex++;
-
-        return (
-          <View key={`card-${ci}`} style={styles.cardOuter}>
-            <View
-              style={[
-                styles.matchCard,
-                {
-                  backgroundColor: theme.colors.cardBackground,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-            >
-              {/* League info row */}
-              <View
-                style={[
-                  styles.leagueInfoRow,
-                  { backgroundColor: theme.colors.textSecondary + "08" },
-                ]}
-              >
-                <View style={[styles.leagueTextPlaceholder, { backgroundColor: skeletonColor, width: 70 + (ci % 3) * 20 }]} />
-                <View style={[styles.leagueSeparator, { backgroundColor: skeletonColor }]} />
-                <View style={[styles.leagueTextPlaceholder, { backgroundColor: skeletonColor, width: 20 }]} />
-                <View style={{ flex: 1 }} />
-                <View style={[styles.leagueTimePlaceholder, { backgroundColor: skeletonColor }]} />
-                <View style={[styles.leagueDivider, { backgroundColor: theme.colors.border }]} />
-                <View style={styles.predictionColumn} />
-              </View>
-
-              {/* Match content */}
-              <View style={styles.matchContent}>
-                {/* Home team row */}
-                <View style={styles.teamRow}>
-                  <View style={styles.teamPressable}>
-                    <View style={[styles.teamLogo, { backgroundColor: skeletonColor }]} />
-                    <View style={[styles.teamName, { backgroundColor: skeletonColor, width: 80 + (ci % 3) * 25 }]} />
-                  </View>
-                  <View style={styles.predictionColumn}>
-                    <View style={[styles.scoreInput, { backgroundColor: skeletonColor }]} />
-                  </View>
-                </View>
-                {/* Away team row */}
-                <View style={styles.teamRow}>
-                  <View style={styles.teamPressable}>
-                    <View style={[styles.teamLogo, { backgroundColor: skeletonColor }]} />
-                    <View style={[styles.teamName, { backgroundColor: skeletonColor, width: 90 + (ci % 3) * 15 }]} />
-                  </View>
-                  <View style={styles.predictionColumn}>
-                    <View style={[styles.scoreInput, { backgroundColor: skeletonColor }]} />
-                  </View>
-                </View>
-              </View>
-            </View>
-          </View>
-        );
-      })}
+      ))}
     </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  /* ── Summary card (matches GamesSummaryCard) ── */
-  summaryWrapper: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  summaryCard: {
-    flex: 1,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-  },
-  summaryRow: {
+const s = StyleSheet.create({
+  bar: { borderRadius: 3 },
+
+  /* ── Vertical (matches MatchPredictionCardVertical default) ── */
+  // outerRow: marginBottom: 8
+  vOuter: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-around",
+    gap: 10, // cardRow gap
+    marginBottom: 8,
   },
-  summaryStat: {
+  // statusBox: 42x42 br:6
+  vStatusBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 6,
     alignItems: "center",
+    justifyContent: "center",
     gap: 2,
+  },
+  // cardContent + hRowBorder: flex:1 br:8 pv:6 ph:8
+  vCard: {
     flex: 1,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
   },
-  summaryIcon: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
+  // teamRow(row, gap:0) → matchPressable(flex:1, row, gap:8) [teamPressable(flex:1) + resultColumn(w:36)] + predictionColumn(w:36)
+  vTeamRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 22,
+    gap: 0,
+    marginBottom: 4,
   },
-  summaryValue: {
-    width: 32,
-    height: 18,
-    borderRadius: 4,
+  // matchPressable: flex:1, row, gap:8
+  vMatchPressable: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
-  summaryLabel: {
-    width: 28,
-    height: 9,
-    borderRadius: 3,
-  },
-  summaryDivider: {
-    width: 1,
-    height: 28,
-  },
-
-  /* ── Section headers (matches GroupGamesScreen sectionHeaderContent) ── */
-  sectionHeaderContent: {
-    paddingStart: 4,
-  },
-  dateRow: {
+  // teamPressable: flex:1, row, gap:10
+  vTeamPressable: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingTop: 8,
-    paddingBottom: 20,
   },
-  dateLine: {
-    flex: 1,
-    height: 1.5,
-  },
-  dateLabelPlaceholder: {
-    width: 80,
-    height: 11,
+  vLogo: {
+    width: 18,
+    height: 18,
     borderRadius: 4,
   },
-
-  /* ── Fixture cards (matches MatchPredictionCardVertical) ── */
-  cardOuter: {
-    marginBottom: 12,
+  // resultColumn w:36 (empty spacer for actual result)
+  vResultCol: {
+    width: 36,
   },
-  matchCard: {
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-
-  /* League info row */
-  leagueInfoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-    marginHorizontal: -12,
-    marginTop: -10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 8,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-  },
-  leagueTextPlaceholder: {
-    height: 10,
-    borderRadius: 3,
-  },
-  leagueSeparator: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    opacity: 0.4,
-  },
-  leagueTimePlaceholder: {
-    width: 32,
-    height: 10,
-    borderRadius: 3,
-  },
-  leagueDivider: {
-    width: 1,
-    alignSelf: "stretch",
-    marginVertical: -6,
-    opacity: 0.5,
-  },
-  predictionColumn: {
-    width: 52,
+  // predictionColumn w:36
+  vScoreCol: {
+    width: 36,
     alignItems: "center",
   },
-
-  /* Match content */
-  matchContent: {
-    gap: 6,
-  },
-  teamRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  teamPressable: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    height: 36,
-  },
-  teamLogo: {
-    width: 30,
-    height: 30,
+  // ScoreInput: 28x18 br:6
+  vScore: {
+    width: 28,
+    height: 18,
     borderRadius: 6,
   },
-  teamName: {
-    height: 14,
+  // right statusCol w:42
+  vRightCol: {
+    width: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* ── Horizontal (matches MatchPredictionCardVertical horizontal) ── */
+  // outerRow mb:8, cardRow row gap:10
+  hOuter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
+  // left time col w:30
+  hLeftCol: {
+    width: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // hRow: flex:1, h:50, br:8, ph:8, gap:6
+  hRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    height: 50,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    gap: 6,
+  },
+  // TeamLogo size:18
+  hLogo: {
+    width: 18,
+    height: 18,
     borderRadius: 4,
   },
-  scoreInput: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+  // right col w:30
+  hRightCol: {
+    width: 30,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

@@ -23,6 +23,7 @@ import { useGroupedFixtures, type LeaguesGroupBy } from "../hooks/useGroupedFixt
 import { usePredictionsStats } from "../hooks/usePredictionsStats";
 import { useCollapsingHeader } from "../hooks/useCollapsingHeader";
 import { useScrollToNextButton } from "../hooks/useScrollToNextButton";
+import { useGameViewPrefs } from "../hooks/useGameViewPrefs";
 import type { PredictionMode, FixtureItem, RenderItem } from "../types";
 import { GroupGamesHeader } from "../components/GroupGamesHeader";
 import { GroupGamesListHeader } from "../components/GroupGamesListHeader";
@@ -60,13 +61,12 @@ export function GroupGamesScreen({
   const insets = useSafeAreaInsets();
   const mode = selectionMode ?? "games";
 
-  const [cardLayout, setCardLayout] = useState<"vertical" | "horizontal">("vertical");
-  const [useFullName, setUseFullName] = useState(true);
+  const { cardLayout, useFullName, toggleCardLayout: rawToggleLayout, toggleFullName: rawToggleFullName } = useGameViewPrefs();
   const [leaguesGroupBy, setLeaguesGroupBy] = useState<LeaguesGroupBy>("round");
   const toggleCardLayout = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCardLayout((prev) => (prev === "vertical" ? "horizontal" : "vertical"));
-  }, []);
+    rawToggleLayout();
+  }, [rawToggleLayout]);
 
   const [isReady, setIsReady] = React.useState(false);
   React.useEffect(() => {
@@ -574,7 +574,7 @@ export function GroupGamesScreen({
         accuracy={summaryStats.accuracy}
         maxAccuracy={summaryStats.maxAccuracy}
         useFullName={useFullName}
-        onToggleFullName={() => setUseFullName((v) => !v)}
+        onToggleFullName={rawToggleFullName}
         cardLayout={cardLayout}
         onToggleCardLayout={toggleCardLayout}
         onFilterSortPress={hasAnyChips ? handleFilterPress : undefined}

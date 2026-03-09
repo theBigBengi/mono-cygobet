@@ -43,7 +43,6 @@ import {
   GroupLobbyActiveScreen,
   GroupLobbyEndedScreen,
   LobbyWithHeader,
-  GroupInfoSheet,
   GroupEditSheet,
 } from "@/features/groups/group-lobby";
 import { GroupChatScreen } from "@/features/groups/chat";
@@ -133,14 +132,9 @@ function GroupLobbyContent() {
     await refetchGroup();
   }, [refetchGroup, groupId, queryClient]);
 
-  const infoSheetRef = useRef<BottomSheetModal>(null);
   const editSheetRef = useRef<BottomSheetModal>(null);
   const inviteSheetRef = useRef<BottomSheetModal>(null);
   const updateGroupMutation = useUpdateGroupMutation(groupId);
-
-  const handleOpenInfo = useCallback(() => {
-    infoSheetRef.current?.present();
-  }, []);
 
   const handleOpenEdit = useCallback(() => {
     editSheetRef.current?.present();
@@ -273,7 +267,6 @@ function GroupLobbyContent() {
           onSettingsPress={() =>
             router.push({ pathname: '/groups/[id]/settings', params: { id: String(group.id) } })
           }
-          onInfoPress={handleOpenInfo}
           onAvatarPress={isCreator ? handleOpenEdit : undefined}
           onChatExpand={handleChatExpand}
           onChatGestureStart={handleChatGestureStart}
@@ -323,11 +316,6 @@ function GroupLobbyContent() {
             threshold={160}
             rightActions={[
               {
-                icon: "information-circle-outline",
-                onPress: handleOpenInfo,
-                size: 22,
-              },
-              {
                 icon: "ellipsis-horizontal",
                 onPress: () => router.push({ pathname: '/groups/[id]/settings', params: { id: String(group.id) } }),
                 size: 22,
@@ -350,11 +338,6 @@ function GroupLobbyContent() {
           </Animated.View>
         )}
 
-        <GroupInfoSheet
-          group={group}
-          sheetRef={infoSheetRef}
-          isLoading={isFetching}
-        />
         {isCreator && (
           <GroupEditSheet
             sheetRef={editSheetRef}
