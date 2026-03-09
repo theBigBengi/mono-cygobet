@@ -56,9 +56,6 @@ function LobbyRecentResultsInner({
   // Take last 5
   const tiles = fixtures.slice(0, 5);
 
-  // Don't render if no finished games and not loading
-  if (!isLoading && tiles.length === 0) return null;
-
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -83,72 +80,89 @@ function LobbyRecentResultsInner({
       </View>
 
       {/* Tiles */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tilesRow}>
-        {isLoading
-          ? Array.from({ length: 5 }).map((_, i) => (
-              <Animated.View
-                key={i}
-                style={[
+      {isLoading ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tilesRow}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Animated.View
+              key={i}
+              style={[
+                styles.tile,
+                { backgroundColor: theme.colors.border },
+                skeletonStyle,
+              ]}
+            />
+          ))}
+        </ScrollView>
+      ) : tiles.length === 0 ? (
+        <Pressable
+          onPress={() => onPress()}
+          style={({ pressed }) => [
+            styles.emptyCard,
+            { backgroundColor: theme.colors.cardBackground },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+            {t("lobby.noRecentResults")}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
+        </Pressable>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tilesRow}>
+          {tiles.map((fixture, index) => {
+            const points = fixture.prediction?.points ?? null;
+            const hasPoints = points != null;
+            const color = hasPoints ? getPointsColor(points, { success: theme.colors.success, warning: theme.colors.warning, danger: theme.colors.danger })! : theme.colors.danger;
+            const gameNumber = completedFixturesCount - index;
+
+            return (
+              <Pressable
+                key={fixture.id}
+                onPress={() => onPress(fixture.id)}
+                style={({ pressed }) => [
                   styles.tile,
-                  { backgroundColor: theme.colors.border },
-                  skeletonStyle,
+                  { backgroundColor: theme.colors.cardBackground },
+                  pressed && { opacity: 0.7 },
                 ]}
-              />
-            ))
-          : tiles.map((fixture, index) => {
-              const points = fixture.prediction?.points ?? null;
-              const hasPoints = points != null;
-              const color = hasPoints ? getPointsColor(points, { success: theme.colors.success, warning: theme.colors.warning, danger: theme.colors.danger })! : theme.colors.danger;
-              const gameNumber = completedFixturesCount - index;
+              >
+                {/* Game number */}
+                <Text style={[styles.tileGameNumber, { color: theme.colors.textSecondary }]}>
+                  #{gameNumber}
+                </Text>
+                {/* Match result */}
+                <View style={styles.tileMatchSection}>
+                  <View style={styles.tileTeamRow}>
+                    <Text style={[styles.tileTeam, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                      {fixture.homeTeam?.shortCode ?? ""}
+                    </Text>
+                    <Text style={[styles.tileResultScore, { color: theme.colors.textPrimary }]}>
+                      {fixture.homeScore90 ?? "?"}
+                    </Text>
+                  </View>
+                  <View style={styles.tileTeamRow}>
+                    <Text style={[styles.tileTeam, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                      {fixture.awayTeam?.shortCode ?? ""}
+                    </Text>
+                    <Text style={[styles.tileResultScore, { color: theme.colors.textPrimary }]}>
+                      {fixture.awayScore90 ?? "?"}
+                    </Text>
+                  </View>
+                </View>
 
-              return (
-                <Pressable
-                  key={fixture.id}
-                  onPress={() => onPress(fixture.id)}
-                  style={({ pressed }) => [
-                    styles.tile,
-                    { backgroundColor: theme.colors.cardBackground },
-                    pressed && { opacity: 0.7 },
-                  ]}
-                >
-                  {/* Game number */}
-                  <Text style={[styles.tileGameNumber, { color: theme.colors.textSecondary }]}>
-                    #{gameNumber}
+                {/* Prediction + Points */}
+                <View style={styles.tilePredictionSection}>
+                  <Text style={[styles.tilePrediction, { color }]}>
+                    {fixture.prediction ? `${fixture.prediction.home}-${fixture.prediction.away}` : "—"}
                   </Text>
-                  {/* Match result */}
-                  <View style={styles.tileMatchSection}>
-                    <View style={styles.tileTeamRow}>
-                      <Text style={[styles.tileTeam, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                        {fixture.homeTeam?.shortCode ?? ""}
-                      </Text>
-                      <Text style={[styles.tileResultScore, { color: theme.colors.textPrimary }]}>
-                        {fixture.homeScore90 ?? "?"}
-                      </Text>
-                    </View>
-                    <View style={styles.tileTeamRow}>
-                      <Text style={[styles.tileTeam, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                        {fixture.awayTeam?.shortCode ?? ""}
-                      </Text>
-                      <Text style={[styles.tileResultScore, { color: theme.colors.textPrimary }]}>
-                        {fixture.awayScore90 ?? "?"}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Prediction + Points */}
-                  <View style={styles.tilePredictionSection}>
-                    <Text style={[styles.tilePrediction, { color }]}>
-                      {fixture.prediction ? `${fixture.prediction.home}-${fixture.prediction.away}` : "—"}
-                    </Text>
-                    <Text style={[styles.tilePoints, { color }]}>
-                      {hasPoints ? `+${points}` : "+0"}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-      </ScrollView>
-
+                  <Text style={[styles.tilePoints, { color }]}>
+                    {hasPoints ? `+${points}` : "+0"}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -187,6 +201,19 @@ const styles = StyleSheet.create({
   viewAllBtnText: {
     fontSize: 13,
     fontWeight: "700",
+  },
+  emptyCard: {
+    marginHorizontal: 16,
+    borderRadius: 10,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  emptyText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   tilesRow: {
     flexDirection: "row",

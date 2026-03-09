@@ -163,6 +163,10 @@ function AppContent() {
                 options={{ headerShown: false }}
               />
               <Stack.Screen
+                name="groups/[id]/about"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="groups/[id]/chat"
                 options={{ headerShown: false }}
               />

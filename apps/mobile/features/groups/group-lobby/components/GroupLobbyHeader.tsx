@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   },
   hudTitleLeft: {
     flex: 1,
-    marginEnd: 12,
+    marginEnd: 16,
   },
   shareButton: {
     width: 46,

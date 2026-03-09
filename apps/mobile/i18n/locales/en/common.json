@@ -376,6 +376,7 @@
     "chooseAvatar": "Choose Avatar",
     "groupAvatar": "Group Avatar",
     "recentResults": "Recent Results",
+    "noRecentResults": "No results yet — view all games",
     "viewResults": "View All",
     "seeMore": "See more",
     "seeLess": "See less",
@@ -900,6 +901,44 @@
     "selectionSummaryTeamsSelected": "Teams selected",
     "selectionSummaryTeamsCount": "{{count}} teams"
   },
+  "groupAbout": {
+    "created": "Created",
+    "howItWorks": "How it works",
+    "rules": {
+      "predictionsTitle": "Predictions",
+      "deadline": "Submit your prediction any time before kickoff. Once the match begins, your prediction is locked in and can't be changed.",
+      "visibility": "All predictions remain hidden until the match starts — so no one can copy anyone else's pick.",
+      "liveTitle": "Live Updates",
+      "liveDesc": "Track your predictions in real time as matches are played. Points update automatically as soon as the final whistle blows.",
+      "scoringTitle": "How Points Work",
+      "scoringIntroCorrectScore": "Each prediction is scored based on accuracy. The closer you are to the actual result, the more points you earn:",
+      "exactScoreDesc": "Exact score — {{points}} pts",
+      "exactScoreHint": "You predicted the exact final score.",
+      "correctDiffDesc": "Goal difference — {{points}} pts",
+      "correctDiffHint": "Wrong score, but the margin between the teams is correct.",
+      "correctOutcomeDesc": "Correct outcome — {{points}} pt",
+      "correctOutcomeHint": "You got the right winner (or a draw), but the score and difference are off.",
+      "noPointsDesc": "No match — 0 pts",
+      "noPointsHint": "The outcome, difference, and score are all wrong.",
+      "scoringIntroMatchWinner": "Pick the match result — Home win, Draw, or Away win. A correct prediction earns 1 point.",
+      "examplesTitle": "Examples",
+      "exampleResult": "Result",
+      "examplePrediction": "Prediction",
+      "examplePoints": "Points",
+      "exampleExact": "Exact",
+      "exampleDiff": "Difference",
+      "exampleOutcome": "Outcome",
+      "exampleNone": "Miss",
+      "tiebreakersTitle": "Tiebreakers",
+      "tiebreakersDesc": "When two or more players share the same score, the tiebreaker order is:\n1. Most exact score predictions\n2. Most correct goal difference predictions\n3. Most correct outcome predictions",
+      "koTitle": "Knockout Rounds",
+      "koPenaltiesDesc": "Knockout matches are scored based on the result after penalties. If a match goes to a shootout, your prediction should reflect the final score including penalty goals.",
+      "koExtraTimeDesc": "Knockout matches are scored based on the result after extra time (120 minutes). Penalty shootouts are not included.",
+      "koFullTimeDesc": "Knockout matches are scored based on regulation time only (90 minutes). Extra time and penalties have no effect on scoring.",
+      "cancelledTitle": "Special Cases",
+      "cancelledDesc": "If a match is cancelled, postponed, or abandoned, predictions for that match are automatically voided. No points are awarded or deducted."
+    }
+  },
   "badges": {
     "earned": "Earned Badges",
     "earnedIn": "Earned in {{group}}"
@@ -934,6 +973,14 @@
       "gamesMode": "Games are manually selected.",
       "koPenalties": "In knockout rounds, the result includes penalties.",
       "koExtraTime": "In knockout rounds, the result includes extra time."
+    },
+    "summary": {
+      "predictExactScore": "Predictions are for exact scores.",
+      "predictWinner": "Predictions are for the match winner (1/X/2).",
+      "scoring": "Exact score is worth {{exact}} pts, correct difference {{diff}} pts, and correct outcome {{outcome}} pt.",
+      "koPenalties": "In knockout rounds, the final result includes penalties.",
+      "koExtraTime": "In knockout rounds, the final result includes extra time.",
+      "koRegularTime": "In knockout rounds, only the 90-minute result counts."
     },
     "statusValues": {
       "draft": "Draft",

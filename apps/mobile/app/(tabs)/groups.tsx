@@ -137,6 +137,10 @@ function GroupsContent() {
     router.push({ pathname: '/groups/[id]', params: { id: String(groupId) } });
   }, [router]);
 
+  const handleGamesPress = useCallback((groupId: number) => {
+    router.push({ pathname: '/groups/[id]/games', params: { id: String(groupId) } });
+  }, [router]);
+
   const groups = data?.data || [];
   const { selectedFilter, setSelectedFilter, selectedSort, setSelectedSort, filteredGroups, counts } =
     useGroupFilter(groups);
@@ -284,9 +288,9 @@ function GroupsContent() {
       <GroupCard
         group={item.data}
         onPress={handleGroupPress}
+        onGamesPress={handleGamesPress}
         unreadCount={unreadCounts[String(item.data.id)] ?? 0}
         unreadActivityCount={unreadActivityCounts[String(item.data.id)] ?? 0}
-        isHudLoading={isHudLoading}
       />
     );
   }, [theme, handleOpenCreate, handleOpenInfo, handleOpenInvites, handleOpenSearch, handleOpenFilterSort, handleToggleViewMode, viewMode, pendingInviteCount, selectedFilter, selectedSort, handleGroupPress, unreadCounts, unreadActivityCounts, isHudLoading]);

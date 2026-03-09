@@ -36,7 +36,7 @@ function GroupCardRowInner({ group, onPress }: GroupCardRowProps) {
       return t("groups.freePick");
     }
     return `${group.memberCount ?? 0} ${t("groups.membersShort").toLowerCase()}`;
-  }, [group, isDraft, t]);
+  }, [group, t]);
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -89,9 +89,6 @@ function GroupCardRowInner({ group, onPress }: GroupCardRowProps) {
       <View style={styles.indicators}>
         {liveCount > 0 && (
           <View style={[styles.liveDot, { backgroundColor: theme.colors.danger }]} />
-        )}
-        {isDraft && (
-          <Ionicons name="construct-outline" size={14} color={theme.colors.warning} />
         )}
       </View>
     </Pressable>
