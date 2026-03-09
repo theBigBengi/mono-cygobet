@@ -9,7 +9,7 @@ import Animated, {
 import { canPredict } from "@repo/utils";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { AppText } from "@/components/ui";
+import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { VerticalScoreSlider } from "./VerticalScoreSlider";
 import { ScoresInput } from "./ScoresInput";
@@ -78,7 +78,6 @@ export const PeekCard = React.memo(function PeekCard({
   const homeRef = useRef<TextInput>(null);
   const awayRef = useRef<TextInput>(null);
   const [focusedField, setFocusedField] = useState<"home" | "away" | null>(null);
-
   const handleSliderChange = useCallback(
     (side: "home" | "away", val: number | null) => {
       onUpdateSliderValue(fixture.id, side, val);
@@ -180,7 +179,7 @@ export const PeekCard = React.memo(function PeekCard({
           <>
             <Animated.View style={[styles.cardContentRow, contentFadeOut]}>
               <View
-                style={styles.sliderContainer}
+                style={styles.sliderContainerLeft}
                 pointerEvents={isInteractive ? "auto" : "none"}
               >
                 <VerticalScoreSlider
@@ -200,6 +199,26 @@ export const PeekCard = React.memo(function PeekCard({
                   />
                 </View>
                 <View style={styles.centerTrack}>
+                  {fixture.homeTeam?.imagePath && (
+                    <View style={styles.homeLogo}>
+                      <TeamLogo
+                        imagePath={fixture.homeTeam.imagePath}
+                        teamName={fixture.homeTeam.name ?? ""}
+                        size={88}
+                        rounded={false}
+                      />
+                    </View>
+                  )}
+                  {fixture.awayTeam?.imagePath && (
+                    <View style={styles.awayLogo}>
+                      <TeamLogo
+                        imagePath={fixture.awayTeam.imagePath}
+                        teamName={fixture.awayTeam.name ?? ""}
+                        size={88}
+                        rounded={false}
+                      />
+                    </View>
+                  )}
                   <View
                     style={styles.scoreCenter}
                     pointerEvents={isInteractive ? "auto" : "none"}
@@ -233,7 +252,7 @@ export const PeekCard = React.memo(function PeekCard({
               </View>
 
               <View
-                style={styles.sliderContainer}
+                style={styles.sliderContainerRight}
                 pointerEvents={isInteractive ? "auto" : "none"}
               >
                 <VerticalScoreSlider
@@ -285,14 +304,23 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
   },
-  sliderContainer: {
-    width: 40,
+  sliderContainerLeft: {
+    width: 66,
+    marginRight: -26,
     overflow: "visible",
     zIndex: 10,
     paddingTop: 48,
     paddingBottom: 12,
     justifyContent: "center",
-    // backgroundColor: "rgba(0,80,255,0.35)", // DEBUG BLUE — sliders
+  },
+  sliderContainerRight: {
+    width: 66,
+    marginLeft: -26,
+    overflow: "visible",
+    zIndex: 10,
+    paddingTop: 48,
+    paddingBottom: 12,
+    justifyContent: "center",
   },
   centerContent: {
     flex: 1,
@@ -314,12 +342,24 @@ const styles = StyleSheet.create({
     position: "relative",
     // backgroundColor: "rgba(0,180,0,0.35)", // DEBUG GREEN — slider track zone
   },
+  homeLogo: {
+    position: "absolute",
+    top: 40,
+    left: 2,
+    opacity: 0.5,
+  },
+  awayLogo: {
+    position: "absolute",
+    bottom: 26,
+    right: 2,
+    opacity: 0.5,
+  },
   scoreCenter: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 3,
-    marginTop: -260,
+    marginTop: 0,
     // backgroundColor: "rgba(255,140,0,0.4)", // DEBUG ORANGE — score input area
   },
   expandCollapseButton: {

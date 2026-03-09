@@ -1,3 +1,4 @@
+import { Dimensions } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
 import {
   useAnimatedStyle,
@@ -5,6 +6,8 @@ import {
   runOnJS,
   type SharedValue,
 } from "react-native-reanimated";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 type VerticalPagerOpts = {
   totalCards: number;
@@ -27,8 +30,21 @@ export function useVerticalPager({
   onSavePending,
   onIndexChange,
 }: VerticalPagerOpts) {
+  // Only the middle 30% of the screen activates the pager swipe.
+  // Sliders live on the edges, so touches there won't trigger card swiping.
+  const LEFT_BOUND = SCREEN_WIDTH * 0.20;
+  const RIGHT_BOUND = SCREEN_WIDTH * 0.80;
+
   const panGesture = Gesture.Pan()
-    .activeOffsetY([-10, 10])
+    .manualActivation(true)
+    .onTouchesMove((e, stateManager) => {
+      const x = e.allTouches[0]?.x ?? 0;
+      if (x > LEFT_BOUND && x < RIGHT_BOUND) {
+        stateManager.activate();
+      } else {
+        stateManager.fail();
+      }
+    })
     .failOffsetX([-20, 20])
     .onUpdate((e) => {
       if (expandProgress.value > 0) return;

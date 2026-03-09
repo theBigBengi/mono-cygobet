@@ -66,15 +66,15 @@ const variantStyles: Record<
   },
   large: {
     input: {
-      width: 100,
+      width: 64,
       height: 100,
-      fontSize: 46,
+      fontSize: 84,
     },
     separator: {
-      fontSize: 36,
-      lineHeight: 40,
+      fontSize: 60,
+      lineHeight: 48,
       fontWeight: "700",
-      marginHorizontal: 4,
+      marginHorizontal: 8,
     },
   },
 };
@@ -149,11 +149,12 @@ export const ScoresInput = React.memo(function ScoresInput({
   };
 
   const separatorStyle: TextStyle = {
-    ...variantStyle.separator,
-    height: variantStyle.input.height,
-    lineHeight: variantStyle.input.height as number,
-    textAlignVertical: "center",
+    fontSize: variantStyle.separator.fontSize,
+    fontWeight: variantStyle.separator.fontWeight as TextStyle["fontWeight"],
+    marginHorizontal: variantStyle.separator.marginHorizontal,
+    lineHeight: variantStyle.separator.fontSize as number,
     includeFontPadding: false,
+    textAlignVertical: "center",
   };
 
   return (
@@ -162,10 +163,10 @@ export const ScoresInput = React.memo(function ScoresInput({
       pointerEvents={isEditable ? "auto" : "none"}
     >
       <View style={[inputStyle, styles.inputWrapper, {
+        borderWidth: isLarge ? 0 : 1,
         borderColor: homeFocused
           ? theme.colors.primary
-          : isLarge ? theme.colors.textPrimary + "25" : theme.colors.border,
-        borderWidth: 1,
+          : theme.colors.border,
         backgroundColor: isLarge ? "transparent" : homeFocused
           ? theme.colors.primary
           : theme.colors.surface,
@@ -178,16 +179,6 @@ export const ScoresInput = React.memo(function ScoresInput({
           elevation: 2,
         }),
       }]}>
-        {isLarge && homeTeamLogo && (
-          <View style={styles.fieldLogo}>
-            <TeamLogo
-              imagePath={homeTeamLogo}
-              teamName={homeTeamName ?? ""}
-              size={(variantStyle.input.width as number) * 0.7}
-              rounded={false}
-            />
-          </View>
-        )}
         <TextInput
           ref={homeRef}
           editable={isEditable}
@@ -214,14 +205,18 @@ export const ScoresInput = React.memo(function ScoresInput({
           placeholderTextColor={theme.colors.textSecondary}
         />
       </View>
-      <AppText variant="body" style={separatorStyle}>
-        {isLarge ? "–" : ":"}
-      </AppText>
+      {(prediction.home != null || prediction.away != null) && (
+        <View style={{ height: variantStyle.input.height, justifyContent: "center" }}>
+          <AppText variant="body" style={separatorStyle}>
+            :
+          </AppText>
+        </View>
+      )}
       <View style={[inputStyle, styles.inputWrapper, {
+        borderWidth: isLarge ? 0 : 1,
         borderColor: awayFocused
           ? theme.colors.primary
-          : isLarge ? theme.colors.textPrimary + "25" : theme.colors.border,
-        borderWidth: 1,
+          : theme.colors.border,
         backgroundColor: isLarge ? "transparent" : awayFocused
           ? theme.colors.primary
           : theme.colors.surface,
@@ -234,16 +229,6 @@ export const ScoresInput = React.memo(function ScoresInput({
           elevation: 2,
         }),
       }]}>
-        {isLarge && awayTeamLogo && (
-          <View style={styles.fieldLogo}>
-            <TeamLogo
-              imagePath={awayTeamLogo}
-              teamName={awayTeamName ?? ""}
-              size={(variantStyle.input.width as number) * 0.7}
-              rounded={false}
-            />
-          </View>
-        )}
         <TextInput
           ref={awayRef}
           editable={isEditable}
@@ -278,7 +263,7 @@ const styles = StyleSheet.create({
   scoreSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 0,
     writingDirection: "ltr",
   },
   inputWrapper: {

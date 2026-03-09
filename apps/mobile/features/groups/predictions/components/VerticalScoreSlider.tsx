@@ -17,8 +17,8 @@ import { getContrastTextColor } from "../utils/color-helpers";
 
 const CELL_HEIGHT = 44;
 const STRIP_WIDTH = 40;
-const THUMB_WIDTH = 56;
-const THUMB_HEIGHT = 44;
+const THUMB_WIDTH = 66;
+const THUMB_HEIGHT = 52;
 // 11 cells: digits 9..0 (yIndex 0–9) + logo (yIndex 10)
 const MAX_Y = 10 * CELL_HEIGHT;
 
@@ -105,6 +105,8 @@ export type VerticalScoreSliderProps = {
   thumbColor: string;
   /** Which side the slider sits on — shifts thumb to pop out towards card center */
   side?: "left" | "right";
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 };
 
 /**
@@ -117,6 +119,8 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
   onValueChange,
   thumbColor,
   side,
+  onDragStart,
+  onDragEnd,
 }: VerticalScoreSliderProps) {
   const { theme } = useTheme();
 
@@ -183,12 +187,13 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
     }
   );
 
-  // Touch anywhere on the strip to jump + drag — no need to hit the thumb precisely
+  // Touch anywhere on the strip + thumb to jump + drag
   const panGesture = Gesture.Pan()
     .minDistance(0)
     .onStart((e) => {
       isSyncingFromProp.value = 0;
       runOnJS(setIsDragging)(true);
+      if (onDragStart) runOnJS(onDragStart)();
       // Jump thumb to touch position immediately
       const touchY = Math.max(0, Math.min(MAX_Y, e.y));
       tabY.value = touchY;
@@ -200,6 +205,7 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
     })
     .onEnd(() => {
       runOnJS(setIsDragging)(false);
+      if (onDragEnd) runOnJS(onDragEnd)();
       const snapped = Math.round(tabY.value / CELL_HEIGHT) * CELL_HEIGHT;
       tabY.value = withSpring(Math.max(0, Math.min(MAX_Y, snapped)), {
         damping: 20,
@@ -221,7 +227,15 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
 
   return (
     <GestureDetector gesture={panGesture}>
-      <Animated.View style={styles.container}>
+      <Animated.View
+        style={[
+          styles.container,
+          side && {
+            width: THUMB_WIDTH,
+            alignItems: side === "right" ? "flex-start" : "flex-end",
+          },
+        ]}
+      >
         {/* Digit track + logo cell */}
         <View style={styles.track} pointerEvents="none">
           {[9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((digit) => (
@@ -250,9 +264,7 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
             thumbStyle,
             {
               backgroundColor: thumbColor,
-              shadowColor: theme.colors.textPrimary,
-              left: side === "left" ? STRIP_WIDTH - THUMB_WIDTH : side === "right" ? 0 : (STRIP_WIDTH - THUMB_WIDTH) / 2,
-              // Rounded on the side that pops towards card center
+              left: 0,
               ...(side === "left"
                 ? { borderTopLeftRadius: THUMB_HEIGHT / 2, borderBottomLeftRadius: THUMB_HEIGHT / 2, borderTopRightRadius: 0, borderBottomRightRadius: 0, paddingLeft: THUMB_WIDTH - STRIP_WIDTH }
                 : side === "right"
@@ -263,9 +275,9 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
           pointerEvents="none"
         >
           {isLogo ? (
-            <Text style={[styles.thumbValue, { color: textColor, textShadowColor: theme.colors.textPrimary + "33" }]}>—</Text>
+            <Text style={[styles.thumbValue, { color: textColor }]}>—</Text>
           ) : (
-            <Text style={[styles.thumbValue, { color: textColor, textShadowColor: theme.colors.textPrimary + "33" }]}>
+            <Text style={[styles.thumbValue, { color: textColor }]}>
               {displayValue}
             </Text>
           )}
@@ -282,7 +294,6 @@ const styles = StyleSheet.create({
     position: "relative",
     alignItems: "center",
     overflow: "visible",
-    // backgroundColor: "rgba(255,0,0,0.15)", // DEBUG red — slider track
   },
   track: {
     flexDirection: "column",
@@ -308,15 +319,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     left: (STRIP_WIDTH - THUMB_WIDTH) / 2,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.25)",
   },
   thumbValue: {
     fontSize: 20,
     fontWeight: "800",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
 });
