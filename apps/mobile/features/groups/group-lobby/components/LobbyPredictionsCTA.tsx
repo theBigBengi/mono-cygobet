@@ -355,6 +355,14 @@ export function LobbyPredictionsCTA({
         <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
           Upcoming
         </Text>
+        <Pressable
+          onPress={() => onPress()}
+          hitSlop={8}
+        >
+          <Text style={[styles.viewAllText, { color: theme.colors.textSecondary }]}>
+            {t("lobby.seeAll")}
+          </Text>
+        </Pressable>
       </View>
       <View style={styles.container}>
         {nextGames.map((f, i) => {
@@ -401,6 +409,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: "700",
+  },
+  viewAllText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   viewAllCenter: {
     alignItems: "center",

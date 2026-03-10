@@ -241,6 +241,8 @@ export interface GroupsRepository {
     totalFixtures: number;
     predictionsCount: number;
     completedFixturesCount: number;
+    predictableCount: number;
+    unpredictedCount: number;
   }>;
   findGroupFixturesForOverview(groupId: number): Promise<
     Array<{
