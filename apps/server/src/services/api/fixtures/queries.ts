@@ -22,7 +22,8 @@ export function buildUpcomingFixturesWhere(params: {
   const where: Prisma.fixturesWhereInput = {
     state,
     isSandbox: false,
-    leagueId: { not: null },
+    league: { isNot: null },
+    season: { isNot: null },
   };
 
   // Handle time range: prefer range (fromTs/toTs) over single point (now)

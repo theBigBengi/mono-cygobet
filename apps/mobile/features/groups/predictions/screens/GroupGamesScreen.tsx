@@ -200,7 +200,7 @@ export function GroupGamesScreen({
       }
       if (f.prediction?.settled) {
         totalSettled++;
-        if (f.prediction?.points != null && f.prediction.points >= 3) {
+        if (maxPoints > 0 && f.prediction?.points != null && f.prediction.points >= maxPoints) {
           maxPointsCount++;
         }
       }

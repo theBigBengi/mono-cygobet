@@ -7,6 +7,7 @@ import {
   TextInput,
   StyleSheet,
   Pressable,
+  I18nManager,
   type TextInputProps,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -58,6 +59,7 @@ export const PasswordInput = React.forwardRef<TextInput, PasswordInputProps>(fun
         secureTextEntry={!visible}
         autoCapitalize="none"
         autoCorrect={false}
+        textAlign={I18nManager.isRTL ? "right" : "left"}
         {...rest}
       />
       <Pressable

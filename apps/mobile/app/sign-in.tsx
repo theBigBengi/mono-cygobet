@@ -95,6 +95,15 @@ function ScreenContent() {
           </AppText>
 
           <View style={styles.form}>
+            {/* Hidden field breaks iOS login-form detection that causes AutoFill toolbar flicker */}
+            {Platform.OS === "ios" && (
+              <TextInput
+                style={styles.hiddenInput}
+                editable={false}
+                textContentType="none"
+                autoComplete="off"
+              />
+            )}
             <TextInput
               style={[
                 styles.input,
@@ -258,6 +267,12 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontWeight: "600",
+  },
+  hiddenInput: {
+    height: 1,
+    width: 1,
+    position: "absolute",
+    opacity: 0,
   },
   toggleRow: {
     flexDirection: "row",

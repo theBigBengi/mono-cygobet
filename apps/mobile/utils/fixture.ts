@@ -85,7 +85,7 @@ export function formatKickoffDateTime(iso: string | null | undefined): string {
   try {
     const date = new Date(iso);
     const locale = getCurrentLocale();
-    const dayDate = format(date, "EEE, MMM d", {
+    const dayDate = format(date, "dd/MM/yy", {
       locale: getDateFnsLocale(locale),
     });
     const time = formatTime24Locale(date, locale);

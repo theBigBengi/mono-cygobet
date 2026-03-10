@@ -3,7 +3,7 @@
 // Uses UTC for "today" to match server (getTodayUtcBounds).
 
 import { useMemo } from "react";
-import { isLive, isNotStarted } from "@repo/utils";
+import { isLive, canPredict } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 
 function getTodayUtcBoundsMs(): { startMs: number; endMs: number } {
@@ -28,19 +28,16 @@ function isTodayUtc(kickoffAt: string): boolean {
  */
 export function useGroupActivityStats(fixtures: FixtureItem[]) {
   return useMemo(() => {
-    const now = Date.now();
-
     const liveGames = fixtures.filter((f) => isLive(f.state));
     const todayGames = fixtures.filter((f) => isTodayUtc(f.kickoffAt));
     const unpredicted = fixtures.filter(
-      (f) => isNotStarted(f.state) && !f.prediction
+      (f) => canPredict(f.state, f.startTs) && !f.prediction
     );
     const todayUnpredicted = todayGames.filter(
-      (f) => isNotStarted(f.state) && !f.prediction
+      (f) => canPredict(f.state, f.startTs) && !f.prediction
     );
     const nextGame = fixtures.find(
-      (f) =>
-        isNotStarted(f.state) && new Date(f.kickoffAt).getTime() > now
+      (f) => canPredict(f.state, f.startTs)
     ) ?? null;
 
     return {

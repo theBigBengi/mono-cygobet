@@ -1,4 +1,5 @@
-import { isNotStarted } from "@repo/utils";
+import { hasMatchStarted } from "@repo/utils";
+export { hasMatchStarted };
 
 export interface ScoringConfig {
   onTheNosePoints: number;
@@ -68,13 +69,3 @@ export const getWinner = (fixture: {
   return "draw";
 };
 
-export const hasMatchStarted = (
-  state: string,
-  result: string | null,
-  startTs: number
-): boolean => {
-  if (result) return true;
-  const now = Math.floor(Date.now() / 1000);
-  if (startTs > now) return false;
-  return !isNotStarted(state);
-};

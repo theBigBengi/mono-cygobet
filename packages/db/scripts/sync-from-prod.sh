@@ -91,12 +91,12 @@ if [ ${#TABLES[@]} -gt 0 ]; then
     psql "$DATABASE_URL" -c "TRUNCATE TABLE public.${t} CASCADE;" > /dev/null 2>&1
   done
 else
-  echo "🗑️  Truncating all dev tables..."
+  echo "🗑️  Truncating all dev tables (preserving _prisma_migrations)..."
   psql "$DATABASE_URL" -c "
     DO \$\$
     DECLARE r RECORD;
     BEGIN
-      FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+      FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename != '_prisma_migrations') LOOP
         EXECUTE 'TRUNCATE TABLE public.' || quote_ident(r.tablename) || ' CASCADE';
       END LOOP;
     END \$\$;

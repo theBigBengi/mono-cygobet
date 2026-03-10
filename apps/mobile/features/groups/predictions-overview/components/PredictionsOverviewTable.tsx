@@ -18,6 +18,7 @@ import { useTheme } from "@/lib/theme";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { useAuth } from "@/lib/auth/useAuth";
 import type { ApiPredictionsOverviewData } from "@repo/types";
+import { isTerminal } from "@repo/utils";
 import {
   calculateLivePoints,
   formatDate,
@@ -108,11 +109,12 @@ export function PredictionsOverviewTable({
     return map;
   }, [showLivePoints, participants, sortedParticipants]);
 
+  const maxPts = scoringConfig?.onTheNosePoints ?? 3;
+
   const getPointsColor = (points: string | null): string => {
     if (!points) return theme.colors.textSecondary;
     const n = parseInt(points, 10);
-    if (n >= 3) return theme.colors.success;
-    if (n >= 2) return theme.colors.warning;
+    if (n >= maxPts) return theme.colors.success;
     if (n >= 1) return theme.colors.warning;
     return theme.colors.danger;
   };
@@ -120,8 +122,7 @@ export function PredictionsOverviewTable({
   const getPointsCellBg = (points: string | null): string | undefined => {
     if (!points) return undefined;
     const n = parseInt(points, 10);
-    if (n >= 3) return theme.colors.success + "08";
-    if (n >= 2) return theme.colors.warning + "08";
+    if (n >= maxPts) return theme.colors.success + "08";
     if (n >= 1) return theme.colors.warning + "08";
     return theme.colors.danger + "08";
   };
@@ -142,8 +143,8 @@ export function PredictionsOverviewTable({
 
     const hasStarted = hasMatchStarted(
       fixture.state,
-      fixture.result,
-      fixture.startTs
+      fixture.startTs,
+      fixture.result
     );
 
     // If match hasn't started, show "?"
@@ -255,8 +256,8 @@ export function PredictionsOverviewTable({
                 const isHomeWinner = winner === "home";
                 const matchStarted = hasMatchStarted(
                   fixture.state,
-                  fixture.result,
-                  fixture.startTs
+                  fixture.startTs,
+                  fixture.result
                 );
                 const isNotStarted = !matchStarted;
                 return (
@@ -284,8 +285,8 @@ export function PredictionsOverviewTable({
                 const isAwayWinner = winner === "away";
                 const matchStarted = hasMatchStarted(
                   fixture.state,
-                  fixture.result,
-                  fixture.startTs
+                  fixture.startTs,
+                  fixture.result
                 );
                 const isNotStarted = !matchStarted;
                 return (
@@ -460,7 +461,7 @@ export function PredictionsOverviewTable({
         {fixtures.map((fixture) => {
           const prediction = getPrediction(participant.id, fixture.id);
           const isLive = fixture.liveMinute != null;
-          const matchFinished = fixture.result != null && !isLive;
+          const matchFinished = isTerminal(fixture.state) && !isLive;
           const rawPts = isLive
             ? calculateLivePoints(prediction, fixture.homeScore90, fixture.awayScore90, scoringConfig)
             : getPoints(participant.id, fixture.id);

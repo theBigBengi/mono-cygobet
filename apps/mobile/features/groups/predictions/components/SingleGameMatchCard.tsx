@@ -17,6 +17,7 @@ import { getShadowStyle } from "@/lib/theme/shadows";
 import { ScoresInput } from "./ScoresInput";
 import { OutcomePicker } from "./OutcomePicker";
 import type { GroupPrediction } from "@/features/group-creation/selection/games";
+import { isCancelled } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 import type { PredictionMode } from "../types";
 import { getOutcomeFromPrediction } from "../utils/utils";
@@ -241,7 +242,7 @@ export function SingleGameMatchCard({
                   {fixture.state !== "HT" && fixture.liveMinute != null ? ` - ${fixture.liveMinute}'` : ""}
                 </AppText>
               )}
-              {(fixture.state === "CANCELLED" || fixture.state === "POSTPONED" || fixture.state === "DELAYED" || fixture.state === "ABANDONED") && (
+              {isCancelled(fixture.state) && (
                 <AppText variant="caption" color="secondary" style={styles.specialStatusText}>
                   {FIXTURE_STATE_MAP[fixture.state] ?? fixture.state}
                 </AppText>

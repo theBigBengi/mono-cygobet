@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "@/lib/adminApi";
+import { apiGet, apiPost, apiDelete } from "@/lib/adminApi";
 import type {
   AdminCountriesListResponse,
   AdminProviderCountriesResponse,
@@ -35,6 +35,16 @@ export const countriesService = {
 
   async syncById(id: number | string, dryRun = false) {
     return apiPost(`/admin/sync-center/sync/countries/${id}`, { dryRun });
+  },
+
+  async deleteById(id: number | string) {
+    return apiDelete<{
+      status: string;
+      data: {
+        countryId: number;
+        countryName: string;
+      };
+    }>(`/admin/sync-center/db/countries/${id}`);
   },
 
   async getBatches(name?: string, limit = 20) {

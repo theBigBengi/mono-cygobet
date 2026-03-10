@@ -1,7 +1,7 @@
 // useFilteredFixtures.ts — Apply action + structural filters, sort, and compute empty state.
 
 import { useMemo } from "react";
-import { isLive, isFinished, isNotStarted } from "@repo/utils";
+import { isLive, isFinished, isNotStarted, isTerminal } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 import {
   classifyFixtureTime,
@@ -58,6 +58,7 @@ export function useFilteredFixtures({
     })();
 
     const resultsCount = fixtures.filter((f) => isFinished(f.state)).length;
+    const terminalCount = fixtures.filter((f) => isTerminal(f.state)).length;
     const toPredictCount = fixtures.filter(isToPredict).length;
 
     function applyActionFilter(
@@ -126,7 +127,7 @@ export function useFilteredFixtures({
 
     let emptyState: EmptyStateInfo | null = null;
     if (filteredFixtures.length === 0 && total > 0) {
-      const allFinished = resultsCount === total;
+      const allFinished = terminalCount === total;
       if (allFinished) {
         emptyState = {
           message: "All games completed!",

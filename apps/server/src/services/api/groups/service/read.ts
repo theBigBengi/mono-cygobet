@@ -388,6 +388,8 @@ export async function getGroupLobbySummary(
       totalFixtures: summary.totalFixtures,
       predictionsCount: summary.predictionsCount,
       completedFixturesCount: summary.completedFixturesCount,
+      predictableCount: summary.predictableCount,
+      unpredictedCount: summary.unpredictedCount,
     },
     message: "Lobby summary fetched successfully",
   };

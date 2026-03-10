@@ -12,7 +12,7 @@ import {
 import { FIXTURE_SELECT_WITH_RESULT } from "../../fixtures/selects";
 import type { FixtureWithRelationsAndResult } from "../types";
 import { hasMatchStarted } from "../helpers";
-import { LIVE_STATES, FINISHED_STATES } from "@repo/utils";
+import { LIVE_STATES, FINISHED_STATES, NOT_STARTED_STATES } from "@repo/utils";
 
 /**
  * Resolve initial fixtures based on selection mode (internal - always wraps transaction).
@@ -308,9 +308,12 @@ export async function fetchLobbySummaryFixtures(
   totalFixtures: number;
   predictionsCount: number;
   completedFixturesCount: number;
+  predictableCount: number;
+  unpredictedCount: number;
 }> {
   const liveStatesArr = Array.from(LIVE_STATES) as FixtureState[];
   const finishedStatesArr = Array.from(FINISHED_STATES) as FixtureState[];
+  const notStartedStatesArr = Array.from(NOT_STARTED_STATES) as FixtureState[];
 
   const selectWithPredictions = {
     id: true,
@@ -329,6 +332,15 @@ export async function fetchLobbySummaryFixtures(
     },
   } satisfies Prisma.groupFixturesFindManyArgs["select"];
 
+  const nowTs = Math.floor(Date.now() / 1000);
+
+  // Reusable where clause matching canPredict() from @repo/utils:
+  // NOT_STARTED_STATES + startTs > now
+  const predictableWhere = {
+    groupId,
+    fixtures: { state: { in: notStartedStatesArr }, startTs: { gt: nowTs } },
+  };
+
   const [
     liveFixtures,
     upcomingFixtures,
@@ -336,6 +348,8 @@ export async function fetchLobbySummaryFixtures(
     totalFixtures,
     predictionsCount,
     completedFixturesCount,
+    predictableCount,
+    unpredictedCount,
   ] = await Promise.all([
     // Live fixtures (all of them — typically 0-5)
     prisma.groupFixtures.findMany({
@@ -376,6 +390,15 @@ export async function fetchLobbySummaryFixtures(
     prisma.groupFixtures.count({
       where: { groupId, fixtures: { state: { in: finishedStatesArr } } },
     }),
+    // Predictable fixtures: canPredict() logic — NOT_STARTED_STATES + startTs > now
+    prisma.groupFixtures.count({ where: predictableWhere }),
+    // Unpredicted predictable fixtures: predictable but user has no prediction
+    prisma.groupFixtures.count({
+      where: {
+        ...predictableWhere,
+        groupPredictions: { none: { userId } },
+      },
+    }),
   ]);
 
   return {
@@ -385,6 +408,8 @@ export async function fetchLobbySummaryFixtures(
     totalFixtures,
     predictionsCount,
     completedFixturesCount,
+    predictableCount,
+    unpredictedCount,
   };
 }
 

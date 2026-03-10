@@ -30,7 +30,7 @@ function mapBatchStatus(status: string): string | null {
 
 const adminSyncCenterOverviewRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{ Reply: AdminSyncCenterOverviewResponse }>(
-    "/",
+    "/overview",
     {
       schema: {
         response: {

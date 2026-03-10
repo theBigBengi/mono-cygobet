@@ -3,7 +3,6 @@ import {
   isLive as isLiveState,
   isFinished as isFinishedState,
   isCancelled as isCancelledState,
-  isNotStarted as isNotStartedState,
 } from "@repo/utils";
 import { formatKickoffTime } from "@/utils/fixture";
 import type { FixtureItem } from "@/types/common";
@@ -190,9 +189,10 @@ export function getCardBorderStyle(positionInGroup: PositionInGroup) {
 
 /**
  * Check if a fixture still needs a prediction.
+ * Uses canPredict (state + time) — consistent with server-side logic.
  */
 export function isToPredict(f: FixtureItem): boolean {
-  return f.prediction == null && isNotStartedState(f.state);
+  return f.prediction == null && canPredict(f.state, f.startTs);
 }
 
 /**

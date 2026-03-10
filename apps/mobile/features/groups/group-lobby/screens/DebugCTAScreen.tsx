@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { ScrollView, View, Text, StyleSheet, Pressable } from "react-native";
 import { useTheme } from "@/lib/theme";
+import { isFinished as isFinishedState } from "@repo/utils";
 import { LobbyPredictionsCTA } from "../components/LobbyPredictionsCTA";
 import type { FixtureItem } from "@/types/common";
 
@@ -58,7 +59,7 @@ function mockFixture(
 ): FixtureItem {
   const homeIdx = (id - 1) % HOME_TEAMS.length;
   const awayIdx = (id - 1) % AWAY_TEAMS.length;
-  const isFinished = opts.state === "FT" || opts.state === "FT_PEN" || opts.state === "AET";
+  const isFinished = isFinishedState(opts.state ?? "NS");
   return {
     id,
     name: `${HOME_TEAMS[homeIdx].name} vs ${AWAY_TEAMS[awayIdx].name}`,

@@ -60,3 +60,12 @@ export const isEditable = (s: string) => NOT_STARTED_STATES.has(s);
 /** Fixture is open for predictions: state is not-started AND kickoff is in the future */
 export const canPredict = (state: string, startTs: number) =>
   NOT_STARTED_STATES.has(state) && startTs > Math.floor(Date.now() / 1000);
+
+/** Match has started: not in a not-started state AND kickoff time has passed, or a result exists */
+export const hasMatchStarted = (
+  state: string,
+  startTs: number,
+  result?: string | null
+): boolean =>
+  !!result ||
+  (startTs <= Math.floor(Date.now() / 1000) && !NOT_STARTED_STATES.has(state));

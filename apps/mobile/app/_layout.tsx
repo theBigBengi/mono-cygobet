@@ -13,7 +13,7 @@ import { enableFreeze } from "react-native-screens";
 // Freeze off-screen screens to prevent unnecessary re-renders during navigation
 enableFreeze(true);
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "expo-router";
 
 import { Provider as JotaiProvider } from "jotai";
@@ -41,7 +41,7 @@ import { DegradedBanner } from "@/components/DegradedBanner";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { initializeGlobalErrorHandlers } from "@/lib/errors/globalErrorHandlers";
 import { handleError, getUserFriendlyMessage } from "@/lib/errors";
-import { View, Text, StyleSheet, Pressable, Platform, Appearance } from "react-native";
+import { View, Text, TextInput, StyleSheet, Pressable, Platform, Appearance, I18nManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useTranslation } from "react-i18next";
@@ -52,6 +52,12 @@ import * as NavigationBar from "expo-navigation-bar";
 import { analytics } from "@/lib/analytics";
 
 SplashScreen.preventAutoHideAsync();
+
+// Force TextInput alignment to match the app's layout direction.
+// Prevents the placeholder from jumping sides when the keyboard language
+// differs from the app language (e.g. Hebrew keyboard in English app).
+if (!(TextInput as any).defaultProps) (TextInput as any).defaultProps = {};
+(TextInput as any).defaultProps.textAlign = I18nManager.isRTL ? "right" : "left";
 
 if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   Sentry.init({
@@ -93,13 +99,16 @@ function AppContent() {
     (isAuthenticated(status) || isOnboarding(status)) && !user?.username;
 
   // Create custom theme with transparent background to allow screens to control their own backgrounds
-  const navigationTheme = {
-    ...(colorScheme === "dark" ? DarkTheme : DefaultTheme),
-    colors: {
-      ...(colorScheme === "dark" ? DarkTheme : DefaultTheme).colors,
-      background: "transparent",
-    },
-  };
+  const navigationTheme = useMemo(
+    () => ({
+      ...(colorScheme === "dark" ? DarkTheme : DefaultTheme),
+      colors: {
+        ...(colorScheme === "dark" ? DarkTheme : DefaultTheme).colors,
+        background: "transparent",
+      },
+    }),
+    [colorScheme]
+  );
 
   return (
     <NavigationThemeProvider value={navigationTheme}>

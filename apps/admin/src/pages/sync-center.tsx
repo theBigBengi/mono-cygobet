@@ -2,9 +2,8 @@ import { useState } from "react";
 import { HeaderActions } from "@/contexts/header-actions";
 import { useQuery } from "@tanstack/react-query";
 import { Wifi, WifiOff, AlertTriangle } from "lucide-react";
-import { GapSummaryBar } from "@/components/sync-center/gap-summary-bar";
-import { SeasonExplorer } from "@/components/sync-center/season-explorer";
-import { QuickActionsBar } from "@/components/sync-center/quick-actions-bar";
+import { OverviewBar } from "@/components/sync-center/overview-bar";
+import { EntityBrowser } from "@/components/sync-center/entity-browser";
 import { BatchesTable } from "@/components/table/batches-table";
 import {
   Card,
@@ -62,8 +61,8 @@ export default function SyncCenterPage() {
       isAggregate
         ? batchesService.getAllBatches(50)
         : batchesService.getBatchesByName(historyFilter, 50),
-    staleTime: 30 * 60_000, // 30 min – invalidated manually after operations
-    gcTime: 60 * 60_000, // 1 hour – survives navigation
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
   });
 
   // Client-side filtering for aggregate filters
@@ -135,9 +134,8 @@ export default function SyncCenterPage() {
           </div>
 
           <div className="flex flex-col gap-3 sm:gap-6 pb-4">
-            <GapSummaryBar />
-            <QuickActionsBar />
-            <SeasonExplorer />
+            <OverviewBar />
+            <EntityBrowser />
 
             <Card>
               <CardHeader className="p-3 sm:p-6">

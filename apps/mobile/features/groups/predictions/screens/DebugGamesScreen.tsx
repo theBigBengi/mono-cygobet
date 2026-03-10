@@ -8,6 +8,7 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useQueryClient } from "@tanstack/react-query";
+import { isFinished as isFinishedState } from "@repo/utils";
 import { useTheme } from "@/lib/theme";
 import { groupsKeys } from "@/domains/groups";
 import { GroupGamesScreen } from "./GroupGamesScreen";
@@ -82,7 +83,7 @@ function mockFixture(
   const homeIdx = opts.homeTeamIdx ?? ((id * 2 - 2) % TEAMS.length);
   const awayIdx = opts.awayTeamIdx ?? ((id * 2 - 1) % TEAMS.length);
   const leagueObj = LEAGUES.find((l) => l.id === (opts.leagueId ?? 1)) ?? LEAGUES[0];
-  const isFinished = opts.state === "FT" || opts.state === "FT_PEN" || opts.state === "AET";
+  const isFinished = isFinishedState(opts.state ?? "NS");
   return {
     id,
     name: `${TEAMS[homeIdx].name} vs ${TEAMS[awayIdx].name}`,

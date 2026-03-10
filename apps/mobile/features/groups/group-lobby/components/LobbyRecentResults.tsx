@@ -14,9 +14,9 @@ import Animated, {
 import { useTheme } from "@/lib/theme";
 import type { FixtureItem } from "../types";
 
-function getPointsColor(points: number | null | undefined, colors: { success: string; warning: string; danger: string }): string | null {
+function getPointsColor(points: number | null | undefined, colors: { success: string; warning: string; danger: string }, maxPossiblePoints = 3): string | null {
   if (points == null) return null;
-  if (points >= 3) return colors.success;
+  if (maxPossiblePoints > 0 && points >= maxPossiblePoints) return colors.success;
   if (points >= 1) return colors.warning;
   return colors.danger;
 }
@@ -26,6 +26,7 @@ export interface LobbyRecentResultsProps {
   onPress: (fixtureId?: number) => void;
   isLoading: boolean;
   completedFixturesCount: number;
+  maxPossiblePoints?: number;
 }
 
 function LobbyRecentResultsInner({
@@ -33,6 +34,7 @@ function LobbyRecentResultsInner({
   onPress,
   isLoading,
   completedFixturesCount,
+  maxPossiblePoints = 3,
 }: LobbyRecentResultsProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -104,7 +106,7 @@ function LobbyRecentResultsInner({
           {tiles.map((fixture, index) => {
             const points = fixture.prediction?.points ?? null;
             const hasPoints = points != null;
-            const color = hasPoints ? getPointsColor(points, { success: theme.colors.success, warning: theme.colors.warning, danger: theme.colors.danger })! : theme.colors.danger;
+            const color = hasPoints ? getPointsColor(points, { success: theme.colors.success, warning: theme.colors.warning, danger: theme.colors.danger }, maxPossiblePoints)! : theme.colors.danger;
             const gameNumber = completedFixturesCount - index;
 
             return (

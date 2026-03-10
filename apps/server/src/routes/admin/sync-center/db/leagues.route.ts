@@ -1,6 +1,7 @@
 // src/routes/admin/db/leagues.route.ts
 import { FastifyPluginAsync } from "fastify";
-import { Prisma } from "@repo/db";
+import { Prisma, prisma } from "@repo/db";
+import { availabilityService } from "../../../../services/availability.service";
 import { LeaguesService } from "../../../../services/leagues.service";
 import { AdminLeaguesListResponse, AdminLeagueResponse } from "@repo/types";
 import {
@@ -49,6 +50,7 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
       // Parse include string to Prisma include object
       const includeKeys = parseIncludeString(query.include);
       const include: Prisma.leaguesInclude = {};
+      const wantsCounts = includeKeys.includes("counts");
       includeKeys.forEach((key) => {
         if (key === "country" || key === "seasons" || key === "fixtures") {
           (include as any)[key] = true;
@@ -68,6 +70,9 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
             externalId: true,
           },
         },
+        ...(wantsCounts && {
+          _count: { select: { seasons: true, fixtures: true } },
+        }),
       };
 
       // Build where clause with optional search
@@ -113,6 +118,10 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
           externalId: l.externalId.toString(),
           createdAt: l.createdAt.toISOString(),
           updatedAt: l.updatedAt.toISOString(),
+          ...(wantsCounts && (l as any)._count && {
+            seasonsCount: (l as any)._count.seasons,
+            fixturesCount: (l as any)._count.fixtures,
+          }),
         })),
         pagination: createPaginationResponse(page, perPage, count),
         message: "Leagues fetched successfully",
@@ -249,6 +258,68 @@ const adminLeaguesDbRoutes: FastifyPluginAsync = async (fastify) => {
         })),
         pagination: createPaginationResponse(1, leagues.length, leagues.length),
         message: "Leagues search completed",
+      });
+    }
+  );
+  // DELETE /admin/sync-center/db/leagues/:id - Delete league and all related data
+  fastify.delete<{
+    Params: { id: string };
+  }>(
+    "/leagues/:id",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: { id: { type: "string" } },
+        },
+      },
+    },
+    async (req, reply) => {
+      let leagueId: number;
+      try {
+        leagueId = parseId(req.params.id);
+      } catch (error: unknown) {
+        return reply.code(400).send({
+          status: "error",
+          message: getErrorMessage(error),
+        });
+      }
+
+      const league = await prisma.leagues.findUnique({
+        where: { id: leagueId },
+        select: {
+          id: true,
+          name: true,
+          _count: { select: { seasons: true, fixtures: true } },
+        },
+      });
+
+      if (!league) {
+        return reply.code(404).send({
+          status: "error",
+          message: "League not found",
+        });
+      }
+
+      // Delete seasons first (no cascade on seasons)
+      const deletedSeasons = await prisma.seasons.deleteMany({
+        where: { leagueId },
+      });
+
+      // Delete league — fixtures cascade automatically
+      await prisma.leagues.delete({ where: { id: leagueId } });
+
+      await availabilityService.invalidateCache().catch(() => {});
+
+      return reply.send({
+        status: "ok",
+        data: {
+          leagueId,
+          leagueName: league.name,
+          deletedSeasons: deletedSeasons.count,
+          deletedFixtures: league._count.fixtures,
+        },
       });
     }
   );

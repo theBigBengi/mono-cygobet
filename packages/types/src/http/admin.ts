@@ -102,6 +102,8 @@ export interface AdminLeaguesListResponse {
     externalId: string;
     createdAt: string;
     updatedAt: string;
+    seasonsCount?: number;
+    fixturesCount?: number;
   }>;
   pagination: {
     page: number;

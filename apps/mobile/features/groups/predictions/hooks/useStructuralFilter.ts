@@ -1,7 +1,7 @@
 // useStructuralFilter.ts — Team list (teams mode) and round list (leagues mode), selected state and navigation.
 
 import { useMemo, useState, useCallback } from "react";
-import { isLive, isFinished, isNotStarted } from "@repo/utils";
+import { isLive, isFinished, isNotStarted, isTerminal } from "@repo/utils";
 import type { FixtureItem } from "@/types/common";
 import { isToPredict } from "../utils/fixture-helpers";
 import type { SelectionMode } from "../types";
@@ -47,8 +47,8 @@ function getRoundStatus(fixturesInRound: FixtureItem[]): RoundStatus {
   if (hasLive) return "live";
   const hasUnpredicted = fixturesInRound.some(isToPredict);
   if (hasUnpredicted) return "unpredicted";
-  const allFinished = fixturesInRound.every((f) => isFinished(f.state));
-  if (allFinished) return "settled";
+  const allTerminal = fixturesInRound.every((f) => isTerminal(f.state));
+  if (allTerminal) return "settled";
   return "upcoming";
 }
 

@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
-import { isNotStarted } from "@repo/utils";
+import { hasMatchStarted } from "@repo/utils";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -12,17 +12,6 @@ type Props = {
   fixtureId: number;
 };
 
-function hasMatchStarted(
-  state: string,
-  result: string | null,
-  startTs: number
-): boolean {
-  if (result) return true;
-  const now = Math.floor(Date.now() / 1000);
-  if (startTs > now) return false;
-  return !isNotStarted(state);
-}
-
 export function FixturePredictionsList({ groupId, fixtureId }: Props) {
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -30,12 +19,13 @@ export function FixturePredictionsList({ groupId, fixtureId }: Props) {
 
   const currentUserId = user?.id ?? null;
 
-  const { participants, predictions, predictionPoints, fixtures } =
+  const { participants, predictions, predictionPoints, fixtures, scoringConfig } =
     data?.data ?? {
       participants: [],
       predictions: {},
       predictionPoints: {},
       fixtures: [],
+      scoringConfig: { onTheNosePoints: 3, correctDifferencePoints: 2, outcomePoints: 1 },
     };
 
   const fixture = fixtures.find((f) => f.id === fixtureId);
@@ -64,12 +54,12 @@ export function FixturePredictionsList({ groupId, fixtureId }: Props) {
     return predictionPoints[`${userId}_${fixtureId}`] ?? null;
   };
 
+  const maxPts = scoringConfig?.onTheNosePoints ?? 3;
   const getPointsColor = (points: string | null): string => {
     if (!points) return theme.colors.textSecondary;
     const n = parseInt(points, 10);
-    if (n >= 3) return "#34C759";
-    if (n >= 2) return "#FF9500";
-    if (n >= 1) return theme.colors.primary;
+    if (n >= maxPts) return "#34C759";
+    if (n >= 1) return "#FF9500";
     return theme.colors.textSecondary;
   };
 
@@ -83,8 +73,8 @@ export function FixturePredictionsList({ groupId, fixtureId }: Props) {
     if (!fixture) return "-:-";
     const hasStarted = hasMatchStarted(
       fixture.state,
-      fixture.result,
-      fixture.startTs
+      fixture.startTs,
+      fixture.result
     );
     if (!hasStarted) return "?";
     return prediction || "-:-";

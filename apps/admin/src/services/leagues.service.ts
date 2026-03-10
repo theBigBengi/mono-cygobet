@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "@/lib/adminApi";
+import { apiGet, apiPost, apiDelete } from "@/lib/adminApi";
 import type {
   AdminLeaguesListResponse,
   AdminProviderLeaguesResponse,
@@ -55,6 +55,18 @@ export const leaguesService = {
     return apiGet<AdminBatchItemsResponse>(
       `/admin/sync-center/db/batches/${batchId}/items?page=${page}&perPage=${perPage}`
     );
+  },
+
+  async deleteById(id: number | string) {
+    return apiDelete<{
+      status: string;
+      data: {
+        leagueId: number;
+        leagueName: string;
+        deletedSeasons: number;
+        deletedFixtures: number;
+      };
+    }>(`/admin/sync-center/db/leagues/${id}`);
   },
 
   async search(query: string, take = 20) {

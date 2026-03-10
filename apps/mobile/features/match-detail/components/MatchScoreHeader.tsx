@@ -7,6 +7,7 @@ import { View, StyleSheet } from "react-native";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
+import { isNotStarted, isLive, isFinished } from "@repo/utils";
 import type { ApiFixtureDetailData } from "@repo/types";
 
 interface MatchScoreHeaderProps {
@@ -17,10 +18,10 @@ function getStateBadgeColor(
   state: string,
   theme: { colors: Record<string, string> }
 ): string {
-  if (state === "LIVE" || state.startsWith("INPLAY") || state === "HT") {
+  if (isLive(state)) {
     return theme.colors.error ?? "#dc2626";
   }
-  if (state === "FT" || state === "AET" || state === "FT_PEN") {
+  if (isFinished(state)) {
     return theme.colors.success ?? "#16a34a";
   }
   return theme.colors.border ?? "#d1d5db";
@@ -33,21 +34,13 @@ export function MatchScoreHeader({ data }: MatchScoreHeaderProps) {
 
   const homeName = translateTeam(data.homeTeam.name, t("common.home"));
   const awayName = translateTeam(data.awayTeam.name, t("common.away"));
-  const isNotStarted =
-    data.state === "NS" ||
-    data.state === "TBA" ||
-    data.state === "DELAYED" ||
-    data.state === "PENDING";
-  const scoreDisplay = isNotStarted
+  const gameNotStarted = isNotStarted(data.state);
+  const scoreDisplay = gameNotStarted
     ? "vs"
     : `${data.homeScore90 ?? "—"} - ${data.awayScore90 ?? "—"}`;
   const stateBadgeColor = getStateBadgeColor(data.state, theme);
   const showLiveMinute =
-    data.liveMinute != null &&
-    data.state !== "NS" &&
-    data.state !== "FT" &&
-    data.state !== "AET" &&
-    data.state !== "FT_PEN";
+    data.liveMinute != null && isLive(data.state);
 
   return (
     <View style={styles.container}>

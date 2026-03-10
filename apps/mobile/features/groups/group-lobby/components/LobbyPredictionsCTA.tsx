@@ -30,6 +30,8 @@ export interface LobbyPredictionsCTAProps {
   isLoading?: boolean;
   /** Number of completed fixtures in the group — used to compute game numbers */
   completedFixturesCount?: number;
+  /** Max points for a perfect prediction (from group rules) */
+  maxPossiblePoints?: number;
 }
 
 // LIVE_COLOR and CRITICAL_COLOR removed — use theme.colors.danger instead
@@ -43,6 +45,7 @@ function FixtureRow({
   urgencyColor,
   gameNumber,
   useFullName,
+  maxPossiblePoints = 3,
 }: {
   fixture: FixtureItem;
   onPress: (fixtureId?: number) => void;
@@ -52,19 +55,19 @@ function FixtureRow({
   urgencyColor?: string;
   gameNumber?: number;
   useFullName?: boolean;
+  maxPossiblePoints?: number;
 }) {
   const isLive = isLiveState(fixture.state);
   const isFinished = isFinishedState(fixture.state);
   const hasPrediction =
     fixture.prediction?.home != null && fixture.prediction?.away != null;
 
-  // Prediction result coloring for finished games
-  const isExact = isFinished && hasPrediction &&
-    fixture.prediction!.home === fixture.homeScore90 &&
-    fixture.prediction!.away === fixture.awayScore90;
-  const hasPoints = isFinished && (fixture.prediction?.points ?? 0) > 0;
+  // Prediction result coloring for finished games — points from server
+  const pts = fixture.prediction?.points ?? 0;
+  const isMaxPoints = isFinished && hasPrediction && maxPossiblePoints > 0 && pts >= maxPossiblePoints;
+  const hasPoints = isFinished && pts > 0;
   const predictionResult: "max" | true | false | undefined = isFinished && hasPrediction
-    ? (isExact ? "max" : hasPoints ? true : false)
+    ? (isMaxPoints ? "max" : hasPoints ? true : false)
     : undefined;
 
   const formatTime = (iso: string) => {
@@ -265,6 +268,7 @@ export function LobbyPredictionsCTA({
   fixtures = [],
   isLoading = false,
   completedFixturesCount = 0,
+  maxPossiblePoints = 3,
 }: LobbyPredictionsCTAProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -372,6 +376,7 @@ export function LobbyPredictionsCTA({
               urgencyColor={urgent}
               gameNumber={completedFixturesCount + liveCount + i + 1}
               useFullName={useFullName}
+              maxPossiblePoints={maxPossiblePoints}
             />
           );
         })}

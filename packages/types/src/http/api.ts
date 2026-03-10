@@ -1222,6 +1222,8 @@ export type ApiGroupLobbySummaryResponse = {
     totalFixtures: number;
     predictionsCount: number;
     completedFixturesCount: number;
+    predictableCount: number;
+    unpredictedCount: number;
   };
   message: string;
 };

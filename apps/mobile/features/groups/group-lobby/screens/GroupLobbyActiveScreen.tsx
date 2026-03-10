@@ -433,8 +433,8 @@ export function GroupLobbyActiveScreen({
 
         <LobbyQuickActions
           actions={quickActions}
-          predictionsCount={predictionsCount}
-          totalFixtures={totalFixtures}
+          unpredictedCount={lobbySummary?.unpredictedCount ?? 0}
+          predictableCount={lobbySummary?.predictableCount ?? 0}
           isLoading={isLobbySummaryLoading}
         />
 
@@ -446,6 +446,7 @@ export function GroupLobbyActiveScreen({
           fixtures={fixtures}
           isLoading={!fixturesLoaded}
           completedFixturesCount={lobbySummary?.completedFixturesCount ?? group.completedFixturesCount ?? 0}
+          maxPossiblePoints={group.onTheNosePoints}
         />
 
         <LobbyLeaderboard
@@ -461,6 +462,7 @@ export function GroupLobbyActiveScreen({
           onPress={handleViewPredictionsOverview}
           isLoading={isLobbySummaryLoading}
           completedFixturesCount={lobbySummary?.completedFixturesCount ?? 0}
+          maxPossiblePoints={group.onTheNosePoints}
         />
 
         <LobbyActivityBanner

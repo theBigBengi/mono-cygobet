@@ -25,8 +25,10 @@ export interface QuickAction {
 export interface LobbyQuickActionsProps {
   actions: QuickAction[];
   isLoading?: boolean;
-  predictionsCount?: number;
-  totalFixtures?: number;
+  /** Number of predictable fixtures without a prediction */
+  unpredictedCount?: number;
+  /** Total number of predictable fixtures */
+  predictableCount?: number;
 }
 
 function renderIcon(icon: QuickAction["icon"], color: string, size: number) {
@@ -45,8 +47,8 @@ case "stats":
 function LobbyQuickActionsInner({
   actions,
   isLoading = false,
-  predictionsCount = 0,
-  totalFixtures = 0,
+  unpredictedCount = 0,
+  predictableCount = 0,
 }: LobbyQuickActionsProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -126,9 +128,9 @@ function LobbyQuickActionsInner({
           <View style={styles.cardsRow}>
             <MaterialCommunityIcons name="cards-outline" size={18} color={theme.colors.textPrimary} />
             <Text style={[styles.cardsSubtitle, { color: theme.colors.textPrimary }]}>
-              {predictionsCount >= totalFixtures
+              {unpredictedCount === 0
                 ? t("lobby.allPredicted")
-                : t("lobby.predictionsLeft", { count: totalFixtures - predictionsCount, total: totalFixtures })}
+                : t("lobby.predictionsLeft", { count: unpredictedCount, total: predictableCount })}
             </Text>
             <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
           </View>

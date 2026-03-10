@@ -37,9 +37,7 @@ function GroupCardInner({
   const liveCount = group.liveGamesCount ?? 0;
   const isLive = liveCount > 0;
   const totalUnread = unreadCount;
-  const totalFixtures = group.totalFixtures ?? 0;
-  const predictionsCount = group.predictionsCount ?? 0;
-  const unpredicted = totalFixtures - predictionsCount;
+  const unpredicted = group.unpredictedGamesCount ?? 0;
   const hasPrediction = nextGame?.prediction?.home != null && nextGame?.prediction?.away != null;
 
   const subtitle = useMemo(() => {

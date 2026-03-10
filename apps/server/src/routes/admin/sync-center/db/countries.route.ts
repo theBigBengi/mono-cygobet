@@ -207,6 +207,72 @@ const adminCountriesDbRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
   );
+  // DELETE /admin/sync-center/db/countries/:id - Delete country (only if no leagues)
+  fastify.delete<{
+    Params: { id: string };
+  }>(
+    "/countries/:id",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: { id: { type: "string" } },
+        },
+      },
+    },
+    async (req, reply) => {
+      let countryId: number;
+      try {
+        countryId = parseId(req.params.id);
+      } catch (error: unknown) {
+        return reply.code(400).send({
+          status: "error",
+          message: getErrorMessage(error),
+        });
+      }
+
+      const country = await prisma.countries.findUnique({
+        where: { id: countryId },
+        select: {
+          id: true,
+          name: true,
+          _count: { select: { leagues: true, teams: true } },
+        },
+      });
+
+      if (!country) {
+        return reply.code(404).send({
+          status: "error",
+          message: "Country not found",
+        });
+      }
+
+      if (country._count.leagues > 0) {
+        return reply.code(409).send({
+          status: "error",
+          message: `Cannot delete ${country.name}: it has ${country._count.leagues} league(s). Delete them first.`,
+        });
+      }
+
+      if (country._count.teams > 0) {
+        return reply.code(409).send({
+          status: "error",
+          message: `Cannot delete ${country.name}: it has ${country._count.teams} team(s). Delete them first.`,
+        });
+      }
+
+      await prisma.countries.delete({ where: { id: countryId } });
+
+      return reply.send({
+        status: "ok",
+        data: {
+          countryId,
+          countryName: country.name,
+        },
+      });
+    }
+  );
 };
 
 export default adminCountriesDbRoutes;

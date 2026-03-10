@@ -3,7 +3,7 @@
 // - Owns: auth status, current user, access token and auth errors.
 // - Wires auth behavior into the HTTP client (refresh, logout, getAccessToken).
 // - Does NOT own domain data (profiles, feeds, etc.) – those live in React Query.
-import React, { createContext, useCallback, useEffect, useState } from "react";
+import React, { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import i18n from "i18next";
 import type { ReactNode } from "react";
 import {
@@ -739,18 +739,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const getAccessToken = useCallback(() => accessTokenRef.current, []);
 
-  const value: AuthContextValue = {
-    status,
-    user,
-    error,
-    getAccessToken,
-    bootstrap,
-    loadUser,
-    login,
-    logout,
-    refreshAccessToken,
-    applyAuthResult,
-  };
+  const value: AuthContextValue = useMemo(
+    () => ({
+      status,
+      user,
+      error,
+      getAccessToken,
+      bootstrap,
+      loadUser,
+      login,
+      logout,
+      refreshAccessToken,
+      applyAuthResult,
+    }),
+    [status, user, error, getAccessToken, bootstrap, loadUser, login, logout, refreshAccessToken, applyAuthResult]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

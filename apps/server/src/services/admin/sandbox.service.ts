@@ -2,7 +2,7 @@
 // Sandbox: fictive fixtures (isSandbox=true), test group, simulate kickoff/FT/reset/cleanup.
 
 import { prisma, type FixtureState } from "@repo/db";
-import { LIVE_STATES } from "@repo/utils";
+import { LIVE_STATES, CANCELLED_STATES } from "@repo/utils";
 import { settlePredictionsForFixtures } from "../api/groups/service/settlement";
 import {
   emitFixtureLiveEvents,
@@ -947,20 +947,15 @@ export async function sandboxBulkKickoff(
 
 // ───── 5f. set state (cancelled/postponed) ─────
 
-const CANCELLED_STATES = [
-  "CANCELLED",
-  "POSTPONED",
-  "SUSPENDED",
-  "ABANDONED",
-  "INTERRUPTED",
-  "WO",
-  "AWARDED",
-] as const;
-
 export async function sandboxSetState(args: {
   fixtureId: number;
-  state: (typeof CANCELLED_STATES)[number];
+  state: string;
 }) {
+  if (!CANCELLED_STATES.has(args.state)) {
+    throw new Error(
+      `Invalid cancelled state: ${args.state}. Must be one of: ${[...CANCELLED_STATES].join(", ")}`
+    );
+  }
   const fixture = await assertSandboxFixture(args.fixtureId);
   const liveStates = [...LIVE_STATES] as string[];
   if (fixture.state !== "NS" && !liveStates.includes(fixture.state)) {

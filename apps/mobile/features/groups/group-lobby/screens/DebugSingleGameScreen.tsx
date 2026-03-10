@@ -4,6 +4,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, Pressable, Dimensions, ScrollView } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { isFinished as isFinishedState } from "@repo/utils";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -79,7 +80,7 @@ function mockFixture(
 ): FixtureItem {
   const homeIdx = (id - 1) % HOME_TEAMS.length;
   const awayIdx = (id - 1) % AWAY_TEAMS.length;
-  const isFinished = opts.state === "FT" || opts.state === "FT_PEN" || opts.state === "AET";
+  const isFinished = isFinishedState(opts.state ?? "NS");
   return {
     id,
     name: `${HOME_TEAMS[homeIdx].name} vs ${AWAY_TEAMS[awayIdx].name}`,
