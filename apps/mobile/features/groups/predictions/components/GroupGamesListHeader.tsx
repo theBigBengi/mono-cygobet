@@ -6,6 +6,7 @@ import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { GroupGamesSkeleton } from "./GroupGamesSkeleton";
+import { RoundNavigator } from "./RoundNavigator";
 
 type Props = {
   isReady: boolean;
@@ -22,6 +23,16 @@ type Props = {
   onToggleCardLayout?: () => void;
   onFilterSortPress?: () => void;
   activeFilterLabel?: string;
+  /** Leagues mode: round navigation */
+  roundNav?: {
+    selectedRound: string;
+    canGoPrev: boolean;
+    canGoNext: boolean;
+    onPrev: () => void;
+    onNext: () => void;
+    onOpenPicker: () => void;
+    labelOverride?: string;
+  };
 };
 
 export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
@@ -38,6 +49,7 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
   onToggleCardLayout,
   onFilterSortPress,
   activeFilterLabel,
+  roundNav,
 }: Props) {
   const { theme } = useTheme();
 
@@ -69,37 +81,23 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
       </View>
     );
   }
-  const progress = totalCount > 0 ? predictedCount / totalCount : 0;
-
   return (
     <View>
-      {/* Stats banner */}
-      <View style={[styles.banner, { backgroundColor: theme.colors.textSecondary + "08" }]}>
-        <View style={styles.bannerStats}>
-          <View style={styles.bannerStat}>
-            <Text style={[styles.bannerValue, { color: theme.colors.textPrimary }]}>{totalCount}</Text>
-            <Text style={[styles.bannerLabel, { color: theme.colors.textSecondary }]}>Games</Text>
-          </View>
-          <View style={styles.bannerStat}>
-            <Text style={[styles.bannerValue, { color: theme.colors.textPrimary }]}>{predictedCount}</Text>
-            <Text style={[styles.bannerLabel, { color: theme.colors.textSecondary }]}>Predicted</Text>
-          </View>
-          <View style={styles.bannerStat}>
-            <Text style={[styles.bannerValue, { color: theme.colors.textPrimary }]}>{accuracy}%</Text>
-            <Text style={[styles.bannerLabel, { color: theme.colors.textSecondary }]}>Hit rate</Text>
-          </View>
-          <View style={styles.bannerStat}>
-            <Text style={[styles.bannerValue, { color: theme.colors.textPrimary }]}>{maxAccuracy}%</Text>
-            <Text style={[styles.bannerLabel, { color: theme.colors.textSecondary }]}>Max pts</Text>
-          </View>
-        </View>
-        <View style={[styles.progressTrack, { backgroundColor: theme.colors.textSecondary + "15" }]}>
-          <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%`, backgroundColor: theme.colors.primary }]} />
-        </View>
-      </View>
+      {/* Round navigator for leagues mode */}
+      {roundNav && (
+        <RoundNavigator
+          selectedRound={roundNav.selectedRound}
+          onPrev={roundNav.onPrev}
+          onNext={roundNav.onNext}
+          onOpenPicker={roundNav.onOpenPicker}
+          canGoPrev={roundNav.canGoPrev}
+          canGoNext={roundNav.canGoNext}
+          labelOverride={roundNav.labelOverride}
+        />
+      )}
 
       <View style={styles.toolbar}>
-        {onFilterSortPress && (
+        {!roundNav && onFilterSortPress && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -117,6 +115,7 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
             </Text>
           </Pressable>
         )}
+        {roundNav && <View />}
         <View style={styles.toolbarRight}>
           <Pressable
             onPress={onToggleFullName}
@@ -144,9 +143,14 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
               <MaterialCommunityIcons name="format-list-text" size={20} color={theme.colors.textSecondary} />
             )}
           </Pressable>
-          <View style={[styles.iconCircle, { backgroundColor: theme.colors.primary }]}>
-            <MaterialCommunityIcons name="cards-outline" size={26} color={theme.colors.textInverse} />
-          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.toolbarBtn,
+              pressed && { opacity: 0.6 },
+            ]}
+          >
+            <MaterialCommunityIcons name="cards-outline" size={20} color={theme.colors.textSecondary} />
+          </Pressable>
         </View>
       </View>
     </View>
@@ -180,13 +184,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
   },
-  iconCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   filterBtnLabel: {
     fontSize: 13,
     fontWeight: "600",
@@ -202,36 +199,5 @@ const styles = StyleSheet.create({
   },
   emptyStateSuggestion: {
     fontWeight: "600",
-  },
-  banner: {
-    paddingHorizontal: 4,
-    paddingVertical: 14,
-  },
-  bannerStats: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  bannerStat: {
-    alignItems: "center",
-    flex: 1,
-  },
-  bannerValue: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  bannerLabel: {
-    fontSize: 11,
-    fontWeight: "500",
-    marginTop: 2,
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: 4,
-    borderRadius: 2,
   },
 });

@@ -24,7 +24,18 @@ export type RoundStatus = "live" | "unpredicted" | "settled" | "upcoming";
 export type RoundInfo = {
   round: string;
   count: number;
+  predictedCount: number;
   status: RoundStatus;
+};
+
+export type WeekInfo = {
+  key: string;
+  label: string;
+  startDate: string;
+  count: number;
+  predictedCount: number;
+  status: RoundStatus;
+  isCurrent: boolean;
 };
 
 export type StructuralFilter =
@@ -40,7 +51,37 @@ export type StructuralFilter =
       currentRound: string;
       allRounds: RoundInfo[];
       selectedRound: string;
+    }
+  | {
+      type: "weeks";
+      allWeeks: WeekInfo[];
+      selectedWeek: string;
+      currentWeek: string;
+      teams?: TeamChip[];
+      selectedTeamId?: number | null;
     };
+
+/** Get the Monday 00:00 of the week containing `date`. */
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun
+  const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatWeekLabel(weekStart: Date): string {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 6);
+  return `${weekStart.getDate()} ${months[weekStart.getMonth()]} – ${end.getDate()} ${months[end.getMonth()]}`;
+}
+
+function getWeekKey(date: Date): string {
+  const ws = getWeekStart(date);
+  return `${ws.getFullYear()}-${String(ws.getMonth() + 1).padStart(2, "0")}-${String(ws.getDate()).padStart(2, "0")}`;
+}
 
 function getRoundStatus(fixturesInRound: FixtureItem[]): RoundStatus {
   const hasLive = fixturesInRound.some((f) => isLive(f.state));
@@ -68,6 +109,7 @@ export function useStructuralFilter({
     number | null
   >(null);
   const [selectedRound, setSelectedRound] = useState<string | null>(null);
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
 
   const selectTeam = useCallback((id: number | null) => {
     setSelectedTeamId(id);
@@ -81,59 +123,81 @@ export function useStructuralFilter({
     setSelectedRound(round);
   }, []);
 
+  const selectWeek = useCallback((weekKey: string) => {
+    setSelectedWeek(weekKey);
+  }, []);
+
   const structuralFilter = useMemo((): StructuralFilter | null => {
     if (fixtures.length === 0) return null;
 
-    if (mode === "teams") {
-      // Extract teams
-      const teamMap = new Map<number, TeamChip>();
-      for (const f of fixtures) {
-        if (f.homeTeam) {
-          teamMap.set(f.homeTeam.id, {
-            id: f.homeTeam.id,
-            name: f.homeTeam.name,
-            imagePath: f.homeTeam.imagePath ?? null,
-          });
-        }
-        if (f.awayTeam) {
-          teamMap.set(f.awayTeam.id, {
-            id: f.awayTeam.id,
-            name: f.awayTeam.name,
-            imagePath: f.awayTeam.imagePath ?? null,
-          });
-        }
-      }
-      const allowedIds = new Set(groupTeamsIds ?? []);
-      const teams = Array.from(teamMap.values())
-        .filter((t) => allowedIds.size === 0 || allowedIds.has(t.id))
-        .sort((a, b) => a.name.localeCompare(b.name));
+    if (mode === "games" || mode === "teams") {
+      // Compute calendar weeks
+      const now = new Date();
+      const currentWeekKey = getWeekKey(now);
+      const weekMap = new Map<string, { start: Date; fixtures: FixtureItem[] }>();
 
-      // Extract competitions (leagues)
-      const competitionMap = new Map<number, CompetitionChip>();
       for (const f of fixtures) {
-        if (f.league) {
-          competitionMap.set(f.league.id, {
-            id: f.league.id,
-            name: f.league.name,
-            imagePath: f.league.imagePath ?? null,
-            countryName: f.country?.name ?? null,
-          });
+        if (!f.kickoffAt) continue;
+        const d = new Date(f.kickoffAt);
+        const key = getWeekKey(d);
+        if (!weekMap.has(key)) {
+          weekMap.set(key, { start: getWeekStart(d), fixtures: [] });
         }
+        weekMap.get(key)!.fixtures.push(f);
       }
-      const competitions = Array.from(competitionMap.values()).sort((a, b) =>
-        a.name.localeCompare(b.name)
-      );
 
-      // Return teams filter if we have teams or competitions
-      if (teams.length > 0 || competitions.length > 0) {
+      const sortedKeys = Array.from(weekMap.keys()).sort();
+
+      if (sortedKeys.length > 1) {
+        const allWeeks: WeekInfo[] = sortedKeys.map((key) => {
+          const entry = weekMap.get(key)!;
+          const isCurrent = key === currentWeekKey;
+          return {
+            key,
+            label: formatWeekLabel(entry.start),
+            startDate: entry.start.toISOString(),
+            count: entry.fixtures.length,
+            predictedCount: entry.fixtures.filter((f) => f.prediction != null).length,
+            status: getRoundStatus(entry.fixtures),
+            isCurrent,
+          };
+        });
+
+        // Default to current week, or nearest future week
+        const defaultWeek =
+          sortedKeys.find((k) => k >= currentWeekKey) ?? sortedKeys[sortedKeys.length - 1]!;
+        const effectiveWeek = selectedWeek ?? defaultWeek;
+
+        // For teams mode, also extract team chips
+        let teams: TeamChip[] | undefined;
+        let effectiveTeamId: number | null | undefined;
+        if (mode === "teams") {
+          const teamMap = new Map<number, TeamChip>();
+          for (const f of fixtures) {
+            if (f.homeTeam) {
+              teamMap.set(f.homeTeam.id, { id: f.homeTeam.id, name: f.homeTeam.name, imagePath: f.homeTeam.imagePath ?? null });
+            }
+            if (f.awayTeam) {
+              teamMap.set(f.awayTeam.id, { id: f.awayTeam.id, name: f.awayTeam.name, imagePath: f.awayTeam.imagePath ?? null });
+            }
+          }
+          const allowedIds = new Set(groupTeamsIds ?? []);
+          teams = Array.from(teamMap.values())
+            .filter((t) => allowedIds.size === 0 || allowedIds.has(t.id))
+            .sort((a, b) => a.name.localeCompare(b.name));
+          effectiveTeamId = selectedTeamId;
+        }
+
         return {
-          type: "teams",
+          type: "weeks",
+          allWeeks,
+          selectedWeek: effectiveWeek,
+          currentWeek: currentWeekKey,
           teams,
-          selectedTeamId: selectedTeamId,
-          competitions,
-          selectedCompetitionId: selectedCompetitionId,
+          selectedTeamId: effectiveTeamId,
         };
       }
+
       return null;
     }
 
@@ -153,6 +217,7 @@ export function useStructuralFilter({
           return {
             round,
             count: list.length,
+            predictedCount: list.filter((f) => f.prediction != null).length,
             status: getRoundStatus(list),
           };
         });
@@ -173,7 +238,7 @@ export function useStructuralFilter({
     }
 
     return null;
-  }, [fixtures, mode, groupTeamsIds, selectedTeamId, selectedCompetitionId, selectedRound]);
+  }, [fixtures, mode, groupTeamsIds, selectedTeamId, selectedCompetitionId, selectedRound, selectedWeek]);
 
   const navigateRound = useCallback(
     (direction: "prev" | "next") => {
@@ -190,14 +255,31 @@ export function useStructuralFilter({
     [structuralFilter]
   );
 
+  const navigateWeek = useCallback(
+    (direction: "prev" | "next") => {
+      if (structuralFilter?.type !== "weeks") return;
+      const keys = structuralFilter.allWeeks.map((w) => w.key);
+      const idx = keys.indexOf(structuralFilter.selectedWeek);
+      if (direction === "prev" && idx > 0) {
+        setSelectedWeek(keys[idx - 1] ?? null);
+      } else if (direction === "next" && idx >= 0 && idx < keys.length - 1) {
+        setSelectedWeek(keys[idx + 1] ?? null);
+      }
+    },
+    [structuralFilter]
+  );
+
   return {
     structuralFilter,
     selectTeam,
     selectCompetition,
     selectRound,
     navigateRound,
+    selectWeek,
+    navigateWeek,
     setSelectedRound,
     setSelectedTeamId,
     setSelectedCompetitionId,
+    setSelectedWeek,
   };
 }

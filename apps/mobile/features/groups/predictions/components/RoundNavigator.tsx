@@ -14,6 +14,8 @@ interface RoundNavigatorProps {
   onOpenPicker: () => void;
   canGoPrev: boolean;
   canGoNext: boolean;
+  /** Override label (e.g. "All Games", "To Predict") */
+  labelOverride?: string;
 }
 
 export function RoundNavigator({
@@ -23,12 +25,13 @@ export function RoundNavigator({
   onOpenPicker,
   canGoPrev,
   canGoNext,
+  labelOverride,
 }: RoundNavigatorProps) {
   const { theme } = useTheme();
-  const label = selectedRound ? `Round ${selectedRound}` : "Round";
+  const label = labelOverride ?? (selectedRound ? `Round ${selectedRound}` : "Round");
 
   return (
-    <View style={[styles.container, { borderTopColor: theme.colors.border }]}>
+    <View style={styles.container}>
       <Pressable
         onPress={onPrev}
         disabled={!canGoPrev}
@@ -67,9 +70,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    borderTopWidth: 1,
     gap: 8,
   },
   arrow: {

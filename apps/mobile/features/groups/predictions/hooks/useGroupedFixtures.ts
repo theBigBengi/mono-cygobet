@@ -69,6 +69,17 @@ export function useGroupedFixtures({
 }: UseGroupedFixturesParams): FixtureGroup[] {
 
   const groups = useMemo((): FixtureGroup[] => {
+    if (skipGrouping) {
+      const sorted = [...fixtures].sort((a, b) =>
+        new Date(a.kickoffAt ?? 0).getTime() - new Date(b.kickoffAt ?? 0).getTime()
+      );
+      return [{
+        key: "flat",
+        label: "",
+        fixtures: sorted,
+      }];
+    }
+
     let result: FixtureGroup[] = [];
 
     if (mode === "leagues" && leaguesGroupBy === "date") {

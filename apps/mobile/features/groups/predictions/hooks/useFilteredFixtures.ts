@@ -65,7 +65,7 @@ export function useFilteredFixtures({
       list: FixtureItem[],
       actionId: string
     ): FixtureItem[] {
-      if (actionId === "all") return list;
+      if (actionId === "all" || actionId === "week" || actionId === "round") return list;
       if (actionId === "live") return list.filter((f) => isLive(f.state));
       if (actionId === "predict") return list.filter(isToPredict);
       if (actionId === "results")
@@ -114,6 +114,26 @@ export function useFilteredFixtures({
       } else if (structuralFilter.type === "rounds") {
         const r = structuralFilter.selectedRound;
         afterAction = afterAction.filter((f) => f.round === r);
+      } else if (structuralFilter.type === "weeks") {
+        const weekKey = structuralFilter.selectedWeek;
+        // Parse the week start date from the key (YYYY-MM-DD)
+        const [y, m, d] = weekKey.split("-").map(Number);
+        const weekStart = new Date(y!, m! - 1, d!);
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        afterAction = afterAction.filter((f) => {
+          if (!f.kickoffAt) return false;
+          const t = new Date(f.kickoffAt).getTime();
+          return t >= weekStart.getTime() && t < weekEnd.getTime();
+        });
+        // Also filter by team if selected
+        if (structuralFilter.selectedTeamId != null) {
+          const tid = structuralFilter.selectedTeamId;
+          afterAction = afterAction.filter(
+            (f) => f.homeTeam?.id === tid || f.awayTeam?.id === tid
+          );
+        }
       }
     }
 

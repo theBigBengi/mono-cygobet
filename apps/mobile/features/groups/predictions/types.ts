@@ -24,6 +24,8 @@ export type RenderItem =
       level?: "date" | "league" | "round";
       isLive?: boolean;
       round?: string | number;
+      secondaryLabel?: string | null;
+      leagueImagePath?: string | null;
       showTrack: boolean;
       isFilled: boolean;
     }

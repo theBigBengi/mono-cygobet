@@ -187,7 +187,7 @@ export function MatchPredictionCardVertical({
       const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       const mo = (k.getMonth() + 1).toString().padStart(2, "0");
       const dateStr = `${dd} ${MONTHS_SHORT[k.getMonth()]}`;
-      const numericDate = `${dd}.${mo}`;
+      const numericDate = `${dd}/${mo}`;
       const c = theme.colors.textSecondary;
       const labelMap: Record<string, string> = {
         CANCELLED: "CAN",
@@ -219,12 +219,12 @@ export function MatchPredictionCardVertical({
       const k = new Date(fixture.kickoffAt);
       const hh = k.getHours().toString().padStart(2, "0");
       const mm = k.getMinutes().toString().padStart(2, "0");
-      const sc = isFinished ? theme.colors.textSecondary : theme.colors.textPrimary;
+      const sc = theme.colors.textSecondary;
       const dd = k.getDate().toString().padStart(2, "0");
       const mo = (k.getMonth() + 1).toString().padStart(2, "0");
       const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       const dateStr = `${dd} ${MONTHS_SHORT[k.getMonth()]}`;
-      const numericDate = `${dd}.${mo}`;
+      const numericDate = `${dd}/${mo}`;
       return { top: hh, bottom: mm, date: dateStr, numericDate, bgColor: "transparent", textColor: sc, inline: hideRound ? `${dateStr} ${hh}:${mm}` : `${hh}:${mm}` };
     }
 
@@ -264,9 +264,9 @@ export function MatchPredictionCardVertical({
     if (statusData.date) {
       const strikethrough = isCancelled ? { textDecorationLine: "line-through" as const } : undefined;
       return (
-        <View style={[styles.statusBox, { backgroundColor: statusData.bgColor }]}>
-          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 10, fontWeight: "500" }, strikethrough]}>{`${statusData.top}:${statusData.bottom}`}</Text>
-          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 10, fontWeight: "500" }, strikethrough]}>{statusData.numericDate}</Text>
+        <View style={[styles.statusBox, { height: undefined }]}>
+          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 11, fontWeight: "500" }, strikethrough]}>{statusData.numericDate}</Text>
+          <Text style={[styles.statusMonthText, { color: statusData.textColor, fontSize: 11, fontWeight: "500" }, strikethrough]}>{`${statusData.top}:${statusData.bottom}`}</Text>
         </View>
       );
     }
@@ -294,23 +294,22 @@ export function MatchPredictionCardVertical({
     return (
       <View ref={cardRef} style={styles.outerRow}>
         <View style={styles.cardRow}>
-          {/* Time — left column */}
-          <View style={{ width: 30, alignItems: "center", justifyContent: "center" }}>
-            <Text style={[styles.hStatusText, { fontSize: 9, color: isLive ? theme.colors.live : (!isFinished && !isCancelled) ? theme.colors.textPrimary : statusData.textColor, fontWeight: "500", textAlign: "center" }, isCancelled && { textDecorationLine: "line-through" }]}>
-              {statusData.date ? `${statusData.top}:${statusData.bottom}\n${statusData.numericDate}` : statusData.inline}
-            </Text>
-          </View>
-
           {/* Card — center */}
           <View
             style={[
-              styles.hRow,
-              { flex: 1, backgroundColor: theme.colors.textSecondary + "12", borderRadius: 8, paddingHorizontal: 8 },
+              { flex: 1, backgroundColor: theme.colors.textSecondary + "12", borderRadius: 8, paddingHorizontal: 8, overflow: "hidden" as const },
               isCancelled && { opacity: 0.6 },
             ]}
           >
             <Animated.View style={[styles.highlightOverlay, { backgroundColor: theme.colors.primary + "15" }, highlightAnimStyle]} pointerEvents="none" />
 
+            {/* Date/time row */}
+            {statusData.date && (
+              <Text style={{ fontSize: 9, fontWeight: "500", color: statusData.textColor, paddingTop: 4 }}>{`${statusData.numericDate}  ${statusData.top}:${statusData.bottom}`}</Text>
+            )}
+
+            {/* Match row */}
+            <View style={[styles.hRow, { flex: undefined, height: undefined, minHeight: 36, overflow: "visible" as const }]}>
             {/* Home half */}
             <Pressable
               style={styles.hTeamHalf}
@@ -319,7 +318,7 @@ export function MatchPredictionCardVertical({
               <TeamLogo imagePath={fixture.homeTeam?.imagePath} teamName={homeTeamName} size={18} rounded={false} />
               <AppText
                 variant="body"
-                numberOfLines={2}
+                numberOfLines={1}
                 style={[
                   styles.hTeamName,
                   { color: isHomeFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary },
@@ -383,7 +382,7 @@ export function MatchPredictionCardVertical({
               </View>
               <AppText
                 variant="body"
-                numberOfLines={2}
+                numberOfLines={1}
                 style={[
                   styles.hTeamName,
                   { color: isAwayFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary, textAlign: "right" },
@@ -393,41 +392,24 @@ export function MatchPredictionCardVertical({
               </AppText>
               <TeamLogo imagePath={fixture.awayTeam?.imagePath} teamName={awayTeamName} size={18} rounded={false} />
             </Pressable>
-          </View>
+            </View>{/* close match row */}
+          </View>{/* close card */}
 
-          {/* Points/status — right column */}
-          <Pressable style={{ width: 30, alignItems: "center", justifyContent: "center" }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPressCard(); }}>
-            {rightBoxData ? (
-              rightBoxData.icon === "cancel" ? (
-                <View style={{ backgroundColor: rightBoxData.bgColor, borderRadius: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
-                  <MaterialCommunityIcons name="cancel" size={14} color={rightBoxData.textColor} />
-                  <Text style={{ fontSize: 7, fontWeight: "700", color: rightBoxData.textColor, marginTop: 1 }}>{("cancelLabel" in statusData ? statusData.cancelLabel : undefined) ?? statusData.top}</Text>
-                </View>
-              ) : (
-                <View style={{ backgroundColor: rightBoxData.bgColor, borderRadius: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ fontSize: 13, fontWeight: "800", color: rightBoxData.textColor }}>{rightBoxData.top}</Text>
-                  {rightBoxData.bottom && <Text style={{ fontSize: 7, fontWeight: "700", color: rightBoxData.textColor }}>{rightBoxData.bottom}</Text>}
-                </View>
-              )
-            ) : isLive ? (
-              <View style={{ backgroundColor: theme.colors.primary + "20", borderRadius: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
-                <Text style={{ fontSize: 13, fontWeight: "800", color: theme.colors.primary }}>?</Text>
-                <Text style={{ fontSize: 7, fontWeight: "700", color: theme.colors.primary }}>PTS</Text>
-              </View>
-            ) : (
-              <View style={{ alignItems: "center", justifyContent: "center" }}>
-                {hasPrediction ? (
-                  <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: "#34C75920", alignItems: "center", justifyContent: "center" }}>
-                    <Ionicons name="checkmark" size={11} color="#34C759" />
-                  </View>
-                ) : (
-                  <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: theme.colors.textSecondary + "90", alignItems: "center", justifyContent: "center" }}>
-                    <FontAwesome6 name="plus" size={9} color={theme.colors.textSecondary + "90"} />
-                  </View>
-                )}
-              </View>
-            )}
-          </Pressable>
+          {/* Badge — centered above scores */}
+          {rightBoxData && rightBoxData.icon !== "cancel" ? (
+            <View style={{ position: "absolute", top: -5, alignSelf: "center", left: "50%", marginLeft: -12, backgroundColor: rightBoxData.bgColor, borderRadius: 12, width: 24, height: 24, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: theme.colors.surface }}>
+              <Text style={{ fontSize: 11, fontWeight: "800", color: rightBoxData.textColor }}>{rightBoxData.top}</Text>
+            </View>
+          ) : !isFinished && !isLive && !isCancelled && !hasPrediction ? (
+            <Pressable onPress={handlePressCenter} style={{ position: "absolute", top: -5, left: "50%", marginLeft: -12, backgroundColor: theme.colors.surface, borderRadius: 12, width: 24, height: 24, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: theme.colors.textSecondary + "40" }}>
+              <FontAwesome6 name="plus" size={10} color={theme.colors.textSecondary + "90"} />
+            </Pressable>
+          ) : !isFinished && !isLive && !isCancelled && hasPrediction ? (
+            <View style={{ position: "absolute", top: -5, left: "50%", marginLeft: -12, backgroundColor: "#34C75920", borderRadius: 12, width: 24, height: 24, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: theme.colors.surface }}>
+              <Ionicons name="checkmark" size={13} color="#34C759" />
+            </View>
+          ) : null}
+
         </View>
       </View>
     );
@@ -454,17 +436,19 @@ export function MatchPredictionCardVertical({
           ]}
         >
           <View style={styles.cardRow}>
-            {/* Status Box — left column */}
-            <View style={styles.statusCol}>
-              {statusBox}
-            </View>
-
-            {/* Card content — center */}
-            <View style={[styles.cardContent, styles.hRowBorder, { backgroundColor: theme.colors.textSecondary + "12" }]}>
+            {/* Unified card: date/time + match content */}
+            <View style={[styles.hRowBorder, { backgroundColor: theme.colors.textSecondary + "12", flexDirection: "row", alignItems: "stretch", flex: 1, overflow: "hidden", paddingLeft: 2 }]}>
               <Animated.View style={[styles.highlightOverlay, { backgroundColor: theme.colors.primary + "15" }, highlightAnimStyle]} pointerEvents="none" />
+              {/* Status Box — left column */}
+              <View style={{ width: 42, alignItems: "center", justifyContent: "center", marginRight: 8 }}>
+                {statusBox}
+              </View>
+
+              {/* Match content */}
               <View
                 style={[
                   styles.matchContent,
+                  { flex: 1 },
                   isCancelled && { opacity: 0.6 },
                 ]}
               >

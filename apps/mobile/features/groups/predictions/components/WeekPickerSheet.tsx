@@ -1,4 +1,4 @@
-// components/RoundPickerSheet.tsx
+// components/WeekPickerSheet.tsx
 import React, { useCallback, useMemo } from "react";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,7 +9,7 @@ import {
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import { useTheme } from "@/lib/theme";
-import type { RoundInfo } from "../hooks/useSmartFilters";
+import type { WeekInfo } from "../hooks/useSmartFilters";
 
 type ActionPill = { id: string; label: string };
 
@@ -19,23 +19,23 @@ const ACTION_PILLS: ActionPill[] = [
   { id: "results", label: "Results" },
 ];
 
-interface RoundPickerSheetProps {
+interface WeekPickerSheetProps {
   sheetRef: React.RefObject<React.ComponentRef<typeof BottomSheetModal>>;
-  rounds: RoundInfo[];
-  selectedRound: string;
-  onSelectRound: (round: string) => void;
+  weeks: WeekInfo[];
+  selectedWeek: string;
+  onSelectWeek: (weekKey: string) => void;
   selectedAction?: string;
   onSelectAction?: (action: string) => void;
 }
 
-export function RoundPickerSheet({
+export function WeekPickerSheet({
   sheetRef,
-  rounds,
-  selectedRound,
-  onSelectRound,
+  weeks,
+  selectedWeek,
+  onSelectWeek,
   selectedAction,
   onSelectAction,
-}: RoundPickerSheetProps) {
+}: WeekPickerSheetProps) {
   const { theme } = useTheme();
 
   const backgroundStyle = useMemo(
@@ -60,11 +60,11 @@ export function RoundPickerSheet({
   );
 
   const handleSelect = useCallback(
-    (round: string) => {
-      onSelectRound(round);
+    (weekKey: string) => {
+      onSelectWeek(weekKey);
       sheetRef.current?.dismiss();
     },
-    [onSelectRound, sheetRef]
+    [onSelectWeek, sheetRef]
   );
 
   const handleSelectAction = useCallback(
@@ -74,8 +74,6 @@ export function RoundPickerSheet({
     },
     [onSelectAction, sheetRef]
   );
-
-  const isActionMode = selectedAction && selectedAction !== "round";
 
   return (
     <BottomSheetModal
@@ -117,9 +115,9 @@ export function RoundPickerSheet({
             })}
           </View>
         )}
-        {rounds.map((r) => {
-          const isSelected = r.round === selectedRound;
-          const isSettled = r.status === "settled";
+        {weeks.map((w) => {
+          const isSelected = w.key === selectedWeek;
+          const isSettled = w.status === "settled";
           const textColor = isSelected
             ? theme.colors.primary
             : isSettled
@@ -127,8 +125,8 @@ export function RoundPickerSheet({
               : theme.colors.textPrimary;
           return (
             <Pressable
-              key={r.round}
-              onPress={() => handleSelect(r.round)}
+              key={w.key}
+              onPress={() => handleSelect(w.key)}
               style={({ pressed }) => [
                 styles.row,
                 {
@@ -140,19 +138,19 @@ export function RoundPickerSheet({
               <View style={styles.rowLeft}>
                 {isSettled ? (
                   <Ionicons name="checkmark-circle" size={16} color={theme.colors.textSecondary + "80"} />
-                ) : (r.status === "upcoming" || r.status === "unpredicted") ? (
+                ) : (w.status === "upcoming" || w.status === "unpredicted") ? (
                   <Ionicons name="stopwatch-outline" size={16} color={textColor + "90"} />
                 ) : null}
                 <Text style={[
-                  styles.roundText,
+                  styles.rowText,
                   { color: textColor },
                   isSelected && { fontWeight: "600" },
                 ]}>
-                  Round {r.round}
+                  {w.label}
                 </Text>
               </View>
               <Text style={[styles.countText, { color: theme.colors.textSecondary }]}>
-                {r.predictedCount}/{r.count}
+                {w.predictedCount}/{w.count}
               </Text>
             </Pressable>
           );
@@ -196,7 +194,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-  roundText: {
+  rowText: {
     fontSize: 14,
     fontWeight: "500",
   },

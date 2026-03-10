@@ -120,8 +120,24 @@ export function useActionChips({ fixtures, mode = "games" }: UseActionChipsParam
     const liveCount = fixtures.filter((f) => isLive(f.state)).length;
     const resultsCount = fixtures.filter((f) => isFinished(f.state)).length;
 
-    // Simplified chips for leagues/teams mode: All, Live (if any), Results
+    // Leagues/teams mode: All, Live, Predict, (time chips for teams), Results
     if (mode === "leagues" || mode === "teams") {
+      const toPredictFixtures = fixtures.filter(isToPredict);
+      const toPredictCount = toPredictFixtures.length;
+
+      const nearestUnpredictedKickoff =
+        toPredictFixtures.length > 0
+          ? (() => {
+              const sorted = [...toPredictFixtures].sort(
+                (a, b) =>
+                  new Date(a.kickoffAt ?? 0).getTime() -
+                  new Date(b.kickoffAt ?? 0).getTime()
+              );
+              return sorted[0]?.kickoffAt ?? null;
+            })()
+          : null;
+      const predictUrgency = getPredictUrgency(nearestUnpredictedKickoff);
+
       const chips: ActionChip[] = [];
 
       // Always show All
@@ -136,6 +152,41 @@ export function useActionChips({ fixtures, mode = "games" }: UseActionChipsParam
         });
       }
 
+      // Predict chip with urgency
+      if (toPredictCount > 0 && toPredictCount < total) {
+        const isUrgent =
+          predictUrgency === "urgent" || predictUrgency === "critical";
+        chips.push({
+          id: "predict",
+          label: isUrgent
+            ? `Predict Now! (${toPredictCount})`
+            : `Predict (${toPredictCount})`,
+          count: toPredictCount,
+          urgency: predictUrgency,
+        });
+      }
+
+      // Time chips for teams mode only (leagues has rounds as its time concept)
+      if (mode === "teams") {
+        const todayCount = fixtures.filter(
+          (f) => classifyFixtureTime(f.kickoffAt, buckets) === "today"
+        ).length;
+        const tomorrowCount = fixtures.filter(
+          (f) => classifyFixtureTime(f.kickoffAt, buckets) === "tomorrow"
+        ).length;
+        const thisWeekCount = fixtures.filter(
+          (f) => classifyFixtureTime(f.kickoffAt, buckets) === "this-week"
+        ).length;
+
+        if (todayCount > 0 && todayCount < total) {
+          chips.push({ id: "time:today", label: `Today (${todayCount})`, count: todayCount });
+        } else if (tomorrowCount > 0 && tomorrowCount < total) {
+          chips.push({ id: "time:tomorrow", label: `Tomorrow (${tomorrowCount})`, count: tomorrowCount });
+        } else if (thisWeekCount > 0 && thisWeekCount < total) {
+          chips.push({ id: "time:this-week", label: `This Week (${thisWeekCount})`, count: thisWeekCount });
+        }
+      }
+
       // Show Results if there are finished games (and not all are finished)
       if (resultsCount > 0 && resultsCount < total) {
         chips.push({
@@ -145,7 +196,7 @@ export function useActionChips({ fixtures, mode = "games" }: UseActionChipsParam
         });
       }
 
-      return chips;
+      return chips.slice(0, 5);
     }
 
     // Full chips logic for games/teams mode

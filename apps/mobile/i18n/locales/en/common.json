@@ -662,7 +662,9 @@
   },
   "members": {
     "loadingMembers": "Loading members...",
-    "failedLoadMembers": "Failed to load members"
+    "failedLoadMembers": "Failed to load members",
+    "count": "{{count}} members",
+    "joined": "Joined {{date}}"
   },
   "errors": {
     "error": "Error",

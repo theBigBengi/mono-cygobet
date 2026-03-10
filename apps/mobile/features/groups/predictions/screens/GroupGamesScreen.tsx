@@ -5,15 +5,16 @@ import Animated, { withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView, type BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
-import { AppText, Screen } from "@/components/ui";
+import { AppText, Screen, TeamLogo } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
   ScoreInputNavigationBar,
-  SmartFilterChips,
   GroupFixtureCard,
 } from "../components";
+import { RoundPickerSheet } from "../components/RoundPickerSheet";
+import { WeekPickerSheet } from "../components/WeekPickerSheet";
 import { useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { usePredictionNavigation } from "../hooks/usePredictionNavigation";
 import { useGroupPredictions } from "../hooks/useGroupPredictions";
@@ -98,11 +99,11 @@ export function GroupGamesScreen({
     selectAction,
     structuralFilter,
     selectTeam,
-    selectCompetition,
     selectRound,
     navigateRound,
+    selectWeek,
+    navigateWeek,
     filteredFixtures,
-    hasAnyChips,
     emptyState,
   } = useSmartFilters({
     fixtures,
@@ -111,7 +112,9 @@ export function GroupGamesScreen({
     onNavigateToLeaderboard: navigateToLeaderboard,
   });
 
-  const skipGrouping = mode === "leagues" && selectedAction === "round";
+  const skipGrouping =
+    (mode === "leagues" && selectedAction === "round") ||
+    ((mode === "games" || mode === "teams") && selectedAction === "week");
   const fixtureGroups = useGroupedFixtures({
     fixtures: filteredFixtures,
     mode,
@@ -304,28 +307,82 @@ export function GroupGamesScreen({
     return parts.join(" \u00B7 ");
   }, [actionChips, selectedAction, structuralFilter]);
 
-  const filterSheetRef = useRef<BottomSheetModal>(null);
+  // Round navigation for leagues mode
+  const roundPickerRef = useRef<BottomSheetModal>(null);
+  const roundsFilter = structuralFilter?.type === "rounds" ? structuralFilter : null;
 
-  const handleFilterPress = useCallback(() => {
+  const roundNav = useMemo(() => {
+    if (mode !== "leagues" || !roundsFilter) return undefined;
+    const isActionMode = selectedAction && selectedAction !== "round";
+    const rounds = roundsFilter.allRounds.map((r) => r.round);
+    const idx = rounds.indexOf(roundsFilter.selectedRound);
+    const actionLabels: Record<string, string> = {
+      all: "All Games",
+      predict: "To Predict",
+      results: "Results",
+    };
+    return {
+      selectedRound: roundsFilter.selectedRound,
+      canGoPrev: isActionMode ? false : idx > 0,
+      canGoNext: isActionMode ? false : idx >= 0 && idx < rounds.length - 1,
+      labelOverride: isActionMode ? actionLabels[selectedAction] : undefined,
+    };
+  }, [mode, roundsFilter, selectedAction]);
+
+  const handleRoundPrev = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    filterSheetRef.current?.present();
+    navigateRound("prev");
+  }, [navigateRound]);
+
+  const handleRoundNext = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigateRound("next");
+  }, [navigateRound]);
+
+  const handleOpenRoundPicker = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    roundPickerRef.current?.present();
   }, []);
 
-  const handleFilterDone = useCallback(() => {
-    filterSheetRef.current?.dismiss();
-  }, []);
+  // Week navigation for games/teams mode
+  const weekPickerRef = useRef<BottomSheetModal>(null);
+  const weeksFilter = structuralFilter?.type === "weeks" ? structuralFilter : null;
 
-  const renderFilterBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        pressBehavior="close"
-      />
-    ),
-    [],
-  );
+  const weekNav = useMemo(() => {
+    if ((mode !== "games" && mode !== "teams") || !weeksFilter) return undefined;
+    const isActionMode = selectedAction && selectedAction !== "week";
+    const keys = weeksFilter.allWeeks.map((w) => w.key);
+    const idx = keys.indexOf(weeksFilter.selectedWeek);
+    const currentWeekInfo = weeksFilter.allWeeks.find((w) => w.key === weeksFilter.selectedWeek);
+    const actionLabels: Record<string, string> = {
+      all: "All Games",
+      predict: "To Predict",
+      results: "Results",
+    };
+    return {
+      selectedRound: weeksFilter.selectedWeek,
+      canGoPrev: isActionMode ? false : idx > 0,
+      canGoNext: isActionMode ? false : idx >= 0 && idx < keys.length - 1,
+      labelOverride: isActionMode
+        ? actionLabels[selectedAction]
+        : currentWeekInfo?.label,
+    };
+  }, [mode, weeksFilter, selectedAction]);
+
+  const handleWeekPrev = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigateWeek("prev");
+  }, [navigateWeek]);
+
+  const handleWeekNext = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigateWeek("next");
+  }, [navigateWeek]);
+
+  const handleOpenWeekPicker = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    weekPickerRef.current?.present();
+  }, []);
 
   const totalHeaderH = HEADER_HEIGHT + insets.top;
 
@@ -491,30 +548,72 @@ export function GroupGamesScreen({
   const flatListRenderItem = useCallback(
     ({ item }: ListRenderItemInfo<RenderItem>) => {
       if (item.type === "header") {
-        return (
-          <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionHeaderContent}>
-              {item.isLive ? (
-                <View style={[styles.sectionLiveBadge, { backgroundColor: theme.colors.live + "15" }]}>
-                  <View style={[styles.sectionLiveDot, { backgroundColor: theme.colors.live }]} />
-                  <Text style={[styles.sectionLiveText, { color: theme.colors.live }]}>LIVE</Text>
-                </View>
-              ) : item.level === "round" && item.label ? (
-                <View style={styles.sectionDateRow}>
-                  <Text
-                    style={[
-                      styles.sectionRoundLabel,
-                      { color: theme.colors.textSecondary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {item.label}
-                  </Text>
-                </View>
-              ) : null}
+        // Date header — large, bold date label
+        if (item.level === "date" && item.label) {
+          return (
+            <View style={styles.sectionDateHeader}>
+              <Text
+                style={[styles.sectionDateLabel, { color: theme.colors.textPrimary }]}
+                numberOfLines={1}
+              >
+                {item.label}
+              </Text>
             </View>
-          </View>
-        );
+          );
+        }
+
+        // League header — logo + name + optional round
+        if (item.level === "league" && item.label) {
+          return (
+            <View style={styles.sectionLeagueHeader}>
+              {item.leagueImagePath && (
+                <TeamLogo imagePath={item.leagueImagePath} teamName={item.label} size={16} rounded={false} />
+              )}
+              <View style={styles.sectionLeagueInfo}>
+                <Text
+                  style={[styles.sectionLeagueLabel, { color: theme.colors.textPrimary }]}
+                  numberOfLines={1}
+                >
+                  {item.label}
+                  {item.secondaryLabel ? ` · ${item.secondaryLabel}` : ""}
+                </Text>
+                {item.round ? (
+                  <Text style={[styles.sectionLeagueRound, { color: theme.colors.textSecondary }]}>
+                    R{item.round}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          );
+        }
+
+        // Live badge
+        if (item.isLive) {
+          return (
+            <View style={styles.sectionHeaderRow}>
+              <View style={[styles.sectionLiveBadge, { backgroundColor: theme.colors.live + "15" }]}>
+                <View style={[styles.sectionLiveDot, { backgroundColor: theme.colors.live }]} />
+                <Text style={[styles.sectionLiveText, { color: theme.colors.live }]}>LIVE</Text>
+              </View>
+            </View>
+          );
+        }
+
+        // Round header
+        if (item.level === "round" && item.label) {
+          return (
+            <View style={styles.sectionDateRow}>
+              <Text
+                style={[styles.sectionRoundLabel, { color: theme.colors.textSecondary }]}
+                numberOfLines={1}
+              >
+                {item.label}
+              </Text>
+            </View>
+          );
+        }
+
+        return null;
       }
 
       const { fixture, group, indexInGroup } = item;
@@ -581,15 +680,27 @@ export function GroupGamesScreen({
         onToggleFullName={toggleFullName}
         cardLayout={cardLayout}
         onToggleCardLayout={toggleCardLayout}
-        onFilterSortPress={hasAnyChips ? handleFilterPress : undefined}
+        onFilterSortPress={undefined}
         activeFilterLabel={activeFilterLabel}
+        roundNav={roundNav ? {
+          ...roundNav,
+          onPrev: handleRoundPrev,
+          onNext: handleRoundNext,
+          onOpenPicker: handleOpenRoundPicker,
+        } : weekNav ? {
+          ...weekNav,
+          onPrev: handleWeekPrev,
+          onNext: handleWeekNext,
+          onOpenPicker: handleOpenWeekPicker,
+        } : undefined}
       />
     ),
     [
       isReady, emptyState, filteredFixtures.length, summaryStats,
       savedPredictionsCount, totalPredictionsCount,
-      useFullName, toggleFullName, cardLayout, toggleCardLayout, hasAnyChips, handleFilterPress,
-      activeFilterLabel,
+      useFullName, toggleFullName, cardLayout, toggleCardLayout,
+      activeFilterLabel, roundNav, handleRoundPrev, handleRoundNext, handleOpenRoundPicker,
+      weekNav, handleWeekPrev, handleWeekNext, handleOpenWeekPicker, mode,
     ]
   );
 
@@ -676,140 +787,35 @@ export function GroupGamesScreen({
         )}
       </View>
 
-      <BottomSheetModal
-        ref={filterSheetRef}
-        enableDynamicSizing
-        enablePanDownToClose
-        backdropComponent={renderFilterBackdrop}
-        backgroundStyle={{
-          backgroundColor: theme.colors.surface,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-        }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
-      >
-        <BottomSheetView style={[styles.filterSheetContent, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          {/* Centered title */}
-          <AppText style={[styles.filterSheetTitle, { color: theme.colors.textPrimary }]}>
-            {t("predictions.filterAndSort", { defaultValue: "Filter & Sort" })}
-          </AppText>
-          {/* Divider below title */}
-          <View style={[styles.filterSheetDivider, { backgroundColor: theme.colors.border }]} />
-          <SmartFilterChips
-            actionChips={actionChips}
-            selectedAction={selectedAction}
-            onSelectAction={selectAction}
-            structuralFilter={structuralFilter}
-            onSelectTeam={selectTeam}
-            onSelectCompetition={selectCompetition}
-            onSelectRound={selectRound}
-            onNavigateRound={navigateRound}
-          />
+      {/* Round picker for leagues mode */}
+      {roundsFilter && (
+        <RoundPickerSheet
+          sheetRef={roundPickerRef}
+          rounds={roundsFilter.allRounds}
+          selectedRound={roundsFilter.selectedRound}
+          onSelectRound={selectRound}
+          selectedAction={selectedAction}
+          onSelectAction={selectAction}
+        />
+      )}
 
-          {/* Group by (leagues mode only) */}
-          {mode === "leagues" && (
-            <>
-              <View style={[styles.filterSheetDivider, { backgroundColor: theme.colors.border, marginTop: 16 }]} />
-              <AppText style={[styles.filterSheetSectionLabel, { color: theme.colors.textPrimary }]}>
-                {t("predictions.groupBy", { defaultValue: "Group by" })}
-              </AppText>
-              <View style={styles.filterSheetSortRow}>
-                {(["round", "date"] as const).map((opt) => {
-                  const isSelected = leaguesGroupBy === opt;
-                  return (
-                    <Pressable
-                      key={opt}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setLeaguesGroupBy(opt);
-                      }}
-                      style={({ pressed }) => [
-                        styles.filterSheetSortChip,
-                        {
-                          backgroundColor: isSelected
-                            ? theme.colors.primary
-                            : theme.colors.textSecondary + "20",
-                          transform: [{ scale: pressed ? 0.95 : 1 }],
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.filterSheetSortChipText, { color: isSelected ? theme.colors.textInverse : theme.colors.textPrimary + "90" }]}>
-                        {opt === "round"
-                          ? t("predictions.byRound", { defaultValue: "Round" })
-                          : t("predictions.byDate", { defaultValue: "Date" })}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          {/* Done button */}
-          <Pressable
-            onPress={handleFilterDone}
-            style={({ pressed }) => [
-              styles.filterSheetDoneBtn,
-              { backgroundColor: theme.colors.primary },
-              pressed && { opacity: 0.85 },
-            ]}
-          >
-            <Text style={[styles.filterSheetBtnText, { color: theme.colors.textInverse }]}>
-              {t("groups.done", { defaultValue: "Done" })}
-            </Text>
-          </Pressable>
-        </BottomSheetView>
-      </BottomSheetModal>
+      {/* Week picker for games/teams mode */}
+      {weeksFilter && (
+        <WeekPickerSheet
+          sheetRef={weekPickerRef}
+          weeks={weeksFilter.allWeeks}
+          selectedWeek={weeksFilter.selectedWeek}
+          onSelectWeek={selectWeek}
+          selectedAction={selectedAction}
+          onSelectAction={selectAction}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, overflow: "hidden" },
-  filterSheetContent: {
-    paddingHorizontal: 20,
-    paddingTop: 4,
-  },
-  filterSheetTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    textAlign: "center",
-    paddingBottom: 12,
-  },
-  filterSheetDivider: {
-    height: 1,
-    marginBottom: 16,
-  },
-  filterSheetSectionLabel: {
-    fontSize: 17,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  filterSheetSortRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  filterSheetSortChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-  },
-  filterSheetSortChipText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  filterSheetDoneBtn: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 24,
-    marginTop: 24,
-  },
-  filterSheetBtnText: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
   scrollView: { flex: 1 },
   contentContainer: { paddingHorizontal: 12 },
   headerOverlay: {
@@ -821,19 +827,41 @@ const styles = StyleSheet.create({
   },
   sectionHeaderRow: {
   },
-  sectionHeaderContent: {
+  sectionDateHeader: {
+    paddingTop: 20,
+    paddingBottom: 8,
+    paddingHorizontal: 4,
+  },
+  sectionLeagueHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingTop: 12,
+    paddingBottom: 8,
+    paddingHorizontal: 4,
+  },
+  sectionLeagueInfo: {
     flex: 1,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  sectionLeagueLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    flex: 1,
+  },
+  sectionLeagueRound: {
+    fontSize: 11,
+    fontWeight: "500",
   },
   sectionDateRow: {
     paddingTop: 16,
     paddingBottom: 12,
   },
   sectionDateLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
-    letterSpacing: 0.5,
-    textAlign: "center",
   },
   sectionRoundLabel: {
     fontSize: 11,

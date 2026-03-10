@@ -678,7 +678,9 @@
   },
   "members": {
     "loadingMembers": "טוען חברים...",
-    "failedLoadMembers": "טעינת חברים נכשלה"
+    "failedLoadMembers": "טעינת חברים נכשלה",
+    "count": "{{count}} חברים",
+    "joined": "הצטרף {{date}}"
   },
   "groupCreation": {
     "tryDifferentSearch": "נסה מונח חיפוש אחר.",

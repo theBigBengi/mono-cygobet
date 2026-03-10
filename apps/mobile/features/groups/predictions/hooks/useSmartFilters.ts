@@ -2,7 +2,7 @@
 // Thin orchestrator: composes useActionChips, useStructuralFilter, useFilteredFixtures.
 // Preserves auto-selection and recovery effects. Same public API as before.
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import type { FixtureItem } from "@/types/common";
 import { useActionChips } from "./useActionChips";
 import { useStructuralFilter } from "./useStructuralFilter";
@@ -15,6 +15,7 @@ export type {
   CompetitionChip,
   RoundInfo,
   RoundStatus,
+  WeekInfo,
   StructuralFilter,
 } from "./useStructuralFilter";
 
@@ -38,7 +39,10 @@ export function useSmartFilters({
     selectedAction,
     selectAction,
     setSelectedAction,
+    userHasChangedSelection,
   } = useActionChips({ fixtures, mode });
+
+  const hasAutoSelected = useRef(false);
 
   const {
     structuralFilter,
@@ -46,8 +50,11 @@ export function useSmartFilters({
     selectCompetition,
     selectRound,
     navigateRound,
+    selectWeek,
+    navigateWeek,
     setSelectedRound,
     setSelectedTeamId,
+    setSelectedWeek,
   } = useStructuralFilter({ fixtures, mode, groupTeamsIds });
 
   // Track if round filter is active (selectedAction is "round")
@@ -73,9 +80,25 @@ export function useSmartFilters({
     [selectRound, selectAction, mode]
   );
 
-  // Determine effective structural filter - null if NOT in round mode for leagues
+  // Handle selecting a week - activates week filter mode
+  const handleSelectWeek = useCallback(
+    (weekKey: string) => {
+      selectWeek(weekKey);
+      selectAction("week");
+    },
+    [selectWeek, selectAction]
+  );
+
+  // Track if week filter is active
+  const isWeekFilterActive = (mode === "games" || mode === "teams") && selectedAction === "week";
+
+  // Determine effective structural filter - null if NOT in round/week mode
   const effectiveStructuralFilter =
-    mode === "leagues" && !isRoundFilterActive ? null : structuralFilter;
+    mode === "leagues" && !isRoundFilterActive
+      ? null
+      : (mode === "games" || mode === "teams") && !isWeekFilterActive
+        ? null
+        : structuralFilter;
 
   const { filteredFixtures, emptyState, hasAnyChips } = useFilteredFixtures({
     fixtures,
@@ -86,17 +109,53 @@ export function useSmartFilters({
     onNavigateToLeaderboard,
   });
 
+  // Smart auto-selection: pick the best default filter based on mode and data
+  useEffect(() => {
+    if (hasAutoSelected.current || userHasChangedSelection.current) return;
+    if (fixtures.length === 0 || actionChips.length === 0) return;
+
+    hasAutoSelected.current = true;
+
+    // Leagues: default to current round
+    if (mode === "leagues" && structuralFilter?.type === "rounds") {
+      setSelectedAction("round");
+      return;
+    }
+
+    // Games/Teams: default to current week
+    if ((mode === "games" || mode === "teams") && structuralFilter?.type === "weeks") {
+      setSelectedAction("week");
+      return;
+    }
+
+    // All modes: live games take priority
+    if (actionChips.some((c) => c.id === "live")) {
+      setSelectedAction("live");
+      return;
+    }
+
+    // All modes: predict if there are games to predict
+    if (actionChips.some((c) => c.id === "predict")) {
+      setSelectedAction("predict");
+      return;
+    }
+
+    // Fallback: "all" (already the initial state, no action needed)
+  }, [fixtures.length, actionChips, mode, structuralFilter, setSelectedAction, userHasChangedSelection]);
+
   // Recovery effect: if current filter results in empty list, fall back to "all"
   useEffect(() => {
     if (filteredFixtures.length > 0 || fixtures.length === 0) return;
     if (selectedAction === "all") {
       setSelectedRound(null);
       setSelectedTeamId(null);
+      setSelectedWeek(null);
       return;
     }
     // Current filter has no results, fall back to "all"
     setSelectedRound(null);
     setSelectedTeamId(null);
+    setSelectedWeek(null);
     setSelectedAction("all");
   }, [
     filteredFixtures.length,
@@ -105,6 +164,7 @@ export function useSmartFilters({
     setSelectedAction,
     setSelectedRound,
     setSelectedTeamId,
+    setSelectedWeek,
   ]);
 
   return {
@@ -116,6 +176,8 @@ export function useSmartFilters({
     selectCompetition,
     selectRound: handleSelectRound,
     navigateRound,
+    selectWeek: handleSelectWeek,
+    navigateWeek,
     filteredFixtures,
     hasAnyChips,
     emptyState,

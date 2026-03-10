@@ -68,6 +68,8 @@ export function buildRenderItems(fixtureGroups: FixtureGroup[]): RenderItem[] {
         level: group.level ?? "league",
         isLive: group.isLive,
         round: group.fixtures[0]?.round,
+        secondaryLabel: group.secondaryLabel,
+        leagueImagePath: group.leagueImagePath,
         showTrack: false,
         isFilled: false,
       });

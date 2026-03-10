@@ -1,5 +1,5 @@
 // features/groups/members/screens/GroupMembersScreen.tsx
-// Screen component for group members list.
+// Group members list — flat, minimal design.
 
 import React, { useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,8 +11,9 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter, type Href } from "expo-router";
-import { Screen, Card, AppText, Row } from "@/components/ui";
+import { AppText } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useGroupMembersQuery } from "@/domains/groups";
@@ -24,6 +25,11 @@ import { formatDate } from "@/utils/date";
 interface GroupMembersScreenProps {
   groupId: number | null;
 }
+
+const ROLE_ICON: Record<string, string> = {
+  owner: "shield",
+  admin: "shield-half-outline",
+};
 
 const MemberRow = React.memo(function MemberRow({
   item,
@@ -37,10 +43,12 @@ const MemberRow = React.memo(function MemberRow({
   groupId: number | null;
 }) {
   const { theme } = useTheme();
+  const { t } = useTranslation("common");
   const router = useRouter();
 
   const displayName = item.username ?? `Player #${index + 1}`;
   const joinedAtFormatted = item.joinedAt ? formatDate(item.joinedAt) : "";
+  const roleIcon = ROLE_ICON[item.role];
 
   const onPress = () => {
     if (groupId != null && item.userId) {
@@ -54,48 +62,69 @@ const MemberRow = React.memo(function MemberRow({
     <Pressable
       onPress={groupId != null ? onPress : undefined}
       style={({ pressed }) => [
-        { marginBottom: 12, opacity: pressed ? 0.8 : 1 },
+        styles.memberRow,
+        {
+          backgroundColor: isCurrentUser
+            ? theme.colors.textPrimary + "06"
+            : "transparent",
+          borderBottomColor: theme.colors.border,
+        },
+        pressed && { opacity: 0.7 },
       ]}
     >
-      <Card
-        style={[
-          styles.card,
-          {
-            borderWidth: isCurrentUser ? 2 : 1,
-            borderColor: isCurrentUser
-              ? theme.colors.primary
-              : theme.colors.border,
-          },
-        ]}
-      >
-        <Row gap={theme.spacing.md} style={styles.row}>
+      {/* Rank number */}
+      <View style={styles.indexCol}>
         <AppText
-          variant="body"
-          numberOfLines={1}
-          style={styles.username}
+          variant="caption"
+          style={[styles.indexText, { color: theme.colors.textSecondary }]}
         >
-          {displayName}
+          {index + 1}
         </AppText>
-        <AppText variant="caption" color="secondary" style={styles.roleBadge}>
-          {item.role}
-        </AppText>
-      </Row>
-      {joinedAtFormatted && (
-        <AppText variant="caption" color="secondary" style={styles.joinedAt}>
-          Joined {joinedAtFormatted}
-        </AppText>
-      )}
-      </Card>
+      </View>
+
+      {/* Name + joined date */}
+      <View style={styles.infoCol}>
+        <View style={styles.nameRow}>
+          <AppText
+            variant="body"
+            numberOfLines={1}
+            style={[
+              styles.username,
+              { color: theme.colors.textPrimary },
+              isCurrentUser && { fontWeight: "700" },
+            ]}
+          >
+            {displayName}
+          </AppText>
+          {roleIcon && (
+            <Ionicons
+              name={roleIcon as any}
+              size={14}
+              color={theme.colors.primary}
+              style={styles.roleIcon}
+            />
+          )}
+        </View>
+        {joinedAtFormatted ? (
+          <AppText
+            variant="caption"
+            style={[styles.joinedText, { color: theme.colors.textSecondary }]}
+          >
+            {t("members.joined", { date: joinedAtFormatted })}
+          </AppText>
+        ) : null}
+      </View>
+
+      {/* Chevron */}
+      <Ionicons
+        name="chevron-forward"
+        size={16}
+        color={theme.colors.textSecondary}
+      />
     </Pressable>
   );
 });
 
-/**
- * GroupMembersScreen component
- *
- * Fetches and displays group members. Shows loading and error states.
- * Current user row is highlighted. Pull-to-refresh supported.
- */
 export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
@@ -108,29 +137,8 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
     isRefetching,
   } = useGroupMembersQuery(groupId);
 
-  if (isLoading) {
-    return (
-      <Screen>
-        <QueryLoadingView message={t("members.loadingMembers")} />
-      </Screen>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <Screen>
-        <QueryErrorView
-          message={t("members.failedLoadMembers")}
-          onRetry={() => refetch()}
-        />
-      </Screen>
-    );
-  }
-
-  const items = data.data;
-
   const renderMemberItem = useCallback(
-    ({ item, index }: { item: (typeof items)[0]; index: number }) => (
+    ({ item, index }: { item: ApiGroupMemberItem; index: number }) => (
       <MemberRow
         item={item}
         isCurrentUser={user?.id != null && item.userId === user.id}
@@ -141,8 +149,36 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
     [user?.id, groupId],
   );
 
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <QueryLoadingView message={t("members.loadingMembers")} />
+      </View>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <View style={styles.centered}>
+        <QueryErrorView
+          message={t("members.failedLoadMembers")}
+          onRetry={() => refetch()}
+        />
+      </View>
+    );
+  }
+
+  const items = data.data;
+
   return (
-    <View  >
+    <View style={styles.container}>
+      {/* Member count */}
+      <View style={[styles.countRow, { borderBottomColor: theme.colors.border }]}>
+        <AppText variant="caption" style={{ color: theme.colors.textSecondary }}>
+          {t("members.count", { count: items.length })}
+        </AppText>
+      </View>
+
       <FlatList
         data={items}
         keyExtractor={(item) => String(item.userId)}
@@ -151,10 +187,6 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
         initialNumToRender={10}
         windowSize={5}
         renderItem={renderMemberItem}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.md, paddingBottom: theme.spacing.md },
-        ]}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -169,23 +201,50 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  listContent: {
-    flexGrow: 1,
-  },
-  card: {
-    minHeight: 56,
-  },
-  row: {
+  container: {
     flex: 1,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  countRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  memberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  indexCol: {
+    width: 28,
+  },
+  indexText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  infoCol: {
+    flex: 1,
+    marginRight: 8,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   username: {
-    flex: 1,
+    fontSize: 15,
     fontWeight: "500",
   },
-  roleBadge: {
-    textTransform: "capitalize",
+  roleIcon: {
+    marginLeft: 6,
   },
-  joinedAt: {
-    marginTop: 4,
+  joinedText: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });
