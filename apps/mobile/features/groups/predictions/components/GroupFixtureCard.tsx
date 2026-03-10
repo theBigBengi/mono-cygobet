@@ -79,10 +79,9 @@ export type GroupFixtureCardProps = {
   hideRound?: boolean;
   /** Show "Round X" instead of "RX" */
   fullRoundLabel?: boolean;
-  /** Card layout mode: vertical (two rows) or horizontal (single row) */
-  cardLayout?: "vertical" | "horizontal";
   /** When true, show full team name instead of short code */
   useFullName?: boolean;
+  cardLayout?: "vertical" | "horizontal";
 };
 
 function GroupFixtureCardInner({
@@ -114,8 +113,8 @@ function GroupFixtureCardInner({
   hideLeagueName,
   hideRound,
   fullRoundLabel,
-  cardLayout,
-  useFullName,
+  useFullName = true,
+  cardLayout = "vertical",
 }: GroupFixtureCardProps) {
   /** Used for card border/radius styling (first/middle/last in group). */
   const positionInGroup = getPositionInGroup(index, totalInGroup);
@@ -261,9 +260,9 @@ function arePropsEqual(
   if (prevProps.isLastInTimeline !== nextProps.isLastInTimeline) return false;
   if (prevProps.isNextToPredict !== nextProps.isNextToPredict) return false;
   if (prevProps.isMaxPoints !== nextProps.isMaxPoints) return false;
-  if (prevProps.cardLayout !== nextProps.cardLayout) return false;
   if (prevProps.hideRound !== nextProps.hideRound) return false;
   if (prevProps.fullRoundLabel !== nextProps.fullRoundLabel) return false;
+  if (prevProps.cardLayout !== nextProps.cardLayout) return false;
   if (prevProps.useFullName !== nextProps.useFullName) return false;
 
   // Callbacks and refs are stable (from useCallback/useRef), no need to compare

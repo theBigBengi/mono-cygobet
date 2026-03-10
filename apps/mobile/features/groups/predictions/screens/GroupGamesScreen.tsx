@@ -68,6 +68,10 @@ export function GroupGamesScreen({
     rawToggleLayout();
   }, [rawToggleLayout]);
 
+  const toggleFullName = useCallback(() => {
+    rawToggleFullName();
+  }, [rawToggleFullName]);
+
   const [isReady, setIsReady] = React.useState(false);
   React.useEffect(() => {
     const handle = InteractionManager.runAfterInteractions(() => {
@@ -574,7 +578,7 @@ export function GroupGamesScreen({
         accuracy={summaryStats.accuracy}
         maxAccuracy={summaryStats.maxAccuracy}
         useFullName={useFullName}
-        onToggleFullName={rawToggleFullName}
+        onToggleFullName={toggleFullName}
         cardLayout={cardLayout}
         onToggleCardLayout={toggleCardLayout}
         onFilterSortPress={hasAnyChips ? handleFilterPress : undefined}
@@ -584,7 +588,7 @@ export function GroupGamesScreen({
     [
       isReady, emptyState, filteredFixtures.length, summaryStats,
       savedPredictionsCount, totalPredictionsCount,
-      useFullName, cardLayout, toggleCardLayout, hasAnyChips, handleFilterPress,
+      useFullName, toggleFullName, cardLayout, toggleCardLayout, hasAnyChips, handleFilterPress,
       activeFilterLabel,
     ]
   );
@@ -607,6 +611,7 @@ export function GroupGamesScreen({
     >
       <View style={{ flex: 1 }}>
         <Animated.FlatList
+          key={cardLayout}
           ref={flatListRef}
           data={isReady ? renderItems : []}
           renderItem={flatListRenderItem}
@@ -625,7 +630,7 @@ export function GroupGamesScreen({
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          windowSize={7}
+          windowSize={5}
           initialNumToRender={initialNumToRender}
           maxToRenderPerBatch={6}
           onScrollToIndexFailed={(info) => {

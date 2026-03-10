@@ -98,85 +98,96 @@ export const GroupGamesListHeader = React.memo(function GroupGamesListHeader({
         </View>
       </View>
 
-      <View style={styles.topRow}>
-        <View style={styles.leftIcons}>
-          <Pressable onPress={onToggleFullName} style={styles.toggleBtn}>
+      <View style={styles.toolbar}>
+        {onFilterSortPress && (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onFilterSortPress();
+            }}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            style={({ pressed }) => [
+              styles.filterBtn,
+                            pressed && { opacity: 0.6 },
+            ]}
+          >
+            <Ionicons name="options-outline" size={14} color={theme.colors.textSecondary} />
+            <Text style={[styles.filterBtnLabel, { color: theme.colors.textSecondary }]}>
+              {activeFilterLabel || "Filter & Sort"}
+            </Text>
+          </Pressable>
+        )}
+        <View style={styles.toolbarRight}>
+          <Pressable
+            onPress={onToggleFullName}
+            style={({ pressed }) => [
+              styles.toolbarBtn,
+                            pressed && { opacity: 0.6 },
+            ]}
+          >
             <TextModeIcon
               expanded={useFullName}
-              size={20}
+              size={18}
               color={theme.colors.textSecondary}
             />
           </Pressable>
-          <Pressable onPress={onToggleCardLayout} style={styles.toggleBtn}>
+          <Pressable
+            onPress={onToggleCardLayout}
+            style={({ pressed }) => [
+              styles.toolbarBtn,
+                            pressed && { opacity: 0.6 },
+            ]}
+          >
             {cardLayout === "vertical" ? (
-              <Foundation name="list" size={18} color={theme.colors.textSecondary} />
+              <Foundation name="list" size={16} color={theme.colors.textSecondary} />
             ) : (
-              <MaterialCommunityIcons name="format-list-text" size={22} color={theme.colors.textSecondary} />
+              <MaterialCommunityIcons name="format-list-text" size={20} color={theme.colors.textSecondary} />
             )}
           </Pressable>
-        </View>
-        <View style={[styles.iconCircle, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
-          <MaterialCommunityIcons name="cards-outline" size={28} color={theme.colors.textInverse} />
+          <View style={[styles.iconCircle, { backgroundColor: theme.colors.primary }]}>
+            <MaterialCommunityIcons name="cards-outline" size={26} color={theme.colors.textInverse} />
+          </View>
         </View>
       </View>
-      {onFilterSortPress && (
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onFilterSortPress();
-          }}
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          style={({ pressed }) => [
-            styles.filterSortButton,
-            pressed && { opacity: 0.5 },
-          ]}
-        >
-          <Ionicons name="options-outline" size={14} color={theme.colors.textSecondary} />
-          <Text style={[styles.filterSortLabel, { color: theme.colors.textSecondary }]}>
-            {activeFilterLabel || "Filter & Sort"}
-          </Text>
-        </Pressable>
-      )}
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  topRow: {
+  toolbar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
-  leftIcons: {
+  toolbarBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toolbarRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
-  toggleBtn: {
-    width: 28,
-    height: 28,
-    borderWidth: 1,
-    borderRadius: 6,
-    borderColor: "transparent",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  filterSortButton: {
+  filterBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingBottom: 12,
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
-  filterSortLabel: {
+  iconCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterBtnLabel: {
     fontSize: 13,
     fontWeight: "600",
   },

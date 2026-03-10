@@ -42,17 +42,43 @@ export function useScrollToNextButton({
       setScrollBtnDir(null);
       return;
     }
-    const timer = setTimeout(() => {
+
+    let measured = false;
+
+    const tryMeasure = (): boolean => {
       const cardRef = matchCardRefs.current[String(nextToPredictId)];
-      if (cardRef?.current) {
-        cardRef.current.measureInWindow((_x: number, screenY: number) => {
-          if (screenY != null) {
-            nextCardY.value = screenY + scrollY.value;
-          }
-        });
+      if (!cardRef?.current) return false;
+      cardRef.current.measureInWindow((_x: number, screenY: number) => {
+        if (screenY != null) {
+          measured = true;
+          nextCardY.value = screenY + scrollY.value;
+        }
+      });
+      return true;
+    };
+
+    // Initial attempt after layout settles
+    const timer = setTimeout(() => {
+      if (!tryMeasure()) {
+        // Card not rendered yet (beyond FlatList window) — assume far below viewport
+        nextCardY.value = 99999;
       }
     }, 400);
-    return () => clearTimeout(timer);
+
+    // Retry until the card is actually measured (renders when user scrolls near it)
+    let attempts = 0;
+    const retryInterval = setInterval(() => {
+      if (measured || attempts++ >= 15) {
+        clearInterval(retryInterval);
+        return;
+      }
+      tryMeasure();
+    }, 800);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(retryInterval);
+    };
   }, [nextToPredictId, isReady, matchCardRefs, scrollY, nextCardY]);
 
   const prevBtnDir = useSharedValue(0);
