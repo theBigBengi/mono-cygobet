@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
-import { AppText, Screen, TeamLogo } from "@/components/ui";
+import { AppText, Screen } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import {
   ScoreInputNavigationBar,
@@ -566,16 +566,12 @@ export function GroupGamesScreen({
         if (item.level === "league" && item.label) {
           return (
             <View style={styles.sectionLeagueHeader}>
-              {item.leagueImagePath && (
-                <TeamLogo imagePath={item.leagueImagePath} teamName={item.label} size={16} rounded={false} />
-              )}
               <View style={styles.sectionLeagueInfo}>
                 <Text
                   style={[styles.sectionLeagueLabel, { color: theme.colors.textPrimary }]}
                   numberOfLines={1}
                 >
                   {item.label}
-                  {item.secondaryLabel ? ` · ${item.secondaryLabel}` : ""}
                 </Text>
                 {item.round ? (
                   <Text style={[styles.sectionLeagueRound, { color: theme.colors.textSecondary }]}>

@@ -35,6 +35,7 @@ import { LobbyLeaderboard } from "../components/LobbyLeaderboard";
 import { LobbyActivityBanner } from "../components/LobbyActivityBanner";
 import { LobbyAboutSection } from "../components/LobbyAboutSection";
 import { LobbyRecentResults } from "../components/LobbyRecentResults";
+import { LobbyGamesSummary } from "../components/LobbyGamesSummary";
 import { formatRelativeTime } from "@/utils/date";
 
 // Debug screens — only loaded in development
@@ -438,7 +439,19 @@ export function GroupLobbyActiveScreen({
           isLoading={isLobbySummaryLoading}
         />
 
-        <LobbyPredictionsCTA
+        {!isLobbySummaryLoading && lobbySummary && (
+          <LobbyGamesSummary
+            totalFixtures={totalFixtures}
+            completedFixturesCount={lobbySummary.completedFixturesCount}
+            predictionsCount={predictionsCount}
+            unpredictedCount={lobbySummary.unpredictedCount}
+            predictableCount={lobbySummary.predictableCount}
+            liveGamesCount={group.liveGamesCount ?? 0}
+            onPress={handleViewGames}
+          />
+        )}
+
+        {/* <LobbyPredictionsCTA
           predictionsCount={predictionsCount}
           totalFixtures={totalFixtures}
           onPress={handleViewGames}
@@ -447,7 +460,7 @@ export function GroupLobbyActiveScreen({
           isLoading={!fixturesLoaded}
           completedFixturesCount={lobbySummary?.completedFixturesCount ?? group.completedFixturesCount ?? 0}
           maxPossiblePoints={group.onTheNosePoints}
-        />
+        /> */}
 
         <LobbyLeaderboard
           ranking={ranking}

@@ -383,7 +383,15 @@
     "seeAll": "See all",
     "about": "About",
     "predictionsLeft": "{{count}} of {{total}} left",
-    "allPredicted": "All games predicted"
+    "allPredicted": "All games predicted",
+    "gamesSummary": "Games",
+    "summaryCompleted": "Completed",
+    "summaryRemaining": "Remaining",
+    "summaryLive": "LIVE",
+    "summaryPredicted": "Predicted",
+    "summaryNeedPrediction": "Need prediction",
+    "summaryNeedPredictionCount": "{{count}} need predictions",
+    "summaryAllSet": "All set"
   },
   "groupSettings": {
     "general": "General",

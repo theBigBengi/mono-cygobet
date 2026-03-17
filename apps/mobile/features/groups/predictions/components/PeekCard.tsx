@@ -6,6 +6,7 @@ import Animated, {
   interpolate,
   type SharedValue,
 } from "react-native-reanimated";
+import { type GestureType } from "react-native-gesture-handler";
 import { canPredict } from "@repo/utils";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -50,6 +51,8 @@ type PeekCardProps = {
   isFinishedGame?: boolean;
   /** Total number of cards in the group */
   totalCards: number;
+  /** Ref to the pager gesture — passed to sliders so they can block it */
+  pagerGestureRef?: React.MutableRefObject<GestureType | undefined>;
 };
 
 export const PeekCard = React.memo(function PeekCard({
@@ -71,6 +74,7 @@ export const PeekCard = React.memo(function PeekCard({
   isNearby = true,
   isFinishedGame = false,
   totalCards,
+  pagerGestureRef,
 }: PeekCardProps) {
   const { theme } = useTheme();
   const isEditable = canPredict(fixture.state, fixture.startTs);
@@ -187,6 +191,7 @@ export const PeekCard = React.memo(function PeekCard({
                   onValueChange={(val) => handleSliderChange("home", val)}
                   thumbColor={homeThumbColor}
                   side="right"
+                  pagerGestureRef={pagerGestureRef}
                 />
               </View>
 
@@ -260,6 +265,7 @@ export const PeekCard = React.memo(function PeekCard({
                   onValueChange={(val) => handleSliderChange("away", val)}
                   thumbColor={awayThumbColor}
                   side="left"
+                  pagerGestureRef={pagerGestureRef}
                 />
               </View>
             </Animated.View>

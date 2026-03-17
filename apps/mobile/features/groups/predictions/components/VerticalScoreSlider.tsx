@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Gesture, GestureDetector, type GestureType } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -107,6 +107,8 @@ export type VerticalScoreSliderProps = {
   side?: "left" | "right";
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  /** Ref to the pager gesture — slider blocks it when touched */
+  pagerGestureRef?: React.MutableRefObject<GestureType | undefined>;
 };
 
 /**
@@ -121,6 +123,7 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
   side,
   onDragStart,
   onDragEnd,
+  pagerGestureRef,
 }: VerticalScoreSliderProps) {
   const { theme } = useTheme();
 
@@ -188,8 +191,11 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
   );
 
   // Touch anywhere on the strip + thumb to jump + drag
-  const panGesture = Gesture.Pan()
-    .minDistance(0)
+  const panGesture = (() => {
+    const g = Gesture.Pan().minDistance(0);
+    if (pagerGestureRef) g.blocksExternalGesture(pagerGestureRef);
+    return g;
+  })()
     .onStart((e) => {
       isSyncingFromProp.value = 0;
       runOnJS(setIsDragging)(true);

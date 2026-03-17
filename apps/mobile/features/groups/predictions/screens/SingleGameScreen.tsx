@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { View, StyleSheet, Dimensions, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { GestureDetector } from "react-native-gesture-handler";
+import { GestureDetector, type GestureType } from "react-native-gesture-handler";
 import Animated, { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -129,6 +129,8 @@ function SingleGameContent({
     saveAllPending,
   } = useGroupPredictions({ groupId, predictionMode });
 
+  const pagerGestureRef = React.useRef<GestureType>(undefined);
+
   const saveAllPendingRef = React.useRef(saveAllPending);
   saveAllPendingRef.current = saveAllPending;
 
@@ -205,6 +207,7 @@ function SingleGameContent({
     swipeThreshold: SWIPE_THRESHOLD,
     onSavePending: savePending,
     onIndexChange,
+    pagerGestureRef,
   });
 
   // Data still loading
@@ -277,6 +280,7 @@ function SingleGameContent({
                   isInteractive={currentIndex === i}
                   isNearby={Math.abs(currentIndex - i) <= 1}
                   totalCards={stripFixtures.length}
+                  pagerGestureRef={pagerGestureRef}
                 />
               ))}
             </Animated.View>

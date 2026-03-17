@@ -383,7 +383,15 @@
     "seeAll": "הצג הכל",
     "about": "אודות",
     "predictionsLeft": "{{count}} מתוך {{total}} נותרו",
-    "allPredicted": "כל המשחקים נוחשו"
+    "allPredicted": "כל המשחקים נוחשו",
+    "gamesSummary": "משחקים",
+    "summaryCompleted": "הסתיימו",
+    "summaryRemaining": "נותרו",
+    "summaryLive": "שידור חי",
+    "summaryPredicted": "נוחשו",
+    "summaryNeedPrediction": "צריך ניחוש",
+    "summaryNeedPredictionCount": "{{count}} צריכים ניחוש",
+    "summaryAllSet": "הכל מוכן"
   },
   "groupSettings": {
     "general": "כללי",

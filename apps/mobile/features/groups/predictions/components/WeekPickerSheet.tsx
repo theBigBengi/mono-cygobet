@@ -9,7 +9,7 @@ import {
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
 import { useTheme } from "@/lib/theme";
-import type { WeekInfo } from "../hooks/useSmartFilters";
+import type { WeekInfo, TeamChip } from "../hooks/useSmartFilters";
 
 type ActionPill = { id: string; label: string };
 
@@ -26,6 +26,9 @@ interface WeekPickerSheetProps {
   onSelectWeek: (weekKey: string) => void;
   selectedAction?: string;
   onSelectAction?: (action: string) => void;
+  teams?: TeamChip[];
+  selectedTeamId?: number | null;
+  onSelectTeam?: (id: number | null) => void;
 }
 
 export function WeekPickerSheet({
@@ -35,6 +38,9 @@ export function WeekPickerSheet({
   onSelectWeek,
   selectedAction,
   onSelectAction,
+  teams,
+  selectedTeamId,
+  onSelectTeam,
 }: WeekPickerSheetProps) {
   const { theme } = useTheme();
 
@@ -109,6 +115,50 @@ export function WeekPickerSheet({
                     { color: isActive ? theme.colors.textInverse : theme.colors.textSecondary },
                   ]}>
                     {pill.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+        {teams && teams.length > 0 && onSelectTeam && (
+          <View style={styles.pillRow}>
+            <Pressable
+              onPress={() => { onSelectTeam(null); sheetRef.current?.dismiss(); }}
+              style={({ pressed }) => [
+                styles.pill,
+                {
+                  backgroundColor: selectedTeamId == null ? theme.colors.primary : theme.colors.textSecondary + "10",
+                  opacity: pressed ? 0.6 : 1,
+                },
+              ]}
+            >
+              <Text style={[
+                styles.pillText,
+                { color: selectedTeamId == null ? theme.colors.textInverse : theme.colors.textSecondary },
+              ]}>
+                All Teams
+              </Text>
+            </Pressable>
+            {teams.map((team) => {
+              const isActive = team.id === selectedTeamId;
+              return (
+                <Pressable
+                  key={team.id}
+                  onPress={() => { onSelectTeam(team.id); sheetRef.current?.dismiss(); }}
+                  style={({ pressed }) => [
+                    styles.pill,
+                    {
+                      backgroundColor: isActive ? theme.colors.primary : theme.colors.textSecondary + "10",
+                      opacity: pressed ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <Text style={[
+                    styles.pillText,
+                    { color: isActive ? theme.colors.textInverse : theme.colors.textSecondary },
+                  ]}>
+                    {team.name}
                   </Text>
                 </Pressable>
               );

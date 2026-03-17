@@ -302,113 +302,71 @@ export function MatchPredictionCardVertical({
             ]}
           >
             <Animated.View style={[styles.highlightOverlay, { backgroundColor: theme.colors.primary + "15" }, highlightAnimStyle]} pointerEvents="none" />
+            {/* Match row: [Home] [Center] [Away] */}
+            <View style={styles.hRow}>
+              {/* Home team */}
+              <Pressable style={styles.hTeamHalf} onPress={handlePressCenter}>
+                <TeamLogo imagePath={fixture.homeTeam?.imagePath} teamName={homeTeamName} size={22} rounded={false} />
+                <AppText
+                  variant="body"
+                  numberOfLines={1}
+                  style={[
+                    styles.hTeamName,
+                    { color: isHomeFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary },
+                  ]}
+                >
+                  {homeTeamName}
+                </AppText>
+              </Pressable>
 
-            {/* Date/time row */}
-            {statusData.date && (
-              <Text style={{ fontSize: 9, fontWeight: "500", color: statusData.textColor, paddingTop: 4 }}>{`${statusData.numericDate}  ${statusData.top}:${statusData.bottom}`}</Text>
-            )}
-
-            {/* Match row */}
-            <View style={[styles.hRow, { flex: undefined, height: undefined, minHeight: 36, overflow: "visible" as const }]}>
-            {/* Home half */}
-            <Pressable
-              style={styles.hTeamHalf}
-              onPress={handlePressCenter}
-            >
-              <TeamLogo imagePath={fixture.homeTeam?.imagePath} teamName={homeTeamName} size={18} rounded={false} />
-              <AppText
-                variant="body"
-                numberOfLines={1}
-                style={[
-                  styles.hTeamName,
-                  { color: isHomeFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary },
-                ]}
-              >
-                {homeTeamName}
-              </AppText>
-              <View style={{ width: 18, alignItems: "flex-end" }}>
-                <ResultDisplay
-                  result={gameResultOrTime}
-                  isLive={isLive}
-                  isFinished={isFinished}
-                  isCancelled={isCancelled}
-                  isHomeWinner={isHomeWinner}
-                  isAwayWinner={isAwayWinner}
-                  type="home"
-                />
+              {/* Center: prediction always aligned with logos, result pinned below */}
+              <View style={styles.hCenter}>
+                {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
+                  <ScoreInputPair
+                    homeValue={prediction.home}
+                    awayValue={prediction.away}
+                    isHomeFocused={isHomeFocused}
+                    isAwayFocused={isAwayFocused}
+                    isEditable={isEditable}
+                    isFinished={isFinished}
+                    isLive={isLive}
+                    homeRef={homeRef}
+                    awayRef={awayRef}
+                    onHomeChange={handleHomeChange}
+                    onAwayChange={handleAwayChange}
+                    onHomeFocus={handleHomeFocus}
+                    onAwayFocus={handleAwayFocus}
+                    onBlur={onBlur}
+                    onHomeAutoNext={onAutoNext ? handleHomeAutoNext : undefined}
+                    onAwayAutoNext={onAutoNext ? handleAwayAutoNext : undefined}
+                    isCorrect={predictionSuccess}
+                  />
+                )}
+                {(isFinished || isLive) && gameResultOrTime && (
+                  <Text style={[styles.hResultText, { color: isLive ? theme.colors.live : theme.colors.textSecondary, position: "absolute", bottom: -14 }]}>
+                    {gameResultOrTime.home ?? "-"}:{gameResultOrTime.away ?? "-"}
+                  </Text>
+                )}
               </View>
-            </Pressable>
 
-            {/* Score inputs center */}
-            {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
-              <View style={styles.hScoresCenter}>
-                <ScoreInputPair
-                  homeValue={prediction.home}
-                  awayValue={prediction.away}
-                  isHomeFocused={isHomeFocused}
-                  isAwayFocused={isAwayFocused}
-                  isEditable={isEditable}
-                  isFinished={isFinished}
-                  isLive={isLive}
-                  homeRef={homeRef}
-                  awayRef={awayRef}
-                  onHomeChange={handleHomeChange}
-                  onAwayChange={handleAwayChange}
-                  onHomeFocus={handleHomeFocus}
-                  onAwayFocus={handleAwayFocus}
-                  onBlur={onBlur}
-                  onHomeAutoNext={onAutoNext ? handleHomeAutoNext : undefined}
-                  onAwayAutoNext={onAutoNext ? handleAwayAutoNext : undefined}
-                  isCorrect={predictionSuccess}
-                />
-              </View>
-            )}
-
-            {/* Away half */}
-            <Pressable
-              style={styles.hTeamHalf}
-              onPress={handlePressCenter}
-            >
-              <View style={{ width: 18 }}>
-                <ResultDisplay
-                  result={gameResultOrTime}
-                  isLive={isLive}
-                  isFinished={isFinished}
-                  isCancelled={isCancelled}
-                  isHomeWinner={isHomeWinner}
-                  isAwayWinner={isAwayWinner}
-                  type="away"
-                />
-              </View>
-              <AppText
-                variant="body"
-                numberOfLines={1}
-                style={[
-                  styles.hTeamName,
-                  { color: isAwayFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary, textAlign: "right" },
-                ]}
-              >
-                {awayTeamName}
-              </AppText>
-              <TeamLogo imagePath={fixture.awayTeam?.imagePath} teamName={awayTeamName} size={18} rounded={false} />
-            </Pressable>
-            </View>{/* close match row */}
+              {/* Away team */}
+              <Pressable style={[styles.hTeamHalf, { flexDirection: "row-reverse" }]} onPress={handlePressCenter}>
+                <TeamLogo imagePath={fixture.awayTeam?.imagePath} teamName={awayTeamName} size={22} rounded={false} />
+                <AppText
+                  variant="body"
+                  numberOfLines={1}
+                  style={[
+                    styles.hTeamName,
+                    { color: isAwayFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary, textAlign: "right" },
+                  ]}
+                >
+                  {awayTeamName}
+                </AppText>
+              </Pressable>
+            </View>
           </View>{/* close card */}
 
-          {/* Badge — centered above scores */}
-          {rightBoxData && rightBoxData.icon !== "cancel" ? (
-            <View style={{ position: "absolute", top: -5, alignSelf: "center", left: "50%", marginLeft: -12, backgroundColor: rightBoxData.bgColor, borderRadius: 12, width: 24, height: 24, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: theme.colors.surface }}>
-              <Text style={{ fontSize: 11, fontWeight: "800", color: rightBoxData.textColor }}>{rightBoxData.top}</Text>
-            </View>
-          ) : !isFinished && !isLive && !isCancelled && !hasPrediction ? (
-            <Pressable onPress={handlePressCenter} style={{ position: "absolute", top: -5, left: "50%", marginLeft: -12, backgroundColor: theme.colors.surface, borderRadius: 12, width: 24, height: 24, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: theme.colors.textSecondary + "40" }}>
-              <FontAwesome6 name="plus" size={10} color={theme.colors.textSecondary + "90"} />
-            </Pressable>
-          ) : !isFinished && !isLive && !isCancelled && hasPrediction ? (
-            <View style={{ position: "absolute", top: -5, left: "50%", marginLeft: -12, backgroundColor: "#34C75920", borderRadius: 12, width: 24, height: 24, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: theme.colors.surface }}>
-              <Ionicons name="checkmark" size={13} color="#34C759" />
-            </View>
-          ) : null}
+
 
         </View>
       </View>
@@ -734,14 +692,23 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   hTeamName: {
-    flex: 1,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "500" as const,
-    lineHeight: 15,
-    minWidth: 0,
+    flex: 1,
   },
-  hScoresCenter: {
+  hCenter: {
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginBottom: 10,
+  },
+  hResultsRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingBottom: 2,
+  },
+  hResultText: {
+    fontSize: 11,
+    fontWeight: "600" as const,
   },
 });

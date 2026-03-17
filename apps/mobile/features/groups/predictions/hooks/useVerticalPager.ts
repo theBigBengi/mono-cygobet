@@ -1,14 +1,11 @@
-import { Dimensions } from "react-native";
-import { Gesture } from "react-native-gesture-handler";
+import type React from "react";
+import { Gesture, type GestureType } from "react-native-gesture-handler";
 import {
   useAnimatedStyle,
-  useSharedValue,
   withTiming,
   runOnJS,
   type SharedValue,
 } from "react-native-reanimated";
-
-const SCREEN_WIDTH = Dimensions.get("window").width;
 
 type VerticalPagerOpts = {
   totalCards: number;
@@ -19,6 +16,7 @@ type VerticalPagerOpts = {
   swipeThreshold: number;
   onSavePending: () => void;
   onIndexChange: (index: number) => void;
+  pagerGestureRef: React.MutableRefObject<GestureType | undefined>;
 };
 
 export function useVerticalPager({
@@ -30,45 +28,11 @@ export function useVerticalPager({
   swipeThreshold,
   onSavePending,
   onIndexChange,
+  pagerGestureRef,
 }: VerticalPagerOpts) {
-  // Only the middle 60% of the screen activates the pager swipe.
-  const LEFT_BOUND = SCREEN_WIDTH * 0.20;
-  const RIGHT_BOUND = SCREEN_WIDTH * 0.80;
-
-  // Track touch start for manual direction disambiguation
-  const startAbsX = useSharedValue(0);
-  const startAbsY = useSharedValue(0);
-  const decided = useSharedValue(false);
-
   const panGesture = Gesture.Pan()
-    .manualActivation(true)
-    .onTouchesDown((e, stateManager) => {
-      const touch = e.allTouches[0];
-      if (!touch) return;
-      // Fail immediately if touch is in the slider zone
-      if (touch.x <= LEFT_BOUND || touch.x >= RIGHT_BOUND) {
-        stateManager.fail();
-        return;
-      }
-      startAbsX.value = touch.absoluteX;
-      startAbsY.value = touch.absoluteY;
-      decided.value = false;
-    })
-    .onTouchesMove((e, stateManager) => {
-      if (decided.value) return;
-      const touch = e.allTouches[0];
-      if (!touch) return;
-      const dx = Math.abs(touch.absoluteX - startAbsX.value);
-      const dy = Math.abs(touch.absoluteY - startAbsY.value);
-      // Wait for enough movement to determine direction
-      if (dx < 10 && dy < 10) return;
-      decided.value = true;
-      if (dy > dx) {
-        stateManager.activate();
-      } else {
-        stateManager.fail();
-      }
-    })
+    .withRef(pagerGestureRef)
+    .activeOffsetY([-10, 10])
     .failOffsetX([-20, 20])
     .onUpdate((e) => {
       if (expandProgress.value > 0) return;
