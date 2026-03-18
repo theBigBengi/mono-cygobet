@@ -31,13 +31,13 @@ export async function logActivity(
       },
     });
 
-    opts?.io?.to(`group:${groupId}`).emit("activity:new" as any, {
+    opts?.io?.to(`group:${groupId}`).emit("activity:new", {
       id: row.id,
       createdAt: row.createdAt.toISOString(),
       eventType: row.eventType,
       body: row.body,
       meta: row.meta as Record<string, unknown> | null,
-      actor: null, // Caller can enrich if needed; for now lightweight
+      actor: null,
     });
   } catch (err) {
     log.warn({ groupId, eventType, err }, "Failed to log activity");

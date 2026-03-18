@@ -24,6 +24,7 @@ import {
   SocketProvider,
   InviteSocketListeners,
   ChatNotificationListeners,
+  ActivitySocketListeners,
 } from "@/lib/socket";
 import { ChatNotificationToast } from "@/components/ChatNotificationToast";
 import { PushNotificationSetup } from "@/lib/push";
@@ -287,6 +288,7 @@ function RootLayout() {
                   <SocketProvider>
                     <InviteSocketListeners />
                     <ChatNotificationListeners />
+                    <ActivitySocketListeners />
                     <ChatNotificationToast />
                     <PushNotificationSetup />
                     <AppContent />

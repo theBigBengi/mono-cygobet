@@ -107,9 +107,17 @@ export function ChatNotificationListeners() {
     return () => unsubscribe();
   }, [socket, isConnected, isReady, queryClient]);
 
-  // Listen to message:new for toast notifications
+  // Listen to message:new — invalidate unread/preview caches and show toast
   const handleMessageNew = useCallback(
     (message: ChatMessage) => {
+      // Always invalidate unread counts and chat preview so the UI stays
+      // up-to-date without polling. This replaces the 30s/60s refetchInterval
+      // with near-instant, event-driven updates.
+      queryClient.invalidateQueries({ queryKey: groupsKeys.unreadCounts() });
+      queryClient.invalidateQueries({ queryKey: groupsKeys.chatPreview() });
+
+      // --- Toast notification logic ---
+
       // 1. Skip system events
       if (message.type !== "user_message") return;
 

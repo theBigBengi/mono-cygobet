@@ -65,6 +65,10 @@ export function useGroupMessagesQuery(groupId: number | null) {
 
 /**
  * Fetch unread message counts for all of the user's joined groups.
+ *
+ * Primary updates come from Socket.IO (message:new → cache invalidation
+ * in ChatNotificationListeners). The 5-minute interval is a safety-net
+ * fallback in case the socket disconnects or an event is missed.
  */
 export function useUnreadCountsQuery() {
   const { status, user } = useAuth();
@@ -76,13 +80,18 @@ export function useUnreadCountsQuery() {
     queryKey: groupsKeys.unreadCounts(),
     queryFn: () => fetchUnreadCounts(),
     enabled,
-    refetchInterval: isActive ? 30_000 : false, // Pause when in background
+    staleTime: 30_000,
+    refetchInterval: isActive ? 5 * 60_000 : false, // 5-min fallback; real-time via socket
     meta: { scope: "user" } as const,
   });
 }
 
 /**
  * Fetch chat preview (unread count + last message) for all of the user's joined groups.
+ *
+ * Primary updates come from Socket.IO (message:new → cache invalidation
+ * in ChatNotificationListeners). The 5-minute interval is a safety-net
+ * fallback in case the socket disconnects or an event is missed.
  */
 export function useGroupChatPreviewQuery() {
   const { status, user } = useAuth();
@@ -94,8 +103,8 @@ export function useGroupChatPreviewQuery() {
     queryKey: groupsKeys.chatPreview(),
     queryFn: () => fetchGroupChatPreview(),
     enabled,
-    staleTime: 30_000, // 30 seconds
-    refetchInterval: isActive ? 60_000 : false, // Pause when in background
+    staleTime: 30_000,
+    refetchInterval: isActive ? 5 * 60_000 : false, // 5-min fallback; real-time via socket
     meta: { scope: "user" } as const,
   });
 }

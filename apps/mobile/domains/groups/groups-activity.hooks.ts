@@ -44,6 +44,10 @@ export function useGroupActivityQuery(groupId: number | null) {
 /**
  * Fetch unread activity counts for all user's groups.
  * Returns Record<groupId, count>.
+ *
+ * Primary updates come from Socket.IO (activity:new → cache invalidation
+ * in ActivitySocketListeners). The 5-minute interval is a safety-net
+ * fallback in case the socket disconnects or an event is missed.
  */
 export function useUnreadActivityCountsQuery() {
   const { status, user } = useAuth();
@@ -55,7 +59,7 @@ export function useUnreadActivityCountsQuery() {
     queryFn: () => fetchUnreadActivityCounts(),
     enabled,
     staleTime: 30_000,
-    refetchInterval: isActive ? 60_000 : false,
+    refetchInterval: isActive ? 5 * 60_000 : false, // 5-min fallback; real-time via socket
     meta: { scope: "user" } as const,
   });
 }

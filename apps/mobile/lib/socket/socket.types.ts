@@ -31,8 +31,18 @@ export interface InviteReceivedPayload {
   expiresAt: string;
 }
 
+export interface ActivityPayload {
+  id: number;
+  createdAt: string;
+  eventType: string;
+  body: string;
+  meta: Record<string, unknown> | null;
+  actor: { id: number; username: string | null } | null;
+}
+
 export interface ServerToClientEvents {
   "message:new": (message: ChatMessage) => void;
+  "activity:new": (payload: ActivityPayload) => void;
   "typing:start": (data: { userId: number; username: string | null }) => void;
   "typing:stop": (data: { userId: number }) => void;
   error: (data: { event: string; message: string }) => void;
