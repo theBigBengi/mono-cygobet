@@ -14,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { useGroupActivityQuery } from "@/domains/groups";
 import { formatRelativeTime } from "@/utils/date";
 import type { ApiGroupActivityItem } from "@repo/types";
@@ -143,8 +144,8 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChang
     setExpanded(next);
   }, [expanded, expandedHeight, collapsedHeight, animHeight, fadeOpacity, onExpandChange]);
 
-  // Build rgba gradient colors from background hex to avoid 8-digit hex rendering issues
-  const bgHex = theme.colors.background;
+  // Build rgba gradient colors from surface hex to avoid 8-digit hex rendering issues
+  const bgHex = theme.colors.surface;
   const r = parseInt(bgHex.slice(1, 3), 16);
   const g = parseInt(bgHex.slice(3, 5), 16);
   const b = parseInt(bgHex.slice(5, 7), 16);
@@ -153,7 +154,7 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChang
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <View style={styles.wrapper}>
+        <View style={[styles.wrapper, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.headerRow}>
             <Animated.View
               style={[
@@ -200,7 +201,7 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChang
 
   return (
     <View style={styles.container}>
-      <View style={styles.wrapper}>
+      <View style={[styles.wrapper, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.headerRow}>
           <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
             {t("lobby.activity")}
@@ -210,11 +211,9 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChang
               onPress={onPress}
               style={({ pressed }) => [pressed && styles.pressed]}
             >
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={theme.colors.textSecondary}
-              />
+              <Text style={[styles.seeAllText, { color: theme.colors.textSecondary }]}>
+                {t("lobby.seeAll")}
+              </Text>
             </Pressable>
           )}
         </View>
@@ -265,12 +264,13 @@ export const LobbyActivityBanner = React.memo(LobbyActivityBannerInner);
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    marginHorizontal: 16,
     marginBottom: 24,
   },
   wrapper: {
     borderRadius: 18,
-    paddingVertical: 16,
+    padding: 16,
+    ...getShadowStyle("sm"),
   },
   headerRow: {
     flexDirection: "row",
@@ -281,6 +281,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: "700",
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
   listWrapper: {
     position: "relative",

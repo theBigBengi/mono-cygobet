@@ -107,13 +107,7 @@ function LobbyAboutSectionInner({ group }: LobbyAboutSectionProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>
-          {t("lobby.about")}
-        </Text>
-      </View>
-
-      <View style={[styles.card, { backgroundColor: c.cardBackground, ...getShadowStyle("sm") }]}>
+      <View style={[styles.card, { backgroundColor: c.surface, ...getShadowStyle("sm") }]}>
         <Text style={[styles.groupName, { color: c.textPrimary }]} numberOfLines={1}>
           {group.name}
         </Text>
@@ -206,22 +200,17 @@ export const LobbyAboutSection = React.memo(LobbyAboutSectionInner);
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    marginHorizontal: 16,
     marginBottom: 24,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 10,
   },
   card: {
     borderRadius: 18,
-    padding: 18,
+    padding: 16,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: "700",
+    marginBottom: 10,
   },
   groupName: {
     fontSize: 16,

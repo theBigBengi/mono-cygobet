@@ -121,7 +121,7 @@ function LobbyQuickActionsInner({
           onPress={cardsAction.onPress}
           style={({ pressed }) => [
             styles.cardWrapper,
-            { backgroundColor: theme.colors.cardBackground },
+            { backgroundColor: theme.colors.surface },
             pressed && { opacity: 0.7 },
           ]}
         >
@@ -149,14 +149,13 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    marginHorizontal: 16,
     marginTop: 12,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   cardWrapper: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 14,
+    borderRadius: 18,
+    padding: 16,
     ...getShadowStyle("sm"),
   },
   row: {

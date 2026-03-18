@@ -1,12 +1,18 @@
 // features/groups/group-lobby/components/LobbyGamesSummary.tsx
-// Flat, minimal games overview — all key stats at a glance.
+// Games summary card — progress ring + stats in a clean card.
 
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Svg, { Circle } from "react-native-svg";
 import { useTheme } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
+
+const RING_SIZE = 56;
+const RING_STROKE = 5;
+const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 export interface LobbyGamesSummaryProps {
   totalFixtures: number;
@@ -32,140 +38,110 @@ function LobbyGamesSummaryInner({
 
   const remaining = totalFixtures - completedFixturesCount;
   const progressPct =
-    totalFixtures > 0
-      ? Math.round((completedFixturesCount / totalFixtures) * 100)
-      : 0;
+    totalFixtures > 0 ? completedFixturesCount / totalFixtures : 0;
+  const strokeDashoffset = RING_CIRCUMFERENCE * (1 - progressPct);
+
+  // Status config
+  let statusIcon: React.ComponentProps<typeof Ionicons>["name"] = "checkmark-circle";
+  let statusColor = theme.colors.success;
+  let statusText = t("lobby.summaryAllSet");
+
+  if (liveGamesCount > 0) {
+    statusIcon = "radio";
+    statusColor = theme.colors.live;
+    statusText = `${liveGamesCount} ${t("lobby.summaryLive")}`;
+  } else if (unpredictedCount > 0) {
+    statusIcon = "alert-circle";
+    statusColor = theme.colors.warning;
+    statusText = t("lobby.summaryNeedPredictionCount", { count: unpredictedCount });
+  } else if (predictableCount === 0) {
+    statusIcon = "time-outline";
+    statusColor = theme.colors.textSecondary;
+    statusText = t("lobby.summaryRemaining");
+  }
 
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [
+        styles.container,
+        { backgroundColor: theme.colors.surface },
+        pressed && { opacity: 0.7 },
+      ]}
     >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
-            {t("lobby.gamesSummary")}
+      {/* Left: Progress ring */}
+      <View style={styles.ringSection}>
+        <Svg width={RING_SIZE} height={RING_SIZE}>
+          {/* Track */}
+          <Circle
+            cx={RING_SIZE / 2}
+            cy={RING_SIZE / 2}
+            r={RING_RADIUS}
+            stroke={theme.colors.border}
+            strokeWidth={RING_STROKE}
+            fill="none"
+          />
+          {/* Fill */}
+          <Circle
+            cx={RING_SIZE / 2}
+            cy={RING_SIZE / 2}
+            r={RING_RADIUS}
+            stroke={theme.colors.primary}
+            strokeWidth={RING_STROKE}
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={RING_CIRCUMFERENCE}
+            strokeDashoffset={strokeDashoffset}
+            rotation={-90}
+            origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
+          />
+        </Svg>
+        <View style={styles.ringLabel}>
+          <Text style={[styles.ringValue, { color: theme.colors.textPrimary }]}>
+            {Math.round(progressPct * 100)}
           </Text>
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={theme.colors.textSecondary}
-          />
+          <Text style={[styles.ringUnit, { color: theme.colors.textSecondary }]}>%</Text>
         </View>
+      </View>
 
-        {/* Progress bar */}
-        <View
-          style={[
-            styles.progressTrack,
-            { backgroundColor: theme.colors.border },
-          ]}
-        >
-          <View
-            style={[
-              styles.progressFill,
-              {
-                backgroundColor: theme.colors.primary,
-                width: `${Math.min(progressPct, 100)}%`,
-              },
-            ]}
-          />
-        </View>
-
-        {/* Stats — single row, evenly spaced */}
-        <View style={styles.statsRow}>
+      {/* Right: Stats */}
+      <View style={styles.statsSection}>
+        <View style={styles.statsGrid}>
           <View style={styles.stat}>
-            <Text
-              style={[styles.statValue, { color: theme.colors.textPrimary }]}
-            >
-              {completedFixturesCount}/{totalFixtures}
+            <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
+              {completedFixturesCount}
             </Text>
-            <Text
-              style={[
-                styles.statLabel,
-                { color: theme.colors.textSecondary },
-              ]}
-            >
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
               {t("lobby.summaryCompleted")}
             </Text>
           </View>
-
-          <View
-            style={[styles.statDivider, { backgroundColor: theme.colors.border }]}
-          />
-
           <View style={styles.stat}>
-            <Text
-              style={[styles.statValue, { color: theme.colors.textPrimary }]}
-            >
+            <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
               {remaining}
             </Text>
-            <Text
-              style={[
-                styles.statLabel,
-                { color: theme.colors.textSecondary },
-              ]}
-            >
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
               {t("lobby.summaryRemaining")}
             </Text>
           </View>
-
-          <View
-            style={[styles.statDivider, { backgroundColor: theme.colors.border }]}
-          />
-
           <View style={styles.stat}>
-            <Text
-              style={[styles.statValue, { color: theme.colors.textPrimary }]}
-            >
-              {predictionsCount}/{totalFixtures}
+            <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
+              {predictionsCount}
             </Text>
-            <Text
-              style={[
-                styles.statLabel,
-                { color: theme.colors.textSecondary },
-              ]}
-            >
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
               {t("lobby.summaryPredicted")}
             </Text>
           </View>
         </View>
 
-        {/* Status line — contextual */}
-        {liveGamesCount > 0 ? (
-          <View style={styles.statusRow}>
-            <Ionicons name="radio" size={12} color={theme.colors.live} />
-            <Text style={[styles.statusText, { color: theme.colors.live }]}>
-              {liveGamesCount} {t("lobby.summaryLive")}
-            </Text>
-          </View>
-        ) : unpredictedCount > 0 ? (
-          <View style={styles.statusRow}>
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: theme.colors.warning },
-              ]}
-            />
-            <Text style={[styles.statusText, { color: theme.colors.warning }]}>
-              {t("lobby.summaryNeedPredictionCount", {
-                count: unpredictedCount,
-              })}
-            </Text>
-          </View>
-        ) : predictableCount > 0 ? (
-          <View style={styles.statusRow}>
-            <Ionicons
-              name="checkmark-circle"
-              size={13}
-              color={theme.colors.success}
-            />
-            <Text style={[styles.statusText, { color: theme.colors.success }]}>
-              {t("lobby.summaryAllSet")}
-            </Text>
-          </View>
-        ) : null}
+        {/* Status pill */}
+        <View style={[styles.statusPill, { backgroundColor: statusColor + "14" }]}>
+          <Ionicons name={statusIcon} size={13} color={statusColor} />
+          <Text style={[styles.statusText, { color: statusColor }]}>
+            {statusText}
+          </Text>
+        </View>
       </View>
+
     </Pressable>
   );
 }
@@ -174,64 +150,67 @@ export const LobbyGamesSummary = React.memo(LobbyGamesSummaryInner);
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
     marginBottom: 24,
+    borderRadius: 18,
+    padding: 16,
+    ...getShadowStyle("sm"),
   },
-  header: {
-    flexDirection: "row",
+  ringSection: {
+    width: RING_SIZE,
+    height: RING_SIZE,
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 14,
+    justifyContent: "center",
+    marginEnd: 16,
   },
-  title: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: 3,
-    marginBottom: 18,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: 4,
-    borderRadius: 3,
-  },
-  statsRow: {
-    flexDirection: "row",
+  ringLabel: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+  },
+  ringValue: {
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  ringUnit: {
+    fontSize: 10,
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  statsSection: {
+    flex: 1,
+    gap: 10,
+  },
+  statsGrid: {
+    flexDirection: "row",
+    gap: 4,
   },
   stat: {
     flex: 1,
-    alignItems: "center",
-  },
-  statDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 28,
   },
   statValue: {
-    fontSize: 17,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "800",
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "500",
-    marginTop: 2,
+    marginTop: 1,
   },
-  statusRow: {
+  statusPill: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 14,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    alignSelf: "flex-start",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
   },
 });

@@ -146,7 +146,7 @@ function LobbyLeaderboardInner({
     return (
       <View style={styles.container}>
         <View
-          style={styles.wrapper}
+          style={[styles.wrapper, { backgroundColor: theme.colors.surface }]}
         >
           {/* Bottom section */}
           <View style={styles.bottomSection}>
@@ -161,17 +161,6 @@ function LobbyLeaderboardInner({
                 </Text>
               </View>
 
-              {/* Right: View All link (only in zero-points state) */}
-              {allZeroPoints && (
-                <Pressable
-                  onPress={onPress}
-                  style={({ pressed }) => [pressed && { opacity: 0.6 }]}
-                >
-                  <Text style={[styles.seeAllText, { color: theme.colors.textSecondary }]}>
-                    {t("lobby.seeAll")}
-                  </Text>
-                </Pressable>
-              )}
             </View>
           </View>
         </View>
@@ -236,6 +225,7 @@ function LobbyLeaderboardInner({
       <View
         style={[
           styles.wrapper,
+          { backgroundColor: theme.colors.surface },
           pressed && styles.wrapperPressed,
         ]}
       >
@@ -243,9 +233,6 @@ function LobbyLeaderboardInner({
         <View style={styles.titleRow}>
           <Text style={[styles.bottomTitle, { color: theme.colors.textPrimary }]}>
             {t("lobby.leaderboard")}
-          </Text>
-          <Text style={[styles.seeAllText, { color: theme.colors.textSecondary }]}>
-            {t("lobby.seeAll")}
           </Text>
         </View>
 
@@ -300,23 +287,26 @@ export const LobbyLeaderboard = React.memo(LobbyLeaderboardInner);
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    marginHorizontal: 16,
     marginBottom: 24,
   },
   wrapper: {
+    backgroundColor: "transparent",
+    borderRadius: 18,
+    padding: 16,
+    ...getShadowStyle("sm"),
   },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 14,
   },
   wrapperPressed: {
     opacity: 0.7,
   },
   barsContainer: {
     gap: 10,
-    marginTop: 14,
   },
   barRow: {
     flexDirection: "row",
