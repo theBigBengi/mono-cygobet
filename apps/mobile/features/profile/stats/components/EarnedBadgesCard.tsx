@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   iconImage: {
     width: 24,
     height: 24,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   content: {
     flex: 1,

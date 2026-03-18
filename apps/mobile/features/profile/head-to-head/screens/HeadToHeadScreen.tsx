@@ -158,7 +158,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 32,
-    backgroundColor: "red",
     width: "100%",
   },
   groupsTitle: {

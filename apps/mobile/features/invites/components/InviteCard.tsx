@@ -7,7 +7,7 @@ import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText, Button } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, getShadowStyle } from "@/lib/theme";
 import { getInitials } from "@/utils/string";
 import type { ApiInviteItem } from "@repo/types";
 
@@ -52,8 +52,7 @@ export function InviteCard({
           styles.card,
           {
             backgroundColor: theme.colors.cardBackground,
-            borderColor: theme.colors.border,
-            shadowColor: "#000",
+            ...getShadowStyle("sm"),
           },
         ]}
       >
@@ -75,13 +74,13 @@ export function InviteCard({
               <Ionicons
                 name="time-outline"
                 size={12}
-                color={isExpired ? theme.colors.error : theme.colors.textSecondary}
+                color={isExpired ? theme.colors.danger : theme.colors.textSecondary}
               />
               <AppText
                 variant="caption"
                 style={[
                   styles.expiresText,
-                  { color: isExpired ? theme.colors.error : theme.colors.textSecondary },
+                  { color: isExpired ? theme.colors.danger : theme.colors.textSecondary },
                 ]}
               >
                 {expiresText}
@@ -245,13 +244,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 18,
     padding: 16,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
   header: {
     flexDirection: "row",
@@ -260,7 +254,7 @@ const styles = StyleSheet.create({
   groupIcon: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     marginEnd: 12,
@@ -304,7 +298,7 @@ const styles = StyleSheet.create({
   pill: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   pillText: {
     fontSize: 11,
@@ -312,7 +306,7 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   divider: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
     marginVertical: 14,
   },
   inviterRow: {
@@ -347,7 +341,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 14,
     marginBottom: 14,
   },
   messageIcon: {
@@ -373,7 +367,7 @@ const styles = StyleSheet.create({
   previewBtn: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },

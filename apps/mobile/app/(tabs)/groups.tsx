@@ -470,9 +470,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 12,
-    paddingBottom: 0,
-    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+    paddingHorizontal: 20,
   },
   headerTop: {
     flexDirection: "row",
@@ -481,26 +481,26 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: "800",
-    fontSize: 24,
+    fontSize: 28,
   },
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   infoButton: {
-    padding: 4,
+    padding: 6,
   },
   inviteBadge: {
     position: "absolute",
     top: -2,
     right: -4,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
   },
   inviteBadgeText: {
     fontSize: 10,

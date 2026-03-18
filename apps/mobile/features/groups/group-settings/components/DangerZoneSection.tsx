@@ -124,13 +124,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: "500",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   rowLabel: {
     fontSize: 15,

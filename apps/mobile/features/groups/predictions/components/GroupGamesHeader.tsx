@@ -2,6 +2,7 @@ import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { AppText } from "@/components/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { HEADER_HEIGHT } from "../utils/constants";
@@ -64,11 +65,7 @@ export function GroupGamesHeader({
 
 const styles = StyleSheet.create({
   container: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    ...getShadowStyle("sm"),
   },
   content: {
     height: HEADER_HEIGHT,
@@ -82,7 +79,7 @@ const styles = StyleSheet.create({
   hudButtonInner: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },

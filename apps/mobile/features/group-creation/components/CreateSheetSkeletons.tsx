@@ -35,7 +35,7 @@ export function CreateSheetSkeletons({ type, pulseStyle, skeletonColor }: Create
       return (
         <Animated.View style={[pulseStyle, { flexDirection: "row", flexWrap: "wrap", gap: 10 }]}>
           {Array.from({ length: 6 }, (_, i) => (
-            <View key={i} style={{ width: "48%", padding: 12, borderRadius: 10, backgroundColor: skeletonColor + "30", gap: 8 }}>
+            <View key={i} style={{ width: "48%", padding: 12, borderRadius: 14, backgroundColor: skeletonColor + "30", gap: 8 }}>
               <View style={{ width: 36, height: 36, borderRadius: 4, backgroundColor: skeletonColor }} />
               <View style={{ width: "70%", height: 12, borderRadius: 5, backgroundColor: skeletonColor }} />
               <View style={{ width: "45%", height: 10, borderRadius: 4, backgroundColor: skeletonColor }} />
@@ -72,7 +72,7 @@ export function CreateSheetSkeletons({ type, pulseStyle, skeletonColor }: Create
       return (
         <Animated.View style={[pulseStyle, { flexDirection: "row", flexWrap: "wrap", gap: 10 }]}>
           {Array.from({ length: 6 }, (_, i) => (
-            <View key={i} style={{ width: "48%", padding: 10, borderRadius: 10, backgroundColor: skeletonColor + "30", gap: 6 }}>
+            <View key={i} style={{ width: "48%", padding: 10, borderRadius: 14, backgroundColor: skeletonColor + "30", gap: 6 }}>
               <View style={{ width: 28, height: 9, borderRadius: 3, backgroundColor: skeletonColor }} />
               <View style={{ width: "50%", height: 9, borderRadius: 3, backgroundColor: skeletonColor }} />
               <View style={{ gap: 4, marginTop: 4 }}>

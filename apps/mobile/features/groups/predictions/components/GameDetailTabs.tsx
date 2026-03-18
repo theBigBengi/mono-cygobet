@@ -3,6 +3,7 @@ import { View, StyleSheet, Pressable } from "react-native";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 
 export type TabId = "predict" | "predictions" | "statistics";
 
@@ -44,9 +45,7 @@ export function GameDetailTabs({ tabs, activeTab, onSelectTab }: Props) {
               {
                 backgroundColor: isActive
                   ? theme.colors.primary
-                  : theme.colors.surface,
-                shadowColor: "#000",
-                shadowOpacity: pressed ? 0 : isActive ? 0.3 : 0.1,
+                  : theme.colors.cardBackground,
                 transform: [{ scale: pressed ? 0.95 : 1 }],
               },
             ]}
@@ -83,10 +82,8 @@ const styles = StyleSheet.create({
   tab: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 12,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 9999,
+    ...getShadowStyle("sm"),
   },
   tabText: {
     fontSize: 12,

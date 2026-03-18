@@ -49,7 +49,6 @@ export function ChatTypingIndicator({
         styles.container,
         {
           backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.border,
         },
       ]}
     >
@@ -64,7 +63,6 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 6,
-    borderTopWidth: 1,
   },
   text: {
     fontStyle: "italic",

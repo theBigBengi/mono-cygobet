@@ -7,7 +7,7 @@ import { StyleSheet, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { Screen, Card, AppText, Row, Stack, Divider, Button } from "@/components/ui";
 import { useAuth } from "@/lib/auth/useAuth";
-import { useTheme } from "@/lib/theme";
+import { useTheme, getShadowStyle } from "@/lib/theme";
 
 export interface GroupMemberProfileScreenProps {
   groupId: number | null;
@@ -82,11 +82,13 @@ export function GroupMemberProfileScreen({
           style={[
             styles.card,
             {
-              borderWidth: isOwnProfile ? 2 : 1,
+              ...getShadowStyle("sm"),
+              borderWidth: isOwnProfile ? 2 : 0,
               borderColor: isOwnProfile
                 ? theme.colors.primary
-                : theme.colors.border,
+                : "transparent",
               paddingVertical: theme.spacing.lg,
+              borderRadius: 18,
             },
           ]}
         >

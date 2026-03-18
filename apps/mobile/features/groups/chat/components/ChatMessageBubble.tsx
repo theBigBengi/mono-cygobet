@@ -7,6 +7,7 @@ import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { AppText } from "@/components/ui";
 import { formatTime24Locale } from "@/lib/i18n/i18n.date";
 import type { Locale } from "@/lib/i18n/i18n.types";
@@ -90,23 +91,17 @@ export function ChatMessageBubble({
     message.sender?.username ??
     t("chat.playerFallback", { id: message.senderId ?? "?" });
 
-  const bubbleBg = isCurrentUser ? theme.colors.primary : theme.colors.surface;
+  const bubbleBg = isCurrentUser ? theme.colors.primary : theme.colors.cardBackground;
   const bubbleStyle = [
     styles.bubble,
     {
       backgroundColor: bubbleBg,
-      borderBottomRightRadius: isCurrentUser ? 4 : 14,
-      borderBottomLeftRadius: isCurrentUser ? 14 : 4,
-      borderWidth: isCurrentUser ? 0 : 1,
-      borderColor: theme.colors.border,
-      borderBottomWidth: isCurrentUser ? 0 : 2,
-      borderBottomColor: isCurrentUser ? undefined : theme.colors.textSecondary + "30",
-      shadowColor: theme.colors.textPrimary,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: isCurrentUser ? 0.2 : 0.05,
-      shadowRadius: 2,
-      elevation: 1,
+      borderTopLeftRadius: isCurrentUser ? 18 : 8,
+      borderTopRightRadius: isCurrentUser ? 8 : 18,
+      borderBottomRightRadius: 18,
+      borderBottomLeftRadius: 18,
     },
+    isCurrentUser ? null : getShadowStyle("sm"),
   ];
 
   return (
@@ -219,9 +214,9 @@ const styles = StyleSheet.create({
   },
   bubble: {
     maxWidth: "80%",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 18,
   },
   senderName: {
     marginBottom: 4,

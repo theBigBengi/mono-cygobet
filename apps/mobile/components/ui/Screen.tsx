@@ -10,7 +10,7 @@
 // - Use safeAreaEdges prop to customize which edges to apply
 // - Use extendIntoStatusBar={true} as shorthand to exclude top edge
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, type RefObject } from "react";
 import { Platform, RefreshControl, ScrollView, ViewStyle, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import {
   SafeAreaView,
@@ -45,6 +45,8 @@ interface ScreenProps {
    * Overrides extendIntoStatusBar if both are provided.
    */
   safeAreaEdges?: SafeAreaEdge[];
+  /** Optional ref to the inner ScrollView (only used when scroll=true) */
+  scrollRef?: RefObject<ScrollView>;
 }
 
 export function Screen({
@@ -56,6 +58,7 @@ export function Screen({
   extendIntoStatusBar = false,
   stickyHeaderIndices,
   safeAreaEdges: customEdges,
+  scrollRef,
 }: ScreenProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -113,6 +116,7 @@ export function Screen({
         }}
       >
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[

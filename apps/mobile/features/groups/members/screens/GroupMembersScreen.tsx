@@ -211,8 +211,8 @@ const styles = StyleSheet.create({
   },
   countRow: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   memberRow: {
     flexDirection: "row",

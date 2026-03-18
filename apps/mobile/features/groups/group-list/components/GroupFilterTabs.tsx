@@ -72,7 +72,7 @@ export function GroupFilterTabs({
                 style={[
                   styles.tabText,
                   {
-                    color: isSelected ? "#fff" : theme.colors.textPrimary + "90",
+                    color: isSelected ? theme.colors.textInverse : theme.colors.textPrimary + "90",
                   },
                 ]}
               >

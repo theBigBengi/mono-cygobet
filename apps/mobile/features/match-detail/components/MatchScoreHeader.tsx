@@ -19,7 +19,7 @@ function getStateBadgeColor(
   theme: { colors: Record<string, string> }
 ): string {
   if (isLive(state)) {
-    return theme.colors.error ?? "#dc2626";
+    return theme.colors.danger ?? "#dc2626";
   }
   if (isFinished(state)) {
     return theme.colors.success ?? "#16a34a";
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   stateBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   stateText: {
     fontWeight: "600",
@@ -145,6 +145,6 @@ const styles = StyleSheet.create({
   liveMinuteBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
 });

@@ -27,6 +27,8 @@ export interface LobbyActivityBannerProps {
   groupId: number;
   unreadCount: number;
   onPress: () => void;
+  /** Called when expand/collapse toggles, with the height delta to scroll by */
+  onExpandChange?: (deltaHeight: number) => void;
 }
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
@@ -66,7 +68,7 @@ function ActivityRow({ item, colors }: { item: ApiGroupActivityItem; colors: imp
   );
 }
 
-function LobbyActivityBannerInner({ groupId, unreadCount, onPress }: LobbyActivityBannerProps) {
+function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChange }: LobbyActivityBannerProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(false);
@@ -105,7 +107,7 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress }: LobbyActivi
 
   const collapsedCount = Math.min(allItems.length, COLLAPSED_COUNT);
   const expandedCount = Math.min(allItems.length, EXPANDED_COUNT);
-  const collapsedHeight = collapsedCount * ROW_HEIGHT + ROW_HEIGHT * 0.6;
+  const collapsedHeight = collapsedCount * ROW_HEIGHT + ROW_HEIGHT;
   const expandedHeight = expandedCount * ROW_HEIGHT;
 
   const animHeight = useSharedValue(collapsedHeight);
@@ -133,14 +135,20 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress }: LobbyActivi
     if (next) {
       animHeight.value = withTiming(expandedHeight, config);
       fadeOpacity.value = withTiming(0, { duration: 200 });
+      onExpandChange?.(expandedHeight - collapsedHeight);
     } else {
       animHeight.value = withTiming(collapsedHeight, config);
       fadeOpacity.value = withTiming(1, { duration: 250 });
     }
     setExpanded(next);
-  }, [expanded, expandedHeight, collapsedHeight, animHeight, fadeOpacity]);
+  }, [expanded, expandedHeight, collapsedHeight, animHeight, fadeOpacity, onExpandChange]);
 
-  const surfaceColor = theme.colors.surface;
+  // Build rgba gradient colors from background hex to avoid 8-digit hex rendering issues
+  const bgHex = theme.colors.background;
+  const r = parseInt(bgHex.slice(1, 3), 16);
+  const g = parseInt(bgHex.slice(3, 5), 16);
+  const b = parseInt(bgHex.slice(5, 7), 16);
+  const fadeTo = (alpha: number) => `rgba(${r},${g},${b},${alpha})`;
 
   if (isLoading) {
     return (
@@ -202,9 +210,11 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress }: LobbyActivi
               onPress={onPress}
               style={({ pressed }) => [pressed && styles.pressed]}
             >
-              <Text style={[styles.headerViewAll, { color: theme.colors.textSecondary }]}>
-                {t("lobby.seeAll")}
-              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={theme.colors.textSecondary}
+              />
             </Pressable>
           )}
         </View>
@@ -221,7 +231,8 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress }: LobbyActivi
               <View style={styles.buttonContainer}>
                 <Animated.View style={[styles.fadeGradient, fadeStyle]} pointerEvents="none">
                   <LinearGradient
-                    colors={[surfaceColor + "00", surfaceColor]}
+                    colors={[fadeTo(0), fadeTo(0.15), fadeTo(0.5), fadeTo(0.85), fadeTo(1)]}
+                    locations={[0, 0.2, 0.5, 0.8, 1]}
                     style={StyleSheet.absoluteFill}
                   />
                 </Animated.View>
@@ -229,7 +240,7 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress }: LobbyActivi
                   onPress={handleToggle}
                   style={({ pressed }) => [
                     styles.toggleButton,
-                    { borderColor: theme.colors.border },
+                    { backgroundColor: theme.colors.textPrimary + "08" },
                     pressed && styles.pressed,
                   ]}
                 >
@@ -255,24 +266,20 @@ export const LobbyActivityBanner = React.memo(LobbyActivityBannerInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   wrapper: {
-    borderRadius: 16,
+    borderRadius: 18,
     paddingVertical: 16,
   },
   headerRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 15,
-    fontWeight: "700",
-  },
-  headerViewAll: {
-    fontSize: 12,
     fontWeight: "700",
   },
   listWrapper: {
@@ -281,7 +288,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     height: ROW_HEIGHT,
   },
   rowTextCol: {
@@ -297,9 +304,9 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   rowIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -313,17 +320,16 @@ const styles = StyleSheet.create({
   },
   fadeGradient: {
     position: "absolute",
-    top: -65,
+    top: -120,
     left: 0,
     right: 0,
-    height: 65,
+    height: 120,
   },
   toggleButton: {
     marginTop: -4,
-    paddingVertical: 7,
-    paddingHorizontal: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
     borderRadius: 20,
-    borderWidth: 1,
   },
   buttonText: {
     fontSize: 13,
@@ -335,13 +341,13 @@ const styles = StyleSheet.create({
   skeletonRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     height: ROW_HEIGHT,
   },
   skeletonCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
   skeletonTextCol: {
     flex: 1,

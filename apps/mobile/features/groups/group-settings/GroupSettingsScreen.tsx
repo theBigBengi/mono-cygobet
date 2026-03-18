@@ -266,11 +266,11 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
         enablePanDownToClose
         backdropComponent={renderBackdrop}
         backgroundStyle={{
-          backgroundColor: theme.colors.background,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          backgroundColor: theme.colors.surfaceElevated,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
         }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled }}
       >
         <BottomSheetView style={styles.sheetContent}>
           <Text
@@ -319,14 +319,14 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
         enablePanDownToClose
         backdropComponent={renderBackdrop}
         backgroundStyle={{
-          backgroundColor: theme.colors.background,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          backgroundColor: theme.colors.surfaceElevated,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
         }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled }}
       >
         <BottomSheetView style={styles.sheetContent}>
-          <View style={{ borderBottomWidth: 1, borderBottomColor: theme.colors.textPrimary + "10", paddingBottom: 12, marginBottom: 8 }}>
+          <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.textPrimary + "10", paddingBottom: 12, marginBottom: 8 }}>
             <Text style={{ fontSize: 15, fontWeight: "600", textAlign: "center", color: theme.colors.textPrimary }}>
               {t("lobby.nudge")}
             </Text>
@@ -421,13 +421,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: "500",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   rowLabel: {
     fontSize: 15,
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
   },
   sheetContent: {
     paddingHorizontal: 20,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingBottom: 12,
     marginBottom: 8,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sheetOption: {
     flexDirection: "row",
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   sheetDoneBtn: {
     marginTop: 16,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 14,
     alignItems: "center",
   },
   sheetDoneBtnText: {

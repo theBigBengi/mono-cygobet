@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Screen } from "@/components/ui";
-import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
+import { useTheme, CARD_BORDER_BOTTOM_WIDTH, getShadowStyle } from "@/lib/theme";
 
 export function GroupsListSkeleton() {
   const { theme } = useTheme();
@@ -80,10 +80,8 @@ export function GroupsListSkeleton() {
               style={{
                 height: 40,
                 backgroundColor: skeletonColor,
-                borderRadius: 10,
+                borderRadius: 14,
                 marginTop: 10,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
               }}
             />
           </View>
@@ -95,7 +93,7 @@ export function GroupsListSkeleton() {
               paddingHorizontal: 16,
               paddingVertical: 10,
               gap: 8,
-              borderBottomWidth: 1,
+              borderBottomWidth: StyleSheet.hairlineWidth,
               borderBottomColor: theme.colors.border,
               backgroundColor: theme.colors.surface,
             }}
@@ -111,11 +109,6 @@ export function GroupsListSkeleton() {
                       ? theme.colors.primary + "20"
                       : skeletonColor,
                   borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor:
-                    i === 0
-                      ? theme.colors.primary + "40"
-                      : theme.colors.border,
                 }}
               />
             ))}
@@ -129,20 +122,14 @@ export function GroupsListSkeleton() {
                 style={{
                   marginHorizontal: 16,
                   marginBottom: 12,
-                  borderRadius: 14,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                  elevation: 3,
+                  borderRadius: 18,
+                  ...getShadowStyle("sm"),
                 }}
               >
                 <View
                   style={{
                     backgroundColor: theme.colors.cardBackground,
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    borderColor: theme.colors.border,
+                    borderRadius: 18,
                     paddingTop: 14,
                     paddingHorizontal: 14,
                     overflow: "hidden",
@@ -216,7 +203,7 @@ export function GroupsListSkeleton() {
                       paddingHorizontal: 14,
                       paddingTop: 14,
                       paddingBottom: 12,
-                      borderTopWidth: 1,
+                      borderTopWidth: StyleSheet.hairlineWidth,
                       borderTopColor: theme.colors.border,
                     }}
                   >
@@ -290,7 +277,7 @@ export function GroupsListSkeleton() {
                       flexDirection: "row",
                       paddingVertical: 12,
                       gap: 4,
-                      borderTopWidth: 1,
+                      borderTopWidth: StyleSheet.hairlineWidth,
                       borderTopColor: theme.colors.border,
                     }}
                   >

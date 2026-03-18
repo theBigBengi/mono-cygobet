@@ -12,6 +12,7 @@ import {
   Text,
   ActivityIndicator,
   Keyboard,
+  StyleSheet,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -456,8 +457,8 @@ export function CreateGroupFlow({
         backdropComponent={renderBackdrop}
         backgroundStyle={{
           backgroundColor: theme.colors.background,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
         }}
         handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
         handleStyle={{ paddingVertical: 6 }}
@@ -614,7 +615,7 @@ export function CreateGroupFlow({
         enableDynamicSizing
         enablePanDownToClose
         backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}
+        backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
         handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
       >
         <BottomSheetView style={createStyles.sortSheet}>
@@ -648,7 +649,7 @@ export function CreateGroupFlow({
       </BottomSheetModal>
 
       {/* Prediction mode sheet */}
-      <BottomSheetModal ref={advPredictionRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+      <BottomSheetModal ref={advPredictionRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
         <BottomSheetView style={createStyles.sheetContent}>
           <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.predictionMode")}</Text>
           {([
@@ -671,7 +672,7 @@ export function CreateGroupFlow({
       </BottomSheetModal>
 
       {/* Scoring sheet */}
-      <BottomSheetModal ref={advScoringRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+      <BottomSheetModal ref={advScoringRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
         <BottomSheetView style={createStyles.sheetContent}>
           <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.scoring")}</Text>
           {[
@@ -713,7 +714,7 @@ export function CreateGroupFlow({
       </BottomSheetModal>
 
       {/* KO round mode sheet */}
-      <BottomSheetModal ref={advKoRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+      <BottomSheetModal ref={advKoRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
         <BottomSheetView style={createStyles.sheetContent}>
           <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.koRoundMode")}</Text>
           {([
@@ -737,7 +738,7 @@ export function CreateGroupFlow({
       </BottomSheetModal>
 
       {/* Max members sheet */}
-      <BottomSheetModal ref={advMembersRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+      <BottomSheetModal ref={advMembersRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
         <BottomSheetView style={createStyles.sheetContent}>
           <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.maxMembers")}</Text>
           {[10, 20, 30, 50, 100].map((num) => (
@@ -757,9 +758,9 @@ export function CreateGroupFlow({
       </BottomSheetModal>
 
       {/* Nudge sheet */}
-      <BottomSheetModal ref={advNudgeWindowRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+      <BottomSheetModal ref={advNudgeWindowRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
         <BottomSheetView style={createStyles.sheetContent}>
-          <View style={{ borderBottomWidth: 1, borderBottomColor: theme.colors.textPrimary + "10", paddingBottom: 12, marginBottom: 8 }}>
+          <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.textPrimary + "10", paddingBottom: 12, marginBottom: 8 }}>
             <Text style={{ fontSize: 15, fontWeight: "600", textAlign: "center", color: theme.colors.textPrimary }}>{t("lobby.nudge")}</Text>
             <Text style={{ color: theme.colors.textSecondary, fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: 4 }}>{t("lobby.nudgeDescription")}</Text>
           </View>

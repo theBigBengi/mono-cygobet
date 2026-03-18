@@ -1,5 +1,5 @@
 // components/ui/AppHeader.tsx
-// Generic app header with back button, optional title, and optional left/right content.
+// Modern app header — clean layout with refined spacing.
 
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Pressable, Animated, Easing } from "react-native";
@@ -9,7 +9,7 @@ import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "./AppText";
 
-const HEADER_HEIGHT = 64;
+const HEADER_HEIGHT = 56;
 
 export interface AppHeaderProps {
   onBack: () => void;
@@ -71,14 +71,17 @@ export function AppHeader({
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={({ pressed }) => [
             styles.backButton,
-            { opacity: pressed ? 0.5 : 1 },
+            {
+              backgroundColor: pressed ? theme.colors.border + "60" : "transparent",
+              borderRadius: theme.radius.sm,
+            },
           ]}
           accessibilityRole="button"
           accessibilityLabel={t("accessibility.goBack")}
         >
           <Ionicons
             name="chevron-back"
-            size={28}
+            size={24}
             color={theme.colors.textPrimary}
           />
         </Pressable>
@@ -97,11 +100,11 @@ export function AppHeader({
             {subtitle ? (
               <View style={styles.subtitleRow}>
                 {showLiveDot ? (
-                  <Animated.View style={[styles.liveDot, { backgroundColor: theme.colors.primary, opacity: pulseAnim }]} />
+                  <Animated.View style={[styles.liveDot, { backgroundColor: theme.colors.live, opacity: pulseAnim }]} />
                 ) : null}
                 <AppText
                   variant="caption"
-                  style={[styles.subtitleText, { color: theme.colors.textSecondary }]}
+                  style={{ color: theme.colors.textSecondary }}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
@@ -124,15 +127,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   backButton: {
-    padding: 4,
+    padding: 6,
   },
   leftRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
     flex: 1,
   },
   titleColumn: {
@@ -145,14 +148,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
+    marginTop: 1,
   },
   liveDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-  },
-  subtitleText: {
-    fontSize: 12,
   },
   rightRow: {
     flexDirection: "row",

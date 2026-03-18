@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   sheetStats: {
-    borderRadius: 14,
+    borderRadius: 18,
     padding: 14,
     marginTop: 4,
   },

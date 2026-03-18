@@ -1,10 +1,12 @@
 // features/settings/components/SettingsSection.tsx
+// Modern grouped settings section — iOS-style rounded card.
 
 import React, { useState } from "react";
 import { View, StyleSheet, Pressable, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 
 interface SettingsSectionProps {
   title?: string;
@@ -63,8 +65,8 @@ export function SettingsSection({
             styles.content,
             {
               backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
-              borderRadius: theme.radius.md,
+              borderRadius: theme.radius.lg,
+              ...getShadowStyle("sm"),
             },
             cardStyle,
           ]}
@@ -83,6 +85,7 @@ const styles = StyleSheet.create({
   title: {
     marginStart: 16,
     fontWeight: "500",
+    letterSpacing: 0.5,
   },
   collapsibleTitleRow: {
     flexDirection: "row",
@@ -95,7 +98,6 @@ const styles = StyleSheet.create({
     marginStart: 4,
   },
   content: {
-    borderWidth: 1,
     overflow: "hidden",
   },
 });

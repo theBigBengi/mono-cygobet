@@ -33,11 +33,11 @@ export function GameCardBase({
 
   const cardRadiusStyle =
     positionInGroup === "single"
-      ? { borderRadius: 16 }
+      ? { borderRadius: 18 }
       : positionInGroup === "top"
         ? {
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
+            borderTopLeftRadius: 18,
+            borderTopRightRadius: 18,
             borderBottomLeftRadius: 0,
             borderBottomRightRadius: 0,
           }
@@ -45,8 +45,8 @@ export function GameCardBase({
           ? {
               borderTopLeftRadius: 0,
               borderTopRightRadius: 0,
-              borderBottomLeftRadius: 16,
-              borderBottomRightRadius: 16,
+              borderBottomLeftRadius: 18,
+              borderBottomRightRadius: 18,
             }
           : { borderRadius: 0 };
 

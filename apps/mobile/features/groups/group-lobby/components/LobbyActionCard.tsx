@@ -7,6 +7,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { LobbyCardSkeleton } from "./LobbyCardSkeleton";
 
 export interface LobbyActionCardLastMessage {
@@ -165,11 +166,13 @@ export function LobbyActionCard({
 const styles = StyleSheet.create({
   card: {
     marginBottom: 16,
+    borderRadius: 18,
+    ...getShadowStyle("sm"),
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
   },
   icon: {
     marginEnd: 0,
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
   title: {
     fontWeight: "600",
@@ -192,8 +195,8 @@ const styles = StyleSheet.create({
   messagePreview: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginTop: 4,
+    gap: 10,
+    marginTop: 6,
   },
   avatar: {
     width: 20,

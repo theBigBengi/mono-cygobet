@@ -61,6 +61,8 @@ export interface AnimatedStickyHeaderProps {
   extendsIntoStatusBar?: boolean;
   /** When true, icons have no background circle */
   transparentIcons?: boolean;
+  /** When true, title aligns to the left instead of center */
+  titleAlignLeft?: boolean;
 }
 
 export function AnimatedStickyHeader({
@@ -75,6 +77,7 @@ export function AnimatedStickyHeader({
   onBack,
   extendsIntoStatusBar = false,
   transparentIcons = false,
+  titleAlignLeft = false,
 }: AnimatedStickyHeaderProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -179,9 +182,9 @@ export function AnimatedStickyHeader({
           )}
 
           {/* Title - appears on scroll */}
-          <Animated.View style={[styles.titleContainer, titleStyle]}>
+          <Animated.View style={[styles.titleContainer, titleAlignLeft && styles.titleContainerLeft, titleStyle]}>
             <Text
-              style={[styles.title, { color: theme.colors.textPrimary }]}
+              style={[styles.title, { color: theme.colors.textPrimary }, titleAlignLeft && styles.titleLeft]}
               numberOfLines={1}
             >
               {title}
@@ -242,9 +245,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   iconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -257,10 +260,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 8,
   },
+  titleContainerLeft: {
+    alignItems: "flex-start",
+  },
   title: {
     fontSize: 17,
     fontWeight: "700",
     textAlign: "center",
+  },
+  titleLeft: {
+    textAlign: "left",
   },
   rightActions: {
     flexDirection: "row",

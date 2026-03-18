@@ -99,8 +99,8 @@ export function InfoSheet({
   const backgroundStyle = useMemo(
     () => ({
       backgroundColor: theme.colors.surface,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: -4 },
       shadowOpacity: 0.15,

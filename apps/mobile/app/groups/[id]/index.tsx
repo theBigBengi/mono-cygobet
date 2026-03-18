@@ -313,7 +313,8 @@ function GroupLobbyContent() {
             fallbackRoute="/(tabs)/groups"
             tintColor="transparent"
             extendsIntoStatusBar
-            threshold={160}
+            titleAlignLeft
+            threshold={insets.top + 170}
             rightActions={[
               {
                 icon: "ellipsis-horizontal",

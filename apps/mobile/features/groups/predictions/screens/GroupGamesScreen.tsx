@@ -714,7 +714,7 @@ export function GroupGamesScreen({
 
   return (
     <View
-      style={[styles.container, { backgroundColor: theme.colors.surface }]}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <View style={{ flex: 1 }}>
         <Animated.FlatList
@@ -871,7 +871,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: 9999,
   },
   sectionLiveDot: {
     width: 6,

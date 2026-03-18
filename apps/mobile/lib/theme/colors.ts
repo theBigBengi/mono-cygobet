@@ -64,16 +64,16 @@ export type Colors = {
   overlay: string;
 };
 export const lightColors: Colors = {
-  // Surfaces — רקע אפור ניטרלי קל, כרטיסים לבנים
-  background: "#FFFFFF", // לבן — אחיד עם surface
-  surface: "#FFFFFF", // לבן — sections/containers
-  cardBackground: "#F2F2F3", // אפור ניטרלי עדין — כרטיסים בולטים על הרקע
+  // Surfaces — רקע אפור-כחלחל עדין, כרטיסים לבנים צפים מעל
+  background: "#F2F4F7", // אפור-כחלחל עדין — מודרני, נותן עומק
+  surface: "#FFFFFF", // לבן — sections/containers צפים מעל הרקע
+  cardBackground: "#FFFFFF", // לבן — כרטיסים עם צל במקום border
   surfaceElevated: "#FFFFFF", // לבן — modals
 
-  // Text — ניטרלי, בלי גוון כחול
-  textPrimary: "#1A1A1A", // כמעט שחור, ניטרלי מלא
-  textSecondary: "#888888", // אפור ניטרלי מאוזן
-  textDisabled: "#CCCCCC", // אפור בהיר, ברור שזה disabled
+  // Text — ניטרלי עם עומק טוב יותר
+  textPrimary: "#111827", // כהה עמוק אבל לא שחור טהור
+  textSecondary: "#6B7280", // אפור מאוזן — ברור וקריא
+  textDisabled: "#D1D5DB", // אפור בהיר, ברור שזה disabled
   textInverse: "#FFFFFF", // לבן — על רקעים כהים
 
   // Brand
@@ -81,64 +81,64 @@ export const lightColors: Colors = {
   primaryText: "#FFFFFF",
 
   // Semantic
-  danger: "#FF3B30",
+  danger: "#EF4444",
   dangerText: "#FFFFFF",
-  success: "#34C759",
-  warning: "#FF9500",
-  warningText: "#663C00",
+  success: "#22C55E",
+  warning: "#F59E0B",
+  warningText: "#78350F",
   live: "#3B82F6", // כחול — סטטוס LIVE
 
   // Ranking
-  gold: "#FFD700",
-  silver: "#C0C0C0",
-  bronze: "#CD7F32",
+  gold: "#EAB308",
+  silver: "#9CA3AF",
+  bronze: "#D97706",
 
   // Accent
   accent: "#F97316", // כתום — streak, flame
 
   // UI
-  border: "#EBEBEB", // קו הפרדה ניטרלי עדין
+  border: "#E5E7EB", // קו הפרדה עדין ומודרני
   keyboardKey: "rgba(255,255,255,0.85)",
-  overlay: "rgba(0,0,0,0.3)",
+  overlay: "rgba(0,0,0,0.4)",
 };
 
 export const darkColors: Colors = {
-  // Surfaces — dark בסגנון ספוטיפיי
-  background: "#121212",
-  surface: "#181818",
-  cardBackground: "#2C2C2C",
-  surfaceElevated: "#282828",
+  // Surfaces — dark מודרני בסגנון zinc
+  background: "#09090B",
+  surface: "#18181B",
+  cardBackground: "#1F1F23",
+  surfaceElevated: "#27272A",
 
   // Text
-  textPrimary: "#F8F8FF",
-  textSecondary: "#9CA3AF",
-  textDisabled: "#4B5563",
-  textInverse: "#1A1A1A", // כהה — על רקעים בהירים
+  textPrimary: "#FAFAFA",
+  textSecondary: "#A1A1AA",
+  textDisabled: "#52525B",
+  textInverse: "#18181B", // כהה — על רקעים בהירים
 
   // Brand
   primary: "#0A84FF",
   primaryText: "#FFFFFF",
 
   // Semantic
-  danger: "#FF453A",
+  danger: "#F87171",
   dangerText: "#FFFFFF",
-  success: "#30D158",
-  warning: "#FF9F0A",
-  warningText: "#FFD60A",
+  success: "#4ADE80",
+  warning: "#FBBF24",
+  warningText: "#FEF3C7",
   live: "#60A5FA", // כחול בהיר יותר ל-dark mode
 
   // Ranking
-  gold: "#FFD700",
-  silver: "#D1D5DB",
-  bronze: "#D4956A",
+  gold: "#FACC15",
+  silver: "#D4D4D8",
+  bronze: "#FB923C",
 
   // Accent
   accent: "#FB923C", // כתום בהיר יותר ל-dark mode
 
   // UI
-  border: "#2E2E36",
-  keyboardKey: "rgba(255,255,255,0.15)",
-  overlay: "rgba(0,0,0,0.55)",
+  border: "#27272A",
+  keyboardKey: "rgba(255,255,255,0.12)",
+  overlay: "rgba(0,0,0,0.6)",
 };
 
 export type ColorScheme = "light" | "dark";

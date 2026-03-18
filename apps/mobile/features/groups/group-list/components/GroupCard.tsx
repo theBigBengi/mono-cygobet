@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { GroupAvatar } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { getInitials } from "@/utils/string";
 import { isLive as isLiveState } from "@repo/utils";
 import type { ApiGroupItem } from "@repo/types";
@@ -122,7 +123,7 @@ function GroupCardInner({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.card,
-        { borderBottomColor: theme.colors.border },
+        { backgroundColor: theme.colors.surface, ...getShadowStyle("sm") },
         pressed && { opacity: 0.7 },
       ]}
       accessibilityRole="button"
@@ -135,7 +136,7 @@ function GroupCardInner({
           avatarValue={group.avatarValue}
           initials={initials}
           size={AVATAR_SIZE}
-          borderRadius={4}
+          borderRadius={10}
           flat
         />
         <View style={styles.info}>
@@ -167,7 +168,7 @@ function GroupCardInner({
             </View>
           )}
           {totalUnread > 0 && (
-            <View style={[styles.unreadBadge, { backgroundColor: theme.colors.primary }]}>
+            <View style={[styles.unreadBadge, { backgroundColor: theme.colors.primary, borderWidth: 2, borderColor: theme.colors.surface }]}>
               <Text style={styles.unreadText}>
                 {totalUnread > 99 ? "99+" : totalUnread}
               </Text>
@@ -257,8 +258,10 @@ export const GroupCard = React.memo(GroupCardInner, (prev, next) => {
 const styles = StyleSheet.create({
   card: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    paddingVertical: 16,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 18,
   },
   header: {
     flexDirection: "row",
@@ -275,7 +278,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   name: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
     flexShrink: 1,
   },
@@ -288,18 +291,18 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   rankBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   rankText: {
     fontSize: 12,
     fontWeight: "800",
   },
   unreadBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
@@ -316,9 +319,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   statusBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 6,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -337,7 +340,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   teamName: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
   },
   nextGameRight: {
@@ -345,14 +348,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   unpredictedText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "600",
     marginTop: 8,
     marginStart: 52,

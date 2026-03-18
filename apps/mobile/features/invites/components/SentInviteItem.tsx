@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   cancelBtn: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
   },
   cancelText: {

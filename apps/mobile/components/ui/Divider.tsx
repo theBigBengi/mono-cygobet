@@ -1,8 +1,8 @@
 // components/ui/Divider.tsx
-// Simple divider line component.
+// Subtle divider line — uses hairline width for modern feel.
 
 import React from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { useTheme } from "@/lib/theme";
 
 interface DividerProps {
@@ -16,7 +16,7 @@ export function Divider({ style }: DividerProps) {
     <View
       style={[
         {
-          height: 1,
+          height: StyleSheet.hairlineWidth,
           backgroundColor: theme.colors.border,
           width: "100%",
         },
@@ -25,4 +25,3 @@ export function Divider({ style }: DividerProps) {
     />
   );
 }
-

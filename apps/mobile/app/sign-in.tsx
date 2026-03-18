@@ -108,9 +108,8 @@ function ScreenContent() {
               style={[
                 styles.input,
                 {
-                  borderColor: theme.colors.border,
                   color: theme.colors.textPrimary,
-                  backgroundColor: theme.colors.surface,
+                  backgroundColor: theme.colors.cardBackground,
                 },
               ]}
               placeholder={t("auth.emailOrUsername")}
@@ -131,9 +130,8 @@ function ScreenContent() {
               style={[
                 styles.input,
                 {
-                  borderColor: theme.colors.border,
                   color: theme.colors.textPrimary,
-                  backgroundColor: theme.colors.surface,
+                  backgroundColor: theme.colors.cardBackground,
                 },
               ]}
               placeholder={t("auth.password")}
@@ -156,7 +154,7 @@ function ScreenContent() {
             >
               <AppText
                 variant="caption"
-                style={{ color: theme.colors.primary, fontWeight: "600" }}
+                style={{ color: theme.colors.primary, fontWeight: "700" }}
               >
                 {t("auth.forgotPassword")}
               </AppText>
@@ -171,7 +169,10 @@ function ScreenContent() {
             <Pressable
               style={[
                 styles.button,
-                { backgroundColor: theme.colors.primary },
+                {
+                  backgroundColor: theme.colors.primary,
+                  shadowColor: theme.colors.primary,
+                },
                 isLoading && styles.buttonDisabled,
               ]}
               onPress={handleLogin}
@@ -204,7 +205,7 @@ function ScreenContent() {
               >
                 <AppText
                   variant="caption"
-                  style={{ color: theme.colors.primary, fontWeight: "600" }}
+                  style={{ color: theme.colors.primary, fontWeight: "700" }}
                 >
                   {t("auth.signUp")}
                 </AppText>
@@ -228,25 +229,25 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 20,
+    padding: 24,
   },
   title: {
     marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
-    marginBottom: 32,
+    marginBottom: 40,
     textAlign: "center",
   },
   form: {
     width: "100%",
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: 0,
+    borderRadius: 14,
+    padding: 16,
     fontSize: 16,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   forgotPassword: {
     alignSelf: "flex-end",
@@ -258,9 +259,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    paddingVertical: 14,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 14,
     alignItems: "center",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.6,

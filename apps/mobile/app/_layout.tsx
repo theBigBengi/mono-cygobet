@@ -394,18 +394,18 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 // Color sets for ErrorBoundary — reads system scheme via Appearance API
 // since ThemeProvider may not be initialized when ErrorBoundary renders.
 const lightColors = {
-  bg: "#ffffff",
-  text: "#000000",
-  textSecondary: "#666666",
-  secondaryBg: "#F2F2F7",
-  secondaryBorder: "#C7C7CC",
+  bg: "#F2F4F7",
+  text: "#111827",
+  textSecondary: "#6B7280",
+  secondaryBg: "#FFFFFF",
+  secondaryBorder: "#E5E7EB",
 };
 const darkColors = {
-  bg: "#1C1C1E",
-  text: "#F2F2F7",
-  textSecondary: "#AEAEB2",
-  secondaryBg: "#2C2C2E",
-  secondaryBorder: "#3A3A3C",
+  bg: "#09090B",
+  text: "#FAFAFA",
+  textSecondary: "#A1A1AA",
+  secondaryBg: "#18181B",
+  secondaryBorder: "#27272A",
 };
 
 const errorBoundaryStyles = StyleSheet.create({
@@ -444,9 +444,9 @@ const errorBoundaryStyles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#007AFF",
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 14,
     minWidth: 200,
     alignItems: "center",
     marginBottom: 12,

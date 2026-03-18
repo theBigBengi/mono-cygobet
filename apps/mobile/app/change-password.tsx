@@ -132,8 +132,8 @@ function ScreenContent() {
               style={[
                 styles.input,
                 {
-                  borderBottomColor: theme.colors.textSecondary + "20",
                   color: theme.colors.textPrimary,
+                  backgroundColor: theme.colors.cardBackground,
                 },
               ]}
               value={currentPassword}
@@ -159,8 +159,8 @@ function ScreenContent() {
               style={[
                 styles.input,
                 {
-                  borderBottomColor: theme.colors.textSecondary + "20",
                   color: theme.colors.textPrimary,
+                  backgroundColor: theme.colors.cardBackground,
                 },
               ]}
               value={newPassword}
@@ -191,8 +191,8 @@ function ScreenContent() {
               style={[
                 styles.input,
                 {
-                  borderBottomColor: theme.colors.textSecondary + "20",
                   color: theme.colors.textPrimary,
+                  backgroundColor: theme.colors.cardBackground,
                 },
               ]}
               value={confirmPassword}
@@ -214,6 +214,7 @@ function ScreenContent() {
               styles.submitButton,
               {
                 backgroundColor: theme.colors.primary,
+                shadowColor: theme.colors.primary,
                 opacity: !canSubmit ? 0.4 : pressed ? 0.8 : 1,
               },
             ]}
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 24,
   },
   inputContainer: {
@@ -273,9 +274,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    borderBottomWidth: 1,
-    paddingVertical: 10,
-    fontSize: 15,
+    borderWidth: 0,
+    borderRadius: 14,
+    padding: 16,
+    fontSize: 16,
   },
   inputHint: {
     fontSize: 11,
@@ -283,9 +285,13 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 12,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
     alignItems: "center",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   submitButtonText: {
     color: "#fff",

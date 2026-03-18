@@ -1,11 +1,12 @@
 // components/ui/Card.tsx
-// Consistent card component for list items and grouped content.
-// - Uses theme colors and spacing
-// - Consistent border and padding
+// Modern card component — shadow-based depth, no borders.
+// - Uses theme colors, spacing, radius, and shadows
+// - Clean floating card on background
 
 import React from "react";
-import { View, ViewProps, StyleSheet } from "react-native";
+import { View, ViewProps } from "react-native";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 
 interface CardProps extends ViewProps {
   children: React.ReactNode;
@@ -19,11 +20,10 @@ export function Card({ children, style, ...props }: CardProps) {
       style={[
         {
           backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
-          borderWidth: 1,
-          borderRadius: theme.radius.md,
+          borderRadius: theme.radius.lg,
           padding: theme.spacing.md,
           marginBottom: theme.spacing.sm,
+          ...getShadowStyle("sm"),
         },
         style,
       ]}

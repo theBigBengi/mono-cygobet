@@ -133,10 +133,10 @@ const s = StyleSheet.create({
     justifyContent: "center",
     gap: 2,
   },
-  // cardContent + hRowBorder: flex:1 br:8 pv:6 ph:8
+  // cardContent + hRowBorder: flex:1 br:14 pv:6 ph:8
   vCard: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 14,
     paddingVertical: 6,
     paddingHorizontal: 8,
   },
@@ -203,13 +203,13 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  // hRow: flex:1, h:50, br:8, ph:8, gap:6
+  // hRow: flex:1, h:50, br:14, ph:8, gap:6
   hRow: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     height: 50,
-    borderRadius: 8,
+    borderRadius: 14,
     paddingHorizontal: 8,
     gap: 6,
   },

@@ -178,12 +178,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   bannerCard: {
+    marginHorizontal: 16,
     marginBottom: 16,
   },
   bannerText: {
     fontWeight: "600",
   },
   winnerCard: {
+    marginHorizontal: 16,
     marginBottom: 16,
   },
   winnerRow: {

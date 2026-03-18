@@ -27,6 +27,8 @@ import { useTheme } from "@/lib/theme";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useSettings } from "@/lib/settings";
+import { SettingsSection } from "@/features/settings/components/SettingsSection";
+import { SettingsRow } from "@/features/settings/components/SettingsRow";
 
 import type { ThemeMode } from "@/lib/theme/theme.types";
 import type { Locale } from "@/lib/i18n/i18n.types";
@@ -49,7 +51,6 @@ function SettingsContent() {
   const { hapticsEnabled, toggleHaptics } = useSettings();
   const queryClient = useQueryClient();
   const router = useRouter();
-
 
   // Bottom sheet refs
   const themeSheetRef = useRef<BottomSheetModal>(null);
@@ -124,6 +125,9 @@ function SettingsContent() {
     ]);
   };
 
+  const showChangePassword = user?.hasPassword === true;
+  const showHaptics = Platform.OS === "ios";
+
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <Screen scroll contentContainerStyle={styles.content}>
@@ -132,319 +136,117 @@ function SettingsContent() {
         </AppText>
 
         {/* Account Section */}
-        <Text
-          style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}
-        >
-          {t("settings.account")}
-        </Text>
-
-        <Pressable
-          onPress={() => router.push("/(tabs)/profile")}
-          style={({ pressed }) => [
-            styles.row,
-            { opacity: pressed ? 0.6 : 1 },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={t("settings.profile")}
-        >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={[styles.rowLabel, { color: theme.colors.textPrimary }]}
-            >
-              {t("settings.profile")}
-            </Text>
-            {user?.username ? (
-              <Text
-                style={[styles.rowSub, { color: theme.colors.textSecondary }]}
-              >
-                @{user.username}
-              </Text>
-            ) : null}
-          </View>
-          <Ionicons
-            name="chevron-forward"
-            size={14}
-            color={theme.colors.textSecondary + "60"}
+        <SettingsSection title={t("settings.account")}>
+          <SettingsRow
+            type="navigation"
+            icon="person-outline"
+            label={t("settings.profile")}
+            subtitle={user?.username ? `@${user.username}` : undefined}
+            onPress={() => router.push("/(tabs)/profile")}
+            isLast={!showChangePassword}
           />
-        </Pressable>
-
-        {user?.hasPassword === true && (
-          <Pressable
-            onPress={() => router.push("/change-password")}
-            style={({ pressed }) => [
-              styles.row,
-              { opacity: pressed ? 0.6 : 1 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={t("settings.changePassword")}
-          >
-            <Text
-              style={[styles.rowLabel, { color: theme.colors.textPrimary }]}
-            >
-              {t("settings.changePassword")}
-            </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={14}
-              color={theme.colors.textSecondary + "60"}
+          {showChangePassword && (
+            <SettingsRow
+              type="navigation"
+              icon="key-outline"
+              label={t("settings.changePassword")}
+              onPress={() => router.push("/change-password")}
+              isLast
             />
-          </Pressable>
-        )}
+          )}
+        </SettingsSection>
 
         {/* Appearance Section */}
-        <Text
-          style={[
-            styles.sectionTitle,
-            { color: theme.colors.textSecondary, marginTop: 8 },
-          ]}
-        >
-          {t("settings.appearance")}
-        </Text>
-
-        <Pressable
-          onPress={handleOpenThemeSheet}
-          style={({ pressed }) => [
-            styles.row,
-            { opacity: pressed ? 0.6 : 1 },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={t("settings.theme")}
-        >
-          <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
-            {t("settings.theme")}
-          </Text>
-          <View style={styles.rowRight}>
-            <Text
-              style={[styles.rowValue, { color: theme.colors.textSecondary }]}
-            >
-              {currentThemeLabel}
-            </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={14}
-              color={theme.colors.textSecondary + "60"}
-            />
-          </View>
-        </Pressable>
-
-        <Pressable
-          onPress={handleOpenLanguageSheet}
-          style={({ pressed }) => [
-            styles.row,
-            { opacity: pressed ? 0.6 : 1 },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={t("profile.language")}
-        >
-          <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
-            {t("profile.language")}
-          </Text>
-          <View style={styles.rowRight}>
-            <Text
-              style={[styles.rowValue, { color: theme.colors.textSecondary }]}
-            >
-              {currentLanguageLabel}
-            </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={14}
-              color={theme.colors.textSecondary + "60"}
-            />
-          </View>
-        </Pressable>
+        <SettingsSection title={t("settings.appearance")}>
+          <SettingsRow
+            type="value"
+            icon="moon-outline"
+            label={t("settings.theme")}
+            value={currentThemeLabel}
+            onPress={handleOpenThemeSheet}
+          />
+          <SettingsRow
+            type="value"
+            icon="language-outline"
+            label={t("profile.language")}
+            value={currentLanguageLabel}
+            onPress={handleOpenLanguageSheet}
+            isLast
+          />
+        </SettingsSection>
 
         {/* Preferences Section */}
-        <Text
-          style={[
-            styles.sectionTitle,
-            { color: theme.colors.textSecondary, marginTop: 8 },
-          ]}
-        >
-          {t("settings.preferences")}
-        </Text>
-
-        <Pressable
-          onPress={() => router.push("/settings/league-order")}
-          style={({ pressed }) => [
-            styles.row,
-            { opacity: pressed ? 0.6 : 1 },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={t("settings.leagueOrder")}
-        >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={[styles.rowLabel, { color: theme.colors.textPrimary }]}
-            >
-              {t("settings.leagueOrder")}
-            </Text>
-            <Text
-              style={[styles.rowSub, { color: theme.colors.textSecondary }]}
-            >
-              {t("settings.leagueOrderSubtitle")}
-            </Text>
-          </View>
-          <Ionicons
-            name="chevron-forward"
-            size={14}
-            color={theme.colors.textSecondary + "60"}
+        <SettingsSection title={t("settings.preferences")}>
+          <SettingsRow
+            type="navigation"
+            icon="reorder-three-outline"
+            label={t("settings.leagueOrder")}
+            subtitle={t("settings.leagueOrderSubtitle")}
+            onPress={() => router.push("/settings/league-order")}
+            isLast={!showHaptics}
           />
-        </Pressable>
-
-        {Platform.OS === "ios" && (
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              toggleHaptics();
-            }}
-            style={({ pressed }) => [
-              styles.row,
-              { opacity: pressed ? 0.6 : 1 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={t("settings.haptics")}
-          >
-            <View style={{ flex: 1 }}>
-              <Text
-                style={[styles.rowLabel, { color: theme.colors.textPrimary }]}
-              >
-                {t("settings.haptics")}
-              </Text>
-              <Text
-                style={[styles.rowSub, { color: theme.colors.textSecondary }]}
-              >
-                {t("settings.hapticsSubtitle")}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.toggle,
-                {
-                  backgroundColor: hapticsEnabled
-                    ? theme.colors.primary
-                    : theme.colors.textSecondary + "30",
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.toggleKnob,
-                  { alignSelf: hapticsEnabled ? "flex-end" : "flex-start" },
-                ]}
-              />
-            </View>
-          </Pressable>
-        )}
+          {showHaptics && (
+            <SettingsRow
+              type="toggle"
+              icon="hand-left-outline"
+              label={t("settings.haptics")}
+              subtitle={t("settings.hapticsSubtitle")}
+              value={hapticsEnabled}
+              onValueChange={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                toggleHaptics();
+              }}
+              isLast
+            />
+          )}
+        </SettingsSection>
 
         {/* Advanced Section */}
-        <Text
-          style={[
-            styles.sectionTitle,
-            { color: theme.colors.textSecondary, marginTop: 8 },
-          ]}
-        >
-          {t("settings.advanced")}
-        </Text>
-
-        <Pressable
-          onPress={handleClearCache}
-          style={({ pressed }) => [
-            styles.row,
-            { opacity: pressed ? 0.6 : 1 },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={t("settings.clearCache")}
-        >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={[styles.rowLabel, { color: theme.colors.textPrimary }]}
-            >
-              {t("settings.clearCache")}
-            </Text>
-            <Text
-              style={[styles.rowSub, { color: theme.colors.textSecondary }]}
-            >
-              {t("settings.clearCacheSubtitle")}
-            </Text>
-          </View>
-          <Ionicons
-            name="chevron-forward"
-            size={14}
-            color={theme.colors.textSecondary + "60"}
+        <SettingsSection title={t("settings.advanced")}>
+          <SettingsRow
+            type="navigation"
+            icon="trash-outline"
+            label={t("settings.clearCache")}
+            subtitle={t("settings.clearCacheSubtitle")}
+            onPress={handleClearCache}
+            isLast
           />
-        </Pressable>
+        </SettingsSection>
 
         {/* About Section */}
-        <Text
-          style={[
-            styles.sectionTitle,
-            { color: theme.colors.textSecondary, marginTop: 8 },
-          ]}
-        >
-          {t("settings.about")}
-        </Text>
-
-        <View style={styles.row}>
-          <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
-            {t("settings.version")}
-          </Text>
-          <Text style={[styles.rowValue, { color: theme.colors.textSecondary }]}>
-            {APP_VERSION}
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={() => Linking.openURL("https://cygobet.com/terms")}
-          style={({ pressed }) => [
-            styles.row,
-            { opacity: pressed ? 0.6 : 1 },
-          ]}
-          accessibilityRole="link"
-          accessibilityLabel={t("settings.termsOfService")}
-        >
-          <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
-            {t("settings.termsOfService")}
-          </Text>
-          <Ionicons
-            name="chevron-forward"
-            size={14}
-            color={theme.colors.textSecondary + "60"}
+        <SettingsSection title={t("settings.about")}>
+          <SettingsRow
+            type="value"
+            icon="information-circle-outline"
+            label={t("settings.version")}
+            value={APP_VERSION}
           />
-        </Pressable>
-
-        <Pressable
-          onPress={() => Linking.openURL("https://cygobet.com/privacy")}
-          style={({ pressed }) => [
-            styles.row,
-            { opacity: pressed ? 0.6 : 1 },
-          ]}
-          accessibilityRole="link"
-          accessibilityLabel={t("settings.privacyPolicy")}
-        >
-          <Text style={[styles.rowLabel, { color: theme.colors.textPrimary }]}>
-            {t("settings.privacyPolicy")}
-          </Text>
-          <Ionicons
-            name="chevron-forward"
-            size={14}
-            color={theme.colors.textSecondary + "60"}
+          <SettingsRow
+            type="navigation"
+            icon="document-text-outline"
+            label={t("settings.termsOfService")}
+            onPress={() => Linking.openURL("https://cygobet.com/terms")}
           />
-        </Pressable>
+          <SettingsRow
+            type="navigation"
+            icon="shield-checkmark-outline"
+            label={t("settings.privacyPolicy")}
+            onPress={() => Linking.openURL("https://cygobet.com/privacy")}
+            isLast
+          />
+        </SettingsSection>
 
-        {/* Logout */}
-        <Pressable
-          onPress={handleLogout}
-          style={({ pressed }) => [
-            styles.row,
-            { opacity: pressed ? 0.6 : 1, marginTop: 8 },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={t("profile.logout")}
-        >
-          <Text style={[styles.rowLabel, { color: theme.colors.danger }]}>
-            {t("profile.logout")}
-          </Text>
-        </Pressable>
+        {/* Logout Section */}
+        <SettingsSection>
+          <SettingsRow
+            type="navigation"
+            icon="log-out-outline"
+            label={t("profile.logout")}
+            onPress={handleLogout}
+            danger
+            isLast
+          />
+        </SettingsSection>
       </Screen>
 
       {/* Theme Picker Bottom Sheet */}
@@ -454,11 +256,15 @@ function SettingsContent() {
         enablePanDownToClose
         backdropComponent={renderBackdrop}
         backgroundStyle={{
-          backgroundColor: theme.colors.background,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          backgroundColor: theme.colors.surfaceElevated,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
         }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+        handleIndicatorStyle={{
+          backgroundColor: theme.colors.textDisabled,
+          width: 36,
+          height: 4,
+        }}
       >
         <BottomSheetView style={styles.sheetContent}>
           <Text
@@ -538,11 +344,15 @@ function SettingsContent() {
         enablePanDownToClose
         backdropComponent={renderBackdrop}
         backgroundStyle={{
-          backgroundColor: theme.colors.background,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          backgroundColor: theme.colors.surfaceElevated,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
         }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+        handleIndicatorStyle={{
+          backgroundColor: theme.colors.textDisabled,
+          width: 36,
+          height: 4,
+        }}
       >
         <BottomSheetView style={styles.sheetContent}>
           <Text
@@ -624,45 +434,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    marginBottom: 4,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-  },
-  rowLabel: {
-    fontSize: 15,
-  },
-  rowValue: {
-    fontSize: 14,
-  },
-  rowSub: {
-    fontSize: 11,
-    marginTop: 2,
-  },
-  rowRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  toggle: {
-    width: 34,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    paddingHorizontal: 2,
-  },
-  toggleKnob: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#fff",
   },
   sheetContent: {
     paddingHorizontal: 20,

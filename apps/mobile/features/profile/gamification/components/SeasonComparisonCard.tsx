@@ -178,6 +178,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   separator: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
   },
 });

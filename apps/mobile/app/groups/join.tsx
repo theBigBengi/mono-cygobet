@@ -78,8 +78,8 @@ function GroupJoinContent() {
                 style={[
                   styles.input,
                   {
-                    backgroundColor: theme.colors.surface,
-                    borderColor: theme.colors.border,
+                    backgroundColor: theme.colors.cardBackground,
+                    borderColor: "transparent",
                     color: theme.colors.textPrimary,
                     marginTop: theme.spacing.sm,
                     marginBottom: theme.spacing.md,
@@ -141,10 +141,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 8,
+    borderWidth: 0,
+    borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     fontSize: 16,
   },
 });

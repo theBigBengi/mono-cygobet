@@ -20,7 +20,6 @@ export function ChatDateSeparator({ label }: ChatDateSeparatorProps) {
           styles.pill,
           {
             backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
           },
         ]}
       >
@@ -39,10 +38,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   pill: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 999,
   },
   text: {
     textAlign: "center",

@@ -3,6 +3,7 @@ import { View, StyleSheet, Pressable } from "react-native";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 
 export type OutcomeOption = "home" | "draw" | "away";
 
@@ -50,12 +51,8 @@ function OutcomePickerInner({
               {
                 backgroundColor: isSelected
                   ? theme.colors.primary
-                  : theme.colors.surface,
-                borderColor: isSelected
-                  ? theme.colors.primary
-                  : theme.colors.border,
+                  : theme.colors.cardBackground,
                 opacity: !isEditable ? 0.5 : 1,
-                shadowOpacity: pressed ? 0 : isSelected ? 0.2 : 0.1,
                 transform: [{ scale: pressed ? 0.95 : 1 }],
               },
             ]}
@@ -93,14 +90,10 @@ const styles = StyleSheet.create({
   button: {
     minWidth: 40,
     height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 2,
+    ...getShadowStyle("sm"),
   },
   label: {
     fontSize: 16,

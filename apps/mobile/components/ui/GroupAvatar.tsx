@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "@/lib/theme";
+import { useTheme, getShadowStyle } from "@/lib/theme";
 import { AVATAR_GRADIENTS } from "@/lib/constants/avatarGradients";
 
 type Props = {
@@ -30,9 +30,7 @@ function GroupAvatarInner({
       width: size,
       height: size,
       borderRadius,
-      shadowColor: theme.colors.textPrimary,
-      borderColor: theme.colors.textInverse + "33",
-      borderBottomColor: theme.colors.textPrimary + "26",
+      ...getShadowStyle("sm"),
     },
     flat && {
       borderWidth: 0,
@@ -83,12 +81,8 @@ const styles = StyleSheet.create({
   container: {
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderBottomWidth: 4,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 8,
+    borderWidth: 0,
+    borderBottomWidth: 0,
   },
   initials: {
     fontWeight: "800",

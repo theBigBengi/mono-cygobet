@@ -115,7 +115,6 @@ export function DiscoverGroupsScreen() {
             styles.searchInputContainer,
             {
               backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
             },
           ]}
         >
@@ -288,8 +287,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 14,
     paddingHorizontal: 12,
     gap: 8,
   },
@@ -309,7 +307,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   card: {
-    padding: 12,
+    padding: 14,
+    borderRadius: 18,
   },
   cardContent: {
     flexDirection: "row",

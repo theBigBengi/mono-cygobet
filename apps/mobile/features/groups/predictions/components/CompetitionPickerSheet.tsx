@@ -34,16 +34,11 @@ export function CompetitionPickerSheet({
 
   const backgroundStyle = useMemo(
     () => ({
-      backgroundColor: theme.colors.surface,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 16,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
     }),
-    [theme.colors.surface]
+    [theme.colors.surfaceElevated]
   );
 
   const renderBackdrop = useCallback(
@@ -73,7 +68,7 @@ export function CompetitionPickerSheet({
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       backgroundStyle={backgroundStyle}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+      handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled }}
       maxDynamicContentSize={500}
     >
       <View style={styles.header}>
@@ -96,11 +91,7 @@ export function CompetitionPickerSheet({
             {
               backgroundColor:
                 selectedCompetitionId === null
-                  ? theme.colors.cardBackground
-                  : "transparent",
-              borderLeftColor:
-                selectedCompetitionId === null
-                  ? theme.colors.primary
+                  ? theme.colors.primary + "10"
                   : "transparent",
               opacity: pressed ? 0.7 : 1,
             },
@@ -154,10 +145,7 @@ export function CompetitionPickerSheet({
                 styles.row,
                 {
                   backgroundColor: isSelected
-                    ? theme.colors.cardBackground
-                    : "transparent",
-                  borderLeftColor: isSelected
-                    ? theme.colors.primary
+                    ? theme.colors.primary + "10"
                     : "transparent",
                   opacity: pressed ? 0.7 : 1,
                 },
@@ -237,7 +225,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
-    borderLeftWidth: 4,
+    borderRadius: 14,
+    marginHorizontal: 8,
   },
   rowText: {
     flex: 1,

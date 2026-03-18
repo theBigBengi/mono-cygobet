@@ -29,7 +29,7 @@ export const ScrollToNextButton = React.memo(function ScrollToNextButton({
         style={[
           styles.scrollToNextBtn,
           {
-            backgroundColor: "#000000",
+            backgroundColor: theme.colors.textPrimary,
             top: HEADER_HEIGHT + insetTop + 12,
           },
           scrollBtnAnimatedStyle,
@@ -39,7 +39,7 @@ export const ScrollToNextButton = React.memo(function ScrollToNextButton({
           <View
             style={[
               styles.scrollToNextArrow,
-              { borderTopColor: "#fff" },
+              { borderTopColor: theme.colors.textInverse },
               { transform: [{ rotate: "180deg" }] },
             ]}
           />
@@ -52,7 +52,7 @@ export const ScrollToNextButton = React.memo(function ScrollToNextButton({
     <Pressable
       style={[
         styles.scrollToNextBtn,
-        { backgroundColor: "#000000" },
+        { backgroundColor: theme.colors.textPrimary },
         {
           bottom:
             keyboardHeight > 0
@@ -64,7 +64,7 @@ export const ScrollToNextButton = React.memo(function ScrollToNextButton({
       ]}
       onPress={onPress}
     >
-      <View style={[styles.scrollToNextArrow, { borderTopColor: "#fff" }]} />
+      <View style={[styles.scrollToNextArrow, { borderTopColor: theme.colors.textInverse }]} />
     </Pressable>
   );
 });

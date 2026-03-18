@@ -11,7 +11,7 @@ export const sharedStyles = StyleSheet.create({
     marginBottom: 24, // spacing.lg
   },
   listGap: {
-    marginBottom: 8, // spacing.sm
+    marginBottom: 10, // slightly more than spacing.sm for modern feel
   },
   centered: {
     flex: 1,

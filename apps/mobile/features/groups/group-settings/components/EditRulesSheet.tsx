@@ -97,7 +97,6 @@ export function EditRulesSheet({
               styles.input,
               {
                 backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
                 color: theme.colors.textPrimary,
               },
             ]}
@@ -116,7 +115,6 @@ export function EditRulesSheet({
               styles.input,
               {
                 backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
                 color: theme.colors.textPrimary,
               },
             ]}
@@ -135,7 +133,6 @@ export function EditRulesSheet({
               styles.input,
               {
                 backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
                 color: theme.colors.textPrimary,
               },
             ]}
@@ -174,8 +171,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 14,
     padding: 12,
     fontSize: 16,
     width: 80,

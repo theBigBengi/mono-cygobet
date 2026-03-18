@@ -28,7 +28,7 @@ export const createStyles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerCenter: {
     flex: 1,
@@ -73,7 +73,7 @@ export const createStyles = StyleSheet.create({
     fontWeight: "500",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 14,
     textAlign: "left",
   },
   descInput: {
@@ -81,7 +81,7 @@ export const createStyles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     minHeight: 100,
     textAlign: "left",
   },
@@ -98,7 +98,7 @@ export const createStyles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   createBtn: {
-    borderRadius: 20,
+    borderRadius: 24,
     paddingVertical: 12,
     alignSelf: "stretch",
     alignItems: "center",
@@ -152,7 +152,7 @@ export const createStyles = StyleSheet.create({
   nudgeChip: {
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 14,
     borderWidth: 1,
   },
   advToggleKnob: {
@@ -178,7 +178,7 @@ export const createStyles = StyleSheet.create({
     textAlign: "center",
     paddingBottom: 12,
     marginBottom: 8,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sheetOption: {
     flexDirection: "row",
@@ -192,7 +192,7 @@ export const createStyles = StyleSheet.create({
   sheetDoneBtn: {
     marginTop: 16,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 14,
     alignItems: "center",
   },
   sheetDoneBtnText: {
@@ -210,7 +210,7 @@ export const createStyles = StyleSheet.create({
   avatarGridItem: {
     width: 64,
     height: 64,
-    borderRadius: 16,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
@@ -233,7 +233,7 @@ export const createStyles = StyleSheet.create({
     gap: 6,
     marginBottom: 12,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
   },
   continueBtn: {
@@ -243,7 +243,7 @@ export const createStyles = StyleSheet.create({
     gap: 5,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 20,
+    borderRadius: 24,
     borderWidth: 1,
     flexShrink: 0,
   },
@@ -269,7 +269,7 @@ export const createStyles = StyleSheet.create({
     width: "48%",
     alignItems: "flex-start",
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 14,
     gap: 6,
   },
   leagueGridDot: {
@@ -349,7 +349,7 @@ export const createStyles = StyleSheet.create({
   gameGridCard: {
     width: "48%",
     padding: 10,
-    borderRadius: 10,
+    borderRadius: 14,
     gap: 6,
   },
   gameGridTeams: {
@@ -447,7 +447,7 @@ export const createStyles = StyleSheet.create({
     marginHorizontal: 12,
     marginVertical: 8,
     paddingHorizontal: 10,
-    borderRadius: 10,
+    borderRadius: 14,
     height: 34,
   },
   searchInput: {
@@ -497,7 +497,7 @@ export const createStyles = StyleSheet.create({
     justifyContent: "center",
     gap: 4,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: 14,
   },
   tabLabel: {
     fontWeight: "600",

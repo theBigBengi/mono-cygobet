@@ -58,8 +58,12 @@ export function GroupInviteSheet({
       enableDynamicSizing={false}
       snapPoints={["90%"]}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: theme.colors.background }}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.border }}
+      backgroundStyle={{
+        backgroundColor: theme.colors.surfaceElevated,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+      }}
+      handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled }}
     >
       <View style={styles.container}>
         <View style={styles.header}>

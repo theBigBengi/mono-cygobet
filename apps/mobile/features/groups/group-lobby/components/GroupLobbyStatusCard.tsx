@@ -6,6 +6,7 @@ import { View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 
 interface GroupLobbyStatusCardProps {
   status: string;
@@ -21,12 +22,11 @@ export function GroupLobbyStatusCard({ status }: GroupLobbyStatusCardProps) {
       style={[
         styles.card,
         {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.cardBackground,
         },
       ]}
     >
-      <View style={[styles.badge, { borderColor: theme.colors.border }]}>
+      <View style={[styles.badge, { backgroundColor: theme.colors.textPrimary + "08" }]}>
         <AppText variant="caption" style={styles.badgeText}>
           {t("lobby.draftBadge")}
         </AppText>
@@ -43,18 +43,17 @@ export function GroupLobbyStatusCard({ status }: GroupLobbyStatusCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 18,
+    padding: 20,
     marginBottom: 24,
+    ...getShadowStyle("sm"),
   },
   badge: {
     alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginBottom: 12,
   },
   badgeText: {
     fontWeight: "600",

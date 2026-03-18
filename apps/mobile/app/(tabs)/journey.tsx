@@ -366,12 +366,12 @@ const styles = StyleSheet.create({
   },
   popover: {
     marginTop: ARROW_SIZE,
-    borderRadius: 16,
+    borderRadius: 20,
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 16,
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
+    paddingTop: 20,
+    paddingBottom: 18,
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 10,
   },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   },
   startButton: {
     borderRadius: 14,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: "center",
   },
   startButtonText: {

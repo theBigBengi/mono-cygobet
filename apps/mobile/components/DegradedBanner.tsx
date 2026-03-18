@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     padding: 10,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    borderRadius: 10,
   },
   buttonText: {
     fontWeight: "600",

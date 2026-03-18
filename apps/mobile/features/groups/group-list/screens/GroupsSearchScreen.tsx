@@ -323,11 +323,11 @@ export function GroupsSearchScreen() {
         enablePanDownToClose
         backdropComponent={renderBackdrop}
         backgroundStyle={{
-          backgroundColor: theme.colors.background,
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
+          backgroundColor: theme.colors.surfaceElevated,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
         }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.border, width: 36 }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled, width: 36 }}
       >
         <BottomSheetView style={styles.joinSheetContent}>
           <Text style={[styles.joinSheetTitle, { color: theme.colors.textPrimary }]}>
@@ -507,7 +507,7 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
             ]}
           >
             {joinMutation.isPending ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={theme.colors.textInverse} />
             ) : (
               <Text style={previewStyles.joinButtonText}>{t("discover.join")}</Text>
             )}
@@ -593,11 +593,11 @@ const previewStyles = StyleSheet.create({
   },
   joinButton: {
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
   },
   joinButtonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "600",
   },
@@ -720,7 +720,7 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 10,
+    borderRadius: 14,
     paddingHorizontal: 12,
     gap: 8,
   },
@@ -776,17 +776,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   joinSheetInput: {
-    borderBottomWidth: 1,
-    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 12,
     fontSize: 16,
   },
   joinSheetButton: {
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
   },
   joinSheetButtonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "600",
   },

@@ -88,6 +88,7 @@ export function GroupLobbyActiveScreen({
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const lobbyScrollRef = useRef<import("react-native").ScrollView>(null);
   const [showDebugCTA, setShowDebugCTA] = useState(false);
   const [showDebugLeaderboard, setShowDebugLeaderboard] = useState(false);
   const [showDebugOverview, setShowDebugOverview] = useState(false);
@@ -397,6 +398,7 @@ export function GroupLobbyActiveScreen({
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Screen
+        scrollRef={lobbyScrollRef}
         contentContainerStyle={styles.screenContent}
         onRefresh={onRefresh}
         onScroll={handleScroll}
@@ -482,6 +484,14 @@ export function GroupLobbyActiveScreen({
           groupId={group.id}
           unreadCount={unreadActivityCount}
           onPress={handleViewActivity}
+          onExpandChange={(delta) => {
+            setTimeout(() => {
+              lobbyScrollRef.current?.scrollTo({
+                y: lastScrollY.current + delta,
+                animated: true,
+              });
+            }, 50);
+          }}
         />
 
         <LobbyAboutSection group={group} />
@@ -759,24 +769,24 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   floatingBottomInner: {
-    borderRadius: 14,
+    borderRadius: 18,
     overflow: "hidden",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   chatPreviewContainer: {
     marginBottom: 6,
     overflow: "hidden",
   },
   chatPreviewFloat: {
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     marginBottom: 6,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 4,
   },
   chatPreviewLine: {},
@@ -852,7 +862,7 @@ const styles = StyleSheet.create({
   },
   miniChatPanel: {
     height: 300,
-    borderRadius: 14,
+    borderRadius: 18,
     marginBottom: 6,
     overflow: "hidden",
   },
@@ -891,16 +901,16 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     maxWidth: "80%",
     // backgroundColor set dynamically via theme-aware logic
-    borderRadius: 12,
-    borderTopLeftRadius: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderRadius: 16,
+    borderTopLeftRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   miniMsgMe: {
     alignSelf: "flex-end",
     // backgroundColor set dynamically via theme.colors.primary
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 4,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 6,
   },
   miniMsgSender: {
     fontSize: 11,

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import type { TFunction } from "i18next";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import type { Colors } from "@/lib/theme/colors";
 import type { ApiGroupItem } from "@repo/types";
 
@@ -112,7 +113,7 @@ function LobbyAboutSectionInner({ group }: LobbyAboutSectionProps) {
         </Text>
       </View>
 
-      <View style={[styles.card, { backgroundColor: c.cardBackground }]}>
+      <View style={[styles.card, { backgroundColor: c.cardBackground, ...getShadowStyle("sm") }]}>
         <Text style={[styles.groupName, { color: c.textPrimary }]} numberOfLines={1}>
           {group.name}
         </Text>
@@ -183,16 +184,16 @@ function LobbyAboutSectionInner({ group }: LobbyAboutSectionProps) {
           {summary}
         </Text>
 
-        {/* See more */}
+        {/* See More */}
         <Pressable
           onPress={() => router.push({ pathname: "/groups/[id]/about", params: { id: String(group.id) } })}
           style={({ pressed }) => [
             styles.seeMoreButton,
-            { borderColor: c.border },
+            { backgroundColor: c.textPrimary + "08" },
             pressed && { opacity: 0.6 },
           ]}
         >
-          <Text style={[styles.seeMoreText, { color: c.textSecondary }]}>
+          <Text style={[styles.seeMoreText, { color: c.textPrimary }]}>
             {t("lobby.seeMore")}
           </Text>
         </Pressable>
@@ -206,33 +207,33 @@ export const LobbyAboutSection = React.memo(LobbyAboutSectionInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 10,
+  },
+  card: {
+    borderRadius: 18,
+    padding: 18,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: "700",
   },
-  card: {
-    borderRadius: 14,
-    padding: 14,
-  },
   groupName: {
     fontSize: 16,
     fontWeight: "700",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-    marginBottom: 6,
+    gap: 8,
+    marginTop: 6,
+    marginBottom: 8,
   },
   sectionHeaderText: {
     fontSize: 13,
@@ -242,7 +243,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 5,
+    paddingVertical: 6,
   },
   rowLabel: {
     fontSize: 13,
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: 10,
+    marginVertical: 12,
   },
   summaryText: {
     fontSize: 13,
@@ -262,12 +263,11 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   seeMoreButton: {
-    alignSelf: "center",
-    marginTop: 12,
+    marginTop: 14,
     paddingVertical: 8,
     paddingHorizontal: 24,
     borderRadius: 20,
-    borderWidth: 1,
+    alignSelf: "center",
   },
   seeMoreText: {
     fontSize: 13,

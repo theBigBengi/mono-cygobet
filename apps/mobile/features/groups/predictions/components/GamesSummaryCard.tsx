@@ -2,6 +2,7 @@ import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 
 type Props = {
   totalPoints: number;
@@ -98,8 +99,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 18,
     gap: 2,
+    ...getShadowStyle("sm"),
   },
   progressPill: {
     paddingVertical: 8,

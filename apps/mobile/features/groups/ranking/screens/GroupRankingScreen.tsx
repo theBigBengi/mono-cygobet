@@ -26,7 +26,7 @@ import {
 } from "@/domains/groups";
 import { groupsKeys } from "@/domains/groups/groups.keys";
 import { useAuth } from "@/lib/auth/useAuth";
-import { useTheme } from "@/lib/theme";
+import { useTheme, getShadowStyle } from "@/lib/theme";
 import { getInitials } from "@/utils/string";
 import type { ApiRankingItem } from "@repo/types";
 
@@ -128,7 +128,7 @@ const RankingRow = React.memo(function RankingRow({
         )}
       </View>
 
-      <View style={[styles.barContent, { borderColor: theme.colors.border }, isCurrentUser && { backgroundColor: theme.colors.textPrimary + "06" }]}>
+      <View style={[styles.barContent, { backgroundColor: theme.colors.cardBackground, ...getShadowStyle("sm") }, isCurrentUser && { backgroundColor: theme.colors.textPrimary + "06" }]}>
         <View style={styles.barOverlay}>
           <View style={styles.barLeft}>
             <Text
@@ -364,12 +364,9 @@ const styles = StyleSheet.create({
   },
   barContent: {
     flex: 1,
-    backgroundColor: "transparent",
-    borderRadius: 10,
+    borderRadius: 14,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    borderWidth: 1,
-    // borderColor set dynamically via theme.colors.border
   },
   barOverlay: {
     flexDirection: "row",

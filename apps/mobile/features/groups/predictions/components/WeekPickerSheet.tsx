@@ -46,11 +46,11 @@ export function WeekPickerSheet({
 
   const backgroundStyle = useMemo(
     () => ({
-      backgroundColor: theme.colors.surface,
-      borderTopLeftRadius: 16,
-      borderTopRightRadius: 16,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
     }),
-    [theme.colors.surface]
+    [theme.colors.surfaceElevated]
   );
 
   const renderBackdrop = useCallback(
@@ -88,7 +88,7 @@ export function WeekPickerSheet({
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       backgroundStyle={backgroundStyle}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary + "40", width: 32 }}
+      handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled, width: 32 }}
     >
       <BottomSheetScrollView
         contentContainerStyle={styles.content}
@@ -105,7 +105,7 @@ export function WeekPickerSheet({
                   style={({ pressed }) => [
                     styles.pill,
                     {
-                      backgroundColor: isActive ? theme.colors.primary : theme.colors.textSecondary + "10",
+                      backgroundColor: isActive ? theme.colors.primary : theme.colors.cardBackground,
                       opacity: pressed ? 0.6 : 1,
                     },
                   ]}
@@ -128,7 +128,7 @@ export function WeekPickerSheet({
               style={({ pressed }) => [
                 styles.pill,
                 {
-                  backgroundColor: selectedTeamId == null ? theme.colors.primary : theme.colors.textSecondary + "10",
+                  backgroundColor: selectedTeamId == null ? theme.colors.primary : theme.colors.cardBackground,
                   opacity: pressed ? 0.6 : 1,
                 },
               ]}
@@ -149,7 +149,7 @@ export function WeekPickerSheet({
                   style={({ pressed }) => [
                     styles.pill,
                     {
-                      backgroundColor: isActive ? theme.colors.primary : theme.colors.textSecondary + "10",
+                      backgroundColor: isActive ? theme.colors.primary : theme.colors.cardBackground,
                       opacity: pressed ? 0.6 : 1,
                     },
                   ]}
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   pill: {
     paddingVertical: 6,
     paddingHorizontal: 14,
-    borderRadius: 16,
+    borderRadius: 9999,
   },
   pillText: {
     fontSize: 13,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 14,
   },
   rowLeft: {
     flexDirection: "row",

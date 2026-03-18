@@ -3,6 +3,7 @@ import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { hasMatchStarted } from "@repo/utils";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { useAuth } from "@/lib/auth/useAuth";
 import { usePredictionsOverviewQuery } from "@/domains/groups";
 import type { ApiPredictionsOverviewParticipant } from "@repo/types";
@@ -58,8 +59,8 @@ export function FixturePredictionsList({ groupId, fixtureId }: Props) {
   const getPointsColor = (points: string | null): string => {
     if (!points) return theme.colors.textSecondary;
     const n = parseInt(points, 10);
-    if (n >= maxPts) return "#34C759";
-    if (n >= 1) return "#FF9500";
+    if (n >= maxPts) return theme.colors.success;
+    if (n >= 1) return theme.colors.warning;
     return theme.colors.textSecondary;
   };
 
@@ -91,7 +92,8 @@ export function FixturePredictionsList({ groupId, fixtureId }: Props) {
   if (sortedParticipants.length === 0) return null;
 
   return (
-    <View style={[styles.container, { borderTopColor: theme.colors.border }]}>
+    <View style={styles.container}>
+      <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
       {sortedParticipants.map(
         (participant: ApiPredictionsOverviewParticipant, index: number) => {
           const isCurrentUser = participant.id === currentUserId;
@@ -108,10 +110,7 @@ export function FixturePredictionsList({ groupId, fixtureId }: Props) {
                 {
                   backgroundColor: isCurrentUser
                     ? theme.colors.primary + "14"
-                    : theme.colors.surface,
-                  borderColor: isCurrentUser
-                    ? theme.colors.primary + "40"
-                    : theme.colors.border,
+                    : theme.colors.cardBackground,
                 },
               ]}
             >
@@ -163,7 +162,10 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderTopWidth: 1,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginBottom: 8,
   },
   loadingContainer: {
     paddingVertical: 24,
@@ -175,14 +177,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 6,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 18,
     gap: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
+    ...getShadowStyle("sm"),
   },
   rankBadge: {
     width: 26,
@@ -190,11 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    ...getShadowStyle("sm"),
   },
   rankText: {
     fontWeight: "700",

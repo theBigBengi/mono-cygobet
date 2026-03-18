@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { usePredictableGroups } from "../hooks/usePredictableGroups";
 
 export function PredictAllBanner() {
@@ -34,12 +35,12 @@ export function PredictAllBanner() {
       onPress={handlePress}
       style={({ pressed }) => [
         styles.container,
-        { backgroundColor: theme.colors.border + "60" },
+        { backgroundColor: theme.colors.cardBackground },
         pressed && { opacity: 0.7 },
       ]}
     >
       <View style={styles.content}>
-        <View style={[styles.iconCircle, { borderColor: theme.colors.textPrimary + "40" }]}>
+        <View style={[styles.iconCircle, { backgroundColor: theme.colors.border }]}>
           <MaterialCommunityIcons
             name="cards-outline"
             size={16}
@@ -64,7 +65,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 14,
     marginBottom: 8,
-    borderRadius: 10,
+    borderRadius: 18,
+    ...getShadowStyle("sm"),
   },
   content: {
     flexDirection: "row",
@@ -76,8 +78,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 9999,
     alignItems: "center",
     justifyContent: "center",
     marginEnd: 8,

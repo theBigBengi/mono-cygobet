@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Card, AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, getShadowStyle } from "@/lib/theme";
 import type { ApiActivityFeedItem } from "@repo/types";
 
 interface ActivityCardProps {
@@ -97,11 +97,9 @@ export function ActivityCard({ item }: ActivityCardProps) {
       <Card
         style={[
           styles.card,
-          {
-            borderColor: isReminder
-              ? theme.colors.primary
-              : theme.colors.border,
-            borderLeftWidth: isReminder ? 4 : 1,
+          isReminder && {
+            borderLeftWidth: 4,
+            borderLeftColor: theme.colors.primary,
           },
         ]}
       >
@@ -140,7 +138,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 10,
     marginTop: 4,
   },
 });

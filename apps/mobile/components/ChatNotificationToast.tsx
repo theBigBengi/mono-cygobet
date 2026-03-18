@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAtom } from "jotai";
-import { useTheme } from "@/lib/theme";
+import { useTheme, getShadowStyle } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import {
   chatNotificationAtom,
@@ -154,8 +154,7 @@ export function ChatNotificationToast() {
           styles.toast,
           {
             backgroundColor: theme.colors.surfaceElevated,
-            borderColor: theme.colors.border,
-            shadowColor: theme.colors.textPrimary,
+            ...getShadowStyle("md"),
           },
         ]}
       >
@@ -227,13 +226,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 18,
     gap: 10,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
   },
   avatar: {
     width: AVATAR_SIZE,

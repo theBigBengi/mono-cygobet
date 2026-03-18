@@ -123,21 +123,21 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    gap: 10,
   },
   track: {
     flex: 1,
-    height: 2,
-    borderRadius: 1,
+    height: 3,
+    borderRadius: 2,
   },
   fill: {
     height: "100%",
-    borderRadius: 1,
+    borderRadius: 2,
   },
   dateLabel: {
-    fontSize: 10,
+    fontSize: 11,
   },
   skeletonLabel: {
     width: 32,

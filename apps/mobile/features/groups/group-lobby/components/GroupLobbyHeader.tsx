@@ -320,7 +320,7 @@ export const GroupLobbyHeader = React.memo(GroupLobbyHeaderInner);
 const styles = StyleSheet.create({
   // HUD Styles
   hudContainer: {
-    paddingBottom: 8,
+    paddingBottom: 12,
     position: "relative",
   },
   hudGradient: {
@@ -332,16 +332,16 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: "absolute",
-    left: 12,
+    left: 16,
     top: 8,
     zIndex: 10,
   },
   rightIcons: {
     position: "absolute",
-    right: 12,
+    right: 16,
     top: 8,
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
     zIndex: 10,
   },
   iconCircle: {
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   hudTextBelow: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   hudTitleRow: {
     flexDirection: "row",
@@ -373,23 +373,21 @@ const styles = StyleSheet.create({
   },
   hudTitleLeft: {
     flex: 1,
-    marginEnd: 16,
+    marginEnd: 20,
   },
   shareButton: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "transparent",
   },
   creatorRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-    marginBottom: 6,
+    gap: 8,
+    marginTop: 6,
+    marginBottom: 8,
   },
   creatorAvatar: {
     width: 20,
@@ -409,8 +407,8 @@ const styles = StyleSheet.create({
   hudNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
+    gap: 8,
+    marginBottom: 6,
   },
   officialBadge: {
     width: 24,
@@ -427,20 +425,21 @@ const styles = StyleSheet.create({
   descriptionText: {
     fontSize: 13,
     fontWeight: "400",
-    marginBottom: 2,
+    lineHeight: 19,
+    marginBottom: 4,
   },
   // Original Styles
   card: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   container: {
     flexDirection: "row",
     alignItems: "flex-start",
-    padding: 16,
+    padding: 20,
   },
   textContainer: {
     flex: 1,
-    marginStart: 12,
+    marginStart: 16,
   },
   name: {
     fontWeight: "700",
@@ -451,7 +450,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 2,
+    marginTop: 4,
   },
   metaChipText: {
     fontSize: 11,

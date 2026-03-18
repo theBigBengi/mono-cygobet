@@ -405,14 +405,15 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   backButton: {
-    width: 32,
-    height: 32,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitle: {
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 17,
+    fontWeight: "700",
   },
   headerSpacer: {
     width: 32,
@@ -434,12 +435,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 12,
     gap: 12,
   },
   orderNumber: {

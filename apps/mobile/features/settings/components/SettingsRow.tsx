@@ -1,4 +1,5 @@
 // features/settings/components/SettingsRow.tsx
+// Modern settings row — clean, spacious, iOS-inspired.
 
 import React from "react";
 import { View, Pressable, Switch, StyleSheet } from "react-native";
@@ -56,9 +57,9 @@ export function SettingsRow(props: SettingsRowProps) {
       style={[
         styles.row,
         {
-          paddingVertical: theme.spacing.md,
+          paddingVertical: theme.spacing.ms,
           paddingHorizontal: theme.spacing.md,
-          borderBottomWidth: isLast ? 0 : 1,
+          borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
           borderBottomColor: theme.colors.border,
         },
       ]}
@@ -69,8 +70,8 @@ export function SettingsRow(props: SettingsRowProps) {
             styles.iconContainer,
             {
               backgroundColor: iconBgColor,
-              borderRadius: theme.radius.sm,
-              marginEnd: theme.spacing.sm,
+              borderRadius: theme.radius.s,
+              marginEnd: theme.spacing.ms,
             },
           ]}
         >
@@ -78,7 +79,7 @@ export function SettingsRow(props: SettingsRowProps) {
             (icon != null ? (
               <Ionicons
                 name={icon}
-                size={18}
+                size={16}
                 color={theme.colors.primaryText}
               />
             ) : null)}
@@ -90,7 +91,7 @@ export function SettingsRow(props: SettingsRowProps) {
           {label}
         </AppText>
         {subtitle && (
-          <AppText variant="caption" color="secondary">
+          <AppText variant="caption" color="secondary" style={styles.subtitle}>
             {subtitle}
           </AppText>
         )}
@@ -99,8 +100,8 @@ export function SettingsRow(props: SettingsRowProps) {
       {type === "navigation" && (
         <Ionicons
           name="chevron-forward"
-          size={20}
-          color={danger ? theme.colors.danger : theme.colors.textSecondary}
+          size={18}
+          color={danger ? theme.colors.danger + "80" : theme.colors.textDisabled}
         />
       )}
 
@@ -127,8 +128,8 @@ export function SettingsRow(props: SettingsRowProps) {
           {props.onPress && (
             <Ionicons
               name="chevron-forward"
-              size={20}
-              color={theme.colors.textSecondary}
+              size={18}
+              color={theme.colors.textDisabled}
               style={{ marginStart: 4 }}
             />
           )}
@@ -150,7 +151,7 @@ export function SettingsRow(props: SettingsRowProps) {
       <Pressable
         onPress={handlePress}
         style={({ pressed }) => [
-          { backgroundColor: pressed ? theme.colors.border : "transparent" },
+          { backgroundColor: pressed ? theme.colors.border + "40" : "transparent" },
         ]}
       >
         {content}
@@ -165,10 +166,11 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
+    minHeight: 48,
   },
   iconContainer: {
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -177,6 +179,9 @@ const styles = StyleSheet.create({
   },
   label: {
     fontWeight: "500",
+  },
+  subtitle: {
+    marginTop: 1,
   },
   valueContainer: {
     flexDirection: "row",

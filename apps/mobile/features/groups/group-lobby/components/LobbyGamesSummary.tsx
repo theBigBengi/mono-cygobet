@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 
 export interface LobbyGamesSummaryProps {
   totalFixtures: number;
@@ -48,7 +49,7 @@ function LobbyGamesSummaryInner({
           </Text>
           <Ionicons
             name="chevron-forward"
-            size={16}
+            size={18}
             color={theme.colors.textSecondary}
           />
         </View>
@@ -174,13 +175,13 @@ export const LobbyGamesSummary = React.memo(LobbyGamesSummaryInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 14,
   },
   title: {
     fontSize: 15,
@@ -188,13 +189,13 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 4,
-    borderRadius: 2,
-    marginBottom: 16,
+    borderRadius: 3,
+    marginBottom: 18,
     overflow: "hidden",
   },
   progressFill: {
     height: 4,
-    borderRadius: 2,
+    borderRadius: 3,
   },
   statsRow: {
     flexDirection: "row",
@@ -221,8 +222,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 12,
+    gap: 8,
+    marginTop: 14,
   },
   statusDot: {
     width: 6,

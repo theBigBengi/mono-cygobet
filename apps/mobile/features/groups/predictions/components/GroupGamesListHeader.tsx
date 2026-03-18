@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   toolbarBtn: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 32,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 9999,
   },
   filterBtnLabel: {
     fontSize: 13,

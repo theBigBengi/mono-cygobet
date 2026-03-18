@@ -68,11 +68,11 @@ const styles = StyleSheet.create({
   },
   track: {
     width: "100%",
-    borderRadius: 2,
+    borderRadius: 6,
     overflow: "hidden",
   },
   fill: {
     height: "100%",
-    borderRadius: 2,
+    borderRadius: 6,
   },
 });

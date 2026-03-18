@@ -87,7 +87,7 @@ export function SmartFilterChips({
   const competitionPillActive = teamsFilter?.selectedCompetitionId != null;
 
   // Shared chip style helpers
-  const inactiveBg = theme.colors.textSecondary + "12";
+  const inactiveBg = theme.colors.cardBackground;
   const inactiveText = theme.colors.textSecondary;
   const activeBg = theme.colors.primary;
   const activeText = theme.colors.textInverse;
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 9999,
   },
   chipText: {
     fontSize: 12,

@@ -82,7 +82,7 @@ export function FloatingTabBar({
               <View style={styles.iconWrap}>
                 <Ionicons
                   name={iconName as React.ComponentProps<typeof Ionicons>["name"]}
-                  size={24}
+                  size={26}
                   color={
                     isFocused
                       ? theme.colors.textPrimary
@@ -93,7 +93,10 @@ export function FloatingTabBar({
                   <View
                     style={[
                       styles.badge,
-                      { backgroundColor: theme.colors.primary },
+                      {
+                        backgroundColor: theme.colors.primary,
+                        borderColor: theme.colors.background,
+                      },
                     ]}
                     pointerEvents="none"
                   >
@@ -124,6 +127,17 @@ export function FloatingTabBar({
               >
                 {label}
               </AppText>
+              {isFocused && (
+                <View
+                  style={{
+                    width: 4,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: theme.colors.primary,
+                    marginTop: 2,
+                  }}
+                />
+              )}
             </Pressable>
           );
         })}
@@ -140,31 +154,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
-    paddingTop: 16,
+    paddingTop: 20,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
+    gap: 3,
   },
   iconWrap: {
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
     alignItems: "center",
     justifyContent: "center",
   },
   label: {
-    fontSize: 10,
-    letterSpacing: 0.1,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
   badge: {
     position: "absolute",
     top: -4,
     right: -10,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,

@@ -35,8 +35,8 @@ export function SendInviteSheet({
       ref={sheetRef}
       snapPoints={["40%"]}
       enablePanDownToClose
-      backgroundStyle={{ backgroundColor: theme.colors.background }}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.border }}
+      backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+      handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
     >
       <View style={[styles.content, { paddingHorizontal: theme.spacing.lg }]}>
         <AppText variant="title" style={styles.title}>
@@ -53,8 +53,7 @@ export function SendInviteSheet({
           style={[
             styles.input,
             {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.textPrimary + "08",
               color: theme.colors.textPrimary,
             },
           ]}
@@ -84,8 +83,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 0,
+    borderRadius: 14,
     padding: 14,
     fontSize: 16,
     minHeight: 80,

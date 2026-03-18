@@ -27,16 +27,16 @@ export const INPUT_BACKGROUND_COLOR_DISABLED = "rgba(15, 23, 42, 0.07)";
 
 /** Base input style dimensions and properties */
 export const INPUT_STYLE = {
-  width: 36,
-  height: 36,
+  width: 38,
+  height: 38,
   fontSize: 17,
-  borderRadius: 8,
+  borderRadius: 10,
   borderWidth: 1,
   fontWeight: "600" as const,
 } as const;
 
 /** Card border radius value */
-export const CARD_BORDER_RADIUS = 14;
+export const CARD_BORDER_RADIUS = 18;
 
 /**
  * Timeline constants — single source of truth for the vertical timeline.

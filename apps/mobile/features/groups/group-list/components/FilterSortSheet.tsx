@@ -105,11 +105,11 @@ export function FilterSortSheet({
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       backgroundStyle={{
-        backgroundColor: theme.colors.surface,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
+        backgroundColor: theme.colors.surfaceElevated,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
       }}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+      handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled }}
     >
       <BottomSheetView style={[styles.content, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         {/* Centered title */}
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   divider: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
     marginVertical: 16,
   },
   option: {
@@ -287,15 +287,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 14,
-    borderRadius: 24,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   applyButton: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 14,
-    borderRadius: 24,
+    borderRadius: 14,
   },
   buttonText: {
     fontSize: 15,

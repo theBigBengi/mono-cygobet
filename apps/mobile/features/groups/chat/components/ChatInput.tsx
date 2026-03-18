@@ -43,7 +43,7 @@ export function ChatInput({
   fixtureOptions,
 }: ChatInputProps) {
   const { t } = useTranslation("common");
-  const { theme, colorScheme } = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const [mentions, setMentions] = useState<MentionData[]>([]);
@@ -218,7 +218,6 @@ export function ChatInput({
           styles.container,
           {
             backgroundColor: theme.colors.surface,
-            borderTopColor: theme.colors.border,
             paddingBottom: isKeyboardVisible ? 12 : Math.max(12, insets.bottom),
           },
         ]}
@@ -250,7 +249,6 @@ export function ChatInput({
           styles.container,
           {
             backgroundColor: theme.colors.surface,
-            borderTopColor: theme.colors.border,
             paddingBottom: isKeyboardVisible ? 0 : Math.max(12, insets.bottom),
           },
         ]}
@@ -273,7 +271,7 @@ export function ChatInput({
           style={[
             styles.input,
             {
-              backgroundColor: colorScheme === "dark" ? theme.colors.textInverse + "0F" : theme.colors.textPrimary + "0A",
+              backgroundColor: theme.colors.background,
               color: theme.colors.textPrimary,
             },
           ]}
@@ -317,7 +315,6 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     padding: 12,
     gap: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
   atButton: {
     width: 40,
@@ -330,7 +327,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 40,
     maxHeight: 100,
-    borderRadius: 20,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: Platform.OS === "ios" ? 10 : 8,
     fontSize: 16,

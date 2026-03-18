@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: 9999,
   },
   liveDot: {
     width: 6,

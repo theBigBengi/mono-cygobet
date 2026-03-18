@@ -41,9 +41,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   pill: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 999,
   },
   text: {
     textAlign: "center",

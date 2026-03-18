@@ -5,6 +5,7 @@ import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { useTranslation } from "react-i18next";
 
 interface GroupCompactCardProps {
@@ -36,7 +37,8 @@ export function GroupCompactCard({
         styles.container,
         {
           backgroundColor: pressed ? theme.colors.border : theme.colors.surface,
-          borderColor: theme.colors.border,
+          borderRadius: theme.radius.md,
+          ...getShadowStyle("sm"),
         },
       ]}
     >
@@ -76,8 +78,6 @@ export function GroupCompactCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 8,
-    borderWidth: 1,
     padding: 12,
     marginBottom: 8,
   },
@@ -95,6 +95,6 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
   },
 });

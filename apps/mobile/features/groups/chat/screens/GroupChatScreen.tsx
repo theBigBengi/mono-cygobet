@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { AppText } from "@/components/ui";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
@@ -340,9 +341,8 @@ export function GroupChatScreen({ groupId, keyboardVerticalOffset: kbOffsetProp 
                   styles.stickyPill,
                   {
                     backgroundColor: theme.colors.surface,
-                    borderColor: theme.colors.border,
-                    shadowColor: theme.colors.textPrimary,
                   },
+                  getShadowStyle("md"),
                 ]}
               >
                 <AppText variant="caption" color="secondary" style={styles.stickyText}>
@@ -392,14 +392,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   stickyPill: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
+    borderRadius: 999,
   },
   stickyText: {
     textAlign: "center",

@@ -7,6 +7,7 @@ import { View, SectionList, Pressable, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { AppText } from "@/components/ui";
 
 export interface MentionOption {
@@ -42,7 +43,7 @@ function OptionRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.option,
-        { backgroundColor: pressed ? theme.colors.border : "transparent" },
+        { backgroundColor: pressed ? theme.colors.background : "transparent" },
       ]}
     >
       {item.image ? (
@@ -114,7 +115,7 @@ export function MentionPicker({
       <View
         style={[
           styles.sectionHeader,
-          { backgroundColor: theme.colors.surface },
+          { backgroundColor: theme.colors.cardBackground },
         ]}
       >
         <AppText
@@ -148,8 +149,8 @@ export function MentionPicker({
         styles.container,
         {
           backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
         },
+        getShadowStyle("md"),
       ]}
     >
       <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
@@ -194,10 +195,8 @@ export function MentionPicker({
 const styles = StyleSheet.create({
   container: {
     maxHeight: 260,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
   },
   header: {
     flexDirection: "row",
@@ -205,7 +204,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: {
     fontSize: 14,

@@ -31,13 +31,13 @@ function shadow(
 
 export const shadows = {
   /** Cards, buttons — subtle lift */
-  sm: shadow(1, 2, 0.08, 2),
-  /** Dropdowns, popovers */
-  md: shadow(2, 6, 0.12, 4),
-  /** Floating elements, FABs */
-  lg: shadow(4, 12, 0.15, 8),
-  /** Modals, overlays */
-  xl: shadow(8, 24, 0.2, 16),
+  sm: shadow(1, 3, 0.06, 2),
+  /** Dropdowns, popovers — refined depth */
+  md: shadow(2, 8, 0.08, 4),
+  /** Floating elements, FABs — prominent */
+  lg: shadow(4, 16, 0.12, 8),
+  /** Modals, overlays — heavy */
+  xl: shadow(8, 32, 0.16, 16),
 } as const;
 
 /** Helper: get platform-specific shadow style */

@@ -13,6 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { AnimatedGradientCard } from "./AnimatedGradientCard";
 
 export interface QuickAction {
@@ -90,7 +91,6 @@ function LobbyQuickActionsInner({
           isFirst && styles.primaryPill,
           {
             backgroundColor: pressed ? theme.colors.textPrimary + "10" : "transparent",
-            borderColor: isFirst ? theme.colors.textPrimary + "20" : "transparent",
           },
         ]}
       >
@@ -150,24 +150,25 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginTop: 10,
-    marginBottom: 6,
+    marginTop: 12,
+    marginBottom: 8,
   },
   cardWrapper: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    ...getShadowStyle("sm"),
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 12,
   },
   cardsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
   cardsSubtitle: {
     flex: 1,
@@ -176,21 +177,20 @@ const styles = StyleSheet.create({
   },
   leftGroup: {
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
     flex: 1,
     justifyContent: "center",
   },
-pill: {
+  pill: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   primaryPill: {
-    borderWidth: 1,
   },
   pillLabel: {
     fontSize: 13,
@@ -214,7 +214,7 @@ pill: {
     borderRadius: 20,
   },
   skeletonCard: {
-    height: 42,
-    borderRadius: 10,
+    height: 44,
+    borderRadius: 14,
   },
 });

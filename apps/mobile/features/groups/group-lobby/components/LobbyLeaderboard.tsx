@@ -15,6 +15,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 import { getInitials } from "@/utils/string";
 import type { ApiRankingItem } from "@repo/types";
 
@@ -160,19 +161,17 @@ function LobbyLeaderboardInner({
                 </Text>
               </View>
 
-              {/* Right: View All button (only in zero-points state) */}
-              {allZeroPoints && <Pressable
-                onPress={onPress}
-                style={({ pressed }) => [
-                  styles.bottomButton,
-                  { borderColor: theme.colors.textSecondary + "40" },
-                  pressed && { opacity: 0.6 },
-                ]}
-              >
-                <Text style={[styles.bottomButtonText, { color: theme.colors.textSecondary }]}>
-                  {t("lobby.viewAll")}
-                </Text>
-              </Pressable>}
+              {/* Right: View All link (only in zero-points state) */}
+              {allZeroPoints && (
+                <Pressable
+                  onPress={onPress}
+                  style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                >
+                  <Text style={[styles.seeAllText, { color: theme.colors.textSecondary }]}>
+                    {t("lobby.seeAll")}
+                  </Text>
+                </Pressable>
+              )}
             </View>
           </View>
         </View>
@@ -245,11 +244,9 @@ function LobbyLeaderboardInner({
           <Text style={[styles.bottomTitle, { color: theme.colors.textPrimary }]}>
             {t("lobby.leaderboard")}
           </Text>
-          <Pressable onPress={onPress} style={({ pressed: p }) => [p && { opacity: 0.6 }]}>
-            <Text style={[styles.seeAllText, { color: theme.colors.textSecondary }]}>
-              {t("lobby.viewAll")}
-            </Text>
-          </Pressable>
+          <Text style={[styles.seeAllText, { color: theme.colors.textSecondary }]}>
+            {t("lobby.seeAll")}
+          </Text>
         </View>
 
         {/* Horizontal bars */}
@@ -304,7 +301,7 @@ export const LobbyLeaderboard = React.memo(LobbyLeaderboardInner);
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   wrapper: {
   },
@@ -312,27 +309,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-  },
-  seeAllText: {
-    fontSize: 13,
-    fontWeight: "500",
+    marginBottom: 12,
   },
   wrapperPressed: {
     opacity: 0.7,
   },
   barsContainer: {
-    marginTop: 12,
-    gap: 8,
+    gap: 10,
+    marginTop: 14,
   },
   barRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
   barRankCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -343,7 +337,7 @@ const styles = StyleSheet.create({
   barContent: {
     flex: 1,
     position: "relative",
-    height: 36,
+    height: 38,
     justifyContent: "center",
   },
   bar: {
@@ -351,18 +345,18 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    borderRadius: 8,
+    borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
   },
   barPointsContainer: {
     marginStart: "auto",
   },
   barNameOverlay: {
     position: "absolute",
-    left: 10,
-    right: 10,
+    left: 12,
+    right: 12,
     top: 0,
     bottom: 0,
     flexDirection: "row",
@@ -411,8 +405,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 32,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 18,
     gap: 8,
   },
   emptyText: {
@@ -426,7 +419,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 15,
   },
   podiumDivider: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
   },
   bottomSection: {
   },
@@ -456,7 +449,6 @@ const styles = StyleSheet.create({
   bottomButtonText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#1a1a1a",
   },
   podiumRow: {
     flexDirection: "row",
@@ -475,9 +467,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 14,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    padding: 10,
+    padding: 12,
     alignItems: "center",
     justifyContent: "flex-end",
     gap: 2,
@@ -488,7 +478,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   podiumCardFirst: {
-    borderWidth: 1.5,
   },
   rankBadgeFloating: {
     position: "absolute",
@@ -520,7 +509,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 2,
@@ -553,9 +541,9 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   userDivider: {
-    height: 1,
-    marginTop: 12,
-    marginBottom: 10,
+    height: StyleSheet.hairlineWidth,
+    marginTop: 14,
+    marginBottom: 12,
   },
   userRow: {
     marginTop: 18,
@@ -610,10 +598,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   viewAllBtn: {
-    paddingVertical: 7,
-    paddingHorizontal: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
     borderRadius: 20,
-    borderWidth: 1,
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   viewAllBtnText: {
     fontSize: 13,
