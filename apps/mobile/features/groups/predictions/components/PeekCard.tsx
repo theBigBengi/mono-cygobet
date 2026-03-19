@@ -11,7 +11,7 @@ import { canPredict } from "@repo/utils";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText, TeamLogo } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { VerticalScoreSlider } from "./VerticalScoreSlider";
 import { ScoresInput } from "./ScoresInput";
 import { FixtureInfoHeader } from "./FixtureInfoHeader";
@@ -315,8 +315,8 @@ const styles = StyleSheet.create({
     marginRight: -26,
     overflow: "visible",
     zIndex: 10,
-    paddingTop: 48,
-    paddingBottom: 12,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.ms,
     justifyContent: "center",
   },
   sliderContainerRight: {
@@ -324,8 +324,8 @@ const styles = StyleSheet.create({
     marginLeft: -26,
     overflow: "visible",
     zIndex: 10,
-    paddingTop: 48,
-    paddingBottom: 12,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.ms,
     justifyContent: "center",
   },
   centerContent: {
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-end",
     alignItems: "center",
-    paddingBottom: 12,
+    paddingBottom: spacing.ms,
   },
   centerTrack: {
     height: 484,
@@ -370,11 +370,11 @@ const styles = StyleSheet.create({
   },
   expandCollapseButton: {
     position: "absolute",
-    right: 16,
+    right: spacing.md,
     zIndex: 20,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.lg,
   },
   expandedTitle: {
     fontSize: 22,
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
   teamName: {
     fontSize: 18,

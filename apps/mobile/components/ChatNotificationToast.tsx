@@ -140,7 +140,9 @@ export function ChatNotificationToast() {
       style={[
         styles.container,
         {
-          top: insets.top + 4,
+          top: insets.top + theme.spacing.xs,
+          left: theme.spacing.ms,
+          right: theme.spacing.ms,
           transform: [{ translateY }],
           opacity,
         },
@@ -154,6 +156,9 @@ export function ChatNotificationToast() {
           styles.toast,
           {
             backgroundColor: theme.colors.surfaceElevated,
+            padding: theme.spacing.ms,
+            borderRadius: theme.radius.lg,
+            gap: 10,
             ...getShadowStyle("md"),
           },
         ]}
@@ -218,16 +223,11 @@ const AVATAR_SIZE = 40;
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    left: 12,
-    right: 12,
     zIndex: 9999,
   },
   toast: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderRadius: 18,
-    gap: 10,
   },
   avatar: {
     width: AVATAR_SIZE,

@@ -101,7 +101,7 @@ export function EditProfileModal({
         style={[styles.container, { backgroundColor: theme.colors.background }]}
       >
         <View
-          style={[styles.header, { borderBottomColor: theme.colors.border }]}
+          style={[styles.header, { borderBottomColor: theme.colors.border, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.ms }]}
         >
           <Pressable onPress={onClose} hitSlop={10}>
             <Ionicons
@@ -118,11 +118,11 @@ export function EditProfileModal({
 
         <ScrollView
           style={styles.content}
-          contentContainerStyle={styles.contentContainer}
+          contentContainerStyle={[styles.contentContainer, { padding: theme.spacing.md }]}
         >
-          <View style={styles.avatarSection}>
+          <View style={[styles.avatarSection, { marginBottom: theme.spacing.lg }]}>
             <View
-              style={[styles.avatar, { backgroundColor: theme.colors.primary }]}
+              style={[styles.avatar, { backgroundColor: theme.colors.primary, borderRadius: theme.radius.full }]}
             >
               <AppText
                 variant="title"
@@ -133,11 +133,11 @@ export function EditProfileModal({
             </View>
           </View>
 
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { marginBottom: theme.spacing.md }]}>
             <AppText
               variant="caption"
               color="secondary"
-              style={styles.inputLabel}
+              style={[styles.inputLabel, { marginBottom: theme.spacing.xs, marginStart: theme.spacing.xs }]}
             >
               {t("editProfile.username")}
             </AppText>
@@ -148,6 +148,9 @@ export function EditProfileModal({
                   backgroundColor: theme.colors.surface,
                   borderColor: theme.colors.border,
                   color: theme.colors.textPrimary,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.ms,
+                  fontSize: 16,
                 },
               ]}
               value={username}
@@ -160,17 +163,17 @@ export function EditProfileModal({
             <AppText
               variant="caption"
               color="secondary"
-              style={styles.inputHint}
+              style={[styles.inputHint, { marginTop: theme.spacing.xs, marginStart: theme.spacing.xs }]}
             >
               {t("auth.usernameHint")}
             </AppText>
           </View>
 
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { marginBottom: theme.spacing.md }]}>
             <AppText
               variant="caption"
               color="secondary"
-              style={styles.inputLabel}
+              style={[styles.inputLabel, { marginBottom: theme.spacing.xs, marginStart: theme.spacing.xs }]}
             >
               {t("editProfile.displayName")}
             </AppText>
@@ -181,6 +184,9 @@ export function EditProfileModal({
                   backgroundColor: theme.colors.surface,
                   borderColor: theme.colors.border,
                   color: theme.colors.textPrimary,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.ms,
+                  fontSize: 16,
                 },
               ]}
               value={name}
@@ -212,8 +218,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: {
@@ -222,35 +226,20 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  contentContainer: {
-    padding: 16,
-  },
+  contentContainer: {},
   avatarSection: {
     alignItems: "center",
-    marginBottom: 24,
   },
   avatar: {
     width: 80,
     height: 80,
-    borderRadius: 40,
     alignItems: "center",
     justifyContent: "center",
   },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    marginBottom: 4,
-    marginStart: 4,
-  },
+  inputContainer: {},
+  inputLabel: {},
   input: {
     borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-    fontSize: 16,
   },
-  inputHint: {
-    marginTop: 4,
-    marginStart: 4,
-  },
+  inputHint: {},
 });

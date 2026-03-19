@@ -58,7 +58,7 @@ export function GroupActivityScreen({ groupId }: GroupActivityScreenProps) {
 
   if (groupId == null) {
     return (
-      <View style={styles.empty}>
+      <View style={[styles.empty, { padding: theme.spacing.xl, gap: theme.spacing.sm }]}>
         <AppText variant="body" color="secondary">
           {t("groups.loadingGroup")}
         </AppText>
@@ -68,7 +68,7 @@ export function GroupActivityScreen({ groupId }: GroupActivityScreenProps) {
 
   if (!isLoading && items.length === 0) {
     return (
-      <View style={styles.empty}>
+      <View style={[styles.empty, { padding: theme.spacing.xl, gap: theme.spacing.sm }]}>
         <AppText variant="subtitle" color="secondary">
           {t("activity.empty")}
         </AppText>
@@ -99,7 +99,7 @@ export function GroupActivityScreen({ groupId }: GroupActivityScreenProps) {
       ]}
       ListFooterComponent={
         isFetchingNextPage ? (
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingVertical: theme.spacing.md }]}>
             <AppText variant="caption" color="secondary">
               {t("activity.loading")}
             </AppText>
@@ -122,14 +122,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 32,
-    gap: 8,
   },
   emptySubtitle: {
     textAlign: "center",
   },
   footer: {
-    paddingVertical: 16,
     alignItems: "center",
   },
 });

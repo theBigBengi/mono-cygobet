@@ -10,7 +10,7 @@ import Animated, {
   withTiming,
   withRepeat,
 } from "react-native-reanimated";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import {
   isFinished as isFinishedState,
   isCancelled as isCancelledState,
@@ -311,29 +311,29 @@ export function LobbyPredictionsCTA({
         {/* Section title skeleton */}
         <Animated.View
           style={[
-            { width: 80, height: 14, borderRadius: 6, backgroundColor: theme.colors.border, marginBottom: 8 },
+            { width: 80, height: 14, borderRadius: radius.xs, backgroundColor: theme.colors.border, marginBottom: spacing.sm },
             skeletonAnimatedStyle,
           ]}
         />
         {/* Fixture rows skeleton */}
         {[0, 1, 2, 3, 4].map((i) => (
-          <View key={i} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 5, gap: 8 }}>
+          <View key={i} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 5, gap: spacing.sm }}>
             <Animated.View
               style={[
-                { width: 42, height: 42, borderRadius: 6, backgroundColor: theme.colors.border },
+                { width: 42, height: 42, borderRadius: radius.xs, backgroundColor: theme.colors.border },
                 skeletonAnimatedStyle,
               ]}
             />
-            <View style={{ flex: 1, gap: 4 }}>
+            <View style={{ flex: 1, gap: spacing.xs }}>
               <Animated.View
                 style={[
-                  { width: 60, height: 12, borderRadius: 4, backgroundColor: theme.colors.border },
+                  { width: 60, height: 12, borderRadius: spacing.xs, backgroundColor: theme.colors.border },
                   skeletonAnimatedStyle,
                 ]}
               />
               <Animated.View
                 style={[
-                  { width: 50, height: 12, borderRadius: 4, backgroundColor: theme.colors.border },
+                  { width: 50, height: 12, borderRadius: spacing.xs, backgroundColor: theme.colors.border },
                   skeletonAnimatedStyle,
                 ]}
               />
@@ -397,14 +397,14 @@ export function LobbyPredictionsCTA({
 
 const styles = StyleSheet.create({
   outerWrapper: {
-    paddingHorizontal: 16,
-    marginBottom: 20,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.ml,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     fontSize: 15,
@@ -416,12 +416,12 @@ const styles = StyleSheet.create({
   },
   viewAllCenter: {
     alignItems: "center",
-    marginTop: 10,
+    marginTop: spacing.sm,
   },
   viewAllBtn: {
     paddingVertical: 7,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    paddingHorizontal: spacing.ml,
+    borderRadius: radius.xl,
     borderWidth: 1,
   },
   viewAllBtnText: {
@@ -434,9 +434,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 8,
-    paddingHorizontal: 4,
-    gap: 8,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    gap: spacing.sm,
   },
   headerTitle: {
     fontSize: 14,
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
   gameNumber: {
     fontSize: 11,
     fontWeight: "600",
-    marginEnd: 10,
+    marginEnd: spacing.sm,
     textAlign: "left",
   },
   logoCol: {
@@ -460,8 +460,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   teamsCol: {
-    gap: 2,
-    marginStart: 4,
+    gap: spacing.xxs,
+    marginStart: spacing.xs,
   },
   teamNameStacked: {
     fontSize: 13,
@@ -474,11 +474,11 @@ const styles = StyleSheet.create({
   },
   homeTeamName: {
     textAlign: "right",
-    marginEnd: 8,
+    marginEnd: spacing.sm,
   },
   awayTeamName: {
     textAlign: "left",
-    marginStart: 8,
+    marginStart: spacing.sm,
   },
   vsCol: {
     alignItems: "center",
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   statusBox: {
     width: 42,
     height: 42,
-    borderRadius: 6,
+    borderRadius: radius.xs,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   liveStatusRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: spacing.xs,
   },
   liveDot: {
     width: 6,
@@ -547,13 +547,13 @@ const styles = StyleSheet.create({
   predictionBoxes: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
-    marginStart: 6,
+    gap: spacing.xxs,
+    marginStart: spacing.xs,
   },
   predictionBox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: spacing.lg,
+    height: spacing.lg,
+    borderRadius: radius.xs,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -570,9 +570,9 @@ const styles = StyleSheet.create({
     height: 1,
   },
   pointsBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: spacing.xs,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -582,12 +582,12 @@ const styles = StyleSheet.create({
   },
   footerSummaryRow: {
     alignItems: "center",
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   viewAllButton: {
     paddingVertical: 7,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    paddingHorizontal: spacing.ml,
+    borderRadius: radius.xl,
     borderWidth: 1,
   },
   viewAllText: {
@@ -595,9 +595,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   dayHeader: {
-    marginBottom: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    marginBottom: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
   dayHeaderText: {
     fontSize: 12,
@@ -606,8 +606,8 @@ const styles = StyleSheet.create({
   footerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 6,
-    paddingHorizontal: 4,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
   savedRow: {
     flexDirection: "row",
@@ -621,10 +621,10 @@ const styles = StyleSheet.create({
   checkCircle: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    marginStart: 4,
+    marginStart: spacing.xs,
   },
   pressed: {
     opacity: 0.8,
@@ -638,22 +638,22 @@ const styles = StyleSheet.create({
   skeletonBar: {
     width: 160,
     height: 14,
-    borderRadius: 4,
+    borderRadius: spacing.xs,
   },
   skeletonBarSmall: {
     width: 80,
     height: 12,
-    borderRadius: 4,
+    borderRadius: spacing.xs,
   },
   skeletonRow: {
     height: 32,
-    borderRadius: 6,
-    marginBottom: 6,
+    borderRadius: radius.xs,
+    marginBottom: spacing.xs,
   },
   skeletonButton: {
     height: 34,
-    borderRadius: 20,
-    marginTop: 12,
+    borderRadius: radius.xl,
+    marginTop: spacing.ms,
     width: 120,
     alignSelf: "center",
   },

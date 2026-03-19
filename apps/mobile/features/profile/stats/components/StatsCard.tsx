@@ -46,7 +46,7 @@ export function StatsCard({
     <Card>
       <View style={styles.statsRow}>
         {stats.map(({ value, label }) => (
-          <View key={label} style={styles.statBox}>
+          <View key={label} style={[styles.statBox, { paddingVertical: theme.spacing.ms }]}>
             <AppText
               style={[styles.statValue, { color: theme.colors.textPrimary }]}
             >
@@ -55,7 +55,7 @@ export function StatsCard({
             <AppText
               variant="caption"
               color="secondary"
-              style={styles.statLabel}
+              style={[styles.statLabel, { marginTop: theme.spacing.xs }]}
             >
               {label}
             </AppText>
@@ -73,7 +73,6 @@ const styles = StyleSheet.create({
   statBox: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 12,
   },
   statValue: {
     fontSize: 24,
@@ -82,6 +81,5 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    marginTop: 4,
   },
 });

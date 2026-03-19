@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 import { AnimatedGradientCard } from "./AnimatedGradientCard";
 
@@ -149,25 +149,25 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 16,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.ms,
+    marginBottom: spacing.md,
   },
   cardWrapper: {
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: radius.lg,
+    padding: spacing.md,
     ...getShadowStyle("sm"),
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 12,
+    marginTop: spacing.ms,
   },
   cardsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: spacing.sm,
   },
   cardsSubtitle: {
     flex: 1,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   leftGroup: {
     flexDirection: "row",
-    gap: 10,
+    gap: spacing.sm,
     flex: 1,
     justifyContent: "center",
   },
@@ -184,10 +184,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: spacing.xs,
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
   },
   primaryPill: {
   },
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   badge: {
     minWidth: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
@@ -210,10 +210,10 @@ const styles = StyleSheet.create({
   skeletonPill: {
     width: 90,
     height: 36,
-    borderRadius: 20,
+    borderRadius: radius.xl,
   },
   skeletonCard: {
     height: 44,
-    borderRadius: 14,
+    borderRadius: radius.md,
   },
 });

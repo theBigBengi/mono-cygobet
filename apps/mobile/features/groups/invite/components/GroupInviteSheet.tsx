@@ -11,7 +11,7 @@ import {
 } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { useInviteCodeQuery } from "@/domains/groups";
 import { GroupInviteScreen } from "../screens/GroupInviteScreen";
 
@@ -60,8 +60,8 @@ export function GroupInviteSheet({
       backdropComponent={renderBackdrop}
       backgroundStyle={{
         backgroundColor: theme.colors.surfaceElevated,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
+        borderTopLeftRadius: radius.xl,
+        borderTopRightRadius: radius.xl,
       }}
       handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled }}
     >
@@ -92,9 +92,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   headerTitle: {
     fontSize: 17,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   headerBtn: {
     width: 30,
     height: 30,
-    borderRadius: 15,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
   },

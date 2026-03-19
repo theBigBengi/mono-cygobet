@@ -30,6 +30,7 @@ function GroupTimelineBarInner({
   isLoading = false,
 }: GroupTimelineBarProps) {
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const opacity = useSharedValue(0.3);
 
   useEffect(() => {
@@ -119,29 +120,30 @@ function GroupTimelineBarInner({
 
 export const GroupTimelineBar = React.memo(GroupTimelineBarInner);
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    gap: 10,
-  },
-  track: {
-    flex: 1,
-    height: 3,
-    borderRadius: 2,
-  },
-  fill: {
-    height: "100%",
-    borderRadius: 2,
-  },
-  dateLabel: {
-    fontSize: 11,
-  },
-  skeletonLabel: {
-    width: 32,
-    height: 10,
-    borderRadius: 4,
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: theme.spacing.ml,
+      paddingVertical: theme.spacing.sm,
+      gap: theme.spacing.sm,
+    },
+    track: {
+      flex: 1,
+      height: 3,
+      borderRadius: 2,
+    },
+    fill: {
+      height: "100%",
+      borderRadius: 2,
+    },
+    dateLabel: {
+      fontSize: 11,
+    },
+    skeletonLabel: {
+      width: 32,
+      height: 10,
+      borderRadius: theme.spacing.xs,
+    },
+  });

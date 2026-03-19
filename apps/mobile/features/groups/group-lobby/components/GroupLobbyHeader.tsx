@@ -106,7 +106,7 @@ function GroupLobbyHeaderInner({
   // HUD Style (compact mode)
   if (compact) {
     return (
-      <View style={styles.hudContainer}>
+      <View style={[styles.hudContainer, { paddingBottom: theme.spacing.ms }]}>
 
         {/* Back Button - Positioned absolutely */}
         {!hideNavButtons && onBack && (
@@ -255,7 +255,7 @@ function GroupLobbyHeaderInner({
                     </Text>
                   </View>
                 )}
-                <View style={styles.metaChips}>
+                <View style={[styles.metaChips, { marginTop: theme.spacing.xs }]}>
                   <Text style={[styles.metaChipText, { color: theme.colors.textSecondary }]}>{statusLabel}</Text>
                   <Text style={[styles.metaDot, { color: theme.colors.textSecondary }]}>·</Text>
                   {memberCount != null && (
@@ -290,8 +290,8 @@ function GroupLobbyHeaderInner({
 
   // Original non-compact style
   return (
-    <Card style={styles.card}>
-      <View style={styles.container}>
+    <Card style={[styles.card, { marginBottom: theme.spacing.ml }]}>
+      <View style={[styles.container, { padding: theme.spacing.ml }]}>
         <GroupAvatar
           avatarType={avatarType}
           avatarValue={avatarValue}
@@ -299,8 +299,8 @@ function GroupLobbyHeaderInner({
           size={80}
           borderRadius={14}
         />
-        <View style={styles.textContainer}>
-          <AppText variant="title" style={styles.name} numberOfLines={2}>
+        <View style={[styles.textContainer, { marginStart: theme.spacing.md }]}>
+          <AppText variant="title" style={[styles.name, { marginBottom: theme.spacing.xs }]} numberOfLines={2}>
             {name}
           </AppText>
           <AppText variant="caption" color="secondary">
@@ -320,7 +320,6 @@ export const GroupLobbyHeader = React.memo(GroupLobbyHeaderInner);
 const styles = StyleSheet.create({
   // HUD Styles
   hudContainer: {
-    paddingBottom: 12,
     position: "relative",
   },
   hudGradient: {
@@ -411,8 +410,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   officialBadge: {
-    width: 24,
-    height: 24,
+    width: 24, // lg
+    height: 24, // lg
     borderRadius: 12,
     backgroundColor: "#D4A01720",
     alignItems: "center",
@@ -429,28 +428,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   // Original Styles
-  card: {
-    marginBottom: 20,
-  },
+  card: {},
   container: {
     flexDirection: "row",
     alignItems: "flex-start",
-    padding: 20,
   },
   textContainer: {
     flex: 1,
-    marginStart: 16,
   },
   name: {
     fontWeight: "700",
     fontSize: 18,
-    marginBottom: 4,
   },
   metaChips: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 4,
   },
   metaChipText: {
     fontSize: 11,

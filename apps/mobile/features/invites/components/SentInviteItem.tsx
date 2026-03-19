@@ -51,12 +51,12 @@ export function SentInviteItem({
   };
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { paddingVertical: theme.spacing.sm, gap: theme.spacing.sm }]}>
       {/* Avatar */}
       <View
         style={[
           styles.avatar,
-          { backgroundColor: theme.colors.textPrimary + "10" },
+          { backgroundColor: theme.colors.textPrimary + "10", borderRadius: theme.radius.full },
         ]}
       >
         {invite.inviteeImage ? (
@@ -91,7 +91,7 @@ export function SentInviteItem({
         disabled={isCancelling}
         style={({ pressed }) => [
           styles.cancelBtn,
-          { borderColor: theme.colors.textSecondary + "30" },
+          { borderColor: theme.colors.textSecondary + "30", paddingVertical: theme.spacing.xs, paddingHorizontal: theme.spacing.ms, borderRadius: theme.radius.md },
           pressed && { opacity: 0.6 },
           isCancelling && { opacity: 0.4 },
         ]}
@@ -108,13 +108,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    gap: 10,
   },
   avatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -145,9 +142,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   cancelBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
     borderWidth: 1,
   },
   cancelText: {

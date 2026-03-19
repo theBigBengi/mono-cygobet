@@ -26,9 +26,9 @@ export function HeroHeader({
   void image;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.md, paddingHorizontal: theme.spacing.ml }]}>
       {showEditButton && (
-        <Pressable style={styles.editButton} onPress={onEditPress} hitSlop={10}>
+        <Pressable style={[styles.editButton, { top: theme.spacing.md, right: theme.spacing.md }]} onPress={onEditPress} hitSlop={10}>
           <MaterialIcons
             name="edit"
             size={18}
@@ -37,7 +37,7 @@ export function HeroHeader({
         </Pressable>
       )}
 
-      <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
+      <View style={[styles.avatar, { backgroundColor: theme.colors.primary, borderRadius: theme.radius.full, marginBottom: theme.spacing.ms }]}>
         <AppText style={[styles.initials, { color: theme.colors.primaryText }]}>
           {initials}
         </AppText>
@@ -55,24 +55,17 @@ export function HeroHeader({
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 24,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
     alignItems: "center",
     overflow: "visible",
   },
   editButton: {
     position: "absolute",
-    top: 16,
-    right: 16,
   },
   avatar: {
     width: 56,
     height: 56,
-    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
     overflow: "visible",
   },
   initials: {

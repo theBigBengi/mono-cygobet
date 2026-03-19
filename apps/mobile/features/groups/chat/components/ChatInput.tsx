@@ -214,18 +214,19 @@ export function ChatInput({
   if (readOnly) {
     return (
       <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.surface,
-            paddingBottom: isKeyboardVisible ? 12 : Math.max(12, insets.bottom),
-          },
-        ]}
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-end",
+          padding: theme.spacing.ms,
+          gap: theme.spacing.sm,
+          backgroundColor: theme.colors.surface,
+          paddingBottom: isKeyboardVisible ? theme.spacing.ms : Math.max(theme.spacing.ms, insets.bottom),
+        }}
       >
         <AppText
           variant="caption"
           color="secondary"
-          style={styles.readOnlyText}
+          style={[styles.readOnlyText, { paddingVertical: theme.spacing.ms }]}
         >
           {t("chat.readOnlyEnded")}
         </AppText>
@@ -245,19 +246,21 @@ export function ChatInput({
         />
       )}
       <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.surface,
-            paddingBottom: isKeyboardVisible ? 0 : Math.max(12, insets.bottom),
-          },
-        ]}
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-end",
+          padding: theme.spacing.ms,
+          gap: theme.spacing.sm,
+          backgroundColor: theme.colors.surface,
+          paddingBottom: isKeyboardVisible ? 0 : Math.max(theme.spacing.ms, insets.bottom),
+        }}
       >
         <Pressable
           onPress={handleAtPress}
           style={({ pressed }) => [
             styles.atButton,
             {
+              borderRadius: theme.radius.xl,
               backgroundColor: "transparent",
               opacity: pressed ? 0.7 : 1,
             },
@@ -271,6 +274,9 @@ export function ChatInput({
           style={[
             styles.input,
             {
+              borderRadius: theme.radius.md,
+              paddingHorizontal: theme.spacing.md,
+              paddingVertical: theme.spacing.sm,
               backgroundColor: theme.colors.background,
               color: theme.colors.textPrimary,
             },
@@ -291,6 +297,7 @@ export function ChatInput({
           style={({ pressed }) => [
             styles.sendButton,
             {
+              borderRadius: theme.radius.xl,
               backgroundColor: "transparent",
               opacity: pressed && canSend ? 0.7 : 1,
             },
@@ -310,16 +317,9 @@ export function ChatInput({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    padding: 12,
-    gap: 10,
-  },
   atButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -327,20 +327,15 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 40,
     maxHeight: 100,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: Platform.OS === "ios" ? 10 : 8,
     fontSize: 16,
   },
   sendButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
   },
   readOnlyText: {
     textAlign: "center",
-    paddingVertical: 12,
   },
 });

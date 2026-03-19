@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing } from "@/lib/theme";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { groupsKeys, fetchGroupById } from "@/domains/groups";
 import { usePredictableGroups } from "../hooks/usePredictableGroups";
@@ -312,8 +312,8 @@ const styles = StyleSheet.create({
     zIndex: 20,
     flexDirection: "row",
     alignItems: "flex-start",
-    paddingHorizontal: 4,
-    paddingBottom: 4,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.xs,
   },
   screenHeaderBack: {
     width: 36,

@@ -6,7 +6,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { AppText, Divider } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { CollapsibleSection } from "./CollapsibleSection";
 
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   optionRow: {
-    paddingVertical: 12,
+    paddingVertical: spacing.ms,
   },
   optionContent: {
     flex: 1,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   optionTitle: {
     fontWeight: "600",

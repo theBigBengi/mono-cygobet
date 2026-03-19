@@ -97,7 +97,7 @@ export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
           </View>
         </View>
 
-        <View style={[styles.colorRow, { marginTop: 8 }]}>
+        <View style={[styles.colorRow, { marginTop: theme.spacing.sm }]}>
           <Ionicons name="checkmark-circle" size={14} color={GREEN} />
           <AppText variant="caption" color="secondary">{t("groups.info.predictionsComplete")}</AppText>
         </View>
@@ -155,7 +155,7 @@ export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
 
       {/* === BADGES === */}
       <View style={[styles.section, styles.badgesSection]}>
-        <AppText variant="subtitle" style={{ marginBottom: 12 }}>
+        <AppText variant="subtitle" style={{ marginBottom: theme.spacing.ms }}>
           {t("groups.info.badgesTitle")}
         </AppText>
 
@@ -178,7 +178,7 @@ export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
           <AppText variant="caption" color="secondary">{t("groups.info.roleMember")}</AppText>
         </View>
 
-        <View style={[styles.badgeRow, { marginTop: 10 }]}>
+        <View style={[styles.badgeRow, { marginTop: theme.spacing.sm }]}>
           <View style={[styles.badge, { backgroundColor: theme.colors.textSecondary + "20" }]}>
             <Ionicons name="lock-closed" size={11} color={theme.colors.textSecondary} />
           </View>
@@ -198,11 +198,11 @@ export function GroupsInfoSheet({ sheetRef }: GroupsInfoSheetProps) {
 const styles = StyleSheet.create({
   title: {
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 20, // theme.spacing.ml
   },
   section: {
-    marginBottom: 24,
-    paddingBottom: 24,
+    marginBottom: 24, // theme.spacing.lg
+    paddingBottom: 24, // theme.spacing.lg
     borderBottomWidth: StyleSheet.hairlineWidth,
     // borderBottomColor set via inline style (theme.colors.border)
   },
@@ -210,37 +210,37 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginBottom: 8,
+    marginBottom: 8, // theme.spacing.sm
   },
   desc: {
     lineHeight: 20,
   },
   lightUpLabel: {
     fontWeight: "700",
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 12, // theme.spacing.ms
+    marginBottom: 4, // theme.spacing.xs
   },
   colorsRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: 8, // theme.spacing.sm
     marginTop: 10,
   },
   colorChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 4, // theme.spacing.xs
     paddingVertical: 5,
     paddingHorizontal: 10,
-    borderRadius: 6,
+    borderRadius: 6, // theme.radius.xs
   },
   colorsList: {
     marginTop: 10,
-    gap: 4,
+    gap: 4, // theme.spacing.xs
   },
   colorRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 8, // theme.spacing.sm
   },
   dot: {
     width: 10,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   badge: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: 11, // ~theme.radius.full for circles
     alignItems: "center",
     justifyContent: "center",
   },

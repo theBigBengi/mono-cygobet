@@ -97,7 +97,7 @@ function AllGroupsContent() {
   return (
     <Screen contentContainerStyle={[styles.screenContent, { padding: 0 }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.ms }]}>
         <Pressable onPress={() => router.back()} hitSlop={10}>
           <MaterialIcons
             name="arrow-back"
@@ -112,7 +112,7 @@ function AllGroupsContent() {
       </View>
 
       {/* Filter tabs */}
-      <View style={styles.tabs}>
+      <View style={[styles.tabs, { paddingHorizontal: theme.spacing.md, gap: theme.spacing.sm, marginBottom: theme.spacing.md }]}>
         {filterTabs.map((tab) => (
           <Pressable
             key={tab.key}
@@ -125,6 +125,8 @@ function AllGroupsContent() {
                     ? theme.colors.primary
                     : theme.colors.surface,
                 borderColor: theme.colors.border,
+                paddingVertical: theme.spacing.sm,
+                borderRadius: theme.radius.s,
               },
             ]}
           >
@@ -150,10 +152,10 @@ function AllGroupsContent() {
         keyExtractor={(item) => String(item.groupId)}
         renderItem={renderItem}
         style={styles.flatList}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingHorizontal: theme.spacing.md, paddingBottom: theme.spacing.xl }]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <AppText variant="body" color="secondary" style={styles.empty}>
+          <AppText variant="body" color="secondary" style={[styles.empty, { paddingVertical: theme.spacing.xl }]}>
             {t("groups.noGroupsYet")}
           </AppText>
         }
@@ -171,8 +173,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
   },
   title: {
     flex: 1,
@@ -184,26 +184,17 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: "row",
-    paddingHorizontal: 16,
-    gap: 8,
-    marginBottom: 16,
   },
   tab: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
   },
   flatList: {
     flex: 1,
   },
-  list: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-  },
+  list: {},
   empty: {
     textAlign: "center",
-    paddingVertical: 32,
   },
 });

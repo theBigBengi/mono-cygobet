@@ -155,7 +155,7 @@ export function CreateSheetFixtures({
         onPress={() => toggleGame(gameKey)}
         style={createStyles.gameCard}
       >
-        {footer ? <Text style={[createStyles.gameFooterText, { color: theme.colors.textSecondary, marginBottom: 4 }]}>{footer}</Text> : null}
+        {footer ? <Text style={[createStyles.gameFooterText, { color: theme.colors.textSecondary, marginBottom: theme.spacing.xs }]}>{footer}</Text> : null}
         <View style={createStyles.gameBody}>
           <View style={createStyles.gameTeams}>
             <View style={createStyles.gameTeamRow}>

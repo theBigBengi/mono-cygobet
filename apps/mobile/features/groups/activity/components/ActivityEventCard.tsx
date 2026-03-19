@@ -66,21 +66,30 @@ export function ActivityEventCard({ item }: ActivityEventCardProps) {
 
   return (
     <View
-      style={[
-        styles.container,
-        { borderBottomColor: theme.colors.border },
-      ]}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.md,
+        gap: theme.spacing.ms,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: theme.colors.border,
+      }}
     >
       <View
-        style={[
-          styles.iconCircle,
-          { backgroundColor: iconColor + "18" },
-        ]}
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: theme.radius.full,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: iconColor + "18",
+        }}
       >
         <Ionicons name={iconName} size={18} color={iconColor} />
       </View>
 
-      <View style={styles.center}>
+      <View style={[styles.center, { gap: theme.spacing.xxs }]}>
         <AppText variant="body" numberOfLines={2}>
           {item.body}
         </AppText>
@@ -91,7 +100,7 @@ export function ActivityEventCard({ item }: ActivityEventCardProps) {
         )}
       </View>
 
-      <AppText variant="caption" color="secondary" style={styles.time}>
+      <AppText variant="caption" color="secondary" style={{ marginStart: theme.spacing.xs }}>
         {formatRelativeTime(item.createdAt)}
       </AppText>
     </View>
@@ -99,26 +108,7 @@ export function ActivityEventCard({ item }: ActivityEventCardProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   center: {
     flex: 1,
-    gap: 2,
-  },
-  time: {
-    marginStart: 4,
   },
 });

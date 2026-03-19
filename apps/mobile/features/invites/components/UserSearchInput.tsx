@@ -25,14 +25,14 @@ export function UserSearchInput({
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.colors.textPrimary + "08" },
+        { backgroundColor: theme.colors.textPrimary + "08", borderRadius: theme.radius.md, paddingHorizontal: theme.spacing.ms, paddingVertical: theme.spacing.sm, marginBottom: theme.spacing.ms },
       ]}
     >
       <Ionicons
         name="search"
         size={18}
         color={theme.colors.textSecondary}
-        style={styles.icon}
+        style={[styles.icon, { marginEnd: theme.spacing.sm }]}
       />
       <TextInput
         value={value}
@@ -53,14 +53,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
   },
-  icon: {
-    marginEnd: 8,
-  },
+  icon: {},
   input: {
     flex: 1,
     fontSize: 15,

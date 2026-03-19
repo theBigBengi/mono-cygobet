@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 import { useMyPredictionsForFixture } from "@/domains/fixtures";
 import type { ApiMyPredictionForFixtureItem } from "@repo/types";
@@ -84,13 +84,13 @@ export function MyPredictionsList({ fixtureId, currentGroupId }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderTopWidth: 1,
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   loadingContainer: {
-    paddingVertical: 24,
+    paddingVertical: spacing.lg,
     alignItems: "center",
   },
   emptyContainer: {
@@ -99,24 +99,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   emptyIcon: {
-    marginBottom: 12,
+    marginBottom: spacing.ms,
   },
   emptyText: {
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   emptySubtext: {
     textAlign: "center",
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.xl,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 6,
-    borderRadius: 12,
+    paddingVertical: spacing.ms,
+    paddingHorizontal: radius.md,
+    marginBottom: radius.xs,
+    borderRadius: radius.md,
     borderWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   },
   groupName: {
     flex: 1,
-    marginEnd: 12,
+    marginEnd: spacing.ms,
   },
   score: {
     fontSize: 16,

@@ -50,6 +50,8 @@ function getEventIcon(eventType: string): IoniconsName {
 }
 
 function ActivityRow({ item, colors }: { item: ApiGroupActivityItem; colors: import("@/lib/theme/colors").Colors }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const iconName = getEventIcon(item.eventType);
 
   return (
@@ -72,6 +74,7 @@ function ActivityRow({ item, colors }: { item: ApiGroupActivityItem; colors: imp
 function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChange }: LobbyActivityBannerProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [expanded, setExpanded] = useState(false);
 
   const { data, isLoading } = useGroupActivityQuery(groupId);
@@ -158,13 +161,13 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChang
           <View style={styles.headerRow}>
             <Animated.View
               style={[
-                { width: 80, height: 14, borderRadius: 6, backgroundColor: theme.colors.border },
+                { width: 80, height: 14, borderRadius: theme.radius.xs, backgroundColor: theme.colors.border },
                 skeletonStyle,
               ]}
             />
             <Animated.View
               style={[
-                { width: 50, height: 12, borderRadius: 6, backgroundColor: theme.colors.border },
+                { width: 50, height: 12, borderRadius: theme.radius.xs, backgroundColor: theme.colors.border },
                 skeletonStyle,
               ]}
             />
@@ -181,13 +184,13 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChang
               <View style={styles.skeletonTextCol}>
                 <Animated.View
                   style={[
-                    { width: "80%", height: 12, borderRadius: 4, backgroundColor: theme.colors.border },
+                    { width: "80%", height: 12, borderRadius: theme.spacing.xs, backgroundColor: theme.colors.border },
                     skeletonStyle,
                   ]}
                 />
                 <Animated.View
                   style={[
-                    { width: 28, height: 10, borderRadius: 4, marginTop: 3, backgroundColor: theme.colors.border },
+                    { width: 28, height: 10, borderRadius: theme.spacing.xs, marginTop: 3, backgroundColor: theme.colors.border },
                     skeletonStyle,
                   ]}
                 />
@@ -262,98 +265,99 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChang
 
 export const LobbyActivityBanner = React.memo(LobbyActivityBannerInner);
 
-const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 16,
-    marginBottom: 24,
-  },
-  wrapper: {
-    borderRadius: 18,
-    padding: 16,
-    ...getShadowStyle("sm"),
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  seeAllText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  listWrapper: {
-    position: "relative",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    height: ROW_HEIGHT,
-  },
-  rowTextCol: {
-    flex: 1,
-  },
-  rowTime: {
-    fontSize: 11,
-    fontWeight: "500",
-    marginTop: 2,
-  },
-  rowBody: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  rowIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  buttonContainer: {
-    alignItems: "center",
-    marginTop: 4,
-  },
-  fadeGradient: {
-    position: "absolute",
-    top: -120,
-    left: 0,
-    right: 0,
-    height: 120,
-  },
-  toggleButton: {
-    marginTop: -4,
-    paddingVertical: 8,
-    paddingHorizontal: 24,
-    borderRadius: 20,
-  },
-  buttonText: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  skeletonRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    height: ROW_HEIGHT,
-  },
-  skeletonCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  skeletonTextCol: {
-    flex: 1,
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    container: {
+      marginHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+    },
+    wrapper: {
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      ...getShadowStyle("sm"),
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.ms,
+    },
+    sectionTitle: {
+      fontSize: 15,
+      fontWeight: "700",
+    },
+    seeAllText: {
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    listWrapper: {
+      position: "relative",
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.ms,
+      height: ROW_HEIGHT,
+    },
+    rowTextCol: {
+      flex: 1,
+    },
+    rowTime: {
+      fontSize: 11,
+      fontWeight: "500",
+      marginTop: theme.spacing.xxs,
+    },
+    rowBody: {
+      fontSize: 13,
+      fontWeight: "500",
+    },
+    rowIcon: {
+      width: theme.spacing.lg,
+      height: theme.spacing.lg,
+      borderRadius: theme.radius.full,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    emptyText: {
+      fontSize: 13,
+      fontWeight: "500",
+    },
+    buttonContainer: {
+      alignItems: "center",
+      marginTop: theme.spacing.xs,
+    },
+    fadeGradient: {
+      position: "absolute",
+      top: -120,
+      left: 0,
+      right: 0,
+      height: 120,
+    },
+    toggleButton: {
+      marginTop: -4,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
+      borderRadius: theme.radius.xl,
+    },
+    buttonText: {
+      fontSize: 13,
+      fontWeight: "700",
+    },
+    pressed: {
+      opacity: 0.8,
+    },
+    skeletonRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.ms,
+      height: ROW_HEIGHT,
+    },
+    skeletonCircle: {
+      width: theme.spacing.lg,
+      height: theme.spacing.lg,
+      borderRadius: theme.radius.full,
+    },
+    skeletonTextCol: {
+      flex: 1,
+    },
+  });

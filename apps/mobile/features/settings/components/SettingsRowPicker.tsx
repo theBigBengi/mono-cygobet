@@ -74,7 +74,7 @@ export function SettingsRowPicker<T extends string>({
           name="chevron-forward"
           size={20}
           color={theme.colors.textSecondary}
-          style={{ marginStart: 4 }}
+          style={{ marginStart: theme.spacing.xs }}
         />
       </Pressable>
 
@@ -89,7 +89,7 @@ export function SettingsRowPicker<T extends string>({
           style={[styles.modal, { backgroundColor: theme.colors.background }]}
         >
           <View
-            style={[styles.header, { borderBottomColor: theme.colors.border }]}
+            style={[styles.header, { borderBottomColor: theme.colors.border, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.ms }]}
           >
             <Pressable
               onPress={() => setModalVisible(false)}
@@ -104,10 +104,10 @@ export function SettingsRowPicker<T extends string>({
             <AppText variant="subtitle" style={styles.headerTitle}>
               {label}
             </AppText>
-            <View style={{ width: 28 }} />
+            <View style={styles.headerSpacer} />
           </View>
 
-          <View style={styles.optionsList}>
+          <View style={[styles.optionsList, { padding: theme.spacing.md }]}>
             {options.map((option, index) => (
               <Pressable
                 key={option.value}
@@ -118,6 +118,8 @@ export function SettingsRowPicker<T extends string>({
                 style={[
                   styles.optionRow,
                   {
+                    paddingVertical: theme.spacing.md,
+                    paddingHorizontal: theme.spacing.sm,
                     borderBottomWidth: index < options.length - 1 ? 1 : 0,
                     borderBottomColor: theme.colors.border,
                     backgroundColor:
@@ -179,21 +181,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   headerTitle: {
     fontWeight: "600",
   },
-  optionsList: {
-    padding: 16,
+  headerSpacer: {
+    width: 28,
   },
+  optionsList: {},
   optionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 8,
   },
 });

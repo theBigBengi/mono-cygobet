@@ -5,7 +5,7 @@ import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 
 interface RoundNavigatorProps {
   selectedRound: string;
@@ -70,12 +70,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    gap: 8,
+    paddingVertical: radius.xs,
+    paddingHorizontal: spacing.ms,
+    gap: spacing.sm,
   },
   arrow: {
-    padding: 4,
+    padding: spacing.xs,
   },
   arrowDisabled: {
     opacity: 0.5,

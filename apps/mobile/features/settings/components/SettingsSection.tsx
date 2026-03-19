@@ -34,26 +34,26 @@ export function SettingsSection({
     <AppText
       variant="caption"
       color="secondary"
-      style={[styles.title, !collapsible && { marginBottom: theme.spacing.xs }]}
+      style={[styles.title, { marginStart: theme.spacing.md }, !collapsible && { marginBottom: theme.spacing.xs }]}
     >
       {title.toUpperCase()}
     </AppText>
   ) : null;
 
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={[styles.container, { marginBottom: theme.spacing.lg }, containerStyle]}>
       {title &&
         (collapsible ? (
           <Pressable
             onPress={() => setExpanded((e) => !e)}
-            style={styles.collapsibleTitleRow}
+            style={[styles.collapsibleTitleRow, { marginEnd: theme.spacing.md, marginBottom: theme.spacing.sm }]}
           >
             {titleContent}
             <Ionicons
               name={expanded ? "chevron-up" : "chevron-down"}
               size={18}
               color={theme.colors.textSecondary}
-              style={styles.chevron}
+              style={[styles.chevron, { marginStart: theme.spacing.xs }]}
             />
           </Pressable>
         ) : (
@@ -79,11 +79,8 @@ export function SettingsSection({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 24,
-  },
+  container: {},
   title: {
-    marginStart: 16,
     fontWeight: "500",
     letterSpacing: 0.5,
   },
@@ -91,12 +88,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginEnd: 16,
-    marginBottom: 8,
   },
-  chevron: {
-    marginStart: 4,
-  },
+  chevron: {},
   content: {
     overflow: "hidden",
   },

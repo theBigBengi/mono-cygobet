@@ -6,7 +6,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 
 /**
  * Skeleton layout that mirrors the real GroupGamesScreen.
@@ -44,9 +44,9 @@ export function GroupGamesSkeleton({ cardLayout = "vertical" }: { cardLayout?: "
               <View style={[s.bar, { width: 36 + (ci % 3) * 14, height: 11, backgroundColor: c }]} />
               <View style={{ flex: 1 }} />
               {/* ScoreInputPair: digitSlot(14x22) + sep + digitSlot(14x22) ≈ 32x22 */}
-              <View style={[s.bar, { width: 14, height: 18, borderRadius: 4, backgroundColor: c }]} />
-              <View style={[s.bar, { width: 4, height: 4, borderRadius: 2, backgroundColor: c }]} />
-              <View style={[s.bar, { width: 14, height: 18, borderRadius: 4, backgroundColor: c }]} />
+              <View style={[s.bar, { width: 14, height: 18, borderRadius: spacing.xs, backgroundColor: c }]} />
+              <View style={[s.bar, { width: spacing.xs, height: spacing.xs, borderRadius: spacing.xxs, backgroundColor: c }]} />
+              <View style={[s.bar, { width: 14, height: 18, borderRadius: spacing.xs, backgroundColor: c }]} />
               <View style={{ flex: 1 }} />
               <View style={[s.bar, { width: 32 + (ci % 3) * 16, height: 11, backgroundColor: c }]} />
               <View style={[s.hLogo, { backgroundColor: c }]} />
@@ -121,24 +121,24 @@ const s = StyleSheet.create({
   vOuter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10, // cardRow gap
-    marginBottom: 8,
+    gap: radius.sm, // cardRow gap
+    marginBottom: spacing.sm,
   },
   // statusBox: 42x42 br:6
   vStatusBox: {
     width: 42,
     height: 42,
-    borderRadius: 6,
+    borderRadius: radius.xs,
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
+    gap: spacing.xxs,
   },
   // cardContent + hRowBorder: flex:1 br:14 pv:6 ph:8
   vCard: {
     flex: 1,
-    borderRadius: 14,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    borderRadius: radius.md,
+    paddingVertical: radius.xs,
+    paddingHorizontal: spacing.sm,
   },
   // teamRow(row, gap:0) → matchPressable(flex:1, row, gap:8) [teamPressable(flex:1) + resultColumn(w:36)] + predictionColumn(w:36)
   vTeamRow: {
@@ -146,26 +146,26 @@ const s = StyleSheet.create({
     alignItems: "center",
     height: 22,
     gap: 0,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   // matchPressable: flex:1, row, gap:8
   vMatchPressable: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
   // teamPressable: flex:1, row, gap:10
   vTeamPressable: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: radius.sm,
   },
   vLogo: {
     width: 18,
     height: 18,
-    borderRadius: 4,
+    borderRadius: spacing.xs,
   },
   // resultColumn w:36 (empty spacer for actual result)
   vResultCol: {
@@ -180,7 +180,7 @@ const s = StyleSheet.create({
   vScore: {
     width: 28,
     height: 18,
-    borderRadius: 6,
+    borderRadius: radius.xs,
   },
   // right statusCol w:42
   vRightCol: {
@@ -194,8 +194,8 @@ const s = StyleSheet.create({
   hOuter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 8,
+    gap: radius.sm,
+    marginBottom: spacing.sm,
   },
   // left time col w:30
   hLeftCol: {
@@ -209,15 +209,15 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     height: 50,
-    borderRadius: 14,
-    paddingHorizontal: 8,
-    gap: 6,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    gap: radius.xs,
   },
   // TeamLogo size:18
   hLogo: {
     width: 18,
     height: 18,
-    borderRadius: 4,
+    borderRadius: spacing.xs,
   },
   // right col w:30
   hRightCol: {

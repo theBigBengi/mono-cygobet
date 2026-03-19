@@ -96,10 +96,13 @@ export function ChatMessageBubble({
     styles.bubble,
     {
       backgroundColor: bubbleBg,
-      borderTopLeftRadius: isCurrentUser ? 18 : 8,
-      borderTopRightRadius: isCurrentUser ? 8 : 18,
-      borderBottomRightRadius: 18,
-      borderBottomLeftRadius: 18,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.radius.lg,
+      borderTopLeftRadius: isCurrentUser ? theme.radius.lg : theme.radius.s,
+      borderTopRightRadius: isCurrentUser ? theme.radius.s : theme.radius.lg,
+      borderBottomRightRadius: theme.radius.lg,
+      borderBottomLeftRadius: theme.radius.lg,
     },
     isCurrentUser ? null : getShadowStyle("sm"),
   ];
@@ -107,8 +110,8 @@ export function ChatMessageBubble({
   return (
     <View
       style={[
-        styles.container,
-        isCurrentUser ? styles.containerRight : styles.containerLeft,
+        { marginHorizontal: theme.spacing.md, marginVertical: theme.spacing.xs },
+        isCurrentUser ? styles.containerRight : [styles.containerLeft, { gap: theme.spacing.sm }],
       ]}
     >
       {!isCurrentUser &&
@@ -136,7 +139,7 @@ export function ChatMessageBubble({
           <AppText
             variant="caption"
             color="secondary"
-            style={styles.senderName}
+            style={{ marginBottom: theme.spacing.xs }}
           >
             {displayName}
           </AppText>
@@ -169,6 +172,7 @@ export function ChatMessageBubble({
           variant="caption"
           style={[
             styles.time,
+            { marginTop: theme.spacing.xs },
             {
               color: isCurrentUser
                 ? theme.colors.textInverse + "CC"
@@ -187,14 +191,9 @@ export function ChatMessageBubble({
 const AVATAR_SIZE = 32;
 
 const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 16,
-    marginVertical: 4,
-  },
   containerLeft: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 8,
   },
   containerRight: {
     alignItems: "flex-end",
@@ -214,15 +213,8 @@ const styles = StyleSheet.create({
   },
   bubble: {
     maxWidth: "80%",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-  },
-  senderName: {
-    marginBottom: 4,
   },
   time: {
-    marginTop: 4,
     fontSize: 11,
   },
 });

@@ -21,6 +21,8 @@ function SectionHeader({
   title: string;
   colors: Colors;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.sectionHeader}>
       <Text style={[styles.sectionHeaderText, { color: colors.textPrimary }]}>
@@ -39,6 +41,8 @@ function InfoRow({
   value: string;
   colors: Colors;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.row}>
       <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>
@@ -52,6 +56,8 @@ function InfoRow({
 }
 
 function Divider({ colors }: { colors: Colors }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   return <View style={[styles.divider, { backgroundColor: colors.border }]} />;
 }
 
@@ -93,6 +99,7 @@ function generateRulesSummary(group: ApiGroupItem, t: TFunction): string {
 function LobbyAboutSectionInner({ group }: LobbyAboutSectionProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const router = useRouter();
   const c = theme.colors;
 
@@ -198,68 +205,69 @@ function LobbyAboutSectionInner({ group }: LobbyAboutSectionProps) {
 
 export const LobbyAboutSection = React.memo(LobbyAboutSectionInner);
 
-const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 16,
-    marginBottom: 24,
-  },
-  card: {
-    borderRadius: 18,
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  groupName: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 6,
-    marginBottom: 8,
-  },
-  sectionHeaderText: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-  rowLabel: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  rowValue: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: 12,
-  },
-  summaryText: {
-    fontSize: 13,
-    lineHeight: 20,
-    paddingBottom: 2,
-  },
-  seeMoreButton: {
-    marginTop: 14,
-    paddingVertical: 8,
-    paddingHorizontal: 24,
-    borderRadius: 20,
-    alignSelf: "center",
-  },
-  seeMoreText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    container: {
+      marginHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+    },
+    card: {
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+    },
+    sectionTitle: {
+      fontSize: 15,
+      fontWeight: "700",
+      marginBottom: theme.spacing.sm,
+    },
+    groupName: {
+      fontSize: 16,
+      fontWeight: "700",
+      marginBottom: theme.spacing.ms,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      marginTop: 6,
+      marginBottom: theme.spacing.sm,
+    },
+    sectionHeaderText: {
+      fontSize: 13,
+      fontWeight: "700",
+    },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 6,
+    },
+    rowLabel: {
+      fontSize: 13,
+      fontWeight: "500",
+    },
+    rowValue: {
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      marginVertical: theme.spacing.ms,
+    },
+    summaryText: {
+      fontSize: 13,
+      lineHeight: 20,
+      paddingBottom: theme.spacing.xxs,
+    },
+    seeMoreButton: {
+      marginTop: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
+      borderRadius: theme.radius.xl,
+      alignSelf: "center",
+    },
+    seeMoreText: {
+      fontSize: 13,
+      fontWeight: "600",
+    },
+  });

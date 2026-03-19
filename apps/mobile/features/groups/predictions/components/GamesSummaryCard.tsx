@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 
 type Props = {
@@ -87,26 +87,26 @@ export function GamesSummaryCard({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginTop: 12,
-    marginBottom: 12,
+    marginTop: spacing.ms,
+    marginBottom: spacing.ms,
   },
   row: {
     flexDirection: "row",
-    gap: 8,
+    gap: spacing.sm,
   },
   pill: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    borderRadius: 18,
-    gap: 2,
+    paddingVertical: radius.sm,
+    borderRadius: radius.lg,
+    gap: spacing.xxs,
     ...getShadowStyle("sm"),
   },
   progressPill: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    gap: 6,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: radius.sm,
+    gap: radius.xs,
   },
   pillValue: {
     fontSize: 17,
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   progressTop: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: spacing.xs,
   },
   progressIcon: {
     marginTop: 1,

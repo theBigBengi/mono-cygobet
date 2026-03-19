@@ -23,12 +23,12 @@ export function DegradedBanner() {
   if (auth.status !== "degraded") return null;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.warning, borderBottomColor: theme.colors.warning }]} accessibilityRole="alert">
+    <View style={[styles.container, { backgroundColor: theme.colors.warning, borderBottomColor: theme.colors.warning, padding: theme.spacing.sm }]} accessibilityRole="alert">
       <Text style={[styles.text, { color: theme.colors.warningText }]}>
         {t("common.limitedConnectivity")}
       </Text>
       <Pressable
-        style={[styles.button, { backgroundColor: theme.colors.warningText }]}
+        style={[styles.button, { backgroundColor: theme.colors.warningText, paddingVertical: 6, paddingHorizontal: theme.spacing.ms, borderRadius: theme.radius.sm }]}
         onPress={handleRetry}
         accessibilityRole="button"
         accessibilityLabel={t("common.retry")}
@@ -42,7 +42,6 @@ export function DegradedBanner() {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    padding: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -53,11 +52,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     flex: 1,
   },
-  button: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
+  button: {},
   buttonText: {
     fontWeight: "600",
     fontSize: 14,

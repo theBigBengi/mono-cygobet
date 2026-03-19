@@ -52,6 +52,8 @@ function GroupCardRowInner({ group, onPress }: GroupCardRowProps) {
           backgroundColor: pressed
             ? theme.colors.border + "40"
             : "transparent",
+          gap: theme.spacing.ms,
+          paddingHorizontal: theme.spacing.md,
         },
       ]}
       accessibilityRole="button"
@@ -62,7 +64,7 @@ function GroupCardRowInner({ group, onPress }: GroupCardRowProps) {
         avatarValue={group.avatarValue}
         initials={initials}
         size={ROW_AVATAR_SIZE}
-        borderRadius={10}
+        borderRadius={theme.radius.sm}
       />
 
       <View style={styles.textBlock}>
@@ -88,7 +90,7 @@ function GroupCardRowInner({ group, onPress }: GroupCardRowProps) {
       {/* Right indicators */}
       <View style={styles.indicators}>
         {liveCount > 0 && (
-          <View style={[styles.liveDot, { backgroundColor: theme.colors.danger }]} />
+          <View style={[styles.liveDot, { backgroundColor: theme.colors.danger, borderRadius: theme.radius.full }]} />
         )}
       </View>
     </Pressable>
@@ -103,18 +105,17 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
+    // gap, paddingHorizontal — applied inline via theme tokens
     paddingVertical: 10,
   },
   textBlock: {
     flex: 1,
-    gap: 2,
+    gap: 2, // theme.spacing.xxs
   },
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 4, // theme.spacing.xs
   },
   name: {
     fontSize: 15,
@@ -131,9 +132,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    // backgroundColor set via inline style (theme.colors.danger)
+    width: 8, // theme.spacing.sm
+    height: 8, // theme.spacing.sm
+    // borderRadius: theme.radius.full — applied inline
   },
 });

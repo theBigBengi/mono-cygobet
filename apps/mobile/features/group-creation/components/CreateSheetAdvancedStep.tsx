@@ -78,7 +78,7 @@ export function CreateSheetAdvancedStep({
       </View>
 
       {/* Predictions */}
-      <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
+      <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary, marginTop: theme.spacing.sm }]}>
         {t("lobby.predictionRules")}
       </Text>
       <Pressable
@@ -122,7 +122,7 @@ export function CreateSheetAdvancedStep({
           <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary + "60"} />
         </View>
       </Pressable> */}
-      <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
+      <Text style={[createStyles.advSectionTitle, { color: theme.colors.textSecondary, marginTop: theme.spacing.sm }]}>
         {t("groupSettings.notifications")}
       </Text>
       <Pressable
@@ -168,7 +168,7 @@ export function CreateSheetAdvancedStep({
         </Pressable>
       )}
     </ScrollView>
-    <View style={{ paddingHorizontal: 16, paddingVertical: 8, paddingBottom: Math.max(bottomInset, 16) }}>
+    <View style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, paddingBottom: Math.max(bottomInset, theme.spacing.md) }}>
       <Pressable
         onPress={handleCreateAndPublish}
         disabled={isCreating || groupName.trim().length === 0}

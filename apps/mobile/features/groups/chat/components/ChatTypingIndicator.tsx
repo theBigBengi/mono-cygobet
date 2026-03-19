@@ -45,12 +45,11 @@ export function ChatTypingIndicator({
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.colors.surface,
-        },
-      ]}
+      style={{
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.xs,
+        backgroundColor: theme.colors.surface,
+      }}
     >
       <AppText variant="caption" color="secondary" style={styles.text}>
         {label}
@@ -60,10 +59,6 @@ export function ChatTypingIndicator({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-  },
   text: {
     fontStyle: "italic",
   },

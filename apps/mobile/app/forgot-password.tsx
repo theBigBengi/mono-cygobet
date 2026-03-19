@@ -69,19 +69,19 @@ function ScreenContent() {
         style={styles.container}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { padding: theme.spacing.lg }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {sent ? (
             <View style={styles.form}>
-              <AppText variant="display" style={styles.title}>
+              <AppText variant="display" style={[styles.title, { marginBottom: theme.spacing.sm }]}>
                 {t("forgotPassword.successTitle")}
               </AppText>
               <AppText
                 variant="body"
                 color="secondary"
-                style={styles.subtitle}
+                style={[styles.subtitle, { marginBottom: theme.spacing.xxl }]}
               >
                 {t("forgotPassword.successMessage")}
               </AppText>
@@ -91,6 +91,8 @@ function ScreenContent() {
                   {
                     backgroundColor: theme.colors.primary,
                     shadowColor: theme.colors.primary,
+                    paddingVertical: theme.spacing.md,
+                    borderRadius: theme.radius.md,
                   },
                 ]}
                 onPress={() => router.replace("/sign-in")}
@@ -106,13 +108,13 @@ function ScreenContent() {
             </View>
           ) : (
             <>
-              <AppText variant="display" style={styles.title}>
+              <AppText variant="display" style={[styles.title, { marginBottom: theme.spacing.sm }]}>
                 {t("forgotPassword.title")}
               </AppText>
               <AppText
                 variant="body"
                 color="secondary"
-                style={styles.subtitle}
+                style={[styles.subtitle, { marginBottom: theme.spacing.xxl }]}
               >
                 {t("forgotPassword.subtitle")}
               </AppText>
@@ -124,6 +126,9 @@ function ScreenContent() {
                     {
                       color: theme.colors.textPrimary,
                       backgroundColor: theme.colors.cardBackground,
+                      borderRadius: theme.radius.md,
+                      padding: theme.spacing.md,
+                      marginBottom: theme.spacing.md,
                     },
                   ]}
                   placeholder={t("forgotPassword.emailPlaceholder")}
@@ -145,7 +150,7 @@ function ScreenContent() {
                   <AppText
                     variant="caption"
                     color="danger"
-                    style={styles.error}
+                    style={[styles.error, { marginBottom: theme.spacing.md }]}
                   >
                     {formError}
                   </AppText>
@@ -157,6 +162,8 @@ function ScreenContent() {
                     {
                       backgroundColor: theme.colors.primary,
                       shadowColor: theme.colors.primary,
+                      paddingVertical: theme.spacing.md,
+                      borderRadius: theme.radius.md,
                     },
                     mutation.isPending && styles.buttonDisabled,
                   ]}
@@ -179,7 +186,7 @@ function ScreenContent() {
                 <Pressable
                   onPress={() => router.back()}
                   disabled={mutation.isPending}
-                  style={styles.backLink}
+                  style={[styles.backLink, { marginTop: theme.spacing.md }]}
                 >
                   <AppText
                     variant="caption"
@@ -207,14 +214,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 24,
   },
   title: {
-    marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
-    marginBottom: 40,
     textAlign: "center",
   },
   form: {
@@ -222,18 +226,12 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 0,
-    borderRadius: 14,
-    padding: 16,
     fontSize: 16,
-    marginBottom: 14,
   },
   error: {
-    marginBottom: 16,
     textAlign: "center",
   },
   button: {
-    paddingVertical: 16,
-    borderRadius: 14,
     alignItems: "center",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -248,6 +246,5 @@ const styles = StyleSheet.create({
   },
   backLink: {
     alignSelf: "center",
-    marginTop: 16,
   },
 });

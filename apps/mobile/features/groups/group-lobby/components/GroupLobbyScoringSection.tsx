@@ -62,6 +62,7 @@ export function GroupLobbyScoringSection({
   noCard = false,
 }: GroupLobbyScoringSectionProps) {
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [onTheNose, setOnTheNose] = useState(initialOnTheNose);
   const [goalDifference, setGoalDifference] = useState(initialGoalDifference);
   const [outcome, setOutcome] = useState(initialOutcome);
@@ -204,39 +205,40 @@ export function GroupLobbyScoringSection({
   );
 }
 
-const styles = StyleSheet.create({
-  scoresContainer: {
-    gap: 0,
-  },
-  scoreRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  scoreLabel: {
-    fontWeight: "500",
-    flex: 1,
-  },
-  scoreControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  controlButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  scoreValue: {
-    fontWeight: "600",
-    minWidth: 24,
-    textAlign: "center",
-  },
-  divider: {
-    marginVertical: 0,
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    scoresContainer: {
+      gap: 0,
+    },
+    scoreRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: theme.spacing.ms,
+    },
+    scoreLabel: {
+      fontWeight: "500",
+      flex: 1,
+    },
+    scoreControls: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.md,
+    },
+    controlButton: {
+      width: 32,
+      height: 32,
+      borderRadius: theme.radius.full,
+      borderWidth: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    scoreValue: {
+      fontWeight: "600",
+      minWidth: theme.spacing.lg,
+      textAlign: "center",
+    },
+    divider: {
+      marginVertical: 0,
+    },
+  });

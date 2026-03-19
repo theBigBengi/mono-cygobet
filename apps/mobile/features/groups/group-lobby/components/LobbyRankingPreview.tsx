@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { Ionicons, FontAwesome6 } from "@expo/vector-icons";
 import { Card, AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import type { ApiRankingItem } from "@repo/types";
 import { LobbyCardSkeleton } from "./LobbyCardSkeleton";
 
@@ -139,13 +139,13 @@ export function LobbyRankingPreview({
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
+    gap: spacing.ms,
+    marginBottom: spacing.sm,
   },
   icon: {
     marginEnd: 0,
@@ -157,20 +157,20 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   rows: {
-    gap: 4,
-    paddingTop: 12,
+    gap: spacing.xs,
+    paddingTop: spacing.ms,
   },
   rowInner: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radius.s,
   },
   rank: {
-    width: 24,
+    width: spacing.lg,
     fontWeight: "600",
   },
   name: {
@@ -184,9 +184,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
-    marginTop: 12,
-    paddingTop: 12,
+    gap: spacing.xs,
+    marginTop: spacing.ms,
+    paddingTop: spacing.ms,
     borderTopWidth: 1,
   },
   viewAllText: {

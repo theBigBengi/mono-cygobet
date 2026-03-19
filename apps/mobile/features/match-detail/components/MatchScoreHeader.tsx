@@ -5,7 +5,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
 import { AppText, TeamLogo } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { isNotStarted, isLive, isFinished } from "@repo/utils";
 import type { ApiFixtureDetailData } from "@repo/types";
@@ -113,14 +113,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   teamName: {
-    marginTop: 6,
+    marginTop: radius.xs,
     textAlign: "center",
     fontSize: 13,
   },
   scoreBlock: {
     flexShrink: 0,
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.ms,
   },
   score: {
     fontSize: 24,
@@ -128,23 +128,23 @@ const styles = StyleSheet.create({
   },
   badges: {
     flexDirection: "row",
-    gap: 6,
-    marginTop: 8,
+    gap: radius.xs,
+    marginTop: spacing.sm,
     flexWrap: "wrap",
     justifyContent: "center",
   },
   stateBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.s,
   },
   stateText: {
     fontWeight: "600",
     fontSize: 11,
   },
   liveMinuteBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.s,
   },
 });

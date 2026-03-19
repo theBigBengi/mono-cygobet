@@ -8,7 +8,7 @@ import { useRouter } from "expo-router";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText, Screen } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import {
   ScoreInputNavigationBar,
   GroupFixtureCard,
@@ -813,7 +813,7 @@ export function GroupGamesScreen({
 const styles = StyleSheet.create({
   container: { flex: 1, overflow: "hidden" },
   scrollView: { flex: 1 },
-  contentContainer: { paddingHorizontal: 12 },
+  contentContainer: { paddingHorizontal: spacing.ms },
   headerOverlay: {
     position: "absolute",
     top: 0,
@@ -824,23 +824,23 @@ const styles = StyleSheet.create({
   sectionHeaderRow: {
   },
   sectionDateHeader: {
-    paddingTop: 20,
-    paddingBottom: 8,
-    paddingHorizontal: 4,
+    paddingTop: spacing.ml,
+    paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
   sectionLeagueHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingTop: 12,
-    paddingBottom: 8,
-    paddingHorizontal: 4,
+    gap: spacing.sm,
+    paddingTop: spacing.ms,
+    paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
   sectionLeagueInfo: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: radius.xs,
   },
   sectionLeagueLabel: {
     fontSize: 12,
@@ -852,8 +852,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   sectionDateRow: {
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.ms,
   },
   sectionDateLabel: {
     fontSize: 13,
@@ -869,9 +869,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 5,
     alignSelf: "flex-start",
-    paddingHorizontal: 10,
+    paddingHorizontal: radius.sm,
     paddingVertical: 3,
-    borderRadius: 9999,
+    borderRadius: radius.full,
   },
   sectionLiveDot: {
     width: 6,
@@ -887,6 +887,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    padding: spacing.ml,
   },
 });

@@ -76,11 +76,11 @@ function ScreenContent() {
         style={[styles.root, { backgroundColor: theme.colors.background }]}
         edges={["top", "left", "right"]}
       >
-        <View style={styles.centerContent}>
-          <AppText variant="display" style={styles.title}>
+        <View style={[styles.centerContent, { padding: theme.spacing.lg }]}>
+          <AppText variant="display" style={[styles.title, { marginBottom: theme.spacing.sm }]}>
             {t("resetPassword.invalidLink")}
           </AppText>
-          <AppText variant="body" color="secondary" style={styles.subtitle}>
+          <AppText variant="body" color="secondary" style={[styles.subtitle, { marginBottom: theme.spacing.xxl }]}>
             {t("resetPassword.invalidLinkMessage")}
           </AppText>
           <Pressable
@@ -89,6 +89,8 @@ function ScreenContent() {
               {
                 backgroundColor: theme.colors.primary,
                 shadowColor: theme.colors.primary,
+                paddingVertical: theme.spacing.md,
+                borderRadius: theme.radius.md,
               },
             ]}
             onPress={() => router.replace("/forgot-password")}
@@ -113,11 +115,11 @@ function ScreenContent() {
         style={[styles.root, { backgroundColor: theme.colors.background }]}
         edges={["top", "left", "right"]}
       >
-        <View style={styles.centerContent}>
-          <AppText variant="display" style={styles.title}>
+        <View style={[styles.centerContent, { padding: theme.spacing.lg }]}>
+          <AppText variant="display" style={[styles.title, { marginBottom: theme.spacing.sm }]}>
             {t("resetPassword.successTitle")}
           </AppText>
-          <AppText variant="body" color="secondary" style={styles.subtitle}>
+          <AppText variant="body" color="secondary" style={[styles.subtitle, { marginBottom: theme.spacing.xxl }]}>
             {t("resetPassword.successMessage")}
           </AppText>
           <Pressable
@@ -126,6 +128,8 @@ function ScreenContent() {
               {
                 backgroundColor: theme.colors.primary,
                 shadowColor: theme.colors.primary,
+                paddingVertical: theme.spacing.md,
+                borderRadius: theme.radius.md,
               },
             ]}
             onPress={() => router.replace("/sign-in")}
@@ -154,14 +158,14 @@ function ScreenContent() {
         style={styles.container}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { padding: theme.spacing.lg }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AppText variant="display" style={styles.title}>
+          <AppText variant="display" style={[styles.title, { marginBottom: theme.spacing.sm }]}>
             {t("resetPassword.title")}
           </AppText>
-          <AppText variant="body" color="secondary" style={styles.subtitle}>
+          <AppText variant="body" color="secondary" style={[styles.subtitle, { marginBottom: theme.spacing.xxl }]}>
             {t("resetPassword.subtitle")}
           </AppText>
 
@@ -172,6 +176,9 @@ function ScreenContent() {
                 {
                   color: theme.colors.textPrimary,
                   backgroundColor: theme.colors.cardBackground,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.md,
+                  marginBottom: theme.spacing.md,
                 },
               ]}
               placeholder={t("resetPassword.newPassword")}
@@ -193,6 +200,9 @@ function ScreenContent() {
                 {
                   color: theme.colors.textPrimary,
                   backgroundColor: theme.colors.cardBackground,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.md,
+                  marginBottom: theme.spacing.md,
                 },
               ]}
               placeholder={t("resetPassword.confirmPassword")}
@@ -207,12 +217,12 @@ function ScreenContent() {
               autoComplete="new-password"
             />
 
-            <AppText variant="caption" color="secondary" style={styles.hint}>
+            <AppText variant="caption" color="secondary" style={[styles.hint, { marginBottom: theme.spacing.md, marginTop: -theme.spacing.sm }]}>
               {t("resetPassword.passwordHint")}
             </AppText>
 
             {formError && (
-              <AppText variant="caption" color="danger" style={styles.error}>
+              <AppText variant="caption" color="danger" style={[styles.error, { marginBottom: theme.spacing.md }]}>
                 {formError}
               </AppText>
             )}
@@ -223,6 +233,8 @@ function ScreenContent() {
                 {
                   backgroundColor: theme.colors.primary,
                   shadowColor: theme.colors.primary,
+                  paddingVertical: theme.spacing.md,
+                  borderRadius: theme.radius.md,
                 },
                 mutation.isPending && styles.buttonDisabled,
               ]}
@@ -258,20 +270,16 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 24,
   },
   centerContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
   },
   title: {
-    marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
-    marginBottom: 40,
     textAlign: "center",
   },
   form: {
@@ -279,22 +287,14 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 0,
-    borderRadius: 14,
-    padding: 16,
     fontSize: 16,
-    marginBottom: 14,
   },
   hint: {
-    marginBottom: 16,
-    marginTop: -8,
   },
   error: {
-    marginBottom: 16,
     textAlign: "center",
   },
   button: {
-    paddingVertical: 16,
-    borderRadius: 14,
     alignItems: "center",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,

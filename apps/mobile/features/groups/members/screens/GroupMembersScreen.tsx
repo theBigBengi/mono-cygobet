@@ -64,6 +64,8 @@ const MemberRow = React.memo(function MemberRow({
       style={({ pressed }) => [
         styles.memberRow,
         {
+          paddingHorizontal: theme.spacing.md,
+          paddingVertical: theme.spacing.md,
           backgroundColor: isCurrentUser
             ? theme.colors.textPrimary + "06"
             : "transparent",
@@ -83,7 +85,7 @@ const MemberRow = React.memo(function MemberRow({
       </View>
 
       {/* Name + joined date */}
-      <View style={styles.infoCol}>
+      <View style={[styles.infoCol, { marginRight: theme.spacing.sm }]}>
         <View style={styles.nameRow}>
           <AppText
             variant="body"
@@ -108,7 +110,7 @@ const MemberRow = React.memo(function MemberRow({
         {joinedAtFormatted ? (
           <AppText
             variant="caption"
-            style={[styles.joinedText, { color: theme.colors.textSecondary }]}
+            style={[styles.joinedText, { marginTop: theme.spacing.xxs, color: theme.colors.textSecondary }]}
           >
             {t("members.joined", { date: joinedAtFormatted })}
           </AppText>
@@ -173,7 +175,7 @@ export function GroupMembersScreen({ groupId }: GroupMembersScreenProps) {
   return (
     <View style={styles.container}>
       {/* Member count */}
-      <View style={[styles.countRow, { borderBottomColor: theme.colors.border }]}>
+      <View style={[styles.countRow, { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.ms, borderBottomColor: theme.colors.border }]}>
         <AppText variant="caption" style={{ color: theme.colors.textSecondary }}>
           {t("members.count", { count: items.length })}
         </AppText>
@@ -210,15 +212,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   countRow: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   memberRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   indexCol: {
@@ -230,7 +228,6 @@ const styles = StyleSheet.create({
   },
   infoCol: {
     flex: 1,
-    marginRight: 8,
   },
   nameRow: {
     flexDirection: "row",
@@ -245,6 +242,5 @@ const styles = StyleSheet.create({
   },
   joinedText: {
     fontSize: 12,
-    marginTop: 2,
   },
 });

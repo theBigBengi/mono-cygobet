@@ -16,7 +16,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { AppText, Button, Card, GroupAvatar } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { getInitials } from "@/utils/string";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
@@ -287,47 +287,47 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    gap: 8,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.ms,
+    gap: spacing.sm,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: spacing.sm,
     fontSize: 15,
   },
   listContent: {
-    paddingBottom: 24,
+    paddingBottom: spacing.lg,
   },
   empty: {
-    padding: 24,
+    padding: spacing.lg,
     alignItems: "center",
   },
   footer: {
     alignItems: "center",
   },
   card: {
-    padding: 14,
-    borderRadius: 18,
+    padding: spacing.md,
+    borderRadius: radius.lg,
   },
   cardContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: spacing.ms,
   },
   cardMain: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
   },
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: spacing.xs,
   },
   officialBadge: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.full,
     backgroundColor: "#D4A01720",
     alignItems: "center",
     justifyContent: "center",

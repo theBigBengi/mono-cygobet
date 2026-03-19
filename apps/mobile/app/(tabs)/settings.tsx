@@ -130,7 +130,7 @@ function SettingsContent() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <Screen scroll contentContainerStyle={styles.content}>
+      <Screen scroll contentContainerStyle={[styles.content, { paddingHorizontal: theme.spacing.md }]}>
         <AppText variant="title" style={{ marginBottom: theme.spacing.lg }}>
           {t("tabs.settings")}
         </AppText>
@@ -257,8 +257,8 @@ function SettingsContent() {
         backdropComponent={renderBackdrop}
         backgroundStyle={{
           backgroundColor: theme.colors.surfaceElevated,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
+          borderTopLeftRadius: theme.radius.xl,
+          borderTopRightRadius: theme.radius.xl,
         }}
         handleIndicatorStyle={{
           backgroundColor: theme.colors.textDisabled,
@@ -266,13 +266,15 @@ function SettingsContent() {
           height: 4,
         }}
       >
-        <BottomSheetView style={styles.sheetContent}>
+        <BottomSheetView style={[styles.sheetContent, { paddingHorizontal: theme.spacing.ml, paddingTop: theme.spacing.ms, paddingBottom: theme.spacing.xl }]}>
           <Text
             style={[
               styles.sheetTitle,
               {
                 color: theme.colors.textPrimary,
                 borderBottomColor: theme.colors.textPrimary + "10",
+                paddingBottom: theme.spacing.ms,
+                marginBottom: theme.spacing.sm,
               },
             ]}
           >
@@ -287,7 +289,7 @@ function SettingsContent() {
               }}
               style={({ pressed }) => [
                 styles.sheetOption,
-                { opacity: pressed ? 0.6 : 1 },
+                { paddingVertical: theme.spacing.md, opacity: pressed ? 0.6 : 1 },
               ]}
             >
               <Text
@@ -322,6 +324,9 @@ function SettingsContent() {
             style={({ pressed }) => [
               styles.sheetDoneBtn,
               {
+                marginTop: theme.spacing.md,
+                paddingVertical: theme.spacing.ms,
+                borderRadius: theme.radius.sm,
                 backgroundColor: theme.colors.primary,
                 opacity:
                   draftMode === mode
@@ -345,8 +350,8 @@ function SettingsContent() {
         backdropComponent={renderBackdrop}
         backgroundStyle={{
           backgroundColor: theme.colors.surfaceElevated,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
+          borderTopLeftRadius: theme.radius.xl,
+          borderTopRightRadius: theme.radius.xl,
         }}
         handleIndicatorStyle={{
           backgroundColor: theme.colors.textDisabled,
@@ -354,13 +359,15 @@ function SettingsContent() {
           height: 4,
         }}
       >
-        <BottomSheetView style={styles.sheetContent}>
+        <BottomSheetView style={[styles.sheetContent, { paddingHorizontal: theme.spacing.ml, paddingTop: theme.spacing.ms, paddingBottom: theme.spacing.xl }]}>
           <Text
             style={[
               styles.sheetTitle,
               {
                 color: theme.colors.textPrimary,
                 borderBottomColor: theme.colors.textPrimary + "10",
+                paddingBottom: theme.spacing.ms,
+                marginBottom: theme.spacing.sm,
               },
             ]}
           >
@@ -375,7 +382,7 @@ function SettingsContent() {
               }}
               style={({ pressed }) => [
                 styles.sheetOption,
-                { opacity: pressed ? 0.6 : 1 },
+                { paddingVertical: theme.spacing.md, opacity: pressed ? 0.6 : 1 },
               ]}
             >
               <Text
@@ -410,6 +417,9 @@ function SettingsContent() {
             style={({ pressed }) => [
               styles.sheetDoneBtn,
               {
+                marginTop: theme.spacing.md,
+                paddingVertical: theme.spacing.ms,
+                borderRadius: theme.radius.sm,
                 backgroundColor: theme.colors.primary,
                 opacity:
                   draftLocale === locale
@@ -432,35 +442,23 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  content: {
-    paddingHorizontal: 20,
-  },
-  sheetContent: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 32,
-  },
+  content: {},
+  sheetContent: {},
   sheetTitle: {
     fontSize: 15,
     fontWeight: "600",
     textAlign: "center",
-    paddingBottom: 12,
-    marginBottom: 8,
     borderBottomWidth: 1,
   },
   sheetOption: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 14,
   },
   sheetOptionLabel: {
     fontSize: 14,
   },
   sheetDoneBtn: {
-    marginTop: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
     alignItems: "center",
   },
   sheetDoneBtnText: {

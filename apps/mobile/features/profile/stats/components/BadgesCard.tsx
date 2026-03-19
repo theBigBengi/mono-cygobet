@@ -55,13 +55,13 @@ function BadgeRow({ badge }: { badge: ApiBadge }) {
     : theme.colors.textSecondary;
 
   return (
-    <View style={[styles.badgeRow, { borderBottomColor: theme.colors.border }]}>
+    <View style={[styles.badgeRow, { borderBottomColor: theme.colors.border, paddingVertical: theme.spacing.ms }]}>
       <View style={styles.badgeRowInner}>
-        <View style={styles.badgeIconWrap}>
+        <View style={[styles.badgeIconWrap, { marginEnd: theme.spacing.ms, marginTop: theme.spacing.xxs }]}>
           <BadgeIcon badgeId={badge.id} color={iconColor} />
         </View>
         <View style={styles.badgeContent}>
-          <View style={styles.badgeHeader}>
+          <View style={[styles.badgeHeader, { marginBottom: theme.spacing.xs }]}>
             <AppText variant="body" style={styles.badgeName}>
               {badge.name}
             </AppText>
@@ -82,7 +82,7 @@ function BadgeRow({ badge }: { badge: ApiBadge }) {
               </AppText>
             )}
           </View>
-          <View style={styles.badgeProgress}>
+          <View style={[styles.badgeProgress, { gap: theme.spacing.ms }]}>
             <AppText
               variant="caption"
               color="secondary"
@@ -128,7 +128,7 @@ export function BadgesCard({ badges }: BadgesCardProps) {
 
   return (
     <Card>
-      <View style={styles.titleRow}>
+      <View style={[styles.titleRow, { marginBottom: theme.spacing.ms }]}>
         <AppText variant="subtitle">Badges</AppText>
         <Pressable onPress={() => sheetRef.current?.present()} hitSlop={10}>
           <MaterialIcons
@@ -140,7 +140,7 @@ export function BadgesCard({ badges }: BadgesCardProps) {
       </View>
       {allZero ? (
         <>
-          <View style={styles.iconRow}>
+          <View style={[styles.iconRow, { gap: theme.spacing.ms, marginBottom: theme.spacing.sm }]}>
             {badges.map((badge) => (
               <BadgeIcon
                 key={badge.id}
@@ -171,20 +171,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
   },
   badgeRow: {
-    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   badgeRowInner: {
     flexDirection: "row",
     alignItems: "flex-start",
   },
-  badgeIconWrap: {
-    marginEnd: 12,
-    marginTop: 2,
-  },
+  badgeIconWrap: {},
   badgeContent: {
     flex: 1,
   },
@@ -192,7 +187,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4,
   },
   badgeName: {
     fontWeight: "600",
@@ -204,7 +198,6 @@ const styles = StyleSheet.create({
   badgeProgress: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
   },
   badgeDesc: {
     flex: 1,
@@ -221,8 +214,6 @@ const styles = StyleSheet.create({
   iconRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 8,
   },
   badgesPreview: {
     textAlign: "center",

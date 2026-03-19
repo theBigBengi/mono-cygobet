@@ -38,18 +38,23 @@ export function GroupCompactCard({
         {
           backgroundColor: pressed ? theme.colors.border : theme.colors.surface,
           borderRadius: theme.radius.md,
+          padding: theme.spacing.ms,
+          marginBottom: theme.spacing.sm,
           ...getShadowStyle("sm"),
         },
       ]}
     >
-      <View style={styles.header}>
-        <AppText variant="body" numberOfLines={1} style={styles.name}>
+      <View style={[styles.header, { marginBottom: theme.spacing.xs }]}>
+        <AppText variant="body" numberOfLines={1} style={[styles.name, { marginEnd: theme.spacing.sm }]}>
           {groupName}
         </AppText>
         <View
           style={[
             styles.statusBadge,
             {
+              paddingHorizontal: theme.spacing.sm,
+              paddingVertical: theme.spacing.xxs,
+              borderRadius: theme.radius.xs,
               backgroundColor: isActive
                 ? theme.colors.success + "20"
                 : theme.colors.textSecondary + "20",
@@ -77,24 +82,15 @@ export function GroupCompactCard({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 12,
-    marginBottom: 8,
-  },
+  container: {},
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 4,
   },
   name: {
     flex: 1,
     fontWeight: "600",
-    marginEnd: 8,
   },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
+  statusBadge: {},
 });

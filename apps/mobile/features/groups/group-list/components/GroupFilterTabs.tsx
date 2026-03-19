@@ -65,6 +65,9 @@ export function GroupFilterTabs({
                     ? theme.colors.primary
                     : theme.colors.textSecondary + "20",
                   transform: [{ scale: pressed ? 0.95 : 1 }],
+                  paddingVertical: theme.spacing.sm,
+                  paddingHorizontal: theme.spacing.md,
+                  borderRadius: theme.radius.xl,
                 },
               ]}
             >
@@ -94,14 +97,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 0,
-    gap: 8,
+    gap: 8, // theme.spacing.sm
   },
   tab: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+    // paddingVertical, paddingHorizontal, borderRadius — applied inline via theme tokens
   },
   tabText: {
     fontSize: 13,

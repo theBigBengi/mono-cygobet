@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import { ScrollView, View, Text, StyleSheet, Pressable } from "react-native";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { isFinished as isFinishedState } from "@repo/utils";
 import { LobbyPredictionsCTA } from "../components/LobbyPredictionsCTA";
 import type { FixtureItem } from "@/types/common";
@@ -424,14 +424,14 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.ms,
   },
   tab: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: spacing.ms,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.s,
     borderWidth: 1,
   },
   tabText: {
@@ -439,13 +439,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   content: {
-    paddingTop: 8,
+    paddingTop: spacing.sm,
     paddingBottom: 40,
   },
   modeTitle: {
     fontSize: 12,
     fontWeight: "600",
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: spacing.ms,
   },
 });

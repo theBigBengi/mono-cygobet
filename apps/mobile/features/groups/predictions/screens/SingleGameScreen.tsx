@@ -6,7 +6,7 @@ import Animated, { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing } from "@/lib/theme";
 import { QueryLoadingView } from "@/components/QueryState/QueryLoadingView";
 import { QueryErrorView } from "@/components/QueryState/QueryErrorView";
 import { useTranslation } from "react-i18next";
@@ -335,8 +335,8 @@ const styles = StyleSheet.create({
     zIndex: 20,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 4,
-    paddingBottom: 4,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.xs,
   },
   screenHeaderBack: {
     width: 36,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   screenHeaderTitle: {
     flex: 1,
     textAlign: "center",
-    fontSize: 16,
+    fontSize: spacing.md,
     fontWeight: "700",
     marginEnd: 36,
   },

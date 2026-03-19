@@ -8,7 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { RoundPickerSheet } from "./RoundPickerSheet";
 import { TeamPickerSheet } from "./TeamPickerSheet";
 import { CompetitionPickerSheet } from "./CompetitionPickerSheet";
@@ -300,27 +300,27 @@ export function SmartFilterChips({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 10,
+    gap: radius.sm,
   },
   roundsRow: {
     flexGrow: 0,
-    marginHorizontal: -20,
+    marginHorizontal: -spacing.ml,
   },
   roundsScroll: {
-    paddingHorizontal: 20,
-    gap: 6,
+    paddingHorizontal: spacing.ml,
+    gap: radius.xs,
   },
   chipsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
+    gap: radius.xs,
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 9999,
+    paddingHorizontal: spacing.ms,
+    paddingVertical: radius.xs,
+    borderRadius: radius.full,
   },
   chipText: {
     fontSize: 12,
@@ -336,9 +336,9 @@ const styles = StyleSheet.create({
     marginEnd: 5,
   },
   statusDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    marginStart: 4,
+    width: spacing.xs,
+    height: spacing.xs,
+    borderRadius: spacing.xxs,
+    marginStart: spacing.xs,
   },
 });

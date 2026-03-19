@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 
 export type TabId = "predict" | "predictions" | "statistics";
@@ -75,14 +75,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
+    gap: spacing.sm,
+    paddingVertical: radius.sm,
+    paddingHorizontal: spacing.xs,
   },
   tab: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 9999,
+    paddingHorizontal: radius.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
     ...getShadowStyle("sm"),
   },
   tabText: {

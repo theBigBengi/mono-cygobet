@@ -47,6 +47,7 @@ export const PasswordInput = React.forwardRef<TextInput, PasswordInputProps>(fun
           {
             backgroundColor: "transparent",
             color: theme.colors.textPrimary,
+            paddingEnd: theme.spacing.xl,
           },
         ]}
         value={value}
@@ -64,8 +65,8 @@ export const PasswordInput = React.forwardRef<TextInput, PasswordInputProps>(fun
       />
       <Pressable
         onPress={toggle}
-        style={styles.iconWrap}
-        hitSlop={8}
+        style={[styles.iconWrap, { right: theme.spacing.ms, padding: theme.spacing.xs }]}
+        hitSlop={theme.spacing.sm}
         accessibilityRole="button"
         accessibilityLabel={visible ? t("accessibility.hidePassword") : t("accessibility.showPassword")}
       >
@@ -88,12 +89,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 0,
     padding: 0,
-    paddingEnd: 32,
     fontSize: 16,
   },
   iconWrap: {
     position: "absolute",
-    right: 12,
-    padding: 4,
   },
 });

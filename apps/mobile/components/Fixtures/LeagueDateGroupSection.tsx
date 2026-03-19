@@ -27,11 +27,16 @@ export function LeagueDateGroupSection({
   const { theme } = useTheme();
 
   return (
-    <View style={styles.section}>
+    <View style={[styles.section, { marginBottom: theme.spacing.sm }]}>
       <View
         style={[
           styles.header,
-          { borderBottomColor: theme.colors.border },
+          {
+            borderBottomColor: theme.colors.border,
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.ms,
+            gap: theme.spacing.sm,
+          },
         ]}
       >
         {leagueImagePath && (
@@ -64,21 +69,16 @@ export function LeagueDateGroupSection({
   );
 }
 
+// Static layout styles — theme-dependent values applied inline via `theme`
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 8,
-  },
+  section: {},
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   leagueName: {
     flex: 1,
-    fontSize: 12,
     fontWeight: "500",
     textTransform: "uppercase",
     letterSpacing: 0.5,

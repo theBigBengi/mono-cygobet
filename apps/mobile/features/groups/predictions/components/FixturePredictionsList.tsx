@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { hasMatchStarted } from "@repo/utils";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 import { useAuth } from "@/lib/auth/useAuth";
 import { usePredictionsOverviewQuery } from "@/domains/groups";
@@ -160,31 +160,31 @@ export function FixturePredictionsList({ groupId, fixtureId }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   loadingContainer: {
-    paddingVertical: 24,
+    paddingVertical: spacing.lg,
     alignItems: "center",
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 6,
-    borderRadius: 18,
-    gap: 12,
+    paddingVertical: radius.sm,
+    paddingHorizontal: radius.md,
+    marginBottom: radius.xs,
+    borderRadius: radius.lg,
+    gap: spacing.ms,
     ...getShadowStyle("sm"),
   },
   rankBadge: {
     width: 26,
     height: 26,
-    borderRadius: 8,
+    borderRadius: radius.s,
     alignItems: "center",
     justifyContent: "center",
     ...getShadowStyle("sm"),

@@ -20,15 +20,15 @@ export function StreakIndicator({ streak, onInfoPress }: StreakIndicatorProps) {
 
   return (
     <Card>
-      <View style={styles.header}>
+      <View style={[styles.header, { marginBottom: theme.spacing.md }]}>
         <AppText variant="subtitle">{t("gamification.streak")}</AppText>
-        <View style={styles.headerRight}>
+        <View style={[styles.headerRight, { gap: theme.spacing.sm }]}>
           {isHot && <Ionicons name="flame" size={20} color={theme.colors.accent} />}
           {onInfoPress && <InfoButton onPress={onInfoPress} />}
         </View>
       </View>
 
-      <View style={styles.statsRow}>
+      <View style={[styles.statsRow, { gap: theme.spacing.lg, paddingVertical: theme.spacing.xs }]}>
         <View style={styles.statItem}>
           <AppText style={[styles.statValue, isHot && { color: theme.colors.accent }]}>
             {streak.current}
@@ -49,13 +49,14 @@ export function StreakIndicator({ streak, onInfoPress }: StreakIndicatorProps) {
       </View>
 
       {streak.lastResults.length > 0 && (
-        <View style={styles.resultsRow}>
+        <View style={[styles.resultsRow, { gap: theme.spacing.xs, marginTop: theme.spacing.md }]}>
           {streak.lastResults.map((result, i) => (
             <View
               key={i}
               style={[
                 styles.resultDot,
                 {
+                  borderRadius: theme.radius.full,
                   backgroundColor: result === "hit" ? theme.colors.success : theme.colors.danger,
                 },
               ]}
@@ -72,19 +73,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
   },
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
   },
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 24,
-    paddingVertical: 4,
   },
   statItem: {
     alignItems: "center",
@@ -104,12 +101,9 @@ const styles = StyleSheet.create({
   resultsRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 16,
   },
   resultDot: {
     width: 12,
     height: 12,
-    borderRadius: 6,
   },
 });

@@ -207,7 +207,7 @@ export function GroupsSearchScreen() {
           <View
             style={[
               styles.searchInputContainer,
-              { backgroundColor: theme.colors.surface },
+              { backgroundColor: theme.colors.surface, borderRadius: theme.radius.md, paddingHorizontal: theme.spacing.ms, gap: theme.spacing.sm },
             ]}
           >
             <Ionicons name="search" size={16} color={theme.colors.textSecondary} />
@@ -239,9 +239,9 @@ export function GroupsSearchScreen() {
           <View style={styles.skeletonContainer}>
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <View key={i} style={[cardStyles.card, { opacity: 1 - i * 0.15 }]}>
-                <View style={{ width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: 12, backgroundColor: theme.colors.border }} />
+                <View style={{ width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: theme.radius.md, backgroundColor: theme.colors.border }} />
                 <View style={cardStyles.info}>
-                  <View style={{ width: 90 + i * 16, height: 12, borderRadius: 4, backgroundColor: theme.colors.border, marginBottom: 6 }} />
+                  <View style={{ width: 90 + i * 16, height: 12, borderRadius: theme.radius.xs, backgroundColor: theme.colors.border, marginBottom: 6 }} />
                   <View style={{ width: 70, height: 10, borderRadius: 3, backgroundColor: theme.colors.border }} />
                 </View>
               </View>
@@ -275,7 +275,7 @@ export function GroupsSearchScreen() {
             ListEmptyComponent={
               !isFetching ? (
                 <View style={styles.emptyResults}>
-                  <View style={[styles.emptyIconWrapper, { backgroundColor: theme.colors.textSecondary + "10" }]}>
+                  <View style={[styles.emptyIconWrapper, { backgroundColor: theme.colors.textSecondary + "10", borderRadius: theme.radius.full }]}>
                     <Ionicons
                       name="globe-outline"
                       size={36}
@@ -324,8 +324,8 @@ export function GroupsSearchScreen() {
         backdropComponent={renderBackdrop}
         backgroundStyle={{
           backgroundColor: theme.colors.surfaceElevated,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
+          borderTopLeftRadius: theme.radius.xl,
+          borderTopRightRadius: theme.radius.xl,
         }}
         handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled, width: 36 }}
       >
@@ -356,6 +356,7 @@ export function GroupsSearchScreen() {
               {
                 backgroundColor: theme.colors.primary,
                 opacity: !inviteCode.trim() || joinByCodeMutation.isPending ? 0.4 : pressed ? 0.85 : 1,
+                borderRadius: theme.radius.md,
               },
             ]}
           >
@@ -424,7 +425,7 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
               avatarValue={String(group.id % 8)}
               initials={getInitials(group.name)}
               size={72}
-              borderRadius={18}
+              borderRadius={theme.radius.lg}
               flat
             />
             <View style={previewStyles.nameBlock}>
@@ -503,6 +504,7 @@ function PreviewSheet({ sheetRef, group, onJoinSuccess }: PreviewSheetProps) {
               {
                 backgroundColor: theme.colors.primary,
                 opacity: joinMutation.isPending ? 0.5 : pressed ? 0.85 : 1,
+                borderRadius: theme.radius.md,
               },
             ]}
           >
@@ -541,11 +543,11 @@ function PreviewStatRow({
 
 const previewStyles = StyleSheet.create({
   content: {
-    gap: 16,
+    gap: 16, // theme.spacing.md
   },
   headerUnit: {
     alignItems: "center",
-    gap: 12,
+    gap: 12, // theme.spacing.ms
   },
   nameBlock: {
     alignItems: "center",
@@ -559,7 +561,7 @@ const previewStyles = StyleSheet.create({
   officialChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 4, // theme.spacing.xs
   },
   officialText: {
     fontSize: 11,
@@ -572,7 +574,7 @@ const previewStyles = StyleSheet.create({
     textAlign: "center",
   },
   stats: {
-    paddingVertical: 4,
+    paddingVertical: 4, // theme.spacing.xs
   },
   statRow: {
     flexDirection: "row",
@@ -593,7 +595,7 @@ const previewStyles = StyleSheet.create({
   },
   joinButton: {
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: 14, // theme.radius.md
     alignItems: "center",
   },
   joinButtonText: {
@@ -639,7 +641,7 @@ const PublicGroupRow = React.memo(function PublicGroupRow({
           avatarValue={avatarValue}
           initials={initials}
           size={AVATAR_SIZE}
-          borderRadius={12}
+          borderRadius={theme.radius.md}
           flat
         />
 
@@ -671,13 +673,13 @@ const PublicGroupRow = React.memo(function PublicGroupRow({
 
 const cardStyles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 16, // theme.spacing.md
   },
   card: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 12,
+    gap: 12, // theme.spacing.ms
+    paddingVertical: 12, // theme.spacing.ms
   },
   info: {
     flex: 1,
@@ -690,7 +692,7 @@ const cardStyles = StyleSheet.create({
   name: {
     fontSize: 15,
     fontWeight: "600",
-    marginBottom: 2,
+    marginBottom: 2, // theme.spacing.xxs
   },
   subtitle: {
     fontSize: 13,
@@ -706,23 +708,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingHorizontal: 16, // theme.spacing.md
+    paddingBottom: 8, // theme.spacing.sm
   },
   headerTitle: {
     fontSize: 15,
     fontWeight: "600",
   },
   searchRow: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 16, // theme.spacing.md
+    paddingBottom: 12, // theme.spacing.ms
   },
   searchInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    gap: 8,
+    // borderRadius, paddingHorizontal, gap — applied inline via theme tokens
   },
   searchInput: {
     flex: 1,
@@ -731,25 +731,25 @@ const styles = StyleSheet.create({
   },
   skeletonContainer: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingHorizontal: 16, // theme.spacing.md
+    paddingTop: 4, // theme.spacing.xs
   },
   listContent: {
-    paddingBottom: 24,
-    paddingTop: 4,
+    paddingBottom: 24, // theme.spacing.lg
+    paddingTop: 4, // theme.spacing.xs
   },
   emptyResults: {
     paddingVertical: 56,
     alignItems: "center",
-    gap: 8,
+    gap: 8, // theme.spacing.sm
   },
   emptyIconWrapper: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    // borderRadius: theme.radius.full — applied inline
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
+    marginBottom: 4, // theme.spacing.xs
   },
   emptyTitle: {
     fontWeight: "600",
@@ -759,16 +759,16 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: "center",
-    padding: 16,
+    padding: 16, // theme.spacing.md
   },
   loadMoreText: {
     fontWeight: "600",
   },
   // Join with code sheet
   joinSheetContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 24, // theme.spacing.lg
     paddingBottom: 36,
-    gap: 16,
+    gap: 16, // theme.spacing.md
   },
   joinSheetTitle: {
     textAlign: "center",
@@ -777,12 +777,12 @@ const styles = StyleSheet.create({
   },
   joinSheetInput: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 12,
+    paddingVertical: 12, // theme.spacing.ms
     fontSize: 16,
   },
   joinSheetButton: {
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: 14, // theme.radius.md
     alignItems: "center",
   },
   joinSheetButtonText: {

@@ -10,7 +10,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 import type { FixtureItem } from "../types";
 
@@ -65,7 +65,7 @@ function LobbyRecentResultsInner({
           {isLoading ? (
             <Animated.View
               style={[
-                { width: 120, height: 14, borderRadius: 6, backgroundColor: theme.colors.border },
+                { width: 120, height: 14, borderRadius: radius.xs, backgroundColor: theme.colors.border },
                 skeletonStyle,
               ]}
             />
@@ -155,18 +155,18 @@ export const LobbyRecentResults = React.memo(LobbyRecentResultsInner);
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
-    marginBottom: 24,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.lg,
   },
   cardWrapper: {
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: radius.lg,
+    padding: spacing.md,
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: spacing.md,
   },
   headerTitle: {
     fontSize: 15,
@@ -178,11 +178,11 @@ const styles = StyleSheet.create({
   },
   cardsRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: spacing.sm,
   },
   card: {
     width: 100,
-    borderRadius: 14,
+    borderRadius: radius.md,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -192,14 +192,14 @@ const styles = StyleSheet.create({
   },
   topEdge: {
     height: 4,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderTopLeftRadius: radius.md,
+    borderTopRightRadius: radius.md,
   },
   scoreSection: {
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    gap: 2,
+    paddingVertical: spacing.ms,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.xxs,
   },
   teamCode: {
     fontSize: 10,
@@ -209,14 +209,14 @@ const styles = StyleSheet.create({
   score: {
     fontSize: 18,
     fontWeight: "800",
-    marginVertical: 2,
+    marginVertical: spacing.xxs,
   },
   bottomSection: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   predictionText: {
@@ -224,9 +224,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   pointsPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xxs,
+    borderRadius: radius.xs,
   },
   pointsText: {
     fontSize: 11,

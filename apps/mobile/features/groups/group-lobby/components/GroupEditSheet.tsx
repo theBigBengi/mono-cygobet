@@ -119,20 +119,20 @@ export function GroupEditSheet({
         enablePanDownToClose
         backdropComponent={renderBackdrop}
         backgroundStyle={{
-          backgroundColor: theme.colors.background,
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
+          backgroundColor: theme.colors.surfaceElevated,
+          borderTopLeftRadius: theme.radius.xl,
+          borderTopRightRadius: theme.radius.xl,
         }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.border, width: 36 }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary, width: 36, height: 4 }}
       >
-        <BottomSheetView style={styles.content}>
+        <BottomSheetView style={[styles.content, { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm, paddingBottom: 36 }]}>
           {/* Avatar */}
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               avatarPickerRef.current?.present();
             }}
-            style={styles.avatarPicker}
+            style={[styles.avatarPicker, { marginBottom: 28 }]}
           >
             <GroupAvatar
               avatarType="gradient"
@@ -148,8 +148,8 @@ export function GroupEditSheet({
           </Pressable>
 
           {/* Name */}
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>
+          <View style={[styles.fieldGroup, { marginBottom: theme.spacing.ml }]}>
+            <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary, marginBottom: theme.spacing.xs + 2 }]}>
               {t("groupCreation.groupNamePlaceholder")}
             </Text>
             <BottomSheetTextInput
@@ -158,6 +158,7 @@ export function GroupEditSheet({
                 {
                   color: theme.colors.textPrimary,
                   borderBottomColor: theme.colors.border,
+                  paddingVertical: theme.spacing.sm,
                 },
               ]}
               placeholder={t("groupCreation.groupNamePlaceholder")}
@@ -170,8 +171,8 @@ export function GroupEditSheet({
           </View>
 
           {/* Description */}
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>
+          <View style={[styles.fieldGroup, { marginBottom: theme.spacing.ml }]}>
+            <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary, marginBottom: theme.spacing.xs + 2 }]}>
               {t("lobby.descriptionPlaceholder")}
             </Text>
             <BottomSheetTextInput
@@ -180,6 +181,7 @@ export function GroupEditSheet({
                 {
                   color: theme.colors.textPrimary,
                   borderBottomColor: theme.colors.border,
+                  paddingVertical: theme.spacing.sm,
                 },
               ]}
               placeholder={t("lobby.descriptionPlaceholder")}
@@ -201,6 +203,9 @@ export function GroupEditSheet({
               styles.saveBtn,
               {
                 backgroundColor: theme.colors.primary,
+                marginTop: theme.spacing.sm,
+                paddingVertical: theme.radius.md,
+                borderRadius: theme.radius.md,
                 opacity: !canSave ? 0.4 : pressed ? 0.85 : 1,
               },
             ]}
@@ -225,14 +230,9 @@ export function GroupEditSheet({
 }
 
 const styles = StyleSheet.create({
-  content: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
-    paddingBottom: 36,
-  },
+  content: {},
   avatarPicker: {
     alignSelf: "center",
-    marginBottom: 28,
     position: "relative",
   },
   avatarEditBadge: {
@@ -246,30 +246,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  fieldGroup: {
-    marginBottom: 20,
-  },
+  fieldGroup: {},
   fieldLabel: {
     fontSize: 12,
     fontWeight: "500",
-    marginBottom: 6,
   },
   nameInput: {
     fontSize: 16,
     fontWeight: "500",
-    paddingVertical: 8,
     borderBottomWidth: 1,
   },
   descInput: {
     fontSize: 14,
-    paddingVertical: 8,
     borderBottomWidth: 1,
     minHeight: 60,
   },
   saveBtn: {
-    marginTop: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
     alignItems: "center",
   },
   saveBtnText: {

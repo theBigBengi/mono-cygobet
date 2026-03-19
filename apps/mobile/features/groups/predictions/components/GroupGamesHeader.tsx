@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 import { AppText } from "@/components/ui";
 import { Ionicons } from "@expo/vector-icons";
@@ -71,15 +71,15 @@ const styles = StyleSheet.create({
     height: HEADER_HEIGHT,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
+    paddingHorizontal: radius.sm,
   },
   hudButton: {
-    padding: 4,
+    padding: spacing.xs,
   },
   hudButtonInner: {
     width: 40,
     height: 40,
-    borderRadius: 14,
+    borderRadius: radius.md,
     justifyContent: "center",
     alignItems: "center",
   },

@@ -106,12 +106,12 @@ export function FilterSortSheet({
       backdropComponent={renderBackdrop}
       backgroundStyle={{
         backgroundColor: theme.colors.surfaceElevated,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
+        borderTopLeftRadius: theme.radius.xl,
+        borderTopRightRadius: theme.radius.xl,
       }}
       handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled }}
     >
-      <BottomSheetView style={[styles.content, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <BottomSheetView style={[styles.content, { paddingBottom: Math.max(insets.bottom, theme.spacing.md) }]}>
         {/* Centered title */}
         <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
           {t("groups.filterAndSort")}
@@ -141,6 +141,9 @@ export function FilterSortSheet({
                       ? theme.colors.primary
                       : theme.colors.textSecondary + "20",
                     transform: [{ scale: pressed ? 0.95 : 1 }],
+                    paddingVertical: theme.spacing.sm,
+                    paddingHorizontal: theme.spacing.md,
+                    borderRadius: theme.radius.xl,
                   },
                 ]}
               >
@@ -207,7 +210,7 @@ export function FilterSortSheet({
             onPress={handleCancel}
             style={({ pressed }) => [
               styles.cancelButton,
-              { borderColor: theme.colors.textSecondary + "60" },
+              { borderColor: theme.colors.textSecondary + "60", borderRadius: theme.radius.md },
               pressed && { opacity: 0.6 },
             ]}
           >
@@ -220,7 +223,7 @@ export function FilterSortSheet({
             onPress={handleApply}
             style={({ pressed }) => [
               styles.applyButton,
-              { backgroundColor: theme.colors.primary },
+              { backgroundColor: theme.colors.primary, borderRadius: theme.radius.md },
               pressed && { opacity: 0.85 },
             ]}
           >
@@ -236,14 +239,14 @@ export function FilterSortSheet({
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 4,
+    paddingHorizontal: 20, // theme.spacing.ml
+    paddingTop: 4, // theme.spacing.xs
   },
   title: {
     fontSize: 15,
     fontWeight: "700",
     textAlign: "center",
-    paddingBottom: 12,
+    paddingBottom: 12, // theme.spacing.ms
   },
   sectionLabel: {
     fontSize: 17,
@@ -253,12 +256,10 @@ const styles = StyleSheet.create({
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 8, // theme.spacing.sm
   },
   chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+    // paddingVertical, paddingHorizontal, borderRadius — applied inline via theme tokens
   },
   chipText: {
     fontSize: 13,
@@ -266,28 +267,28 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: 16,
+    marginVertical: 16, // theme.spacing.md
   },
   option: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
+    paddingVertical: 12, // theme.spacing.ms
   },
   optionText: {
     fontSize: 16,
   },
   buttonRow: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 24,
+    gap: 12, // theme.spacing.ms
+    marginTop: 24, // theme.spacing.lg
   },
   cancelButton: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 14,
-    borderRadius: 14,
+    // borderRadius: theme.radius.md — applied inline
     borderWidth: StyleSheet.hairlineWidth,
   },
   applyButton: {
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 14,
-    borderRadius: 14,
+    // borderRadius: theme.radius.md — applied inline
   },
   buttonText: {
     fontSize: 15,

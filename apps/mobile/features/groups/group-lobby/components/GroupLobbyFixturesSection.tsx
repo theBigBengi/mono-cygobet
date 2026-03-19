@@ -138,8 +138,8 @@ export function GroupLobbyFixturesSection({
 
   const headerContent = (
     <>
-      <View style={styles.gamesHeaderRow}>
-        {icon && <View style={styles.iconWrapper}>{icon}</View>}
+      <View style={[styles.gamesHeaderRow, { marginBottom: theme.spacing.sm }]}>
+        {icon && <View style={[styles.iconWrapper, { marginEnd: theme.spacing.sm }]}>{icon}</View>}
         <AppText variant="body" style={styles.gamesTitle}>
           {titleText}
         </AppText>
@@ -151,7 +151,7 @@ export function GroupLobbyFixturesSection({
             <AppText
               variant="caption"
               color="secondary"
-              style={styles.viewAllText}
+              style={[styles.viewAllText, { marginStart: theme.spacing.sm }]}
             >
               {t("lobby.viewAllGames")}
             </AppText>
@@ -160,11 +160,11 @@ export function GroupLobbyFixturesSection({
       </View>
 
       {showProgress && (
-        <View style={styles.progressBlock}>
+        <View style={[styles.progressBlock, { marginTop: theme.spacing.xs }]}>
           <AppText
             variant="caption"
             color="secondary"
-            style={styles.progressText}
+            style={[styles.progressText, { marginBottom: theme.spacing.xs }]}
           >
             {t("lobby.predictionsProgress", {
               count: predictionsCount!,
@@ -199,9 +199,9 @@ export function GroupLobbyFixturesSection({
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { marginBottom: theme.spacing.md }]}>
       {/* Header Card - contains only the title and actions */}
-      <Card style={styles.headerCard}>
+      <Card style={[styles.headerCard, { marginBottom: theme.spacing.sm }]}>
         {onBannerPress ? (
           <Pressable
             onPress={onBannerPress}
@@ -225,7 +225,7 @@ export function GroupLobbyFixturesSection({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={[
             styles.gamesList,
-            { paddingHorizontal: theme.spacing.md },
+            { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm },
           ]}
           style={[
             styles.gamesScrollView,
@@ -247,59 +247,41 @@ export function GroupLobbyFixturesSection({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  headerCard: {
-    marginBottom: 8,
-  },
+  container: {},
+  headerCard: {},
   gamesHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
   },
   gamesTitle: {
     fontWeight: "600",
     flex: 1,
   },
-  iconWrapper: {
-    marginEnd: 8,
-  },
-  viewAllText: {
-    marginStart: 8,
-  },
+  iconWrapper: {},
+  viewAllText: {},
   gamesLoadingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
   },
-  gamesLoadingText: {
-    marginStart: 8,
-  },
+  gamesLoadingText: {},
   gamesErrorRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 8,
   },
   gamesScrollView: {
     // Negative margin will be applied via inline style to match Screen padding
   },
   gamesList: {
     // Padding will be applied via inline style to allow first/last cards to peek
-    paddingVertical: 8,
   },
   gameItemWrapper: {
     width: GAME_CARD_WIDTH,
     marginEnd: CARD_SPACING,
   },
-  progressBlock: {
-    marginTop: 4,
-  },
-  progressText: {
-    marginBottom: 4,
-  },
+  progressBlock: {},
+  progressText: {},
   progressTrack: {
     height: 3,
     borderRadius: 2,

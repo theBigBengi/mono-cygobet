@@ -5,7 +5,7 @@ import * as Haptics from "expo-haptics";
 import { formatKickoffTime } from "@/utils/fixture";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import { MaterialCommunityIcons, Ionicons, AntDesign, FontAwesome6 } from "@expo/vector-icons";
 import { AppText, TeamLogo } from "@/components/ui";
@@ -297,7 +297,7 @@ export function MatchPredictionCardVertical({
           {/* Card — center */}
           <View
             style={[
-              { flex: 1, backgroundColor: theme.colors.textSecondary + "12", borderRadius: 8, paddingHorizontal: 8, overflow: "hidden" as const },
+              { flex: 1, backgroundColor: theme.colors.textSecondary + "12", borderRadius: radius.s, paddingHorizontal: spacing.sm, overflow: "hidden" as const },
               isCancelled && { opacity: 0.6 },
             ]}
           >
@@ -398,7 +398,7 @@ export function MatchPredictionCardVertical({
             <View style={[styles.hRowBorder, { backgroundColor: theme.colors.textSecondary + "12", flexDirection: "row", alignItems: "stretch", flex: 1, overflow: "hidden", paddingLeft: 2 }]}>
               <Animated.View style={[styles.highlightOverlay, { backgroundColor: theme.colors.primary + "15" }, highlightAnimStyle]} pointerEvents="none" />
               {/* Status Box — left column */}
-              <View style={{ width: 42, alignItems: "center", justifyContent: "center", marginRight: 8 }}>
+              <View style={{ width: 42, alignItems: "center", justifyContent: "center", marginRight: spacing.sm }}>
                 {statusBox}
               </View>
 
@@ -537,11 +537,11 @@ export function MatchPredictionCardVertical({
               ) : (
                 <View style={[styles.statusBox, { backgroundColor: "transparent", alignItems: "center", justifyContent: "center" }]}>
                   {hasPrediction ? (
-                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#34C75920", alignItems: "center", justifyContent: "center" }}>
+                    <View style={{ width: 20, height: 20, borderRadius: radius.sm, backgroundColor: "#34C75920", alignItems: "center", justifyContent: "center" }}>
                       <Ionicons name="checkmark" size={12} color="#34C759" />
                     </View>
                   ) : (
-                    <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: theme.colors.textSecondary + "90", alignItems: "center", justifyContent: "center" }}>
+                    <View style={{ width: 20, height: 20, borderRadius: radius.sm, borderWidth: 1.5, borderColor: theme.colors.textSecondary + "90", alignItems: "center", justifyContent: "center" }}>
                       <FontAwesome6 name="plus" size={11} color={theme.colors.textSecondary + "90"} />
                     </View>
                   )}
@@ -557,22 +557,22 @@ export function MatchPredictionCardVertical({
 
 const styles = StyleSheet.create({
   outerRow: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   outerRowSpacing: {
-    marginBottom: 10,
+    marginBottom: radius.sm,
   },
   cardShadowWrapper: {
     flex: 1,
   },
   highlightOverlay: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 8,
+    borderRadius: radius.s,
     zIndex: 1,
   },
   matchCard: {
     borderWidth: 0,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   cardRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: radius.sm,
   },
   statusCol: {
     width: 42,
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
   statusBox: {
     width: 42,
     height: 42,
-    borderRadius: 6,
+    borderRadius: radius.xs,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   leagueInfoRow: {
     flexDirection: "row",
     justifyContent: "flex-start",
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   leagueText: {
     fontSize: 11,
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
   teamPressable: {
     flex: 1,
@@ -661,26 +661,26 @@ const styles = StyleSheet.create({
     lineHeight: 10,
   },
   hPointsBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: radius.xs,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: radius.xs,
   },
   hStatusRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: radius.xs,
   },
   hRowBorder: {
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    borderRadius: radius.s,
+    paddingVertical: radius.xs,
+    paddingHorizontal: spacing.sm,
   },
   hRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     writingDirection: "ltr" as const,
-    gap: 6,
+    gap: radius.xs,
     height: 50,
     overflow: "hidden" as const,
   },
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 6,
+    gap: radius.xs,
     minWidth: 0,
   },
   hTeamName: {
@@ -699,13 +699,13 @@ const styles = StyleSheet.create({
   hCenter: {
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    marginBottom: 10,
+    marginBottom: radius.sm,
   },
   hResultsRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    paddingBottom: 2,
+    paddingBottom: spacing.xxs,
   },
   hResultText: {
     fontSize: 11,

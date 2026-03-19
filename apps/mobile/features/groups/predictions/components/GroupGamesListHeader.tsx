@@ -4,7 +4,7 @@ import { MaterialCommunityIcons, Foundation, Ionicons } from "@expo/vector-icons
 import { TextModeIcon } from "./TextModeIcon";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { GroupGamesSkeleton } from "./GroupGamesSkeleton";
 import { RoundNavigator } from "./RoundNavigator";
 
@@ -162,40 +162,40 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: radius.sm,
   },
   toolbarBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 14,
+    width: spacing.xl,
+    height: spacing.xl,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
   toolbarRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: radius.sm,
   },
   filterBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    height: 32,
-    paddingHorizontal: 12,
-    borderRadius: 9999,
+    gap: radius.xs,
+    height: spacing.xl,
+    paddingHorizontal: spacing.ms,
+    borderRadius: radius.full,
   },
   filterBtnLabel: {
     fontSize: 13,
     fontWeight: "600",
   },
   emptyStateContainer: {
-    paddingVertical: 24,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
     alignItems: "center",
   },
   emptyStateMessage: {
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: spacing.ms,
   },
   emptyStateSuggestion: {
     fontWeight: "600",

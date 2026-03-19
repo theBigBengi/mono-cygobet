@@ -92,14 +92,14 @@ function ScreenContent() {
         style={styles.container}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { padding: theme.spacing.lg }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AppText variant="title" style={styles.title}>
+          <AppText variant="title" style={[styles.title, { marginBottom: theme.spacing.sm }]}>
             {t("auth.completeProfile")}
           </AppText>
-          <AppText variant="body" color="secondary" style={styles.subtitle}>
+          <AppText variant="body" color="secondary" style={[styles.subtitle, { marginBottom: theme.spacing.xxl }]}>
             {t("auth.chooseUsername")}
           </AppText>
 
@@ -110,6 +110,9 @@ function ScreenContent() {
                 {
                   color: theme.colors.textPrimary,
                   backgroundColor: theme.colors.cardBackground,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.md,
+                  marginBottom: theme.spacing.sm,
                 },
               ]}
               placeholder={t("auth.username")}
@@ -128,7 +131,7 @@ function ScreenContent() {
 
             {/* Availability indicator */}
             {username.trim().length >= 3 && (
-              <View style={styles.availabilityRow}>
+              <View style={[styles.availabilityRow, { marginTop: theme.spacing.xs, marginBottom: theme.spacing.sm }]}>
                 {availabilityStatus === "checking" && (
                   <>
                     <ActivityIndicator
@@ -138,7 +141,7 @@ function ScreenContent() {
                     <AppText
                       variant="caption"
                       color="secondary"
-                      style={styles.availabilityText}
+                      style={[styles.availabilityText, { marginStart: theme.spacing.xs }]}
                     >
                       {t("auth.checkingUsername")}
                     </AppText>
@@ -155,7 +158,7 @@ function ScreenContent() {
                       variant="caption"
                       style={[
                         styles.availabilityText,
-                        { color: theme.colors.success },
+                        { color: theme.colors.success, marginStart: theme.spacing.xs },
                       ]}
                     >
                       {t("auth.usernameAvailable")}
@@ -173,7 +176,7 @@ function ScreenContent() {
                       variant="caption"
                       style={[
                         styles.availabilityText,
-                        { color: theme.colors.danger },
+                        { color: theme.colors.danger, marginStart: theme.spacing.xs },
                       ]}
                     >
                       {t("auth.usernameTaken")}
@@ -183,7 +186,7 @@ function ScreenContent() {
               </View>
             )}
 
-            <AppText variant="caption" color="secondary" style={styles.hint}>
+            <AppText variant="caption" color="secondary" style={[styles.hint, { marginBottom: theme.spacing.lg }]}>
               {t("auth.usernameHint")}
             </AppText>
 
@@ -193,6 +196,8 @@ function ScreenContent() {
                 {
                   backgroundColor: theme.colors.primary,
                   shadowColor: theme.colors.primary,
+                  paddingVertical: theme.spacing.md,
+                  borderRadius: theme.radius.md,
                 },
                 (isLoading || !canSubmit) && styles.buttonDisabled,
               ]}
@@ -218,7 +223,7 @@ function ScreenContent() {
             <Pressable
               onPress={() => logout()}
               disabled={isLoading}
-              style={styles.logoutLink}
+              style={[styles.logoutLink, { marginTop: theme.spacing.md, padding: theme.spacing.sm }]}
               accessibilityRole="button"
               accessibilityLabel={t("accessibility.logout")}
             >
@@ -245,15 +250,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
     justifyContent: "center",
   },
   title: {
-    marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
-    marginBottom: 40,
     textAlign: "center",
   },
   form: {
@@ -261,26 +263,17 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 0,
-    borderRadius: 14,
-    padding: 16,
     fontSize: 16,
-    marginBottom: 8,
   },
   availabilityRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
-    marginBottom: 8,
   },
   availabilityText: {
-    marginStart: 6,
   },
   hint: {
-    marginBottom: 24,
   },
   button: {
-    paddingVertical: 16,
-    borderRadius: 14,
     alignItems: "center",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -295,7 +288,5 @@ const styles = StyleSheet.create({
   },
   logoutLink: {
     alignSelf: "center",
-    marginTop: 16,
-    padding: 8,
   },
 });

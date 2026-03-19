@@ -60,17 +60,17 @@ export function AvatarPickerSheet({
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       backgroundStyle={{
-        backgroundColor: theme.colors.background,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
+        backgroundColor: theme.colors.surfaceElevated,
+        borderTopLeftRadius: theme.radius.xl,
+        borderTopRightRadius: theme.radius.xl,
       }}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.border, width: 36 }}
+      handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary, width: 36, height: 4 }}
     >
-      <BottomSheetView style={styles.content}>
-        <AppText variant="body" style={[styles.title, { color: theme.colors.textPrimary }]}>
+      <BottomSheetView style={[styles.content, { paddingHorizontal: theme.spacing.lg, paddingBottom: 36 }]}>
+        <AppText variant="body" style={[styles.title, { color: theme.colors.textPrimary, marginBottom: theme.spacing.ml }]}>
           {t("lobby.chooseAvatar")}
         </AppText>
-        <View style={styles.grid}>
+        <View style={[styles.grid, { gap: theme.spacing.ms }]}>
           {AVATAR_GRADIENTS.map((colors, index) => {
             const isSelected = String(index) === localValue;
             return (
@@ -85,6 +85,7 @@ export function AvatarPickerSheet({
                   end={{ x: 1, y: 1 }}
                   style={[
                     styles.item,
+                    { borderRadius: theme.radius.lg },
                     isSelected && {
                       borderColor: theme.colors.primary,
                       borderWidth: 2.5,
@@ -94,7 +95,7 @@ export function AvatarPickerSheet({
                   <Text style={[styles.itemInitials, { color: "#fff" }]}>{initials}</Text>
                 </LinearGradient>
                 {isSelected && (
-                  <View style={[styles.checkBadge, { backgroundColor: theme.colors.primary }]}>
+                  <View style={[styles.checkBadge, { backgroundColor: theme.colors.primary, borderRadius: theme.radius.full }]}>
                     <Ionicons name="checkmark" size={12} color="#fff" />
                   </View>
                 )}
@@ -108,6 +109,9 @@ export function AvatarPickerSheet({
             styles.confirmButton,
             {
               backgroundColor: theme.colors.primary,
+              marginTop: theme.spacing.lg,
+              paddingVertical: theme.radius.md,
+              borderRadius: theme.radius.md,
               opacity: pressed ? 0.85 : 1,
             },
           ]}
@@ -120,13 +124,9 @@ export function AvatarPickerSheet({
 }
 
 const styles = StyleSheet.create({
-  content: {
-    paddingHorizontal: 24,
-    paddingBottom: 36,
-  },
+  content: {},
   title: {
     textAlign: "center",
-    marginBottom: 20,
     fontWeight: "600",
     fontSize: 15,
   },
@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 12,
   },
   itemContainer: {
     position: "relative",
@@ -142,7 +141,6 @@ const styles = StyleSheet.create({
   item: {
     width: ITEM_SIZE,
     height: ITEM_SIZE,
-    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -154,16 +152,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: -3,
     right: -3,
-    borderRadius: 9,
     width: 18,
     height: 18,
     justifyContent: "center",
     alignItems: "center",
   },
   confirmButton: {
-    marginTop: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
     alignItems: "center",
   },
   confirmButtonText: {

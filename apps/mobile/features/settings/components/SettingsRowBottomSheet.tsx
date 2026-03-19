@@ -92,7 +92,7 @@ function RowComponent({
         name="chevron-forward"
         size={20}
         color={theme.colors.textSecondary}
-        style={{ marginStart: 4 }}
+        style={{ marginStart: theme.spacing.xs }}
       />
     </Pressable>
   );
@@ -110,8 +110,12 @@ function SheetWrapper({ sheetRef, title, children }: SheetWrapperProps) {
   const insets = useSafeAreaInsets();
 
   const backgroundStyle = useMemo(
-    () => ({ backgroundColor: theme.colors.background }),
-    [theme.colors.background]
+    () => ({
+      backgroundColor: theme.colors.surfaceElevated,
+      borderTopLeftRadius: theme.radius.xl,
+      borderTopRightRadius: theme.radius.xl,
+    }),
+    [theme.colors.surfaceElevated, theme.radius.xl]
   );
 
   const handleIndicatorStyle = useMemo(
@@ -147,7 +151,7 @@ function SheetWrapper({ sheetRef, title, children }: SheetWrapperProps) {
     >
       <BottomSheetView style={styles.sheetWrap}>
         <View
-          style={[styles.header, { borderBottomColor: theme.colors.border }]}
+          style={[styles.header, { borderBottomColor: theme.colors.border, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.ms }]}
         >
           <Pressable
             onPress={() => sheetRef.current?.dismiss()}
@@ -165,7 +169,7 @@ function SheetWrapper({ sheetRef, title, children }: SheetWrapperProps) {
           <View style={styles.headerSpacer} />
         </View>
         <View
-          style={[styles.sheetContent, { paddingBottom: contentPaddingBottom }]}
+          style={[styles.sheetContent, { padding: theme.spacing.md, paddingBottom: contentPaddingBottom }]}
         >
           {children}
         </View>
@@ -223,6 +227,8 @@ function SheetComponent<T extends string>(props: SheetProps<T>) {
               style={[
                 styles.optionRow,
                 {
+                  paddingVertical: theme.spacing.md,
+                  paddingHorizontal: theme.spacing.ms,
                   borderBottomWidth: index < options.length - 1 ? 1 : 0,
                   borderBottomColor: theme.colors.border,
                   backgroundColor:
@@ -296,8 +302,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   headerTitle: {
@@ -308,9 +312,7 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 28,
   },
-  sheetContent: {
-    padding: 16,
-  },
+  sheetContent: {},
   optionsCard: {
     borderWidth: 1,
     overflow: "hidden",
@@ -319,7 +321,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 12,
   },
 });

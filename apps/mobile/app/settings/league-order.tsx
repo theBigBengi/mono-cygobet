@@ -193,7 +193,7 @@ function LeagueOrderContent() {
         const isLast = index === selectedLeagues.length - 1;
 
         return (
-          <View style={styles.row}>
+          <View style={[styles.row, { paddingVertical: theme.spacing.ms, gap: theme.spacing.ms }]}>
             <Text
               style={[
                 styles.orderNumber,
@@ -212,14 +212,14 @@ function LeagueOrderContent() {
               </Text>
               {item.countryName && (
                 <Text
-                  style={[styles.leagueCountry, { color: theme.colors.textSecondary }]}
+                  style={[styles.leagueCountry, { color: theme.colors.textSecondary, marginTop: theme.spacing.xxs }]}
                   numberOfLines={1}
                 >
                   {item.countryName}
                 </Text>
               )}
             </View>
-            <View style={styles.actions}>
+            <View style={[styles.actions, { gap: theme.spacing.ms }]}>
               <Pressable
                 onPress={() => moveUp(index)}
                 disabled={isFirst}
@@ -268,7 +268,7 @@ function LeagueOrderContent() {
           onPress={() => handleAdd(item)}
           style={({ pressed }) => [
             styles.row,
-            { opacity: pressed ? 0.6 : 1 },
+            { paddingVertical: theme.spacing.ms, gap: theme.spacing.ms, opacity: pressed ? 0.6 : 1 },
           ]}
         >
           <TeamLogo imagePath={item.imagePath} teamName={item.name} size={28} />
@@ -281,7 +281,7 @@ function LeagueOrderContent() {
             </Text>
             {item.countryName && (
               <Text
-                style={[styles.leagueCountry, { color: theme.colors.textSecondary }]}
+                style={[styles.leagueCountry, { color: theme.colors.textSecondary, marginTop: theme.spacing.xxs }]}
                 numberOfLines={1}
               >
                 {item.countryName}
@@ -300,7 +300,7 @@ function LeagueOrderContent() {
       <View
         style={[
           styles.sectionHeader,
-          { backgroundColor: theme.colors.background },
+          { backgroundColor: theme.colors.background, paddingTop: theme.spacing.md, paddingBottom: theme.spacing.xs },
         ]}
       >
         <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
@@ -312,9 +312,9 @@ function LeagueOrderContent() {
             hitSlop={8}
             style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
           >
-            <Text style={{ fontSize: 12, color: theme.colors.textSecondary }}>
+            <AppText variant="caption" color="secondary">
               {t("settings.leagueOrderScreen.resetToDefault")}
-            </Text>
+            </AppText>
           </Pressable>
         )}
       </View>
@@ -323,10 +323,10 @@ function LeagueOrderContent() {
   );
 
   const renderHeader = (showSave: boolean) => (
-    <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.header, { paddingTop: insets.top + theme.spacing.ms, paddingHorizontal: theme.spacing.ml, paddingBottom: theme.spacing.ms }]}>
       <Pressable
         onPress={() => router.back()}
-        style={styles.backButton}
+        style={[styles.backButton, { borderRadius: theme.radius.full }]}
         hitSlop={8}
       >
         <Ionicons name="chevron-back" size={24} color={theme.colors.textPrimary} />
@@ -372,20 +372,20 @@ function LeagueOrderContent() {
         renderSectionHeader={renderSectionHeader}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 16 },
+          { paddingHorizontal: theme.spacing.ml, paddingBottom: insets.bottom + theme.spacing.md },
         ]}
         stickySectionHeadersEnabled
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
+          <View style={[styles.emptyContainer, { paddingVertical: 60, gap: theme.spacing.ms }]}>
             <Ionicons
               name="trophy-outline"
               size={48}
               color={theme.colors.textSecondary}
             />
-            <Text style={{ fontSize: 14, color: theme.colors.textSecondary, textAlign: "center" }}>
+            <AppText variant="body" color="secondary" style={{ textAlign: "center" }}>
               {t("settings.leagueOrderScreen.noLeaguesConfigured")}
-            </Text>
+            </AppText>
           </View>
         }
       />
@@ -401,13 +401,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 12,
   },
   backButton: {
     width: 38,
     height: 38,
-    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -423,15 +420,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  listContent: {
-    paddingHorizontal: 20,
-  },
+  listContent: {},
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 16,
-    paddingBottom: 4,
   },
   sectionTitle: {
     fontSize: 12,
@@ -441,8 +434,6 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    gap: 12,
   },
   orderNumber: {
     fontSize: 13,
@@ -458,18 +449,14 @@ const styles = StyleSheet.create({
   },
   leagueCountry: {
     fontSize: 11,
-    marginTop: 2,
   },
   actions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 60,
-    gap: 12,
   },
 });

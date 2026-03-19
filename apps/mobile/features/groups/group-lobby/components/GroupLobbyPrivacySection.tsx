@@ -47,6 +47,7 @@ export function GroupLobbyPrivacySection({
 }: GroupLobbyPrivacySectionProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   // Only show privacy section for creators in draft mode
   if (!isCreator || status !== "draft") {
@@ -91,24 +92,25 @@ export function GroupLobbyPrivacySection({
   return <Card style={styles.section}>{content}</Card>;
 }
 
-const styles = StyleSheet.create({
-  section: {
-    marginBottom: 16,
-  },
-  privacyRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  privacyLabelContainer: {
-    flex: 1,
-    marginEnd: 16,
-  },
-  privacyLabel: {
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  privacyHelperText: {
-    marginTop: 0,
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    section: {
+      marginBottom: theme.spacing.md,
+    },
+    privacyRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    privacyLabelContainer: {
+      flex: 1,
+      marginEnd: theme.spacing.md,
+    },
+    privacyLabel: {
+      fontWeight: "600",
+      marginBottom: theme.spacing.xs,
+    },
+    privacyHelperText: {
+      marginTop: 0,
+    },
+  });

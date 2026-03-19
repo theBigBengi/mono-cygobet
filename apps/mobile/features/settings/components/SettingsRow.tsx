@@ -130,7 +130,7 @@ export function SettingsRow(props: SettingsRowProps) {
               name="chevron-forward"
               size={18}
               color={theme.colors.textDisabled}
-              style={{ marginStart: 4 }}
+              style={{ marginStart: theme.spacing.xs }}
             />
           )}
         </View>

@@ -8,7 +8,7 @@ import {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import type { WeekInfo, TeamChip } from "../hooks/useSmartFilters";
 
 type ActionPill = { id: string; label: string };
@@ -47,8 +47,8 @@ export function WeekPickerSheet({
   const backgroundStyle = useMemo(
     () => ({
       backgroundColor: theme.colors.surfaceElevated,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
     }),
     [theme.colors.surfaceElevated]
   );
@@ -212,20 +212,20 @@ export function WeekPickerSheet({
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 32,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xl,
   },
   pillRow: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    gap: spacing.sm,
+    marginBottom: spacing.ms,
+    paddingHorizontal: spacing.xs,
   },
   pill: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 9999,
+    paddingVertical: radius.xs,
+    paddingHorizontal: radius.md,
+    borderRadius: radius.full,
   },
   pillText: {
     fontSize: 13,
@@ -235,14 +235,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
+    paddingVertical: radius.sm,
+    paddingHorizontal: spacing.ms,
+    borderRadius: radius.md,
   },
   rowLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: radius.xs,
   },
   rowText: {
     fontSize: 14,

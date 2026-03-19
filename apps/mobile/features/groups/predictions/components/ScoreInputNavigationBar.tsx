@@ -5,7 +5,7 @@
 import React from "react";
 import { View, StyleSheet, Pressable, Keyboard, ActivityIndicator, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
 
@@ -122,30 +122,30 @@ export function ScoreInputNavigationBar({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    left: 12,
-    right: 12,
+    left: spacing.ms,
+    right: spacing.ms,
     zIndex: 1000,
   },
   content: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    borderRadius: 14,
+    paddingVertical: radius.xs,
+    paddingHorizontal: radius.xs,
+    borderRadius: radius.md,
     borderWidth: 1,
-    gap: 6,
+    gap: radius.xs,
   },
   leftSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: spacing.xs,
   },
   middleSection: {
     flex: 1,
     alignItems: "flex-start",
     justifyContent: "center",
-    marginStart: 4,
+    marginStart: spacing.xs,
   },
   teamName: {
     fontSize: 13,
@@ -154,14 +154,14 @@ const styles = StyleSheet.create({
   navButton: {
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 10,
+    borderRadius: radius.sm,
     width: 36,
     height: 36,
   },
   doneButton: {
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 10,
+    borderRadius: radius.sm,
     width: 36,
     height: 36,
   },

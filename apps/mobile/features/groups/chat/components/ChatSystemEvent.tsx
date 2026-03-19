@@ -17,14 +17,14 @@ export function ChatSystemEvent({ message }: ChatSystemEventProps) {
   if (message.type !== "system_event") return null;
 
   return (
-    <View style={styles.container}>
+    <View style={{ alignItems: "center", marginVertical: theme.spacing.sm, marginHorizontal: theme.spacing.md }}>
       <View
-        style={[
-          styles.pill,
-          {
-            backgroundColor: theme.colors.surface,
-          },
-        ]}
+        style={{
+          paddingHorizontal: theme.spacing.md,
+          paddingVertical: theme.spacing.xs,
+          borderRadius: theme.radius.full,
+          backgroundColor: theme.colors.surface,
+        }}
       >
         <AppText variant="caption" color="secondary" style={styles.text}>
           {message.body}
@@ -35,16 +35,6 @@ export function ChatSystemEvent({ message }: ChatSystemEventProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
   text: {
     textAlign: "center",
   },

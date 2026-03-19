@@ -14,14 +14,14 @@ export function ChatDateSeparator({ label }: ChatDateSeparatorProps) {
   const { theme } = useTheme();
 
   return (
-    <View style={styles.container}>
+    <View style={{ alignItems: "center", marginVertical: theme.spacing.ms, marginHorizontal: theme.spacing.md }}>
       <View
-        style={[
-          styles.pill,
-          {
-            backgroundColor: theme.colors.surface,
-          },
-        ]}
+        style={{
+          paddingHorizontal: theme.spacing.md,
+          paddingVertical: theme.spacing.xs,
+          borderRadius: theme.radius.full,
+          backgroundColor: theme.colors.surface,
+        }}
       >
         <AppText variant="caption" color="secondary" style={styles.text}>
           {label}
@@ -32,16 +32,6 @@ export function ChatDateSeparator({ label }: ChatDateSeparatorProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    marginVertical: 12,
-    marginHorizontal: 16,
-  },
-  pill: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
   text: {
     textAlign: "center",
     fontSize: 12,

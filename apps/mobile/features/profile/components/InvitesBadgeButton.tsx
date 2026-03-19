@@ -26,6 +26,10 @@ export function InvitesBadgeButton() {
           backgroundColor: theme.colors.surface,
           borderColor: theme.colors.border,
           opacity: pressed ? 0.8 : 1,
+          borderRadius: theme.radius.md,
+          paddingVertical: theme.spacing.ms,
+          paddingHorizontal: theme.spacing.md,
+          marginBottom: theme.spacing.ms,
         },
       ]}
     >
@@ -37,13 +41,13 @@ export function InvitesBadgeButton() {
         />
         <AppText
           variant="body"
-          style={[styles.label, { color: theme.colors.textPrimary }]}
+          style={[styles.label, { color: theme.colors.textPrimary, marginStart: theme.spacing.sm }]}
         >
           {t("invites.invitations")}
         </AppText>
         {pendingCount > 0 && (
           <View
-            style={[styles.badge, { backgroundColor: theme.colors.primary }]}
+            style={[styles.badge, { backgroundColor: theme.colors.primary, borderRadius: theme.radius.full, paddingHorizontal: theme.spacing.xs }]}
           >
             <AppText
               variant="caption"
@@ -60,28 +64,21 @@ export function InvitesBadgeButton() {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
     borderWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 12,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
   },
   label: {
-    marginStart: 10,
     fontWeight: "600",
     flex: 1,
   },
   badge: {
     minWidth: 22,
     height: 22,
-    borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 6,
   },
   badgeText: {
     fontWeight: "700",

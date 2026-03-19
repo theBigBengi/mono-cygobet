@@ -100,6 +100,6 @@ export function AnimatedGradientCard({ children, style, ...rest }: AnimatedGradi
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: 14,
   },
 });

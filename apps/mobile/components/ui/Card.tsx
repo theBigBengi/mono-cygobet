@@ -22,7 +22,6 @@ export function Card({ children, style, ...props }: CardProps) {
           backgroundColor: theme.colors.surface,
           borderRadius: theme.radius.lg,
           padding: theme.spacing.md,
-          marginBottom: theme.spacing.sm,
           ...getShadowStyle("sm"),
         },
         style,

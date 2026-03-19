@@ -43,6 +43,7 @@ export function KORoundModeSelector({
 }: KORoundModeSelectorProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const OPTIONS: { mode: KORoundMode; titleKey: string }[] = [
     { mode: "90min", titleKey: "lobby.after90Minutes" },
@@ -103,21 +104,22 @@ export function KORoundModeSelector({
   );
 }
 
-const styles = StyleSheet.create({
-  optionsContainer: {
-    gap: 0,
-  },
-  optionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  optionTitle: {
-    fontWeight: "500",
-    flex: 1,
-  },
-  divider: {
-    marginVertical: 0,
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    optionsContainer: {
+      gap: 0,
+    },
+    optionRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: theme.spacing.ms,
+    },
+    optionTitle: {
+      fontWeight: "500",
+      flex: 1,
+    },
+    divider: {
+      marginVertical: 0,
+    },
+  });

@@ -15,7 +15,7 @@ import * as Haptics from "expo-haptics";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Screen } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/auth/useAuth";
 import {
   useGroupRankingQuery,
@@ -499,46 +499,46 @@ export function GroupLobbyActiveScreen({
         {__DEV__ && (
           <>
             {/* DEBUG buttons */}
-            <View style={{ flexDirection: "row", gap: 8, marginHorizontal: 16, marginTop: 12 }}>
+            <View style={{ flexDirection: "row", gap: spacing.sm, marginHorizontal: spacing.md, marginTop: spacing.ms }}>
               <Pressable
                 onPress={() => setShowDebugCTA(true)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center" }}
+                style={{ flex: 1, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#EF4444", alignItems: "center" }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG CTA</Text>
               </Pressable>
               <Pressable
                 onPress={() => setShowDebugLeaderboard(true)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#8B5CF6", alignItems: "center" }}
+                style={{ flex: 1, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#8B5CF6", alignItems: "center" }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG LEADERBOARD</Text>
               </Pressable>
               <Pressable
                 onPress={() => setShowDebugOverview(true)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#10B981", alignItems: "center" }}
+                style={{ flex: 1, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#10B981", alignItems: "center" }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG TABLE</Text>
               </Pressable>
               <Pressable
                 onPress={() => setShowDebugSingleGame(true)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#F59E0B", alignItems: "center" }}
+                style={{ flex: 1, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#F59E0B", alignItems: "center" }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG GAME</Text>
               </Pressable>
               <Pressable
                 onPress={() => setShowDebugGroupCard(true)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#3B82F6", alignItems: "center" }}
+                style={{ flex: 1, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#3B82F6", alignItems: "center" }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>DEBUG CARD</Text>
               </Pressable>
               <Pressable
                 onPress={() => setShowDebugSwipeCard(true)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#EC4899", alignItems: "center" }}
+                style={{ flex: 1, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#EC4899", alignItems: "center" }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>SWIPE CARD</Text>
               </Pressable>
               <Pressable
                 onPress={() => setShowDebugGames(true)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, backgroundColor: "#14B8A6", alignItems: "center" }}
+                style={{ flex: 1, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#14B8A6", alignItems: "center" }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>GAMES</Text>
               </Pressable>
@@ -548,7 +548,7 @@ export function GroupLobbyActiveScreen({
               <DebugCTAScreen />
               <Pressable
                 onPress={() => setShowDebugCTA(false)}
-                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+                style={{ position: "absolute", top: 60, right: spacing.md, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#00000066", zIndex: 10 }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
               </Pressable>
@@ -558,7 +558,7 @@ export function GroupLobbyActiveScreen({
               <DebugLeaderboardScreen />
               <Pressable
                 onPress={() => setShowDebugLeaderboard(false)}
-                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+                style={{ position: "absolute", top: 60, right: spacing.md, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#00000066", zIndex: 10 }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
               </Pressable>
@@ -568,7 +568,7 @@ export function GroupLobbyActiveScreen({
               <DebugPredictionsOverviewScreen />
               <Pressable
                 onPress={() => setShowDebugOverview(false)}
-                style={{ position: "absolute", bottom: 40, alignSelf: "center", paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+                style={{ position: "absolute", bottom: 40, alignSelf: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.s, backgroundColor: "#00000066", zIndex: 10 }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
               </Pressable>
@@ -578,7 +578,7 @@ export function GroupLobbyActiveScreen({
               <DebugSingleGameScreen />
               <Pressable
                 onPress={() => setShowDebugSingleGame(false)}
-                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+                style={{ position: "absolute", top: 60, right: spacing.md, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#00000066", zIndex: 10 }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
               </Pressable>
@@ -588,7 +588,7 @@ export function GroupLobbyActiveScreen({
               <DebugGroupCardScreen />
               <Pressable
                 onPress={() => setShowDebugGroupCard(false)}
-                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+                style={{ position: "absolute", top: 60, right: spacing.md, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#00000066", zIndex: 10 }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
               </Pressable>
@@ -598,7 +598,7 @@ export function GroupLobbyActiveScreen({
               <DebugSwipeCardScreen />
               <Pressable
                 onPress={() => setShowDebugSwipeCard(false)}
-                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+                style={{ position: "absolute", top: 60, right: spacing.md, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#00000066", zIndex: 10 }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
               </Pressable>
@@ -608,7 +608,7 @@ export function GroupLobbyActiveScreen({
               <DebugGamesScreen />
               <Pressable
                 onPress={() => setShowDebugGames(false)}
-                style={{ position: "absolute", top: 60, right: 16, padding: 8, borderRadius: 8, backgroundColor: "#00000066", zIndex: 10 }}
+                style={{ position: "absolute", top: 60, right: spacing.md, padding: spacing.sm, borderRadius: radius.s, backgroundColor: "#00000066", zIndex: 10 }}
               >
                 <Text style={{ color: "#fff", fontWeight: "700" }}>X</Text>
               </Pressable>
@@ -736,19 +736,19 @@ const styles = StyleSheet.create({
     // paddingBottom handled by Screen component (includes insets.bottom + tab bar)
   },
   metaRow: {
-    paddingHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 4,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   metaIcons: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: spacing.ms,
   },
   metaItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: spacing.xs,
   },
   metaText: {
     fontSize: 13,
@@ -759,8 +759,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.ms,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
@@ -769,20 +769,20 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   floatingBottomInner: {
-    borderRadius: 18,
+    borderRadius: radius.lg,
     overflow: "hidden",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   chatPreviewContainer: {
-    marginBottom: 6,
+    marginBottom: spacing.xs,
     overflow: "hidden",
   },
   chatPreviewFloat: {
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginBottom: 6,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.xs,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -1 },
     shadowOpacity: 0.06,
@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
   chatPreviewRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: spacing.xs,
     paddingVertical: 3,
   },
   chatPreviewClose: {
@@ -815,19 +815,19 @@ const styles = StyleSheet.create({
   chatBarRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
   chatInput: {
     flex: 1,
     height: 38,
-    borderRadius: 19,
-    paddingHorizontal: 14,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
     fontSize: 15,
   },
   chatActionBtn: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
     right: -6,
     minWidth: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 3,
@@ -850,10 +850,10 @@ const styles = StyleSheet.create({
   chatBadge: {
     minWidth: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 6,
+    paddingHorizontal: spacing.xs,
   },
   chatBadgeText: {
     // color set dynamically via theme.colors.textInverse
@@ -862,13 +862,13 @@ const styles = StyleSheet.create({
   },
   miniChatPanel: {
     height: 300,
-    borderRadius: 18,
-    marginBottom: 6,
+    borderRadius: radius.lg,
+    marginBottom: spacing.xs,
     overflow: "hidden",
   },
   miniChatBlur: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
   },
@@ -876,9 +876,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 6,
+    paddingHorizontal: spacing.ms,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
     // borderBottomColor set dynamically via theme.colors.border
   },
@@ -887,30 +887,30 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   miniChatExpandBtn: {
-    padding: 4,
+    padding: spacing.xs,
   },
   miniChatList: {
     flex: 1,
   },
   miniChatContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
+    paddingHorizontal: spacing.ms,
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
   },
   miniMsg: {
     alignSelf: "flex-start",
     maxWidth: "80%",
     // backgroundColor set dynamically via theme-aware logic
-    borderRadius: 16,
-    borderTopLeftRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: radius.lg,
+    borderTopLeftRadius: radius.xs,
+    paddingHorizontal: spacing.ms,
+    paddingVertical: spacing.sm,
   },
   miniMsgMe: {
     alignSelf: "flex-end",
     // backgroundColor set dynamically via theme.colors.primary
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 6,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.xs,
   },
   miniMsgSender: {
     fontSize: 11,

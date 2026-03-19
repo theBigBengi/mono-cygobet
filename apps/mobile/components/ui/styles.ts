@@ -11,7 +11,7 @@ export const sharedStyles = StyleSheet.create({
     marginBottom: 24, // spacing.lg
   },
   listGap: {
-    marginBottom: 10, // slightly more than spacing.sm for modern feel
+    marginBottom: 8, // spacing.sm
   },
   centered: {
     flex: 1,
@@ -42,5 +42,24 @@ export const sharedStyles = StyleSheet.create({
   },
   sectionTitleMargin: {
     marginBottom: 8, // spacing.sm
+  },
+  /** Section header: 15px bold, inside card */
+  sectionHeader: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    marginBottom: 8, // spacing.sm
+  },
+  /** "See all" action text */
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+  },
+  /** Screen horizontal padding */
+  screenPadding: {
+    paddingHorizontal: 16, // spacing.md
+  },
+  /** Card internal padding */
+  cardPadding: {
+    padding: 16, // spacing.md
   },
 });

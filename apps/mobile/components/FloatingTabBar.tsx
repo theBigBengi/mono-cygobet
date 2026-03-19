@@ -132,9 +132,9 @@ export function FloatingTabBar({
                   style={{
                     width: 4,
                     height: 4,
-                    borderRadius: 2,
+                    borderRadius: theme.radius.xs,
                     backgroundColor: theme.colors.primary,
-                    marginTop: 2,
+                    marginTop: theme.spacing.xxs,
                   }}
                 />
               )}

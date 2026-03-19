@@ -5,7 +5,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 import { usePredictableGroups } from "../hooks/usePredictableGroups";
 
@@ -62,25 +62,25 @@ export function PredictAllBanner() {
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 8,
-    borderRadius: 18,
+    marginHorizontal: spacing.md,
+    marginTop: radius.md,
+    marginBottom: spacing.sm,
+    borderRadius: radius.lg,
     ...getShadowStyle("sm"),
   },
   content: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: radius.md,
+    paddingVertical: radius.sm,
   },
   iconCircle: {
     width: 28,
     height: 28,
-    borderRadius: 9999,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    marginEnd: 8,
+    marginEnd: spacing.sm,
   },
 });

@@ -24,12 +24,12 @@ export function PowerScoreCard({ score, onInfoPress }: PowerScoreCardProps) {
 
   return (
     <Card>
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
+      <View style={[styles.header, { marginBottom: theme.spacing.md }]}>
+        <View style={[styles.titleRow, { gap: theme.spacing.sm }]}>
           <AppText variant="subtitle">{t("gamification.powerScore")}</AppText>
           {onInfoPress && <InfoButton onPress={onInfoPress} />}
         </View>
-        <View style={styles.scoreContainer}>
+        <View style={[styles.scoreContainer, { gap: theme.spacing.xxs }]}>
           <AppText style={[styles.score, { color }]}>{score}</AppText>
           <AppText variant="caption" color="secondary">
             /100
@@ -38,17 +38,17 @@ export function PowerScoreCard({ score, onInfoPress }: PowerScoreCardProps) {
       </View>
 
       <View
-        style={[styles.progressBar, { backgroundColor: theme.colors.border }]}
+        style={[styles.progressBar, { backgroundColor: theme.colors.border, borderRadius: theme.radius.xs }]}
       >
         <View
           style={[
             styles.progressFill,
-            { width: `${Math.min(score, 100)}%`, backgroundColor: color },
+            { width: `${Math.min(score, 100)}%`, backgroundColor: color, borderRadius: theme.radius.xs },
           ]}
         />
       </View>
 
-      <View style={styles.labels}>
+      <View style={[styles.labels, { marginTop: theme.spacing.sm }]}>
         <AppText variant="caption" color="secondary">
           0
         </AppText>
@@ -68,17 +68,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
   },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
   },
   scoreContainer: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 2,
     flexShrink: 0,
     minWidth: 70,
     minHeight: 44,
@@ -90,16 +87,13 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 12,
-    borderRadius: 6,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    borderRadius: 6,
   },
   labels: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 8,
   },
 });

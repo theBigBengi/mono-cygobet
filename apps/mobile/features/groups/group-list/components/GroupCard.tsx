@@ -123,7 +123,14 @@ function GroupCardInner({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.colors.surface, ...getShadowStyle("sm") },
+        {
+          backgroundColor: theme.colors.surface,
+          ...getShadowStyle("sm"),
+          paddingHorizontal: theme.spacing.md,
+          paddingVertical: theme.spacing.md,
+          marginHorizontal: theme.spacing.md,
+          borderRadius: theme.radius.lg,
+        },
         pressed && { opacity: 0.7 },
       ]}
       accessibilityRole="button"
@@ -136,7 +143,7 @@ function GroupCardInner({
           avatarValue={group.avatarValue}
           initials={initials}
           size={AVATAR_SIZE}
-          borderRadius={10}
+          borderRadius={theme.radius.sm}
           flat
         />
         <View style={styles.info}>
@@ -161,14 +168,14 @@ function GroupCardInner({
 
         <View style={styles.indicators}>
           {userRank != null && (
-            <View style={[styles.rankBadge, { backgroundColor: theme.colors.textSecondary + "12" }]}>
+            <View style={[styles.rankBadge, { backgroundColor: theme.colors.textSecondary + "12", borderRadius: theme.radius.s }]}>
               <Text style={[styles.rankText, { color: theme.colors.textPrimary }]}>
                 #{userRank}
               </Text>
             </View>
           )}
           {totalUnread > 0 && (
-            <View style={[styles.unreadBadge, { backgroundColor: theme.colors.primary, borderWidth: 2, borderColor: theme.colors.surface }]}>
+            <View style={[styles.unreadBadge, { backgroundColor: theme.colors.primary, borderWidth: 2, borderColor: theme.colors.surface, borderRadius: theme.radius.sm }]}>
               <Text style={styles.unreadText}>
                 {totalUnread > 99 ? "99+" : totalUnread}
               </Text>
@@ -184,13 +191,14 @@ function GroupCardInner({
           disabled={!onGamesPress}
           style={({ pressed }) => [
             styles.nextGameRow,
+            { marginTop: theme.spacing.ms },
             pressed && onGamesPress && { opacity: 0.6 },
           ]}
         >
           <View
             style={[
               styles.statusBox,
-              { backgroundColor: (statusBox.color) + "12" },
+              { backgroundColor: (statusBox.color) + "12", borderRadius: theme.radius.sm },
             ]}
           >
             <Text
@@ -223,11 +231,11 @@ function GroupCardInner({
 
           <View style={styles.nextGameRight}>
             {hasPrediction ? (
-              <View style={[styles.checkCircle, { backgroundColor: theme.colors.success + "20" }]}>
+              <View style={[styles.checkCircle, { backgroundColor: theme.colors.success + "20", borderRadius: theme.radius.full }]}>
                 <Ionicons name="checkmark" size={12} color={theme.colors.success} />
               </View>
             ) : (
-              <View style={[styles.checkCircle, { borderWidth: 1.5, borderColor: theme.colors.textSecondary + "40" }]}>
+              <View style={[styles.checkCircle, { borderWidth: 1.5, borderColor: theme.colors.textSecondary + "40", borderRadius: theme.radius.full }]}>
                 <Ionicons name="add" size={12} color={theme.colors.textSecondary} />
               </View>
             )}
@@ -237,7 +245,7 @@ function GroupCardInner({
 
       {/* Unpredicted games count */}
       {unpredicted > 0 && (
-        <Text style={[styles.unpredictedText, { color: theme.colors.danger }]}>
+        <Text style={[styles.unpredictedText, { color: theme.colors.danger, marginTop: theme.spacing.sm }]}>
           {unpredicted} unpredicted
         </Text>
       )}
@@ -257,11 +265,8 @@ export const GroupCard = React.memo(GroupCardInner, (prev, next) => {
 
 const styles = StyleSheet.create({
   card: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginHorizontal: 16,
+    // paddingHorizontal, paddingVertical, marginHorizontal, borderRadius — applied inline via theme tokens
     marginBottom: 10,
-    borderRadius: 18,
   },
   header: {
     flexDirection: "row",
@@ -270,12 +275,12 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
-    gap: 2,
+    gap: 2, // theme.spacing.xxs
   },
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 4, // theme.spacing.xs
   },
   name: {
     fontSize: 17,
@@ -288,12 +293,12 @@ const styles = StyleSheet.create({
   },
   indicators: {
     alignItems: "flex-end",
-    gap: 4,
+    gap: 4, // theme.spacing.xs
   },
   rankBadge: {
     paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: 8,
+    // borderRadius: theme.radius.s — applied inline
   },
   rankText: {
     fontSize: 12,
@@ -302,10 +307,10 @@ const styles = StyleSheet.create({
   unreadBadge: {
     minWidth: 20,
     height: 20,
-    borderRadius: 10,
+    // borderRadius: theme.radius.sm — applied inline
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: 4, // theme.spacing.xs
   },
   unreadText: {
     fontSize: 10,
@@ -315,13 +320,13 @@ const styles = StyleSheet.create({
   nextGameRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 12,
+    // marginTop: theme.spacing.ms — applied inline
     gap: 10,
   },
   statusBox: {
     width: 44,
     height: 44,
-    borderRadius: 10,
+    // borderRadius: theme.radius.sm — applied inline
     alignItems: "center",
     justifyContent: "center",
   },
@@ -337,7 +342,7 @@ const styles = StyleSheet.create({
   },
   teams: {
     flex: 1,
-    gap: 2,
+    gap: 2, // theme.spacing.xxs
   },
   teamName: {
     fontSize: 14,
@@ -350,14 +355,14 @@ const styles = StyleSheet.create({
   checkCircle: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    // borderRadius: theme.radius.full — applied inline
     alignItems: "center",
     justifyContent: "center",
   },
   unpredictedText: {
     fontSize: 12,
     fontWeight: "600",
-    marginTop: 8,
+    // marginTop: theme.spacing.sm — applied inline
     marginStart: 52,
   },
 });

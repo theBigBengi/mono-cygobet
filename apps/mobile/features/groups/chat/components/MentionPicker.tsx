@@ -42,7 +42,13 @@ function OptionRow({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        styles.option,
+        {
+          flexDirection: "row" as const,
+          alignItems: "center" as const,
+          paddingHorizontal: theme.spacing.md,
+          paddingVertical: theme.spacing.sm,
+          gap: theme.spacing.ms,
+        },
         { backgroundColor: pressed ? theme.colors.background : "transparent" },
       ]}
     >
@@ -113,10 +119,12 @@ export function MentionPicker({
   const renderSectionHeader = useCallback(
     ({ section: { title } }: { section: { title: string } }) => (
       <View
-        style={[
-          styles.sectionHeader,
-          { backgroundColor: theme.colors.cardBackground },
-        ]}
+        style={{
+          paddingHorizontal: theme.spacing.md,
+          paddingTop: theme.spacing.sm,
+          paddingBottom: theme.spacing.xs,
+          backgroundColor: theme.colors.cardBackground,
+        }}
       >
         <AppText
           variant="caption"
@@ -146,14 +154,24 @@ export function MentionPicker({
   return (
     <View
       style={[
-        styles.container,
         {
+          maxHeight: 260,
+          borderTopLeftRadius: theme.radius.lg,
+          borderTopRightRadius: theme.radius.lg,
           backgroundColor: theme.colors.surface,
         },
         getShadowStyle("md"),
       ]}
     >
-      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+      <View style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: theme.spacing.ms,
+        paddingVertical: theme.spacing.sm,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: theme.colors.border,
+      }}>
         <AppText variant="caption" color="secondary" style={styles.headerTitle}>
           @
         </AppText>
@@ -161,7 +179,7 @@ export function MentionPicker({
           onPress={onClose}
           hitSlop={12}
           style={({ pressed }) => [
-            styles.closeButton,
+            { padding: theme.spacing.xs },
             { opacity: pressed ? 0.7 : 1 },
           ]}
         >
@@ -173,7 +191,7 @@ export function MentionPicker({
         </Pressable>
       </View>
       {showEmpty ? (
-        <View style={styles.emptyWrap}>
+        <View style={{ paddingVertical: theme.spacing.lg, paddingHorizontal: theme.spacing.md, alignItems: "center" }}>
           <AppText variant="body" color="secondary" style={styles.emptyText}>
             {t("chat.noMentionResults")}
           </AppText>
@@ -193,42 +211,14 @@ export function MentionPicker({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    maxHeight: 260,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
   headerTitle: {
     fontSize: 14,
     fontWeight: "600",
-  },
-  closeButton: {
-    padding: 4,
-  },
-  sectionHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 4,
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: "600",
     textTransform: "uppercase",
-  },
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 12,
   },
   optionIconWrap: {
     width: AVATAR_SIZE,
@@ -244,11 +234,6 @@ const styles = StyleSheet.create({
   },
   optionDisplay: {
     flex: 1,
-  },
-  emptyWrap: {
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: "center",
   },
   emptyText: {
     textAlign: "center",

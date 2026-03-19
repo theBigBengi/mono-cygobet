@@ -106,17 +106,18 @@ const RankingRow = React.memo(function RankingRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.rowContainer,
+        { paddingHorizontal: theme.spacing.md, marginBottom: 6, gap: theme.spacing.sm },
         pressed && styles.cardPressed,
       ]}
     >
       {/* Rank */}
-      <View style={[styles.rankBadge, { backgroundColor: theme.colors.textPrimary }]}>
+      <View style={[styles.rankBadge, { backgroundColor: theme.colors.textPrimary, borderRadius: theme.radius.full }]}>
         <Text style={[styles.rankText, { color: theme.colors.textInverse }]}>{item.rank}</Text>
         {rankChange !== 0 && (
           <View
             style={[
               styles.rankChangeIndicator,
-              { backgroundColor: rankChange > 0 ? theme.colors.success : theme.colors.danger },
+              { backgroundColor: rankChange > 0 ? theme.colors.success : theme.colors.danger, borderRadius: theme.radius.full },
             ]}
           >
             <Ionicons
@@ -128,8 +129,8 @@ const RankingRow = React.memo(function RankingRow({
         )}
       </View>
 
-      <View style={[styles.barContent, { backgroundColor: theme.colors.cardBackground, ...getShadowStyle("sm") }, isCurrentUser && { backgroundColor: theme.colors.textPrimary + "06" }]}>
-        <View style={styles.barOverlay}>
+      <View style={[styles.barContent, { borderRadius: theme.radius.md, paddingVertical: theme.spacing.sm, paddingHorizontal: 10, backgroundColor: theme.colors.cardBackground, ...getShadowStyle("sm") }, isCurrentUser && { backgroundColor: theme.colors.textPrimary + "06" }]}>
+        <View style={[styles.barOverlay, { gap: theme.spacing.sm }]}>
           <View style={styles.barLeft}>
             <Text
               style={[
@@ -141,7 +142,7 @@ const RankingRow = React.memo(function RankingRow({
             >
               {isCurrentUser ? t("lobby.you") : displayName}
             </Text>
-            <View style={styles.statsRow}>
+            <View style={[styles.statsRow, { gap: theme.spacing.xs }]}>
               <Text style={[styles.statText, { color: theme.colors.textSecondary }]}>
                 {item.correctScoreCount} {t("ranking.exact")}
               </Text>
@@ -166,7 +167,7 @@ const RankingRow = React.memo(function RankingRow({
               hitSlop={8}
               style={[
                 styles.nudgeButton,
-                { backgroundColor: canNudge ? theme.colors.primary + "10" : "transparent" },
+                { borderRadius: theme.radius.full, backgroundColor: canNudge ? theme.colors.primary + "10" : "transparent" },
               ]}
             >
               <Ionicons
@@ -276,7 +277,7 @@ export function GroupRankingScreen({ groupId }: GroupRankingScreenProps) {
   if (items.length === 0) {
     return (
       <View style={styles.container}>
-        <AppText variant="body" color="secondary" style={styles.emptyState}>
+        <AppText variant="body" color="secondary" style={[styles.emptyState, { paddingVertical: theme.spacing.xxl, paddingHorizontal: theme.spacing.lg }]}>
           {t("ranking.empty")}
         </AppText>
       </View>
@@ -324,8 +325,6 @@ const styles = StyleSheet.create({
   emptyState: {
     flex: 1,
     textAlign: "center",
-    paddingVertical: 48,
-    paddingHorizontal: 24,
   },
   listContent: {
     flexGrow: 1,
@@ -333,9 +332,6 @@ const styles = StyleSheet.create({
   rowContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    marginBottom: 6,
-    gap: 8,
   },
   cardPressed: {
     opacity: 0.7,
@@ -343,7 +339,6 @@ const styles = StyleSheet.create({
   rankBadge: {
     width: 22,
     height: 22,
-    borderRadius: 11,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -358,20 +353,15 @@ const styles = StyleSheet.create({
     right: -3,
     width: 12,
     height: 12,
-    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
   },
   barContent: {
     flex: 1,
-    borderRadius: 14,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
   },
   barOverlay: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
   },
   barLeft: {
     flex: 1,
@@ -383,7 +373,6 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
     marginTop: 1,
   },
   statText: {
@@ -401,7 +390,6 @@ const styles = StyleSheet.create({
   nudgeButton: {
     width: 28,
     height: 28,
-    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },

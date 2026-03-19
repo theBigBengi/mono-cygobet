@@ -98,16 +98,16 @@ export function InfoSheet({
 
   const backgroundStyle = useMemo(
     () => ({
-      backgroundColor: theme.colors.surface,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
+      backgroundColor: theme.colors.surfaceElevated,
+      borderTopLeftRadius: theme.radius.xl,
+      borderTopRightRadius: theme.radius.xl,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: -4 },
       shadowOpacity: 0.15,
       shadowRadius: 12,
       elevation: 16,
     }),
-    [theme.colors.surface]
+    [theme.colors.surfaceElevated, theme.radius.xl]
   );
 
   const renderBackdrop = useCallback(
@@ -134,7 +134,7 @@ export function InfoSheet({
       android_keyboardInputMode="adjustResize"
       backdropComponent={renderBackdrop}
       backgroundStyle={backgroundStyle}
-      handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
+      handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary, width: 36, height: 4 }}
     >
       {(headerTitle || showHeaderAction) && (
         <SheetHeader
@@ -150,7 +150,7 @@ export function InfoSheet({
         <BottomSheetScrollView
           contentContainerStyle={[
             styles.content,
-            { paddingBottom: Math.max(insets.bottom, 16) },
+            { paddingBottom: Math.max(insets.bottom, theme.spacing.md) },
           ]}
         >
           {children}

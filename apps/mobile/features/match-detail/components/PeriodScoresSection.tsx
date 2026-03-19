@@ -4,6 +4,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet } from "react-native";
+import { spacing } from "@/lib/theme";
 import { AppText } from "@/components/ui";
 
 interface PeriodScoresSectionProps {
@@ -71,8 +72,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     justifyContent: "space-around",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: spacing.ms,
+    paddingHorizontal: spacing.sm,
     backgroundColor: "transparent",
   },
   cell: {

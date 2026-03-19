@@ -126,12 +126,12 @@ export function InvitesInboxScreen() {
   if (invites.length === 0) {
     return (
       <Screen>
-        <View style={styles.emptyContainer}>
+        <View style={[styles.emptyContainer, { padding: theme.spacing.ml }]}>
           <View style={styles.emptyContent}>
             <View
               style={[
                 styles.emptyIconCircle,
-                { backgroundColor: theme.colors.surface },
+                { backgroundColor: theme.colors.surface, borderRadius: theme.radius.full, marginBottom: theme.spacing.ml },
               ]}
             >
               <Ionicons
@@ -144,14 +144,14 @@ export function InvitesInboxScreen() {
             <AppText
               variant="body"
               color="secondary"
-              style={styles.emptyText}
+              style={[styles.emptyText, { marginBottom: theme.spacing.sm }]}
             >
               {t("invites.noInvites")}
             </AppText>
             <AppText
               variant="caption"
               color="secondary"
-              style={styles.emptySubtext}
+              style={[styles.emptySubtext, { paddingHorizontal: theme.spacing.xxl }]}
             >
               {t("invites.noInvitesHint")}
             </AppText>
@@ -175,7 +175,7 @@ export function InvitesInboxScreen() {
         windowSize={5}
         contentContainerStyle={[
           styles.container,
-          { paddingHorizontal: theme.spacing.lg },
+          { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.xl },
         ]}
         refreshControl={
           <RefreshControl
@@ -190,7 +190,7 @@ export function InvitesInboxScreen() {
       {/* Group preview bottom sheet */}
       <InfoSheet sheetRef={sheetRef} enableDynamicSizing>
         {selectedInvite && preview ? (
-          <View style={styles.sheetContent}>
+          <View style={[styles.sheetContent, { gap: theme.spacing.ms }]}>
             {/* Sheet header */}
             <AppText variant="title" style={styles.sheetTitle}>
               {selectedInvite.groupName}
@@ -210,7 +210,7 @@ export function InvitesInboxScreen() {
             <View
               style={[
                 styles.sheetStats,
-                { backgroundColor: theme.colors.cardBackground },
+                { backgroundColor: theme.colors.cardBackground, borderRadius: theme.radius.lg, padding: theme.spacing.md, marginTop: theme.spacing.xs },
               ]}
             >
               <SheetStatRow
@@ -275,7 +275,7 @@ export function InvitesInboxScreen() {
             </View>
 
             {/* Sheet actions */}
-            <View style={styles.sheetActions}>
+            <View style={[styles.sheetActions, { gap: theme.spacing.ms, marginTop: theme.spacing.sm }]}>
               <Button
                 label={t("invites.accept")}
                 onPress={handleSheetAccept}
@@ -310,7 +310,7 @@ function SheetStatRow({
   theme: ReturnType<typeof useTheme>["theme"];
 }) {
   return (
-    <View style={styles.sheetStatRow}>
+    <View style={[styles.sheetStatRow, { paddingVertical: theme.spacing.sm, gap: theme.spacing.sm }]}>
       <Ionicons name={icon} size={18} color={theme.colors.textSecondary} />
       <AppText variant="body" color="secondary" style={styles.sheetStatLabel}>
         {label}
@@ -325,11 +325,9 @@ function SheetStatRow({
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingBottom: 32,
   },
   emptyContainer: {
     flex: 1,
-    padding: 20,
   },
   emptyContent: {
     flex: 1,
@@ -340,24 +338,18 @@ const styles = StyleSheet.create({
   emptyIconCircle: {
     width: 100,
     height: 100,
-    borderRadius: 50,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
   },
   emptyText: {
     textAlign: "center",
     fontSize: 16,
-    marginBottom: 8,
   },
   emptySubtext: {
     textAlign: "center",
-    paddingHorizontal: 40,
   },
   // Sheet styles
-  sheetContent: {
-    gap: 12,
-  },
+  sheetContent: {},
   sheetTitle: {
     fontSize: 20,
     fontWeight: "700",
@@ -367,16 +359,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
   },
-  sheetStats: {
-    borderRadius: 18,
-    padding: 14,
-    marginTop: 4,
-  },
+  sheetStats: {},
   sheetStatRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    gap: 10,
   },
   sheetStatLabel: {
     flex: 1,
@@ -389,8 +375,6 @@ const styles = StyleSheet.create({
   },
   sheetActions: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
   },
   acceptBtn: {
     flex: 1,

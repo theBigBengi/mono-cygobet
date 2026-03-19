@@ -41,20 +41,21 @@ export function PerformanceCard({
 
   return (
     <Card>
-      <AppText variant="subtitle" style={styles.title}>
+      <AppText variant="subtitle" style={[styles.title, { marginBottom: theme.spacing.md }]}>
         {t("profile.performance")}
       </AppText>
 
-      <AppText variant="caption" color="secondary" style={styles.sectionLabel}>
+      <AppText variant="caption" color="secondary" style={[styles.sectionLabel, { marginBottom: theme.spacing.sm }]}>
         {t("profile.lastPredictions", { count: 10 })}
       </AppText>
-      <View style={styles.formRow}>
+      <View style={[styles.formRow, { marginBottom: theme.spacing.ml }]}>
         {formDisplay.slice(0, 10).map((item, i) => (
           <View
             key={i}
             style={[
               styles.formDot,
               {
+                borderRadius: theme.radius.md,
                 backgroundColor:
                   item.fixtureId === 0
                     ? theme.colors.border
@@ -65,7 +66,7 @@ export function PerformanceCard({
         ))}
       </View>
 
-      <View style={[styles.barContainer, { backgroundColor: theme.colors.border }]}>
+      <View style={[styles.barContainer, { backgroundColor: theme.colors.border, borderRadius: theme.radius.xs, marginBottom: theme.spacing.ms }]}>
         {total > 0 ? (
           <View style={styles.barRow}>
             {exact > 0 && (
@@ -111,31 +112,31 @@ export function PerformanceCard({
         )}
       </View>
 
-      <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: COLORS.exact }]} />
+      <View style={[styles.legend, { rowGap: theme.spacing.sm }]}>
+        <View style={[styles.legendItem, { gap: theme.spacing.xs }]}>
+          <View style={[styles.legendDot, { backgroundColor: COLORS.exact, borderRadius: theme.radius.full }]} />
           <AppText variant="caption" color="secondary">
             {t("predictions.exact")}: {exact}
           </AppText>
         </View>
-        <View style={styles.legendItem}>
+        <View style={[styles.legendItem, { gap: theme.spacing.xs }]}>
           <View
-            style={[styles.legendDot, { backgroundColor: COLORS.difference }]}
+            style={[styles.legendDot, { backgroundColor: COLORS.difference, borderRadius: theme.radius.full }]}
           />
           <AppText variant="caption" color="secondary">
             {t("predictions.diff")}: {difference}
           </AppText>
         </View>
-        <View style={styles.legendItem}>
+        <View style={[styles.legendItem, { gap: theme.spacing.xs }]}>
           <View
-            style={[styles.legendDot, { backgroundColor: COLORS.outcome }]}
+            style={[styles.legendDot, { backgroundColor: COLORS.outcome, borderRadius: theme.radius.full }]}
           />
           <AppText variant="caption" color="secondary">
             {t("predictions.outcome")}: {outcome}
           </AppText>
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: COLORS.miss }]} />
+        <View style={[styles.legendItem, { gap: theme.spacing.xs }]}>
+          <View style={[styles.legendDot, { backgroundColor: COLORS.miss, borderRadius: theme.radius.full }]} />
           <AppText variant="caption" color="secondary">
             {t("predictions.miss")}: {miss}
           </AppText>
@@ -146,28 +147,20 @@ export function PerformanceCard({
 }
 
 const styles = StyleSheet.create({
-  title: {
-    marginBottom: 16,
-  },
-  sectionLabel: {
-    marginBottom: 8,
-  },
+  title: {},
+  sectionLabel: {},
   formRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
   },
   formDot: {
     width: 28,
     height: 28,
-    borderRadius: 14,
   },
   barContainer: {
     height: 12,
-    borderRadius: 6,
     overflow: "hidden",
     // backgroundColor set via inline style (theme.colors.border)
-    marginBottom: 12,
   },
   barRow: {
     flexDirection: "row",
@@ -178,17 +171,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    rowGap: 8,
   },
   legendItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
     width: "48%",
   },
   legendDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
   },
 });

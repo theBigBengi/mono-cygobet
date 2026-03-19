@@ -16,13 +16,14 @@ interface GroupLobbyStatusCardProps {
 export function GroupLobbyStatusCard({ status }: GroupLobbyStatusCardProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   return (
     <View
       style={[
         styles.card,
         {
-          backgroundColor: theme.colors.cardBackground,
+          backgroundColor: theme.colors.surface,
         },
       ]}
     >
@@ -41,27 +42,28 @@ export function GroupLobbyStatusCard({ status }: GroupLobbyStatusCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 24,
-    ...getShadowStyle("sm"),
-  },
-  badge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  badgeText: {
-    fontWeight: "600",
-  },
-  title: {
-    marginBottom: 4,
-  },
-  subtitle: {
-    lineHeight: 20,
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    card: {
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.ml,
+      marginBottom: theme.spacing.lg,
+      ...getShadowStyle("sm"),
+    },
+    badge: {
+      alignSelf: "flex-start",
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 5,
+      borderRadius: theme.radius.s,
+      marginBottom: theme.spacing.ms,
+    },
+    badgeText: {
+      fontWeight: "600",
+    },
+    title: {
+      marginBottom: theme.spacing.xs,
+    },
+    subtitle: {
+      lineHeight: 20,
+    },
+  });

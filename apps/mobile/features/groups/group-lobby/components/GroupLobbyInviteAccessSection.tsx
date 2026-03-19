@@ -47,6 +47,7 @@ export function GroupLobbyInviteAccessSection({
 }: GroupLobbyInviteAccessSectionProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   // Only show invite access section for creators in draft mode
   if (!isCreator || status !== "draft") {
@@ -91,24 +92,25 @@ export function GroupLobbyInviteAccessSection({
   return <Card style={styles.section}>{content}</Card>;
 }
 
-const styles = StyleSheet.create({
-  section: {
-    marginBottom: 16,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  labelContainer: {
-    flex: 1,
-    marginEnd: 16,
-  },
-  label: {
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  helperText: {
-    marginTop: 0,
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    section: {
+      marginBottom: theme.spacing.md,
+    },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    labelContainer: {
+      flex: 1,
+      marginEnd: theme.spacing.md,
+    },
+    label: {
+      fontWeight: "600",
+      marginBottom: theme.spacing.xs,
+    },
+    helperText: {
+      marginTop: 0,
+    },
+  });

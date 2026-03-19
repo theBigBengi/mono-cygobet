@@ -35,6 +35,7 @@ function LobbyGamesSummaryInner({
 }: LobbyGamesSummaryProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const remaining = totalFixtures - completedFixturesCount;
   const progressPct =
@@ -148,69 +149,70 @@ function LobbyGamesSummaryInner({
 
 export const LobbyGamesSummary = React.memo(LobbyGamesSummaryInner);
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 16,
-    marginBottom: 24,
-    borderRadius: 18,
-    padding: 16,
-    ...getShadowStyle("sm"),
-  },
-  ringSection: {
-    width: RING_SIZE,
-    height: RING_SIZE,
-    alignItems: "center",
-    justifyContent: "center",
-    marginEnd: 16,
-  },
-  ringLabel: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-  },
-  ringValue: {
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  ringUnit: {
-    fontSize: 10,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  statsSection: {
-    flex: 1,
-    gap: 10,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  stat: {
-    flex: 1,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: "500",
-    marginTop: 1,
-  },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      ...getShadowStyle("sm"),
+    },
+    ringSection: {
+      width: RING_SIZE,
+      height: RING_SIZE,
+      alignItems: "center",
+      justifyContent: "center",
+      marginEnd: theme.spacing.md,
+    },
+    ringLabel: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
+    },
+    ringValue: {
+      fontSize: 16,
+      fontWeight: "800",
+    },
+    ringUnit: {
+      fontSize: 10,
+      fontWeight: "600",
+      marginTop: theme.spacing.xxs,
+    },
+    statsSection: {
+      flex: 1,
+      gap: theme.spacing.sm,
+    },
+    statsGrid: {
+      flexDirection: "row",
+      gap: theme.spacing.xs,
+    },
+    stat: {
+      flex: 1,
+    },
+    statValue: {
+      fontSize: 18,
+      fontWeight: "800",
+    },
+    statLabel: {
+      fontSize: 10,
+      fontWeight: "500",
+      marginTop: 1,
+    },
+    statusPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      gap: 5,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.radius.xl,
+    },
+    statusText: {
+      fontSize: 11,
+      fontWeight: "700",
+    },
+  });

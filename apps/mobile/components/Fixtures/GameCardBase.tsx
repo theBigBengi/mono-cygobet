@@ -10,6 +10,7 @@ import { Card, AppText, TeamLogo } from "@/components/ui";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
 import type { FixtureItem, PositionInGroup } from "@/types/common";
 import { useTheme } from "@/lib/theme";
+import { getShadowStyle } from "@/lib/theme/shadows";
 
 interface GameCardBaseProps {
   fixture: FixtureItem;
@@ -33,11 +34,11 @@ export function GameCardBase({
 
   const cardRadiusStyle =
     positionInGroup === "single"
-      ? { borderRadius: 18 }
+      ? { borderRadius: theme.radius.lg }
       : positionInGroup === "top"
         ? {
-            borderTopLeftRadius: 18,
-            borderTopRightRadius: 18,
+            borderTopLeftRadius: theme.radius.lg,
+            borderTopRightRadius: theme.radius.lg,
             borderBottomLeftRadius: 0,
             borderBottomRightRadius: 0,
           }
@@ -45,8 +46,8 @@ export function GameCardBase({
           ? {
               borderTopLeftRadius: 0,
               borderTopRightRadius: 0,
-              borderBottomLeftRadius: 18,
-              borderBottomRightRadius: 18,
+              borderBottomLeftRadius: theme.radius.lg,
+              borderBottomRightRadius: theme.radius.lg,
             }
           : { borderRadius: 0 };
 
@@ -58,11 +59,14 @@ export function GameCardBase({
   const card = (
     <Card
       style={[styles.matchCard, cardRadiusStyle, cardBorderStyle, {
-        backgroundColor: theme.colors.cardBackground,
+        marginHorizontal: theme.spacing.xs,
+        padding: theme.spacing.sm,
+        backgroundColor: theme.colors.surface,
+        ...getShadowStyle("sm"),
       }]}
     >
       <View style={styles.matchContent}>
-        <View style={styles.teamSection}>
+        <View style={[styles.teamSection, { gap: theme.spacing.sm }]}>
           <TeamLogo
             imagePath={fixture.homeTeam?.imagePath}
             teamName={homeTeamName}
@@ -77,7 +81,7 @@ export function GameCardBase({
           {children ?? <View style={styles.middleSpacer} />}
         </View>
 
-        <View style={styles.teamSectionAway}>
+        <View style={[styles.teamSectionAway, { gap: theme.spacing.sm }]}>
           <AppText
             variant="body"
             style={styles.teamNameAway}
@@ -111,11 +115,10 @@ export function GameCardBase({
   return card;
 }
 
+// Static layout styles — theme-dependent values applied inline via `theme`
 const styles = StyleSheet.create({
   matchCard: {
-    marginHorizontal: 4,
     marginBottom: 0,
-    padding: 8,
   },
   matchContent: {
     flexDirection: "row",
@@ -126,7 +129,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
     minWidth: 0,
   },
   teamSectionAway: {
@@ -134,19 +136,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 8,
     minWidth: 0,
   },
   teamName: {
     flex: 1,
-    fontSize: 14,
     fontWeight: "500",
     minWidth: 0,
   },
   teamNameAway: {
     flex: 1,
     minWidth: 0,
-    fontSize: 14,
     fontWeight: "500",
     textAlign: "right",
   },

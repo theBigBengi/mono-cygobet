@@ -45,6 +45,7 @@ export function LobbyActionCard({
   isLoading = false,
 }: LobbyActionCardProps) {
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const color = iconColor ?? theme.colors.primary;
 
   if (isLoading) {
@@ -163,77 +164,78 @@ export function LobbyActionCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    marginBottom: 16,
-    borderRadius: 18,
-    ...getShadowStyle("sm"),
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  icon: {
-    marginEnd: 0,
-  },
-  textBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  title: {
-    fontWeight: "600",
-  },
-  subtitle: {
-    marginTop: 2,
-  },
-  messagePreview: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 6,
-  },
-  avatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  avatarPlaceholder: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarInitial: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  messageText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  unreadText: {
-    fontWeight: "600",
-  },
-  timestamp: {
-    marginStart: 4,
-  },
-  badge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  chevron: {
-    marginStart: 0,
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    card: {
+      marginBottom: theme.spacing.md,
+      borderRadius: theme.radius.lg,
+      ...getShadowStyle("sm"),
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.ms,
+    },
+    icon: {
+      marginEnd: 0,
+    },
+    textBlock: {
+      flex: 1,
+      minWidth: 0,
+    },
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+    },
+    title: {
+      fontWeight: "600",
+    },
+    subtitle: {
+      marginTop: theme.spacing.xxs,
+    },
+    messagePreview: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      marginTop: 6,
+    },
+    avatar: {
+      width: 20,
+      height: 20,
+      borderRadius: theme.radius.full,
+    },
+    avatarPlaceholder: {
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    avatarInitial: {
+      fontSize: 10,
+      fontWeight: "600",
+    },
+    messageText: {
+      flex: 1,
+      minWidth: 0,
+    },
+    unreadText: {
+      fontWeight: "600",
+    },
+    timestamp: {
+      marginStart: theme.spacing.xs,
+    },
+    badge: {
+      minWidth: 20,
+      height: 20,
+      borderRadius: theme.radius.full,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: theme.spacing.xs,
+    },
+    badgeText: {
+      fontSize: 11,
+      fontWeight: "700",
+    },
+    chevron: {
+      marginStart: 0,
+    },
+  });

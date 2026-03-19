@@ -156,7 +156,7 @@ export function AnimatedStickyHeader({
       />
 
       {/* Content below status bar */}
-      <View style={[styles.content, { height, marginTop: topOffset }]}>
+      <View style={[styles.content, { height, marginTop: topOffset, paddingHorizontal: theme.spacing.md }]}>
           {/* Back button */}
           {!hideBackButton && (
             <Pressable
@@ -169,6 +169,7 @@ export function AnimatedStickyHeader({
               <View
                 style={[
                   styles.iconCircle,
+                  { borderRadius: theme.radius.full },
                   !transparentIcons && styles.iconCircleBg,
                 ]}
               >
@@ -182,7 +183,7 @@ export function AnimatedStickyHeader({
           )}
 
           {/* Title - appears on scroll */}
-          <Animated.View style={[styles.titleContainer, titleAlignLeft && styles.titleContainerLeft, titleStyle]}>
+          <Animated.View style={[styles.titleContainer, { paddingHorizontal: theme.spacing.sm }, titleAlignLeft && styles.titleContainerLeft, titleStyle]}>
             <Text
               style={[styles.title, { color: theme.colors.textPrimary }, titleAlignLeft && styles.titleLeft]}
               numberOfLines={1}
@@ -192,7 +193,7 @@ export function AnimatedStickyHeader({
           </Animated.View>
 
           {/* Right actions */}
-          <View style={styles.rightActions}>
+          <View style={[styles.rightActions, { gap: theme.spacing.xxs }]}>
             {rightActions.map((action, index) => (
               <Pressable
                 key={index}
@@ -202,6 +203,7 @@ export function AnimatedStickyHeader({
                 <View
                   style={[
                     styles.iconCircle,
+                    { borderRadius: theme.radius.full },
                     !transparentIcons && styles.iconCircleBg,
                   ]}
                 >
@@ -219,6 +221,7 @@ export function AnimatedStickyHeader({
   );
 }
 
+// Static layout styles — theme-dependent values applied inline via `theme`
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
@@ -239,7 +242,6 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
   },
   iconButton: {
     zIndex: 10,
@@ -247,7 +249,6 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 38,
     height: 38,
-    borderRadius: 19,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -258,7 +259,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
   },
   titleContainerLeft: {
     alignItems: "flex-start",
@@ -274,7 +274,6 @@ const styles = StyleSheet.create({
   rightActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
   },
   pressed: {
     opacity: 0.6,

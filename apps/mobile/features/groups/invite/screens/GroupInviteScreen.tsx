@@ -30,7 +30,7 @@ import {
   useSentInvitesQuery,
   useCancelInviteMutation,
 } from "@/domains/invites";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { UserSearchInput } from "@/features/invites/components/UserSearchInput";
 import { UserSearchResultItem } from "@/features/invites/components/UserSearchResultItem";
 import type { ApiUserSearchItem } from "@repo/types";
@@ -163,18 +163,18 @@ export function GroupInviteScreen({
   // ── Full-screen loading / error ──────────────────────────────
   if (isLoading) {
     return (
-      <View style={[styles.container, { paddingHorizontal: 16, paddingTop: 12 }]}>
+      <View style={[styles.container, { paddingHorizontal: spacing.md, paddingTop: spacing.ms }]}>
         {/* Search skeleton */}
-        <Animated.View style={[{ height: 40, borderRadius: 10, backgroundColor: theme.colors.border }, skeletonStyle]} />
+        <Animated.View style={[{ height: 40, borderRadius: radius.sm, backgroundColor: theme.colors.border }, skeletonStyle]} />
         {/* User rows skeleton */}
         {[0, 1, 2, 3].map((i) => (
-          <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 }}>
-            <Animated.View style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.border }, skeletonStyle]} />
-            <View style={{ flex: 1, gap: 4 }}>
-              <Animated.View style={[{ width: 100, height: 12, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
-              <Animated.View style={[{ width: 70, height: 10, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
+          <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.sm }}>
+            <Animated.View style={[{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: theme.colors.border }, skeletonStyle]} />
+            <View style={{ flex: 1, gap: spacing.xs }}>
+              <Animated.View style={[{ width: 100, height: 12, borderRadius: spacing.xs, backgroundColor: theme.colors.border }, skeletonStyle]} />
+              <Animated.View style={[{ width: 70, height: 10, borderRadius: spacing.xs, backgroundColor: theme.colors.border }, skeletonStyle]} />
             </View>
-            <Animated.View style={[{ width: 60, height: 28, borderRadius: 14, backgroundColor: theme.colors.border }, skeletonStyle]} />
+            <Animated.View style={[{ width: 60, height: 28, borderRadius: radius.md, backgroundColor: theme.colors.border }, skeletonStyle]} />
           </View>
         ))}
       </View>
@@ -201,11 +201,11 @@ export function GroupInviteScreen({
         return (
           <View>
             {[0, 1, 2].map((i) => (
-              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 }}>
-                <Animated.View style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.border }, skeletonStyle]} />
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Animated.View style={[{ width: 90, height: 12, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
-                  <Animated.View style={[{ width: 60, height: 10, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
+              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.sm }}>
+                <Animated.View style={[{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: theme.colors.border }, skeletonStyle]} />
+                <View style={{ flex: 1, gap: spacing.xs }}>
+                  <Animated.View style={[{ width: 90, height: 12, borderRadius: spacing.xs, backgroundColor: theme.colors.border }, skeletonStyle]} />
+                  <Animated.View style={[{ width: 60, height: 10, borderRadius: spacing.xs, backgroundColor: theme.colors.border }, skeletonStyle]} />
                 </View>
               </View>
             ))}
@@ -360,27 +360,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.ms,
+    paddingBottom: spacing.lg,
   },
   statusCenter: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 40,
-    gap: 8,
+    gap: spacing.sm,
   },
   hintRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: -8,
-    marginBottom: 10,
+    gap: spacing.xs,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: "600",
-    marginTop: 16,
-    marginBottom: 4,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
 });

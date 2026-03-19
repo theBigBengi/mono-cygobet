@@ -56,7 +56,7 @@ export function GroupSortRow({
   const sortLabel = t(SORT_LABEL_KEYS[selectedSort]);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.md }]}>
       <Pressable
         onPress={handleFilterSortPress}
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    // paddingHorizontal: theme.spacing.md — applied inline
     paddingVertical: 10,
   },
   filterSortButton: {
@@ -116,6 +116,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   viewToggle: {
-    padding: 4,
+    padding: 4, // theme.spacing.xs
   },
 });

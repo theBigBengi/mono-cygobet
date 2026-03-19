@@ -4,7 +4,7 @@
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import type { FixtureGroup } from "../hooks/useGroupedFixtures";
 
 interface FixtureGroupSectionProps {
@@ -100,15 +100,15 @@ const styles = StyleSheet.create({
   // LIVE
   liveHeader: {
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   liveBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: radius.sm,
     paddingVertical: 3,
-    borderRadius: 9999,
+    borderRadius: radius.full,
   },
   liveDot: {
     width: 6,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   // Date — centered, no lines
   dateHeader: {
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: radius.sm,
     paddingHorizontal: 36,
   },
   dateText: {
@@ -136,10 +136,10 @@ const styles = StyleSheet.create({
   leagueHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: radius.sm,
     paddingStart: 44,
     paddingEnd: 36,
-    gap: 10,
+    gap: radius.sm,
   },
   leagueText: {
     fontSize: 11,

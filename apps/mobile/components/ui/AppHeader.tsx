@@ -127,15 +127,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
+    paddingHorizontal: 12, // spacing.ms
   },
   backButton: {
-    padding: 6,
+    padding: 8, // spacing.sm
   },
   leftRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8, // spacing.sm
     flex: 1,
   },
   titleColumn: {
@@ -147,8 +147,8 @@ const styles = StyleSheet.create({
   subtitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    marginTop: 1,
+    gap: 4, // spacing.xs
+    marginTop: 2, // spacing.xxs
   },
   liveDot: {
     width: 6,

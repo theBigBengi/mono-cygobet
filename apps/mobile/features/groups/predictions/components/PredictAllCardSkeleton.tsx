@@ -6,7 +6,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing } from "@/lib/theme";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const CARD_GAP = 12;
@@ -128,8 +128,8 @@ const styles = StyleSheet.create({
   },
   sliderColumn: {
     width: 40,
-    paddingTop: 48,
-    paddingBottom: 12,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.ms,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -140,8 +140,8 @@ const styles = StyleSheet.create({
   },
   centerContent: {
     flex: 1,
-    paddingTop: 48,
-    paddingBottom: 12,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.ms,
     justifyContent: "center",
   },
   centerTrack: {
@@ -154,8 +154,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: "center",
-    paddingHorizontal: 8,
-    paddingBottom: 4,
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.xs,
   },
   textBar: {
     height: 10,
@@ -170,18 +170,18 @@ const styles = StyleSheet.create({
   scoreRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: spacing.xs,
     writingDirection: "ltr",
   },
   scoreBox: {
     width: 100,
     height: 100,
-    borderRadius: 4,
+    borderRadius: spacing.xs,
   },
   separatorBar: {
-    width: 16,
-    height: 4,
-    borderRadius: 2,
-    marginHorizontal: 4,
+    width: spacing.md,
+    height: spacing.xs,
+    borderRadius: spacing.xxs,
+    marginHorizontal: spacing.xs,
   },
 });

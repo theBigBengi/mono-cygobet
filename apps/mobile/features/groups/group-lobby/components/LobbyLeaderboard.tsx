@@ -14,7 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 import { getInitials } from "@/utils/string";
 import type { ApiRankingItem } from "@repo/types";
@@ -107,23 +107,23 @@ function LobbyLeaderboardInner({
           {/* Title skeleton */}
           <Animated.View
             style={[
-              { width: 100, height: 14, borderRadius: 6, backgroundColor: theme.colors.border },
+              { width: 100, height: 14, borderRadius: radius.xs, backgroundColor: theme.colors.border },
               animatedStyle,
             ]}
           />
           {/* Bar rows skeleton */}
-          <View style={{ marginTop: 12, gap: 8 }}>
+          <View style={{ marginTop: spacing.ms, gap: spacing.sm }}>
             {[200, 150, 100].map((w, i) => (
-              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
                 <Animated.View
                   style={[
-                    { width: 22, height: 22, borderRadius: 11, backgroundColor: theme.colors.border },
+                    { width: 22, height: 22, borderRadius: radius.full, backgroundColor: theme.colors.border },
                     animatedStyle,
                   ]}
                 />
                 <Animated.View
                   style={[
-                    { width: w, height: 36, borderRadius: 8, backgroundColor: theme.colors.border },
+                    { width: w, height: 36, borderRadius: radius.s, backgroundColor: theme.colors.border },
                     animatedStyle,
                   ]}
                 />
@@ -156,7 +156,7 @@ function LobbyLeaderboardInner({
                 <Text style={[styles.bottomTitle, { color: theme.colors.textPrimary }]}>
                   {t("lobby.leaderboard")}
                 </Text>
-<Text style={[styles.bottomSubtitle, { color: theme.colors.textSecondary, marginTop: 10 }]}>
+<Text style={[styles.bottomSubtitle, { color: theme.colors.textSecondary, marginTop: spacing.sm }]}>
                   {message}
                 </Text>
               </View>
@@ -287,36 +287,36 @@ export const LobbyLeaderboard = React.memo(LobbyLeaderboardInner);
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
-    marginBottom: 24,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.lg,
   },
   wrapper: {
     backgroundColor: "transparent",
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: radius.lg,
+    padding: spacing.md,
     ...getShadowStyle("sm"),
   },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: spacing.md,
   },
   wrapperPressed: {
     opacity: 0.7,
   },
   barsContainer: {
-    gap: 10,
+    gap: spacing.sm,
   },
   barRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: spacing.sm,
   },
   barRankCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: spacing.lg,
+    height: spacing.lg,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -335,18 +335,18 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.ms,
   },
   barPointsContainer: {
     marginStart: "auto",
   },
   barNameOverlay: {
     position: "absolute",
-    left: 12,
-    right: 12,
+    left: spacing.ms,
+    right: spacing.ms,
     top: 0,
     bottom: 0,
     flexDirection: "row",
@@ -360,19 +360,19 @@ const styles = StyleSheet.create({
   barPoints: {
     fontSize: 14,
     fontWeight: "800",
-    marginStart: 8,
+    marginStart: spacing.sm,
   },
   memberCountRow: {
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   memberCountBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.md,
   },
   memberCountText: {
     fontSize: 12,
@@ -382,8 +382,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginBottom: 16,
+    gap: spacing.xs,
+    marginBottom: spacing.md,
   },
   sectionTitle: {
     fontSize: 12,
@@ -394,19 +394,19 @@ const styles = StyleSheet.create({
   emptyCard: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 32,
-    borderRadius: 18,
-    gap: 8,
+    paddingVertical: spacing.xl,
+    borderRadius: radius.lg,
+    gap: spacing.sm,
   },
   emptyText: {
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   podiumSection: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
     paddingBottom: 0,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
   },
   podiumDivider: {
     height: StyleSheet.hairlineWidth,
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   },
   bottomLeft: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
   },
   bottomTitle: {
     fontSize: 15,
@@ -444,28 +444,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "center",
-    gap: 10,
-    minHeight: PODIUM_HEIGHTS[1] + 16,
-    paddingTop: 8,
+    gap: spacing.sm,
+    minHeight: PODIUM_HEIGHTS[1] + spacing.md,
+    paddingTop: spacing.sm,
   },
   podiumSlot: {
     flex: 1,
     maxWidth: 90,
   },
   podiumCard: {
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderTopLeftRadius: radius.md,
+    borderTopRightRadius: radius.md,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    padding: 12,
+    padding: spacing.ms,
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 2,
+    gap: spacing.xxs,
   },
   podiumCardContent: {
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 2,
+    gap: spacing.xxs,
   },
   podiumCardFirst: {
   },
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
   rankBadgeCircle: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
     top: -8,
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -498,10 +498,10 @@ const styles = StyleSheet.create({
   avatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   avatarText: {
     fontSize: 13,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     textAlign: "center",
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   playerNameHighlight: {
     fontWeight: "800",
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   pointsRow: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 2,
+    gap: spacing.xxs,
   },
   pointsValue: {
     fontSize: 16,
@@ -532,19 +532,19 @@ const styles = StyleSheet.create({
   },
   userDivider: {
     height: StyleSheet.hairlineWidth,
-    marginTop: 14,
-    marginBottom: 12,
+    marginTop: spacing.md,
+    marginBottom: spacing.ms,
   },
   userRow: {
-    marginTop: 18,
+    marginTop: spacing.lg,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
   userRankCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: spacing.lg,
+    height: spacing.lg,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -568,14 +568,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 8,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.s,
   },
   buttonIconCircle: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -585,12 +585,12 @@ const styles = StyleSheet.create({
   },
   viewAllCenter: {
     alignItems: "center",
-    marginTop: 12,
+    marginTop: spacing.ms,
   },
   viewAllBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 24,
-    borderRadius: 20,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.xl,
   },
   seeAllText: {
     fontSize: 13,
@@ -610,21 +610,21 @@ const styles = StyleSheet.create({
   },
   // Skeleton styles
   skeletonIcon: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
+    width: spacing.md,
+    height: spacing.md,
+    borderRadius: spacing.xs,
   },
   skeletonHeaderText: {
     width: 80,
     height: 12,
-    borderRadius: 4,
+    borderRadius: spacing.xs,
   },
   skeletonPodiumCard: {
-    borderRadius: 12,
+    borderRadius: radius.md,
     width: "100%",
   },
   skeletonButton: {
     height: 44,
-    borderRadius: 10,
+    borderRadius: radius.sm,
   },
 });

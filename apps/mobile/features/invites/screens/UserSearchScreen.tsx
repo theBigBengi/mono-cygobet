@@ -112,11 +112,11 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
   );
 
   const renderHeader = () => (
-    <View style={styles.headerSection}>
+    <View style={[styles.headerSection, { paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.ml }]}>
       <View
         style={[
           styles.iconCircle,
-          { backgroundColor: theme.colors.primary + "15" },
+          { backgroundColor: theme.colors.primary + "15", borderRadius: theme.radius.full, marginBottom: theme.spacing.ms },
         ]}
       >
         <Ionicons name="person-add" size={28} color={theme.colors.primary} />
@@ -125,7 +125,7 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
         {t("invites.inviteToGroupDefault")}
       </AppText>
       {groupName && (
-        <AppText variant="body" color="secondary" style={styles.groupName}>
+        <AppText variant="body" color="secondary" style={[styles.groupName, { marginTop: theme.spacing.xs }]}>
           {groupName}
         </AppText>
       )}
@@ -133,7 +133,7 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
   );
 
   const renderSearchSection = () => (
-    <View style={styles.searchSection}>
+    <View style={[styles.searchSection, { marginBottom: theme.spacing.md }]}>
       <UserSearchInput
         value={query}
         onChangeText={handleQueryChange}
@@ -141,7 +141,7 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
         autoFocus
       />
       {query.length > 0 && query.length < MIN_QUERY_LENGTH && (
-        <View style={styles.hintRow}>
+        <View style={[styles.hintRow, { gap: theme.spacing.xs, marginTop: theme.spacing.sm }]}>
           <Ionicons
             name="information-circle-outline"
             size={14}
@@ -156,7 +156,7 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
   );
 
   const renderLoading = () => (
-    <View style={styles.loadingContainer}>
+    <View style={[styles.loadingContainer, { gap: theme.spacing.sm, paddingVertical: theme.spacing.ml }]}>
       <ActivityIndicator size="small" color={theme.colors.primary} />
       <AppText variant="body" color="secondary" style={styles.loadingText}>
         {t("invites.searchingUsers")}
@@ -165,11 +165,11 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
   );
 
   const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
+    <View style={[styles.emptyContainer, { paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.lg }]}>
       <View
         style={[
           styles.emptyIconCircle,
-          { backgroundColor: theme.colors.surface },
+          { backgroundColor: theme.colors.surface, borderRadius: theme.radius.full, marginBottom: theme.spacing.md },
         ]}
       >
         <Ionicons
@@ -179,17 +179,17 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
           style={{ opacity: 0.5 }}
         />
       </View>
-      <AppText variant="body" color="secondary" style={styles.emptyText}>
+      <AppText variant="body" color="secondary" style={[styles.emptyText, { marginBottom: theme.spacing.xs }]}>
         {t("invites.noResults")}
       </AppText>
-      <AppText variant="caption" color="secondary" style={styles.emptyHint}>
+      <AppText variant="caption" color="secondary" style={[styles.emptyHint, { paddingHorizontal: theme.spacing.xl }]}>
         {t("invites.tryDifferentSearch")}
       </AppText>
     </View>
   );
 
   const renderSuggestionsHeader = () => (
-    <View style={styles.suggestionsHeader}>
+    <View style={[styles.suggestionsHeader, { gap: theme.spacing.sm, marginBottom: theme.spacing.ms, paddingTop: theme.spacing.sm }]}>
       <Ionicons name="people" size={16} color={theme.colors.textSecondary} />
       <AppText variant="label" color="secondary" style={styles.suggestionsTitle}>
         {t("invites.suggestedUsers")}
@@ -226,7 +226,7 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
             ListHeaderComponent={listHeader}
             contentContainerStyle={[
               styles.listContent,
-              { paddingHorizontal: theme.spacing.lg },
+              { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.lg },
             ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -235,7 +235,7 @@ export function UserSearchScreen({ groupId, groupName }: UserSearchScreenProps) 
           <ScrollView
             contentContainerStyle={[
               styles.scrollContent,
-              { paddingHorizontal: theme.spacing.lg },
+              { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.lg },
             ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -260,23 +260,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 24,
   },
-  listContent: {
-    paddingBottom: 24,
-  },
+  listContent: {},
   headerSection: {
     alignItems: "center",
-    paddingTop: 8,
-    paddingBottom: 20,
   },
   iconCircle: {
     width: 64,
     height: 64,
-    borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
   },
   title: {
     fontSize: 20,
@@ -284,17 +277,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   groupName: {
-    marginTop: 4,
     textAlign: "center",
   },
-  searchSection: {
-    marginBottom: 16,
-  },
+  searchSection: {},
   hintRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 8,
   },
   hintText: {
     fontSize: 12,
@@ -303,39 +291,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    paddingVertical: 20,
   },
   loadingText: {
     fontSize: 14,
   },
   emptyContainer: {
     alignItems: "center",
-    paddingTop: 32,
-    paddingBottom: 24,
   },
   emptyIconCircle: {
     width: 72,
     height: 72,
-    borderRadius: 36,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
   },
   emptyText: {
     fontSize: 15,
-    marginBottom: 6,
   },
   emptyHint: {
     textAlign: "center",
-    paddingHorizontal: 32,
   },
   suggestionsHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-    paddingTop: 8,
   },
   suggestionsTitle: {
     fontSize: 13,

@@ -44,7 +44,7 @@ export function CreateSheetDetailsStep({
   return (
     <Animated.View style={step1AnimStyle}>
     {/* Step 1: Group Details */}
-    <View style={{ flex: 1, paddingHorizontal: 20 }}>
+    <View style={{ flex: 1, paddingHorizontal: theme.spacing.ml }}>
       <View style={{ flex: 3 }} />
       <Pressable onPress={onOpenAvatarPicker} style={createStyles.avatarPicker}>
         <GroupAvatar
@@ -102,7 +102,7 @@ export function CreateSheetDetailsStep({
             borderColor: groupName.trim().length > 0 && !isCreating
               ? theme.colors.primary + "40"
               : theme.colors.textSecondary + "20",
-            marginTop: 24,
+            marginTop: theme.spacing.lg,
             marginBottom: 0,
             opacity: pressed ? 0.7 : 1,
           },

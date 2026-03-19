@@ -456,12 +456,12 @@ export function CreateGroupFlow({
         enablePanDownToClose
         backdropComponent={renderBackdrop}
         backgroundStyle={{
-          backgroundColor: theme.colors.background,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
+          backgroundColor: theme.colors.surfaceElevated,
+          borderTopLeftRadius: theme.radius.xl,
+          borderTopRightRadius: theme.radius.xl,
         }}
         handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
-        handleStyle={{ paddingVertical: 6 }}
+        handleStyle={{ paddingVertical: theme.spacing.xs + 2 }}
       >
         <View style={createStyles.container}>
           {/* Header */}
@@ -485,7 +485,7 @@ export function CreateGroupFlow({
             {step !== 0 && (
               <Pressable
                 onPress={handleBack}
-                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, padding: 6, position: "absolute", left: 12, top: 10 })}
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, padding: theme.spacing.xs + 2, position: "absolute", left: theme.spacing.ms, top: theme.spacing.sm + 2 })}
               >
                 <Ionicons name="arrow-back-circle-outline" size={24} color={theme.colors.textSecondary} />
               </Pressable>
@@ -500,12 +500,12 @@ export function CreateGroupFlow({
                 style={({ pressed }) => ({
                   opacity: pressed ? 0.6 : 1,
                   paddingVertical: 5,
-                  paddingHorizontal: 12,
-                  borderRadius: 14,
+                  paddingHorizontal: theme.spacing.ms,
+                  borderRadius: theme.radius.md,
                   backgroundColor: theme.colors.textPrimary + "0A",
                   position: "absolute",
-                  right: 12,
-                  top: 10,
+                  right: theme.spacing.ms,
+                  top: theme.spacing.sm + 2,
                 })}
               >
                 <AppText variant="caption" style={{ color: theme.colors.primary, fontWeight: "600" }}>
@@ -615,7 +615,7 @@ export function CreateGroupFlow({
         enableDynamicSizing
         enablePanDownToClose
         backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+        backgroundStyle={{ backgroundColor: theme.colors.surfaceElevated, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl }}
         handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}
       >
         <BottomSheetView style={createStyles.sortSheet}>
@@ -649,7 +649,7 @@ export function CreateGroupFlow({
       </BottomSheetModal>
 
       {/* Prediction mode sheet */}
-      <BottomSheetModal ref={advPredictionRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+      <BottomSheetModal ref={advPredictionRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.surfaceElevated, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
         <BottomSheetView style={createStyles.sheetContent}>
           <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.predictionMode")}</Text>
           {([
@@ -672,7 +672,7 @@ export function CreateGroupFlow({
       </BottomSheetModal>
 
       {/* Scoring sheet */}
-      <BottomSheetModal ref={advScoringRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+      <BottomSheetModal ref={advScoringRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.surfaceElevated, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
         <BottomSheetView style={createStyles.sheetContent}>
           <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.scoring")}</Text>
           {[
@@ -682,7 +682,7 @@ export function CreateGroupFlow({
           ].map((opt) => (
             <View key={opt.label} style={[createStyles.sheetOption]}>
               <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{opt.label}</Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.ms }}>
                 <Pressable
                   onPress={() => { if (opt.value > 0) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); opt.set(opt.value - 1); } }}
                   hitSlop={8}
@@ -690,7 +690,7 @@ export function CreateGroupFlow({
                 >
                   <Ionicons name="remove-circle-outline" size={24} color={theme.colors.textPrimary} />
                 </Pressable>
-                <Text style={{ color: theme.colors.textPrimary, fontWeight: "700", fontSize: 16, minWidth: 20, textAlign: "center" }}>{opt.value}</Text>
+                <Text style={{ color: theme.colors.textPrimary, fontWeight: "700", fontSize: 16, minWidth: theme.spacing.ml, textAlign: "center" }}>{opt.value}</Text>
                 <Pressable
                   onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); opt.set(opt.value + 1); }}
                   hitSlop={8}
@@ -714,7 +714,7 @@ export function CreateGroupFlow({
       </BottomSheetModal>
 
       {/* KO round mode sheet */}
-      <BottomSheetModal ref={advKoRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+      <BottomSheetModal ref={advKoRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.surfaceElevated, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
         <BottomSheetView style={createStyles.sheetContent}>
           <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.koRoundMode")}</Text>
           {([
@@ -738,7 +738,7 @@ export function CreateGroupFlow({
       </BottomSheetModal>
 
       {/* Max members sheet */}
-      <BottomSheetModal ref={advMembersRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+      <BottomSheetModal ref={advMembersRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.surfaceElevated, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
         <BottomSheetView style={createStyles.sheetContent}>
           <Text style={[createStyles.sheetTitle, { color: theme.colors.textPrimary, borderBottomColor: theme.colors.textPrimary + "10" }]}>{t("lobby.maxMembers")}</Text>
           {[10, 20, 30, 50, 100].map((num) => (
@@ -758,11 +758,11 @@ export function CreateGroupFlow({
       </BottomSheetModal>
 
       {/* Nudge sheet */}
-      <BottomSheetModal ref={advNudgeWindowRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
+      <BottomSheetModal ref={advNudgeWindowRef} stackBehavior="push" enableDynamicSizing enablePanDownToClose backdropComponent={renderBackdrop} backgroundStyle={{ backgroundColor: theme.colors.surfaceElevated, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl }} handleIndicatorStyle={{ backgroundColor: theme.colors.textSecondary }}>
         <BottomSheetView style={createStyles.sheetContent}>
-          <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.textPrimary + "10", paddingBottom: 12, marginBottom: 8 }}>
+          <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.textPrimary + "10", paddingBottom: theme.spacing.ms, marginBottom: theme.spacing.sm }}>
             <Text style={{ fontSize: 15, fontWeight: "600", textAlign: "center", color: theme.colors.textPrimary }}>{t("lobby.nudge")}</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: 4 }}>{t("lobby.nudgeDescription")}</Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: theme.spacing.xs }}>{t("lobby.nudgeDescription")}</Text>
           </View>
           <Pressable
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNudgeEnabled((prev) => !prev); }}
@@ -774,7 +774,7 @@ export function CreateGroupFlow({
             </View>
           </Pressable>
           <View style={{ opacity: nudgeEnabled ? 1 : 0.35 }} pointerEvents={nudgeEnabled ? "auto" : "none"}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: "500", marginBottom: 4, marginTop: 8 }}>{t("lobby.minutesBeforeKickoff")}</Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: "500", marginBottom: theme.spacing.xs, marginTop: theme.spacing.sm }}>{t("lobby.minutesBeforeKickoff")}</Text>
             {[30, 60, 120, 180].map((min) => (
               <Pressable key={min} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNudgeWindowMinutes(min); }} style={({ pressed }) => [createStyles.sheetOption, { opacity: pressed ? 0.6 : 1 }]}>
                 <Text style={[createStyles.sheetOptionLabel, { color: theme.colors.textPrimary }]}>{min} min</Text>

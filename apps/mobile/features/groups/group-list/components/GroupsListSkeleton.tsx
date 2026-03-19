@@ -53,16 +53,16 @@ export function GroupsListSkeleton() {
                   width: 100,
                   height: 28,
                   backgroundColor: skeletonColor,
-                  borderRadius: 8,
+                  borderRadius: theme.radius.s,
                 }}
               />
-              <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={{ flexDirection: "row", gap: theme.spacing.ms }}>
                 <View
                   style={{
                     width: 28,
                     height: 28,
                     backgroundColor: skeletonColor,
-                    borderRadius: 14,
+                    borderRadius: theme.radius.md,
                   }}
                 />
                 <View
@@ -70,7 +70,7 @@ export function GroupsListSkeleton() {
                     width: 28,
                     height: 28,
                     backgroundColor: skeletonColor,
-                    borderRadius: 14,
+                    borderRadius: theme.radius.md,
                   }}
                 />
               </View>
@@ -80,7 +80,7 @@ export function GroupsListSkeleton() {
               style={{
                 height: 40,
                 backgroundColor: skeletonColor,
-                borderRadius: 14,
+                borderRadius: theme.radius.md,
                 marginTop: 10,
               }}
             />
@@ -90,9 +90,9 @@ export function GroupsListSkeleton() {
           <View
             style={{
               flexDirection: "row",
-              paddingHorizontal: 16,
+              paddingHorizontal: theme.spacing.md,
               paddingVertical: 10,
-              gap: 8,
+              gap: theme.spacing.sm,
               borderBottomWidth: StyleSheet.hairlineWidth,
               borderBottomColor: theme.colors.border,
               backgroundColor: theme.colors.surface,
@@ -108,28 +108,28 @@ export function GroupsListSkeleton() {
                     i === 0
                       ? theme.colors.primary + "20"
                       : skeletonColor,
-                  borderRadius: 16,
+                  borderRadius: theme.radius.lg,
                 }}
               />
             ))}
           </View>
 
           {/* Cards skeleton */}
-          <View style={{ paddingTop: 12 }}>
+          <View style={{ paddingTop: theme.spacing.ms }}>
             {[1, 2, 3].map((i) => (
               <View
                 key={i}
                 style={{
-                  marginHorizontal: 16,
-                  marginBottom: 12,
-                  borderRadius: 18,
+                  marginHorizontal: theme.spacing.md,
+                  marginBottom: theme.spacing.ms,
+                  borderRadius: theme.radius.lg,
                   ...getShadowStyle("sm"),
                 }}
               >
                 <View
                   style={{
                     backgroundColor: theme.colors.cardBackground,
-                    borderRadius: 18,
+                    borderRadius: theme.radius.lg,
                     paddingTop: 14,
                     paddingHorizontal: 14,
                     overflow: "hidden",
@@ -148,18 +148,18 @@ export function GroupsListSkeleton() {
                       style={{
                         width: 56,
                         height: 56,
-                        borderRadius: 12,
+                        borderRadius: theme.radius.md,
                         backgroundColor: skeletonColor,
                       }}
                     />
                     {/* Info */}
-                    <View style={{ flex: 1, gap: 8 }}>
+                    <View style={{ flex: 1, gap: theme.spacing.sm }}>
                       <View
                         style={{
                           width: "75%",
                           height: 18,
                           backgroundColor: skeletonColor,
-                          borderRadius: 6,
+                          borderRadius: theme.radius.xs,
                         }}
                       />
                       <View
@@ -167,7 +167,7 @@ export function GroupsListSkeleton() {
                           width: 100,
                           height: 24,
                           backgroundColor: skeletonColor,
-                          borderRadius: 8,
+                          borderRadius: theme.radius.s,
                         }}
                       />
                     </View>
@@ -177,7 +177,7 @@ export function GroupsListSkeleton() {
                         style={{
                           width: 24,
                           height: 24,
-                          borderRadius: 12,
+                          borderRadius: theme.radius.full,
                           backgroundColor: skeletonColor,
                         }}
                       />
@@ -185,7 +185,7 @@ export function GroupsListSkeleton() {
                         style={{
                           width: 24,
                           height: 24,
-                          borderRadius: 12,
+                          borderRadius: theme.radius.full,
                           backgroundColor: skeletonColor,
                         }}
                       />
@@ -202,7 +202,7 @@ export function GroupsListSkeleton() {
                       marginHorizontal: -14,
                       paddingHorizontal: 14,
                       paddingTop: 14,
-                      paddingBottom: 12,
+                      paddingBottom: theme.spacing.ms,
                       borderTopWidth: StyleSheet.hairlineWidth,
                       borderTopColor: theme.colors.border,
                     }}
@@ -213,7 +213,7 @@ export function GroupsListSkeleton() {
                           width: 100,
                           height: 12,
                           backgroundColor: skeletonColor,
-                          borderRadius: 4,
+                          borderRadius: theme.radius.xs,
                         }}
                       />
                       <View
@@ -221,12 +221,12 @@ export function GroupsListSkeleton() {
                           width: 150,
                           height: 16,
                           backgroundColor: skeletonColor,
-                          borderRadius: 4,
+                          borderRadius: theme.radius.xs,
                         }}
                       />
                     </View>
                     <View style={{ flexDirection: "row", gap: 6 }}>
-                      <View style={{ alignItems: "center", gap: 2 }}>
+                      <View style={{ alignItems: "center", gap: theme.spacing.xxs }}>
                         <View
                           style={{
                             width: 20,
@@ -247,7 +247,7 @@ export function GroupsListSkeleton() {
                           }}
                         />
                       </View>
-                      <View style={{ alignItems: "center", gap: 2 }}>
+                      <View style={{ alignItems: "center", gap: theme.spacing.xxs }}>
                         <View
                           style={{
                             width: 20,
@@ -275,8 +275,8 @@ export function GroupsListSkeleton() {
                   <View
                     style={{
                       flexDirection: "row",
-                      paddingVertical: 12,
-                      gap: 4,
+                      paddingVertical: theme.spacing.ms,
+                      gap: theme.spacing.xs,
                       borderTopWidth: StyleSheet.hairlineWidth,
                       borderTopColor: theme.colors.border,
                     }}
@@ -289,7 +289,7 @@ export function GroupsListSkeleton() {
                           flexDirection: "row",
                           alignItems: "center",
                           justifyContent: "center",
-                          gap: 4,
+                          gap: theme.spacing.xs,
                           paddingVertical: 6,
                         }}
                       >
@@ -297,7 +297,7 @@ export function GroupsListSkeleton() {
                           style={{
                             width: 16,
                             height: 16,
-                            borderRadius: 4,
+                            borderRadius: theme.radius.xs,
                             backgroundColor: skeletonColor,
                           }}
                         />
@@ -305,7 +305,7 @@ export function GroupsListSkeleton() {
                           style={{
                             width: 28,
                             height: 14,
-                            borderRadius: 4,
+                            borderRadius: theme.radius.xs,
                             backgroundColor: skeletonColor,
                           }}
                         />
@@ -327,9 +327,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 12,
+    paddingTop: 12, // ~theme.spacing.ms
     paddingBottom: 0,
-    paddingHorizontal: 16,
+    paddingHorizontal: 16, // theme.spacing.md
   },
   headerTop: {
     flexDirection: "row",

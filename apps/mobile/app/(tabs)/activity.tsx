@@ -87,7 +87,7 @@ function ActivityContent() {
         initialNumToRender={10}
         windowSize={5}
         contentContainerStyle={[
-          styles.listContent,
+          { flexGrow: 1, paddingVertical: theme.spacing.md },
           items.length === 0 && styles.emptyList,
           { paddingBottom: totalTabBarSpace + theme.spacing.md },
         ]}
@@ -106,8 +106,8 @@ function ActivityContent() {
         }}
         onEndReachedThreshold={0.3}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <AppText variant="title" style={styles.emptyTitle}>
+          <View style={{ alignItems: "center", paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.xxl }}>
+            <AppText variant="title" style={[styles.emptyTitle, { marginBottom: theme.spacing.ms }]}>
               {t("activity.empty")}
             </AppText>
             <AppText
@@ -128,21 +128,11 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  listContent: {
-    flexGrow: 1,
-    paddingVertical: 16,
-  },
   emptyList: {
     flex: 1,
     justifyContent: "center",
   },
-  empty: {
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-  },
   emptyTitle: {
-    marginBottom: 12,
     textAlign: "center",
   },
   emptySubtitle: {

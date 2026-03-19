@@ -52,7 +52,7 @@ export interface GamesTimelineProps {
   showTrophyEnd?: boolean;
 }
 
-const DOT_GAP = 12;
+const DOT_GAP = 12; // theme.spacing.ms
 
 /**
  * Get short team name (first 3 letters or abbreviation)
@@ -231,20 +231,20 @@ export function GamesTimeline({
     <View style={styles.wrapper}>
       {/* Game number and match label above with connector */}
       {!hideLabels && matchLabel && (
-        <View style={styles.labelConnector}>
+        <View style={[styles.labelConnector, { marginTop: theme.spacing.xxs }]}>
           {gameNumberLabel && (
-            <AppText style={[styles.gameNumberLabel, { color: theme.colors.textSecondary }]}>
+            <AppText style={[styles.gameNumberLabel, { color: theme.colors.textSecondary, marginBottom: theme.spacing.xxs }]}>
               {gameNumberLabel}
             </AppText>
           )}
           <AppText variant="caption" color="secondary">
             {matchLabel}
           </AppText>
-          <View style={[styles.connectorLine, { backgroundColor: theme.colors.border }]} />
+          <View style={[styles.connectorLine, { backgroundColor: theme.colors.border, height: theme.spacing.sm }]} />
         </View>
       )}
 
-      <View style={styles.container} onLayout={handleLayout}>
+      <View style={[styles.container, { height: theme.spacing.lg }]} onLayout={handleLayout}>
         {/* Scrollable dots with line */}
         {containerWidth > 0 && (
           <ScrollView
@@ -257,7 +257,7 @@ export function GamesTimeline({
             ]}
           >
             {/* Wrapper for dots and line together */}
-            <View style={[styles.dotsAndLineWrapper, { width: total * dotWidth }]}>
+            <View style={[styles.dotsAndLineWrapper, { width: total * dotWidth, height: theme.spacing.lg }]}>
               {/* Timeline line - from center of first dot to center of last dot */}
               <View
                 style={[
@@ -266,6 +266,8 @@ export function GamesTimeline({
                     backgroundColor: theme.colors.border,
                     width: (total - 1) * dotWidth,
                     left: dotWidth / 2,
+                    height: theme.spacing.xxs,
+                    borderRadius: 1,
                   },
                 ]}
               >
@@ -275,6 +277,7 @@ export function GamesTimeline({
                     {
                       width: finishedCount * dotWidth,
                       backgroundColor: theme.colors.primary,
+                      borderRadius: 1,
                     },
                   ]}
                 />
@@ -359,8 +362,8 @@ export function GamesTimeline({
 
       {/* Bottom label (score or countdown) with connector */}
       {!hideLabels && bottomLabel && (
-        <View style={styles.labelConnector}>
-          <View style={[styles.connectorLine, { backgroundColor: theme.colors.border }]} />
+        <View style={[styles.labelConnector, { marginTop: theme.spacing.xxs }]}>
+          <View style={[styles.connectorLine, { backgroundColor: theme.colors.border, height: theme.spacing.sm }]} />
           <AppText style={[styles.bottomLabel, { color: theme.colors.textSecondary }]}>
             {bottomLabel}
           </AppText>
@@ -369,9 +372,9 @@ export function GamesTimeline({
 
       {/* Custom label or game number below selected dot (compact mode) */}
       {(customBottomLabel || (showGameNumber && gameNumberLabel)) && (
-        <View style={styles.labelConnector}>
-          <View style={[styles.connectorLine, { backgroundColor: theme.colors.border }]} />
-          <AppText style={[styles.gameNumberLabel, { color: theme.colors.textSecondary }]}>
+        <View style={[styles.labelConnector, { marginTop: theme.spacing.xxs }]}>
+          <View style={[styles.connectorLine, { backgroundColor: theme.colors.border, height: theme.spacing.sm }]} />
+          <AppText style={[styles.gameNumberLabel, { color: theme.colors.textSecondary, marginBottom: theme.spacing.xxs }]}>
             {customBottomLabel ?? gameNumberLabel}
           </AppText>
         </View>
@@ -380,13 +383,13 @@ export function GamesTimeline({
   );
 }
 
+// Static layout styles — theme-dependent values applied inline via `theme`
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: "center",
   },
   container: {
     position: "relative",
-    height: 24,
     justifyContent: "center",
     width: "100%",
   },
@@ -394,12 +397,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     top: 11,
-    height: 2,
-    borderRadius: 1,
   },
   lineFilled: {
     height: "100%",
-    borderRadius: 1,
   },
   dotsContent: {
     flexDirection: "row",
@@ -407,7 +407,6 @@ const styles = StyleSheet.create({
   },
   dotsAndLineWrapper: {
     position: "relative",
-    height: 24,
     justifyContent: "center",
   },
   dotsRow: {
@@ -424,17 +423,14 @@ const styles = StyleSheet.create({
   },
   labelConnector: {
     alignItems: "center",
-    marginTop: 2,
   },
   connectorLine: {
     width: 1,
-    height: 8,
   },
   bottomLabel: {
     fontSize: 10,
   },
   gameNumberLabel: {
     fontSize: 10,
-    marginBottom: 2,
   },
 });

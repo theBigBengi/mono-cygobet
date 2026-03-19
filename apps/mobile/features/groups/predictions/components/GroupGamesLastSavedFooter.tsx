@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing } from "@/lib/theme";
 import { formatDate } from "@/utils/date";
 import { formatTime24Locale } from "@/lib/i18n/i18n.date";
 import i18n from "i18next";
@@ -71,7 +71,7 @@ export function GroupGamesLastSavedFooter({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     alignItems: "flex-start",
   },
   row: {
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   loadingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
   text: {
     fontSize: 11,

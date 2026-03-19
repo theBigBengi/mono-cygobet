@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Card, AppText } from "@/components/ui";
-import { useTheme, getShadowStyle } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import type { ApiActivityFeedItem } from "@repo/types";
 
 interface ActivityCardProps {
@@ -96,14 +96,14 @@ export function ActivityCard({ item }: ActivityCardProps) {
     >
       <Card
         style={[
-          styles.card,
+          { marginHorizontal: theme.spacing.md, marginVertical: theme.spacing.xs },
           isReminder && {
             borderLeftWidth: 4,
             borderLeftColor: theme.colors.primary,
           },
         ]}
       >
-        <View style={styles.content}>
+        <View style={{ gap: theme.spacing.xs }}>
           <AppText variant="subtitle" style={styles.title}>
             {t(titleKey as never)}
           </AppText>
@@ -111,7 +111,14 @@ export function ActivityCard({ item }: ActivityCardProps) {
             {subtitle}
           </AppText>
           <View
-            style={[styles.badge, { backgroundColor: theme.colors.surface }]}
+            style={{
+              alignSelf: "flex-start",
+              paddingHorizontal: theme.spacing.sm,
+              paddingVertical: theme.spacing.xs,
+              borderRadius: theme.radius.sm,
+              marginTop: theme.spacing.xs,
+              backgroundColor: theme.colors.surface,
+            }}
           >
             <AppText variant="caption" color="secondary">
               {item.groupName}
@@ -124,21 +131,7 @@ export function ActivityCard({ item }: ActivityCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    marginHorizontal: 16,
-    marginVertical: 6,
-  },
-  content: {
-    gap: 6,
-  },
   title: {
     fontWeight: "600",
-  },
-  badge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginTop: 4,
   },
 });

@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { usePredictionsOverviewQuery } from "@/domains/groups";
 import { PredictionsOverviewTable } from "../components/PredictionsOverviewTable";
 
@@ -46,15 +46,15 @@ export function PredictionsOverviewScreen({
       <View style={styles.skeletonContainer}>
         {/* Header skeleton */}
         <View style={styles.skeletonHeaderRow}>
-          <Animated.View style={[{ width: 120, height: 14, borderRadius: 6, backgroundColor: theme.colors.border }, skeletonStyle]} />
+          <Animated.View style={[{ width: 120, height: 14, borderRadius: radius.xs, backgroundColor: theme.colors.border }, skeletonStyle]} />
         </View>
         {/* Row skeletons */}
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <View key={i} style={styles.skeletonRow}>
-            <Animated.View style={[{ width: 20, height: 12, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
-            <Animated.View style={[{ width: 80, height: 12, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
+            <Animated.View style={[{ width: 20, height: 12, borderRadius: spacing.xs, backgroundColor: theme.colors.border }, skeletonStyle]} />
+            <Animated.View style={[{ width: 80, height: 12, borderRadius: spacing.xs, backgroundColor: theme.colors.border }, skeletonStyle]} />
             <View style={{ flex: 1 }} />
-            <Animated.View style={[{ width: 30, height: 12, borderRadius: 4, backgroundColor: theme.colors.border }, skeletonStyle]} />
+            <Animated.View style={[{ width: 30, height: 12, borderRadius: spacing.xs, backgroundColor: theme.colors.border }, skeletonStyle]} />
           </View>
         ))}
       </View>
@@ -106,20 +106,20 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    padding: spacing.lg,
   },
   skeletonContainer: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
   },
   skeletonHeaderRow: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   skeletonRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 12,
+    gap: radius.sm,
+    paddingVertical: spacing.ms,
   },
 });

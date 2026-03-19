@@ -17,6 +17,7 @@ interface LobbyCardSkeletonProps {
 
 export function LobbyCardSkeleton({ height = 80 }: LobbyCardSkeletonProps) {
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const opacity = useSharedValue(0.3);
 
   useEffect(() => {
@@ -38,10 +39,11 @@ export function LobbyCardSkeleton({ height = 80 }: LobbyCardSkeletonProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  skeleton: {
-    borderRadius: 12,
-    marginBottom: 16,
-    // marginHorizontal: 16,
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    skeleton: {
+      borderRadius: theme.radius.md,
+      marginBottom: theme.spacing.md,
+      // marginHorizontal: theme.spacing.md,
+    },
+  });

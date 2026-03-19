@@ -87,10 +87,13 @@ export function GroupLobbyFixtureCard({
         {
           borderColor: theme.colors.border,
           backgroundColor: theme.colors.background,
+          borderRadius: theme.radius.s,
+          paddingVertical: theme.spacing.md,
+          paddingHorizontal: theme.spacing.md,
         },
       ]}
     >
-      <View style={styles.gameHeaderRow}>
+      <View style={[styles.gameHeaderRow, { marginBottom: theme.spacing.md }]}>
         <AppText variant="caption" color="secondary">
           {translateLeague(fixture.league?.name, t("common.unknownLeague"))}
         </AppText>
@@ -99,14 +102,14 @@ export function GroupLobbyFixtureCard({
         </AppText>
       </View>
 
-      <View style={styles.gameLogosRow}>
+      <View style={[styles.gameLogosRow, { gap: theme.spacing.md }]}>
         <View style={styles.gameTeamLogoBlock}>
           <TeamLogo
             imagePath={fixture.homeTeam?.imagePath}
             teamName={homeTeamName}
             size={56}
           />
-          <AppText variant="body" style={styles.gameTeamName} numberOfLines={1}>
+          <AppText variant="body" style={[styles.gameTeamName, { marginTop: theme.spacing.xs }]} numberOfLines={1}>
             {homeTeamName}
           </AppText>
         </View>
@@ -134,7 +137,7 @@ export function GroupLobbyFixtureCard({
             teamName={awayTeamName}
             size={56}
           />
-          <AppText variant="body" style={styles.gameTeamName} numberOfLines={1}>
+          <AppText variant="body" style={[styles.gameTeamName, { marginTop: theme.spacing.xs }]} numberOfLines={1}>
             {awayTeamName}
           </AppText>
         </View>
@@ -147,25 +150,19 @@ const styles = StyleSheet.create({
   gameRowContainer: {
     justifyContent: "center",
     borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
   },
   gameTeamName: {
     fontSize: 14,
-    marginTop: 4,
     textAlign: "center",
   },
   gameHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
   },
   gameLogosRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 16,
   },
   gameTeamLogoBlock: {
     flex: 1,

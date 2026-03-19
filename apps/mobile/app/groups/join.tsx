@@ -65,7 +65,7 @@ function GroupJoinContent() {
             style={styles.form}
           >
             <View style={[styles.formInner, { padding: theme.spacing.md }]}>
-              <AppText variant="body" color="secondary" style={styles.hint}>
+              <AppText variant="body" color="secondary" style={[styles.hint, { marginBottom: theme.spacing.xs }]}>
                 {t("groups.inviteCodeHint")}
               </AppText>
               <TextInput
@@ -81,6 +81,9 @@ function GroupJoinContent() {
                     backgroundColor: theme.colors.cardBackground,
                     borderColor: "transparent",
                     color: theme.colors.textPrimary,
+                    borderRadius: theme.radius.md,
+                    paddingHorizontal: theme.spacing.md,
+                    paddingVertical: theme.spacing.md,
                     marginTop: theme.spacing.sm,
                     marginBottom: theme.spacing.md,
                   },
@@ -137,14 +140,9 @@ const styles = StyleSheet.create({
   formInner: {
     flex: 1,
   },
-  hint: {
-    marginBottom: 4,
-  },
+  hint: {},
   input: {
     borderWidth: 0,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
     fontSize: 16,
   },
 });

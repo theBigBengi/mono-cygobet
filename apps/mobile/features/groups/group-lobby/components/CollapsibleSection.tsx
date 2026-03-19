@@ -40,11 +40,11 @@ export function CollapsibleSection({
         onPress={() => setExpanded((e) => !e)}
         style={({ pressed }) => [
           styles.headerRow,
-          { opacity: pressed ? 0.8 : 1 },
+          { gap: theme.spacing.sm, opacity: pressed ? 0.8 : 1 },
         ]}
       >
         <View style={styles.headerContent}>
-          <AppText variant="body" style={styles.title}>
+          <AppText variant="body" style={[styles.title, { marginBottom: theme.spacing.xs }]}>
             {title}
           </AppText>
           {!expanded && (
@@ -64,12 +64,12 @@ export function CollapsibleSection({
         />
       </Pressable>
       {expanded && (
-        <View style={styles.expandedContent}>
+        <View style={[styles.expandedContent, { marginTop: theme.spacing.sm }]}>
           {description != null && description !== "" && (
             <AppText
               variant="caption"
               color="secondary"
-              style={styles.description}
+              style={[styles.description, { marginBottom: theme.spacing.md }]}
             >
               {description}
             </AppText>
@@ -84,35 +84,28 @@ export function CollapsibleSection({
     return <View style={styles.sectionNoCard}>{content}</View>;
   }
 
-  return <Card style={styles.section}>{content}</Card>;
+  return <Card style={[styles.section, { marginBottom: theme.spacing.md }]}>{content}</Card>;
 }
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 16,
-  },
+  section: {},
   sectionNoCard: {},
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 8,
   },
   headerContent: {
     flex: 1,
   },
   title: {
     fontWeight: "600",
-    marginBottom: 4,
   },
   selectionLabel: {
     lineHeight: 18,
   },
-  expandedContent: {
-    marginTop: 8,
-  },
+  expandedContent: {},
   description: {
-    marginBottom: 16,
     lineHeight: 18,
   },
 });

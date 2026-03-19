@@ -13,7 +13,7 @@ export function OfflineBanner() {
   if (isOnline) return null;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.danger + "18", borderBottomColor: theme.colors.danger + "30" }]} accessibilityRole="alert">
+    <View style={[styles.container, { backgroundColor: theme.colors.danger + "18", borderBottomColor: theme.colors.danger + "30", paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md, gap: theme.spacing.sm }]} accessibilityRole="alert">
       <Ionicons name="cloud-offline" size={16} color={theme.colors.danger} />
       <Text style={[styles.text, { color: theme.colors.danger }]}>{t("errors.noInternet")}</Text>
     </View>
@@ -23,12 +23,9 @@ export function OfflineBanner() {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
   },
   text: {
     fontSize: 14,

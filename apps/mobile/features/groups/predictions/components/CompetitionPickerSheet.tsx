@@ -12,7 +12,7 @@ import {
 } from "@gorhom/bottom-sheet";
 import { MaterialIcons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { useTranslation } from "react-i18next";
 import type { CompetitionChip } from "../hooks/useSmartFilters";
 
@@ -35,8 +35,8 @@ export function CompetitionPickerSheet({
   const backgroundStyle = useMemo(
     () => ({
       backgroundColor: theme.colors.surfaceElevated,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
     }),
     [theme.colors.surfaceElevated]
   );
@@ -209,24 +209,24 @@ export function CompetitionPickerSheet({
 const styles = StyleSheet.create({
   header: {
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.ms,
+    paddingHorizontal: spacing.md,
   },
   headerTitle: {
     fontWeight: "600",
   },
   listContent: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     paddingBottom: 40,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-    borderRadius: 14,
-    marginHorizontal: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.ms,
+    gap: spacing.ms,
+    borderRadius: radius.md,
+    marginHorizontal: spacing.sm,
   },
   rowText: {
     flex: 1,
@@ -241,14 +241,14 @@ const styles = StyleSheet.create({
   competitionLogoPlaceholder: {
     width: 32,
     height: 32,
-    borderRadius: 4,
+    borderRadius: spacing.xs,
     justifyContent: "center",
     alignItems: "center",
   },
   allCompetitionsIcon: {
     width: 32,
     height: 32,
-    borderRadius: 4,
+    borderRadius: spacing.xs,
     justifyContent: "center",
     alignItems: "center",
   },

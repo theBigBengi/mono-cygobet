@@ -19,7 +19,7 @@ import {
 } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { useGroupQuery, useUpdateGroupMutation } from "@/domains/groups";
 import {
   EditRulesSheet,
@@ -197,7 +197,7 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
         {/* Edit Rules Section - Creator only */}
         {isCreator && (
           <>
-            <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary, marginTop: spacing.sm }]}>
               {t("groupSettings.editRules" as Parameters<typeof t>[0])}
             </Text>
 
@@ -234,7 +234,7 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
         {/* Notifications Section - Creator only */}
         {showNudgeSection && (
           <>
-            <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary, marginTop: spacing.sm }]}>
               {t("groupSettings.notifications" as Parameters<typeof t>[0])}
             </Text>
 
@@ -267,8 +267,8 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
         backdropComponent={renderBackdrop}
         backgroundStyle={{
           backgroundColor: theme.colors.surfaceElevated,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
+          borderTopLeftRadius: radius.xl,
+          borderTopRightRadius: radius.xl,
         }}
         handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled }}
       >
@@ -320,17 +320,17 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
         backdropComponent={renderBackdrop}
         backgroundStyle={{
           backgroundColor: theme.colors.surfaceElevated,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
+          borderTopLeftRadius: radius.xl,
+          borderTopRightRadius: radius.xl,
         }}
         handleIndicatorStyle={{ backgroundColor: theme.colors.textDisabled }}
       >
         <BottomSheetView style={styles.sheetContent}>
-          <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.textPrimary + "10", paddingBottom: 12, marginBottom: 8 }}>
+          <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.textPrimary + "10", paddingBottom: spacing.ms, marginBottom: spacing.sm }}>
             <Text style={{ fontSize: 15, fontWeight: "600", textAlign: "center", color: theme.colors.textPrimary }}>
               {t("lobby.nudge")}
             </Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: 4 }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: spacing.xs }}>
               {t("lobby.nudgeDescription")}
             </Text>
           </View>
@@ -358,7 +358,7 @@ export function GroupSettingsScreen({ groupId }: GroupSettingsScreenProps) {
 
           {/* Minutes options */}
           <View style={{ opacity: draftNudgeEnabled ? 1 : 0.35 }} pointerEvents={draftNudgeEnabled ? "auto" : "none"}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: "500", marginBottom: 4, marginTop: 8 }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: "500", marginBottom: spacing.xs, marginTop: spacing.sm }}>
               {t("lobby.minutesBeforeKickoff")}
             </Text>
             {NUDGE_WINDOW_OPTIONS.map((min) => (
@@ -414,20 +414,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingHorizontal: spacing.ml,
+    paddingTop: spacing.sm,
     paddingBottom: 40,
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: "500",
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
+    paddingVertical: spacing.ms,
   },
   rowLabel: {
     fontSize: 15,
@@ -437,52 +437,52 @@ const styles = StyleSheet.create({
   },
   rowSub: {
     fontSize: 11,
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   rowRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: spacing.xs,
   },
   toggle: {
     width: 34,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.full,
     justifyContent: "center",
-    paddingHorizontal: 2,
+    paddingHorizontal: spacing.xxs,
   },
   toggleKnob: {
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: radius.full,
     backgroundColor: "#FFFFFF",
   },
   sheetContent: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 32,
+    paddingHorizontal: spacing.ml,
+    paddingTop: spacing.ms,
+    paddingBottom: spacing.xl,
   },
   sheetTitle: {
     fontSize: 15,
     fontWeight: "600",
     textAlign: "center",
-    paddingBottom: 12,
-    marginBottom: 8,
+    paddingBottom: spacing.ms,
+    marginBottom: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sheetOption: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 14,
+    paddingVertical: spacing.md,
   },
   sheetOptionLabel: {
     fontSize: 14,
   },
   sheetDoneBtn: {
-    marginTop: 16,
-    paddingVertical: 12,
-    borderRadius: 14,
+    marginTop: spacing.md,
+    paddingVertical: spacing.ms,
+    borderRadius: radius.md,
     alignItems: "center",
   },
   sheetDoneBtnText: {

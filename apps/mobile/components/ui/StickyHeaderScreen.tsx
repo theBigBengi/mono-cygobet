@@ -174,7 +174,7 @@ export function StickyHeaderScreen({
         />
 
         {/* Header content */}
-        <View style={styles.stickyHeaderContent}>
+        <View style={[styles.stickyHeaderContent, { paddingHorizontal: theme.spacing.ms }]}>
           {/* Back button */}
           {!hideBackButton && (
             <Pressable
@@ -200,7 +200,7 @@ export function StickyHeaderScreen({
           )}
 
           {/* Title - appears on scroll */}
-          <Animated.View style={[styles.titleContainer, stickyTitleStyle]}>
+          <Animated.View style={[styles.titleContainer, { paddingHorizontal: theme.spacing.sm }, stickyTitleStyle]}>
             <Text
               style={[styles.title, { color: theme.colors.textPrimary }]}
               numberOfLines={1}
@@ -210,7 +210,7 @@ export function StickyHeaderScreen({
           </Animated.View>
 
           {/* Right actions */}
-          <View style={styles.rightActions}>
+          <View style={[styles.rightActions, { gap: theme.spacing.sm }]}>
             {rightActions.map((action, index) => (
               <Pressable
                 key={index}
@@ -266,7 +266,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
   },
   iconButton: {
     zIndex: 10,
@@ -282,7 +281,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
   },
   title: {
     fontSize: 17,
@@ -291,7 +289,6 @@ const styles = StyleSheet.create({
   },
   rightActions: {
     flexDirection: "row",
-    gap: 8,
   },
   pressed: {
     opacity: 0.6,

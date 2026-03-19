@@ -4,6 +4,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, ScrollView } from "react-native";
+import { spacing } from "@/lib/theme";
 import { ScreenWithHeader } from "@/components/ui/ScreenWithHeader";
 import { AppText, Card } from "@/components/ui";
 import type { ApiFixtureDetailData } from "@repo/types";
@@ -84,18 +85,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
   },
   card: {
-    marginBottom: 16,
-    padding: 16,
+    marginBottom: spacing.md,
+    padding: spacing.md,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     fontWeight: "600",
   },
 });

@@ -10,7 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 import PagerView from "react-native-pager-view";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 
 export interface LobbyTab {
   key: string;
@@ -169,14 +169,14 @@ export function LobbyTabView({
 const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
-    gap: 24,
-    paddingHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 8,
+    gap: spacing.lg,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
     position: "relative",
   },
   tab: {
-    paddingBottom: 10,
+    paddingBottom: spacing.sm,
   },
   tabText: {
     fontSize: 16,

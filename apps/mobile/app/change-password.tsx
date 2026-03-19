@@ -85,10 +85,10 @@ function ScreenContent() {
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + theme.spacing.ms, paddingHorizontal: theme.spacing.ml, paddingBottom: theme.spacing.ms }]}>
         <Pressable
           onPress={() => router.back()}
-          style={styles.backButton}
+          style={[styles.backButton, { width: theme.spacing.xl, height: theme.spacing.xl }]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
           accessibilityLabel={t("accessibility.goBack")}
@@ -104,7 +104,7 @@ function ScreenContent() {
         >
           {t("changePassword.title")}
         </Text>
-        <View style={styles.headerSpacer} />
+        <View style={[styles.headerSpacer, { width: theme.spacing.xl }]} />
       </View>
 
       {/* Content */}
@@ -117,14 +117,14 @@ function ScreenContent() {
           style={styles.scrollView}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: insets.bottom + 40 },
+            { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg, paddingBottom: insets.bottom + 40 },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { marginBottom: theme.spacing.lg }]}>
             <Text
-              style={[styles.inputLabel, { color: theme.colors.textSecondary }]}
+              style={[styles.inputLabel, { color: theme.colors.textSecondary, marginBottom: theme.spacing.sm }]}
             >
               {t("changePassword.currentPassword")}
             </Text>
@@ -134,6 +134,8 @@ function ScreenContent() {
                 {
                   color: theme.colors.textPrimary,
                   backgroundColor: theme.colors.cardBackground,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.md,
                 },
               ]}
               value={currentPassword}
@@ -148,9 +150,9 @@ function ScreenContent() {
             />
           </View>
 
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { marginBottom: theme.spacing.lg }]}>
             <Text
-              style={[styles.inputLabel, { color: theme.colors.textSecondary }]}
+              style={[styles.inputLabel, { color: theme.colors.textSecondary, marginBottom: theme.spacing.sm }]}
             >
               {t("changePassword.newPassword")}
             </Text>
@@ -161,6 +163,8 @@ function ScreenContent() {
                 {
                   color: theme.colors.textPrimary,
                   backgroundColor: theme.colors.cardBackground,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.md,
                 },
               ]}
               value={newPassword}
@@ -174,15 +178,15 @@ function ScreenContent() {
               autoComplete="new-password"
             />
             <Text
-              style={[styles.inputHint, { color: theme.colors.textSecondary }]}
+              style={[styles.inputHint, { color: theme.colors.textSecondary, marginTop: theme.spacing.xs }]}
             >
               {t("changePassword.passwordHint")}
             </Text>
           </View>
 
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { marginBottom: theme.spacing.lg }]}>
             <Text
-              style={[styles.inputLabel, { color: theme.colors.textSecondary }]}
+              style={[styles.inputLabel, { color: theme.colors.textSecondary, marginBottom: theme.spacing.sm }]}
             >
               {t("changePassword.confirmPassword")}
             </Text>
@@ -193,6 +197,8 @@ function ScreenContent() {
                 {
                   color: theme.colors.textPrimary,
                   backgroundColor: theme.colors.cardBackground,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.md,
                 },
               ]}
               value={confirmPassword}
@@ -216,6 +222,9 @@ function ScreenContent() {
                 backgroundColor: theme.colors.primary,
                 shadowColor: theme.colors.primary,
                 opacity: !canSubmit ? 0.4 : pressed ? 0.8 : 1,
+                marginTop: theme.spacing.ms,
+                paddingVertical: theme.spacing.md,
+                borderRadius: theme.radius.md,
               },
             ]}
           >
@@ -239,12 +248,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 12,
   },
   backButton: {
-    width: 32,
-    height: 32,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -253,7 +258,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   headerSpacer: {
-    width: 32,
   },
   container: {
     flex: 1,
@@ -262,31 +266,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
   },
   inputContainer: {
-    marginBottom: 24,
   },
   inputLabel: {
     fontSize: 12,
     fontWeight: "500",
-    marginBottom: 8,
   },
   input: {
     borderWidth: 0,
-    borderRadius: 14,
-    padding: 16,
     fontSize: 16,
   },
   inputHint: {
     fontSize: 11,
-    marginTop: 6,
   },
   submitButton: {
-    marginTop: 12,
-    paddingVertical: 16,
-    borderRadius: 14,
     alignItems: "center",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,

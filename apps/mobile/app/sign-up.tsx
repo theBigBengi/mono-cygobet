@@ -102,14 +102,14 @@ function ScreenContent() {
         style={styles.container}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { padding: theme.spacing.lg }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AppText variant="display" style={styles.title}>
+          <AppText variant="display" style={[styles.title, { marginBottom: theme.spacing.sm }]}>
             {t("auth.createAccount")}
           </AppText>
-          <AppText variant="body" color="secondary" style={styles.subtitle}>
+          <AppText variant="body" color="secondary" style={[styles.subtitle, { marginBottom: theme.spacing.xxl }]}>
             {t("auth.signUpToGetStarted")}
           </AppText>
 
@@ -120,6 +120,9 @@ function ScreenContent() {
                 {
                   color: theme.colors.textPrimary,
                   backgroundColor: theme.colors.cardBackground,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.md,
+                  marginBottom: theme.spacing.md,
                 },
               ]}
               placeholder={t("auth.email")}
@@ -144,6 +147,9 @@ function ScreenContent() {
                 {
                   color: theme.colors.textPrimary,
                   backgroundColor: theme.colors.cardBackground,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.md,
+                  marginBottom: theme.spacing.md,
                 },
               ]}
               placeholder={t("auth.password")}
@@ -160,13 +166,13 @@ function ScreenContent() {
             <AppText
               variant="caption"
               color="secondary"
-              style={styles.passwordHint}
+              style={[styles.passwordHint, { marginTop: -theme.spacing.sm, marginBottom: theme.spacing.md, marginStart: theme.spacing.xs }]}
             >
               {t("auth.passwordHint")}
             </AppText>
 
             {(formError || error) && (
-              <AppText variant="caption" color="danger" style={styles.error}>
+              <AppText variant="caption" color="danger" style={[styles.error, { marginBottom: theme.spacing.md }]}>
                 {formError || error}
               </AppText>
             )}
@@ -177,6 +183,8 @@ function ScreenContent() {
                 {
                   backgroundColor: theme.colors.primary,
                   shadowColor: theme.colors.primary,
+                  paddingVertical: theme.spacing.md,
+                  borderRadius: theme.radius.md,
                 },
                 isLoading && styles.buttonDisabled,
               ]}
@@ -196,7 +204,7 @@ function ScreenContent() {
               )}
             </Pressable>
 
-            <View style={styles.toggleRow}>
+            <View style={[styles.toggleRow, { marginTop: theme.spacing.md, gap: theme.spacing.xs }]}>
               <AppText variant="caption" color="secondary">
                 {t("auth.alreadyHaveAccount")}
               </AppText>
@@ -229,14 +237,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 24,
   },
   title: {
-    marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
-    marginBottom: 40,
     textAlign: "center",
   },
   form: {
@@ -244,23 +249,14 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 0,
-    borderRadius: 14,
-    padding: 16,
     fontSize: 16,
-    marginBottom: 14,
   },
   passwordHint: {
-    marginTop: -10,
-    marginBottom: 14,
-    marginStart: 4,
   },
   error: {
-    marginBottom: 16,
     textAlign: "center",
   },
   button: {
-    paddingVertical: 16,
-    borderRadius: 14,
     alignItems: "center",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -277,7 +273,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 16,
-    gap: 4,
   },
 });

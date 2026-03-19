@@ -46,6 +46,7 @@ export function GroupLobbyMaxMembersSection({
 }: GroupLobbyMaxMembersSectionProps) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [maxMembers, setMaxMembers] = useState(initialMaxMembers);
 
   const handleValueChange = (delta: number) => {
@@ -184,56 +185,57 @@ export function GroupLobbyMaxMembersSection({
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: 16,
-  },
-  counterRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  label: {
-    fontWeight: "500",
-    flex: 1,
-  },
-  counterControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  controlButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  counterValue: {
-    fontWeight: "600",
-    minWidth: 32,
-    textAlign: "center",
-  },
-  presetsContainer: {
-    gap: 8,
-  },
-  presetsLabel: {
-    marginBottom: 4,
-  },
-  presetsRow: {
-    flexDirection: "row",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  presetButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  presetText: {
-    fontWeight: "500",
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
+  StyleSheet.create({
+    content: {
+      gap: theme.spacing.md,
+    },
+    counterRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: theme.spacing.sm,
+    },
+    label: {
+      fontWeight: "500",
+      flex: 1,
+    },
+    counterControls: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.md,
+    },
+    controlButton: {
+      width: 32,
+      height: 32,
+      borderRadius: theme.radius.full,
+      borderWidth: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    counterValue: {
+      fontWeight: "600",
+      minWidth: 32,
+      textAlign: "center",
+    },
+    presetsContainer: {
+      gap: theme.spacing.sm,
+    },
+    presetsLabel: {
+      marginBottom: theme.spacing.xs,
+    },
+    presetsRow: {
+      flexDirection: "row",
+      gap: theme.spacing.sm,
+      flexWrap: "wrap",
+    },
+    presetButton: {
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.radius.xl,
+      borderWidth: 1,
+    },
+    presetText: {
+      fontWeight: "500",
+    },
+  });

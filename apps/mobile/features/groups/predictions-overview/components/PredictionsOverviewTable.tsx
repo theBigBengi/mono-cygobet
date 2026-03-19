@@ -14,7 +14,7 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/components/ui";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { useAuth } from "@/lib/auth/useAuth";
 import type { ApiPredictionsOverviewData } from "@repo/types";
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: "100%",
-    borderRadius: 18,
+    borderRadius: radius.lg,
   },
   contentRow: {
     flex: 1,
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
   leftHeader: {
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
   },
   leftColumnList: {
     flex: 1,
@@ -628,8 +628,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingStart: 0,
-    paddingEnd: 8,
-    gap: 4,
+    paddingEnd: spacing.sm,
+    gap: spacing.xs,
   },
   changeArrowPlaceholder: {
     width: 10,
@@ -656,13 +656,13 @@ const styles = StyleSheet.create({
     height: HEADER_HEIGHT,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
   totalPointsHeader: {
     justifyContent: "flex-end",
     alignItems: "center",
-    paddingBottom: 6,
+    paddingBottom: radius.xs,
   },
   gameHeaderColumn: {
     flexDirection: "column",
@@ -681,11 +681,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   resultText: {
-    marginTop: 2,
+    marginTop: spacing.xxs,
     fontWeight: "800",
   },
   dateText: {
-    marginTop: 2,
+    marginTop: spacing.xxs,
     fontWeight: "300",
   },
   flatList: {
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
     height: ROW_HEIGHT,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
   },
   predictionCellInner: {
     alignItems: "center",

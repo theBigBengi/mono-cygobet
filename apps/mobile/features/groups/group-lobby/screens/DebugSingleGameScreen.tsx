@@ -16,7 +16,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTheme } from "@/lib/theme";
+import { useTheme, spacing, radius } from "@/lib/theme";
 import { groupsKeys } from "@/domains/groups";
 import { SingleGameContent } from "../../predictions/components/SingleGameContent";
 import { SingleGameMatchCard } from "../../predictions/components/SingleGameMatchCard";
@@ -657,14 +657,14 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.ms,
   },
   tab: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: spacing.ms,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.s,
     borderWidth: 1,
   },
   tabText: {
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   content: {
     flex: 1,
@@ -683,17 +683,17 @@ const styles = StyleSheet.create({
   v2Container: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.ms,
   },
   v2Card: {
     flexDirection: "row",
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     overflow: "hidden",
   },
   v2SliderStrip: {
     width: 44,
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
   v2Thumb: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -728,24 +728,24 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingBottom: 16,
-    gap: 12,
+    paddingBottom: spacing.md,
+    gap: spacing.ms,
   },
   v2InfoPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: spacing.ms,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.md,
   },
   v2LogoTopLeft: {
     position: "absolute",
-    top: 8,
-    left: 8,
+    top: spacing.sm,
+    left: spacing.sm,
     zIndex: 2,
   },
   v2LogoBottomRight: {
     position: "absolute",
-    bottom: 8,
-    right: 8,
+    bottom: spacing.sm,
+    right: spacing.sm,
     zIndex: 2,
   },
   v2ScoreCenter: {
@@ -761,14 +761,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    marginTop: 12,
+    gap: spacing.ms,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.ms,
   },
   v2ExpandedTeam: {
     flex: 1,
     alignItems: "center",
-    gap: 6,
+    gap: spacing.xs,
   },
   v2ExpandedTeamName: {
     fontSize: 13,
@@ -778,15 +778,15 @@ const styles = StyleSheet.create({
   v2ExpandedScore: {
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 10,
+    paddingTop: spacing.sm,
   },
   exLeagueBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.ms,
     borderBottomWidth: 1,
-    gap: 8,
+    gap: spacing.sm,
   },
   exBackArrow: {
     width: 28,
@@ -808,17 +808,17 @@ const styles = StyleSheet.create({
   exTabsRow: {
     alignSelf: "stretch",
     borderBottomWidth: 1,
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   exTabsScroll: {
     flexDirection: "row",
-    gap: 4,
-    paddingHorizontal: 12,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.ms,
   },
   exTab: {
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
   },
   exTabActive: {},
   exTabText: {
@@ -830,13 +830,13 @@ const styles = StyleSheet.create({
   exTabIndicator: {
     height: 3,
     width: "60%",
-    borderRadius: 2,
-    marginTop: 6,
+    borderRadius: spacing.xxs,
+    marginTop: spacing.xs,
   },
   exTabContent: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 16,
+    padding: spacing.md,
   },
 });

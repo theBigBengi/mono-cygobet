@@ -129,20 +129,20 @@ export function ProgressDots({
     <View style={styles.wrapper}>
       {/* Match label above with connector */}
       {matchLabel && totalFuture > 0 && (
-        <View style={styles.labelConnector}>
+        <View style={[styles.labelConnector, { marginTop: theme.spacing.xxs }]}>
           <AppText variant="caption" color="secondary">
             {matchLabel}
           </AppText>
-          <View style={[styles.connectorLine, { backgroundColor: theme.colors.border }]} />
+          <View style={[styles.connectorLine, { backgroundColor: theme.colors.border, height: theme.spacing.sm }]} />
         </View>
       )}
 
-      <View style={styles.container}>
+      <View style={[styles.container, { height: theme.spacing.lg }]}>
         {/* Timeline line */}
         <View
           style={[
             styles.line,
-            { backgroundColor: theme.colors.border },
+            { backgroundColor: theme.colors.border, height: theme.spacing.xxs, borderRadius: 1 },
           ]}
         >
           {/* Filled portion for finished games */}
@@ -152,6 +152,7 @@ export function ProgressDots({
               {
                 width: `${fillPercent}%`,
                 backgroundColor: theme.colors.textSecondary,
+                borderRadius: 1,
               },
             ]}
           />
@@ -194,8 +195,8 @@ export function ProgressDots({
 
       {/* Countdown label below with connector */}
       {countdownLabel && totalFuture > 0 && (
-        <View style={styles.labelConnector}>
-          <View style={[styles.connectorLine, { backgroundColor: theme.colors.border }]} />
+        <View style={[styles.labelConnector, { marginTop: theme.spacing.xxs }]}>
+          <View style={[styles.connectorLine, { backgroundColor: theme.colors.border, height: theme.spacing.sm }]} />
           <AppText style={[styles.countdownLabel, { color: theme.colors.textSecondary }]}>
             {countdownLabel}
           </AppText>
@@ -272,7 +273,6 @@ const styles = StyleSheet.create({
   },
   container: {
     position: "relative",
-    height: 24,
     justifyContent: "center",
     width: "100%",
   },
@@ -280,12 +280,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 7,
     right: 7,
-    height: 2,
-    borderRadius: 1,
   },
   lineFilled: {
     height: "100%",
-    borderRadius: 1,
   },
   dotsRow: {
     flexDirection: "row",
@@ -298,11 +295,9 @@ const styles = StyleSheet.create({
   },
   labelConnector: {
     alignItems: "center",
-    marginTop: 2,
   },
   connectorLine: {
     width: 1,
-    height: 8,
   },
   countdownLabel: {
     fontSize: 10,

@@ -20,13 +20,13 @@ function EarnedBadgeRow({ badge }: { badge: ApiEarnedBadge }) {
 
   return (
     <View
-      style={[styles.badgeRow, { borderBottomColor: theme.colors.border }]}
+      style={[styles.badgeRow, { borderBottomColor: theme.colors.border, paddingVertical: theme.spacing.ms }]}
     >
-      <View style={styles.iconWrap}>
+      <View style={[styles.iconWrap, { marginEnd: theme.spacing.ms, marginTop: theme.spacing.xxs }]}>
         {badge.icon.startsWith("http") ? (
           <Image
             source={badge.icon}
-            style={styles.iconImage}
+            style={[styles.iconImage, { borderRadius: theme.radius.xs }]}
             cachePolicy="disk"
           />
         ) : (
@@ -34,7 +34,7 @@ function EarnedBadgeRow({ badge }: { badge: ApiEarnedBadge }) {
         )}
       </View>
       <View style={styles.content}>
-        <AppText variant="body" style={styles.name}>
+        <AppText variant="body" style={[styles.name, { marginBottom: theme.spacing.xxs }]}>
           {badge.name}
         </AppText>
         <AppText variant="caption" color="secondary">
@@ -50,12 +50,13 @@ function EarnedBadgeRow({ badge }: { badge: ApiEarnedBadge }) {
 
 export function EarnedBadgesCard({ badges }: EarnedBadgesCardProps) {
   const { t } = useTranslation("common");
+  const { theme } = useTheme();
 
   if (badges.length === 0) return null;
 
   return (
     <Card>
-      <AppText variant="subtitle" style={styles.title}>
+      <AppText variant="subtitle" style={[styles.title, { marginBottom: theme.spacing.ms }]}>
         {t("badges.earned")}
       </AppText>
       {badges.map((badge) => (
@@ -66,32 +67,24 @@ export function EarnedBadgesCard({ badges }: EarnedBadgesCardProps) {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    marginBottom: 12,
-  },
+  title: {},
   badgeRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  iconWrap: {
-    marginEnd: 12,
-    marginTop: 2,
-  },
+  iconWrap: {},
   icon: {
     fontSize: 24,
   },
   iconImage: {
     width: 24,
     height: 24,
-    borderRadius: 6,
   },
   content: {
     flex: 1,
   },
   name: {
     fontWeight: "600",
-    marginBottom: 2,
   },
 });

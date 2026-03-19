@@ -188,7 +188,7 @@ function GroupsContent() {
     if (item.type === "header") {
       return (
         <View
-          style={[styles.header, { backgroundColor: theme.colors.background }]}
+          style={[styles.header, { backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.ml }]}
           onLayout={(e) => { headerHeightRef.current = e.nativeEvent.layout.height; }}
         >
           {/* Row 1: Title + Invites badge + Info */}
@@ -229,7 +229,7 @@ function GroupsContent() {
                   color={theme.colors.textPrimary}
                 />
                 {pendingInviteCount > 0 && (
-                  <View style={[styles.inviteBadge, { backgroundColor: theme.colors.danger }]}>
+                  <View style={[styles.inviteBadge, { backgroundColor: theme.colors.danger, borderRadius: theme.radius.sm, paddingHorizontal: theme.spacing.xs }]}>
                     <AppText style={[styles.inviteBadgeText, { color: theme.colors.textInverse }]}>
                       {pendingInviteCount > 9 ? "9+" : String(pendingInviteCount)}
                     </AppText>
@@ -317,8 +317,8 @@ function GroupsContent() {
     return (
       <View style={styles.root}>
         <Screen>
-          <View style={styles.emptyContainer}>
-            <AppText variant="title" style={styles.emptyTitle}>
+          <View style={[styles.emptyContainer, { padding: theme.spacing.lg }]}>
+            <AppText variant="title" style={[styles.emptyTitle, { marginBottom: theme.spacing.ms }]}>
               {t("groups.noGroupsYet")}
             </AppText>
             <AppText
@@ -417,12 +417,12 @@ function GroupsContent() {
           removeClippedSubviews={Platform.OS === "android"}
           ListFooterComponent={
             filteredGroups.length === 0 ? (
-              <View style={styles.emptyFilter}>
+              <View style={[styles.emptyFilter, { paddingVertical: theme.spacing.xxl }]}>
                 <Ionicons
                   name="folder-open-outline"
                   size={48}
                   color={theme.colors.textSecondary}
-                  style={{ marginBottom: 12, opacity: 0.5 }}
+                  style={{ marginBottom: theme.spacing.ms, opacity: 0.5 }}
                 />
                 <AppText variant="body" color="secondary">
                   {t("groups.noGroupsInFilter")}
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 14,
     paddingBottom: 4,
-    paddingHorizontal: 20,
+    // paddingHorizontal: theme.spacing.ml — applied inline
   },
   headerTop: {
     flexDirection: "row",
@@ -495,12 +495,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -2,
     right: -4,
-    borderRadius: 10,
     minWidth: 18,
     height: 18,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 4,
+    // borderRadius: theme.radius.sm, paddingHorizontal: theme.spacing.xs — applied inline
   },
   inviteBadgeText: {
     fontSize: 10,
@@ -511,17 +510,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   emptyFilter: {
-    paddingVertical: 48,
+    // paddingVertical: theme.spacing.xxl — applied inline
     alignItems: "center",
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    // padding: theme.spacing.lg — applied inline
   },
   emptyTitle: {
-    marginBottom: 12,
+    marginBottom: 12, // ~theme.spacing.ms
     textAlign: "center",
   },
   emptySubtitle: {
@@ -534,11 +533,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: 4, // theme.spacing.xs
   },
   secondaryAction: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingVertical: 4, // theme.spacing.xs
+    paddingHorizontal: 8, // theme.spacing.sm
   },
   secondaryActionPressed: {
     opacity: 0.7,

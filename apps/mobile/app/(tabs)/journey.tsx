@@ -114,7 +114,9 @@ function JourneyContent() {
         style={[
           styles.header,
           {
-            paddingTop: insets.top + 8,
+            paddingTop: insets.top + theme.spacing.sm,
+            paddingHorizontal: theme.spacing.md,
+            paddingBottom: theme.spacing.ms,
             backgroundColor: theme.colors.background,
           },
         ]}
@@ -126,7 +128,7 @@ function JourneyContent() {
         ref={scrollRef}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: 120 + insets.bottom },
+          { paddingTop: theme.spacing.ml, paddingBottom: 120 + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
@@ -273,13 +275,20 @@ function JourneyContent() {
               <View
                 style={[
                   styles.popover,
-                  { backgroundColor: popoverBg, shadowColor: theme.colors.textPrimary },
+                  {
+                    backgroundColor: popoverBg,
+                    shadowColor: theme.colors.textPrimary,
+                    borderRadius: theme.spacing.ml,
+                    paddingHorizontal: theme.spacing.ml,
+                    paddingTop: theme.spacing.ml,
+                    paddingBottom: theme.spacing.lg,
+                  },
                 ]}
               >
-                <AppText style={[styles.popoverTitle, { color: theme.colors.textInverse }]}>
+                <AppText style={[styles.popoverTitle, { color: theme.colors.textInverse, marginBottom: theme.spacing.xxs }]}>
                   Pair letters and sounds
                 </AppText>
-                <AppText style={[styles.popoverSubtitle, { color: theme.colors.textInverse + "BF" }]}>
+                <AppText style={[styles.popoverSubtitle, { color: theme.colors.textInverse + "BF", marginBottom: theme.spacing.md }]}>
                   {activeNode.completed
                     ? `Completed · ${activeNode.points} XP`
                     : "Lesson 3 of 5"}
@@ -289,7 +298,11 @@ function JourneyContent() {
                   onPress={handleStart}
                   style={({ pressed }) => [
                     styles.startButton,
-                    { backgroundColor: theme.colors.textInverse },
+                    {
+                      backgroundColor: theme.colors.textInverse,
+                      borderRadius: theme.radius.md,
+                      paddingVertical: theme.radius.md,
+                    },
                     pressed && { opacity: 0.85 },
                   ]}
                 >
@@ -315,13 +328,8 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  scrollContent: {
-    paddingTop: 20,
-  },
+  header: {},
+  scrollContent: {},
   pathContainer: {
     position: "relative",
   },
@@ -366,10 +374,6 @@ const styles = StyleSheet.create({
   },
   popover: {
     marginTop: ARROW_SIZE,
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 18,
     shadowOpacity: 0.2,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
@@ -378,16 +382,12 @@ const styles = StyleSheet.create({
   popoverTitle: {
     fontSize: 17,
     fontWeight: "700",
-    marginBottom: 2,
   },
   popoverSubtitle: {
     fontSize: 13,
     fontWeight: "500",
-    marginBottom: 14,
   },
   startButton: {
-    borderRadius: 14,
-    paddingVertical: 14,
     alignItems: "center",
   },
   startButtonText: {

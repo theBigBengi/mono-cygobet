@@ -46,12 +46,14 @@ export function InviteCard({
   const preview = invite.groupPreview;
 
   return (
-    <View style={styles.cardWrapper}>
+    <View style={[styles.cardWrapper, { marginBottom: theme.spacing.md }]}>
       <View
         style={[
           styles.card,
           {
             backgroundColor: theme.colors.cardBackground,
+            borderRadius: theme.radius.lg,
+            padding: theme.spacing.md,
             ...getShadowStyle("sm"),
           },
         ]}
@@ -61,16 +63,16 @@ export function InviteCard({
           <View
             style={[
               styles.groupIcon,
-              { backgroundColor: theme.colors.primary + "15" },
+              { backgroundColor: theme.colors.primary + "15", borderRadius: theme.radius.md, marginEnd: theme.spacing.ms },
             ]}
           >
             <Ionicons name="people" size={20} color={theme.colors.primary} />
           </View>
           <View style={styles.headerText}>
-            <AppText variant="body" style={styles.groupName} numberOfLines={1}>
+            <AppText variant="body" style={[styles.groupName, { marginBottom: theme.spacing.xxs }]} numberOfLines={1}>
               {invite.groupName}
             </AppText>
-            <View style={styles.expiresRow}>
+            <View style={[styles.expiresRow, { gap: theme.spacing.xs }]}>
               <Ionicons
                 name="time-outline"
                 size={12}
@@ -91,8 +93,8 @@ export function InviteCard({
 
         {/* Inline stats row */}
         {preview ? (
-          <View style={styles.statsRow}>
-            <View style={styles.statChip}>
+          <View style={[styles.statsRow, { gap: theme.spacing.xs, marginTop: theme.spacing.sm }]}>
+            <View style={[styles.statChip, { gap: theme.spacing.xs }]}>
               <Ionicons
                 name="people-outline"
                 size={13}
@@ -108,7 +110,7 @@ export function InviteCard({
             <AppText variant="caption" color="secondary">
               ·
             </AppText>
-            <View style={styles.statChip}>
+            <View style={[styles.statChip, { gap: theme.spacing.xs }]}>
               <Ionicons
                 name="football-outline"
                 size={13}
@@ -118,11 +120,11 @@ export function InviteCard({
                 {t("invites.gamesCount", { count: preview.totalFixtures })}
               </AppText>
             </View>
-            <View style={styles.statPills}>
+            <View style={[styles.statPills, { gap: theme.spacing.xs }]}>
               <View
                 style={[
                   styles.pill,
-                  { backgroundColor: theme.colors.primary + "18" },
+                  { backgroundColor: theme.colors.primary + "18", paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xxs, borderRadius: theme.radius.sm },
                 ]}
               >
                 <AppText
@@ -142,14 +144,14 @@ export function InviteCard({
         ) : null}
 
         {/* Divider */}
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+        <View style={[styles.divider, { backgroundColor: theme.colors.border, marginVertical: theme.spacing.md }]} />
 
         {/* Inviter row */}
-        <View style={styles.inviterRow}>
+        <View style={[styles.inviterRow, { marginBottom: theme.spacing.ms }]}>
           <View
             style={[
               styles.avatar,
-              { backgroundColor: theme.colors.surface },
+              { backgroundColor: theme.colors.surface, borderRadius: theme.radius.full, marginEnd: theme.spacing.sm },
             ]}
           >
             {invite.inviter.image ? (
@@ -181,14 +183,14 @@ export function InviteCard({
           <View
             style={[
               styles.messageBox,
-              { backgroundColor: theme.colors.surface },
+              { backgroundColor: theme.colors.surface, padding: theme.spacing.ms, borderRadius: theme.radius.md, marginBottom: theme.spacing.md },
             ]}
           >
             <Ionicons
               name="chatbubble-outline"
               size={14}
               color={theme.colors.textSecondary}
-              style={styles.messageIcon}
+              style={[styles.messageIcon, { marginEnd: theme.spacing.sm, marginTop: theme.spacing.xxs }]}
             />
             <AppText
               variant="body"
@@ -202,7 +204,7 @@ export function InviteCard({
         ) : null}
 
         {/* Action buttons */}
-        <View style={styles.actions}>
+        <View style={[styles.actions, { gap: theme.spacing.ms }]}>
           <Button
             label={t("invites.accept")}
             onPress={onAccept}
@@ -222,7 +224,7 @@ export function InviteCard({
               onPress={onPreview}
               style={[
                 styles.previewBtn,
-                { backgroundColor: theme.colors.surface },
+                { backgroundColor: theme.colors.surface, borderRadius: theme.radius.md },
               ]}
               hitSlop={4}
             >
@@ -240,13 +242,8 @@ export function InviteCard({
 }
 
 const styles = StyleSheet.create({
-  cardWrapper: {
-    marginBottom: 16,
-  },
-  card: {
-    borderRadius: 18,
-    padding: 16,
-  },
+  cardWrapper: {},
+  card: {},
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -254,10 +251,8 @@ const styles = StyleSheet.create({
   groupIcon: {
     width: 44,
     height: 44,
-    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginEnd: 12,
   },
   headerText: {
     flex: 1,
@@ -265,12 +260,10 @@ const styles = StyleSheet.create({
   groupName: {
     fontWeight: "700",
     fontSize: 16,
-    marginBottom: 2,
   },
   expiresRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
   },
   expiresText: {
     fontSize: 11,
@@ -278,13 +271,10 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 10,
   },
   statChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
   },
   statText: {
     fontSize: 12,
@@ -292,14 +282,9 @@ const styles = StyleSheet.create({
   statPills: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
     marginStart: "auto",
   },
-  pill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
+  pill: {},
   pillText: {
     fontSize: 11,
     fontWeight: "600",
@@ -307,20 +292,16 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: 14,
   },
   inviterRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
   },
   avatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginEnd: 10,
     overflow: "hidden",
   },
   avatarImage: {
@@ -340,14 +321,8 @@ const styles = StyleSheet.create({
   messageBox: {
     flexDirection: "row",
     alignItems: "flex-start",
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 14,
   },
-  messageIcon: {
-    marginEnd: 8,
-    marginTop: 2,
-  },
+  messageIcon: {},
   messageText: {
     flex: 1,
     fontStyle: "italic",
@@ -356,7 +331,6 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
   },
   acceptBtn: {
     flex: 1,
@@ -367,7 +341,6 @@ const styles = StyleSheet.create({
   previewBtn: {
     width: 40,
     height: 40,
-    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -259,13 +259,13 @@ export function GroupChatScreen({ groupId, keyboardVerticalOffset: kbOffsetProp 
   const ListFooterComponent = useCallback(() => {
     if (!isFetchingNextPage) return null;
     return (
-      <View style={styles.loadingMore}>
+      <View style={{ paddingVertical: theme.spacing.ms, alignItems: "center" as const }}>
         <AppText variant="caption" color="secondary">
           {t("chat.loadingOlderMessages")}
         </AppText>
       </View>
     );
-  }, [isFetchingNextPage, t]);
+  }, [isFetchingNextPage, t, theme]);
 
   if (!groupId) {
     return (
@@ -297,7 +297,7 @@ export function GroupChatScreen({ groupId, keyboardVerticalOffset: kbOffsetProp 
       keyboardVerticalOffset={kbOffsetProp ?? insets.top}
     >
       {messages.length === 0 && !isLoading ? (
-        <View style={styles.emptyContainer}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: theme.spacing.lg }}>
           <AppText variant="body" color="secondary" style={styles.emptyText}>
             {t("chat.noMessagesYet")}
           </AppText>
@@ -324,7 +324,7 @@ export function GroupChatScreen({ groupId, keyboardVerticalOffset: kbOffsetProp 
             viewabilityConfig={viewabilityConfig}
             onScroll={handleScroll}
             scrollEventThrottle={16}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={{ paddingVertical: theme.spacing.ms }}
           />
 
           {/* Sticky date header overlay */}
@@ -332,14 +332,23 @@ export function GroupChatScreen({ groupId, keyboardVerticalOffset: kbOffsetProp 
             <Animated.View
               pointerEvents="none"
               style={[
-                styles.stickyHeader,
+                {
+                  position: "absolute" as const,
+                  top: theme.spacing.sm,
+                  left: 0,
+                  right: 0,
+                  alignItems: "center" as const,
+                  zIndex: 10,
+                },
                 { opacity: stickyOpacity },
               ]}
             >
               <View
                 style={[
-                  styles.stickyPill,
                   {
+                    paddingHorizontal: theme.spacing.md,
+                    paddingVertical: theme.spacing.xs,
+                    borderRadius: theme.radius.full,
                     backgroundColor: theme.colors.surface,
                   },
                   getShadowStyle("md"),
@@ -380,32 +389,10 @@ const styles = StyleSheet.create({
   listWrapper: {
     flex: 1,
   },
-  listContent: {
-    paddingVertical: 12,
-  },
-  stickyHeader: {
-    position: "absolute",
-    top: 8,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    zIndex: 10,
-  },
-  stickyPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
   stickyText: {
     textAlign: "center",
     fontSize: 12,
     fontWeight: "600",
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
   },
   emptyText: {
     textAlign: "center",
@@ -413,10 +400,6 @@ const styles = StyleSheet.create({
   centered: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingMore: {
-    paddingVertical: 12,
     alignItems: "center",
   },
 });

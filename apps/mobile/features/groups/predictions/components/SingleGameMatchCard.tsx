@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { AppText, TeamLogo } from "@/components/ui";
 import { useEntityTranslation } from "@/lib/i18n/i18n.entities";
-import { useTheme, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
+import { useTheme, spacing, radius, CARD_BORDER_BOTTOM_WIDTH } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 import { ScoresInput } from "./ScoresInput";
 import { OutcomePicker } from "./OutcomePicker";
@@ -279,24 +279,24 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   card: {
-    marginHorizontal: 12,
-    marginTop: 12,
+    marginHorizontal: spacing.ms,
+    marginTop: spacing.ms,
     alignSelf: "stretch",
-    paddingTop: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingTop: spacing.ms,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.ml,
     borderWidth: 1,
     borderBottomWidth: CARD_BORDER_BOTTOM_WIDTH,
-    borderRadius: 14,
+    borderRadius: radius.md,
     overflow: "hidden",
   },
   liveTint: {},
   infoPill: {
     alignSelf: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: -6,
+    paddingHorizontal: spacing.ms,
+    paddingVertical: spacing.xs,
+    borderRadius: spacing.ms,
+    marginBottom: -radius.xs,
     zIndex: 1,
   },
   resultScore: {
@@ -316,14 +316,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 8,
+    gap: spacing.sm,
   },
   teamSection: {
     flex: 1,
     alignItems: "center",
-    gap: 10,
+    gap: radius.sm,
     minWidth: 0,
-    paddingHorizontal: 2,
+    paddingHorizontal: spacing.xxs,
   },
   teamName: {
     fontSize: 12,
@@ -334,20 +334,20 @@ const styles = StyleSheet.create({
   scoreSection: {
     alignItems: "center",
     writingDirection: "ltr",
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
     flexShrink: 0,
-    paddingTop: 12,
-    gap: 6,
+    paddingTop: spacing.ms,
+    gap: radius.xs,
   },
   resultRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    gap: radius.xs,
+    marginTop: spacing.ms,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.ms,
+    borderRadius: radius.sm,
     alignSelf: "center",
   },
   resultRowHidden: {
