@@ -34,11 +34,11 @@ export function GameCardBase({
 
   const cardRadiusStyle =
     positionInGroup === "single"
-      ? { borderRadius: theme.radius.lg }
+      ? { borderRadius: theme.radius.xl }
       : positionInGroup === "top"
         ? {
-            borderTopLeftRadius: theme.radius.lg,
-            borderTopRightRadius: theme.radius.lg,
+            borderTopLeftRadius: theme.radius.xl,
+            borderTopRightRadius: theme.radius.xl,
             borderBottomLeftRadius: 0,
             borderBottomRightRadius: 0,
           }
@@ -46,8 +46,8 @@ export function GameCardBase({
           ? {
               borderTopLeftRadius: 0,
               borderTopRightRadius: 0,
-              borderBottomLeftRadius: theme.radius.lg,
-              borderBottomRightRadius: theme.radius.lg,
+              borderBottomLeftRadius: theme.radius.xl,
+              borderBottomRightRadius: theme.radius.xl,
             }
           : { borderRadius: 0 };
 
@@ -62,7 +62,7 @@ export function GameCardBase({
         marginHorizontal: theme.spacing.xs,
         padding: theme.spacing.sm,
         backgroundColor: theme.colors.surface,
-        ...getShadowStyle("sm"),
+        ...getShadowStyle("md"),
       }]}
     >
       <View style={styles.matchContent}>

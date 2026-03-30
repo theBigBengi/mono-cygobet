@@ -114,7 +114,7 @@ function LobbyAboutSectionInner({ group }: LobbyAboutSectionProps) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.card, { backgroundColor: c.surface, ...getShadowStyle("sm") }]}>
+      <View style={[styles.card, { backgroundColor: c.surface }]}>
         <Text style={[styles.groupName, { color: c.textPrimary }]} numberOfLines={1}>
           {group.name}
         </Text>
@@ -190,11 +190,10 @@ function LobbyAboutSectionInner({ group }: LobbyAboutSectionProps) {
           onPress={() => router.push({ pathname: "/groups/[id]/about", params: { id: String(group.id) } })}
           style={({ pressed }) => [
             styles.seeMoreButton,
-            { backgroundColor: c.textPrimary + "08" },
-            pressed && { opacity: 0.6 },
+            pressed && { opacity: 0.7 },
           ]}
         >
-          <Text style={[styles.seeMoreText, { color: c.textPrimary }]}>
+          <Text style={[styles.seeMoreText, { color: c.primary }]}>
             {t("lobby.seeMore")}
           </Text>
         </Pressable>
@@ -212,8 +211,9 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
       marginBottom: theme.spacing.lg,
     },
     card: {
-      borderRadius: theme.radius.lg,
-      padding: theme.spacing.md,
+      borderRadius: theme.radius.sm,
+      padding: theme.spacing.lg,
+      ...getShadowStyle("md"),
     },
     sectionTitle: {
       fontSize: 15,
@@ -221,9 +221,9 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
       marginBottom: theme.spacing.sm,
     },
     groupName: {
-      fontSize: 16,
+      fontSize: 18,
       fontWeight: "700",
-      marginBottom: theme.spacing.ms,
+      marginBottom: theme.spacing.md,
     },
     sectionHeader: {
       flexDirection: "row",
@@ -233,7 +233,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
       marginBottom: theme.spacing.sm,
     },
     sectionHeaderText: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: "700",
     },
     row: {
@@ -243,11 +243,11 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
       paddingVertical: 6,
     },
     rowLabel: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: "500",
     },
     rowValue: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: "600",
     },
     divider: {
@@ -255,19 +255,20 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
       marginVertical: theme.spacing.ms,
     },
     summaryText: {
-      fontSize: 13,
+      fontSize: 14,
       lineHeight: 20,
       paddingBottom: theme.spacing.xxs,
     },
     seeMoreButton: {
-      marginTop: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.lg,
-      borderRadius: theme.radius.xl,
-      alignSelf: "center",
+      marginTop: theme.spacing.lg,
+      paddingVertical: theme.spacing.ms,
+      backgroundColor: theme.colors.primary + "30",
+      borderRadius: theme.radius.full,
+      alignItems: "center",
     },
     seeMoreText: {
-      fontSize: 13,
-      fontWeight: "600",
+      fontSize: 14,
+      fontWeight: "700",
+      letterSpacing: 0.5,
     },
   });

@@ -215,6 +215,8 @@
     "predictAll": "נחש הכל",
     "predictAllBanner": "{{count}} משחקים לניחוש ב-{{groups}} קבוצות",
     "predictAllBannerSingle": "{{count}} משחקים לניחוש בקבוצה אחת",
+    "predictAllGamesLabel": "משחקים לניחוש",
+    "predictAllAcrossGroups": "ב-{{count}} קבוצות",
     "predictAllLoading": "טוען ניחושים..."
   },
   "lobby": {
@@ -356,6 +358,7 @@
     "winnerWithPoints": "{{name}} · {{points}} נק׳",
     "winnerPoints": "{{points}} נק׳",
     "viewAll": "צפה בדירוג המלא",
+    "viewGames": "צפה במשחקים",
     "tapToPredict": "הקש לניחוש",
     "yourRankSection": "הדירוג שלך",
     "viewRanking": "צפה בדירוג",
@@ -386,6 +389,7 @@
     "allPredicted": "כל המשחקים נוחשו",
     "gamesSummary": "משחקים",
     "summaryCompleted": "הסתיימו",
+    "gamesPlayed": "משחקים שוחקו",
     "summaryRemaining": "נותרו",
     "summaryLive": "שידור חי",
     "summaryPredicted": "נוחשו",
@@ -460,7 +464,9 @@
     "allTeams": "כל הקבוצות",
     "allCompetitions": "כל התחרויות",
     "selectTeam": "בחר קבוצה",
-    "selectCompetition": "בחר תחרות"
+    "selectCompetition": "בחר תחרות",
+    "filterUnpredicted": "חסרים",
+    "filterAll": "הכל"
   },
   "countdown": {
     "inHoursMinutes": "בעוד {{hours}} שעות {{minutes}} דקות",

@@ -65,8 +65,8 @@ export function SettingsSection({
             styles.content,
             {
               backgroundColor: theme.colors.surface,
-              borderRadius: theme.radius.lg,
-              ...getShadowStyle("sm"),
+              borderRadius: theme.radius.xl,
+              ...getShadowStyle("md"),
             },
             cardStyle,
           ]}

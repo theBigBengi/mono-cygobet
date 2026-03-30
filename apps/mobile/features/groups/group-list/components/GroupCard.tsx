@@ -125,11 +125,11 @@ function GroupCardInner({
         styles.card,
         {
           backgroundColor: theme.colors.surface,
-          ...getShadowStyle("sm"),
-          paddingHorizontal: theme.spacing.md,
-          paddingVertical: theme.spacing.md,
+          ...getShadowStyle("md"),
+          paddingHorizontal: theme.spacing.ml,
+          paddingVertical: theme.spacing.ml,
           marginHorizontal: theme.spacing.md,
-          borderRadius: theme.radius.lg,
+          borderRadius: theme.radius.xl,
         },
         pressed && { opacity: 0.7 },
       ]}
@@ -266,12 +266,12 @@ export const GroupCard = React.memo(GroupCardInner, (prev, next) => {
 const styles = StyleSheet.create({
   card: {
     // paddingHorizontal, paddingVertical, marginHorizontal, borderRadius — applied inline via theme tokens
-    marginBottom: 10,
+    marginBottom: 12,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
   info: {
     flex: 1,

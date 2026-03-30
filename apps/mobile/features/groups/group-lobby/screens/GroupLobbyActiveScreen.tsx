@@ -26,6 +26,7 @@ import {
   groupsKeys,
 } from "@/domains/groups";
 import type { ApiGroupItem } from "@repo/types";
+import { canPredict } from "@repo/utils";
 import type { FixtureItem } from "../types";
 import { GroupLobbyHeader } from "../components/GroupLobbyHeader";
 import { GroupTimelineBar } from "../components/GroupTimelineBar";
@@ -369,11 +370,13 @@ export function GroupLobbyActiveScreen({
   );
 
   const handlePredictAll = useCallback(() => {
-    // Find first upcoming unpredicted fixture
-    const upcomingUnpredicted = fixtures.find(
-      (f) => f.prediction?.home == null && f.prediction?.away == null && f.kickoffAt && new Date(f.kickoffAt).getTime() > Date.now()
+    // Find first predictable fixture without a prediction (same canPredict logic as SingleGameScreen)
+    const unpredicted = fixtures.find(
+      (f) => canPredict(f.state, f.startTs) && f.prediction?.home == null && f.prediction?.away == null
     );
-    const targetId = upcomingUnpredicted?.id ?? fixtures[0]?.id;
+    // Fallback: first predictable fixture (even if already predicted)
+    const firstPredictable = unpredicted ?? fixtures.find((f) => canPredict(f.state, f.startTs));
+    const targetId = firstPredictable?.id;
     if (targetId) {
       router.push({ pathname: '/groups/[id]/fixtures/[fixtureId]', params: { id: String(group.id), fixtureId: String(targetId) } });
     } else {
@@ -431,6 +434,8 @@ export function GroupLobbyActiveScreen({
           startDate={group.firstGame?.kickoffAt ?? ""}
           endDate={group.lastGame?.kickoffAt ?? ""}
           progress={timelineProgress}
+          completedCount={lobbySummary?.completedFixturesCount ?? group.completedFixturesCount ?? 0}
+          totalCount={totalFixtures}
           isLoading={isRankingLoading}
         />
 
@@ -453,17 +458,6 @@ export function GroupLobbyActiveScreen({
           />
         )}
 
-        {/* <LobbyPredictionsCTA
-          predictionsCount={predictionsCount}
-          totalFixtures={totalFixtures}
-          onPress={handleViewGames}
-          onPredictPress={handlePredictGame}
-          fixtures={fixtures}
-          isLoading={!fixturesLoaded}
-          completedFixturesCount={lobbySummary?.completedFixturesCount ?? group.completedFixturesCount ?? 0}
-          maxPossiblePoints={group.onTheNosePoints}
-        /> */}
-
         <LobbyLeaderboard
           ranking={ranking}
           currentUserId={user?.id ?? null}
@@ -480,6 +474,10 @@ export function GroupLobbyActiveScreen({
           maxPossiblePoints={group.onTheNosePoints}
         />
 
+        {/* ── ACTIVITY ── */}
+        <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>
+          {t("lobby.activity").toUpperCase()}
+        </Text>
         <LobbyActivityBanner
           groupId={group.id}
           unreadCount={unreadActivityCount}
@@ -494,6 +492,10 @@ export function GroupLobbyActiveScreen({
           }}
         />
 
+        {/* ── ABOUT ── */}
+        <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>
+          {t("lobby.about").toUpperCase()}
+        </Text>
         <LobbyAboutSection group={group} />
 
         {__DEV__ && (
@@ -734,6 +736,15 @@ const styles = StyleSheet.create({
   },
   screenContent: {
     // paddingBottom handled by Screen component (includes insets.bottom + tab bar)
+    gap: spacing.xs,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 1,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs,
   },
   metaRow: {
     paddingHorizontal: spacing.md,

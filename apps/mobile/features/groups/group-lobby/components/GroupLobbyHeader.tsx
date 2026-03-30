@@ -106,7 +106,7 @@ function GroupLobbyHeaderInner({
   // HUD Style (compact mode)
   if (compact) {
     return (
-      <View style={[styles.hudContainer, { paddingBottom: theme.spacing.ms }]}>
+      <View style={[styles.hudContainer, { paddingBottom: theme.spacing.ml, paddingTop: theme.spacing.sm }]}>
 
         {/* Back Button - Positioned absolutely */}
         {!hideNavButtons && onBack && (
@@ -149,12 +149,12 @@ function GroupLobbyHeaderInner({
             style={[
               styles.avatarCenter,
               styles.skeletonAvatar,
-              { backgroundColor: theme.colors.border },
+              { backgroundColor: theme.colors.border, marginBottom: theme.spacing.xl },
               skeletonStyle,
             ]}
           />
         ) : (
-          <View style={styles.avatarCenter}>
+          <View style={[styles.avatarCenter, { marginBottom: theme.spacing.xl }]}>
             <Pressable
               onPress={onAvatarPress}
               disabled={!onAvatarPress}
@@ -181,7 +181,7 @@ function GroupLobbyHeaderInner({
         )}
 
         {/* Name + creator + share */}
-        <View style={styles.hudTextBelow}>
+        <View style={[styles.hudTextBelow, { paddingHorizontal: theme.spacing.lg }]}>
           {isLoading ? (
             <View style={styles.hudTitleLeft}>
               {/* Name skeleton */}
@@ -355,16 +355,13 @@ const styles = StyleSheet.create({
   },
   avatarCenter: {
     alignSelf: "center",
-    marginBottom: 32,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 10,
   },
-  hudTextBelow: {
-    paddingHorizontal: 20,
-  },
+  hudTextBelow: {},
   hudTitleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -372,7 +369,7 @@ const styles = StyleSheet.create({
   },
   hudTitleLeft: {
     flex: 1,
-    marginEnd: 20,
+    marginEnd: 16,
   },
   shareButton: {
     width: 46,
@@ -418,13 +415,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   hudName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
   },
   descriptionText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "400",
-    lineHeight: 19,
+    lineHeight: 20,
     marginBottom: 4,
   },
   // Original Styles
@@ -446,11 +443,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   metaChipText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "600",
   },
   metaDot: {
-    fontSize: 11,
+    fontSize: 13,
   },
   avatarInfoHint: {
     position: "absolute",
@@ -468,7 +465,6 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 20,
     alignSelf: "center",
-    marginBottom: 32,
   },
   skeletonBar: {
     borderRadius: 6,

@@ -10,7 +10,7 @@ export function useGroupFixture(
   groupId: number | null,
   fixtureId: number | null
 ) {
-  const { data, isLoading, error } = useGroupQuery(groupId, {
+  const { data, isLoading, isPlaceholderData, error } = useGroupQuery(groupId, {
     includeFixtures: true,
     staleTime: 5 * 60 * 1000,
   });
@@ -38,6 +38,7 @@ export function useGroupFixture(
     allFixtures: fixtures,
     group,
     isLoading,
+    isPlaceholderData,
     error,
   };
 }

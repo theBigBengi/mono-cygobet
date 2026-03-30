@@ -37,7 +37,14 @@ export function PredictAllScreen() {
   const insets = useSafeAreaInsets();
 
   const queryClient = useQueryClient();
-  const { groups, isLoading } = usePredictableGroups();
+  const { groups: liveGroups, isLoading } = usePredictableGroups();
+
+  // Snapshot groups on first load — predictions should not re-sort or remove groups
+  const snapshotRef = useRef<typeof liveGroups | null>(null);
+  if (snapshotRef.current === null && liveGroups.length > 0) {
+    snapshotRef.current = liveGroups;
+  }
+  const groups = snapshotRef.current ?? liveGroups;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexSV = useSharedValue(0);
@@ -68,10 +75,10 @@ export function PredictAllScreen() {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && groups.length === 0) {
+    if (!isLoading && liveGroups.length === 0) {
       router.back();
     }
-  }, [isLoading, groups.length, router]);
+  }, [isLoading, liveGroups.length, router]);
 
   // Prefetch next group's data for instant swipe
   useEffect(() => {

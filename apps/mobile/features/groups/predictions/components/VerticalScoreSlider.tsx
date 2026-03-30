@@ -196,14 +196,12 @@ export const VerticalScoreSlider = React.memo(function VerticalScoreSlider({
     if (pagerGestureRef) g.blocksExternalGesture(pagerGestureRef);
     return g;
   })()
-    .onStart((e) => {
+    .onStart(() => {
       isSyncingFromProp.value = 0;
       runOnJS(setIsDragging)(true);
       if (onDragStart) runOnJS(onDragStart)();
-      // Jump thumb to touch position immediately
-      const touchY = Math.max(0, Math.min(MAX_Y, e.y));
-      tabY.value = touchY;
-      dragStartY.value = touchY;
+      // Start from current thumb position — don't jump to touch y
+      dragStartY.value = tabY.value;
     })
     .onUpdate((event) => {
       const newY = dragStartY.value + event.translationY;

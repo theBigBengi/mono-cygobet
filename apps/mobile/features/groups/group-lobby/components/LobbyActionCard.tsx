@@ -168,8 +168,8 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
   StyleSheet.create({
     card: {
       marginBottom: theme.spacing.md,
-      borderRadius: theme.radius.lg,
-      ...getShadowStyle("sm"),
+      borderRadius: theme.radius.sm,
+      ...getShadowStyle("md"),
     },
     row: {
       flexDirection: "row",

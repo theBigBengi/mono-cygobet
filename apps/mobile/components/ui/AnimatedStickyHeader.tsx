@@ -36,6 +36,8 @@ export interface HeaderAction {
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   size?: number;
+  /** Custom icon element — when set, overrides the default Ionicons rendering */
+  iconComponent?: React.ReactNode;
 }
 
 export interface AnimatedStickyHeaderProps {
@@ -207,11 +209,13 @@ export function AnimatedStickyHeader({
                     !transparentIcons && styles.iconCircleBg,
                   ]}
                 >
-                  <Ionicons
-                    name={action.icon}
-                    size={action.size ?? 20}
-                    color={theme.colors.textPrimary}
-                  />
+                  {action.iconComponent ?? (
+                    <Ionicons
+                      name={action.icon}
+                      size={action.size ?? 20}
+                      color={theme.colors.textPrimary}
+                    />
+                  )}
                 </View>
               </Pressable>
             ))}

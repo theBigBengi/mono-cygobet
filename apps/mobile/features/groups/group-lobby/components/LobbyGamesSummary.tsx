@@ -1,18 +1,13 @@
 // features/groups/group-lobby/components/LobbyGamesSummary.tsx
-// Games summary card — progress ring + stats in a clean card.
+// Games stats card — stats grid + view games button.
 
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Circle } from "react-native-svg";
+import * as Haptics from "expo-haptics";
 import { useTheme } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
-
-const RING_SIZE = 56;
-const RING_STROKE = 5;
-const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 export interface LobbyGamesSummaryProps {
   totalFixtures: number;
@@ -22,14 +17,13 @@ export interface LobbyGamesSummaryProps {
   predictableCount: number;
   liveGamesCount: number;
   onPress: () => void;
+  onPredictPress?: () => void;
 }
 
 function LobbyGamesSummaryInner({
   totalFixtures,
   completedFixturesCount,
   predictionsCount,
-  unpredictedCount,
-  predictableCount,
   liveGamesCount,
   onPress,
 }: LobbyGamesSummaryProps) {
@@ -38,112 +32,66 @@ function LobbyGamesSummaryInner({
   const styles = createStyles(theme);
 
   const remaining = totalFixtures - completedFixturesCount;
-  const progressPct =
-    totalFixtures > 0 ? completedFixturesCount / totalFixtures : 0;
-  const strokeDashoffset = RING_CIRCUMFERENCE * (1 - progressPct);
-
-  // Status config
-  let statusIcon: React.ComponentProps<typeof Ionicons>["name"] = "checkmark-circle";
-  let statusColor = theme.colors.success;
-  let statusText = t("lobby.summaryAllSet");
-
-  if (liveGamesCount > 0) {
-    statusIcon = "radio";
-    statusColor = theme.colors.live;
-    statusText = `${liveGamesCount} ${t("lobby.summaryLive")}`;
-  } else if (unpredictedCount > 0) {
-    statusIcon = "alert-circle";
-    statusColor = theme.colors.warning;
-    statusText = t("lobby.summaryNeedPredictionCount", { count: unpredictedCount });
-  } else if (predictableCount === 0) {
-    statusIcon = "time-outline";
-    statusColor = theme.colors.textSecondary;
-    statusText = t("lobby.summaryRemaining");
-  }
+  const isLive = liveGamesCount > 0;
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
+    <View
+      style={[
         styles.container,
         { backgroundColor: theme.colors.surface },
-        pressed && { opacity: 0.7 },
       ]}
     >
-      {/* Left: Progress ring */}
-      <View style={styles.ringSection}>
-        <Svg width={RING_SIZE} height={RING_SIZE}>
-          {/* Track */}
-          <Circle
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
-            r={RING_RADIUS}
-            stroke={theme.colors.border}
-            strokeWidth={RING_STROKE}
-            fill="none"
-          />
-          {/* Fill */}
-          <Circle
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
-            r={RING_RADIUS}
-            stroke={theme.colors.primary}
-            strokeWidth={RING_STROKE}
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={RING_CIRCUMFERENCE}
-            strokeDashoffset={strokeDashoffset}
-            rotation={-90}
-            origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
-          />
-        </Svg>
-        <View style={styles.ringLabel}>
-          <Text style={[styles.ringValue, { color: theme.colors.textPrimary }]}>
-            {Math.round(progressPct * 100)}
+      {/* Stats */}
+      <View style={styles.statsGrid}>
+        <View style={styles.stat}>
+          <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
+            {completedFixturesCount}
           </Text>
-          <Text style={[styles.ringUnit, { color: theme.colors.textSecondary }]}>%</Text>
+          <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+            {t("lobby.summaryCompleted")}
+          </Text>
         </View>
-      </View>
-
-      {/* Right: Stats */}
-      <View style={styles.statsSection}>
-        <View style={styles.statsGrid}>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
-              {completedFixturesCount}
-            </Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-              {t("lobby.summaryCompleted")}
-            </Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
-              {remaining}
-            </Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-              {t("lobby.summaryRemaining")}
-            </Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
-              {predictionsCount}
-            </Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-              {t("lobby.summaryPredicted")}
-            </Text>
-          </View>
+        <View style={styles.stat}>
+          <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
+            {remaining}
+          </Text>
+          <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+            {t("lobby.summaryRemaining")}
+          </Text>
         </View>
-
-        {/* Status pill */}
-        <View style={[styles.statusPill, { backgroundColor: statusColor + "14" }]}>
-          <Ionicons name={statusIcon} size={13} color={statusColor} />
-          <Text style={[styles.statusText, { color: statusColor }]}>
-            {statusText}
+        <View style={styles.stat}>
+          <Text style={[styles.statValue, { color: theme.colors.textPrimary }]}>
+            {predictionsCount}
+          </Text>
+          <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+            {t("lobby.summaryPredicted")}
           </Text>
         </View>
       </View>
 
-    </Pressable>
+      {/* Live indicator */}
+      {isLive && (
+        <View style={[styles.livePill, { backgroundColor: theme.colors.live + "18" }]}>
+          <View style={[styles.liveDot, { backgroundColor: theme.colors.live }]} />
+          <Text style={[styles.liveText, { color: theme.colors.live }]}>
+            {liveGamesCount} {t("lobby.summaryLive")}
+          </Text>
+        </View>
+      )}
+
+      {/* View Games button */}
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.viewGamesButton,
+          pressed && { opacity: 0.7 },
+        ]}
+      >
+        <Text style={styles.viewGamesText}>
+          {t("lobby.viewGames").toUpperCase()}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -152,39 +100,16 @@ export const LobbyGamesSummary = React.memo(LobbyGamesSummaryInner);
 const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
   StyleSheet.create({
     container: {
-      flexDirection: "row",
-      alignItems: "center",
       marginHorizontal: theme.spacing.md,
-      marginBottom: theme.spacing.lg,
-      borderRadius: theme.radius.lg,
+      marginBottom: theme.spacing.md,
+      borderRadius: theme.radius.sm,
       padding: theme.spacing.md,
-      ...getShadowStyle("sm"),
+      ...getShadowStyle("md"),
     },
-    ringSection: {
-      width: RING_SIZE,
-      height: RING_SIZE,
-      alignItems: "center",
-      justifyContent: "center",
-      marginEnd: theme.spacing.md,
-    },
-    ringLabel: {
-      ...StyleSheet.absoluteFillObject,
-      alignItems: "center",
-      justifyContent: "center",
-      flexDirection: "row",
-    },
-    ringValue: {
-      fontSize: 16,
-      fontWeight: "800",
-    },
-    ringUnit: {
-      fontSize: 10,
-      fontWeight: "600",
-      marginTop: theme.spacing.xxs,
-    },
-    statsSection: {
-      flex: 1,
-      gap: theme.spacing.sm,
+    title: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: theme.spacing.ms,
     },
     statsGrid: {
       flexDirection: "row",
@@ -192,6 +117,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
     },
     stat: {
       flex: 1,
+      alignItems: "center",
     },
     statValue: {
       fontSize: 18,
@@ -202,17 +128,38 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
       fontWeight: "500",
       marginTop: 1,
     },
-    statusPill: {
+    livePill: {
       flexDirection: "row",
       alignItems: "center",
-      alignSelf: "flex-start",
+      alignSelf: "center",
       gap: 5,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,
-      borderRadius: theme.radius.xl,
+      borderRadius: theme.radius.full,
+      marginTop: theme.spacing.sm,
     },
-    statusText: {
+    liveDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    liveText: {
       fontSize: 11,
       fontWeight: "700",
+    },
+    viewGamesButton: {
+      backgroundColor: "transparent",
+      borderWidth: 1,
+      borderBottomWidth: 3,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radius.sm,
+      paddingVertical: theme.spacing.ms,
+      alignItems: "center",
+      marginTop: theme.spacing.ms,
+    },
+    viewGamesText: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: theme.colors.primary,
     },
   });

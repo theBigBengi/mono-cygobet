@@ -1,9 +1,8 @@
 // features/groups/group-lobby/components/GroupTimelineBar.tsx
-// Timeline progress bar showing group duration from start to end date.
+// Timeline progress bar showing games completed out of total.
 
 import React, { useEffect } from "react";
 import { View, StyleSheet } from "react-native";
-import { Ionicons, Entypo } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -12,108 +11,75 @@ import Animated, {
 } from "react-native-reanimated";
 import { AppText } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
+import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 
 interface GroupTimelineBarProps {
   startDate: string;
   endDate: string;
-  /** Progress value between 0 and 1 */
+  /** Time-based progress (0–1) — kept for API compat, not used */
   progress: number;
-  /** When true, shows skeleton loader */
+  /** Number of completed fixtures */
+  completedCount?: number;
+  /** Total number of fixtures */
+  totalCount?: number;
   isLoading?: boolean;
 }
 
 function GroupTimelineBarInner({
-  startDate,
   endDate,
-  progress,
+  completedCount = 0,
+  totalCount = 0,
   isLoading = false,
 }: GroupTimelineBarProps) {
+  const { t } = useTranslation("common");
   const { theme } = useTheme();
   const styles = createStyles(theme);
-  const opacity = useSharedValue(0.3);
+  const skeletonOpacity = useSharedValue(0.3);
+
+  const gamesProgress = totalCount > 0 ? completedCount / totalCount : 0;
 
   useEffect(() => {
     if (isLoading) {
-      opacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
+      skeletonOpacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
     }
-  }, [isLoading, opacity]);
+  }, [isLoading, skeletonOpacity]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
+  const skeletonStyle = useAnimatedStyle(() => ({
+    opacity: skeletonOpacity.value,
   }));
 
-  // Skeleton loading state
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <View style={styles.barContainer}>
-          <Animated.View
-            style={[
-              styles.flagContainer,
-              { backgroundColor: theme.colors.border },
-              animatedStyle,
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.track,
-              { backgroundColor: theme.colors.border },
-              animatedStyle,
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.trophyContainer,
-              { backgroundColor: theme.colors.border },
-              animatedStyle,
-            ]}
-          />
-        </View>
-        <View style={styles.labelsContainer}>
-          <Animated.View
-            style={[
-              styles.skeletonLabel,
-              { backgroundColor: theme.colors.border },
-              animatedStyle,
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.skeletonLabel,
-              { backgroundColor: theme.colors.border },
-              animatedStyle,
-            ]}
-          />
-        </View>
+        <Animated.View
+          style={[styles.track, { backgroundColor: theme.colors.border }, skeletonStyle]}
+        />
       </View>
     );
   }
 
-  const startFormatted = format(new Date(startDate), "dd.MM.");
-  const endFormatted = format(new Date(endDate), "dd.MM.");
-
-  const clampedProgress = Math.max(0, Math.min(1, progress));
-
   return (
     <View style={styles.container}>
-      <AppText variant="caption" color="secondary" style={styles.dateLabel}>
-        {startFormatted}
-      </AppText>
       <View style={[styles.track, { backgroundColor: theme.colors.border }]}>
         <View
           style={[
             styles.fill,
             {
-              width: `${clampedProgress * 100}%`,
-              backgroundColor: theme.colors.textSecondary,
+              width: `${gamesProgress * 100}%`,
+              backgroundColor: theme.colors.primary,
             },
           ]}
         />
       </View>
-      <AppText variant="caption" color="secondary" style={styles.dateLabel}>
-        {endFormatted}
-      </AppText>
+      <View style={styles.row}>
+        <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+          {`${completedCount}/${totalCount} ${t("lobby.summaryCompleted").toLowerCase()}`}
+        </AppText>
+        <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+          {format(new Date(endDate), "dd.MM.")}
+        </AppText>
+      </View>
     </View>
   );
 }
@@ -123,27 +89,27 @@ export const GroupTimelineBar = React.memo(GroupTimelineBarInner);
 const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
   StyleSheet.create({
     container: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: theme.spacing.ml,
+      marginHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
-      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.sm,
+    },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: theme.spacing.xs,
     },
     track: {
-      flex: 1,
-      height: 3,
+      height: 4,
       borderRadius: 2,
+      overflow: "hidden",
     },
     fill: {
       height: "100%",
       borderRadius: 2,
     },
-    dateLabel: {
+    label: {
       fontSize: 11,
-    },
-    skeletonLabel: {
-      width: 32,
-      height: 10,
-      borderRadius: theme.spacing.xs,
+      fontWeight: "600",
     },
   });

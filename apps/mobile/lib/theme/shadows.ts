@@ -30,12 +30,12 @@ function shadow(
 }
 
 export const shadows = {
-  /** Cards, buttons — subtle lift */
-  sm: shadow(1, 3, 0.06, 2),
-  /** Dropdowns, popovers — refined depth */
-  md: shadow(2, 8, 0.08, 4),
+  /** Cards, buttons — visible float */
+  sm: shadow(3, 10, 0.12, 4),
+  /** Dropdowns, popovers — clear depth */
+  md: shadow(6, 16, 0.15, 6),
   /** Floating elements, FABs — prominent */
-  lg: shadow(4, 16, 0.12, 8),
+  lg: shadow(8, 24, 0.18, 10),
   /** Modals, overlays — heavy */
   xl: shadow(8, 32, 0.16, 16),
 } as const;

@@ -25,7 +25,7 @@ import Animated, {
   FadeIn,
   FadeOut,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome6 } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Screen, AppText } from "@/components/ui";
@@ -316,6 +316,13 @@ function GroupLobbyContent() {
             titleAlignLeft
             threshold={insets.top + 170}
             rightActions={[
+              ...(group.inviteAccess !== "admin_only" || isCreator
+                ? [{
+                    icon: "share-outline" as const,
+                    onPress: handleOpenInvite,
+                    iconComponent: <FontAwesome6 name="share" size={18} color={theme.colors.textPrimary} />,
+                  }]
+                : []),
               {
                 icon: "ellipsis-horizontal",
                 onPress: () => router.push({ pathname: '/groups/[id]/settings', params: { id: String(group.id) } }),

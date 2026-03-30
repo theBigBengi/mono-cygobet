@@ -20,9 +20,9 @@ export function Card({ children, style, ...props }: CardProps) {
       style={[
         {
           backgroundColor: theme.colors.surface,
-          borderRadius: theme.radius.lg,
-          padding: theme.spacing.md,
-          ...getShadowStyle("sm"),
+          borderRadius: theme.radius.xl,
+          padding: theme.spacing.lg,
+          ...getShadowStyle("md"),
         },
         style,
       ]}

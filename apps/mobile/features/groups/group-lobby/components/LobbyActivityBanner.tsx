@@ -214,7 +214,7 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChang
               onPress={onPress}
               style={({ pressed }) => [pressed && styles.pressed]}
             >
-              <Text style={[styles.seeAllText, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>
                 {t("lobby.seeAll")}
               </Text>
             </Pressable>
@@ -242,11 +242,11 @@ function LobbyActivityBannerInner({ groupId, unreadCount, onPress, onExpandChang
                   onPress={handleToggle}
                   style={({ pressed }) => [
                     styles.toggleButton,
-                    { backgroundColor: theme.colors.textPrimary + "08" },
+                    { backgroundColor: theme.colors.primary + "30" },
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.buttonText, { color: theme.colors.textPrimary }]}>
+                  <Text style={[styles.buttonText, { color: theme.colors.primary }]}>
                     {expanded ? t("lobby.seeLess") : t("lobby.seeMore")}
                   </Text>
                 </Pressable>
@@ -272,9 +272,9 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
       marginBottom: theme.spacing.lg,
     },
     wrapper: {
-      borderRadius: theme.radius.lg,
-      padding: theme.spacing.md,
-      ...getShadowStyle("sm"),
+      borderRadius: theme.radius.sm,
+      padding: theme.spacing.lg,
+      ...getShadowStyle("md"),
     },
     headerRow: {
       flexDirection: "row",
@@ -283,12 +283,13 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
       marginBottom: theme.spacing.ms,
     },
     sectionTitle: {
-      fontSize: 15,
+      fontSize: 18,
       fontWeight: "700",
     },
     seeAllText: {
-      fontSize: 13,
-      fontWeight: "600",
+      fontSize: 14,
+      fontWeight: "700",
+      color: theme.colors.primary,
     },
     listWrapper: {
       position: "relative",
@@ -303,12 +304,12 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
       flex: 1,
     },
     rowTime: {
-      fontSize: 11,
+      fontSize: 12,
       fontWeight: "500",
       marginTop: theme.spacing.xxs,
     },
     rowBody: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: "500",
     },
     rowIcon: {
@@ -335,12 +336,12 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
     },
     toggleButton: {
       marginTop: -4,
-      paddingVertical: theme.spacing.sm,
+      paddingVertical: theme.spacing.ms,
       paddingHorizontal: theme.spacing.lg,
-      borderRadius: theme.radius.xl,
+      borderRadius: theme.radius.full,
     },
     buttonText: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: "700",
     },
     pressed: {

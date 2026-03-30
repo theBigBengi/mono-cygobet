@@ -45,7 +45,7 @@ export function GroupLobbyStatusCard({ status }: GroupLobbyStatusCardProps) {
 const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
   StyleSheet.create({
     card: {
-      borderRadius: theme.radius.lg,
+      borderRadius: theme.radius.sm,
       padding: theme.spacing.ml,
       marginBottom: theme.spacing.lg,
       ...getShadowStyle("sm"),

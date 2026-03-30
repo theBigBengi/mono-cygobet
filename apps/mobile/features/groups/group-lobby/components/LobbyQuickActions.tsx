@@ -1,20 +1,15 @@
 // features/groups/group-lobby/components/LobbyQuickActions.tsx
-// Compact pill-row quick action buttons.
+// Predict banner — gradient card similar to PredictAllBanner in groups list.
+// Shows unpredicted count and CTA to predict. Hidden when all predicted.
 
-import React, { useEffect } from "react";
-import { Animated as RNAnimated, View, ScrollView, StyleSheet, Pressable, Text } from "react-native";
+import React from "react";
+import { View, StyleSheet, Pressable, Text } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useTheme, spacing, radius } from "@/lib/theme";
+import * as Haptics from "expo-haptics";
+import { spacing, radius } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
-import { AnimatedGradientCard } from "./AnimatedGradientCard";
 
 export interface QuickAction {
   icon: "cards" | "chat" | "stats" | "activity";
@@ -26,23 +21,8 @@ export interface QuickAction {
 export interface LobbyQuickActionsProps {
   actions: QuickAction[];
   isLoading?: boolean;
-  /** Number of predictable fixtures without a prediction */
   unpredictedCount?: number;
-  /** Total number of predictable fixtures */
   predictableCount?: number;
-}
-
-function renderIcon(icon: QuickAction["icon"], color: string, size: number) {
-  switch (icon) {
-case "cards":
-      return <MaterialCommunityIcons name="cards-outline" size={size + 2} color={color} />;
-    case "chat":
-      return <Ionicons name="chatbubbles-outline" size={size} color={color} />;
-case "stats":
-      return <MaterialIcons name="view-comfortable" size={size + 4} color={color} />;
-    case "activity":
-      return <Ionicons name="newspaper-outline" size={size} color={color} />;
-  }
 }
 
 function LobbyQuickActionsInner({
@@ -52,96 +32,43 @@ function LobbyQuickActionsInner({
   predictableCount = 0,
 }: LobbyQuickActionsProps) {
   const { t } = useTranslation("common");
-  const { theme } = useTheme();
-  const opacity = useSharedValue(0.3);
+  const cardsAction = actions.find((a) => a.icon === "cards");
 
-  useEffect(() => {
-    if (isLoading) {
-      opacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
-    }
-  }, [isLoading, opacity]);
+  if (isLoading || unpredictedCount === 0 || !cardsAction) return null;
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Animated.View
-          style={[
-            styles.skeletonCard,
-            { backgroundColor: theme.colors.border },
-            animatedStyle,
-          ]}
-        />
-      </View>
-    );
-  }
-
-  const renderAction = (action: QuickAction, index: number) => {
-    const hasBadge = action.badge != null && action.badge > 0;
-    const isFirst = action.icon === "cards";
-    return (
-      <Pressable
-        key={index}
-        onPress={action.onPress}
-        style={({ pressed }) => [
-          styles.pill,
-          isFirst && styles.primaryPill,
-          {
-            backgroundColor: pressed ? theme.colors.textPrimary + "10" : "transparent",
-          },
-        ]}
-      >
-        {renderIcon(action.icon, isFirst ? theme.colors.textPrimary : theme.colors.textSecondary, 22)}
-        {hasBadge && (
-          <View
-            style={[
-              styles.badge,
-              { backgroundColor: theme.colors.danger },
-            ]}
-          >
-            <Text style={[styles.badgeText, { color: theme.colors.textInverse }]}>
-              {action.badge! > 99 ? "99+" : action.badge}
-            </Text>
-          </View>
-        )}
-      </Pressable>
-    );
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    cardsAction.onPress();
   };
 
-  const cardsAction = actions.find((a) => a.icon === "cards");
-  const otherActions = actions.filter((a) => a.icon !== "cards");
-
   return (
-    <View style={styles.container}>
-      {cardsAction && (
-        <Pressable
-          onPress={cardsAction.onPress}
-          style={({ pressed }) => [
-            styles.cardWrapper,
-            { backgroundColor: theme.colors.surface },
-            pressed && { opacity: 0.7 },
-          ]}
-        >
-          <View style={styles.cardsRow}>
-            <MaterialCommunityIcons name="cards-outline" size={18} color={theme.colors.textPrimary} />
-            <Text style={[styles.cardsSubtitle, { color: theme.colors.textPrimary }]}>
-              {unpredictedCount === 0
-                ? t("lobby.allPredicted")
-                : t("lobby.predictionsLeft", { count: unpredictedCount, total: predictableCount })}
+    <Pressable
+      onPress={handlePress}
+      style={({ pressed }) => [
+        styles.container,
+        pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
+      ]}
+    >
+      <LinearGradient
+        colors={["#007AFF", "#5856D6"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}
+      >
+        <View style={styles.content}>
+          <Text style={styles.heroNumber}>{unpredictedCount}</Text>
+          <View style={styles.textCol}>
+            <Text style={styles.title}>
+              {t("groups.predictAllGamesLabel")}
             </Text>
-            <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
+            <Text style={styles.subtitle}>
+              {t("lobby.predictionsLeft", { count: unpredictedCount, total: predictableCount })}
+            </Text>
           </View>
-        </Pressable>
-      )}
-      <View style={styles.row}>
-        <View style={styles.leftGroup}>
-          {otherActions.map((a, i) => renderAction(a, i + 1))}
+          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.85)" />
         </View>
-      </View>
-    </View>
+      </LinearGradient>
+    </Pressable>
   );
 }
 
@@ -150,70 +77,38 @@ export const LobbyQuickActions = React.memo(LobbyQuickActionsInner);
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: spacing.md,
-    marginTop: spacing.ms,
     marginBottom: spacing.md,
+    borderRadius: radius.sm,
+    ...getShadowStyle("md"),
   },
-  cardWrapper: {
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    ...getShadowStyle("sm"),
+  gradient: {
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: spacing.ms,
-  },
-  cardsRow: {
+  content: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
+    gap: spacing.ms,
   },
-  cardsSubtitle: {
+  heroNumber: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    lineHeight: 32,
+  },
+  textCol: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: "500",
+    gap: 2,
   },
-  leftGroup: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    flex: 1,
-    justifyContent: "center",
-  },
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-    width: 44,
-    height: 44,
-    borderRadius: radius.full,
-  },
-  primaryPill: {
-  },
-  pillLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  badge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-  },
-  badgeText: {
+  title: {
+    fontSize: 15,
     fontWeight: "700",
-    fontSize: 10,
+    color: "#FFFFFF",
   },
-  skeletonPill: {
-    width: 90,
-    height: 36,
-    borderRadius: radius.xl,
-  },
-  skeletonCard: {
-    height: 44,
-    borderRadius: radius.md,
+  subtitle: {
+    fontSize: 12,
+    fontWeight: "400",
+    color: "rgba(255,255,255,0.7)",
   },
 });

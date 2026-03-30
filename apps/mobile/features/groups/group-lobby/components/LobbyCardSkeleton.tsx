@@ -42,7 +42,7 @@ export function LobbyCardSkeleton({ height = 80 }: LobbyCardSkeletonProps) {
 const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
   StyleSheet.create({
     skeleton: {
-      borderRadius: theme.radius.md,
+      borderRadius: theme.radius.sm,
       marginBottom: theme.spacing.md,
       // marginHorizontal: theme.spacing.md,
     },

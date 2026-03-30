@@ -215,6 +215,8 @@
     "predictAll": "Predict All",
     "predictAllBanner": "{{count}} games to predict across {{groups}} groups",
     "predictAllBannerSingle": "{{count}} games to predict in 1 group",
+    "predictAllGamesLabel": "games to predict",
+    "predictAllAcrossGroups": "across {{count}} groups",
     "predictAllLoading": "Loading predictions..."
   },
   "lobby": {
@@ -356,6 +358,7 @@
     "winnerWithPoints": "{{name}} · {{points}} pts",
     "winnerPoints": "{{points}} pts",
     "viewAll": "View ranking",
+    "viewGames": "View Games",
     "tapToPredict": "Tap to predict",
     "yourRankSection": "YOUR RANK",
     "viewRanking": "View ranking",
@@ -386,6 +389,7 @@
     "allPredicted": "All games predicted",
     "gamesSummary": "Games",
     "summaryCompleted": "Completed",
+    "gamesPlayed": "games played",
     "summaryRemaining": "Remaining",
     "summaryLive": "LIVE",
     "summaryPredicted": "Predicted",
@@ -460,7 +464,9 @@
     "allTeams": "All Teams",
     "allCompetitions": "All Competitions",
     "selectTeam": "Select Team",
-    "selectCompetition": "Select Competition"
+    "selectCompetition": "Select Competition",
+    "filterUnpredicted": "Unpredicted",
+    "filterAll": "All"
   },
   "countdown": {
     "inHoursMinutes": "in {{hours}}h {{minutes}}m",

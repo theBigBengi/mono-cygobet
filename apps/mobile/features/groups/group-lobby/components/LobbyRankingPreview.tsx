@@ -116,20 +116,15 @@ export function LobbyRankingPreview({
           <View
             style={[
               styles.viewAllButton,
-              { borderTopColor: theme.colors.border },
+              { backgroundColor: theme.colors.primary + "30" },
             ]}
           >
             <AppText
               variant="caption"
               style={[styles.viewAllText, { color: theme.colors.primary }]}
             >
-              {t("lobby.viewAll")}
+              {t("lobby.viewAll").toUpperCase()}
             </AppText>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={theme.colors.primary}
-            />
           </View>
         )}
       </Pressable>
@@ -151,7 +146,8 @@ const styles = StyleSheet.create({
     marginEnd: 0,
   },
   title: {
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "700",
   },
   pendingText: {
     marginTop: 0,
@@ -181,15 +177,15 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   viewAllButton: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: spacing.xs,
-    marginTop: spacing.ms,
-    paddingTop: spacing.ms,
-    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingVertical: spacing.ms,
+    borderRadius: radius.full,
   },
   viewAllText: {
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
 });

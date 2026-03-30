@@ -1,10 +1,9 @@
 import React from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
-import { AppText } from "@/components/ui";
 import { useTheme, spacing, radius } from "@/lib/theme";
 import { getShadowStyle } from "@/lib/theme/shadows";
 import { usePredictableGroups } from "../hooks/usePredictableGroups";
@@ -17,14 +16,6 @@ export function PredictAllBanner() {
 
   if (totalUnpredicted === 0) return null;
 
-  const summaryText =
-    totalGroups === 1
-      ? t("groups.predictAllBannerSingle", { count: totalUnpredicted })
-      : t("groups.predictAllBanner", {
-          count: totalUnpredicted,
-          groups: totalGroups,
-        });
-
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push("/groups/predict-all");
@@ -35,27 +26,35 @@ export function PredictAllBanner() {
       onPress={handlePress}
       style={({ pressed }) => [
         styles.container,
-        { backgroundColor: theme.colors.cardBackground },
-        pressed && { opacity: 0.7 },
+        pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
       ]}
     >
-      <View style={styles.content}>
-        <View style={[styles.iconCircle, { backgroundColor: theme.colors.border }]}>
-          <MaterialCommunityIcons
-            name="cards-outline"
-            size={16}
-            color={theme.colors.textPrimary}
-          />
+      <LinearGradient
+        colors={["#007AFF", "#5856D6"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}
+      >
+        {/* Info row: big number + description */}
+        <View style={styles.infoRow}>
+          <Text style={styles.heroNumber}>{totalUnpredicted}</Text>
+          <View style={styles.textCol}>
+            <Text style={styles.label}>
+              {t("groups.predictAllGamesLabel")}
+            </Text>
+            {totalGroups > 1 && (
+              <Text style={styles.subtitle}>
+                {t("groups.predictAllAcrossGroups", { count: totalGroups })}
+              </Text>
+            )}
+          </View>
         </View>
-        <AppText variant="label" color="secondary" style={{ flex: 1 }}>
-          {summaryText}
-        </AppText>
-        <Ionicons
-          name="chevron-forward"
-          size={16}
-          color={theme.colors.textSecondary}
-        />
-      </View>
+
+        {/* CTA button */}
+        <View style={styles.ctaButton}>
+          <Text style={styles.ctaText}>{t("groups.predictAll").toUpperCase()}</Text>
+        </View>
+      </LinearGradient>
     </Pressable>
   );
 }
@@ -63,24 +62,54 @@ export function PredictAllBanner() {
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: spacing.md,
-    marginTop: radius.md,
+    marginTop: spacing.ms,
     marginBottom: spacing.sm,
     borderRadius: radius.lg,
-    ...getShadowStyle("sm"),
   },
-  content: {
+  gradient: {
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.ml,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.md,
+  },
+  infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: radius.md,
-    paddingVertical: radius.sm,
+    gap: spacing.md,
   },
-  iconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.full,
+  heroNumber: {
+    fontSize: 40,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    lineHeight: 44,
+  },
+  textCol: {
+    flex: 1,
+    gap: 2,
+  },
+  label: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    lineHeight: 22,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.7)",
+    lineHeight: 18,
+  },
+  ctaButton: {
     alignItems: "center",
     justifyContent: "center",
-    marginEnd: spacing.sm,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: radius.full,
+    paddingVertical: spacing.ms,
+  },
+  ctaText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
 });

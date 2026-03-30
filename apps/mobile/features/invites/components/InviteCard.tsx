@@ -52,9 +52,9 @@ export function InviteCard({
           styles.card,
           {
             backgroundColor: theme.colors.cardBackground,
-            borderRadius: theme.radius.lg,
-            padding: theme.spacing.md,
-            ...getShadowStyle("sm"),
+            borderRadius: theme.radius.xl,
+            padding: theme.spacing.ml,
+            ...getShadowStyle("md"),
           },
         ]}
       >

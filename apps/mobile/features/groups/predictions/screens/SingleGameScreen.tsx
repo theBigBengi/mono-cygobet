@@ -112,7 +112,7 @@ function SingleGameContent({
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const { fixture, allFixtures, group, isLoading, error } = useGroupFixture(
+  const { fixture, allFixtures, group, isLoading, isPlaceholderData, error } = useGroupFixture(
     groupId,
     fixtureId
   );
@@ -210,9 +210,14 @@ function SingleGameContent({
     pagerGestureRef,
   });
 
-  // Data still loading
-  if (isLoading) {
-    return <QueryLoadingView message={t("groups.loadingGroup")} />;
+  // Data still loading (or placeholder data without real fixtures — avoids card jump)
+  if (isLoading || isPlaceholderData) {
+    return (
+      <PredictAllCardSkeleton
+        cardHeight={CARD_HEIGHT}
+        contentTop={CONTENT_TOP}
+      />
+    );
   }
   if (error) {
     return <QueryErrorView message={t("groups.failedLoadGroup")} />;
