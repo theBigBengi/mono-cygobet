@@ -127,17 +127,6 @@ export function FloatingTabBar({
               >
                 {label}
               </AppText>
-              {isFocused && (
-                <View
-                  style={{
-                    width: 4,
-                    height: 4,
-                    borderRadius: theme.radius.xs,
-                    backgroundColor: theme.colors.primary,
-                    marginTop: theme.spacing.xxs,
-                  }}
-                />
-              )}
             </Pressable>
           );
         })}
