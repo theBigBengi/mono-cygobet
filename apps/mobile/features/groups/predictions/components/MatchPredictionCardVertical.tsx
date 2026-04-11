@@ -291,84 +291,129 @@ export function MatchPredictionCardVertical({
   }));
 
   if (cardLayout === "horizontal") {
-    return (
-      <View ref={cardRef} style={styles.outerRow}>
-        <View style={styles.cardRow}>
-          {/* Card — center */}
-          <View
-            style={[
-              { flex: 1, backgroundColor: theme.colors.textSecondary + "12", borderRadius: radius.s, paddingHorizontal: spacing.sm, overflow: "hidden" as const },
-              isCancelled && { opacity: 0.6 },
-            ]}
-          >
-            <Animated.View style={[styles.highlightOverlay, { backgroundColor: theme.colors.primary + "15" }, highlightAnimStyle]} pointerEvents="none" />
-            {/* Match row: [Home] [Center] [Away] */}
-            <View style={styles.hRow}>
-              {/* Home team */}
-              <Pressable style={styles.hTeamHalf} onPress={handlePressCenter}>
-                <TeamLogo imagePath={fixture.homeTeam?.imagePath} teamName={homeTeamName} size={22} rounded={false} />
-                <AppText
-                  variant="body"
-                  numberOfLines={1}
-                  style={[
-                    styles.hTeamName,
-                    { color: isHomeFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary },
-                  ]}
-                >
-                  {homeTeamName}
-                </AppText>
-              </Pressable>
-
-              {/* Center: prediction always aligned with logos, result pinned below */}
-              <View style={styles.hCenter}>
-                {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
-                  <ScoreInputPair
-                    homeValue={prediction.home}
-                    awayValue={prediction.away}
-                    isHomeFocused={isHomeFocused}
-                    isAwayFocused={isAwayFocused}
-                    isEditable={isEditable}
-                    isFinished={isFinished}
-                    isLive={isLive}
-                    homeRef={homeRef}
-                    awayRef={awayRef}
-                    onHomeChange={handleHomeChange}
-                    onAwayChange={handleAwayChange}
-                    onHomeFocus={handleHomeFocus}
-                    onAwayFocus={handleAwayFocus}
-                    onBlur={onBlur}
-                    onHomeAutoNext={onAutoNext ? handleHomeAutoNext : undefined}
-                    onAwayAutoNext={onAutoNext ? handleAwayAutoNext : undefined}
-                    isCorrect={predictionSuccess}
-                  />
-                )}
-                {(isFinished || isLive) && gameResultOrTime && (
-                  <Text style={[styles.hResultText, { color: isLive ? theme.colors.live : theme.colors.textSecondary, position: "absolute", bottom: -14 }]}>
-                    {gameResultOrTime.home ?? "-"}:{gameResultOrTime.away ?? "-"}
-                  </Text>
-                )}
-              </View>
-
-              {/* Away team */}
-              <Pressable style={[styles.hTeamHalf, { flexDirection: "row-reverse" }]} onPress={handlePressCenter}>
-                <TeamLogo imagePath={fixture.awayTeam?.imagePath} teamName={awayTeamName} size={22} rounded={false} />
-                <AppText
-                  variant="body"
-                  numberOfLines={1}
-                  style={[
-                    styles.hTeamName,
-                    { color: isAwayFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary, textAlign: "right" },
-                  ]}
-                >
-                  {awayTeamName}
-                </AppText>
-              </Pressable>
-            </View>
-          </View>{/* close card */}
-
-
-
+    // Points/status badge
+    const hPointsElement = (() => {
+      if (isCancelled) {
+        const label = ("cancelLabel" in statusData ? statusData.cancelLabel : undefined) ?? statusData.top;
+        return <Text style={{ fontSize: 10, fontWeight: "600", color: theme.colors.textSecondary }}>{label}</Text>;
+      }
+      if (isLive) {
+        return <Text style={{ fontSize: 10, fontWeight: "600", color: theme.colors.live }}>LIVE {statusData.inline}</Text>;
+      }
+      if (isFinished) {
+        const fp = fixture.prediction;
+        const hasServerPrediction = fp != null && fp.home != null && fp.away != null;
+        const pts = hasServerPrediction ? (fp.points ?? 0) : 0;
+        const predResult: "max" | true | false = isMaxPoints ? "max" : pts > 0 ? true : false;
+        const textColor = predResult === "max" ? theme.colors.success : predResult === true ? theme.colors.warning : theme.colors.danger;
+        const bgColor = predResult === "max" ? theme.colors.success + "18" : predResult === true ? theme.colors.warning + "18" : theme.colors.danger + "15";
+        return (
+          <View style={{ backgroundColor: bgColor, borderRadius: radius.xs, paddingHorizontal: 6, paddingVertical: 1 }}>
+            <Text style={{ fontSize: 10, fontWeight: "700", color: textColor }}>{pts} PTS</Text>
+          </View>
+        );
+      }
+      // Upcoming: show check/plus
+      return hasPrediction ? (
+        <View style={{ width: 16, height: 16, borderRadius: radius.xs, backgroundColor: "#34C75920", alignItems: "center", justifyContent: "center" }}>
+          <Ionicons name="checkmark" size={10} color="#34C759" />
         </View>
+      ) : (
+        <View style={{ width: 16, height: 16, borderRadius: radius.xs, borderWidth: 1.5, borderColor: theme.colors.textSecondary + "60", alignItems: "center", justifyContent: "center" }}>
+          <FontAwesome6 name="plus" size={8} color={theme.colors.textSecondary + "60"} />
+        </View>
+      );
+    })();
+
+    return (
+      <View ref={cardRef} style={[styles.outerRow, { marginBottom: spacing.xs }]}>
+        <Pressable onPress={handlePressCenter} style={isCancelled ? { opacity: 0.6 } : undefined}>
+          <Animated.View style={[styles.highlightOverlay, { backgroundColor: theme.colors.primary + "15", borderRadius: radius.s }, highlightAnimStyle]} pointerEvents="none" />
+
+          {/* Top info row: time/date left — status/points right */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: spacing.xs, paddingBottom: spacing.xs, paddingHorizontal: spacing.sm, backgroundColor: theme.colors.textSecondary + "12" }}>
+            <Text style={{ fontSize: 10, fontWeight: "500", color: isLive ? theme.colors.live : theme.colors.textSecondary }}>
+              {statusData.inline}
+            </Text>
+            {hPointsElement}
+          </View>
+
+          {/* Main row: [Home Logo+Name] [Score] [Away Name+Logo] */}
+          <View style={styles.hRow}>
+            {/* Home team */}
+            <View style={styles.hTeamHalf}>
+              <TeamLogo imagePath={fixture.homeTeam?.imagePath} teamName={homeTeamName} size={22} rounded={false} />
+              <AppText
+                variant="body"
+                numberOfLines={1}
+                style={[
+                  styles.hTeamName,
+                  { color: isHomeFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary },
+                ]}
+              >
+                {homeTeamName}
+              </AppText>
+            </View>
+
+            {/* Home result */}
+            <View style={{ width: 20, alignItems: "center" }}>
+              {(isFinished || isLive) && gameResultOrTime && (
+                <Text style={[styles.hResultText, { color: isLive ? theme.colors.live : theme.colors.textSecondary }]}>
+                  {gameResultOrTime.home ?? "-"}
+                </Text>
+              )}
+            </View>
+
+            {/* Center: prediction */}
+            <View style={styles.hCenter}>
+              {predictionMode === "MatchWinner" && onSelectOutcome ? null : (
+                <ScoreInputPair
+                  homeValue={prediction.home}
+                  awayValue={prediction.away}
+                  isHomeFocused={isHomeFocused}
+                  isAwayFocused={isAwayFocused}
+                  isEditable={isEditable}
+                  isFinished={isFinished}
+                  isLive={isLive}
+                  homeRef={homeRef}
+                  awayRef={awayRef}
+                  onHomeChange={handleHomeChange}
+                  onAwayChange={handleAwayChange}
+                  onHomeFocus={handleHomeFocus}
+                  onAwayFocus={handleAwayFocus}
+                  onBlur={onBlur}
+                  onHomeAutoNext={onAutoNext ? handleHomeAutoNext : undefined}
+                  onAwayAutoNext={onAutoNext ? handleAwayAutoNext : undefined}
+                  isCorrect={predictionSuccess}
+                />
+              )}
+            </View>
+
+            {/* Away result */}
+            <View style={{ width: 20, alignItems: "center" }}>
+              {(isFinished || isLive) && gameResultOrTime && (
+                <Text style={[styles.hResultText, { color: isLive ? theme.colors.live : theme.colors.textSecondary }]}>
+                  {gameResultOrTime.away ?? "-"}
+                </Text>
+              )}
+            </View>
+
+            {/* Away team */}
+            <View style={[styles.hTeamHalf, { flexDirection: "row-reverse" }]}>
+              <TeamLogo imagePath={fixture.awayTeam?.imagePath} teamName={awayTeamName} size={22} rounded={false} />
+              <AppText
+                variant="body"
+                numberOfLines={1}
+                style={[
+                  styles.hTeamName,
+                  { color: isAwayFocused ? theme.colors.primary : (!isFinished && !isLive) ? theme.colors.textPrimary : theme.colors.textSecondary, textAlign: "right" },
+                ]}
+              >
+                {awayTeamName}
+              </AppText>
+            </View>
+          </View>
+        </Pressable>
       </View>
     );
   }
@@ -395,12 +440,15 @@ export function MatchPredictionCardVertical({
         >
           <View style={styles.cardRow}>
             {/* Unified card: date/time + match content */}
-            <View style={[styles.hRowBorder, { backgroundColor: theme.colors.textSecondary + "12", flexDirection: "row", alignItems: "stretch", flex: 1, overflow: "hidden", paddingLeft: 2 }]}>
+            <View style={[styles.hRowBorder, { backgroundColor: "transparent", flexDirection: "row", alignItems: "stretch", flex: 1, overflow: "hidden", paddingLeft: 2, paddingRight: 0 }]}>
               <Animated.View style={[styles.highlightOverlay, { backgroundColor: theme.colors.primary + "15" }, highlightAnimStyle]} pointerEvents="none" />
               {/* Status Box — left column */}
               <View style={{ width: 42, alignItems: "center", justifyContent: "center", marginRight: spacing.sm }}>
                 {statusBox}
               </View>
+
+              {/* Separator: date | match */}
+              <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: theme.colors.textSecondary + "60", alignSelf: "stretch", marginVertical: spacing.xs, marginRight: spacing.sm }} />
 
               {/* Match content */}
               <View
@@ -513,6 +561,9 @@ export function MatchPredictionCardVertical({
                   />
                 )}
               </View>
+
+              {/* Separator: match | points */}
+              <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: theme.colors.textSecondary + "60", alignSelf: "stretch", marginVertical: spacing.xs }} />
             </View>
 
             {/* Right spacer — mirrors statusCol for symmetry */}
@@ -624,7 +675,7 @@ const styles = StyleSheet.create({
     lineHeight: 11,
   },
   resultColumn: {
-    width: 36,
+    width: 28,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -681,7 +732,7 @@ const styles = StyleSheet.create({
     alignItems: "center" as const,
     writingDirection: "ltr" as const,
     gap: radius.xs,
-    height: 50,
+    height: 40,
     overflow: "hidden" as const,
   },
   hTeamHalf: {
@@ -699,7 +750,6 @@ const styles = StyleSheet.create({
   hCenter: {
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    marginBottom: radius.sm,
   },
   hResultsRow: {
     flexDirection: "row" as const,
